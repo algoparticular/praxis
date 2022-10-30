@@ -15,9 +15,7 @@
     const cover = ref('');
     const showTooltip = ref(false);
 
-    // console.log(router);
-
-    const shareUrl = 'https://algoparticular.com/card/'+route.params.id;
+    const shareUrl = window.location.origin+'/card/'+route.params.id;
 
     const copyUrl = () => {
         navigator.clipboard.writeText(shareUrl);

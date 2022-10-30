@@ -30,7 +30,7 @@
                     cover.value = 'url(' + card.value.image[0].url + ')';
                     color.value = card.value.color;
                     colorAlt.value = card.value.colorAlt;    
-                    console.log(card.value);
+                    // console.log(card.value);
                     resolve();        
                 });
             }, 4000)
