@@ -1,0 +1,119 @@
+{
+    "es": {
+        "message": {
+            "hello": "Algo Particular cuenta las historias de una partícula que al volverse consciente de sí, aprende a navegar el Universo libremente.\nBajo la premisa hermética 'Como es arriba, es abajo', transmite su verdad: todos somos iguales, todos somos uno, (no) somos (de) aquí.",
+            "copyright": "© Algo Particular es un proyecto de ",
+            "back": "Volver ❤",                
+            "notFound": "Sólo un espacio vacío...",
+            "notFoundCopy": "Con o sin error, te invito a aprovechar esta oportunidad para estar aquí. No se necesita ninguna máscara social en esta página 404.\n\nUna simple oportunidad para cerrar los ojos y exhalar todo el aire. Liberar todos los músculos de la cara, haciendo movimientos muy lentos mientras escudriñamos nuestro cuerpo.\n\n¿Cómo he llegado a esta página? ¿En qué frecuencia estoy vibrando?\n\nY cuando lo necesites, vuelve a abrir los ojos. Sonríe y expresa tu gratitud a alguien, a algo, y especialmente a ti mismo.\n\nGracias, ahora puedes seguir navegando.",
+            "notFoundButton": "Volver al sitio",                        
+            "praxisIntro": "Bienvenidx al Oráculo de las Partículas.\n\nPresiona el símbolo para tomar tu mensaje, pon intención verdadera en eso que vibra en tu interior."
+        },
+        "landing": {
+            "intro": "¿Y tú qué tienes de particular?",
+            "oracleTitle": "Orienta a tu intuición",
+            "oracleDescrip": "Al igual que cuando recorremos un lugar, tomamos la guía de un mapa o una brújula, al navegar el Universo de forma consciente necesitamos contar con la ayuda de herramientas que guíen nuestra intuición.",
+            "oracleAction": "Consulta al Oráculo",
+            "aboutTitle": "Navega el Universo",
+            "aboutDescrip": "Nuestra misión es invitar a las personas tanto a la acción como a la reflección. Utilizando el arte y la filosofía, buscamos conectar con lo que hace vibrar nuestro interior, esa brújula interna que nos invita a un camino con corazón.",
+            "aboutAction": "¿Quieres ayudar?",
+            "uno": "“Todos somos iguales,\ntodos somos uno,\n(no) somos (de) aquí.”"
+        },
+        "nav": {
+            "home": "Inicio",
+            "praxis": "El Oráculo",
+            "intro": "Intro",
+            "about": "¿Qué es esto?",
+            "collaborate": "¿Quieres ayudar?",
+            "signIn": "Ingresar",
+            "register": "Crear una cuenta",
+            "logout": "Salir",
+            "skip": "al Oráculo"
+        },
+        "auth": {
+            "registerTitle": "Crea una cuenta",
+            "registerDescrip": "Puedes coleccionar y trabajar sobre cada carta que vaya apareciendo en tu camino.",
+            "registerSubmit": "Quiero sumergirme",
+            "registerGoogle": "Voy a ingresar usando mi Gmail",
+            "signinTitle": "Ingresa a tu cuenta",
+            "signinDescrip": "Inicia con tu email y contraseña.",
+            "signinSubmit": "Quiero sumergirme",
+            "signinGoogle": "Voy a ingresar usando mi Gmail",
+            "formEmail": "Email",
+            "formPassword": "Contraseña"
+        },
+        "onboarding": {
+            "0": "Cada uno de nuestros átomos, y los de todo lo que existe, vienen navegando el Universo desde el principio de los tiempos.\n\nEsas partículas cargan con miles de historias, de reflexiones y aprendizajes.",
+            "1": "Desconéctate por un momento y conoce el mensaje que estas partículas tienen para tí.\n\nAl elegir, cierra tus ojos y pon intención verdadera en eso que vibra en tu interior.",
+            "2": "Cuando estés listx, presiona el símbolo para tomar tu carta.",
+            "3": ""
+        },
+        "about": {
+            "intro": "Algo Particular es un proyecto de",
+            "oracleDeck": "Cartas oráculo escritas por",
+            "oracleAuthor": "Belén Brito",
+            "designedBy": "Desarrollada e ilustrada por",
+            "author": "Juan Yañez",
+            "authorLink": "https://juanmanuelynz.com",
+            "praxis": "Sobre nosotros",
+            "praxisDescrip": "Algo Particular es una propuesta artístico/espiritual creada en 2020.\n\nNuestra misión es invitar a las personas tanto a la acción como a la reflección.\n\nUtilizando el arte y la filosofía, buscamos establecer contacto con nuestra intuición, esa brújula interna que nos invita a un camino con corazón.\n\nComo primer propuesta interactiva desarrollamos Praxis, una versión digital de Cartas Oráculo.",
+            "oracle": "Praxis y las Cartas del Oráculo de las Partículas",
+            "oracleDescrip": "Al igual que cuando recorremos un lugar, tomamos la guía de un mapa o una brújula, en el camino del autodescubrimiento es beneficiosa la orientación del llamado “Plano Superior”, que no es otra que la guía de nuestro Ser más profundo.\n\nPraxis invita tanto a la acción como a la reflección, buscando conectar con lo que vibra en nuestro interior.\n\nLas Cartas del Oráculo, escritas por Belén Brito son una herramienta para aquellos que creemos que la magia existe. Con su luminosa calma, Belén nos insta a encontrar las respuestas de nuestro ser interno, utilizando cada carta como un espejo para evaluar o validar nuestro camino.\n\nEs así que las Partículas nos traen esos mensajes que nuestro Ser está necesitando en este momento, en este aquí y ahora.",
+            "seed": "Pulsa la semilla\npara recibir un mensaje",
+            "brote": "Pulsa el brote\npara coleccionarlo",
+            "cta": "¿Quieres ayudar?",
+            "sustent": "Colabora con nosotros para desarrollar este universo"
+        },
+        "collaborate": {
+            "title": "Próximamente",
+            "intro": "Con tu ayuda podemos seguir creando y haciendo crecer este universo. ",
+            "howToHelp": "¿Cómo ayudar?",
+            "sharing": "Compartiendo nuestro contenido en redes sociales o a esas personas que crees que están necesitando algo de magia en sus vidas.",
+            "cocreate": "Co-creando este espacio. Desde su nacimiento, Algo Particular no podría transmitir su propósito si no fuera por otras partículas que, a lo largo del camino, co-crean o colaboran con el desarrollo y expresión de este Universo.\nA todas ellas les estoy infinitamente agradecido.",
+            "contact": "Feliz de leerte",
+            "donating": "Colaborando con cualquier monto que puedas. Imagina que estamos sentados en una mesa y decides invitar unos tes.",
+            "whatsNext": "¿Qué sigue?",
+            "next": [
+                "Expandir el mazo Oráculo.",
+                "Implementar cuentas de usuario para acceder a nuevas funciones.",
+                "Versión impresa del mazo Oráculo.",
+                "Realizar música original para cada carta.",
+                "Desarrollo de videojuego de mundo abierto.",
+                "Crear un segundo mazo, tipo Tarot, de 78 cartas.",
+                "Versión impresa del mazo Tarot.",                
+                "Lanzamiento de colección NFT."
+            ],
+            "forKids": "¿Che y para niñxs?",
+            "kids": "También... algo... pronto..."
+        },
+        "oracle": {
+            "deckCopy": "Siente y elige tu carta",
+            "deckLoading": "Mezclando las cartas con la frecuencia del momento presente...",
+            "cardAfirmattion": "Afirmación",
+            "cardInvitation": "Invitación",
+            "collectionTitle": "El mazo",
+            "collectionDescrip": "you can do it",
+            "linkCopied": "Copiado!"
+        },
+        "loading": [
+            "conversando con los Maestros...",
+            "leyendo historias de partículas...",
+            "descargando la información de las partículas...",
+            "conectando con la fuente...",
+            "calibrando la frecuencia...",
+            "armonizando la vibración...",
+            "inspirando, exhalando..."
+        ],
+        "categories": {
+            "regular": {
+                "text":""
+            },
+            "parami": {
+                "text":"Pāramīs, virtudes que te invitan a vivir una vida sin obstrucciones hacia el camino de la iluminación."
+            },
+            "chakra": {
+                "text":""
+            }
+        }
+    }
+}

@@ -1,0 +1,21 @@
+{
+    "short_name": "Algo Particular",
+    "name": "Algo Particular",
+    "start_url": "/praxis",
+    "display": "standalone",
+    "background_color": "#10100F",
+    "theme_color": "#10100F",
+    "orientation": "portrait-primary",
+    "icons": [
+      {
+        "src": "../icon-32.png",
+        "type": "image/png",
+        "sizes": "32x32" 
+      },
+      {
+        "src": "../icon-512.png",
+        "type": "image/png",
+        "sizes": "512x512" 
+      }
+    ]  
+  }

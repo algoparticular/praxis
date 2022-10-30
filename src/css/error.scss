@@ -1,0 +1,54 @@
+#notFound {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    padding-top: 10vh;
+
+    .drawingWrapper {
+        display: flex;
+        justify-content: center;
+        img {
+            width: 80%;
+        }
+    }
+
+    h2 {
+        margin: 16px 0 32px;
+        color: $color-whiteMana;
+        text-align: left;
+    }
+
+    p {
+        white-space: pre-line;
+        color: $color-whiteMana;
+        text-align: justify;        
+    }
+
+    .button {
+        background-color: $color-whiteMana;
+        color: $color-black;
+        margin-top: 24px;
+        height: auto;
+
+        &:hover {
+            color: $color-whiteMana;
+            background: $color-lorange;
+        }
+    }
+
+    .textContainer {
+        // background-image: url('/assets/atom_1px.svg');
+        // background-repeat: no-repeat;
+        // background-size: 240vw;
+        // background-position: 42%;
+        background-color: $color-black;
+        width: 100%;
+        display: flex;
+        justify-content: center;
+
+        padding: 3vh 0 20vh;
+        margin-top: 32px;
+    }
+}
