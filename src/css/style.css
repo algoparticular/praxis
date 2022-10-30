@@ -51,14 +51,10 @@ body {
 }
 
 #app {
-  padding: 18px 0;
+  padding: 0;
   width: 100vw;
   overflow-x: hidden;
   min-height: 100vh;
-}
-
-#app.praxis {
-  padding: 0;
 }
 
 main {
