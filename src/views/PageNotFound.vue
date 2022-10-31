@@ -9,10 +9,10 @@
             :hasBack="true"
             :hasMenu="true"/>
 		<main id="home">
-			<img class="title" alt="Praxis, by Algo Particular" src="../assets/Logo_praxis.svg">
+			<img class="title" alt="Algo Particular" src="../assets/Logo_mana.svg">
 
 			<section class="intro">
-				<h2>{{ $t("message.notFound") }}</h2>
+				<h3>{{ $t("message.notFound") }}</h3>
 				<p>{{ $t("message.notFoundCopy") }}</p>
 				<!-- <p>{{ $t("message.notFoundButton") }}</p> -->
 			</section>
@@ -38,11 +38,11 @@
 
 	section {
 		padding: 100px 0;
+		width: 90vh;
+		max-width: 360px;		
 	}
 
 	section p {
-		width: 326px;
 		text-align: justify;
-
 	}
 </style>

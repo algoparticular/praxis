@@ -5,12 +5,9 @@
 </script>
 
 <script>
-// import { Motion } from "motion/vue";
 import { animate, stagger } from "motion";
 
 export default {
-//   components: { Motion },
-
   data() {
     return {
       randomIndex: 0,
