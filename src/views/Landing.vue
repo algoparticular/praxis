@@ -423,6 +423,7 @@
 <style scoped>
     #colorMe {
         background-color: #F7F8F1;
+        background-image: url('../assets/noise_white.png');
     }
 
     /* ABOUT */
@@ -509,10 +510,10 @@
         width: 100vw;
         height: 100vh;
 
-        background-image: url('../assets/icon/SeedGhost.svg'), url('../assets/noise_white.png');
-        background-repeat: no-repeat, repeat;
-        background-size: 135px, 200px;
-        background-position: 90% 60%, 0 0;
+        background-image: url('../assets/icon/SeedGhost.svg');
+        background-repeat: no-repeat;
+        background-size: 135px;
+        background-position: 90% 60%;
     }
 
     #uno h2 {
@@ -529,8 +530,8 @@
     /* DESKTOP */
     @media screen and (min-width: 769px) {
         #uno {
-            background-size: 180px, 200px;
-            background-position: 66% 60%, 0 0;
+            background-size: 180px;
+            background-position: 66% 60%;
         }
 
         #uno h2 {
