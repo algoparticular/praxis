@@ -1,7 +1,7 @@
 <script setup>
 	import { onMounted, ref } from 'vue';
     import { useRouter } from 'vue-router';
-    import { animate, scroll } from "motion";
+    import { animate, inView, scroll } from "motion";
 
     import Header  from '../components/Header.vue';
     import Footer  from '../components/Footer.vue';
@@ -30,6 +30,13 @@
     // //ON MOUNTED
 	onMounted (() => {           
         setInterval(function(){
+            // animate("#.splash.particle", {
+            //     transform: 'translate3D(-10, -20, 0)'
+            // },
+            // {
+            //     ease: "cubic-bezier(0.23, 1, 0.32, 1)"
+            // });
+
             animate("#galleryWrapper", {
                 backgroundImage: gallery.value[currentIndex]
             },
@@ -45,18 +52,19 @@
             // console.log(currentIndex);
         }, 5000);
 
-        const colorSection = document.querySelectorAll("#uno")[0];
-
+        const colorSection = document.getElementById("uno"); 
+        
         const scrollOptions = {
             target: colorSection,
             offset: ["start end", "end end"]
         }
 
-        // Pass an animation or timeline to automatically scrub
-        scroll(
-            animate("#uno", { backgroundColor: "#FF6F61" }),
-            scrollOptions
-        );
+        inView(colorSection, () => {
+            scroll(
+                animate("#colorMe", { backgroundColor: "#FF6F61" }),
+                scrollOptions
+            )
+        });
     });
 </script>
 
@@ -112,34 +120,36 @@
                 <button @click="handleNavigate('/praxis')">{{ $t("landing.oracleAction") }}</button>
             </div>
         
-            <kinesis-element 
-                class="oracle particle"
-                :strength="60"
-                type="translate"/>
-            <kinesis-element 
-                class="oracle tree"
-                :strength="50"
-                type="translate"/>
-
-            <div class="oracle stars"></div>
+            <div class="gfx">
+                <kinesis-element 
+                    class="oracle particle"
+                    :strength="60"
+                    type="translate"/>
+                <kinesis-element 
+                    class="oracle tree"
+                    :strength="50"
+                    type="translate"/>
+            </div>
         </kinesis-container>
 
-        <section id="about">
-            <div id="galleryWrapper"></div>
+        <div id="colorMe">
+            <section id="about">
+                <div id="galleryWrapper"></div>
 
-            <div class="copy">
-                <div class="heading">
-                    <img src="../assets/icon/Brote.svg"/>
-                    <h3>{{ $t("landing.aboutTitle") }}</h3>
-                </div>
-                <p>{{ $t("landing.aboutDescrip") }}</p>
-                <button @click="handleNavigate('/collaborate')">{{ $t("landing.aboutAction") }}</button>
-            </div>
-        </section>
-
-        <section id="uno">
-            <h2>{{ $t("landing.uno") }}</h2>
-        </section>
+                <div class="copy">
+                    <div class="heading">
+                        <img src="../assets/icon/Brote.svg"/>
+                        <h3>{{ $t("landing.aboutTitle") }}</h3>
+                    </div>
+                    <p>{{ $t("landing.aboutDescrip") }}</p>
+                    <button @click="handleNavigate('/collaborate')">{{ $t("landing.aboutAction") }}</button>
+                </div>            
+            </section>
+            
+            <section id="uno">
+                <h2>{{ $t("landing.uno") }}</h2>
+            </section>
+        </div>
 
         <Footer />
 	</div>
@@ -174,7 +184,7 @@
         line-height: 120%;
     }
 
-    .splash, .oracle {        
+    .splash {        
         position: absolute;
         z-index: 3;
         
@@ -291,8 +301,10 @@
         display: flex;
         align-items: center;
         justify-content: center;
+        flex-direction: column;
+        gap: 80px;
         width: 100vw;
-        min-height: 100vh;
+        min-height: 120vh;
     }
 
     .copy {
@@ -304,11 +316,7 @@
     }
 
     #oracle .copy {
-        position: absolute;
-        top: 7vh;
-        left: 5vw;
         width: 90vw;
-        z-index: 9;
     }
 
     .copy .heading {
@@ -350,66 +358,68 @@
         background-color: #E8E974;
     }
 
+    .gfx {
+        height: 32vh;
+        width: 80vw;
+        position: relative;
+    }
+
+    .oracle {
+        background-size: contain;
+        background-position: center;
+        background-repeat: no-repeat;        
+    }
+
     .oracle.particle {
         background-image: url('../assets/oracle/particle.png');   
-        z-index: 9;             
-        height: 24vh;
-        width: 80vw;
-
-        top: 66vh;
-        left: 10vw;        
+        width: 100%;
+        height: 100%;      
     }
 
     .oracle.tree {
         background-image: url('../assets/oracle/tree.png');     
-        z-index: 7;           
+        position: absolute;
+        top: 5vh;
+        right: 0;
+        z-index: -1;           
         height: 20vh;
-        width: 20vw;
-
-        top: 64vh;
-        right: 18vw;        
+        width: 20vw;     
     }   
 
     /* DESKTOP */
     @media screen and (min-width: 769px) {
         #oracle {
             flex-direction: row;
-        }
-
-        #oracle {
-            justify-content: flex-start;
+            align-items: center;
+            justify-content: center;
+            gap: 100px;
+            min-height: 100vh;
         }
 
         #oracle .copy {
-            top: 20vh;
-            left: 15vw;
             width: auto;
         }
 
-        .oracle.particle {            
-            height: 50vh;
-            width: 50vw;
-
-            top: 20vh;
-            left: auto;
-            right: 6vw;        
+        .gfx {
+            height: 52vh;
+            width: 36vw;
         }
 
         .oracle.tree {         
             height: 20vh;
             width: 20vw;
-
-            top: 23vh;
-            right: 8vw;        
         }
 
     }
 </style>
 
 <style scoped>
-    /* ABOUT */
-    #about {
+    #colorMe {
         background-color: #F7F8F1;
+    }
+
+    /* ABOUT */
+    #about {        
         display: flex;
         justify-content: center;
         align-items: center;
@@ -434,7 +444,7 @@
     #about .copy {        
         width: 100vw;
         height: 100%;
-        background-color: #F7F8F1;
+        /* background-color: #F7F8F1; */
         z-index: 1;
         padding: 0 0 10vh;        
     }
@@ -485,15 +495,17 @@
 <style scoped>
     /* UNO */
     #uno {
-        background-color: #F7F8F1;
+        /* background-color: #F7F8F1; */
         display: flex;
         align-items: center;
         justify-content: center;
+        width: 100vw;
         height: 100vh;
 
-        background-image: url('../assets/noise.png');
-        /* background-repeat: no-repeat; */
-        /* background-size: 90px; */
+        background-image: url('../assets/icon/SeedGhost.svg'), url('../assets/noise_white.png');
+        background-repeat: no-repeat, repeat;
+        background-size: 180px, 200px;
+        background-position: 66% 60%, 0 0;
     }
 
     #uno h2 {
