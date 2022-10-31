@@ -138,8 +138,6 @@
         width: 66px;
         height: 66px;
 
-        /* -webkit-transition: all 250ms ease-out;
-        transition: all 250ms ease-out; */
         -webkit-transition: border 270ms ease-out, 
                     background-color 150ms ease-out,
                     filter 150ms ease-out;

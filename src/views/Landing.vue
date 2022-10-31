@@ -96,7 +96,10 @@
                 transformOrigin="bottom left"
                 type="translate"/>
 
-            <div class="splash background"></div>            
+            <kinesis-element 
+                class="splash background"
+                :strength="1"
+                type="depth"/>        
         </kinesis-container>
 
         <kinesis-container id="oracle" tag="section" easing="cubic-bezier(0.23, 1, 0.32, 1)" event="scroll">
@@ -111,11 +114,11 @@
         
             <kinesis-element 
                 class="oracle particle"
-                :strength="200"
+                :strength="60"
                 type="translate"/>
             <kinesis-element 
                 class="oracle tree"
-                :strength="100"
+                :strength="50"
                 type="translate"/>
 
             <div class="oracle stars"></div>
@@ -270,6 +273,10 @@
             top: 73vh;
             left: 3vw;
         }
+
+        .splash.background {
+            background-size: 108%;
+        }
     }
 </style>
 
@@ -277,10 +284,15 @@
     /* ORACLE */
     #oracle {
         background-color: #0381BA;   
+        background-image: url('../assets/oracle/stars.png');
+        background-size: contain;
+        background-repeat: repeat;
+
         display: flex;
         align-items: center;
         justify-content: center;
         width: 100vw;
+        min-height: 100vh;
     }
 
     .copy {
@@ -288,12 +300,12 @@
         flex-direction: column;
         justify-content: center;
         align-items: center;
-        gap: 40px;        
+        gap: 24px;        
     }
 
     #oracle .copy {
         position: absolute;
-        top: 10vh;
+        top: 7vh;
         left: 5vw;
         width: 90vw;
         z-index: 9;
@@ -325,6 +337,7 @@
         line-height: 150%;
         text-align: center;
         max-width: 310px;
+        margin-bottom: 0;
     }
 
     .copy button {
@@ -353,20 +366,9 @@
         height: 20vh;
         width: 20vw;
 
-        top: 63vh;
+        top: 64vh;
         right: 18vw;        
-    }
-
-    .oracle.stars {
-        background-image: url('../assets/oracle/stars.png');
-        background-size: contain;
-        background-repeat: repeat;
-        
-        top: 0;
-        z-index: 3;
-        width: 100vw;
-        height: 100%;
-    }
+    }   
 
     /* DESKTOP */
     @media screen and (min-width: 769px) {
@@ -401,9 +403,6 @@
             right: 8vw;        
         }
 
-        .oracle.stars {
-            
-        }
     }
 </style>
 
@@ -412,14 +411,18 @@
     #about {
         background-color: #F7F8F1;
         display: flex;
+        justify-content: center;
         align-items: center;
-        flex-direction: column;      
+        flex-direction: column;
+        gap: 40px;
         height: 120vh;      
     }
 
     #galleryWrapper {        
-        width: 100vw;
-        height: 100vh;
+        width: 90vw;
+        height: 95vh;
+        margin-top: 5vh;
+        border-radius: 24px;
         background-color: #A4DAD9;   
         background-size: cover; 
         background-position: center;
@@ -433,7 +436,7 @@
         height: 100%;
         background-color: #F7F8F1;
         z-index: 1;
-        padding: 5vh 0 15vh;        
+        padding: 0 0 10vh;        
     }
 
     #about .copy .heading img {
@@ -462,15 +465,18 @@
     @media screen and (min-width: 769px) {
         #about {
             flex-direction: row;
-            height: auto;
+            gap: 80px;
+            height: 100vh;
         }
 
         #galleryWrapper {
-            width: 50vw;            
+            width: 36vw;
+            height: 70vh;
+            margin: 0;
         }
 
         #about .copy {
-            width: 50vw;
+            width: 36vw;
             padding: 0;
         }
     }
@@ -483,25 +489,28 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        height: 90vh;
+        height: 100vh;
+
+        background-image: url('../assets/noise.png');
+        /* background-repeat: no-repeat; */
+        /* background-size: 90px; */
     }
 
     #uno h2 {
         color: #F7F8F1;
-        letter-spacing: 1px;
+        letter-spacing: 0.01em;
         margin: 0;
         padding: 0;
         white-space: pre-line;
         text-align: center;
         line-height: 130%;
-        font-size: 32px;
-    }
+        font-size: 32px;        
+    }    
 
     /* DESKTOP */
     @media screen and (min-width: 769px) {
         #uno h2 {
             font-size: 48px;
-            letter-spacing: 2px;
         }
     }
 </style>
