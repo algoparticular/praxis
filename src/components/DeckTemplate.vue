@@ -65,7 +65,7 @@
 
 <style>
     #cardDeck {
-        padding-top: 15vh;
+        padding: 15vh 0;
     }
 
     .deckWrapper {
@@ -90,7 +90,7 @@
     /* DESKTOP */
     @media screen and (min-width: 769px) {
         #cardDeck {
-            padding-top: 0;
+            padding: 0;
             min-height: 100vh;
             display: flex;
             justify-content: center;

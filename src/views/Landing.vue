@@ -504,8 +504,8 @@
 
         background-image: url('../assets/icon/SeedGhost.svg'), url('../assets/noise_white.png');
         background-repeat: no-repeat, repeat;
-        background-size: 180px, 200px;
-        background-position: 66% 60%, 0 0;
+        background-size: 135px, 200px;
+        background-position: 90% 60%, 0 0;
     }
 
     #uno h2 {
@@ -521,8 +521,13 @@
 
     /* DESKTOP */
     @media screen and (min-width: 769px) {
+        #uno {
+            background-size: 180px, 200px;
+            background-position: 66% 60%, 0 0;
+        }
+
         #uno h2 {
-            font-size: 48px;
+            font-size: 48px;            
         }
     }
 </style>
