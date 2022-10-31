@@ -27,8 +27,6 @@
 					class="oracle tree"
 					:strength="60"
 					type="translate"/>
-
-				<div class="oracle stars"></div>
 			</kinesis-container>
 
 			<div id="panel">
@@ -51,6 +49,9 @@
 <style scoped>
 	.content.home {
 		background-color: #0282BB;
+		background-image: url('../assets/oracle/stars.png');
+        background-size: contain;
+        background-repeat: round;
 	}
 
 	#home {
@@ -58,13 +59,8 @@
 		flex-direction: column;
 		justify-content: center;
 		align-items: center;
-	}
-
-	#home .cover {
-		width: 100%;
-		height: 100vh;
-		position: relative;
-	}	
+		min-height: 100vh;
+	}		
 
 	#panel {
         display: flex;
@@ -73,8 +69,8 @@
 		justify-content: center;
 		gap: 40px;
 
-		position: absolute;
-		bottom: 9vh;
+		/* position: absolute;
+		bottom: 9vh; */
     }	
 
     #panel p {
@@ -92,10 +88,14 @@
 		color: #F7F8F1;
 		filter: drop-shadow(0px 2px 3px rgba(234, 234, 234, 1));
     }  
+
+	#home .cover {
+		width: 100vw;
+		min-height: 40vh;
+	}
 	
 	.oracle {        
         position: absolute;
-        z-index: 3;
         
         background-size: contain;
         background-position: center;
@@ -106,41 +106,35 @@
         background-image: url('../assets/oracle/particle.png');   
         z-index: 9;             
         height: 36vh;
-        width: 80vw;
+        width: 90vw;
 
-        top: 18vh;
-        left: 10vw;        
+        left: 5vw;
     }
 
     .oracle.tree {
         background-image: url('../assets/oracle/tree.png');     
         z-index: 7;           
         height: 20vh;
-        width: 20vw;
+        width: 25vw;
 
-        top: 21vh;
-        left: 63vw;        
-    }
-
-    .oracle.stars {
-        background-image: url('../assets/oracle/stars.png');
-        background-size: contain;
-        background-repeat: round;
-        
-        top: 0;
-        z-index: 3;
-        width: 100vw;
-        height: 100%;
+        top: 0vh;
+		right: 10vw;
     }
     
 
 	/* DESKTOP */
-    @media screen and (min-width: 769px) {        
+    @media screen and (min-width: 769px) { 
+		#home {
+			flex-direction: row;
+			/* justify-content: space-around; */
+			gap: 80px;
+		}       
 
-		#panel {
-			right: 11vw;
-			bottom: 18vh;
-		}		
+		#home .cover {
+			width: auto;
+			min-width: 40vw;
+			min-height: 400px;
+		}
 
 		#panel p {
 			max-width: 420px;
@@ -150,17 +144,14 @@
 		.oracle.particle {           
 			height: 42vh;
 			width: 40vw;
-
-			top: 18vh;
-			left: 10vw;        
+			left: 0;
 		}
 
 		.oracle.tree {           
-			height: 20vh;
-			width: 20vw;
-
-			top: 18vh;
-			left: 33vw;        
+			height: 15vh;
+			width: 15vw;
+			top: 5vh;
+			right: 0;
 		}
     }
 </style>
