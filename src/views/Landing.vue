@@ -1,7 +1,7 @@
 <script setup>
 	import { onMounted, ref } from 'vue';
     import { useRouter } from 'vue-router';
-    import { animate, inView, scroll } from "motion";
+    import { animate, timeline, inView, scroll } from "motion";
 
     import Header  from '../components/Header.vue';
     import Footer  from '../components/Footer.vue';
@@ -28,15 +28,22 @@
 
 
     // //ON MOUNTED
-	onMounted (() => {           
-        setInterval(function(){
-            // animate("#.splash.particle", {
-            //     transform: 'translate3D(-10, -20, 0)'
-            // },
-            // {
-            //     ease: "cubic-bezier(0.23, 1, 0.32, 1)"
-            // });
+	onMounted (() => {         
+        const sequence = [
+            [".splash.particle", { y: 20 }],
+            [".splash.cell.one", { x: 20 }, { at: "<" }],
+            [".splash.cell.two", { x: -30 }, { at: "<" }],
+            [".splash.cell.three", { y: -30 }, { at: "<" }],
+        ];
 
+        timeline(sequence, { 
+            duration: 4, 
+            direction: 'alternate-reverse', 
+            repeat: Infinity,
+            defaultOptions: { ease: "ease-out" },
+        });
+
+        setInterval(function(){
             animate("#galleryWrapper", {
                 backgroundImage: gallery.value[currentIndex]
             },
