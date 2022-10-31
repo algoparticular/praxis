@@ -54,7 +54,7 @@
         flex-direction: column;
         justify-content: center;
         align-items: center;
-        height: auto;            
+        height: auto;        
     }
 
     .deck button.back {   
@@ -70,6 +70,7 @@
     @media screen and (min-width: 769px) {
         .content.deck {
             padding: 40px 0;
+            min-height: 100vh;
         }
     }
     

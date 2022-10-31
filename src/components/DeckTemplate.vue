@@ -90,7 +90,11 @@
     /* DESKTOP */
     @media screen and (min-width: 769px) {
         #cardDeck {
-            padding-top: 10vh;
+            padding-top: 0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
         .deckWrapper {
