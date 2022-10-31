@@ -20,12 +20,12 @@
 			<kinesis-container class="cover" easing="cubic-bezier(0.23, 1, 0.32, 1)" :perspective="100">
 				<kinesis-element 
 					class="oracle particle"
-					:strength="100"
-					transformOrigin="bottom right"
+					:strength="70"
+					transformOrigin="bottom left"
 					type="translate"/>
 				<kinesis-element 
 					class="oracle tree"
-					:strength="60"
+					:strength="40"
 					type="translate"/>
 			</kinesis-container>
 

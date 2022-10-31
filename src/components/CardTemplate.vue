@@ -33,25 +33,12 @@
                     // console.log(card.value);
                     resolve();        
                 });
-            }, 4000)
+            }, 3000)
         })
     }
     
     const data = ref(await loadCardData());           
-    
-//     onBeforeMount (() => {
-//         base('Oracle cards').select({
-//             view: 'List'
-//         }).firstPage(function(err, records) {
-//             if (err) { console.error(err); return; }
-// console.log('here bring stuff .. again?');
-//             card.value = records[props.id].fields;
-
-//             cover.value = 'url(' + card.value.image[0].url + ')';
-//             color.value = card.value.color;
-//             colorAlt.value = card.value.colorAlt;            
-//         });   
-//     }); 
+ 
 </script>
 
 <template>
