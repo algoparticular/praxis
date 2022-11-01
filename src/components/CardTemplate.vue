@@ -34,7 +34,7 @@
                     colorAlt.value = card.value.colorAlt;                
                     
                     // console.log('done ' + color.value);
-                    // resolve();  
+                    resolve();  
                 });
             }, 3000)
         })
