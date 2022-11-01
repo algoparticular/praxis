@@ -1,10 +1,10 @@
 <script setup>
     import { onBeforeMount, onMounted, ref } from 'vue';
+    import { animate } from "motion";
 
     const props = defineProps({
         id: String,
     });
-</script>
 
     const randomIndex = ref(0);
     
