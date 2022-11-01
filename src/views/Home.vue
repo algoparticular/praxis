@@ -20,12 +20,12 @@
 			<kinesis-container class="cover" easing="cubic-bezier(0.23, 1, 0.32, 1)" :perspective="100">
 				<kinesis-element 
 					class="oracle particle"
-					:strength="70"
+					:strength="5"
 					transformOrigin="bottom left"
 					type="translate"/>
 				<kinesis-element 
 					class="oracle tree"
-					:strength="40"
+					:strength="9"
 					type="translate"/>
 			</kinesis-container>
 
@@ -50,8 +50,7 @@
 	.content.home {
 		background-color: #0282BB;
 		background-image: url('../assets/oracle/stars.png');
-        background-size: contain;
-        background-repeat: round;
+        background-size: cover;
 	}
 
 	#home {
@@ -68,9 +67,6 @@
 		align-items: center;
 		justify-content: center;
 		gap: 40px;
-
-		/* position: absolute;
-		bottom: 9vh; */
     }	
 
     #panel p {
@@ -83,6 +79,7 @@
         text-align: center;
 		flex-shrink: 0;
 
+		width: 90vw;
 		max-width: 370px;
         min-height: 100px;
 		color: #F7F8F1;

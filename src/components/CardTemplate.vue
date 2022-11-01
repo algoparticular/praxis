@@ -1,6 +1,7 @@
 <script setup>
-	import { onBeforeMount, ref } from 'vue';
-    import { useRouter } from 'vue-router';    
+	import { onMounted, ref } from 'vue';
+    import { useRouter } from 'vue-router';   
+    import { animate, scroll } from "motion";
 
     //Database
     import Airtable from "airtable";
@@ -21,23 +22,40 @@
         return new Promise((resolve) => {
             setTimeout(() => {
                 base('Oracle cards').select({
-                    view: 'List'
+                    view: 'List',
+                    filterByFormula: `id = "${props.id}"`
                 }).firstPage(function(err, records) {
                     if (err) { console.error(err); return; }
 
-                    card.value = records[props.id].fields;
+                    card.value = records[0].fields;
 
                     cover.value = 'url(' + card.value.image[0].url + ')';
                     color.value = card.value.color;
-                    colorAlt.value = card.value.colorAlt;    
-                    // console.log(card.value);
-                    resolve();        
+                    colorAlt.value = card.value.colorAlt;                
+                    
+                    // console.log('done ' + color.value);
+                    // resolve();  
                 });
             }, 3000)
         })
     }
     
-    const data = ref(await loadCardData());           
+    const data = ref(await loadCardData());   
+
+    /////////////////
+    // //ON MOUNTED
+	// onMounted (() => {
+        // const zoomElement = document.getElementsByClassName("cardWrapper"); 
+        // const scrollOptions = {
+        //     target: '.cardWrapper',
+        //     offset: ["start", "center"]
+        // }
+        
+        // scroll(
+        //     animate(".illustration", { backgroundSize: "110%" }),
+        //     scrollOptions
+        // );
+    // });    
  
 </script>
 
@@ -45,6 +63,7 @@
 	<main class="cardWrapper">
         <div class="imageWrapper">
             <div class="illustration"></div>
+            
             <button class="action" @click="router.push({ path: '/share/'+props.id });">
                 <!-- <svg class="icon share" width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M20.0001 5.33301C20.4511 5.33301 20.8829 5.51583 21.1968 5.83972L26.7968 11.6175C27.4375 12.2785 27.421 13.3336 26.76 13.9742C26.0991 14.6149 25.0439 14.5984 24.4033 13.9374L21.6667 11.114V24.333C21.6667 25.2535 20.9205 25.9997 20.0001 25.9997C19.0796 25.9997 18.3334 25.2535 18.3334 24.333V11.114L15.5968 13.9374C14.9562 14.5984 13.9011 14.6149 13.2401 13.9742C12.5791 13.3336 12.5627 12.2785 13.2033 11.6175L18.8033 5.83972C19.1172 5.51583 19.549 5.33301 20.0001 5.33301Z"/>
@@ -220,7 +239,7 @@
 
         .textWrapper {
             width: 40%;
-            padding: 0;
+            padding: 40px 0;
             /* height: 100vh; */
             display: flex;
             flex-direction: column;

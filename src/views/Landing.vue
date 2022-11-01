@@ -302,8 +302,8 @@
     #oracle {
         background-color: #0381BA;   
         background-image: url('../assets/oracle/stars.png');
-        background-size: contain;
-        background-repeat: repeat;
+        background-size: cover;
+        background-position: center;
 
         display: flex;
         align-items: center;

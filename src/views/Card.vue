@@ -9,17 +9,29 @@
         <Header 
             :hasBack="true"
             :hasMenu="true"/>
-        <Suspense>
-            <template #default>
-                <CardTemplate :id="$route.params.id"/>
-            </template>
-            <template #fallback> 
-                <CardTemplateSkeleton :id="$route.params.id"/>
-            </template>
-        </Suspense>
+        <Transition name="fade" mode="in-out">
+            <KeepAlive>
+                <Suspense>
+                    <template #default>
+                        <CardTemplate :id="$route.params.id"/>
+                    </template>
+                    <template #fallback> 
+                        <CardTemplateSkeleton :id="$route.params.id"/>
+                    </template>
+                </Suspense>
+            </KeepAlive>
+        </Transition>
     </div>
 </template>
 
 <style>
-    
+    .fade-enter-from,
+	.fade-leave-to {
+		opacity: 0;
+	}
+
+	.fade-enter-active,
+	.fade-leave-active {
+		transition: opacity .3s ease-out;
+	}
 </style>
