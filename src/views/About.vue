@@ -1,16 +1,34 @@
 <script setup>
-    	
+    import { onMounted, ref } from 'vue';
     import { useRouter } from 'vue-router';
     import { es } from "../json/copy_es.json";
     
     import Footer  from '../components/Footer.vue';
     import Header from '../components/Header.vue';
+
+    import { animate, timeline, inView, scroll } from "motion";
     
     const router = useRouter();
 
     const navigate = (url) => {
         router.push({ path: url});
     };     
+
+    onMounted (() => {
+        const colorSection = document.getElementById("cta"); 
+        
+        const scrollOptions = {
+            target: colorSection,
+            offset: ["start end", "end end"]
+        }
+
+        inView(colorSection, () => {
+            scroll(
+                animate(".colorMe", { backgroundColor: "#FF6F61" }),
+                scrollOptions
+            )
+        });
+    });
 </script>
 
 
@@ -19,7 +37,7 @@
         <Header 
             :hasBack="true"
             :hasMenu="true"/>
-		<main id="about">
+		<main id="about" class="colorMe">
 			<section class="intro">
 				<p>{{ $t("about.intro") }}</p>
                 <a href="https://samasama.studio" target="_blank"><img src="../assets/samasama.svg"></a>
@@ -38,11 +56,13 @@
                 <h4 class="title">{{ $t("about.oracle") }}</h4>
                 <p>{{ $t("about.oracleDescrip") }}</p>
                 <div>
-                    <button class="fake seed"></button>
+                    <button class="fake seed">
+                        
+                    </button>
                     <p>{{ $t("about.seed") }}</p>
                 </div>
             </section>            
-            <section class="cta">
+            <section id="cta">
                 <h4>{{ $t("about.sustent") }}</h4>
                 <button @click="navigate('/collaborate')">{{ $t("about.cta") }}</button>
             </section>            
@@ -99,7 +119,7 @@
     }
 
     .faq {
-        padding: 40px;
+        padding: 0 40px;
         max-width: 420px;
         display: flex;
         flex-direction: column;
@@ -134,33 +154,33 @@
 
         box-shadow: 0px 2px 6px rgba(16, 16, 15, 0.36); 
         
-        background-image: url('../assets/icon/Seed.svg');
-        background-color: #FF6F61;
+        background-image: url('../assets/icon/active/Seed.svg');
+        background-color: #F7F8F1;
         background-repeat: no-repeat;
         background-position: 50%;
         background-size: 50%;
-
     }
 
     .faq button.fake.brote  {
         background-image: url('../assets/icon/Brote.svg');
     }
 
-    .cta {
+    #cta {
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
         gap: 32px;
+        padding: 48px 24px;
     }
-    .cta h4 {
+    #cta h4 {
         text-align: center;
     }
 
-    .cta button {
+    #cta button {
         min-width: 240px;
+        color: #FF6F61;
     }
-
 
     /* DESKTOP */
     @media screen and (min-width: 769px) {

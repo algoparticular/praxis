@@ -92,7 +92,8 @@
             "cardInvitation": "Invitation",
             "collectionTitle": "The deck",
             "collectionDescrip": "you can do it",
-            "linkCopied": "Copied!"
+            "linkCopied": "Copied!",
+            "share": "Share this card!"
         },        
         "loading": [
             "talking with the Masters...",

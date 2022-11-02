@@ -389,7 +389,7 @@
         top: 5vh;
         right: 0;
         z-index: -1;           
-        height: 20vh;
+        height: 11vh;
         width: 20vw;     
     }   
 

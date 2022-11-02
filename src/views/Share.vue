@@ -53,6 +53,7 @@
             :hasMenu="true"/>
 		
         <main id="share">
+            <!-- <h5> {{ $t("oracle.share") }} </h5> -->
             <div class="card">
                 <div class="illustration"></div>
                 <p class="text">{{ card['affirmation_'+$i18n.locale] }}</p>

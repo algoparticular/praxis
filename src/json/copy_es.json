@@ -93,7 +93,8 @@
             "cardInvitation": "Invitación",
             "collectionTitle": "El mazo",
             "collectionDescrip": "you can do it",
-            "linkCopied": "Copiado!"
+            "linkCopied": "Copiado!",
+            "share": "Comparte esta carta!"
         },
         "loading": [
             "conversando con los Maestros...",
