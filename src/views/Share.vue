@@ -53,51 +53,63 @@
             :hasMenu="true"/>
 		
         <main id="share">
-            <h4> {{ $t("oracle.share") }} </h4>
-            <div class="card">
-                <div class="illustration"></div>
-                <p class="text">{{ card['affirmation_'+$i18n.locale] }}</p>
-            </div>            
+            <div class="heading">
+                <h4> {{ $t("oracle.share") }} </h4>
+                <div class="card">
+                    <div class="illustration"></div>
+                    <p class="text">{{ card['affirmation_'+$i18n.locale] }}</p>
+                </div>
+            </div>
             <div class="buttons">
-                <div class="linkWrapper">
-                    <button class="social link" @click="copyUrl()">
+                <div class="social">
+                    <button class="shareButton link" @click="copyUrl()">
                         <i class="fa fa-lg fa-link"></i>
                     </button>
                     <span v-if="showTooltip">{{ $t("oracle.linkCopied") }}</span>
+                    <span v-else>{{ $t("oracle.link") }}</span>
                 </div>
 
-                <ShareNetwork
-                    network="facebook"                    
-                    :url="shareUrl"
-                    :title="card['name_'+$i18n.locale]"
-                    :description="card['affirmation_'+$i18n.locale]"
-                    hashtags="PraxisApp"
-                    class="social"
-                    :style="{backgroundColor: '#1877F2'}" >
-                        <i class="fab fah fa-lg fa-facebook-f"></i>
-                </ShareNetwork>
+                <div class="social">
+                    <ShareNetwork
+                        network="facebook"                    
+                        :url="shareUrl"
+                        :title="card['name_'+$i18n.locale]"
+                        :description="card['affirmation_'+$i18n.locale]"
+                        hashtags="PraxisApp"
+                        class="shareButton"
+                        :style="{backgroundColor: '#1877F2'}" >
+                            <i class="fab fah fa-lg fa-facebook-f"></i>
+                    </ShareNetwork>
+                    <span>Facebook</span>
+                </div>
+            
+                <div class="social">
+                    <ShareNetwork
+                        network="twitter"
+                        :url="shareUrl"
+                        :title="card['affirmation_'+$i18n.locale]"
+                        twitterUser="algoparticular"
+                        hashtags="PraxisApp"
+                        class="shareButton"
+                        :style="{backgroundColor: '#1DA1F2'}" >
+                            <i class="fab fah fa-lg fa-twitter"></i>
+                    </ShareNetwork>
+                    <span>Twitter</span>
+                </div>
 
-                <ShareNetwork
-                    network="twitter"
-                    :url="shareUrl"
-                    :title="card['affirmation_'+$i18n.locale]"
-                    twitterUser="algoparticular"
-                    hashtags="PraxisApp"
-                    class="social"
-                    :style="{backgroundColor: '#1DA1F2'}" >
-                        <i class="fab fah fa-lg fa-twitter"></i>
-                </ShareNetwork>
+                <div class="social">
+                    <ShareNetwork
+                        network="whatsapp"
+                        :url="shareUrl"
+                        :title="card['name_'+$i18n.locale]"
+                        :description="card['affirmation_'+$i18n.locale]"
 
-                <ShareNetwork
-                    network="whatsapp"
-                    :url="shareUrl"
-                    :title="card['name_'+$i18n.locale]"
-                    :description="card['affirmation_'+$i18n.locale]"
-
-                    class="social"
-                    :style="{backgroundColor: '#25D366'}" >
-                        <i class="fab fah fa-lg fa-whatsapp"></i>
-                </ShareNetwork>
+                        class="shareButton"
+                        :style="{backgroundColor: '#25D366'}" >
+                            <i class="fab fah fa-lg fa-whatsapp"></i>
+                    </ShareNetwork>
+                    <span>WhatsApp</span>
+                </div>
 
                 <!-- <ShareNetwork
                     network="messenger"
@@ -112,28 +124,34 @@
                 <!-- <button class="social more"></button> -->
             </div>
         </main>
-
-        <!-- <Toolbar :hideAction="true"/> -->
     </div>
 </template>
 
 <style scoped>
     .content {
         background-color: #143246;
-        /* height: auto; */
     }   
 
     #share {
         display: flex;
         flex-direction: column;
+        justify-content: space-between;
+        align-items: center;
+        padding-top: 13vh;
+        height: 87vh;
+    }
+
+    .heading {
+        display: flex;
+        flex-direction: column;
         justify-content: center;
         align-items: center;
         gap: 48px;
-        padding-top: 96px;
     }
 
     h4 {
         font-size: 24px;
+        /* filter: drop-shadow(0px 0px 3px rgb(234, 234, 234)); */
     }
 
     .card {
@@ -172,10 +190,28 @@
     .buttons {
         display: flex;
         flex-wrap: wrap;
-        gap: 32px;
+        width: 100vw;
+        max-width: 374px;
+        justify-content: space-around;
+        padding: 10vh 0;
     }
 
     .social {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        gap: 4px;
+        min-width: 60px;
+    }
+
+    .social span {
+        color: #F7F8F1;
+        font-size: 13px;
+        display: inline-flex;
+    }
+
+    .shareButton {
         width: 50px !important;
         height: 50px;
         border-radius: 100%;
@@ -183,15 +219,20 @@
         display: flex;
         justify-content: center;
         align-items: center;
+        flex-shrink: 0;
 
         transition: all .2s ease-in;
     }
 
-    .social.link {
+    .shareButton i {
+        font-size: 1.5em;
+    }
+
+    .shareButton.link {
         color: #143246;
     }    
 
-    .social:hover {
+    .shareButton:hover {
         color: #F7F8F1;
         /* background: #143246 !important; */
         /* filter: drop-shadow(0px 0px 3px rgb(234, 234, 234)); */
@@ -201,20 +242,8 @@
         transform: scale(1.1);
     }   
     
-    .linkWrapper {
-        /* display:flex;
-        flex-direction: column;
-        justify-content: center;
-        gap: 16px; */
-        position: relative;
-    }
+    /* DESKTOP */
+    @media screen and (min-width: 768px) {
 
-    .linkWrapper span {
-        color: #F7F8F1;
-        display: inline-flex;
-        align-self: center;
-        position: absolute;
-        bottom: -32px;
-        left: -7px;
     }
 </style>
