@@ -1,21 +1,13 @@
 <script setup>
     import { onMounted, ref } from 'vue';  
-
-    const props = defineProps({
-        amountOfCards: Number
-    });
-</script>
-
-<script>    
     import DeckItem from "./DeckItem.vue";
     import { animate } from "motion";
 
-    export default {
-        components: { DeckItem },
-        
-        data() {
-            return {
-                colorWheel: [
+    const props = defineProps({
+        cardsDrawn: Array
+    });
+
+    const colorWheel = ref([
                     '#E49414',
                     '#F55F4B',
                     '#FF7E39',
@@ -23,46 +15,45 @@
                     '#75D090',
                     '#46DBDD',
                     '#B112B1',
-                ],
-            }
-        },
+                ]);
 
-        methods: {  
-            getRandomColor() {
-                const randomIndex = Math.floor(Math.random() * 7); //+ 1
-                
-                return this.colorWheel[randomIndex];
-            },      
-            animateList() {
-                const cards = document.querySelectorAll(".deckItem");
-
-                for (var i = 0; i < cards.length; i++) {
-                    animate(cards[i], 
-                        {
-                            borderColor:  [this.getRandomColor(),this.getRandomColor(),this.getRandomColor(),this.getRandomColor()]                
-                        },
-                        {
-                            duration: 1, 
-                            repeat: Infinity,
-                            easing: 'ease-in',
-                            direction: 'alternate'
-                        }    
-                    );
-                }                
-            },   
-        },
-        mounted() {    
-            this.animateList();
-        }
+    function getRandomColor() {
+        const randomIndex = Math.floor(Math.random() * 7); //+ 1
+        
+        return colorWheel.value[randomIndex];
     }
 
+    function animateList() {
+        const cards = document.querySelectorAll(".deckItem");
+
+        for (var i = 0; i < cards.length; i++) {
+            animate(cards[i], 
+                {
+                    borderColor:  [getRandomColor(),getRandomColor(),getRandomColor(),getRandomColor()]                
+                },
+                {
+                    duration: 1, 
+                    repeat: Infinity,
+                    easing: 'ease-in',
+                    direction: 'alternate'
+                }    
+            );
+        }                
+    }
+
+
+    onMounted (() => {
+        animateList();
+    });
 </script>
 
 <template> 
     <main id="cardDeck" class="loading">  
-        <p class="deckIntro">{{ $t("oracle.deckLoading") }}</p>
+        <div class="heading">
+            <p class="deckIntro">{{ $t("oracle.deckLoading") }}</p>
+        </div>
         <div class="deckWrapper">
-            <template v-for="item in props.amountOfCards" :key="item">
+            <template v-for="item in props.cardsDrawn" :key="item">
                 <DeckItem :loading="true"/>
             </template>
         </div>

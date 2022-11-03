@@ -4,36 +4,21 @@
     import DeckItem from "./DeckItem.vue";     
 
     const props = defineProps({
-        amountOfCards: Number
+        cardsDrawn: Array
     });    
 
-    const router = useRouter();
-
-    function shuffleNumbers() {
-        let array=[];
-
-        //create array with shuffled amount of cards -> 60
-        for (let i = 0; i < props.amountOfCards; ++i) array[i]= "" + i;
-
-        for (let i = array.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            const temp = array[i];
-            array[i] = array[j];
-            array[j] = temp;
-        }
-        return array;
-    }
+    const router = useRouter();    
 
     //This make possible the loading skeleton state
     const loadDeckData = async () => {
         return new Promise((resolve) => {
             setTimeout(() => {                
-                resolve(shuffleNumbers())
+                resolve()
             }, 2500)
         })
     }
-
     const deckData = ref(await loadDeckData());
+
 
     //handle take a card
     const handleTakeCard = (cardId) => {
@@ -44,20 +29,15 @@
 
 <template>
     <main id="cardDeck">
-        <p class="deckIntro">{{ $t("oracle.deckCopy") }}</p>
+        <div class="heading">
+            <p class="deckIntro">{{ $t("oracle.deckCopy") }}</p>
+        </div>
         <div class="deckWrapper">
-            <template v-for="cardItem in deckData" :key="cardItem">
+            <template v-for="cardItem in props.cardsDrawn" :key="cardItem">
                 <DeckItem 
                     :cardId="cardItem" 
                     :loading="false" 
                     @takeCard="handleTakeCard"/>
-
-                    <!-- <RouterLink :to="{ name: 'card', params: { id: cardItem } }">
-                    <DeckItem 
-                        :cardId="cardItem" 
-                        :loading="false" 
-                        />
-                </RouterLink> -->
             </template>
         </div>
     </main>
@@ -65,15 +45,28 @@
 
 <style>
     #cardDeck {
-        padding: 15vh 0;
+        padding: 0;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        gap: 24px;
     }
 
     .deckWrapper {
         display: flex;
         flex-wrap: wrap;
-        width: calc(94px * 3 + 10px * 2);
+        width: calc(94px * 3 + 16px * 2);
         margin: 0 auto;        
-        gap: 8px;
+        gap: 24px 16px;
+    }
+
+    #cardDeck .heading {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 18vh;
     }
 
     p.deckIntro {
@@ -82,9 +75,9 @@
         color: #F7F8F1;
         text-align: center;
         
-        letter-spacing: 1px;
+        letter-spacing: 0;
         min-width: 360px;
-        /* min-height: 108px; */
+        margin: 0;
     }
 
     /* DESKTOP */
@@ -97,13 +90,19 @@
             align-items: center;
         }
 
+        #cardDeck .heading {
+            height: auto;
+        }
+
         .deckWrapper {
             width: calc(94px * 9 + 10px * 8);
+            gap: 8px;
         }
     }
 
     /* XL */
-    @media screen and (min-width: 1281px) {
+    @media screen and (min-width: 1281px) {        
+
         .deckWrapper {
             width: calc(94px * 11 + 10px * 10);
         }

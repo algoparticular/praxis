@@ -13,6 +13,7 @@
     const router = useRouter();
     const card = ref({});
     const cover = ref('');
+    const color = ref('');
     const showTooltip = ref(false);
 
     const shareUrl = window.location.origin+'/card/'+route.params.id;
@@ -39,6 +40,7 @@
             card.value = records[route.params.id].fields;
 
             cover.value = 'url(' + card.value.image[0].url + ')';
+            color.value = card.value.color;
         });
     });  
 
@@ -53,75 +55,75 @@
             :hasMenu="true"/>
 		
         <main id="share">
-            <div class="heading">
-                <h4> {{ $t("oracle.share") }} </h4>
-                <div class="card">
-                    <div class="illustration"></div>
-                    <p class="text">{{ card['affirmation_'+$i18n.locale] }}</p>
-                </div>
+            <div class="card">
+                <div class="illustration"></div>
+                <p class="text">{{ card['affirmation_'+$i18n.locale] }}</p>
             </div>
-            <div class="buttons">
-                <div class="social">
-                    <button class="shareButton link" @click="copyUrl()">
-                        <i class="fa fa-lg fa-link"></i>
-                    </button>
-                    <span v-if="showTooltip">{{ $t("oracle.linkCopied") }}</span>
-                    <span v-else>{{ $t("oracle.link") }}</span>
-                </div>
+            <div class="footer">
+                <h4> {{ $t("oracle.share") }} </h4>
+                <div class="buttons">
+                    <div class="social">
+                        <button class="shareButton link" @click="copyUrl()">
+                            <i class="fa fa-lg fa-link"></i>
+                        </button>
+                        <span v-if="showTooltip">{{ $t("oracle.linkCopied") }}</span>
+                        <span v-else>{{ $t("oracle.link") }}</span>
+                    </div>
 
-                <div class="social">
-                    <ShareNetwork
-                        network="facebook"                    
-                        :url="shareUrl"
-                        :title="card['name_'+$i18n.locale]"
-                        :description="card['affirmation_'+$i18n.locale]"
-                        hashtags="PraxisApp"
-                        class="shareButton"
-                        :style="{backgroundColor: '#1877F2'}" >
-                            <i class="fab fah fa-lg fa-facebook-f"></i>
-                    </ShareNetwork>
-                    <span>Facebook</span>
-                </div>
-            
-                <div class="social">
-                    <ShareNetwork
-                        network="twitter"
+                    <div class="social">
+                        <ShareNetwork
+                            network="facebook"                    
+                            :url="shareUrl"
+                            :title="card['name_'+$i18n.locale]"
+                            :description="card['affirmation_'+$i18n.locale]"
+                            hashtags="PraxisApp"
+                            class="shareButton"
+                            :style="{backgroundColor: '#1877F2'}" >
+                                <i class="fab fah fa-lg fa-facebook-f"></i>
+                        </ShareNetwork>
+                        <span>Facebook</span>
+                    </div>
+                
+                    <div class="social">
+                        <ShareNetwork
+                            network="twitter"
+                            :url="shareUrl"
+                            :title="card['affirmation_'+$i18n.locale]"
+                            twitterUser="algoparticular"
+                            hashtags="PraxisApp"
+                            class="shareButton"
+                            :style="{backgroundColor: '#1DA1F2'}" >
+                                <i class="fab fah fa-lg fa-twitter"></i>
+                        </ShareNetwork>
+                        <span>Twitter</span>
+                    </div>
+
+                    <div class="social">
+                        <ShareNetwork
+                            network="whatsapp"
+                            :url="shareUrl"
+                            :title="card['name_'+$i18n.locale]"
+                            :description="card['affirmation_'+$i18n.locale]"
+
+                            class="shareButton"
+                            :style="{backgroundColor: '#25D366'}" >
+                                <i class="fab fah fa-lg fa-whatsapp"></i>
+                        </ShareNetwork>
+                        <span>WhatsApp</span>
+                    </div>
+
+                    <!-- <ShareNetwork
+                        network="messenger"
                         :url="shareUrl"
                         :title="card['affirmation_'+$i18n.locale]"
-                        twitterUser="algoparticular"
-                        hashtags="PraxisApp"
-                        class="shareButton"
-                        :style="{backgroundColor: '#1DA1F2'}" >
-                            <i class="fab fah fa-lg fa-twitter"></i>
-                    </ShareNetwork>
-                    <span>Twitter</span>
+
+                        class="social"
+                        :style="{background: 'radial-gradient(110% 110% at 16.75% 100%, #0099FF 0%, #A033FF 60%, #FF5280 90%, #FF7061 100%)'}" >
+                            <i class="fab fah fa-lg fa-facebook-messenger"></i>
+                    </ShareNetwork> -->
+
+                    <!-- <button class="social more"></button> -->
                 </div>
-
-                <div class="social">
-                    <ShareNetwork
-                        network="whatsapp"
-                        :url="shareUrl"
-                        :title="card['name_'+$i18n.locale]"
-                        :description="card['affirmation_'+$i18n.locale]"
-
-                        class="shareButton"
-                        :style="{backgroundColor: '#25D366'}" >
-                            <i class="fab fah fa-lg fa-whatsapp"></i>
-                    </ShareNetwork>
-                    <span>WhatsApp</span>
-                </div>
-
-                <!-- <ShareNetwork
-                    network="messenger"
-                    :url="shareUrl"
-                    :title="card['affirmation_'+$i18n.locale]"
-
-                    class="social"
-                    :style="{background: 'radial-gradient(110% 110% at 16.75% 100%, #0099FF 0%, #A033FF 60%, #FF5280 90%, #FF7061 100%)'}" >
-                        <i class="fab fah fa-lg fa-facebook-messenger"></i>
-                </ShareNetwork> -->
-
-                <!-- <button class="social more"></button> -->
             </div>
         </main>
     </div>
@@ -129,7 +131,8 @@
 
 <style scoped>
     .content {
-        background-color: #143246;
+        background: #143246;
+        background: linear-gradient(180deg, v-bind(color) 0%, v-bind(color) 9%, #143246 100%);
     }   
 
     #share {
@@ -141,12 +144,13 @@
         height: 87vh;
     }
 
-    .heading {
+    .footer {
         display: flex;
         flex-direction: column;
         justify-content: center;
         align-items: center;
-        gap: 48px;
+        gap: 40px;
+        padding: 10vh 0;
     }
 
     h4 {
@@ -192,8 +196,7 @@
         flex-wrap: wrap;
         width: 100vw;
         max-width: 374px;
-        justify-content: space-around;
-        padding: 10vh 0;
+        justify-content: space-around;        
     }
 
     .social {
