@@ -62,6 +62,7 @@
         gap: 24px 16px; */
         width: calc(94px * 3 + 8px * 2);
         gap: 8px;
+        padding-bottom: 90px;
     }
 
     #cardDeck .heading {
