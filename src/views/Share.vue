@@ -53,7 +53,7 @@
             :hasMenu="true"/>
 		
         <main id="share">
-            <!-- <h5> {{ $t("oracle.share") }} </h5> -->
+            <h4> {{ $t("oracle.share") }} </h4>
             <div class="card">
                 <div class="illustration"></div>
                 <p class="text">{{ card['affirmation_'+$i18n.locale] }}</p>
@@ -128,8 +128,12 @@
         flex-direction: column;
         justify-content: center;
         align-items: center;
-        gap: 80px;
-        padding-top: 128px;
+        gap: 48px;
+        padding-top: 96px;
+    }
+
+    h4 {
+        font-size: 24px;
     }
 
     .card {
