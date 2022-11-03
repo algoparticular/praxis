@@ -22,20 +22,20 @@
             deck[j] = temp;
         }
 
-        if (isMobile) {
-            // draw 9 from shuffled deck
-            deck = [
-                deck[3],
-                deck[6],
-                deck[9],
-                deck[11],
-                deck[13],
-                deck[18],
-                deck[23],
-                deck[27],
-                deck[30],
-            ];
-        }
+        // if (isMobile) {
+        //     // draw 9 from shuffled deck
+        //     deck = [
+        //         deck[3],
+        //         deck[6],
+        //         deck[9],
+        //         deck[11],
+        //         deck[13],
+        //         deck[18],
+        //         deck[23],
+        //         deck[27],
+        //         deck[30],
+        //     ];
+        // }
 
         return deck;
     }

@@ -46,20 +46,22 @@
 <style>
     #cardDeck {
         padding: 0;
-        height: 100vh;
+        /* height: 100vh; */
         display: flex;
         flex-direction: column;
         justify-content: center;
         align-items: center;
-        gap: 24px;
+        gap: 16px;
     }
 
     .deckWrapper {
         display: flex;
-        flex-wrap: wrap;
-        width: calc(94px * 3 + 16px * 2);
-        margin: 0 auto;        
-        gap: 24px 16px;
+        flex-wrap: wrap;        
+        margin: 0 auto; 
+        /* width: calc(94px * 3 + 16px * 2);       
+        gap: 24px 16px; */
+        width: calc(94px * 3 + 8px * 2);
+        gap: 8px;
     }
 
     #cardDeck .heading {
@@ -67,6 +69,7 @@
         justify-content: center;
         align-items: center;
         height: 18vh;
+        padding-top: 10vh;
     }
 
     p.deckIntro {
@@ -76,7 +79,7 @@
         text-align: center;
         
         letter-spacing: 0;
-        min-width: 360px;
+        max-width: 360px;
         margin: 0;
     }
 
@@ -92,10 +95,11 @@
 
         #cardDeck .heading {
             height: auto;
+            padding-top: 0;
         }
 
         .deckWrapper {
-            width: calc(94px * 9 + 10px * 8);
+            width: calc(94px * 9 + 8px * 8);
             gap: 8px;
         }
     }
@@ -104,7 +108,7 @@
     @media screen and (min-width: 1281px) {        
 
         .deckWrapper {
-            width: calc(94px * 11 + 10px * 10);
+            width: calc(94px * 11 + 8px * 10);
         }
     }
 
