@@ -63,9 +63,9 @@ const router = createRouter({
     {
       path: "/deck",
       component: Deck,
-      meta: {
-        requiresAuth: true
-      }
+      // meta: {
+      //   requiresAuth: true
+      // }
     },
     {
       path: "/:pathMatch(.*)",

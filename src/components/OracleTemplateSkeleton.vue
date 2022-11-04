@@ -1,10 +1,10 @@
 <script setup>
     import { onMounted, ref } from 'vue';  
-    import DeckItem from "./DeckItem.vue";
+    import OracleItem from "./OracleItem.vue";
     import { animate } from "motion";
 
     const props = defineProps({
-        amountOfCards: Number
+        cardsDrawn: Array
     });
 
     const colorWheel = ref([
@@ -48,20 +48,18 @@
 </script>
 
 <template> 
-    <main id="deck" class="loading">  
-        <!-- <div class="heading">
+    <main id="cardDeck" class="loading">  
+        <div class="heading">
             <p class="deckIntro">{{ $t("oracle.deckLoading") }}</p>
-        </div> -->
-        <div class="deckWrapper collection">
-            <template v-for="item in props.amountOfCards" :key="item">
-                <DeckItem :loading="true"/>
+        </div>
+        <div class="deckWrapper">
+            <template v-for="item in props.cardsDrawn" :key="item">
+                <OracleItem :loading="true"/>
             </template>
         </div>
     </main>
 </template>
 
 <style>
-    #deck.loading .collection {
-        width: calc(146px * 2 + 24px);
-    }
+    
 </style>

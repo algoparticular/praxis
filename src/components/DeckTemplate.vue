@@ -1,19 +1,36 @@
 <script setup>
     import { onMounted, ref } from 'vue'; 
     import { useRouter } from 'vue-router';
-    import DeckItem from "./DeckItem.vue";     
+    import DeckItem from "./DeckItem.vue";       
 
-    const props = defineProps({
-        cardsDrawn: Array
-    });    
-
+    //Database
+    import Airtable from "airtable";
+    const base = new Airtable({ apiKey: "keyLdBi48iZZkEOMG" }).base("appgHXHkRRjGjbYgM");
+    
     const router = useRouter();    
+    const deck = ref([]);
+
+    function getDeck() {
+        base('Oracle cards').select({
+            view: 'List'
+        }).firstPage(function(err, records) {
+            if (err) { 
+                console.error('hubo un error ' + err); 
+                return; 
+            }
+
+            deck.value = records;
+            
+            // console.log(deck.value);
+        });
+    }
 
     //This make possible the loading skeleton state
     const loadDeckData = async () => {
         return new Promise((resolve) => {
-            setTimeout(() => {                
-                resolve()
+            setTimeout(() => {               
+                getDeck();
+                resolve();
             }, 2500)
         })
     }
@@ -21,32 +38,31 @@
 
 
     //handle take a card
-    const handleTakeCard = (cardId) => {
-        router.push({ name: 'card', params: { id: cardId } });
-       
+    const drawCard = (cardId) => {
+        router.push({ name: 'card', params: { id: cardId } });       
     };
 </script>
 
 <template>
-    <main id="cardDeck">
-        <div class="heading">
+    <main id="deck">
+        <!-- <div class="heading">
             <p class="deckIntro">{{ $t("oracle.deckCopy") }}</p>
-        </div>
-        <div class="deckWrapper">
-            <template v-for="cardItem in props.cardsDrawn" :key="cardItem">
+        </div> -->
+        <div class="deckWrapper collection">
+            <template v-for="card in deck" :key="card.fields.id">
                 <DeckItem 
-                    :cardId="cardItem" 
+                    :id="card.fields.id" 
+                    :data="card.fields"
                     :loading="false" 
-                    @takeCard="handleTakeCard"/>
+                    @drawCard="drawCard"/>
             </template>
         </div>
     </main>
 </template>
 
-<style>
-    #cardDeck {
-        padding: 0;
-        /* height: 100vh; */
+<style >
+    #deck {
+        padding: 108px 0;
         display: flex;
         flex-direction: column;
         justify-content: center;
@@ -54,18 +70,12 @@
         gap: 16px;
     }
 
-    .deckWrapper {
-        display: flex;
-        flex-wrap: wrap;        
-        margin: 0 auto; 
-        /* width: calc(94px * 3 + 16px * 2);       
-        gap: 24px 16px; */
-        width: calc(94px * 3 + 8px * 2);
-        gap: 8px;
-        padding-bottom: 90px;
-    }
+    .deckWrapper.collection {
+        width: calc(142px * 2 + 24px);
+        gap: 24px;
+    }    
 
-    #cardDeck .heading {
+    #deck .heading {
         display: flex;
         justify-content: center;
         align-items: center;
@@ -74,33 +84,26 @@
     }
 
     p.deckIntro {
-        font-family: 'particular', 'Inter', helvetica, sans-serif;
-        font-size: 24px;
-        color: #F7F8F1;
-        text-align: center;
-        
-        letter-spacing: 0;
-        max-width: 360px;
-        margin: 0;
+    
     }
 
     /* DESKTOP */
     @media screen and (min-width: 769px) {
-        #cardDeck {
-            padding: 0;
+        #deck {
+            padding-bottom: 80px;
             min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
         }
 
-        #cardDeck .heading {
+        #deck .heading {
             height: auto;
             padding-top: 0;
         }
 
-        .deckWrapper {
-            width: calc(94px * 9 + 8px * 8);
+        .deckWrapper.collection {
+            width: calc(142px * 6 + 8px * 5);
             gap: 8px;
         }
     }
@@ -108,8 +111,8 @@
     /* XL */
     @media screen and (min-width: 1281px) {        
 
-        .deckWrapper {
-            width: calc(94px * 11 + 8px * 10);
+        .deckWrapper.collection {
+            /* width: calc(108px * 11 + 8px * 10); */
         }
     }
 
