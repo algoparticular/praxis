@@ -1,24 +1,42 @@
 <script setup>
-    
+    import { onMounted, ref } from 'vue';
     import { useRouter } from 'vue-router';
     import Header from '../components/Header.vue';
     import Footer from '../components/Footer.vue';
+
+    import { animate, timeline, inView, scroll } from "motion";
     
     const router = useRouter();
 
     const navigate = (url) => {
         router.push({ path: url });
     };
+
+    onMounted (() => {
+        const colorSection = document.getElementById("forKids"); 
+        
+        const scrollOptions = {
+            target: colorSection,
+            offset: ["start end", "end end"]
+        }
+
+        inView(colorSection, () => {
+            scroll(
+                animate(".colorMe", { backgroundColor: "#FF6F61" }),
+                scrollOptions
+            )
+        });
+    });
     
 </script>
 
 
 <template>
-    <div class="content">        
+    <div class="content info">        
         <Header 
             :hasBack="true"
             :hasMenu="true"/>
-		<main id="collaborate">
+		<main id="collaborate" class="colorMe">
 			
             <section class="howToHelp">
 				<h3>{{ $t("collaborate.howToHelp") }}</h3>  
@@ -68,7 +86,7 @@
                     </li>
                 </ul>
             </section>
-            <section class="forKids">
+            <section id="forKids">
                 <h4>{{ $t("collaborate.forKids") }}</h4>
                 <p>{{ $t("collaborate.kids") }}</p>
             </section>
@@ -104,9 +122,8 @@
     
     main p {
         margin: 0;
-        text-align: justify;
+        text-align: center;
         width: 85vw;
-        max-width: 310px;
     }
 
     /* section {
@@ -144,7 +161,16 @@
         gap: 32px;
     }
 
-    .forKids p {
+    #forKids {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 32px;
+        padding: 48px 24px;
+    }
+
+    #forKids p {
         text-align: center;
     }
 

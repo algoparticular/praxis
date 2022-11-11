@@ -65,14 +65,14 @@
             "sustent": "Colabora con nosotros para desarrollar este universo"
         },
         "collaborate": {
-            "title": "Próximamente",
+            "title": "¿Qué sigue?",
             "intro": "Con tu ayuda podemos seguir creando y haciendo crecer este universo. ",
             "howToHelp": "¿Cómo ayudar?",
             "sharing": "Compartiendo nuestro contenido en redes sociales o a esas personas que crees que están necesitando algo de magia en sus vidas.",
             "cocreate": "Co-creando este espacio. Desde su nacimiento, Algo Particular no podría transmitir su propósito si no fuera por otras partículas que, a lo largo del camino, co-crean o colaboran con el desarrollo y expresión de este Universo.\nA todas ellas les estoy infinitamente agradecido.",
             "contact": "Feliz de leerte",
             "donating": "Colaborando con cualquier monto que puedas. Imagina que estamos sentados en una mesa y decides invitar unos tes.",
-            "whatsNext": "¿Qué sigue?",
+            "whatsNext": "Esto tenemos en mente",
             "next": [
                 "Expandir el mazo Oráculo.",
                 "Implementar cuentas de usuario para acceder a nuevas funciones.",
@@ -84,7 +84,7 @@
                 "Lanzamiento de colección NFT."
             ],
             "forKids": "¿Che y para niñxs?",
-            "kids": "También... algo... pronto..."
+            "kids": "Me encantaría! Andaría faltando alguien que escriba cuentos. Si te interesa, contactanos!"
         },
         "oracle": {
             "deckCopy": "Siente y elige tu carta",

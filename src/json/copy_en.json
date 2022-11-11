@@ -64,14 +64,14 @@
             "sustent": "Collaborate with us to develop this universe"
         },
         "collaborate": {
-            "title": "Comming next",
+            "title": "What's next?",
             "intro": "With your help we can continue to create and grow this universe.",
             "howToHelp": "How to help?",
             "sharing": "Sharing our content on social media or to those people you think are in need of some magic in their lives.",
             "cocreate": "Co-creating this space. Since its birth, Algo Particular could not seek and transmit its purpose if it were not for other particles that, along the way, co-create or collaborate with the development and expression of this Universe.\nTo all of them I am infinitely grateful.",
             "contact": "I'm happy to read you",
             "donating": "Contributing whatever amount you can. Imagine we are sitting at a table and you decide to invite some tea.",
-            "whatsNext": "What's next?",
+            "whatsNext": "This is what we have in mind",
             "next": [
                 "Expand the Oracle deck",
                 "Implement user accounts to access new features.", 
@@ -83,7 +83,7 @@
                 "Launch of NFT collection."
             ],
             "forKids": "¿'Che' and for the kids?",
-            "kids": "Yeah! I'm planning... something... soon..."
+            "kids": "I would love to! ... We're missing someone who writes short stories. If you are interested, contact us!"
         },
         "oracle": {
             "deckCopy": "Feel and choose your card",
