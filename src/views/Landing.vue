@@ -238,12 +238,12 @@
 
     .splash.background {
         background-image: url('../assets/hero/background.png');
-        background-size: cover;        
+        background-size: cover;
         
         top: 0;
         z-index: 0;
         width: 100vw;
-        height: 100%;
+        height: 100vh;
     }
 
     /* DESKTOP */
@@ -292,7 +292,7 @@
         }
 
         .splash.background {
-            background-size: 108%;
+            background-size: contain;
         }
     }
 </style>

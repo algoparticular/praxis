@@ -86,6 +86,10 @@
     .content.info main section {
         max-width: 420px;
     }
+
+    .content.info p {
+        line-height: 160%;
+    }
 </style>
 
 <style scoped>
