@@ -103,6 +103,10 @@
             width: calc(94px * 9 + 8px * 8);
             gap: 8px;
         }
+
+        p.deckIntro {
+            max-width: 70vw;
+        }
     }
 
     /* XL */
