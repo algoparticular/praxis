@@ -7,7 +7,8 @@
 <template>    
     <div class="content">
         <Header 
-            :hasBack="true"
+            :hasBack="false"
+            :hasDeck="true"
             :hasMenu="true"/>
         <Transition name="fade" mode="in-out">
             <KeepAlive>

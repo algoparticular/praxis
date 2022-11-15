@@ -118,6 +118,10 @@
         </kinesis-container>
 
         <kinesis-container id="oracle" tag="section" easing="cubic-bezier(0.23, 1, 0.32, 1)" event="scroll">
+            <div class="corner topLeft"></div>
+            <div class="corner bottomLeft"></div>
+            <div class="corner topRight"></div>
+            <div class="corner bottomRight"></div>
             <div class="copy">
                 <div class="heading">
                     <img src="../assets/icon/Lab.svg"/>
@@ -162,6 +166,7 @@
 	</div>
 </template>
 
+<!-- Hero -->
 <style scoped>
     section {
         height: 100vh;
@@ -297,6 +302,7 @@
     }
 </style>
 
+<!-- Oracle -->
 <style scoped>
     /* ORACLE */
     #oracle {
@@ -365,6 +371,39 @@
         background-color: #E8E974;
     }
 
+    .corner {        
+        background-image: url('../assets/oracle/corner.png');
+        background-size: contain;
+        background-repeat: no-repeat;
+
+        position: absolute;
+        z-index: 3;
+        top: 2vw;
+        left: 2vw;
+        width: 30vw;
+        height: 30vw;
+    }
+
+    .corner.bottomLeft {
+        top: auto;
+        bottom: 2vw;
+        transform: scaleY(-1);
+    }
+
+    .corner.topRight {
+        left: auto;
+        right: 2vw;
+        transform: scaleX(-1);
+    }
+
+    .corner.bottomRight {
+        top: auto;
+        left: auto;
+        bottom: 2vw;
+        right: 2vw;
+        transform: scale(-1, -1);
+    }
+
     .gfx {
         height: 32vh;
         width: 80vw;
@@ -407,19 +446,25 @@
             width: auto;
         }
 
+        .corner {
+            width: 15vw;
+            height: 15vw;
+        }
+
         .gfx {
             height: 52vh;
             width: 36vw;
         }
 
         .oracle.tree {         
-            height: 20vh;
-            width: 20vw;
+            height: 16vh;
+            width: 13vw;
         }
 
     }
 </style>
 
+<!-- About -->
 <style scoped>
     #colorMe {
         background-color: #F7F8F1;
@@ -500,6 +545,7 @@
     }
 </style>
 
+<!-- UNO Quote -->
 <style scoped>
     /* UNO */
     #uno {
