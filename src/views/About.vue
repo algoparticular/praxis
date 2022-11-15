@@ -180,6 +180,11 @@
         background-size: 50%;
     }
 
+    .faq button.fake:hover {
+        background-image: url('../assets/icon/Seed.svg');
+        background-color: #143246;
+    }
+
     .faq button.fake.brote  {
         background-image: url('../assets/icon/Brote.svg');
     }
@@ -199,6 +204,11 @@
     #cta button {
         min-width: 240px;
         color: #FF6F61;
+    }
+
+    #cta button:hover {
+        color: #F7F8F1;
+        background-color: #143246;
     }
 
     /* DESKTOP */
