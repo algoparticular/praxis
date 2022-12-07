@@ -42,8 +42,12 @@
     };
 
     //handle deck
-    const handleGoToDeck = () => {                
-        router.push({ path: '/oracle' });
+    const handleGoToDeck = () => {
+        if(router.options.history.state.back == '/deck') {
+            router.push({ path: '/deck' });
+        } else {
+            router.push({ path: '/oracle' });
+        }        
     };
 
     //handle language change
