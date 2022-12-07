@@ -11,11 +11,11 @@
     const router = useRouter();
 
     const gallery = ref([
-        'url(/gallery/27.jpg)',
-        'url(/gallery/4.jpg)',
-        'url(/gallery/29.jpg)',
-        'url(/gallery/3.jpg)',
-        'url(/gallery/20.jpg)'
+        'url(/assets/gallery/27.jpg)',
+        'url(/assets/gallery/4.jpg)',
+        'url(/assets/gallery/29.jpg)',
+        'url(/assets/gallery/3.jpg)',
+        'url(/assets/gallery/20.jpg)'
     ]);
     let currentIndex = 1;
 
@@ -66,7 +66,7 @@
             offset: ["start end", "end end"]
         }
 
-        inView(colorSection, () => {
+        inView(colorSection, () => {            
             scroll(
                 animate("#colorMe", { backgroundColor: "#FF6F61" }),
                 scrollOptions
@@ -91,22 +91,34 @@
             
             <kinesis-element 
                 class="splash particle"
+                tag="img"
+                src="/assets/hero/particle.png"
+                loading=”lazy”
                 :strength="30"
                 axis="y"
                 type="translate"/>
             <kinesis-element 
                 class="splash cell one"
+                tag="img"
+                src="/assets/hero/cell-one.png"
+                loading=”lazy”
                 :strength="20"   
                 axis="x"
                 transformOrigin="top left"
                 type="translate"/>
             <kinesis-element 
                 class="splash cell two"
+                tag="img"
+                src="/assets/hero/cell-two.png"
+                loading=”lazy”
                 :strength="40"
                 transformOrigin="bottom right"
                 type="translate"/>
             <kinesis-element 
                 class="splash cell three"
+                tag="img"
+                src="/assets/hero/cell-three.png"
+                loading=”lazy”
                 :strength="10"
                 transformOrigin="bottom left"
                 type="translate"/>
@@ -118,9 +130,13 @@
         </kinesis-container>
 
         <kinesis-container id="oracle" tag="section" easing="cubic-bezier(0.23, 1, 0.32, 1)" event="scroll">
+            <div class="corner topLeft"></div>
+            <div class="corner bottomLeft"></div>
+            <div class="corner topRight"></div>
+            <div class="corner bottomRight"></div>
             <div class="copy">
                 <div class="heading">
-                    <img src="../assets/icon/Lab.svg"/>
+                    <img loading="lazy" src="../assets/icon/Lab.svg"/>
                     <h3>{{ $t("landing.oracleTitle") }}</h3>
                 </div>
                 <p>{{ $t("landing.oracleDescrip") }}</p>
@@ -130,10 +146,16 @@
             <div class="gfx">
                 <kinesis-element 
                     class="oracle particle"
+                    tag="img"
+                    src="/assets/oracle/particle.png"
+                    loading=”lazy”
                     :strength="60"
                     type="translate"/>
                 <kinesis-element 
                     class="oracle tree"
+                    tag="img"
+                    src="/assets/oracle/tree.png"
+                    loading=”lazy”
                     :strength="50"
                     type="translate"/>
             </div>
@@ -162,6 +184,7 @@
 	</div>
 </template>
 
+<!-- Hero -->
 <style scoped>
     section {
         height: 100vh;
@@ -194,6 +217,7 @@
     .splash {        
         position: absolute;
         z-index: 3;
+        height: auto;
         
         background-size: contain;
         background-position: center;
@@ -201,9 +225,7 @@
     }
 
     .splash.particle {
-        background-image: url('../assets/hero/particle.png');        
-        z-index: 9;
-        height: 40vh;
+        z-index: 9;        
         width: 80vw;
 
         top: 36vh;
@@ -211,8 +233,6 @@
     }
 
     .splash.cell.one {
-        background-image: url('../assets/hero/cell-one.png');
-        height: 27vh;
         width: 27vw;
 
         top: 69vh;
@@ -220,30 +240,26 @@
     }
 
     .splash.cell.two {
-        background-image: url('../assets/hero/cell-two.png');
-        height: 23vh;
         width: 23vw;
 
         top: 7vh;
         right: 18vw;
     }
     .splash.cell.three {
-        background-image: url('../assets/hero/cell-three.png');            
-        height: 27vh;
         width: 27vw;
 
-        top: 78vh;
+        top: 88vh;
         left: 9vw;
     }    
 
     .splash.background {
         background-image: url('../assets/hero/background.png');
-        background-size: cover;        
+        background-size: cover;
         
         top: 0;
         z-index: 0;
         width: 100vw;
-        height: 100%;
+        height: 100vh;
     }
 
     /* DESKTOP */
@@ -259,7 +275,6 @@
         }
 
         .splash.particle {
-            height: 70vh;
             width: 36vw;
 
             top: 20vh;
@@ -267,7 +282,6 @@
         }
 
         .splash.cell.one {
-            height: 30vh;
             width: 13vw;
 
             top: 63vh;
@@ -275,7 +289,6 @@
         }
 
         .splash.cell.two {
-            height: 22vh;
             width: 12vw;
 
             top: 13vh;
@@ -284,7 +297,6 @@
         }
 
         .splash.cell.three {
-            height: 18vh;
             width: 15vw;
 
             top: 73vh;
@@ -292,11 +304,12 @@
         }
 
         .splash.background {
-            background-size: 108%;
+            background-size: contain;
         }
     }
 </style>
 
+<!-- Oracle -->
 <style scoped>
     /* ORACLE */
     #oracle {
@@ -365,6 +378,39 @@
         background-color: #E8E974;
     }
 
+    .corner {        
+        background-image: url('../assets/oracle/corner.png');
+        background-size: contain;
+        background-repeat: no-repeat;
+
+        position: absolute;
+        z-index: 3;
+        top: 2vw;
+        left: 2vw;
+        width: 30vw;
+        height: 30vw;
+    }
+
+    .corner.bottomLeft {
+        top: auto;
+        bottom: 2vw;
+        transform: scaleY(-1);
+    }
+
+    .corner.topRight {
+        left: auto;
+        right: 2vw;
+        transform: scaleX(-1);
+    }
+
+    .corner.bottomRight {
+        top: auto;
+        left: auto;
+        bottom: 2vw;
+        right: 2vw;
+        transform: scale(-1, -1);
+    }
+
     .gfx {
         height: 32vh;
         width: 80vw;
@@ -372,24 +418,18 @@
     }
 
     .oracle {
-        background-size: contain;
-        background-position: center;
-        background-repeat: no-repeat;        
+        height: auto;      
     }
 
-    .oracle.particle {
-        background-image: url('../assets/oracle/particle.png');   
-        width: 100%;
-        height: 100%;      
+    .oracle.particle {           
+        width: 80vw;
     }
 
     .oracle.tree {
-        background-image: url('../assets/oracle/tree.png');     
         position: absolute;
         top: 5vh;
         right: 0;
         z-index: -1;           
-        height: 11vh;
         width: 20vw;     
     }   
 
@@ -407,19 +447,28 @@
             width: auto;
         }
 
+        .corner {
+            width: 15vw;
+            height: 15vw;
+        }
+
         .gfx {
             height: 52vh;
             width: 36vw;
         }
 
-        .oracle.tree {         
-            height: 20vh;
-            width: 20vw;
+        .oracle.particle {
+            width: 34vw;
+        }
+
+        .oracle.tree {
+            width: 11vw;
         }
 
     }
 </style>
 
+<!-- About -->
 <style scoped>
     #colorMe {
         background-color: #F7F8F1;
@@ -500,6 +549,7 @@
     }
 </style>
 
+<!-- UNO Quote -->
 <style scoped>
     /* UNO */
     #uno {

@@ -16,7 +16,11 @@
 <template>
 	<div class="content home">
 		<Header :hasMenu="true"/>
-		<main id="home">			
+		<main id="home">
+			<div class="corner topLeft"></div>
+            <div class="corner bottomLeft"></div>
+            <div class="corner topRight"></div>
+            <div class="corner bottomRight"></div>
 			<kinesis-container class="cover" easing="cubic-bezier(0.23, 1, 0.32, 1)" :perspective="100">
 				<kinesis-element 
 					class="oracle particle"
@@ -90,6 +94,39 @@
 		width: 100vw;
 		min-height: 40vh;
 	}
+
+	.corner {        
+        background-image: url('../assets/oracle/corner.png');
+        background-size: contain;
+        background-repeat: no-repeat;
+
+        position: absolute;
+        z-index: 3;
+        top: 2vw;
+        left: 2vw;
+        width: 30vw;
+        height: 30vw;
+    }
+
+    .corner.bottomLeft {
+        top: auto;
+        bottom: 2vw;
+        transform: scaleY(-1);
+    }
+
+    .corner.topRight {
+        left: auto;
+        right: 2vw;
+        transform: scaleX(-1);
+    }
+
+    .corner.bottomRight {
+        top: auto;
+        left: auto;
+        bottom: 2vw;
+        right: 2vw;
+        transform: scale(-1, -1);
+    }
 	
 	.oracle {        
         position: absolute;
@@ -138,6 +175,11 @@
 			font-size: 24px;
 		}
 
+		.corner {
+			width: 15vw;
+            height: 15vw;
+		}
+
 		.oracle.particle {           
 			height: 42vh;
 			width: 40vw;
@@ -145,8 +187,8 @@
 		}
 
 		.oracle.tree {           
-			height: 15vh;
-			width: 15vw;
+			height: 16vh;
+			width: 13vw;
 			top: 5vh;
 			right: 0;
 		}

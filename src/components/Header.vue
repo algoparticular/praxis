@@ -5,7 +5,8 @@
 
     const props = defineProps({
         hasBack: Boolean,
-        hasMenu: Boolean
+        hasMenu: Boolean,
+        hasDeck: Boolean
     });
 
     const showMenu = ref(false);
@@ -40,6 +41,11 @@
         router.back();
     };
 
+    //handle deck
+    const handleGoToDeck = () => {                
+        router.push({ path: '/oracle' });
+    };
+
     //handle language change
     function handleLangChanged(lang) {		
 		localStorage.setItem("lang", lang);
@@ -52,6 +58,7 @@
     <header>
         <div class="navContainer">
             <button v-if="props.hasBack" class="back" @click="handleBack()"></button>
+            <button v-if="props.hasDeck" class="deck" @click="handleGoToDeck()"></button>
         </div>
 
         <div id="logo">
@@ -131,5 +138,12 @@
     #menuOverlay nav #languageSelect label,
     #menuOverlay nav #languageSelect span {
         font-size: 32px;
+    }
+
+    button.deck {
+        background-repeat: no-repeat;
+        background-color: transparent;
+        background-image: url('../assets/icon/deck.svg');
+        filter: drop-shadow(0px 2px 3px rgb(199, 190, 142));
     }
 </style>

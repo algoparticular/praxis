@@ -33,7 +33,7 @@
 
 
 <template>
-    <div class="content">
+    <div class="content info">
         <Header 
             :hasBack="true"
             :hasMenu="true"/>
@@ -56,7 +56,7 @@
                 <h4 class="title">{{ $t("about.oracle") }}</h4>
                 <p>{{ $t("about.oracleDescrip") }}</p>
                 <div>
-                    <button class="fake seed">
+                    <button class="fake seed" @click="navigate('/oracle')">
                         
                     </button>
                     <p>{{ $t("about.seed") }}</p>
@@ -71,6 +71,26 @@
 	</div>
 </template>
 
+<style>
+    .content.info {
+        
+    }
+
+    .content.info main {
+        width: 100vw;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    .content.info main section {
+        max-width: 420px;
+    }
+
+    .content.info p {
+        line-height: 160%;
+    }
+</style>
 
 <style scoped>
     .content {
@@ -120,7 +140,6 @@
 
     .faq {
         padding: 0 40px;
-        max-width: 420px;
         display: flex;
         flex-direction: column;
         gap: 24px;
@@ -131,7 +150,7 @@
     }
 
     .faq p {
-        text-align: justify;
+        text-align: center;
         white-space: pre-line;
     }
 
@@ -161,6 +180,11 @@
         background-size: 50%;
     }
 
+    .faq button.fake:hover {
+        background-image: url('../assets/icon/Seed.svg');
+        background-color: #143246;
+    }
+
     .faq button.fake.brote  {
         background-image: url('../assets/icon/Brote.svg');
     }
@@ -180,6 +204,11 @@
     #cta button {
         min-width: 240px;
         color: #FF6F61;
+    }
+
+    #cta button:hover {
+        color: #F7F8F1;
+        background-color: #143246;
     }
 
     /* DESKTOP */

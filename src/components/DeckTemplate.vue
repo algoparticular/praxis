@@ -107,6 +107,10 @@
         .deckWrapper.collection {
             gap: 48px 24px;
         }
+
+        p.deckIntro {
+            max-width: 70vw;
+        }
     }
 
     /* XL */

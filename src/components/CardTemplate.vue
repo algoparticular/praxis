@@ -1,7 +1,7 @@
 <script setup>
 	import { onMounted, ref } from 'vue';
     import { useRouter } from 'vue-router';   
-    import { animate, scroll } from "motion";
+    // import { animate, scroll, inView } from "motion";
 
     //Database
     import Airtable from "airtable";
@@ -31,9 +31,8 @@
 
             cover.value = 'url(' + card.value.image[0].url + ')';
             color.value = card.value.color;
-            colorAlt.value = card.value.colorAlt;                
-            
-            // console.log('done ' + color.value);
+            colorAlt.value = card.value.colorAlt;            
+            // console.log('done ' + color.value);            
         });
     }
 
@@ -41,7 +40,7 @@
     const loadCardData = async () => {
         return new Promise((resolve) => {
             setTimeout(() => {
-                resolve(getCard(props.id));  
+                resolve(getCard(props.id));                
             }, 3000)
         })
     }
@@ -50,31 +49,26 @@
 
     /////////////////
     // //ON MOUNTED
-	onMounted (() => {
-        // const zoomElement = document.getElementsByClassName("cardWrapper"); 
+	// onMounted (() => {
+        // const zoomElement = document.getElementById("scrollOn"); 
+
         // const scrollOptions = {
-        //     target: '.cardWrapper',
-        //     offset: ["start", "center"]
+        //     // target: zoomElement,
+        //     offset: ["start end", "end end"]
         // }
-        
+
         // scroll(
-        //     animate(".illustration", 
-        //         { 
-        //             backgroundSize: "110%" 
-        //         }),
-        //         {
-        //             target: '.cardWrapper',
-        //             offset: ["start", "center"]
-        //         }
+        //     animate("#illustration", { backgroundSize: "120%" }),
+        //     scrollOptions
         // );
-    });    
+    // });    
  
 </script>
 
 <template>
 	<main class="cardWrapper">
         <div class="imageWrapper">
-            <div class="illustration"></div>
+            <div id="illustration"></div>
             
             <button class="action" @click="router.push({ path: '/share/'+props.id });">
                 <!-- <svg class="icon share" width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -90,13 +84,13 @@
             </button>
         </div>
         
-        <div class="textWrapper">
+        <div class="textWrapper"> 
             <h4 v-if="card['affirmation_'+$i18n.locale] != null">
                 {{ card['name_'+$i18n.locale] }}
             </h4>
             <p :class="{onlyDescription: card['affirmation_'+$i18n.locale] == null}">
                 {{ card['description_'+$i18n.locale] }}
-            </p>
+            </p>            
             <div class="bottom">
                 <div>
                     <h5 v-if="card['affirmation_'+$i18n.locale] != null">
@@ -138,13 +132,14 @@
         width: 100%;                
     }
 
-    .illustration {
+    #illustration {
         width: 100%;
         height: 0;
         padding-top: 100%;
         background-image: v-bind(cover);
         background-size: cover;
         background-position: center;
+        background-repeat: no-repeat;
         box-shadow: 0px 4px 42px rgba(16, 16, 15, 0.18) inset, 0px -4px 42px rgba(16, 16, 15, 0.18) inset;
     }
 
@@ -172,6 +167,7 @@
 
     .textWrapper {
         padding: 64px 40px;
+        position: relative;
     }
 
     .textWrapper h4 {
@@ -202,7 +198,7 @@
 
     .bottom p {
         text-align: center;
-    }
+    }    
 
     /* DESKTOP */
     @media screen and (min-width: 768px) {
@@ -219,7 +215,8 @@
             width: 360px;
         }
 
-        .illustration {       
+        #illustration {       
+            background-size: cover !important;
             /* width: 360px; */
             height: 450px;
             padding-top: 0;
