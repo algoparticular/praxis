@@ -22,6 +22,7 @@
         "nav": {
             "home": "Inicio",
             "praxis": "El Oráculo",
+            "deck": "El mazo",
             "intro": "Intro",
             "about": "¿Qué es esto?",
             "collaborate": "¿Quieres ayudar?",
@@ -96,6 +97,9 @@
             "link": "Enlace",
             "linkCopied": "Copiado!",
             "share": "Comparte esta carta"
+        },
+        "deck": {
+            "name": "El Oráculo de las Partículas"
         },
         "loading": [
             "conversando con los Maestros...",

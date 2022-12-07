@@ -20,7 +20,6 @@
             }
 
             deck.value = records;
-            
             // console.log(deck.value);
         });
     }
@@ -46,7 +45,7 @@
 <template>
     <main id="deck">
         <!-- <div class="heading">
-            <p class="deckIntro">{{ $t("oracle.deckCopy") }}</p>
+            <p class="deckIntro">{{ $t("deck.name") }}</p>
         </div> -->
         <div class="deckWrapper collection">
             <template v-for="card in deck" :key="card.fields.id">
@@ -60,8 +59,9 @@
     </main>
 </template>
 
-<style >
+<style>
     #deck {
+        min-height: 100vh;
         padding: 108px 0;
         display: flex;
         flex-direction: column;
@@ -71,16 +71,18 @@
     }
 
     .deckWrapper.collection {
-        width: calc(142px * 2 + 24px);
+        display: flex;
+        width: 90vw;
         gap: 24px;
+        padding-bottom: 0;
     }    
 
     #deck .heading {
         display: flex;
         justify-content: center;
         align-items: center;
-        height: 18vh;
-        padding-top: 10vh;
+        /* height: 18vh; */
+        /* padding-top: 10vh; */
     }
 
     p.deckIntro {
@@ -103,17 +105,13 @@
         }
 
         .deckWrapper.collection {
-            width: calc(142px * 6 + 8px * 5);
-            gap: 8px;
+            gap: 48px 24px;
         }
     }
 
     /* XL */
     @media screen and (min-width: 1281px) {        
 
-        .deckWrapper.collection {
-            /* width: calc(108px * 11 + 8px * 10); */
-        }
     }
 
 </style>

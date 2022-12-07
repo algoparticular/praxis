@@ -11,6 +11,7 @@
         hasIntro: Boolean,
         hasHome: Boolean,
         hasPraxis: Boolean,
+        hasFullDeck: Boolean,
         hasAbout: Boolean,
         hasCollaborate: Boolean,
     });
@@ -55,6 +56,7 @@
     <nav id="menu">
         <a v-if="props.hasHome" @click="navigate('/')">{{ $t("nav.home") }}</a>
         <a v-if="props.hasPraxis" @click="navigate('/praxis')">{{ $t("nav.praxis") }}</a>
+        <a v-if="props.hasFullDeck" @click="navigate('/deck')">{{ $t("nav.deck") }}</a>
         <a v-if="props.hasIntro" @click="navigate('/intro')">{{ $t("nav.intro") }}</a>
         
         <a v-if="props.hasAbout" @click="navigate('/about')">{{ $t("nav.about") }}</a>

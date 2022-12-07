@@ -22,6 +22,7 @@
         "nav": {
             "home": "Home",
             "praxis": "The Oracle",
+            "deck": "The deck",
             "intro": "Intro",
             "about": "What's this?",
             "collaborate": "Want to help?",
@@ -95,7 +96,10 @@
             "link": "Copy link",
             "linkCopied": "Copied!",
             "share": "Share this card"
-        },        
+        },   
+        "deck": {
+            "name": "The Oracle of the Particles"
+        },     
         "loading": [
             "talking with the Masters...",
             "reading particles' stories...",
