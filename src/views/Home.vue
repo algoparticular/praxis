@@ -53,7 +53,7 @@
 <style scoped>
 	.content.home {
 		background-color: #0282BB;
-		background-image: url('../assets/oracle/stars.png');
+		background-image: url('../assets/oracle/stars.webp');
         background-size: cover;
 	}
 
@@ -96,7 +96,7 @@
 	}
 
 	.corner {        
-        background-image: url('../assets/oracle/corner.png');
+        background-image: url('../assets/oracle/corner.webp');
         background-size: contain;
         background-repeat: no-repeat;
 
@@ -137,7 +137,7 @@
     }
 
 	.oracle.particle {
-        background-image: url('../assets/oracle/particle.png');   
+        background-image: url('../assets/oracle/particle.webp');   
         z-index: 9;             
         height: 36vh;
         width: 90vw;
@@ -146,7 +146,7 @@
     }
 
     .oracle.tree {
-        background-image: url('../assets/oracle/tree.png');     
+        background-image: url('../assets/oracle/tree.webp');     
         z-index: 7;           
         height: 20vh;
         width: 25vw;

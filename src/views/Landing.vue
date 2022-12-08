@@ -79,7 +79,7 @@
 	<div class="landing">
         <Header :hasMenu="true">
             <template v-slot:logo>
-                <img alt="Algo Particular" src="../assets/SeedWhite.svg">
+                <img alt="Algo Particular" src="../assets/SeedWhite.svg" loading="lazy">
             </template>
         </Header>
        
@@ -92,7 +92,7 @@
             <kinesis-element 
                 class="splash particle"
                 tag="img"
-                src="/assets/hero/particle.png"
+                src="/assets/hero/particle.webp"
                 loading=”lazy”
                 :strength="30"
                 axis="y"
@@ -100,7 +100,7 @@
             <kinesis-element 
                 class="splash cell one"
                 tag="img"
-                src="/assets/hero/cell-one.png"
+                src="/assets/hero/cell-one.webp"
                 loading=”lazy”
                 :strength="20"   
                 axis="x"
@@ -109,7 +109,7 @@
             <kinesis-element 
                 class="splash cell two"
                 tag="img"
-                src="/assets/hero/cell-two.png"
+                src="/assets/hero/cell-two.webp"
                 loading=”lazy”
                 :strength="40"
                 transformOrigin="bottom right"
@@ -117,7 +117,7 @@
             <kinesis-element 
                 class="splash cell three"
                 tag="img"
-                src="/assets/hero/cell-three.png"
+                src="/assets/hero/cell-three.webp"
                 loading=”lazy”
                 :strength="10"
                 transformOrigin="bottom left"
@@ -147,14 +147,14 @@
                 <kinesis-element 
                     class="oracle particle"
                     tag="img"
-                    src="/assets/oracle/particle.png"
+                    src="/assets/oracle/particle.webp"
                     loading=”lazy”
                     :strength="60"
                     type="translate"/>
                 <kinesis-element 
                     class="oracle tree"
                     tag="img"
-                    src="/assets/oracle/tree.png"
+                    src="/assets/oracle/tree.webp"
                     loading=”lazy”
                     :strength="50"
                     type="translate"/>
@@ -177,6 +177,7 @@
             
             <section id="uno">
                 <h2>{{ $t("landing.uno") }}</h2>
+                <img src="../assets/icon/seed.svg" loading="lazy"/>
             </section>
         </div>
 
@@ -253,7 +254,7 @@
     }    
 
     .splash.background {
-        background-image: url('../assets/hero/background.png');
+        background-image: url('../assets/hero/background.webp');
         background-size: cover;
         
         top: 0;
@@ -314,7 +315,7 @@
     /* ORACLE */
     #oracle {
         background-color: #0381BA;   
-        background-image: url('../assets/oracle/stars.png');
+        background-image: url('../assets/oracle/stars.webp');
         background-size: cover;
         background-position: center;
 
@@ -379,7 +380,7 @@
     }
 
     .corner {        
-        background-image: url('../assets/oracle/corner.png');
+        background-image: url('../assets/oracle/corner.webp');
         background-size: contain;
         background-repeat: no-repeat;
 
@@ -472,7 +473,7 @@
 <style scoped>
     #colorMe {
         background-color: #F7F8F1;
-        background-image: url('../assets/noise_white.png');
+        background-image: url('../assets/noise_white.webp');
     }
 
     /* ABOUT */
@@ -557,13 +558,15 @@
         display: flex;
         align-items: center;
         justify-content: center;
+        flex-direction: column;
+        gap: 16px;
         width: 100vw;
         height: 100vh;
 
-        background-image: url('../assets/icon/SeedGhost.svg');
+        /* background-image: url('../assets/icon/SeedGhost.svg');
         background-repeat: no-repeat;
         background-size: 135px;
-        background-position: 90% 60%;
+        background-position: 90% 60%; */
     }
 
     #uno h2 {

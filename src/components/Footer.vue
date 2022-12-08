@@ -19,7 +19,7 @@
 <template>
     <footer>
         <div class="wrapper">
-            <img src="../assets/Logo_blue.svg"/>
+            <img src="../assets/Logo_blue.svg" loading="lazy"/>
             <div class="social-nav">
                 <a class="social twit" href="https://www.twitter.com/in/algoparticular" target="_blank">                        
                     <svg class="icon twitter" viewBox="0 0 50 50" fill="#143246" xmlns="http://www.w3.org/2000/svg">
@@ -43,6 +43,7 @@
                 :hasHome="true"
                 :hasIntro="false"
                 :hasPraxis="true"
+                :hasFullDeck="true"
                 :hasAbout="true"
                 :hasCollaborate="true"
                 />
