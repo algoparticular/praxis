@@ -205,10 +205,11 @@
 
         .cardWrapper {
             flex-direction: row;
-            align-items: center;
+            align-items: flex-start;
             justify-content: space-around;            
             width: 82vw;
-            padding: 0 9vw;           
+            padding: 10vh 9vw 0;     
+            min-height: 90vh;      
         }
 
         .imageWrapper {
@@ -250,7 +251,7 @@
 
         .textWrapper {
             width: 40%;
-            padding: 40px 0;
+            padding: 0 0 40px;
             /* height: 100vh; */
             display: flex;
             flex-direction: column;
