@@ -490,7 +490,7 @@
         width: 90vw;
         height: 95vh;
         margin-top: 5vh;
-        border-radius: 24px;
+        border-radius: 90px;
         background-color: #A4DAD9;   
         background-size: cover; 
         background-position: center;
