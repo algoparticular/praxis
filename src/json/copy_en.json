@@ -65,26 +65,26 @@
             "sustent": "Collaborate with us to develop this universe"
         },
         "collaborate": {
-            "title": "What's next?",
-            "intro": "With your help we can continue to create and grow this universe.",
-            "howToHelp": "How to help?",
-            "sharing": "Sharing our content on social media or to those people you think are in need of some magic in their lives.",
-            "cocreate": "co-creates this space. Something Particular could not convey its purpose if it were not for other particles that, along the way, co-created and collaborated with the development and expression of this Universe. To all of them I am infinitely grateful.",
-            "contact": "I'm happy to read you",
-            "donating": "Treat us to tea, or a meal. Full belly, happy heart. If the proposal resonates and is within your possibilities, collaborate with any amount you can.",
-            "donatingEurope": "If you are outside of Argentina, you can support us by using your card or ApplePay.",
-            "whatsNext": "This is what we have in mind",
+            "intro": "With your help we can grow this universe",
+            "shareTitle": "Share",
+            "shareDescrip": "our content on social media or to those people you think are in need of some magic in their lives.",
+            "cocreateTitle": "Co-create",
+            "cocreateDescrip": "this space. Algo Particular could not convey its purpose if it were not for other particles that, along the way, co-created or collaborated with the development and expression of this Universe. To all of them I am infinitely grateful.",
+            "cocreateAction": "Get in touch with us.",
+            "donateTitle": "Collaborate",
+            "donateDescrip": "Invite us for a tea or a meal. Full belly, happy heart. If the proposal resonates and it's within your means, contribute whatever amount you can.",
+            "donateWorld": "If you are outside Argentina, you can support us using your card or ApplePay.",
+            "whatsNext": "This is what we have in mind.",
             "next": [
-                "Expand the Oracle deck",
-                "Printed version of the Oracle deck.",                 
-                "Create original music for each card.",
-                "Development of open-world video game.",
-                "Create a second, 78-card Tarot deck.",
-                "Printed version of the Tarot deck",                
-                "Launch of NFT collection."
+                "Re-open Merchandise shops",
+                "Printed version of the Oracle deck.",
+                "Perform original music for each card.",
+                "Development of open-world videogame.",
+                "Create a second 78-card Tarot deck.",
+                "Printed version of the Tarot deck."
             ],
-            "forKids": "¿'Che' and for the kids?",
-            "kids": "I would love to! ... We're missing someone who writes short stories. If you are interested, contact us!"
+            "forKids": "Hey and for the kids?",
+            "kids": "I'd love to! We're missing someone to write stories. If you're interested, contact us!"
         },
         "oracle": {
             "deckCopy": "Feel and choose your card",
