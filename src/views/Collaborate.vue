@@ -613,6 +613,10 @@
             justify-content: space-around;
         }
 
+        .shareSection.invert {
+            flex-direction: row;
+        }
+
         .shareSection .col {
             width: 50vw;
             height: 100vh;
