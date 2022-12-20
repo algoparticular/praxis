@@ -177,7 +177,7 @@
             
             <section id="uno">
                 <h2>{{ $t("landing.uno") }}</h2>
-                <img src="../assets/icon/seed.svg" loading="lazy"/>
+                <img src="../assets/icon/Seed.svg" loading="lazy"/>
             </section>
         </div>
 
