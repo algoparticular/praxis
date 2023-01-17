@@ -1,8 +1,10 @@
 # Algo Particular
-![Imagen del proyecto](https://github.com/eduardofierropro/Portafolio-y-CV/blob/main/IMAGEN-DEL-PROYECTO.jpg?raw=true)
+![Imagen del proyecto](https://github.com/algoparticular/praxis/blob/main/public/pub/Muralito.jpg)
+
 
 ## En vivo
 - [https://algoparticular.com](https://algoparticular.com)
+
 
 ## Description 📑
 Algo Particular es una propuesta artístico/espiritual creada en 2020.
@@ -15,7 +17,7 @@ Praxis busca ayudar a conectar con lo que vibra en nuestro interior. Las Cartas 
 
 Es así que las Partículas nos traen esos mensajes que nuestro Ser está necesitando en este momento, en este aquí y ahora.
 
----
+-
 Algo Particular is an artistic/spiritual proposal created in 2020.
 Our mission is to invite people to both action and reflection. Through art and philosophy, we seek to establish contact with our intuition, that inner compass that invites us to a path with heart.
 
@@ -27,15 +29,18 @@ Praxis helps to connect with what vibrates within. The Oracle Card Deck, written
 Thus the Particles bring us those messages that our Being is needing in this moment, in this here and now.
 
 
+
 ## What I have learned in this project? 🌲 
 Principalmente fue un desafío propio de poder crear y montar una PWA de punta a punta. A principios de 2022 investigué y compartí lecturas y prácticas sobre Vue.js con mis estudiantes de 10mo grado, lo que despertó mi viejo amor por el desarrollo. Por lo que decidí potenciar mi yo artístico con el tecnológico.
 
 Todo fue aprendizaje: crear el proyecto con Vite, desarrollar basado en el framework Vue SFC + router + una serie de plugins, implementar base de datos en Airtable, publicar el proyecto con Netlify. 
 
----
+-
 It was mainly a challenge of my own to be able to create and assemble a PWA from end to end. In early 2022 I researched and shared readings and practices on Vue.js with my 10th grade students, which awakened my old love for development. So I decided to leverage my artistic self with the technological one.
 
 Everything was learning: creating the project with Vite, developing based on the Vue SFC framework + router + a series of plugins, implementing database in Airtable, publishing the project with Netlify. 
+
+
 
 ## Tecnology 🛠
 <!-- Iconos sacados de: https://github.com/hendrasob/badges/blob/master/README.md y https://github.com/alexandresanlim/Badges4-README.md-Profile -->
@@ -48,12 +53,16 @@ Everything was learning: creating the project with Vite, developing based on the
 [![Netlify](https://img.shields.io/badge/Netlify-00C7B7?style=for-the-badge&logo=netlify&logoColor=white)](https://netlify.com)
 [![Airtable](https://img.shields.io/badge/Airtable-18BFFF?style=for-the-badge&logo=Airtable&logoColor=white)](https://airtable.com)
 
+
+
 ## Preview of the project
 Si quieres hechas un vistazo al proyecto, te recomiendo:
 
-![Captura del proyecto](https://github.com/eduardofierropro/Portafolio-y-CV/blob/main/CAPTURA-DEL-PROYECTO.jpg?raw=true)
-![Captura del proyecto](https://github.com/eduardofierropro/Portafolio-y-CV/blob/main/CAPTURA-DEL-PROYECTO.jpg?raw=true)
-![Captura del proyecto](https://github.com/eduardofierropro/Portafolio-y-CV/blob/main/CAPTURA-DEL-PROYECTO.jpg?raw=true)
+![Captura del proyecto](https://github.com/algoparticular/praxis/blob/main/public/pub/screen1.jpg)
+![Captura del proyecto](https://github.com/algoparticular/praxis/blob/main/public/pub/screen2.jpg)
+![Captura del proyecto](https://github.com/algoparticular/praxis/blob/main/public/pub/screen3.jpg)
+
+
 
 ## Author ✒️
 **Juan Manuel Yañez**
@@ -63,13 +72,17 @@ Si quieres hechas un vistazo al proyecto, te recomiendo:
 * [Behance](https://www.behance.net/juanmanuelynz)
 * [web](https://juanmanuelynz.com/)
 
+
+
 ## Instalation
 Como Progressive Web App (PWA) este proyecto puede ser "instalado" en cualquier dispositivo móbil. 
 En Safari, tap el ícono compartir, tap en "Añadir marcador". En Chrome, tap en opciones de la tab, tap en "Instalar".
 
----
+-
 As a Progressive Web App (PWA) this project can be "installed" on any mobile device. 
 In Safari, tap the share icon, tap "Add bookmark". In Chrome, tap on tab options, tap on "Install".
+  
+  
   
 ## License 📄
 MIT Public License v3.0
