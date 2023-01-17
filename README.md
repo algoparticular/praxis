@@ -1,10 +1,5 @@
 # Algo Particular
-![Imagen del proyecto](https://github.com/algoparticular/praxis/blob/main/public/pub/Muralito.jpg)
-
-
-## En vivo
-- [https://algoparticular.com](https://algoparticular.com)
-
+[![Imagen del proyecto](https://github.com/algoparticular/praxis/blob/main/public/pub/Muralito.jpg)](https://algoparticular.com)
 
 ## Description 📑
 Algo Particular is an artistic/spiritual proposal created in 2020.
@@ -19,25 +14,23 @@ Thus the Particles bring us those messages that our Being is needing in this mom
 
 > Algo Particular es una propuesta artístico/espiritual creada en 2020.
 > Nuestra misión es invitar a las personas tanto a la acción como a la reflexión. Por medio del arte y la filosofía, buscamos establecer contacto con nuestra intuición, esa brújula interna que nos invita a un camino con corazón.
-
+>
 > Como primer propuesta interactiva desarrollamos Praxis, una versión digital de Cartas Oráculo.
 Al igual que cuando recorremos un lugar, tomamos la guía de un mapa o una brújula, en el camino del autodescubrimiento es beneficiosa la orientación del llamado “Plano Superior”, que no es otra que la guía de nuestro Ser más profundo.
-
-Praxis busca ayudar a conectar con lo que vibra en nuestro interior. Las Cartas del Oráculo, escritas por Belén Brito son una herramienta para aquellos que estamos atentos a los mensajes que el Universo, en su divino azar, brinda para guiar nuestros pasos. Con su luminosa calma, Belén nos insta a encontrar las respuestas de nuestro ser interno, utilizando cada carta como un espejo para evaluar o validar nuestro camino. 
-
-Es así que las Partículas nos traen esos mensajes que nuestro Ser está necesitando en este momento, en este aquí y ahora.
+>
+>Praxis busca ayudar a conectar con lo que vibra en nuestro interior. Las Cartas del Oráculo, escritas por Belén Brito son una herramienta para aquellos que estamos atentos a los mensajes que el Universo, en su divino azar, brinda para guiar nuestros pasos. Con su luminosa calma, Belén nos insta a encontrar las respuestas de nuestro ser interno, utilizando cada carta como un espejo para evaluar o validar nuestro camino. 
+>
+>Es así que las Partículas nos traen esos mensajes que nuestro Ser está necesitando en este momento, en este aquí y ahora.
 
 
 ## What I have learned in this project? 🌲 
-Principalmente fue un desafío propio de poder crear y montar una PWA de punta a punta. A principios de 2022 investigué y compartí lecturas y prácticas sobre Vue.js con mis estudiantes de 10mo grado, lo que despertó mi viejo amor por el desarrollo. Por lo que decidí potenciar mi yo artístico con el tecnológico.
-
-Todo fue aprendizaje: crear el proyecto con Vite, desarrollar basado en el framework Vue SFC + router + una serie de plugins, implementar base de datos en Airtable, publicar el proyecto con Netlify. 
-
--
 It was mainly a challenge of my own to be able to create and assemble a PWA from end to end. In early 2022 I researched and shared readings and practices on Vue.js with my 10th grade students, which awakened my old love for development. So I decided to leverage my artistic self with the technological one.
 
 Everything was learning: creating the project with Vite, developing based on the Vue SFC framework + router + a series of plugins, implementing database in Airtable, publishing the project with Netlify. 
 
+>Principalmente fue un desafío propio de poder crear y montar una PWA de punta a punta. A principios de 2022 investigué y compartí lecturas y prácticas sobre Vue.js con mis estudiantes de 10mo grado, lo que despertó mi viejo amor por el desarrollo. Por lo que decidí potenciar mi yo artístico con el tecnológico.
+>
+>Todo fue aprendizaje: crear el proyecto con Vite, desarrollar basado en el framework Vue SFC + router + una serie de plugins, implementar base de datos en Airtable, publicar el proyecto con Netlify. 
 
 
 ## Tecnology 🛠
@@ -53,9 +46,7 @@ Everything was learning: creating the project with Vite, developing based on the
 
 
 
-## Preview of the project
-Si quieres hechas un vistazo al proyecto, te recomiendo:
-
+## Preview
 ![Captura del proyecto](https://github.com/algoparticular/praxis/blob/main/public/pub/screen1.jpg)
 ![Captura del proyecto](https://github.com/algoparticular/praxis/blob/main/public/pub/screen2.jpg)
 ![Captura del proyecto](https://github.com/algoparticular/praxis/blob/main/public/pub/screen3.jpg)
@@ -73,13 +64,11 @@ Si quieres hechas un vistazo al proyecto, te recomiendo:
 
 
 ## Instalation
-Como Progressive Web App (PWA) este proyecto puede ser "instalado" en cualquier dispositivo móbil. 
-En Safari, tap el ícono compartir, tap en "Añadir marcador". En Chrome, tap en opciones de la tab, tap en "Instalar".
-
--
 As a Progressive Web App (PWA) this project can be "installed" on any mobile device. 
 In Safari, tap the share icon, tap "Add bookmark". In Chrome, tap on tab options, tap on "Install".
-  
+
+>Como Progressive Web App (PWA) este proyecto puede ser "instalado" en cualquier dispositivo móbil. 
+>En Safari, tap el ícono compartir, tap en "Añadir marcador". En Chrome, tap en opciones de la tab, tap en "Instalar".  
   
   
 ## License 📄
