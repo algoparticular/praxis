@@ -75,6 +75,7 @@
         width: 90vw;
         gap: 24px;
         padding-bottom: 0;
+        justify-content: center;
     }    
 
     #deck .heading {
@@ -96,7 +97,7 @@
             min-height: 100vh;
             display: flex;
             justify-content: center;
-            align-items: center;
+            align-items: center;            
         }
 
         #deck .heading {
@@ -114,8 +115,10 @@
     }
 
     /* XL */
-    @media screen and (min-width: 1281px) {        
-
+    @media screen and (min-width: 1025px) {        
+        .deckWrapper.collection {
+            gap: 48px;
+        }
     }
 
 </style>

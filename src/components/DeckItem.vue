@@ -42,6 +42,11 @@
         letter-spacing: 0.02em;
         margin: 8px 0 0;
         text-align: center;
+
+        width: -webkit-fill-available;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     .deckItem {
@@ -77,10 +82,29 @@
         filter: drop-shadow(0px 2px 3px rgba(234, 234, 234, 1));
     }
 
+    /* tablet */
+    @media screen and (min-width: 465px) and (max-width: 768px) {
+        .deckItem {
+            height: 350px;
+        }
+    }
+
     /* DESKTOP */
-    @media screen and (min-width: 768px) {
+    @media screen and (min-width: 769px) {
         .item {
-            width: calc(33% - 12px);
+            width: calc(32% - 12px);
+        }
+
+        .deckItem {            
+            width: 220px;
+            height: 275px;
+        }
+    }
+
+    /* DESKTOP */
+    @media screen and (min-width: 1025px) {
+        .item {
+            width: calc(16% - 18px);
         }
 
         .deckItem {            
