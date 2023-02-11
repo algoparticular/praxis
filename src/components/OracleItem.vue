@@ -121,10 +121,9 @@
         border-bottom: 2px solid rgba(252, 252, 252, 0.42);
     }
 
-    .deckItem:hover,
-    .deckItem:active {
+    /* .deckItem:hover{
         transform: scale(1.08);
-    }
+    } */
 
     .deckItem.loading {
         animation: pulse-bg 1.8s infinite;
@@ -144,4 +143,6 @@
             border: 2px solid rgba(243, 243, 243, 0.42);
         }
     }
+
+
 </style>
