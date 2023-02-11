@@ -37,7 +37,10 @@
         <Header 
             :hasBack="true"
             :hasMenu="true"/>
-		<main id="about" class="colorMe">
+        <section id="hero">
+            <!-- <img src="../../public/pub/mural.jpg"/> -->
+        </section>
+		<main id="about" class="colorMe">            
 			<section class="intro">
 				<p>{{ $t("about.intro") }}</p>
                 <a href="https://samasama.studio" target="_blank"><img src="../assets/samasama.svg"></a>
@@ -98,15 +101,34 @@
         height: auto;
     }
 
+    #hero {
+        width: 100vw;
+        height: 60vh;
+        /* overflow: hidden; */
+        /* display: flex;
+        align-items: center;         */
+
+        background-image: url("../../public/pub/mural.jpg");
+        background-size: cover;
+        background-position: center;
+        box-shadow: inset 0px 6px 63px rgb(0 127 136 / 36%), inset 0px -6px 64px rgb(20 50 70 / 90%);
+    }
+
+    /* #hero img {
+        width: 100%;
+        height: fit-content;
+    } */
+
     main {
         gap: 108px;
-        padding: 108px 0 108px;
+        padding: 63px 0 108px;
     }
 
     .content button.back {   
         margin: 40px;     
         height: 40px;        
     }
+    
 
     .intro p, .credits p {
         text-align: center;
