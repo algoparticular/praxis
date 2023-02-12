@@ -104,12 +104,12 @@
     /* DESKTOP */
     @media screen and (min-width: 1025px) {
         .item {
-            width: calc(16% - 18px);
+            width: calc(18% - 18px);
         }
 
         .deckItem {            
-            width: 220px;
-            height: 275px;
+            width: 200px;
+            height: 255px;
         }
     }
 </style>
