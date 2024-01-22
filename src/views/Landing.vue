@@ -84,10 +84,10 @@
         </Header>
        
         <kinesis-container id="hero" tag="section" easing="cubic-bezier(0.23, 1, 0.32, 1)" :perspective="100">
-            <kinesis-element
+            <a href="/praxis"><kinesis-element
                 tag="h1">
                 {{ $t("landing.intro") }}
-            </kinesis-element>
+            </kinesis-element></a>
             
             <kinesis-element 
                 class="splash particle"
