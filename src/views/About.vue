@@ -38,7 +38,7 @@
             :hasBack="true"
             :hasMenu="true"/>
         <section id="hero">
-            <!-- <img src="../../public/pub/mural.jpg"/> -->
+            <!-- <img src="../../public/assets/mural.jpg"/> -->
         </section>
 		<main id="about" class="colorMe">            
 			<section class="intro">
@@ -108,7 +108,7 @@
         /* display: flex;
         align-items: center;         */
 
-        background-image: url("../../public/pub/mural.jpg");
+        background-image: url("../../public/assets/mural.jpg");
         background-size: cover;
         background-position: center;
         box-shadow: inset 0px 6px 63px rgb(0 127 136 / 36%), inset 0px -6px 64px rgb(20 50 70 / 90%);

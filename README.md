@@ -1,5 +1,5 @@
 # Algo Particular
-[![Imagen del proyecto](https://github.com/algoparticular/praxis/blob/main/public/pub/Muralito.jpg)](https://algoparticular.com)
+[![Imagen del proyecto](https://github.com/algoparticular/praxis/blob/main/public/assets/Muralito.jpg)](https://algoparticular.com)
 
 ## Description 📑
 Algo Particular is an artistic/spiritual proposal created in 2020.
@@ -47,9 +47,9 @@ Everything was learning: creating the project with Vite, developing based on the
 
 
 ## Preview
-![Captura del proyecto](https://github.com/algoparticular/praxis/blob/main/public/pub/screen1.jpg)
-![Captura del proyecto](https://github.com/algoparticular/praxis/blob/main/public/pub/screen2.jpg)
-![Captura del proyecto](https://github.com/algoparticular/praxis/blob/main/public/pub/screen3.jpg)
+![Captura del proyecto](https://github.com/algoparticular/praxis/blob/main/public/assets/screenshots/screen1.jpg)
+![Captura del proyecto](https://github.com/algoparticular/praxis/blob/main/public/assets/screenshots/screen2.jpg)
+![Captura del proyecto](https://github.com/algoparticular/praxis/blob/main/public/assets/screenshots/screen3.jpg)
 
 
 
