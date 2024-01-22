@@ -211,7 +211,7 @@
         text-align: center;
         width: 86vw;        
         font-size: 36px;
-        letter-spacing: 2px;
+        letter-spacing: 1px;
         line-height: 120%;
     }
 
