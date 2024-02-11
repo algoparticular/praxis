@@ -84,10 +84,13 @@
         </Header>
        
         <kinesis-container id="hero" tag="section" easing="cubic-bezier(0.23, 1, 0.32, 1)" :perspective="100">
-            <a href="/praxis"><kinesis-element
-                tag="h1">
-                {{ $t("landing.intro") }}
-            </kinesis-element></a>
+            <a href="/praxis">
+                <kinesis-element
+                    tag="h1">
+                    {{ $t("landing.intro") }}
+                    <br><span>{{ $t("landing.introAction") }} →</span>
+                </kinesis-element>                            
+            </a>
             
             <kinesis-element 
                 class="splash particle"
@@ -197,6 +200,7 @@
 	#hero {
         background-color: #6A428D;
         height: 90vh;
+        min-height: 667px;
         padding: 5vh 0;
         box-shadow: inset 0px 6px 63px rgb(255 111 97 / 36%), inset 0px -6px 64px rgb(20 50 70 / 90%);
     }
@@ -213,6 +217,13 @@
         font-size: 36px;
         letter-spacing: 1px;
         line-height: 120%;
+    }
+
+    h1 span {
+        font-family: 'Inter', helvetica, sans-serif;
+        text-transform: uppercase;
+        font-size: 12px;
+        color: #F7F8F1;        
     }
 
     .splash {        
@@ -325,7 +336,7 @@
         flex-direction: column;
         gap: 80px;
         width: 100vw;
-        min-height: 120vh;
+        min-height: 150vh;
     }
 
     .copy {
@@ -483,7 +494,7 @@
         align-items: center;
         flex-direction: column;
         gap: 40px;
-        height: 120vh;      
+        height: 140vh;    
     }
 
     #galleryWrapper {        
