@@ -66,7 +66,9 @@
         </div>
 
         <div id="logo">
-            <slot name="logo"></slot>
+            <a href="/praxis">
+                <slot name="logo"></slot>
+            </a>
         </div>  
 
         <Transition name="fade" mode="out-in">

@@ -79,7 +79,7 @@
 	<div class="landing">
         <Header :hasMenu="true">
             <template v-slot:logo>
-                <a href="/praxis"><img alt="Algo Particular" src="../assets/SeedWhite.svg" loading="lazy"></a>
+                <img alt="Algo Particular" src="../assets/SeedWhite.svg" loading="lazy">
             </template>
         </Header>
        
