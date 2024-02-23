@@ -141,7 +141,7 @@
         justify-content: space-between;
         align-items: center;
         padding-top: 13vh;
-        height: 87vh;
+        /* height: 87vh; */
     }
 
     .footer {
