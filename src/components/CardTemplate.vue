@@ -5,7 +5,7 @@
 
     //Database
     import Airtable from "airtable";
-    const base = new Airtable({ apiKey: "keyLdBi48iZZkEOMG" }).base("appgHXHkRRjGjbYgM");
+    const base = new Airtable({ apiKey: "pat551SjcY5IJ6UAR.60426de457da1e3a373eadab9afb97dcc492e439ab52da2a4aab56ea213746f1" }).base("appgHXHkRRjGjbYgM");
 
     const props = defineProps({
         id: String

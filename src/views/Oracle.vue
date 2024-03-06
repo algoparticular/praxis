@@ -9,7 +9,7 @@
     //Database
     // import Airtable from "airtable";
     // const base = new Airtable({ apiKey: "keyLdBi48iZZkEOMG" }).base("appgHXHkRRjGjbYgM");
-
+ 
     //***************************
     //***************************
     //Harcoded amount of cards.. help me :P
