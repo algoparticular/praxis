@@ -43,11 +43,12 @@
 
     //handle deck
     const handleGoToDeck = () => {
-        if(router.options.history.state.back == '/deck') {
-            router.push({ path: '/deck' });
-        } else {
-            router.push({ path: '/oracle' });
-        }        
+        // if(router.options.history.state.back == '/deck') {
+        //     router.push({ path: '/deck' });
+        // } else {
+        //     router.push({ path: '/oracle' });
+        // }  
+        router.back();      
     };
 
     //handle language change

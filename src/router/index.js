@@ -6,6 +6,7 @@ import Home from '../views/Home.vue';
 import Register from '../views/Register.vue';
 import SignIn from '../views/SignIn.vue';
 import Oracle from '../views/Oracle.vue';
+import OracleTheNine from '../views/OracleTheNine.vue';
 import Card from '../views/Card.vue';
 import Deck from '../views/Deck.vue';
 import PageNotFound from '../views/PageNotFound.vue';
@@ -49,6 +50,10 @@ const router = createRouter({
     {
       path: "/oracle",
       component: Oracle,
+    },
+    {
+      path: "/oracleTheNine",
+      component: OracleTheNine,
     },
     {
       name: "card",
