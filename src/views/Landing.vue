@@ -396,6 +396,10 @@
 <style scoped>
     /* ORACLE */
     #oracle {
+        /* Height of the zone where the hero's violet sinks into the navy. It sits above the content, which is all on the dark. */
+        --sky: 36vh;
+        box-sizing: border-box;
+        padding-top: var(--sky);
         background-color: #143246;
         /* The top of the block is the violet of the hero, eased down into the navy */
         background-image: linear-gradient(180deg,
@@ -405,7 +409,7 @@
             rgba(106, 66, 141, 0.28) 52%,
             rgba(106, 66, 141, 0.1) 74%,
             rgba(106, 66, 141, 0) 100%);
-        background-size: 100% 70vh;
+        background-size: 100% var(--sky);
         background-repeat: no-repeat;
         isolation: isolate;
         overflow-x: clip;
@@ -416,7 +420,7 @@
         flex-direction: column;
         gap: 80px;
         width: 100vw;
-        min-height: 150vh;
+        min-height: calc(150vh + var(--sky));
     }
 
     /* The sky fades in from the top so the stars do not start on a visible edge */
@@ -429,8 +433,8 @@
         pointer-events: none;
         opacity: 0;
         transition: opacity 1.2s ease-out;
-        -webkit-mask-image: linear-gradient(to bottom, transparent 0%, transparent 10%, #000 45%);
-        mask-image: linear-gradient(to bottom, transparent 0%, transparent 10%, #000 45%);
+        -webkit-mask-image: linear-gradient(to bottom, transparent 0, transparent calc(var(--sky) * 0.15), #000 calc(var(--sky) * 0.95));
+        mask-image: linear-gradient(to bottom, transparent 0, transparent calc(var(--sky) * 0.15), #000 calc(var(--sky) * 0.95));
     }
 
     .copy {
@@ -493,7 +497,7 @@
 
         position: absolute;
         z-index: 3;
-        top: 2vw;
+        top: calc(var(--sky) + 2vw);
         left: 2vw;
         width: 30vw;
         height: 30vw;
@@ -549,7 +553,8 @@
             align-items: center;
             justify-content: center;
             gap: 100px;
-            min-height: 100vh;
+            --sky: 46vh;
+            min-height: calc(100vh + var(--sky));
         }
 
         #oracle .copy {

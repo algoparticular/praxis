@@ -1,11 +1,23 @@
 <script setup>
-    // A drawn four-point star instead of the arrow, only for devices with a real mouse.
+    // A small glowing particle instead of the arrow; only for devices with a real mouse.
     // Touch screens never see it; with prefers-reduced-motion it follows the pointer without easing.
     import { onMounted, onBeforeUnmount, ref } from 'vue';
 
     const cursor = ref(null);
     const INTERACTIVE = 'a, button, [role="button"], label, summary, select, .tap, .deckItem';
 
+    // Over a light surface (the cream footer, the cream buttons) the cursor turns orange
+    const isLight = (element) => {
+        for (let node = element; node && node !== document.documentElement; node = node.parentElement) {
+            const match = getComputedStyle(node).backgroundColor.match(/rgba?\(([^)]+)\)/);
+            if (!match) continue;
+            const [r, g, b, a = 1] = match[1].split(',').map(parseFloat);
+            if (a > 0.5) return 0.299 * r + 0.587 * g + 0.114 * b > 190;
+        }
+        return false;
+    };
+
+    let lastTarget = null;
     let frame = 0;
     let x = 0, y = 0, targetX = 0, targetY = 0;
     let visible = false;
@@ -37,6 +49,11 @@
                 cursor.value.classList.add('show');
             }
             cursor.value.classList.toggle('over', Boolean(event.target.closest?.(INTERACTIVE)));
+            // Only worth recomputing when the pointer moves onto a different element
+            if (event.target !== lastTarget) {
+                lastTarget = event.target;
+                cursor.value.classList.toggle('light', isLight(event.target));
+            }
         };
         const onLeave = () => { visible = false; cursor.value.classList.remove('show'); };
         const onDown = () => cursor.value.classList.add('press');
@@ -63,9 +80,7 @@
 
 <template>
     <div class="cursor" ref="cursor" aria-hidden="true">
-        <svg viewBox="0 0 24 24" width="28" height="28">
-            <path d="M12 1 L14.6 9.4 L23 12 L14.6 14.6 L12 23 L9.4 14.6 L1 12 L9.4 9.4 Z"/>
-        </svg>
+        <div class="dot"></div>
     </div>
 </template>
 
@@ -92,23 +107,28 @@
         opacity: 1;
     }
 
-    .cursor svg {
-        display: block;
-        margin: -14px 0 0 -14px;
-        fill: #E6E973;
-        stroke: #143246;
-        stroke-width: 1.4;
-        stroke-linejoin: round;
-        -webkit-transition: transform 180ms ease-out, fill 180ms ease-out;
-        transition: transform 180ms ease-out, fill 180ms ease-out;
+    /* A small round particle with the soft glow of the brand icon; orange over light surfaces */
+    .cursor .dot {
+        width: 14px;
+        height: 14px;
+        margin: -7px 0 0 -7px;
+        border-radius: 50%;
+        background: #F7F8F1;
+        box-shadow: 0 0 6px 1px rgba(247, 248, 241, 0.9), 0 0 16px 4px rgba(230, 233, 115, 0.45);
+        -webkit-transition: transform 220ms ease-out, background 320ms ease-out, box-shadow 320ms ease-out;
+        transition: transform 220ms ease-out, background 320ms ease-out, box-shadow 320ms ease-out;
     }
 
-    .cursor.over svg {
-        transform: scale(1.5) rotate(45deg);
-        fill: #FF6F61;
+    .cursor.light .dot {
+        background: #FF6F61;
+        box-shadow: 0 0 6px 1px rgba(255, 111, 97, 0.9), 0 0 16px 4px rgba(255, 111, 97, 0.45);
     }
 
-    .cursor.press svg {
+    .cursor.over .dot {
+        transform: scale(1.8);
+    }
+
+    .cursor.press .dot {
         transform: scale(0.8);
     }
 </style>
