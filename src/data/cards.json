@@ -1,1 +1,790 @@
-[]
+[
+  {
+    "description_es": "Sí este Pāramī ha llegado a ti hoy es para invitarte a preguntarte ¿quién realmente eres? Tomate un instante y busca responder con el corazón. ¿Quién soy? Más allá de tu nombre, nacionalidad, profesión, religión y posesiones. ¿Quien eres en esencia? Un ser humano con diseño divino. \nCuando la mente lidera, el ego le gana al saber del alma y te distrae identificándote con lo limitado y pequeño. Creyendo que sos solo lo que posees. Nekkhamma te invita a reconocer quién sos en esencia, un alma sagrada haciendo una experiencia humana.\n\nNo es una tarea fácil reconocer la infinitud de tu ser y tu conexión con todo lo que existe. Pero si esta carta ha llegado a tus manos hoy, es para instarte a confiar en el poder más alto que reside en ti y practicar la renunciación.\n\nDe este modo, Nekkhamma te insta abrazar tu materialidad, lo cual no significa identificarte con ella sino reconocer su sacralidad y encontrar el mayor provecho en esta vida, para tu beneficio y el de todos los seres sintientes.",
+    "id": 0,
+    "invitation_es": "Practica la renunciación, suelta alguna de esas cosas que ya no necesites y busca andar liviano.",
+    "name_en": "Nekkhamma",
+    "rarity": 2,
+    "invitation_en": "Practice renunciation, let go of some of the things that you no longer need and seek to walk lightly.",
+    "affirmation_en": "I acknowledge that I am a sacred being making a human experience ",
+    "category": "Paramis",
+    "colorAlt": "#D9EFED",
+    "affirmation_es": "Reconozco que soy un ser sagrado haciendo una experiencia humana.",
+    "image": [
+      {
+        "url": "/cards/0.jpeg",
+        "width": 2160,
+        "height": 2160
+      }
+    ],
+    "color": "#3A3B57",
+    "Status": "ready",
+    "description_en": "If this Paramis has reached you today, it is to invite you to ask yourself: who are you really? Take a moment and seek to respond with your heart. Who I am? Beyond your name, nationality, profession, religion and possessions. Who are you in essence? A human being with a divine design. When the mind leads, the ego wins over the knowledge of the soul and distracts you by identifying with what is limited and small. Believing that you are only what you possess. Nekkhamma invites you to recognize who you are in essence, a sacred soul making a human experience.\n\nIt is not an easy task to recognize the infinity of your being and your connection to all that exists. But if this letter has come into your hands today, it is to urge you to trust in the highest power that resides in you and practice renunciation.\n\nIn this way, Nekkhamma urges you to embrace your materiality, which does not mean identifying with it, but recognizing its sacredness and finding the greatest benefit in this life, for your benefit and that of all sentient beings.",
+    "author": "Belén Brito",
+    "name_es": "Nekkhamma"
+  },
+  {
+    "description_es": "Sila es una invitación a la moralidad, a hacer el bien en resonancia con la voz de tu sabiduría interior y la corriente de vida interconectada.\n\nConfía en todo lo que tienes para ofrecer, recuerda que todo aquello que hagas para ser mejor persona no solo es para tu beneficio propio, sino también para el de muchos otros. Ponte de pie y abraza tu dignidad, siéntete orgullosa por todo lo que has logrado, tu crecimiento trae abundancia de amor al universo.\n\nLa voz del corazón es la guía frente a las distracciones que se presentan ante nuestros sentidos y el parloteo de la mente. Sin dudar, hay un propósito profundo en tu viaje por esta tierra, una tarea que tu alma conoce, para poder encontrarla el primer paso es honrar tu humanidad, y las infinitas posibilidades que trae pasar por esta tierra siendo una mujer u hombre de luz.",
+    "id": 1,
+    "invitation_es": "En secreto, busca hacer una acción beneficiosa para otros.",
+    "name_en": "Sila",
+    "rarity": 2,
+    "invitation_en": "In secret, seek to do an action that is beneficial to others. ",
+    "affirmation_en": "I find peace in doing good in resonance with the voice of my soul. ",
+    "category": "Paramis",
+    "colorAlt": "#046132",
+    "affirmation_es": "Encuentro paz al hacer el bien en resonancia con la voz de mi alma. ",
+    "image": [
+      {
+        "url": "/cards/1.jpeg",
+        "width": 2160,
+        "height": 2160
+      }
+    ],
+    "color": "#A7D6B4",
+    "Status": "ready",
+    "description_en": "Sila is an invitation to morality, to do good in resonance with the voice of your inner wisdom and the interconnected stream of life.\n\nTrust in everything that you have to offer, remember that everything you do to be a better person is not only for your own benefit, but also for that of many others. Stand up and embrace your dignity, be proud of everything you have achieved, your growth brings abundance of love to the universe.\n\nThe voice of the heart is the guide against the distractions that appear before our senses and the chatter of the mind. Without a doubt, there is a deeper purpose in your journey on this earth, a task that your soul knows, in order to find it, the first step is to honor your humanity, and the infinite possibilities that going through this earth brings as a woman or man of light.",
+    "author": "Belén Brito",
+    "name_es": "Sila"
+  },
+  {
+    "description_es": "Al practicar Danna estás buscando alimentar tu generosidad, esa cualidad pura que engrandece tu Espíritu. \n\nSer de corazón generoso es alegrarse por la buena fortuna de los otros aún cuando no eres tú el que recibe algo a cambio. Si este Pāramī ha llegado a tí hoy es para instarte a recordar al niño que llevas dentro. Los niños no saben más que amar, no conocen otra cosa que el amor. Ese amor desinteresado es el que te invita a practicar el altruismo y abrirle la puerta a la felicidad de vivir en un Universo abundante, abundancia que con el paso de los años olvidamos y confundimos por miedo a la escasez y la falta. \n\nExisten muchos modos de darse a otros, tu tiempo y energía es el modo más generoso de entrega. Y como en este universo todo se encuentra en relación y conexión, presta atención a todas aquellas bendiciones que fluyen y vuelven a ti multiplicadas porque en primera instancia has sabido dar desde tu corazón generoso.",
+    "id": 2,
+    "invitation_es": "Hoy práctica tu altruismo y regala algo de tu tiempo y energía aquel que lo necesite. ",
+    "name_en": "Dana",
+    "rarity": 2,
+    "invitation_en": "Today practice altruism and give the gift of your time and energy to someone who really needs it. ",
+    "affirmation_en": "I listen to the child within me and I am happy giving without expecting anything in return. ",
+    "category": "Paramis",
+    "colorAlt": "#F0FAF1",
+    "affirmation_es": " Escucho al niño que llevo dentro y soy feliz al dar sin esperar nada a cambio.",
+    "image": [
+      {
+        "url": "/cards/2.jpeg",
+        "width": 2160,
+        "height": 2160
+      }
+    ],
+    "color": "#0099A6",
+    "Status": "ready",
+    "description_en": "By practicing Dana you are looking to feed your generosity, that pure quality that magnifies your Spirit.\n\nBeing of generous heart is rejoicing in the good fortune of others even when you are not the one receiving something in return. If this Paramis has come to you today it is to urge you to remember the child that you carry within you. Children don't know anything more than giving love, they know nothing but love. That disinterested love is what invites you to practice altruism and open the door to the happiness of living in an abundant Universe, abundance that over the years we forget and confuse for fear of scarcity and lack thereof.\n\nThere are many ways to give to others, your time and energy is the most generous way of giving. And since in this universe everything is found in relationship and connection, pay attention to all those blessings that flow and return to you multiplied because in the first instance you have known how to give from your generous heart.",
+    "author": "Belén Brito",
+    "name_es": "Dana"
+  },
+  {
+    "description_es": "Al practicar Pañña estás trabajando la sabiduría,  esa consciencia divina que llevas dentro, este Pāramī viaja contigo desde el inicio de los tiempos, y por eso dista del conocimiento que se aprende.\n\nPañña te invita a respetarte y amarte a ti mismo para poder confiar en tu saber interior, dejando que tus respuestas te guíen.\n\nSi estás atravesando un desafío o momento de incertidumbre regalate el tiempo y el espacio para descansar, conectar contigo mismo y abrirle la puerta a tu sabiduría. Recuerda que ese saber proviene y fluye de la Fuente de toda creación, por lo que al escuchar tu corazón estarás, al mismo tiempo, dándole la bienvenida a la divinidad.\n\nObserva la vida desde una perspectiva más amplia y desde tu sabiduría abraza la gracia y belleza que te rodea.",
+    "id": 3,
+    "invitation_es": "Preguntale a tu sabiduria interior, ¿Qué debo hacer frente a esta situación o persona que me esta inquietando? Escucha en silencio.",
+    "name_en": "Pañña",
+    "rarity": 2,
+    "invitation_en": "Ask your inner wisdom, \"What should I do about this situation or person that is disturbing me?\" Listen in silence. ",
+    "affirmation_en": "My calm and silent center listens to the divine instance within me.",
+    "category": "Paramis",
+    "colorAlt": "#FFE47D",
+    "affirmation_es": "Mi centro calmo y silencio escucha la instancia Divina dentro de mí.",
+    "image": [
+      {
+        "url": "/cards/3.jpeg",
+        "width": 2160,
+        "height": 2160
+      }
+    ],
+    "color": "#008F83",
+    "Status": "ready",
+    "description_en": "By practicing Pañña you are working on wisdom, that divine consciousness that you carry within, this Paramis travels with you since the beginning of time, and that is why it is far from the knowledge that is learned.\n\nPañña invites you to respect and love yourself in order to be able to trust your inner knowledge, letting your answers guide you.\n\nIf you are going through a challenge or a moment of uncertainty, give yourself the time and space to rest, connect with yourself and open the door to your wisdom. Remember that this knowledge comes and flows from the Source of all creation, so by listening to your heart you will be, at the same time, welcoming divinity.\n\nSee life from a broader perspective and from your wisdom embrace the grace and beauty that surrounds you.",
+    "author": "Belén Brito",
+    "name_es": "Pañña"
+  },
+  {
+    "description_es": "Al practicar Viriya estás trabajando la diligencia. Sí este Pāramī ha llegado a ti es para recordarte que tu eres la cocreadora de tu vida. Cada pensamiento, sentimiento y decisión irá construyendo tu propio camino. Para ser fiel a la voz que guía dentro se requiere determinación y autodisciplina.\n\nViriya te invita a ser responsable reconociendo que cada día es una nueva oportunidad. Una posibilidad de honrar a tu verdad y nutrir la vida que sueñas.\n\nUn día a la vez, una cosa a la vez, sin prisa pero sin pausa. El cambio y la transformación son posibles si la determinación y el compromiso acompañan tus pasos. \n\nAsí también debes saber que en esta co-creación las fuerzas superiores te asisten y acompañan en la búsqueda de tu próposito. Por lo que aquellos días donde la diligencia flaquee convoca a tus guías y maestros para que te sostengan, jamás olvides que no estás sola.",
+    "id": 4,
+    "invitation_es": "Hoy se diligente con el cambio que anhelas realizar.",
+    "name_en": "Viriya",
+    "rarity": 2,
+    "invitation_en": "Today be diligent with the change you long to make.",
+    "affirmation_en": "I listen to my heart and follow its truth with determination.",
+    "category": "Paramis",
+    "colorAlt": "#FAC795",
+    "affirmation_es": "Escucho mi corazón y sigo su verdad con determinación.",
+    "image": [
+      {
+        "url": "/cards/4.jpeg",
+        "width": 2160,
+        "height": 2160
+      }
+    ],
+    "color": "#05807F",
+    "Status": "ready",
+    "description_en": "By practicing Viriya you are working with diligence. If this Paramis has come to you, it is to remind you that you are the co-creator of your life. Every thought, feeling, and decision will build your own path. Being true to the guiding voice within requires determination and self-discipline.\n\nViriya invites you to be responsible, recognizing that every day is a new opportunity. A chance to honor your truth and nurture the life you dream of.\n\nOne day at a time, one thing at a time, slowly but surely. Change and transformation are possible if determination and commitment accompany your steps.\n\nYou should also know that in this co-creation the superior forces assist you and accompany you in the search for your purpose. So those days when diligence faulters, summon your guides and teachers to support you, and never forget that you are not alone.",
+    "author": "Belén Brito",
+    "name_es": "Viriya"
+  },
+  {
+    "description_es": "Al practicar Khanti estás trabajando la tolerancia. Ser tolerante es aceptar que ningún aprendizaje es lineal, y de ese modo instarte a ser paciente con tu proceso. Escuchar la necesidad de tu cuerpo y energía y ser capaz de responder a ella para no exigirte más de aquello que puedes sostener. \n\nAl practicar la tolerancia vuelves consciente que cada uno avanza en su propio camino espiritual, y que la mejor manera de acompañar a otros es inspirándolos con tu ejemplo. Khanti te invita a no juzgar, a soltar las culpas y rencores. Por eso si esta carta ha llegado a ti hoy es para invitarte a dejar a un lado la irritación pudiendo mirar la realidad desde una perspectiva más amplia y amorosa.\n\nSer tolerante es abrirle la puerta a la aceptación, nutriendo las virtudes de la fortaleza y la amplitud de tu consciencia, para ser paciente con vos mismo y los demás, reconociendo que en esta experiencia espiritual que es la vida cada uno avanza a su tiempo y modos. ",
+    "id": 5,
+    "invitation_es": "Hoy se tolerante y paciente contigo. Respeta tus tiempos sin exigencias. ",
+    "name_en": "Khanti",
+    "rarity": 2,
+    "invitation_en": "Today be tolerant and patient with yourself. Respect your time without any demands. ",
+    "affirmation_en": "My divinity expands by being tolerant of my spiritual path and that of others.",
+    "category": "Paramis",
+    "colorAlt": "#007096",
+    "affirmation_es": "Mi divinidad se expande al ser tolerante con mi camino espiritual y el de los otros.",
+    "image": [
+      {
+        "url": "/cards/5.jpeg",
+        "width": 2160,
+        "height": 2160
+      }
+    ],
+    "color": "#ABDCD9",
+    "Status": "ready",
+    "description_en": "By practicing Khanti you are working on tolerance. Being tolerant is accepting that no learning is linear, and thus urging you to be patient with your process. Listen to the needs of your body and energy and be able to respond to them so as not to demand more than what you can sustain.\n\nBy practicing tolerance, you become aware that each one advances on their own spiritual path, and that the best way to accompany others is to inspire them with your example. Khanti invites you not to judge, and to let go of guilt and grudges. Therefore, if this card has reached you today, it is to invite you to put irritation aside and be able to look at reality from a broader and more loving perspective.\n\nTo be tolerant is to open the door to acceptance, nurture the virtues of the strength and amplitude of your conscience, be patient with yourself and others, and recognize that in this spiritual experience that is life, everyone advances at their own time and in their own way.",
+    "author": "Belén Brito",
+    "name_es": "Khanti"
+  },
+  {
+    "description_es": "Al practicar Sacca estás abriéndole la puerta a la verdad. Ir en búsqueda de la verdad es alentarte a encontrar el sentido más profundo de tu existencia. Es cambiar la perspectiva de la pregunta, y en lugar del ¿porque a mi? preguntarte ¿Para qué será necesario vivenciar tal circunstancia? ¿Qué debes aprender y compartir?  La verdad es aquello que te insta a crecer en el plano álmico y descubrir tu razón de ser, tu próposito de luz.\n\nBuscar ese propósito es el primer paso para dejar de lado una vida en automático y volverte más consciente del milagro que estás experimentando a cada instante. Buscar que cada día tenga un sentido, que cada tarea, acción cotidiana, encuentro con otros y vos mismo sea significativo y alimente tu verdad. Al practicar Sacca le darás lugar a la sincronicidad, descubriendo que no sos el único en nada, todos somos parte de un plan mayor. Déjate sorprender por las señales y la asistencia de los guías.\n\nHoy practica compartir tu verdad e inspirar a otros a hacerlo también, descubriendo que en lo más intimo la verdad es una sola.",
+    "id": 6,
+    "invitation_es": "Estate atenta a las sincronicidades que te rodean cuando dejas que la verdad te guíe. ",
+    "name_en": "Sacca",
+    "rarity": 2,
+    "invitation_en": "Pay attention to the synchronicities that surround you when you let the truth guide you.",
+    "affirmation_en": "I commit to my truth and open the door to my purpose.",
+    "category": "Paramis",
+    "colorAlt": "#FFFBD6",
+    "affirmation_es": "Me comprometo con mi verdad y le abro la puerta a mi próposito. ",
+    "image": [
+      {
+        "url": "/cards/6.jpeg",
+        "width": 2160,
+        "height": 2160
+      }
+    ],
+    "color": "#9AAEE7",
+    "Status": "ready",
+    "description_en": "By practicing Sacca you are opening the door to the truth. Going in search of the truth is encouraging you to find the deepest meaning of your existence. It is to change the perspective of the question, and instead of why me? Ask yourself, \"Why will it be necessary to experience such a circumstance?\" \"What should you learn and share?\" The truth is what urges you to grow in the soul realm and discover your reason for being, your purpose of light.\n\nSeeking that purpose is the first step to putting aside a life on automatic and becoming more aware of the miracle that you are experiencing at every moment. Seek that each day has a meaning, that each task, daily action, and meeting with others and yourself is significant and feeds your truth. By practicing Sacca you will give way to synchronicity, discovering that you are not the only one in anything, we are all part of a greater plan. Let yourself be surprised by the signs and the assistance of the guides.\n\nToday, practice sharing your truth and inspiring others to do it too, discovering that deep down the truth is only one.",
+    "author": "Belén Brito",
+    "name_es": "Sacca"
+  },
+  {
+    "description_es": "Al practicar Addhitthana estas trabajando tu determinación, esa que es necesaria para sostener en el tiempo hábitos y decisiones que te ayuden a ser cada día más feliz.\nImagina una montaña, firme y majestuosa, anclada en la tierra alcanzando el cielo. Ahora busca alinear tu columna, recta y relajada como sí en tu interior respirase el espíritu de una gran montaña. Percibí la asistencia de los guías superiores, el padre cielo y la madre tierra, te instan a nutrir tu autoridad interior, ordenando tu voluntad y desarrollando tu individualidad. Ser determinada es abandonar el ámbito de la comodidad y despertar tu poder personal.\n\nAl desarrollar Addhitthana estarás abriendo la puerta a tu maduración álmica, nutriendo la certeza de que la fortaleza se enciende en vos al enfrentar cualquier desafío. Si este mensaje ha llegado a ti hoy es porque estás lista para la transformación hacia tu evolución y propósito.",
+    "id": 7,
+    "invitation_es": "Por 21 días comprometete a implementar ese hábito que hace tiempo deseas.",
+    "name_en": "Addhitthana",
+    "rarity": 2,
+    "invitation_en": "For 21 days commit to implementing that habit that from long ago you've been wishing to do.",
+    "affirmation_en": "I am determined in nurturing habits that add to my happiness and plenitude. ",
+    "category": "Paramis",
+    "colorAlt": "#72CBCF",
+    "affirmation_es": "Soy determinada en nutrir hábitos que hagan a mi felicidad y plenitud.",
+    "image": [
+      {
+        "url": "/cards/7.jpeg",
+        "width": 2160,
+        "height": 2160
+      }
+    ],
+    "color": "#002A42",
+    "Status": "ready",
+    "description_en": "By practicing Addhitthana you are working on your determination, the one that is necessary to sustain habits and decisions over time that help you to be happier every day.\n\nImagine a mountain, firm and majestic, anchored in the earth reaching for the sky. Now seek to align your spine, straight and relaxed as if you were breathing the spirit of a great mountain inside you. I perceived the assistance of the superior guides, the father sky, and the mother earth, they urge you to nurture your inner authority, ordering your will and developing your individuality. Being determined is leaving the realm of comfort and awakening your personal power.\n\nBy developing Addhitthana you will be opening the door to your soul maturing, nurturing the certainty that strength ignites in you when facing any challenge. If this message has reached you today, it is because you are ready for the transformation toward your evolution and purpose.",
+    "author": "Belén Brito",
+    "name_es": "Addhitthana"
+  },
+  {
+    "description_es": "Tu esencia más íntima es el amor. Es de amor de lo que estás hecho. Es el principio, el camino y el fin. Metta es en primera instancia reconocer tu esencia más intima y luego invitarte a nutrir ese amor puro, comenzando por vos mismo. \n\nAl amarte incondicionalmente estás nutriendo ese amor que luego podrás dar a los demás. Porque no podemos dar lo que no tenemos ni recibir lo que no damos\n\nComo un niño, que no sabe otra cosa más que amar, que no entiende de egos, miedos ni codicias. Metta te invita a practicar el amor desinteresado, ese que no espera del otro para darse.  Sí esta carta ha llegado a tí hoy es para instarte a regresar a ese estado innato de ser. Despertar al niño que habita en vos y dejar que él te enseñe a practicar el desapego, a darse sin temer a la escasez, y así sorprenderte al descubrir una vida plena en sentido. Metta es la razón y el motivo de estar acá. ",
+    "id": 8,
+    "invitation_es": "Esta semana haz una acción beneficiosa para otro sin esperar nada a cambio.",
+    "name_en": "Metta",
+    "rarity": 2,
+    "invitation_en": "This week do an action that will benefit someone else without expecting anything in return. ",
+    "affirmation_en": "I am infinite Love, I recognize my purest essence. ",
+    "category": "Paramis",
+    "colorAlt": "#FFFFFF",
+    "affirmation_es": "Soy Amor infinito, reconozco mi escencia más pura.",
+    "image": [
+      {
+        "url": "/cards/8.jpeg",
+        "width": 2160,
+        "height": 2160
+      }
+    ],
+    "color": "#2B5391",
+    "Status": "ready",
+    "description_en": "Your most intimate essence is love. It is love what you're made of. It is the beginning, the way, and the end. Metta is in the first instance to recognize your most intimate essence and then invite you to nurture that pure love, starting with yourself.\n\nBy loving yourself unconditionally you are nurturing that love that you can then give to others. Because we cannot give what we do not have, or receive what we do not give.\n\nLike a child, who knows nothing but love, who does not understand egos, fears, or greed. Metta invites you to practice selfless love, the kind that does not wait for the other to give itself. If this card has reached you today, it is to urge you to return to that innate state of being. Awaken the child that lives in you and let him teach you how to practice detachment, to give yourself without fear of scarcity, and thus surprise yourself by discovering a life full of meaning. Metta is the reason and the motive for being here.",
+    "author": "Belén Brito",
+    "name_es": "Metta"
+  },
+  {
+    "description_es": "Ser ecuánime es reconocer la impermanencia de todas las cosas y recordar que todo pasa, todo cambia constantemente. Si cada día pudiéramos meditar en este parami podriamos invitarnos a vivir este instante, el único tiempo eterno. Este aquí y ahora que te estas regalando para leer tu mensaje de hoy. \n\nEs solo el presente de lo que puedes ocuparte, buscar vivir en el pasado es como abrazarte fuerte al ancla de tu barco y no permitir que el viaje continue con el fluir de las aguas. Así mismo, estar continuamente en pensando lo que sucederá es perderte el recorrido, el viaje en si  y solo esperar el fin del destino. Sí prestas atención el parloteo de tu mente descubrirás que los pensamientos se mueven en estas dos direcciones, pasado y futuro. Upekka te insta a traerte aqui y ahora, donde la vida es, y a ser ecuanime frente a ella.  \n\nCada acontecimiento tiene un propósito, cada persona que cruza tu camino una razón de ser, la ecuanimidad te ayuda a entender los motivos de cada suceso en tu vida. Y solo entonces, fluir en armonía con los cambios y la corriente confiando en tu capacidad de adaptación y equilibrio interno al estar centrado en tu aqui y ahora.",
+    "id": 9,
+    "invitation_es": "Hoy flui con la corriente de la vida y solta el exceso de control. ",
+    "name_en": "Upekkha",
+    "rarity": 2,
+    "invitation_en": "Today, flow with the current of life and let go of excess control.",
+    "affirmation_en": "The only thing that is permanent is the impermanence of everything. ",
+    "category": "Paramis",
+    "colorAlt": "#208F9E",
+    "affirmation_es": "Lo único permanente es la impermanencia de todas las cosas.",
+    "image": [
+      {
+        "url": "/cards/9.jpeg",
+        "width": 2160,
+        "height": 2160
+      }
+    ],
+    "color": "#B1DED1",
+    "Status": "ready",
+    "description_en": "Being fair is recognizing the impermanence of all things and remembering that everything happens, and everything changes constantly. If every day we could meditate on this paramis, we could invite ourselves to live this moment, the only eternal time. Be here and now that you are giving yourself away to read your message today.\n\nIt is only the present that you can take care of, seeking to live in the past is like holding tight to the anchor of your ship and not allowing the journey to continue with the flow of the waters. Likewise, constantly thinking about what will happen is missing the journey, the trip itself, and just waiting for the end of the destination. If you pay attention to the chatter of your mind you will discover that thoughts move in these two directions, past, and future. Upekka urges you to bring yourself here and now, where life is, and to be even with it.\n\nEach event has a purpose, and each person who crosses your path has a reason for being, equanimity helps you understand the reasons for each event in your life. And only then, flow in harmony with the changes and the current, trusting in your ability to adapt and internally balance by being focused on your here and now.",
+    "author": "Belén Brito",
+    "name_es": "Upekkha"
+  },
+  {
+    "description_es": "Escucho mi interior y afirmo mi verdad. ",
+    "id": 10,
+    "name_en": "\" ... \"",
+    "rarity": 1,
+    "category": "Special",
+    "colorAlt": "#202221",
+    "image": [
+      {
+        "url": "/cards/10.jpeg",
+        "width": 2160,
+        "height": 2160
+      }
+    ],
+    "color": "#E9EDD8",
+    "Status": "ready",
+    "description_en": "I listen to my deeper self and affirm my truth. ",
+    "author": "Belén Brito",
+    "name_es": "\" ... \""
+  },
+  {
+    "description_es": "La aceptación es la capacidad para asumir la vida y a los otros tal como son, sin intentar cambiar o luchar contra aquello que no podemos controlar. \n\nRecuerda que es de tus propias elecciones de lo único que puedes ocuparte, dejar a un lado el intento de convencer a otros, de tal o cual modo de vivir, es aceptar que todos somos distintos y que cada uno busca la felicidad a su manera. \n\nSoltar el control y aceptar la diversidad, no es una actitud estática, es una decisión activa, que te invita a estar en paz y cuidar tu energía. Al aceptar aquello particular que habita en vos sin comparaciones ni patrones externos, te vuelves más confiado y tu ser divino se revela.",
+    "id": 11,
+    "invitation_es": "Hoy solta el exceso de control y acepta lo que te rodea aquí y ahora.",
+    "name_en": "Acceptance",
+    "rarity": 3,
+    "invitation_en": "Today let go of the control and accept what surrounds you here and now. ",
+    "affirmation_en": "I accept and honour who I am.",
+    "category": "Regular",
+    "colorAlt": "#F4EFC7",
+    "affirmation_es": "Acepto y honro quién soy.",
+    "image": [
+      {
+        "url": "/cards/11.jpeg",
+        "width": 2160,
+        "height": 2160
+      }
+    ],
+    "color": "#40BAAD",
+    "Status": "ready",
+    "description_en": "Acceptance is the ability to accept life and others as they are, without trying to change or fight against what we cannot control.\n\nRemember that the only thing you can deal with is your own choices, putting aside the attempt to convince others of this or that way of living, is accepting that we are all different and that each one seeks happiness in their own way.\n\nLetting go of control and accepting diversity is not an ecstatic attitude, it is an active decision that invites you to be at peace and take care of your energy. By accepting that particular thing that lives in you without comparisons or external patterns, you become more confident and your divine being is revealed.",
+    "author": "Belén Brito",
+    "name_es": "Aceptación"
+  },
+  {
+    "description_es": "La armonía en la música se encuentra cuando existe un equilibrio entre la variedad y proporción de sonidos y pausas. Buscar la armonía en tu vida es una invitación al balance ya sea en la quietud o en el movimiento. \n\nPara poder hacerlo el primer paso es regalarte un tiempo de silencio interior. Un momento de pausa para discernir y encontrar el orden, aprendiendo a nutrir y descubrir la armonía aun en medio de los bemoles de la vida. Solo entonces, toda relación, ambiente y tarea devendrá en una melodía armoniosa contagiando encanto a todo su alrededor.\n\nClaro que a veces el camino es inverso, un ambiente o persona en armonía puede ayudarte a redescubrir el equilibrio en tu interior. Por lo que siempre busca rodearte de gente de hermosa vibración, porque todos somos influenciados por lo que nos rodea.",
+    "id": 12,
+    "invitation_es": "Crea un espacio armonioso y regalate un tiempo de encuentro interior.",
+    "name_en": "Harmony",
+    "rarity": 3,
+    "invitation_en": "Create a harmonious space and give yourself the gift of finding yourself within.",
+    "affirmation_en": "I vibrate in harmony and in my here and now.",
+    "category": "Regular",
+    "colorAlt": "#39509E",
+    "affirmation_es": "Vibro en armonía en mi aquí y ahora.",
+    "image": [
+      {
+        "url": "/cards/12.jpeg",
+        "width": 2160,
+        "height": 2160
+      }
+    ],
+    "color": "#DCEBB2",
+    "Status": "ready",
+    "description_en": "Harmony in music is found when there is an equilibrium that exists within the variety and proportion of sounds and pauses. Seeking harmony in your life is an invitation to balance, whether in stillness or in movement.\n\nIn order to do so, the first step is to give yourself a time of inner silence. A moment of pause to discern and find order, learning to nurture and discover harmony even in the midst of life's flats. Only then, every relationship, environment, and task will become a harmonious melody spreading charm to everyone around you.\n\nOf course, sometimes the path is reversed, a harmonious environment or person can help you rediscover the balance within you. So always seek to surround yourself with people of beautiful vibration, because we are all influenced by what surrounds us.",
+    "author": "Belén Brito",
+    "name_es": "Armonía"
+  },
+  {
+    "description_es": "Poder ver lo bello aún en la apariencia más desafiante es un alimento para el alma. Reconocer tu belleza y la de los otros es poder prestar atención a las multiples expresiones de la vida. \n\nSin duda a medida que sintonizas con la particular belleza de tu ser, de los otros y de la naturaleza, tu resonancia se convierte en la de la belleza, y se irradia hacia todo lo que te rodea, volviéndote una expresión de luz que invita a los otros a ver lo bello también.\n\nSí este mensaje ha llegado a ti hoy es para instarte a reconocer tus encantos y al igual que la brisa suave, desplegarlos por donde quiera que vayas. ",
+    "id": 13,
+    "invitation_es": "Hoy encuentra 3 aspectos bellos en ti.",
+    "name_en": "Beauty",
+    "rarity": 3,
+    "invitation_en": "Today, search for 3 beautiful aspects of yourself. ",
+    "affirmation_en": "I recognize my beauty and the beauty of others. ",
+    "category": "Regular",
+    "colorAlt": "#0F6995",
+    "affirmation_es": "Reconozco mi belleza y la de los otros.",
+    "image": [
+      {
+        "url": "/cards/13.jpeg",
+        "width": 2160,
+        "height": 2160
+      }
+    ],
+    "color": "#8BCDA7",
+    "Status": "ready",
+    "description_en": "Being able to see beauty in even the most challenging situations is food for the soul. To recognize your beauty and that of others is to be able to pay attention to the multiple expressions of life.\n\nUndoubtedly, as you tune in to the particular beauty of your being, of others, and of nature, your resonance becomes that of beauty, and it radiates out to everything around you, becoming an expression of light that invites others to see the beauty too.\n\nIf this message has reached you today, it is to urge you to recognize your charms and like the soft breeze, spread them wherever you go.",
+    "author": "Belén Brito",
+    "name_es": "Belleza "
+  },
+  {
+    "description_es": "Celebrar cada experiencia que la vida te regala despierta una actitud de gratitud que alimenta el placer y el disfrute. Cuando celebras con otros una gran energía se libera, expandiendo la alegría, atrayendo las buenas vibraciones y las ganas compartidas de honrar la vida.\n\nSí este mensaje ha llegado a ti hoy, es para instarte a encontrar un motivo para honrarte, aún en los momentos más adversos. El solo hecho de despertar cada día ya es una razón para celebrar. \n\nDebes saber que existen muchas maneras de disfrutar, a veces son los pequeños rituales y detalles que hacen que el día se vista de encanto, encender una vela, prender un incienso, escuchar esa música que te hace bailar. \n\nRecuerda que cada vez que celebras, no solo existes, vives, atrayendo y contagiando magia.",
+    "id": 14,
+    "invitation_es": "Hoy encuentra una razón para celebrar y celebrarTE.",
+    "name_en": "Celebration",
+    "rarity": 3,
+    "invitation_en": "Today, find a reason to celebrate and celebrate yourself.",
+    "affirmation_en": "I celebrate life, its transits, and this particular moment. ",
+    "category": "Regular",
+    "colorAlt": "#D2F4FD",
+    "affirmation_es": "Celebro la vida, sus tránsitos y este instante particular.",
+    "image": [
+      {
+        "url": "/cards/14.jpeg",
+        "width": 2160,
+        "height": 2160
+      }
+    ],
+    "color": "#1D5DA5",
+    "Status": "ready",
+    "description_en": "To be able to celebrate each experience that life gifts you, opens up an attitude of gratitude that feeds into pleasure and enjoyment. When you celebrate with others, a big energy becomes free, expanding your happiness, attracting good vibes and the shared desire to honor life. \n\nIf this message has reached you today, it is to instigate you to find a motive to honor yourself, even in the most adverse moments. Merely waking up each day is a reason to celebrate.\n\nYou should know that there are many ways to be able to enjoy something. Sometimes it is the small rituals and details that make the day look enchanting, lighting a candle, lighting incense, and listening to that music that makes you dance.\n\nRemember that every time you celebrate, you not only exist, you live, attracting and spreading magic.",
+    "author": "Belén Brito",
+    "name_es": "Celebración "
+  },
+  {
+    "description_es": "Imagina una escalera caracol y obsérvate ascendiendo de modo circular. Con cada escalón avanzas y a su vez dejas atrás un espacio vacío, un tránsito recorrido en el pasado. Entender que todo tiene un ciclo es poder ascender tu escalera con determinación y confianza. No a medias, con un pie abajo y otro arriba. \n\nMuchas veces comprender que algo ha finalizado no es fácil, porque implica desapegarse de lo conocido para darle lugar a un nuevo ciclo que aún desconoces. Pero lo cierto es que sólo puedes avanzar si sos capaz de soltar lo viejo, porque todo cierre de ciclo es también una puerta que se abre para darle la bienvenida a un nuevo comienzo. \n\nSi este mensaje ha llegado a ti es para invitarte a preguntarte, si estás en un tiempo oportuno para dar cierre a alguna etapa, relación o hábito. Deja que el corazón te guíe. Que la gratitud por lo aprendido, prime al cerrar ciclos, para sólo entonces comenzar nuevos capítulos con frescura y liviandad.",
+    "id": 15,
+    "invitation_es": "¿Qué es tiempo de dejar ir? ¿Qué nuevo comienzo anhela tu corazón?",
+    "name_en": "Cycles",
+    "rarity": 3,
+    "invitation_en": "What is it time to let go of? What new beginning does your heart seek? ",
+    "affirmation_en": "I appreciate who I was, I honour who I am, and I project who I want to be.",
+    "category": "Regular",
+    "colorAlt": "#64A57A",
+    "affirmation_es": "Agradezco quien fui, honro quien soy y proyecto quien quiero ser. ",
+    "image": [
+      {
+        "url": "/cards/15.jpeg",
+        "width": 2160,
+        "height": 2160
+      }
+    ],
+    "color": "#FED989",
+    "Status": "ready",
+    "description_en": "Imagine a spiral staircase and observe yourself ascending in a circular motion. With each step, you move forward and at the same time you leave behind an empty space, a moment left in the past. Understanding that everything works in a cycle means that you can ascend your staircase with determination and confidence. Not halfway like with one foot on the bottom and one on top. \n\nSometimes having to understand that something has ended is not easy, because it means letting go of the known to give rise to a new cycle that is unknown. But the truth is that you can only move forward if you are capable of letting go of the old because closing the cycle also means that a door is opening to welcome a new beginning. \n\nIf this message has reached you today it invites you to ask yourself if you are in a good place to close a stage of your life, a relationship, or a habit. Let your heart guide you. Let the gratitude of learning something new prime your closed cycle, so only then you can begin a new chapter with a sense of freshness and lightness.",
+    "author": "Belén Brito",
+    "name_es": "Ciclos"
+  },
+  {
+    "description_es": "La paz y la alegría fluyen como un manantial cuando avanzas en el camino que tu corazón indica. Para que el andar sea a paso constante es necesario el compromiso. Comprometerte con vos mismo y tu visión. \n\nMuchas veces tenemos en claro lo que queremos pero resulta difícil concretarlo. El compromiso te ayuda a realizar cada día esas pequeñas o grandes acciones que te acercan a tu deseo, alineando tus pensamientos e intenciones por alcanzar aquello que anhelas. Tu camino se ilumina por el solo hecho de comprometerte con tu búsqueda, cualquiera ella sea. \n\nSi aún no hay claridad en la visión de tu deseo, lleva tu intención a iluminar la búsqueda. Mientras la búsqueda hacia el anhelo del alma esté activa habrá paz.",
+    "id": 16,
+    "invitation_es": "Hoy comprometete a seguir el camino de tu corazón. ",
+    "name_en": "Commitment",
+    "rarity": 3,
+    "invitation_en": "Today, commit to following the path of your heart. ",
+    "affirmation_en": "I am committed to what I seek and my vision ",
+    "category": "Regular",
+    "colorAlt": "#FFFFFF",
+    "affirmation_es": "Estoy comprometida con mi búsqueda y visión.",
+    "image": [
+      {
+        "url": "/cards/16.jpeg",
+        "width": 2160,
+        "height": 2160
+      }
+    ],
+    "color": "#64A57A",
+    "Status": "ready",
+    "description_en": "Peace and happiness flow like a spring when you advance in the path that your heart indicates. To be able to move forward at a constant speed, commitment is necessary. Commit to yourself and your vision. \n\nOften times we clearly know what we want but it can be difficult to solidify it. Having commitment helps you realize each day, those small or big actions that help you reach your wish, aligning your thoughts and intentions to reach your goal. Your path is illuminated just by committing yourself to what you seek, whatever that may be.\n\nIf there is still no clarity in the vision of your wish, take your intentions to help illuminate your search. While the search to reach your goal is active, there will be peace. ",
+    "author": "Belén Brito",
+    "name_es": "Compromiso"
+  },
+  {
+    "description_es": "El primer paso para comunicarte con honestidad es escucharte a vos mismo. La comunicación con tu interior es una invitación a establecer una relación sagrada con el ser divino que te habita. Detenerte en la quietud, templando el parloteo de la mente y dejando que el oído del alma escuche respuestas en el silencio.\n\nLa práctica de la meditación es una puerta para comunicarte con tu sabiduría, pero no es la única, el movimiento consciente, la voz armoniosa, la contemplación del arte, el contacto con la naturaleza y el juego con los más pequeños, son todas puertas para escuchar tu sabiduría interior.  \n\nDesde la claridad de tu interior es posible comunicarse con otros a través de la palabra, la acción y la intención vestidas de franqueza. \n\nRecuerda que la verdad atrae como el polen a las abejas, invitando a los demás a ser honestos también.",
+    "id": 17,
+    "invitation_es": "Regalate 15' de silencio meditativo para escuchar tu verdad interior.",
+    "name_en": "Communication",
+    "rarity": 3,
+    "invitation_en": "Give yourself 15 minutes of meditative silence to listen to your true self within.  ",
+    "affirmation_en": "I listen to my truth and through her, I communicate with clarity and honesty. ",
+    "category": "Regular",
+    "colorAlt": "#F0C873",
+    "affirmation_es": "Escucho mi verdad y desde ella, me comunico con claridad y honestidad.",
+    "image": [
+      {
+        "url": "/cards/17.jpeg",
+        "width": 2160,
+        "height": 2160
+      }
+    ],
+    "color": "#6F2234",
+    "Status": "ready",
+    "description_en": "The first step to communicating honestly is to listen to yourself. Communication with your interior is an invitation to establish a sacred relationship with the divine being that inhabits you. Stop in stillness, tempering the chatter of the mind and letting the ear of the soul listen to answers in the silence.\n\nThe practice of meditation is a door to communicate with your wisdom, but it is not the only one, the conscious movement, the harmonious voice, the contemplation of art, contact with nature, and playing with the little ones, are all doors to listening to your inner wisdom.\n\nFrom the clarity of your interior, it is possible to communicate with others through the word, the action, and the intention dressed in frankness.\n\nRemember that the truth attracts bees like pollen, inviting others to be honest as well.",
+    "author": "Belén Brito",
+    "name_es": "Comunicación"
+  },
+  {
+    "description_es": "Puedes imaginar la vida como un viaje dentro de un laberinto, donde el objetivo final es encontrar el camino hacia el centro del mismo, que es ni más ni menos que tu interior. La vida es un viaje de autoconocimiento, por lo que el fin último es regresar a ti mismo, volver al hogar. Solo podrás alcanzarte sí practicas la confianza en ti mismo, volviéndote consciente de la sabiduría y fuerza que llevas dentro. \n\nPara nutrir la confianza en tu interior es importante dejar a un lado las expectativas ajenas y búsqueda de aprobación. Recuerda que cada uno avanza según su propio camino espiritual, y no hay un camino igual al otro, porque cada uno es único. \n\nConfía en tu intuición y en tu propia experiencia. Si la mente está muy atareada y es difícil escuchar, confía en las señales de tu cuerpo. Tu cuerpo es tu templo y sabrá contarte que es lo mejor para ti. Al cultivar la confianza tu espíritu se ilumina y sabrá ser tu estrella del Norte para avanzar desde y con el corazón en este viaje que es vivir.",
+    "id": 18,
+    "invitation_es": "Detente a recordar las veces que superaste adversidades, pon valor en esas experiencias y confia en el poder que habita en ti.",
+    "name_en": "Confidence",
+    "rarity": 3,
+    "invitation_en": "Stop to remember the times you overcame adversity, put value in those experiences and trust the power that dwells in you.",
+    "affirmation_en": "I trust in myself and I let my wisdom guide my steps. ",
+    "category": "Regular",
+    "colorAlt": "#00709A",
+    "affirmation_es": "Confío en mi y dejo que mi sabiduría guíe mis pasos.",
+    "image": [
+      {
+        "url": "/cards/18.jpeg",
+        "width": 2160,
+        "height": 2160
+      }
+    ],
+    "color": "#ABDCD9",
+    "Status": "ready",
+    "description_en": "You can imagine life as a journey in a labyrinth, where the ultimate goal is to find the way to the center of it, which is neither more nor less than your self-being. Life is a journey of self-knowledge, so the ultimate goal is to return to yourself, to return home. You can only reach yourself if you practice trust in yourself, becoming aware of the wisdom and strength that you carry within.\n\nTo nurture the confidence within you, it is important to put aside the expectations of others and the seeking of their approval. Remember that everyone advances according to their own spiritual path, and there is no path equal to the other because each one is unique.\n\nTrust your intuition and your own experience. If the mind is very busy and it is difficult to listen, trust your body's signals. Your body is your temple and it will know how to tell you what is best for you. By cultivating trust, your spirit lights up, and it will know how to be your North Star to advance from and with your heart on this journey that is living.",
+    "author": "Belén Brito",
+    "name_es": "Confianza"
+  },
+  {
+    "description_es": "Para amar hay que ser valiente. Para soltar viejos puertos y adentrarse en la mar hay que ser valiente. Para seguir el camino del corazón hay que tener coraje. \n\nEn el silencio somos capaces de escuchar nuestra voz interior que como un faro en medio del océano nos guía. La voz interna te invita a elegir en función a tu deseo, te invita a callar voces y patrones externos y de ese modo crear y hacerle lugar a tu magia. Recuerda que solo es posible escuchar esa voz si te vistes de coraje. \n\nSi este mensaje ha llegado a ti es porque es tiempo de ver y darle lugar a la fuerza que llevas dentro. Siéntete seguro, invoca a tus guÍas para ayudarte a mantenerte alejado de cualquier persona o situación que pueda interferir con tu presencia. Reconoce tu fortaleza y mantente en pie en tu luz. Confía en todo lo que tienes para ofrecer y expande tu potencial.",
+    "id": 19,
+    "invitation_es": "Inhala coraje. Exhala miedo. Repite, \"Inhalo amor. Exhalo miedo.\" ",
+    "name_en": "Courage",
+    "rarity": 3,
+    "invitation_en": "Inhale courage. Breathe out fear. Repeat, \"I breathe in love. I breathe out fear.\"",
+    "affirmation_en": "I recognize my bravery and my inner strength guides my steps.",
+    "category": "Regular",
+    "colorAlt": "#CEE8E5",
+    "affirmation_es": "Reconozco mi valentia y mi fuerza interior guía mis pasos. ",
+    "image": [
+      {
+        "url": "/cards/19.jpeg",
+        "width": 2160,
+        "height": 2160
+      }
+    ],
+    "color": "#22486D",
+    "Status": "ready",
+    "description_en": "In order to love, you have to be brave. To release old harbors and enter the sea you have to be brave. To follow the path of the heart you have to have courage.\n\nIn silence, we are able to listen to the inner voice that guides us like a lighthouse in the middle of the ocean. The internal voice invites you to choose according to your desire, it invites you to silence external voices and patterns and thus create and make room for your magic. Remember that it is only possible to hear that voice if you dress in courage.\n\nIf this message has reached you, it is because it is time to see and give place to the strength that you carry within. Feel safe, and invoke your guides to help you stay away from any person or situation that may interfere with your presence. Acknowledge your strength and stand in your light. Trust in everything you have to offer and expand your potential.",
+    "author": "Belén Brito",
+    "name_es": "Coraje"
+  },
+  {
+    "description_es": "A medida que permites que el poder creativo fluya dentro tuyo alimentas la energía del cambio. La posibilidad de adaptación frente a las adversidades, y la magia de crear cada día la vida que sueñas. \n\nAl canalizar tu creatividad, das y recibes vida, ya que la creatividad no es un movimiento solitario. Allí donde pasa, atrae a quien sepa oír, ver y percibir; para regresar a ti en abundancia. Dejando de lado los juicios y exigencias, te reconoces co-creador de lo Divino, explorando así tu inmenso y particular potencial. \n\nSi esta carta ha llegado a ti hoy es para instarte a sumar creatividad a tus rutinas para llenarlas de encanto, en tus pensamientos para abrir nuevas puertas y en tus relaciones para crear vínculos sanos. \n\nExpande tu poder creativo y colma tu vida de encanto, desparramando belleza vayas donde vayas.",
+    "id": 20,
+    "invitation_es": "Hoy dedica al menos 1 hora a crear algo nuevo, de la forma que más disfrutes.",
+    "name_en": "Creativity",
+    "rarity": 3,
+    "invitation_en": "Today dedicate at least an hour to create something new, in the way that you most enjoy.",
+    "affirmation_en": "I put in practice my creativity and I create the life that I dream of.",
+    "category": "Regular",
+    "colorAlt": "#F8A476",
+    "affirmation_es": "Pongo en practica mi creatividad y creo la vida que sueño.",
+    "image": [
+      {
+        "url": "/cards/20.jpeg",
+        "width": 2160,
+        "height": 2160
+      }
+    ],
+    "color": "#71838F",
+    "Status": "ready",
+    "description_en": "As you allow the creative power to flow within you, you feed the energy of change. The possibility of adaptation in the face of adversity, and the magic of creating the life you dream of every day.\n\nBy channeling your creativity, you give and receive life, since creativity is not a solitary movement. Wherever it passes, it attracts those who know how to hear, see and perceive; to return to you in abundance. Leaving judgments and demands aside, you recognize yourself as a co-creator of the Divine, thus exploring your immense and particular potential.\n\nIf this card has reached you today, it is to urge you to add creativity to your routines to fill them with charm, to your thoughts to open new doors, and to your relationships to create healthy bonds.\n\nExpand your creative power and fill your life with charm, spreading beauty wherever you go.",
+    "author": "Belén Brito",
+    "name_es": "Creatividad"
+  },
+  {
+    "description_es": "Los desafíos pueden ser vistos como dificultades insuperables o como oportunidades para la transformación y el crecimiento personal. Al practicar el autoconocimiento, cualquier desafío puede enriquecerte, dándote la oportunidad de encontrar cada día una mejor versión de vos mismo.\n\nSi no existiera cierta cuota de resistencia no podrías descubrir tu propia fuerza. Recuerda que cada vicisitud de la vida se presenta sólo cuando uno está listo para enfrentarla. Si las circunstancias parecen abrumar no dudes en pedir ayuda a otros, tus seres queridos, guías y maestros están a la espera de tu llamado para brindarte asistencia. \n\nSí un desafío ha llegado a tu puerta, alza la mirada y avanza con confianza, descubriendo talentos y fuerzas que hasta entonces mantenías silenciadas.  Puedes imaginar la vida como un laberinto, donde en su recorrido serán varios los desafíos a enfrentar. Pero confía que al final del camino no solo encontrarás la salida, sino también una mejor versión de ti, porque habrás sabido autoconocerte y superarte en cada paso.",
+    "id": 21,
+    "invitation_es": "Transforma ese desafío que hoy atraviesas en una oportunidad para tu autoconocimiento.",
+    "name_en": "Challenge",
+    "rarity": 3,
+    "invitation_en": "Transform that challenge that you are going through today into an opportunity for your self-awareness.",
+    "affirmation_en": "I respond to my challenges with confidence and I discover new talents. ",
+    "category": "Regular",
+    "colorAlt": "#6E8FC0",
+    "affirmation_es": "Respondo a mis desafios con confianza y descubro nuevos talentos. ",
+    "image": [
+      {
+        "url": "/cards/21.jpeg",
+        "width": 2160,
+        "height": 2160
+      }
+    ],
+    "color": "#ABDCD9",
+    "Status": "ready",
+    "description_en": "Challenges can be seen as insurmountable difficulties or as opportunities for transformation and personal growth. By practicing self-knowledge, any challenge can enrich you, giving you the opportunity to find a better version of yourself every day.\n\nIf there was not a certain amount of resistance, you couldn't discover your own strength. Remember that each vicissitude of life comes only when one is ready to face it. If circumstances seem overwhelming, do not hesitate to ask others for help. Your loved ones, guides, and teachers are waiting for your call to provide you with assistance.\n\nIf a challenge has arrived at your door, look up and move forward with confidence, discovering talents and strengths that until then you kept silent. You can imagine life as a labyrinth, where in its journey there will be several challenges to face. But trust that at the end of the road you will not only find the way out but also a better version of yourself because you will have known yourself and improved yourself at every step of the way.",
+    "author": "Belén Brito",
+    "name_es": "Desafío"
+  },
+  {
+    "description_es": "Tu misión particular en esta tierra es tu puerta para el mayor de los propósitos, evolucionar espiritualmente. La evolución espiritual es el encuentro con la presencia de un alma ensanchada, capaz de ver, sentir, y aceptar al otro, y a uno mismo, reconociendo lo sagrado y la interconexión entre todo lo que existe. Sí esta carta ha llegado a tus manos hoy es porque tu alma esta deseosa de evolución. \n\nEl camino espiritual es único y personal, por lo que no lo busques en los demás, cada uno está haciendo su propio recorrido. Puedes preguntarte a ti mismo, ¿este camino tiene corazón? Si la respuesta es sí, entonces confía que vas por el sendero correcto. \n\nRecuerda siempre que una alma iluminada es capaz de transformar cada atmósfera que habita, siendo faro para otros. Por lo que no sientas que mantienes una actitud egoísta si a veces es necesario decir que no para dedicarte tiempo de introspección, porque tu tarea y desarrollo espiritual es beneficioso para todo el universo.",
+    "id": 22,
+    "invitation_es": "Pregúntate, ¿Mi camino tiene corazón? ",
+    "name_en": "Spiritual Evolution",
+    "rarity": 3,
+    "invitation_en": "Ask yourself, \"Does my path have a heart?\"",
+    "affirmation_en": "My soul evolves everyday and contributes to the spiritual growth of the universe. ",
+    "category": "Regular",
+    "colorAlt": "#59263D",
+    "affirmation_es": "Mi alma evoluciona cada día y contribuye al crecimiento espiritual del universo.",
+    "image": [
+      {
+        "url": "/cards/22.jpeg",
+        "width": 2160,
+        "height": 2160
+      }
+    ],
+    "color": "#71838F",
+    "Status": "ready",
+    "description_en": "Your particular mission on this earth is your door to the greatest of purposes, to evolve spiritually. Spiritual evolution is the encounter with the presence of an expanded soul, capable of seeing, feeling, and accepting the other, and oneself, recognizing the sacred and the interconnection between everything that exists. If this card has come into your hands today, it is because your soul is eager for evolution.\n\nThe spiritual path is unique and personal, so do not look for it in others, each one is making their own journey. You may ask yourself, does this path have a heart? If the answer is yes, then trust that you are on the right course.\n\nAlways remember that an enlightened soul is capable of transforming every atmosphere it inhabits, being a beacon for others. So do not feel that you maintain a selfish attitude if sometimes it is necessary to say no to spend time for introspection because your task and spiritual development is beneficial to the entire universe.",
+    "author": "Belén Brito",
+    "name_es": "Evolución Espiritual"
+  },
+  {
+    "description_es": "La fe es esa virtud que te invita a recordar la fuerza inconmovible de tu alma, dejando de lado la duda y el miedo en los momentos de mayor incertidumbre. Si has recibido esta carta es para recordarte que tus guías ancestrales están acompañando tu camino, invitándote a no olvidar que ahora y siempre cuentas con el apoyo incondicional del universo. \n\nSiempre y aún más cuando estés atravesando un período de inquietud y vacilación, recuerda nutrir la fe en ti mismo, en tu fuerza y sabiduría para tomar las decisiones correctas. Los seres superiores te apoyarán removiendo barreras y permitiendo que la luminosidad de tu ser se manifieste. \n\nRegálate una pausa de silencio, te la mereces. Percibe la calma que habita en vos. Ese estado innato de tu existencia. Escucha dentro, percibe la voz de tus guías susurrándote, instándote a estar tranquilo y en confianza, incrementando tu fe en el poder infinito que te habita.",
+    "id": 23,
+    "invitation_es": "Realiza ese paso/cambio que hace tiempo esperas con confianza en ti mismo y en la asistencia del universo.",
+    "name_en": "Faith",
+    "rarity": 3,
+    "invitation_en": "Make that step/change that you have been waiting for a long time with confidence in yourself and in the assistance of the universe.",
+    "affirmation_en": "I have faith in the unshakeable strength of my soul and the support of the universe.",
+    "category": "Regular",
+    "colorAlt": "#FFFFFF",
+    "affirmation_es": "Tengo fe en la fuerza inconmovible de mi alma y el apoyo del universo.",
+    "image": [
+      {
+        "url": "/cards/23.jpeg",
+        "width": 2160,
+        "height": 2160
+      }
+    ],
+    "color": "#64A57A",
+    "Status": "ready",
+    "description_en": "Faith is that virtue that invites you to remember the unshakable strength of your soul, leaving doubt and fear aside in moments of greatest uncertainty. If you have received this letter, it is to remind you that your ancestral guides are accompanying your path, inviting you not to forget that now and always you have the unconditional support of the universe.\n\nAlways and even more so when you are going through a period of restlessness and hesitation, remember to nurture faith in yourself, in your strength and wisdom to make the right decisions. Higher beings will support you by removing barriers and allowing the luminosity of your being to manifest.\n\nTreat yourself to a silent break, you deserve it. Perceive the calm that dwells in you. That innate state of your existence. Listen inside, perceive the voice of your guides whispering to you, urging you to be calm and confident, increasing your faith in the infinite power that inhabits you.",
+    "author": "Belén Brito",
+    "name_es": "Fe"
+  },
+  {
+    "description_es": "La gratitud es la madre de todas las virtudes porque te invita a valorar los pequeños y grandes milagros que te rodean. Si esta carta ha llegado a ti hoy es para invitarte a abrir esa puerta que permite vislumbrar nuevas posibilidades para poder ver la realidad desde una perspectiva más amplia. Esa puerta que abres cada vez que agradeces. \n\nUn corazón agradecido te invita a la conexión con ese ser Divino que habita en tu interior, aquel que es capaz de reconocer que todo lo que está sucediendo fue diseñado por un plan mayor, para tu aprendizaje y crecimiento en esta experiencia espiritual, que es vivir.\n\nAl dar las gracias tu Espíritu se ilumina y una actitud positiva se despierta, gracias a estar en conexión con el poder místico que se mueve dentro tuyo. Hoy regálate una pausa y agradece tu proceso, búsquedas, tus seres queridos, errores e intentos. Recuerda que al dar las gracias por quién eres hoy serás capaz de soñar y nutrir tu mejor versión de mañana.",
+    "id": 24,
+    "invitation_es": "Hoy agradecele a ese ser querido especial.  ",
+    "name_en": "Gratitude",
+    "rarity": 3,
+    "invitation_en": "Today give thanks to that special loved one.",
+    "affirmation_en": "I am grateful for who I am and all the experiences that brought me here.",
+    "category": "Regular",
+    "colorAlt": "#023A5A",
+    "affirmation_es": "Agradezco quién soy y todas las experiencias que me trajeron hasta aquí. ",
+    "image": [
+      {
+        "url": "/cards/24.jpeg",
+        "width": 2160,
+        "height": 2160
+      }
+    ],
+    "color": "#72CBCF",
+    "Status": "ready",
+    "description_en": "Gratitude is the mother of all virtues because it invites you to appreciate the small and big miracles that surround you. If this card has come to you today, it is to invite you to open that door that allows you to glimpse new possibilities in order to see reality from a broader perspective. That door you open every time you give thanks.\n\nA grateful heart invites you to connect with that Divine being that lives inside you, the one who is capable of recognizing that everything that is happening was designed by a greater plan, for your learning and growth in this spiritual experience, which is to live.\n\nBy giving thanks your Spirit illuminates and a positive attitude awakens, thanks to being in connection with the mystical power that moves within you. Today give yourself a break and appreciate your process, searches, your loved ones, mistakes, and attempts. Remember that by giving thanks for who you are today, you will be able to dream and nurture your best version of tomorrow.",
+    "author": "Belén Brito",
+    "name_es": "Gratitud"
+  },
+  {
+    "description_es": "El hogar es ese lugar tuyo, único y especial, que viaja con vos vayas donde vayas. Es ese espacio en tu interior donde reside tu ser místico, tu sabiduría ancestral. \n\nAl dedicar cada día un momento para nutrir tu mundo interior, estás creando tu hogar, dando lugar a escuchar respuestas, visionar el futuro que quieres crear, recordar y honrar quién realmente eres, un ser divino transitando una experiencia en un cuerpo humano.\n\nLos lugares físicos a los que usualmente llamamos hogar, son tan sólo el vehículo para alcanzar el verdadero hogar que es tu interior. Son muchas las puertas que puedes abrir para llegar a él, la contemplación, el silencio, el movimiento consciente, la música, el arte, detenerte a oír y ver el mar, tocar la tierra con tus pies descalzos, o dejar que el agua de lluvia te bañe la cara. Puertas que te invitan a detener el tiempo, a viajar dentro para regresar y nutrir tu conexión con vos mismo. \n\nRecuerda que siempre puedes regresar a tu hogar, porque viaja con vos vayas donde vayas. ¡Feliz reencuentro!",
+    "id": 25,
+    "invitation_es": "Esta semana encuentra un tiempo para descansar en ti, disfrutando de estar en contacto contigo.",
+    "name_en": "Home",
+    "rarity": 3,
+    "invitation_en": "This week find time to rest in you, enjoying being in contact with yourself.",
+    "affirmation_en": "Every day I return to my home and nurture my relationship with the Divine spark that lives in me.",
+    "category": "Regular",
+    "colorAlt": "#F9A477",
+    "affirmation_es": "Cada día regreso a mi hogar y nutro mi relación con la chispa Divina que habita en mi. ",
+    "image": [
+      {
+        "url": "/cards/25.jpeg",
+        "width": 2160,
+        "height": 2160
+      }
+    ],
+    "color": "#7E5E76",
+    "Status": "ready",
+    "description_en": "Home is that place of yours, unique and special, that travels with you wherever you go. It is that space inside you where your mystical being resides, your ancestral wisdom.\n\nBy taking a moment each day to nurture your inner world, you are creating your home, giving rise to hearing answers, envisioning the future you want to create, remembering and honoring who you really are, a divine being undergoing an experience in a human body.\n\nThe physical places that we usually call home are just the vehicle to reach the true home that is your interior. There are many doors that you can open to reach it: contemplation, silence, conscious movement, music, art, stopping to hear and see the sea, touching the earth with your bare feet, or letting the water of rain bathe your face. Doors that invite you to stop time, to travel in them in order to return and nurture your connection with yourself.\n\nRemember that you can always return to your home because it travels with you wherever you go. Happy reunion!",
+    "author": "Belén Brito",
+    "name_es": "Hogar"
+  },
+  {
+    "description_es": "La honestidad es poner en práctica la integridad de aquello que eres. Pudiendo compartir tu verdad a través de tus acciones, palabras y pensamientos. Practicando así la coherencia en cada aspecto de tu vida.\n\nPara poder ser honestos con otros primero debemos ser honestos con nosotros mismos. Escucha tu verdad acallando voces y patrones externos. Haz una pausa y pregúntate, ¿Qué deseo? Si la respuesta deviene en silencio, pregúntate esta vez, ¿qué siento? Deja que sea el cuerpo y sus señales las puertas para conocer tu verdad. \n\nAl ser honesto con otros, los inspiras a hacer lo mismo también, dejando que la transparencia abrace tus vínculos dando lugar a relaciones sanas y plenas.\n",
+    "id": 26,
+    "invitation_es": "Hoy dedica 15' en silencio para escuchar dentro, deja que tu Verdad te cuente.",
+    "name_en": "Honesty",
+    "rarity": 3,
+    "invitation_en": "Today dedicate 15 minutes to listen to your deeper self, let your truth tell you. ",
+    "affirmation_en": "I am honest with myself and the truth guides my steps. ",
+    "category": "Regular",
+    "colorAlt": "#FFE47D",
+    "affirmation_es": "Soy honesta conmigo misma y la Verdad guía mis pasos.",
+    "image": [
+      {
+        "url": "/cards/26.jpeg",
+        "width": 2160,
+        "height": 2160
+      }
+    ],
+    "color": "#016863",
+    "Status": "ready",
+    "description_en": "Honesty is putting into practice the integrity of who you are. Being able to share your truth through your actions, words, and thoughts. Thus practicing consistency in every aspect of your life.\n\nIn order to be honest with others we must first be honest with ourselves. Listen to your truth by silencing external voices and patterns. Pause and ask yourself, \"What do I want?\" If the answer welcomes silence, ask yourself this time, \"What do I feel?\" Let the body and its signs be the doors to knowing your truth.\n\nBy being honest with others, you inspire them to do the same too, letting transparency embrace your bonds leading to healthy and fulfilling relationships.",
+    "author": "Belén Brito",
+    "name_es": "Honestidad"
+  },
+  {
+    "description_es": "La maestra naturaleza nos enseña que la paciencia amorosa trae grandes recompensas y que cada etapa del camino tiene un valor único y necesario en el ciclo de la vida.\n\nAprender a ser paciente ante los cambios, vicisitudes y lo desconocido es abrir las puertas a las virtudes de la paz y la confianza en uno mismo y en el apoyo de los guías y seres amados. \n\nSi este mensaje ha llegado a tus manos hoy es para instarte a recordar que no estás solo, el universo sabe escucharte, por lo que presta atención a las señales de los guías superiores durante este periodo de espera. Pide apoyo y ríndete al proceso, comprendiendo que el orden de los acontecimientos es para tu mayor bien. \n\nCierra tus ojos y lleva las manos al corazón siendo testigo de la presencia divina que habita en ti, allí podrás descansar en tu fuente inagotable de paciencia.",
+    "id": 27,
+    "invitation_es": "Observa la naturaleza y sus ciclos, aprende de su paciente sabiduría en cada transición. ",
+    "name_en": "Patience",
+    "rarity": 3,
+    "invitation_en": "Observe nature and its cycles, learn from its patient wisdom in each transition.",
+    "affirmation_en": "I am patient with myself and discover miracles every moment.",
+    "category": "Regular",
+    "colorAlt": "#14525D",
+    "affirmation_es": "Soy paciente conmigo mismo y descubro milagros a cada instante.",
+    "image": [
+      {
+        "url": "/cards/27.jpeg",
+        "width": 2160,
+        "height": 2160
+      }
+    ],
+    "color": "#97D8D7",
+    "Status": "ready",
+    "description_en": "The nature teacher teaches us that loving patience brings great rewards and that each stage of the path has a unique and necessary value in the cycle of life.\n\nLearning to be patient in the face of changes, vicissitudes and the unknown is to open the doors to the virtues of peace and self-confidence and in the support of guides and loved ones.\n\nIf this message has come into your hands today, it is to urge you to remember that you are not alone, the universe knows how to listen to you, so pay attention to the signs of the higher guides during this waiting period. Ask for support and surrender to the process, understanding that the order of events is for your highest benefit.\n\nClose your eyes and take your hands to your heart witnessing the divine presence that dwells within you, there you can rest in your inexhaustible source of patience.",
+    "author": "Belén Brito",
+    "name_es": "Paciencia"
+  },
+  {
+    "description_es": "El perdón es un regalo que hacemos a otros y a nosotros mismos. Al perdonar con sinceridad en el corazón sos capaz de sanar y volverte más compasivo. Practicar el perdón es dejar a un lado la idea de perfeccionismo, pudiendo entender que equivocarnos es una gran oportunidad para el aprendizaje y el crecimiento.\n\nEl perdón nos invita a andar livianos sin culpas ni rencores, dejando atrás el pasado y abriéndole la puerta al presente consciente. Cuanto más ligera y liviana se vuelve la vida tanto más fluido es el regreso al hogar, esa instancia divina dentro de ti. Y es solo entonces cuando sos capaz de experimentar verdadera alegría por volver consciente qué es lo que realmente importa, qué es lo que realmente necesitas para ser feliz y experimentar así paz verdadera.\n\nSí esta carta ha llegado a ti hoy es para invitarte a sanar vínculos con otros otorgándoles tu perdón y al mismo tiempo ofrecerte el mejor regalo que puedes hacerte, ese estado de gracia que brinda la paz.",
+    "id": 28,
+    "invitation_es": "Inhalo amor. Exhalo perdón.",
+    "name_en": "Forgiveness",
+    "rarity": 3,
+    "invitation_en": "I inhale love. I exhale forgiveness. ",
+    "affirmation_en": "I forgive myself and others.",
+    "category": "Regular",
+    "colorAlt": "#E9ECD7",
+    "affirmation_es": "Me perdono a mi mismo y a los otros. ",
+    "image": [
+      {
+        "url": "/cards/28.jpeg",
+        "width": 2160,
+        "height": 2160
+      }
+    ],
+    "color": "#007474",
+    "Status": "ready",
+    "description_en": "Forgiveness is a gift that we give to others and ourselves. To be able to forgive with sincerity in your heart indicates that you are capable of healing and becoming more compassionate. Practicing forgiveness is leaving to the side the idea of perfectionism, and understanding that making a mistake is a huge opportunity to learn and grow. \n\nForgiveness invites us to live life without faults or grudges, leaving behind the past and opening the door to the conscious present. The lighter life becomes, the more fluid the return home is, that divine instance within you. And it is only then that you are capable of experimenting with true happiness for becoming conscious which is what is truly important, it is what you really need to be happy and experience true peacefulness. \n\nIf this card has reached you today it is to invite you to heal bonds with others by giving them your forgiveness and at the same time offer yourself the best gift that you can give yourself, that state of grace that brings peace. ",
+    "author": "Belén Brito",
+    "name_es": "Perdón"
+  },
+  {
+    "description_es": "Las sincronicidades suceden cuando somos capaces de estar en armonía con todo lo que nos rodea. Si este mensaje ha llegado a ti, alégrate porque es una señal de que te encuentras en el lugar indicado para tu crecimiento. Abre tus ojos para poder ver el fluir de la sincronicidad en tu vida.\n\nRecuerda que nadie está donde está por casualidad y nada en el plan Divino es al azar, cada acontecimiento sucede en el momento y lugar indicado para tu crecimiento.\n\nAdvertir o buscar las señales es una invitación a reconocer la interconexión que existe en este maravilloso universo, pudiendo contemplar que detrás de cada suceso hay una razón Divina de ser.",
+    "id": 29,
+    "invitation_es": "Reconoce el constante fluir de las sincronicidades en tu vida.",
+    "name_en": "Synchronicity",
+    "rarity": 3,
+    "invitation_en": "Recognize the constant flow of synchronicities in your life.",
+    "affirmation_en": "I am in the right moment and place for my self growth. ",
+    "category": "Regular",
+    "colorAlt": "#FAF2A1",
+    "affirmation_es": "Estoy en el momento y lugar indicado para mi crecimiento. ",
+    "image": [
+      {
+        "url": "/cards/29.jpeg",
+        "width": 2160,
+        "height": 2160
+      }
+    ],
+    "color": "#35838D",
+    "Status": "ready",
+    "description_en": "Synchronicities happen when we are able to be in harmony with everything around us. If this message has reached you, be happy because it is a sign that you are in the right place for your growth. Open your eyes to see the flow of synchronicity in your life.\n\nRemember that no one is where they are by chance and nothing in the Divine plan is random, each event happens at the right time and place for your growth.\n\nNoticing or looking for signs is an invitation to recognize the interconnection that exists in this wonderful universe, being able to contemplate that behind each event there is a Divine reason for being.",
+    "author": "Belén Brito",
+    "name_es": "Sincronicidad"
+  },
+  {
+    "description_es": "¿Qué sería de la vida sin la esperanza? ¿Cómo podría ser posible avanzar sin creer? Sería algo así como esperar que un coche ande sin sus ruedas. Hay muchos modos de alimentar la esperanza, la conexión con todo aquello que te haga bien, los valores humanos, la magia y el renacer de la naturaleza, la inocencia de los niños o una buena lectura. \n\nNutrir la esperanza es creer en vos mismo y en la asistencia del universo con sus hilos invisibles de luz, que te acompañan paso a paso, instándote a recordar que siempre se puede volver a empezar y que cada día es una nueva posibilidad de crear la vida que sueñas. \n\nAl practicar la esperanza, la ansiedad se templa y la confianza surge, rememorando que eres el resultado del amor de miles. Tus ancestros están detrás tuyo alentandote a seguir.",
+    "id": 30,
+    "invitation_es": "Aquieta tu ansiedad al percibir la presencia de tus guías y ancestros acompañando cada paso. Recuerda, no estás solo. ",
+    "name_en": "Hope",
+    "rarity": 3,
+    "invitation_en": "Calm your anxiety by perceiving the presence of your guides and ancestors accompanying each step. Remember, you are not alone.",
+    "affirmation_en": "I have hope in myself and in the assistance of the Universe. ",
+    "category": "Regular",
+    "colorAlt": "#039BA9",
+    "affirmation_es": "Tengo esperanza en mi mismo y en la asistencia del Universo.",
+    "image": [
+      {
+        "url": "/cards/30.jpeg",
+        "width": 2160,
+        "height": 2160
+      }
+    ],
+    "color": "#FED989",
+    "Status": "ready",
+    "description_en": "What would life be without hope? How could it be possible to move forward without believing? It would be something like waiting for a car to run without its wheels. There are many ways to feed hope, the connection with everything that does you good, human values, magic and the rebirth of nature, the innocence of children, or a good read.\n\nNurturing hope is believing in yourself and in the assistance of the universe with its invisible threads of light, which accompany you step by step, urging you to remember that you can always start over and that each day is a new possibility to create the life that you dream of.\n\nBy practicing hope, anxiety is tempered and confidence arises, remembering that you are the result of the love of thousands. Your ancestors are behind you encouraging you to continue.",
+    "author": "Belén Brito",
+    "name_es": "Esperanza"
+  },
+  {
+    "description_es": "Vipassana es una palabra sánscrita que significa, \"ver las cosas tal cual son\". Si esta carta ha llegado a ti hoy, es para invitarte a hacer una pausa y detenerte a observar tu realidad desde todos los ángulos y perspectivas. \n\nObservar desde el corazón con la sabiduría innata que habita en él. Desarrollar el arte de observar con el corazón, es una invitación a practicar la contemplación estableciendo una relación sagrada con vos misma, dando lugar al desapego, recordando la impermanencia de todo lo que existe. Todo pasa… todo cambia constantemente. Ya no sos la misma que comenzó a leer este mensaje unos minutos atrás. \n\nAl practicar Vipassana y contemplarte, sos testigo de la energía divina que habita en tu interior, con todo lo que hay allí, tus miedos, alegrías, esperanzas y sueños. Contemplar de corazón a corazón para ser capaz de amar incondicionalmente a tu ser. Amar lo suficiente para perdonarte, honrarte, y ofrecerte, en esta tarea de entregar algo tuyo al mundo cada día.",
+    "id": 31,
+    "invitation_es": "Detente por 10’ a observarte internamente, escanea tu cuerpo de ida y vuelta, de pies a cabeza. Y volve a empezar...",
+    "name_en": "Vipassana",
+    "rarity": 1,
+    "invitation_en": "Stop for 10 minutes to observe yourself internally, scan your body back and forth, from head to toe. And start again...",
+    "affirmation_en": "Today I remember that everything happens and I observe reality as it is without getting attached to anything or anyone.",
+    "category": "Special",
+    "colorAlt": "#D6E8CE",
+    "affirmation_es": "Hoy recuerdo que todo pasa y observo la realidad tal cual es sin apegarme a nada ni nadie.",
+    "image": [
+      {
+        "url": "/cards/31.jpeg",
+        "width": 2160,
+        "height": 2160
+      }
+    ],
+    "color": "#6B428E",
+    "Status": "ready",
+    "description_en": "Vipassana is a Sanskrit word that means \"to see things as they are.\" If this card has come to you today, it is to invite you to pause and stop to observe your reality from all angles and perspectives.\n\nObserve from the heart with the innate wisdom that dwells in it. Developing the art of observing with the heart is an invitation to practice contemplation by establishing a sacred relationship with yourself, giving rise to detachment, and remembering the impermanence of everything that exists. Everything happens… everything changes constantly. You are no longer the same person who started reading this message a few minutes ago.\n\nBy practicing Vipassana and contemplating yourself, you witness the divine energy that lives within you, with everything that is there, your fears, joys, hopes, and dreams. Contemplate from heart to heart to be able to love your being unconditionally. Love enough to forgive you, honor you, and offer you in this task of giving something of yours to the world every day.",
+    "author": "Belén Brito",
+    "name_es": "Vipassana"
+  },
+  {
+    "description_es": "Lo único permanente es la impermanencia de todas las cosas. La transformación es un proceso natural y constante. Cada día nacemos de nuevo y cada paso del camino es una oportunidad para transformarnos en aquello que anhelamos ser. \n\nAbrazar la calma durante el transcurso del cambio no es fácil, es encontrar el equilibrio en medio del movimiento. \n\nEn esos días recuerda que el aquí y ahora es el único tiempo eterno, el presente es el único tiempo del cual te puedes ocupar, por lo que suelta lo que ya ha sucedido y las expectativas de lo que vendrá. Regálate la pausa en este instante, respira despacio y abre la puerta de la confianza, pudiendo descubrir nuevas posibilidades. \n\nConfía en tus transiciones, en el fluir de la vida sin resistencias. Como el agua de un río que fluye a través de las piedras descubriendo recovecos y nuevos caminos. Agua que con el paso del tiempo modifica la forma de las piedras creando nuevos recorridos transformándolo todo a su alrededor.",
+    "id": 32,
+    "invitation_es": "Hoy confia en las transiciones y ciclos de tu vida. ",
+    "name_en": "Transformation",
+    "rarity": 3,
+    "invitation_en": "Today trust in the transitions and cycles of your life.",
+    "affirmation_en": "My heart flows with joy in the course of the change.",
+    "category": "Regular",
+    "colorAlt": "#47456D",
+    "affirmation_es": "Mi corazón fluye con alegría en el transcurso del cambio.",
+    "image": [
+      {
+        "url": "/cards/32.jpeg",
+        "width": 2160,
+        "height": 2160
+      }
+    ],
+    "color": "#69B8E1",
+    "Status": "ready",
+    "description_en": "The only thing that is permanent, is the impermanence of everything. The process of transforming is natural and constant. Every single day we are born again and every step of the journey is an opportunity to transform into what we long to become. \n\nWelcoming the calm during the process of change is not an easy task, it is finding the balance in the midst of the movement. \n\nOn those days, remember that the here and now is the only eternal time, and the present is the only time you can take care of, so let go of what has already happened and the expectations of what will come. Treat yourself to the break right now, breathe slowly and open the door of confidence, being able to discover new possibilities.\n\nTrust your transitions, in the flow of life without resistance. Like the water of a river that flows through the stones, discovering nooks and crannies and new paths. Water that with the passage of time modifies the shape of the stones creating new paths, and transforming everything around it.",
+    "author": "Belén Brito",
+    "name_es": "Transformación"
+  }
+]
