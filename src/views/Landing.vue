@@ -225,6 +225,19 @@
         box-shadow: inset 0px 6px 63px rgb(255 111 97 / 36%), inset 0px -6px 64px rgb(20 50 70 / 90%);
     }
 
+    /* The hero sinks into the dark navy of the oracle block instead of ending in a hard cut */
+    #hero::after {
+        content: '';
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: 45%;
+        z-index: 8;
+        pointer-events: none;
+        background: linear-gradient(to bottom, rgba(20, 50, 70, 0) 0%, rgba(20, 50, 70, 0.7) 55%, #143246 100%);
+    }
+
     h1 {
         color: #F7F8F1;
         position: absolute;
@@ -356,10 +369,8 @@
 <style scoped>
     /* ORACLE */
     #oracle {
-        background-color: #0381BA;   
-        background-image: url('../assets/oracle/stars.webp');
-        background-size: cover;
-        background-position: center;
+        background-color: #143246;
+        isolation: isolate;
 
         display: flex;
         align-items: center;
@@ -368,6 +379,20 @@
         gap: 80px;
         width: 100vw;
         min-height: 150vh;
+    }
+
+    /* Stars fade in from the top so they do not start on a visible edge */
+    #oracle::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        z-index: -1;
+        pointer-events: none;
+        background-image: url('../assets/oracle/stars.webp');
+        background-size: cover;
+        background-position: center;
+        -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 35%);
+        mask-image: linear-gradient(to bottom, transparent 0%, #000 35%);
     }
 
     .copy {
@@ -425,6 +450,8 @@
         background-image: url('../assets/oracle/corner.webp');
         background-size: contain;
         background-repeat: no-repeat;
+        /* Their dark outlines would vanish into the navy */
+        filter: drop-shadow(0 0 8px rgba(164, 218, 217, 0.45));
 
         position: absolute;
         z-index: 3;
