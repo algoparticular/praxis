@@ -1,7 +1,7 @@
 <script setup>
 	import { onMounted, onBeforeUnmount, ref } from 'vue';
     import { useRouter } from 'vue-router';
-    import { animate, timeline, inView, scroll } from "motion";
+    import { timeline, inView, scroll } from "motion";
 
     import Header  from '../components/Header.vue';
     import Footer  from '../components/Footer.vue';
@@ -9,17 +9,6 @@
     import { KinesisContainer, KinesisElement} from 'vue-kinesis';
     
     const router = useRouter();
-
-    const gallery = ref([
-        'url(/assets/gallery/27.jpg)',
-        'url(/assets/gallery/4.jpg)',
-        'url(/assets/gallery/29.jpg)',
-        'url(/assets/gallery/3.jpg)',
-        'url(/assets/gallery/20.jpg)'
-    ]);
-    let currentIndex = 1;
-
-    const galleryWrapper = document.getElementById('galleryWrapper');
 
     //handle navigation
     const handleNavigate = (url) => {
@@ -66,30 +55,14 @@
             defaultOptions: { ease: "ease-out" },
         });
 
-        setInterval(function(){
-            animate("#galleryWrapper", {
-                backgroundImage: gallery.value[currentIndex]
-            },
-            {
-                ease: "cubic-bezier(0.23, 1, 0.32, 1)"
-            });
-
-            if(currentIndex+1 == gallery.value.length ) {
-                currentIndex = 0;
-            } else {
-                currentIndex++;
-            }
-            // console.log(currentIndex);
-        }, 5000);
-
         //The oracle block frames itself while scrolling: its four corners appear one by one, clockwise.
         //The corners are mirrored with transform, so they animate through the independent scale/translate properties.
         if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
             [
-                ['.corner.topLeft', -1, -1, ['start end', 'start 78%']],
-                ['.corner.topRight', 1, -1, ['start 88%', 'start 62%']],
-                ['.corner.bottomRight', 1, 1, ['start end', 'start 82%']],
-                ['.corner.bottomLeft', -1, 1, ['start 90%', 'start 66%']],
+                ['.corner.topLeft', -1, -1, ['start 55%', 'start 30%']],
+                ['.corner.topRight', 1, -1, ['start 38%', 'start 14%']],
+                ['.corner.bottomRight', 1, 1, ['start 92%', 'start 62%']],
+                ['.corner.bottomLeft', -1, 1, ['start 80%', 'start 52%']],
             ].forEach(([selector, dx, dy, offset]) => {
                 const corner = document.querySelector(selector);
                 corner.style.opacity = 0;
@@ -97,7 +70,7 @@
                     const eased = 1 - (1 - Math.min(1, Math.max(0, y.progress))) ** 3;
                     corner.style.opacity = eased;
                     corner.style.scale = 0.75 + 0.25 * eased;
-                    corner.style.translate = `${dx * 28 * (1 - eased)}px ${dy * 28 * (1 - eased)}px`;
+                    corner.style.translate = `${dx * 40 * (1 - eased)}px ${dy * 40 * (1 - eased)}px`;
                 }, { target: corner, offset }));
             });
         }
@@ -124,6 +97,12 @@
                 duration, direction: 'alternate', iterations: Infinity, easing: 'ease-in-out'
             }));
 
+            const quote = ['#uno h2', '#uno img'].map((selector) => document.querySelector(selector));
+            quote.forEach((el) => { el.style.opacity = 0; });
+            stopReveals.push(inView('#uno h2', () => {
+                quote.forEach((el, i) => reveal({ el, y: 32, delay: i * 350, duration: 1300 }));
+            }, { amount: 0.6 }));
+
             stopReveals.push(inView('#oracle .copy', () => {
                 copy.forEach((el, i) => reveal({ el, delay: i * 140 }));
             }, { amount: 0.5 }));
@@ -136,20 +115,6 @@
                     .then(() => idle(tree, { rotate: ['-1.4deg', '1.4deg'] }, 5200)).catch(() => {});
             }, { amount: 0.3 }));
         }
-
-        const colorSection = document.getElementById("uno"); 
-        
-        const scrollOptions = {
-            target: colorSection,
-            offset: ["start end", "end end"]
-        }
-
-        inView(colorSection, () => {            
-            scroll(
-                animate("#colorMe", { backgroundColor: "#FF6F61" }),
-                scrollOptions
-            )
-        });
     });
 </script>
 
@@ -247,19 +212,6 @@
         </kinesis-container>
 
         <div id="colorMe">
-            <section id="about">
-                <div id="galleryWrapper"></div>
-
-                <div class="copy">
-                    <div class="heading">
-                        <img src="../assets/icon/Brote.svg"/>
-                        <h3>{{ $t("landing.aboutTitle") }}</h3>
-                    </div>
-                    <p>{{ $t("landing.aboutDescrip") }}</p>
-                    <button @click="handleNavigate('/collaborate')">{{ $t("landing.aboutAction") }}</button>
-                </div>            
-            </section>
-            
             <section id="uno">
                 <h2>{{ $t("landing.uno") }}</h2>
                 <img src="../assets/icon/Seed.svg" loading="lazy"/>
@@ -281,7 +233,7 @@
     /* HERO */
 	#hero {
         background-color: #6A428D;
-        height: 90vh;
+        height: 115vh;
         min-height: 667px;
         padding: 5vh 0;
         box-shadow: inset 0px 6px 63px rgb(255 111 97 / 36%), inset 0px -6px 64px rgb(20 50 70 / 90%);
@@ -377,7 +329,7 @@
         top: 0;
         z-index: 0;
         width: 100vw;
-        height: 100vh;
+        height: 100%;
     }
 
     /* DESKTOP */
@@ -421,9 +373,6 @@
             left: 3vw;
         }
 
-        .splash.background {
-            background-size: contain;
-        }
     }
 </style>
 
@@ -612,104 +561,25 @@
     }
 </style>
 
-<!-- About -->
-<style scoped>
-    #colorMe {
-        background-color: #F7F8F1;
-        background-image: url('../assets/noise_white.webp');
-    }
-
-    /* ABOUT */
-    #about {        
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        flex-direction: column;
-        gap: 40px;
-        height: 140vh;    
-    }
-
-    #galleryWrapper {        
-        width: 90vw;
-        height: 95vh;
-        margin-top: 5vh;
-        border-radius: 90px;
-        background-color: #A4DAD9;   
-        background-size: cover; 
-        background-position: center;
-        box-shadow: inset 0px -6px 81px rgba(255, 111, 97, 0.36), inset 0px 6px 81px rgba(20, 50, 70, 0.23);    
-
-        background-image: url('/gallery/27.jpg'); /*default*/
-    }    
-
-    #about .copy {        
-        width: 100vw;
-        height: 100%;
-        /* background-color: #F7F8F1; */
-        z-index: 1;
-        padding: 0 0 10vh;        
-    }
-
-    #about .copy .heading img {
-        filter: drop-shadow(0px 2px 3px rgba(255, 111, 97, 0.56));
-    }
-
-    #about .copy .heading h3 {
-        color: #143246;
-    }
-
-    #about .copy p {
-        color: #143246;
-    }
-
-    #about .copy button {
-        color: #F7F8F1;
-        background-color: #FF6F61;
-    }
-
-    #about .copy button:hover {
-        color: #143246;
-        background-color: #E8E974;
-    }
-
-    /* DESKTOP */
-    @media screen and (min-width: 769px) {
-        #about {
-            flex-direction: row;
-            gap: 80px;
-            height: 100vh;
-        }
-
-        #galleryWrapper {
-            width: 36vw;
-            height: 70vh;
-            margin: 0;
-        }
-
-        #about .copy {
-            width: 36vw;
-            padding: 0;
-        }
-    }
-</style>
-
 <!-- UNO Quote -->
 <style scoped>
     /* UNO */
+    /* From the dark of the oracle into the orange, as the scroll goes on */
+    #colorMe {
+        background-color: #143246;
+    }
+
     #uno {
-        /* background-color: #F7F8F1; */
         display: flex;
         align-items: center;
         justify-content: center;
         flex-direction: column;
         gap: 16px;
         width: 100vw;
-        height: 100vh;
-
-        /* background-image: url('../assets/icon/SeedGhost.svg');
-        background-repeat: no-repeat;
-        background-size: 135px;
-        background-position: 90% 60%; */
+        height: 170vh;
+        padding-top: 70vh;
+        box-sizing: border-box;
+        background: linear-gradient(180deg, #143246 0%, #4a3a6e 30%, #c8636f 60%, #FF6F61 80%);
     }
 
     #uno h2 {
@@ -725,11 +595,6 @@
 
     /* DESKTOP */
     @media screen and (min-width: 769px) {
-        #uno {
-            background-size: 180px;
-            background-position: 66% 60%;
-        }
-
         #uno h2 {
             font-size: 48px;            
         }
