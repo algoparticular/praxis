@@ -2,7 +2,7 @@
     import { onMounted, onBeforeUnmount, ref } from 'vue';
     import { useRouter } from 'vue-router';
     import { getCard } from '../data/cards.js';
-    import { setPendingTransition } from '../cardTransition.js';
+    import { handOffCard } from '../cardTransition.js';
     import { createStarField } from '../composables/useStarField.js';
     import { play, vibrate } from '../composables/useSound.js';
 
@@ -32,21 +32,7 @@
     // The chosen card is flipped and centered; leave a copy in the body for the card page to animate into place
     const handlePick = (cardId, rect, hideCard) => {
         if (!rect) return router.push({ name: 'card', params: { id: cardId } });
-
-        const card = getCard(cardId);
-        const color = card?.color ?? '#143246';
-        const border = rect.width * 2 / 90;
-        const radius = rect.width * 18 / 90;
-        const clone = document.createElement('div');
-        clone.style.cssText = `position:fixed;z-index:100;pointer-events:none;box-sizing:border-box;`
-            + `left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;height:${rect.height}px;`
-            + `border:${border}px solid ${color};border-radius:${radius}px;`
-            + `background:${color} ${card?.image ? `url(${card.image[0].url})` : ''} center/cover no-repeat`;
-        document.body.appendChild(clone);
-        hideCard?.();
-
-        setPendingTransition({ el: clone, color });
-        router.push({ name: 'card', params: { id: cardId } });
+        handOffCard({ router, card: getCard(cardId), rect, hideCard });
     };
 
     onMounted(async () => {

@@ -21,6 +21,8 @@
    - Cursor personalizado: una partícula circular con el resplandor de la marca, que es blanca en general, amarilla en la sección del oráculo (atributo `data-cursor="yellow"` en la sección) y naranja sobre superficies claras como el footer; solo con ratón (`CustomCursor.vue`).
    - `prefers-reduced-motion` en toda la app: CSS global, parallax de `vue-kinesis` apagado, sin bucles de JavaScript.
 
+**El mazo** (`/deck`) — HECHO (primera versión): galería de las 33 cartas con el mismo cielo estrellado de la landing, título y filtros por categoría (Todas / Paramis / Regulares / Especiales). En 3D (`src/components/DeckRing.vue` + `src/composables/useDeckRing.js`) las cartas están boca arriba en un anillo: arrastrar, rueda o flechas lo giran y se detiene en la carta más cercana; un toque abre la carta con la misma entrega (`handOffCard` en `src/cardTransition.js`, compartida con las mesas). Un filtro reordena las cartas en un arco. Respaldo 2D (`DeckTemplate.vue`) sin WebGL o con `prefers-reduced-motion`. La galería carga miniaturas de 480 px (`public/cards/thumb/`, 0,9 MB contra 8,7 MB; se generan con `npm run thumbs` y con `sync:cards`).
+
 ## Para retomar: The Nine en 3D
 Rama: `claude/cool-heisenberg-l4fuyc`. Los pasos 1 a 6 están hechos y la landing está cerrada. Falta solo esto.
 

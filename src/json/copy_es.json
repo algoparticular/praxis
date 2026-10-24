@@ -105,7 +105,11 @@
             "share": "Comparte esta carta"
         },
         "deck": {
-            "name": "El Oráculo de las Partículas"
+            "name": "El Oráculo de las Partículas",
+            "filterAll": "Todas",
+            "filterParamis": "Paramis",
+            "filterRegular": "Regulares",
+            "filterSpecial": "Especiales"
         },
         "loading": [
             "conversando con los Maestros...",
