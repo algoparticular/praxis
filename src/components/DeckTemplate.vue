@@ -1,40 +1,11 @@
 <script setup>
     import { onMounted, ref } from 'vue'; 
     import { useRouter } from 'vue-router';
-    import DeckItem from "./DeckItem.vue";       
+    import DeckItem from "./DeckItem.vue";
+    import { deck as deckData } from '../data/cards.js';
 
-    //Database
-    import Airtable from "airtable";
-    const base = new Airtable({ apiKey: "pat551SjcY5IJ6UAR.027a8d829d98875261ad7f6bdcddb446fd4496ba196b589724438f90608b76fd" }).base("appgHXHkRRjGjbYgM");
-    
-    const router = useRouter();    
-    const deck = ref([]);
-
-    function getDeck() {
-        base('Oracle cards').select({
-            view: 'List'
-        }).firstPage(function(err, records) {
-            if (err) { 
-                console.error('hubo un error ' + err); 
-                return; 
-            }
-
-            deck.value = records;
-            // console.log(deck.value);
-        });
-    }
-
-    //This make possible the loading skeleton state
-    const loadDeckData = async () => {
-        return new Promise((resolve) => {
-            setTimeout(() => {               
-                getDeck();
-                resolve();
-            }, 2500)
-        })
-    }
-    const deckData = ref(await loadDeckData());
-
+    const router = useRouter();
+    const deck = ref(deckData);
 
     //handle take a card
     const drawCard = (cardId) => {
@@ -48,10 +19,10 @@
             <p class="deckIntro">{{ $t("deck.name") }}</p>
         </div> -->
         <div class="deckWrapper collection">
-            <template v-for="card in deck" :key="card.fields.id">
+            <template v-for="card in deck" :key="card.id">
                 <DeckItem 
-                    :id="card.fields.id" 
-                    :data="card.fields"
+                    :id="card.id" 
+                    :data="card"
                     :loading="false" 
                     @drawCard="drawCard"/>
             </template>

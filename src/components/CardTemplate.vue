@@ -3,49 +3,17 @@
     import { useRouter } from 'vue-router';   
     // import { animate, scroll, inView } from "motion";
 
-    //Database
-    import Airtable from "airtable";
-    const base = new Airtable({ apiKey: "pat551SjcY5IJ6UAR.027a8d829d98875261ad7f6bdcddb446fd4496ba196b589724438f90608b76fd" }).base("appgHXHkRRjGjbYgM");
+    import { getCard } from '../data/cards.js';
 
     const props = defineProps({
         id: String
     });
 
     const router = useRouter();
-    const card = ref({});
-    const cover = ref('');
-    const color = ref('');
-    const colorAlt = ref('');
-
-    const getCard = (id) => {
-        base('Oracle cards').select({
-            view: 'List',
-            filterByFormula: `id = "${id}"`
-        }).firstPage(function(err, records) {
-            if (err) { 
-                console.error('hubo un error ' + err); 
-                return; 
-            }
-
-            card.value = records[0].fields;
-
-            cover.value = 'url(' + card.value.image[0].url + ')';
-            color.value = card.value.color;
-            colorAlt.value = card.value.colorAlt;            
-            // console.log('done ' + color.value);            
-        });
-    }
-
-    //This make possible the loading skeleton state
-    const loadCardData = async () => {
-        return new Promise((resolve) => {
-            setTimeout(() => {
-                resolve(getCard(props.id));                
-            }, 3000)
-        })
-    }
-    
-    const data = ref(await loadCardData());   
+    const card = ref(getCard(props.id) ?? {});
+    const cover = ref(card.value.image ? 'url(' + card.value.image[0].url + ')' : '');
+    const color = ref(card.value.color ?? '');
+    const colorAlt = ref(card.value.colorAlt ?? '');
 
     /////////////////
     // //ON MOUNTED
