@@ -33,9 +33,16 @@
     let cellField = null;
     let unmounted = false;
 
+    const stopCorners = [];
+    const stopReveals = [];
+    const idleAnimations = [];
+
     onBeforeUnmount(() => {
         unmounted = true;
         cellField?.destroy();
+        stopCorners.forEach((stop) => stop());
+        stopReveals.forEach((stop) => stop());
+        idleAnimations.forEach((animation) => animation.cancel());
     });
 
     // //ON MOUNTED
@@ -74,6 +81,61 @@
             }
             // console.log(currentIndex);
         }, 5000);
+
+        //The oracle block frames itself while scrolling: its four corners appear one by one, clockwise.
+        //The corners are mirrored with transform, so they animate through the independent scale/translate properties.
+        if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            [
+                ['.corner.topLeft', -1, -1, ['start end', 'start 78%']],
+                ['.corner.topRight', 1, -1, ['start 88%', 'start 62%']],
+                ['.corner.bottomRight', 1, 1, ['start end', 'start 82%']],
+                ['.corner.bottomLeft', -1, 1, ['start 90%', 'start 66%']],
+            ].forEach(([selector, dx, dy, offset]) => {
+                const corner = document.querySelector(selector);
+                corner.style.opacity = 0;
+                stopCorners.push(scroll(({ y }) => {
+                    const eased = 1 - (1 - Math.min(1, Math.max(0, y.progress))) ** 3;
+                    corner.style.opacity = eased;
+                    corner.style.scale = 0.75 + 0.25 * eased;
+                    corner.style.translate = `${dx * 28 * (1 - eased)}px ${dy * 28 * (1 - eased)}px`;
+                }, { target: corner, offset }));
+            });
+        }
+
+        //Text and illustrations of the oracle block arrive one after the other when it comes into view.
+        //Independent translate/scale/rotate are used so they do not fight the parallax, which owns transform.
+        if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            const pick = (selector) => document.querySelector('#oracle ' + selector);
+            const copy = ['.copy .heading img', '.copy .heading h3', '.copy > p', '.copy > button'].map(pick);
+            const man = pick('.gfx .oracle.particle');
+            const tree = pick('.gfx .oracle.tree');
+            [...copy, man, tree].forEach((el) => { el.style.opacity = 0; });
+
+            const reveal = ({ el, y = 24, scale = 1, delay = 0, duration = 900, origin }) => {
+                if (origin) el.style.transformOrigin = origin;
+                const animation = el.animate(
+                    { opacity: [0, 1], translate: [`0 ${y}px`, '0 0'], scale: [scale, 1] },
+                    { duration, delay, easing: 'cubic-bezier(0.22, 1, 0.36, 1)', fill: 'backwards' }
+                );
+                el.style.opacity = '';
+                return animation.finished;
+            };
+            const idle = (el, keyframes, duration) => idleAnimations.push(el.animate(keyframes, {
+                duration, direction: 'alternate', iterations: Infinity, easing: 'ease-in-out'
+            }));
+
+            stopReveals.push(inView('#oracle .copy', () => {
+                copy.forEach((el, i) => reveal({ el, delay: i * 140 }));
+            }, { amount: 0.5 }));
+
+            //The man on the rug and the bonsai are separate pieces: the man settles first, the tree grows from its pot after
+            stopReveals.push(inView('#oracle .gfx', () => {
+                reveal({ el: man, y: 48, scale: 0.94, duration: 1200 })
+                    .then(() => idle(man, { translate: ['0 0', '0 -7px'] }, 4200)).catch(() => {});
+                reveal({ el: tree, y: 20, scale: 0.55, delay: 600, duration: 1400, origin: '50% 100%' })
+                    .then(() => idle(tree, { rotate: ['-1.4deg', '1.4deg'] }, 5200)).catch(() => {});
+            }, { amount: 0.3 }));
+        }
 
         const colorSection = document.getElementById("uno"); 
         
@@ -371,6 +433,7 @@
     #oracle {
         background-color: #143246;
         isolation: isolate;
+        overflow-x: clip;
 
         display: flex;
         align-items: center;
@@ -497,7 +560,7 @@
 
     .oracle.tree {
         position: absolute;
-        top: 5vh;
+        top: -9vh;
         right: 0;
         z-index: -1;           
         width: 20vw;     
@@ -531,8 +594,19 @@
             width: 34vw;
         }
 
+        /* The bonsai stands beside the rug instead of on top of it */
         .oracle.tree {
             width: 11vw;
+            top: 20vh;
+            right: -11vw;
+        }
+    }
+
+    /* Narrow desktops and tablets: a smaller bonsai so it still fits next to the rug */
+    @media screen and (min-width: 769px) and (max-width: 1100px) {
+        .oracle.tree {
+            width: 8vw;
+            right: -9vw;
         }
 
     }
