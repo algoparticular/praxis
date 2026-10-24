@@ -34,7 +34,7 @@ export async function createCellField(canvas, container) {
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const smallScreen = window.innerWidth < 600;
     const lowPower = (navigator.hardwareConcurrency ?? 8) <= 4;
-    const cellCount = Math.round((smallScreen ? 9 : 15) * (lowPower ? 0.65 : 1));
+    const cellCount = Math.round((smallScreen ? 16 : 26) * (lowPower ? 0.65 : 1));
     const particleCount = Math.round((smallScreen ? 150 : 260) * (lowPower ? 0.6 : 1));
 
     // Throws without WebGL; the caller falls back to the static cells
@@ -53,13 +53,13 @@ export async function createCellField(canvas, container) {
     const textures = await Promise.all(CELL_TEXTURES.map((url) => loader.loadAsync(url)));
     textures.forEach((texture) => { texture.colorSpace = THREE.SRGBColorSpace; });
 
-    // Three tiers so the same three illustrations read as many different cells
-    const big = Math.max(2, Math.round(cellCount * 0.2));
-    const medium = Math.round(cellCount * 0.35);
+    // A few big cells up front, some medium ones and many small ones lost in the background
+    const big = 2;
+    const medium = Math.round(cellCount * 0.2);
     const tiers = Array.from({ length: cellCount }, (_, i) => {
-        if (i < big) return { size: rand(0.46, 0.6), z: rand(-4, 0.5) };
-        if (i < big + medium) return { size: rand(0.26, 0.38), z: rand(-5, 1.5) };
-        return { size: rand(0.12, 0.2), z: rand(-5, 2.5) };
+        if (i < big) return { size: rand(0.46, 0.6), z: rand(-2.5, 1.5) };
+        if (i < big + medium) return { size: rand(0.24, 0.34), z: rand(-4, 1) };
+        return { size: rand(0.09, 0.18), z: rand(-5, -0.5) };
     });
 
     // Placement works in world units, biggest first, so overlaps are judged by size
@@ -181,6 +181,71 @@ export async function createCellField(canvas, container) {
     points.frustumCulled = false;
     root.add(points);
 
+    // ---- Light filtering down through the liquid: soft beams from two sources above the frame
+    const raysMaterial = new THREE.ShaderMaterial({
+        transparent: true,
+        depthTest: false,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+        uniforms: {
+            uTime: { value: 0 },
+            uAspect: { value: 1 },
+            uShift: { value: 0 },
+            uFade: { value: 1 },
+        },
+        vertexShader: `
+            varying vec2 vUv;
+            void main() {
+                vUv = uv;
+                gl_Position = vec4(position.xy, 0.0, 1.0);
+            }`,
+        fragmentShader: `
+            varying vec2 vUv;
+            uniform float uTime;
+            uniform float uAspect;
+            uniform float uShift;
+            uniform float uFade;
+
+            float hash(float n) { return fract(sin(n) * 43758.5453); }
+            float noise(float x) {
+                float i = floor(x);
+                float f = fract(x);
+                f = f * f * (3.0 - 2.0 * f);
+                return mix(hash(i), hash(i + 1.0), f);
+            }
+            float beam(float ang, float freq, float speed, float seed) {
+                return smoothstep(0.5, 0.95, noise(ang * freq + uTime * speed + seed));
+            }
+
+            float shaft(vec2 source) {
+                vec2 p = (vUv - source) * vec2(uAspect, 1.0);
+                float ang = atan(p.x, -p.y);
+                float r = length(p);
+                float rays = beam(ang, 6.0, 0.05, 0.0) * 0.8
+                           + beam(ang, 11.0, -0.04, 13.0) * 0.5
+                           + beam(ang, 3.0, 0.03, 31.0) * 0.6;
+                float breathe = 0.75 + 0.25 * sin(uTime * 0.4 + ang * 3.0);
+                float shimmer = 1.0 + 0.25 * (noise(ang * 40.0 + uTime * 0.8) - 0.5);
+                float reach = exp(-r * 1.15);
+                return rays * breathe * shimmer * reach;
+            }
+
+            void main() {
+                float t = uTime;
+                float light = shaft(vec2(0.30 + uShift + 0.05 * sin(t * 0.07), 1.35))
+                            + shaft(vec2(0.78 + uShift * 1.4 + 0.04 * cos(t * 0.05), 1.45)) * 0.7;
+                vec3 coral = vec3(1.0, 0.55, 0.5);
+                vec3 cyan = vec3(0.5, 0.9, 1.0);
+                vec3 color = mix(coral, cyan, 0.35 + 0.3 * sin(vUv.x * 3.0 + t * 0.05));
+                float intensity = light * 0.42 * uFade;
+                gl_FragColor = vec4(color, intensity);
+            }`,
+    });
+    const rays = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), raysMaterial);
+    rays.frustumCulled = false;
+    rays.renderOrder = -10;
+    scene.add(rays);
+
     // ---- Layout
     let viewW = 1, viewH = 1, unit = 1;
 
@@ -194,6 +259,7 @@ export async function createCellField(canvas, container) {
         viewH = 2 * CAMERA_Z * Math.tan((FOV * Math.PI) / 360);
         viewW = viewH * camera.aspect;
         unit = Math.min(viewW, viewH);
+        raysMaterial.uniforms.uAspect.value = camera.aspect;
         pointMaterial.uniforms.uPixelsPerUnit.value = renderer.domElement.height / (2 * Math.tan((FOV * Math.PI) / 360));
 
         cells.forEach((cell) => {
@@ -246,6 +312,10 @@ export async function createCellField(canvas, container) {
         camera.position.x = parallax.x * unit * 0.07 + Math.sin(time * 0.17) * unit * 0.02;
         camera.position.y = parallax.y * unit * 0.05 + Math.cos(time * 0.13) * unit * 0.015;
         camera.lookAt(0, 0, 0);
+
+        raysMaterial.uniforms.uTime.value = time;
+        raysMaterial.uniforms.uShift.value = parallax.x * 0.05;
+        raysMaterial.uniforms.uFade.value = 1 - scrollProgress * 0.85;
 
         // The field rises and approaches while the hero scrolls away
         root.position.y = scrollProgress * unit * 0.8;
@@ -424,6 +494,8 @@ export async function createCellField(canvas, container) {
             canvas.removeEventListener('webglcontextrestored', onContextRestored);
             geometry.dispose();
             pointMaterial.dispose();
+            rays.geometry.dispose();
+            raysMaterial.dispose();
             cells.forEach((cell) => cell.sprite.material.dispose());
             textures.forEach((texture) => texture.dispose());
             renderer.dispose();
