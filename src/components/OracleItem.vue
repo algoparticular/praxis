@@ -73,7 +73,10 @@
             await img.decode().catch(() => {});
         }
         showFront.value = true;
-        randomColor.value = card?.color ?? randomColor.value;
+        if (card?.color) {
+            randomColor.value = card.color;
+            randomShadow.value = `drop-shadow(0px 2px 3px ${card.color})`;
+        }
         await animate(flipper.value, { rotateY: 180 }, { duration: 0.8, easing: [0.4, 0, 0.2, 1] }).finished;
     }
 
@@ -85,12 +88,12 @@
         
     </div>
     <div class="deckItem tap" 
-        :style="{borderColor: randomColor, filter: randomShadow}" 
+        :style="{filter: randomShadow}" 
         @click="picked()"
         @mouseenter="randomizeColor()" 
         @mouseleave="backColorToDefault()" ref="root" v-else>
         <div class="flipper" ref="flipper">
-          <div class="face back">
+          <div class="face back" :style="{borderColor: randomColor}">
             <div class="extra-border" :style="{borderColor: randomColor}"></div>
             <!-- <svg class="icon" width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M25.6483 20.7714C25.1717 19.9268 25.0208 18.9369 25.2243 17.9887C25.6388 15.7775 25.8215 13.5291 25.7695 11.28C25.8673 8.74686 25.6047 6.21269 24.9896 3.75346C24.751 2.64178 24.2499 1.60329 23.5282 0.724687C23.1988 0.34609 22.8429 -0.187728 22.2713 0.065932C21.6276 0.34988 21.9457 0.95563 22.0744 1.4213C22.6182 3.40181 22.8167 5.46123 22.6612 7.50915C22.4985 10.2339 22.1761 12.9468 21.6958 15.6338C21.3361 17.4776 21.1544 17.7161 19.3409 17.86C16.4711 18.0947 14.5252 19.753 13.4272 22.3691C12.8215 23.8191 12.7647 25.2843 13.8853 26.5337C14.3912 27.1158 15.0465 27.5487 15.7804 27.7856C16.5144 28.0225 17.2992 28.0543 18.0499 27.8777C19.1747 27.6705 20.2293 27.1836 21.1165 26.4617C21.3702 26.2535 21.639 25.9355 22.01 26.102C22.4719 26.3103 22.3545 26.7797 22.3356 27.1583C22.2276 28.2907 22.0224 29.4117 21.7223 30.5089C21.1771 32.9244 20.0451 35.0899 18.985 37.2934C18.4701 38.3648 18.7011 39.2659 19.4242 39.7429C20.0754 40.1745 20.9689 40.0647 21.7791 39.3984C22.5635 38.7363 23.216 37.9323 23.7023 37.0284C25.6976 33.4658 26.5078 29.5889 26.6819 25.572C26.8083 23.9056 26.4493 22.2382 25.6483 20.7714ZM17.6259 24.0084C17.5666 24.0124 17.5072 24.0124 17.4479 24.0084C17.0693 23.9289 17.0466 23.6677 17.1602 23.3724C17.4593 22.5887 18.7768 21.6232 19.3712 21.7444C19.4556 21.7566 19.532 21.8008 19.5848 21.8677C19.6376 21.9346 19.6628 22.0192 19.6551 22.1041C19.6362 22.6492 18.296 23.891 17.6259 24.0084Z"/>
@@ -103,7 +106,7 @@
                 <path d="M7.50161 37.2678C6.22091 37.1762 5.58057 36.3975 5.58057 35.115C5.58057 33.4661 7.1357 32.0004 8.69083 32.092C9.74283 32.1836 10.7491 33.1913 10.7491 34.3364C10.6119 35.8937 9.05674 37.3594 7.50161 37.2678Z" />
             </svg>
           </div>
-          <div class="face front" :style="{backgroundImage: showFront ? frontImage : 'none', backgroundColor: card?.color}"></div>
+          <div class="face front" :style="{backgroundImage: showFront ? frontImage : 'none', backgroundColor: card?.color, borderColor: randomColor}"></div>
         </div>
     </div>
 </template>
@@ -138,10 +141,19 @@
         transform-style: preserve-3d;
     }
 
+    /* The border lives on the faces so the whole card, frame included, spins when flipped */
+    .deckItem.tap {
+        border: none;
+        width: 94px;
+        height: 112px;
+    }
+
     .deckItem .face {
         position: absolute;
         inset: 0;
-        border-radius: 16px;
+        box-sizing: border-box;
+        border: 2px solid rgba(252, 252, 252, 0.42);
+        border-radius: 18px;
         backface-visibility: hidden;
         -webkit-backface-visibility: hidden;
         display: flex;
