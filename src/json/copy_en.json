@@ -104,7 +104,11 @@
             "share": "Share this card"
         },   
         "deck": {
-            "name": "The Oracle of the Particles"
+            "name": "The Oracle of the Particles",
+            "filterAll": "All",
+            "filterParamis": "Paramis",
+            "filterRegular": "Regular",
+            "filterSpecial": "Special"
         },     
         "loading": [
             "talking with the Masters...",

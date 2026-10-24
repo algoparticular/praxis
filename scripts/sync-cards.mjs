@@ -17,6 +17,7 @@ if (!token) {
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const imagesDir = path.join(root, 'public', 'cards');
+const thumbsDir = path.join(imagesDir, 'thumb');
 const dataFile = path.join(root, 'src', 'data', 'cards.json');
 
 async function fetchRecords() {
@@ -46,10 +47,12 @@ async function downloadImage(id, attachment) {
     const { width, height } = await sharp(Buffer.from(await res.arrayBuffer()))
         .webp({ quality: 80 })
         .toFile(path.join(imagesDir, file));
+    // Small copy for the deck gallery
+    await sharp(path.join(imagesDir, file)).resize({ width: 480 }).webp({ quality: 78 }).toFile(path.join(thumbsDir, file));
     return { url: `/cards/${file}`, width, height };
 }
 
-await mkdir(imagesDir, { recursive: true });
+await mkdir(thumbsDir, { recursive: true });
 
 const records = await fetchRecords();
 const cards = [];

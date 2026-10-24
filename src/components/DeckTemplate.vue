@@ -1,95 +1,81 @@
 <script setup>
-    import { onMounted, ref } from 'vue'; 
     import { useRouter } from 'vue-router';
     import DeckItem from "./DeckItem.vue";
-    import { deck as deckData } from '../data/cards.js';
+    import { handOffCard } from '../cardTransition.js';
+    import { play } from '../composables/useSound.js';
+
+    const props = defineProps({
+        cards: Array
+    });
 
     const router = useRouter();
-    const deck = ref(deckData);
+    const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-    //handle take a card
-    const drawCard = (cardId) => {
-        router.push({ name: 'card', params: { id: cardId } });       
+    //handle take a card: the frame flies to the card page
+    const drawCard = (cardId, frame) => {
+        const card = props.cards.find((c) => c.id === cardId);
+        play('tap');
+        if (!frame || reducedMotion()) return router.push({ name: 'card', params: { id: cardId } });
+
+        const rect = frame.getBoundingClientRect();
+        handOffCard({
+            router, card, rect,
+            frameColor: '#F7F8F1',
+            hideCard: () => { frame.style.visibility = 'hidden'; }
+        });
     };
 </script>
 
 <template>
     <main id="deck">
-        <!-- <div class="heading">
-            <p class="deckIntro">{{ $t("deck.name") }}</p>
-        </div> -->
-        <div class="deckWrapper collection">
-            <template v-for="card in deck" :key="card.id">
-                <DeckItem 
-                    :id="card.id" 
-                    :data="card"
-                    :loading="false" 
-                    @drawCard="drawCard"/>
-            </template>
-        </div>
+        <TransitionGroup tag="div" name="deckItem" class="deckWrapper collection">
+            <DeckItem
+                v-for="card in props.cards" :key="card.id"
+                :id="card.id"
+                :data="card"
+                @drawCard="drawCard"/>
+        </TransitionGroup>
     </main>
 </template>
 
 <style>
     #deck {
-        min-height: 100vh;
-        padding: 108px 0;
+        padding: 24px 0 120px;
         display: flex;
-        flex-direction: column;
         justify-content: center;
-        align-items: center;
-        gap: 16px;
     }
 
     .deckWrapper.collection {
-        display: flex;
-        width: 90vw;
-        gap: 24px;
-        padding-bottom: 0;
-        justify-content: center;
-    }    
-
-    #deck .heading {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        /* height: 18vh; */
-        /* padding-top: 10vh; */
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 28px 20px;
+        width: 86vw;
+        max-width: 1100px;
     }
 
-    p.deckIntro {
-    
+    .deckItem-enter-active,
+    .deckItem-leave-active {
+        transition: opacity 250ms ease-out, scale 250ms ease-out;
+    }
+
+    .deckItem-enter-from,
+    .deckItem-leave-to {
+        opacity: 0;
+        scale: 0.9;
     }
 
     /* DESKTOP */
     @media screen and (min-width: 769px) {
-        #deck {
-            padding-bottom: 80px;
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;            
-        }
-
-        #deck .heading {
-            height: auto;
-            padding-top: 0;
-        }
-
         .deckWrapper.collection {
-            gap: 48px 24px;
-        }
-
-        p.deckIntro {
-            max-width: 70vw;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 40px 28px;
         }
     }
 
     /* XL */
-    @media screen and (min-width: 1025px) {        
+    @media screen and (min-width: 1025px) {
         .deckWrapper.collection {
-            gap: 48px;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
         }
     }
-
 </style>
