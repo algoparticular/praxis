@@ -3,7 +3,11 @@
     import OracleTemplate from '../components/OracleTemplate.vue';
     import OracleTemplateSkeleton from '../components/OracleTemplateSkeleton.vue';
     
-    import { onBeforeMount, onMounted, ref } from 'vue';
+    import { canUse3D } from '../composables/webgl.js';
+    import { defineAsyncComponent, onMounted, ref } from 'vue';
+
+    // three.js only loads when the deck is opened (see CardTable)
+    const CardTable = defineAsyncComponent(() => import('../components/CardTable.vue'));
     // import { isMobile } from 'mobile-device-detect';
 
     //***************************
@@ -11,6 +15,7 @@
     //Harcoded amount of cards.. help me :P
     const cardsAmount = ref(33);
     const cardsDrawn = ref(shuffleNumbers());
+    const use3D = ref(canUse3D());
 
     function shuffleNumbers() {
         let deck=[];
@@ -38,7 +43,12 @@
         <Header 
             :hasBack="true"
             :hasMenu="true"/>
-        <Suspense>
+        <CardTable
+            v-if="use3D"
+            :cardsDrawn="cardsDrawn"
+            layout="spiral"
+            @unsupported="use3D = false"/>
+        <Suspense v-else>
             <template #default>
                 <OracleTemplate :cardsDrawn="cardsDrawn"/>
             </template>

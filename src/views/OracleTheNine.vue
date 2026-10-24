@@ -3,10 +3,11 @@
     import OracleTemplate from '../components/OracleTemplate.vue';
     import OracleTemplateSkeleton from '../components/OracleTemplateSkeleton.vue';
     
+    import { canUse3D } from '../composables/webgl.js';
     import { defineAsyncComponent, onBeforeMount, onMounted, ref } from 'vue';
 
-    // three.js only loads when The Nine is opened (see NineTable)
-    const NineTable = defineAsyncComponent(() => import('../components/NineTable.vue'));
+    // three.js only loads when The Nine is opened (see CardTable)
+    const CardTable = defineAsyncComponent(() => import('../components/CardTable.vue'));
     // import { isMobile } from 'mobile-device-detect';
 
     //Harcoded amount of cards.. help me :P
@@ -15,16 +16,7 @@
     const cardsAmount = ref(33); 
     const cardsDrawn = ref(shuffleNumbers());
 
-    // 3D scene needs WebGL and no reduced-motion preference; otherwise use the 2D grid
-    function canUse3D() {
-        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return false;
-        try {
-            const canvas = document.createElement('canvas');
-            return !!(canvas.getContext('webgl2') || canvas.getContext('webgl'));
-        } catch (e) {
-            return false;
-        }
-    }
+    // 3D table needs WebGL and no reduced-motion preference; otherwise use the 2D grid
     const use3D = ref(canUse3D());
 
     function shuffleNumbers() {
@@ -64,9 +56,10 @@
         <Header 
             :hasBack="true"
             :hasMenu="true"/>
-        <NineTable
+        <CardTable
             v-if="use3D"
             :cardsDrawn="cardsDrawn"
+            layout="grid"
             @unsupported="use3D = false"/>
         <Suspense v-else>
             <template #default>

@@ -1,4 +1,5 @@
-// three.js table for The Nine: nine face-down cards on a round rug, seen from an orbiting camera.
+// three.js table for the oracle: face-down cards on a round rug, seen from an orbiting camera.
+// Two layouts: a 3x3 grid (The Nine) and a spiral fan (the full deck).
 // Drag to turn the table (with inertia), tap a card to choose it. The chosen card joins the camera,
 // flips and is handed over to the DOM (rect, border and radius) so the card page can animate it in place.
 // three is imported on demand so it does not weigh on the first load.
@@ -9,11 +10,14 @@ const CARD_W = 1;
 const CARD_H = 1.2;           // same 1:1.2 ratio as .deckItem
 const GAP_X = 0.22;
 const GAP_Z = 0.26;
+// Bounding radius of each layout, used to fit it in the screen
+const FIT_RADIUS = { grid: 2.6, spiral: 3.7 };
+const SPIRAL = { turns: 2, inner: 1.3, outer: 3.0 };
+
 const BORDER_RATIO = 2 / 90;  // border and radius relative to the card width, as in .deckItem
 const RADIUS_RATIO = 18 / 90;
 
 const FOV = 40;
-const FIT_RADIUS = 2.6;       // bounding radius of the 3x3 grid
 const ELEVATION = { min: 0.4, max: 1.3, start: 0.95 };
 const TAP = { distance: 8, time: 350 };
 
@@ -51,7 +55,21 @@ const loadImage = (url) => new Promise((resolve) => {
     img.src = url;
 });
 
-export async function createNineTable(canvas, { cardsDrawn, onPick, onSound }) {
+// Where each card rests on the table: position, turn inside its plane and stacking height
+const layoutCard = (layout, i, count) => {
+    if (layout === 'spiral') {
+        const t = i / (count - 1);
+        const angle = t * SPIRAL.turns * Math.PI * 2;
+        const radius = SPIRAL.inner + (SPIRAL.outer - SPIRAL.inner) * t;
+        // The top of each card points away from the center, so the deck opens like a fan
+        return { x: Math.cos(angle) * radius, z: Math.sin(angle) * radius, rot: -angle - Math.PI / 2, y: 0.02 + i * 0.005 };
+    }
+    const col = i % 3;
+    const row = Math.floor(i / 3);
+    return { x: (col - 1) * (CARD_W + GAP_X), z: (row - 1) * (CARD_H + GAP_Z), rot: 0, y: 0.02 };
+};
+
+export async function createCardTable(canvas, { cardsDrawn, layout = 'grid', onPick, onSound }) {
     const THREE = await import('three');
 
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -175,9 +193,8 @@ export async function createNineTable(canvas, { cardsDrawn, onPick, onSound }) {
     const shadowGeo = new THREE.PlaneGeometry(CARD_W * 1.5, CARD_H * 1.5);
 
     const cards = cardsDrawn.map((id, i) => {
-        const col = i % 3;
-        const row = Math.floor(i / 3);
-        const home = new THREE.Vector3((col - 1) * (CARD_W + GAP_X), 0.02, (row - 1) * (CARD_H + GAP_Z));
+        const spot = layoutCard(layout, i, cardsDrawn.length);
+        const home = new THREE.Vector3(spot.x, spot.y, spot.z);
 
         const pivot = new THREE.Group();
         const back = new THREE.Mesh(cardGeo, new THREE.MeshBasicMaterial({
@@ -202,12 +219,12 @@ export async function createNineTable(canvas, { cardsDrawn, onPick, onSound }) {
 
         return {
             id, pivot, back, face, shadow, home,
-            spin: (Math.random() - 0.5) * 0.12, // tiny hand-placed rotation of each card
+            spin: spot.rot + (Math.random() - 0.5) * (layout === 'spiral' ? 0.05 : 0.12), // tiny hand-placed rotation of each card
             lift: 0,                            // eased hover height
             hover: false,
             opacity: 1,
             // dealing: starts stacked in the middle and slides to its place
-            dealDelay: i * 0.07,
+            dealDelay: i * Math.min(0.07, 1.6 / cardsDrawn.length),
             dealt: reducedMotion ? 1 : 0,
         };
     });
@@ -220,7 +237,7 @@ export async function createNineTable(canvas, { cardsDrawn, onPick, onSound }) {
         const z = card.home.z * k;
         const y = card.home.y + (1 - k) * 0.01 * cards.indexOf(card) + card.lift * 0.22;
         card.pivot.position.set(x, y, z);
-        card.pivot.rotation.z = card.spin * k + (1 - k) * (card.spin * 6);
+        card.pivot.rotation.z = card.spin * k + (1 - k) * (card.spin + 0.6);
         card.shadow.position.set(x + card.lift * 0.05, 0.008, z + card.lift * 0.08);
         card.shadow.rotation.z = card.pivot.rotation.z;
         const s = 1 + card.lift * 0.12;
@@ -253,7 +270,7 @@ export async function createNineTable(canvas, { cardsDrawn, onPick, onSound }) {
         // Fit the grid in the narrower of the two fields of view: portrait phones are limited by width
         const half = THREE.MathUtils.degToRad(FOV) / 2;
         const halfW = Math.atan(Math.tan(half) * camera.aspect);
-        orbit.dist = FIT_RADIUS / Math.sin(Math.min(half, halfW)) * 0.9;
+        orbit.dist = FIT_RADIUS[layout] / Math.sin(Math.min(half, halfW)) * 0.9;
         camera.updateProjectionMatrix();
         applyCamera();
     };

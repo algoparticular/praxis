@@ -7,7 +7,8 @@
     import { play, vibrate } from '../composables/useSound.js';
 
     const props = defineProps({
-        cardsDrawn: Array
+        cardsDrawn: Array,
+        layout: { type: String, default: 'grid' } // 'grid' (The Nine) or 'spiral' (full deck)
     });
 
     // Sent when WebGL fails after all, so the view can fall back to the flat grid
@@ -51,10 +52,11 @@
     onMounted(async () => {
         starField = createStarField(starCanvas.value, root.value, { shooting: false });
         try {
-            const { createNineTable } = await import('../composables/useNineTable.js');
+            const { createCardTable } = await import('../composables/useCardTable.js');
             if (destroyed) return;
-            table = await createNineTable(tableCanvas.value, {
+            table = await createCardTable(tableCanvas.value, {
                 cardsDrawn: props.cardsDrawn,
+                layout: props.layout,
                 onPick: (cardId, rect, hideCard) => {
                     if (heading.value) heading.value.style.opacity = 0;
                     handlePick(cardId, rect, hideCard);
@@ -63,7 +65,7 @@
             });
             if (destroyed) table.destroy();
         } catch (e) {
-            console.warn('The Nine 3D is not available', e);
+            console.warn('3D table is not available', e);
             emit('unsupported');
         }
     });
@@ -76,7 +78,7 @@
 </script>
 
 <template>
-    <main id="nineTable" ref="root">
+    <main id="cardTable" ref="root">
         <canvas class="stars" ref="starCanvas"></canvas>
         <canvas class="table" ref="tableCanvas"></canvas>
         <div class="heading" ref="heading">
@@ -86,14 +88,14 @@
 </template>
 
 <style>
-    #nineTable {
+    #cardTable {
         position: fixed;
         inset: 0;
         z-index: 0;
         overflow: hidden;
     }
 
-    #nineTable canvas {
+    #cardTable canvas {
         position: absolute;
         inset: 0;
         width: 100%;
@@ -101,7 +103,7 @@
         display: block;
     }
 
-    #nineTable .heading {
+    #cardTable .heading {
         position: absolute;
         top: 0;
         left: 0;
@@ -113,7 +115,7 @@
         transition: opacity 0.4s ease-out;
     }
 
-    #nineTable p.deckIntro {
+    #cardTable p.deckIntro {
         font-family: 'particular', 'Inter', helvetica, sans-serif;
         font-size: 24px;
         color: #F7F8F1;
@@ -124,7 +126,7 @@
     }
 
     @media screen and (min-width: 769px) {
-        #nineTable .heading {
+        #cardTable .heading {
             padding-top: 12vh;
         }
     }
