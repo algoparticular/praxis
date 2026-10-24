@@ -4,6 +4,10 @@
   functions = "netlify/functions"
   publish = "dist"
 
+  # sharp (used by scripts/sync-cards.mjs) needs Node 20.9 or newer
+  [build.environment]
+    NODE_VERSION = "20"
+
 ## Uncomment to use this redirect for Single Page Applications like create-react-app.
 ## Not needed for static site generators.
 [[redirects]]
