@@ -263,6 +263,8 @@
         width: 100%;
         height: 100%;
         pointer-events: none;
+        opacity: 0;
+        transition: opacity 1.4s ease-out;
     }
 
     .splash.particle {
