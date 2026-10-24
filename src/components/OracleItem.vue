@@ -161,6 +161,10 @@
         align-items: center;
     }
 
+    .deckItem .face.back {
+        background-color: #143246;
+    }
+
     .deckItem .face.front {
         transform: rotateY(180deg);
         background-size: cover;

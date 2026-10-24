@@ -12,6 +12,7 @@
     const router = useRouter();
     const items = {};
     const wrapper = ref(null);
+    const heading = ref(null);
     let busy = true;
 
     const setItem = (id, instance) => { if (instance) items[id] = instance; };
@@ -63,6 +64,7 @@
         [el, ...others].forEach((node) => { node.style.transition = 'none'; });
 
         animate(others, { opacity: 0, scale: 0.85 }, { duration: 0.5, delay: stagger(0.01) });
+        animate(heading.value, { opacity: 0 }, { duration: 0.4 });
 
         const r = el.getBoundingClientRect();
         const scale = Math.min(window.innerWidth * 0.6 / r.width, window.innerHeight * 0.6 / r.height, 3);
@@ -93,7 +95,7 @@
 
 <template>
     <main id="cardDeck">
-        <div class="heading">
+        <div class="heading" ref="heading">
             <p class="deckIntro">{{ $t("oracle.deckCopy") }}</p>
         </div>
         <div class="deckWrapper" ref="wrapper">
