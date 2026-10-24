@@ -1,5 +1,5 @@
 <script setup>
-	import { onMounted, ref } from 'vue';
+	import { onMounted, onBeforeUnmount, ref } from 'vue';
     import { useRouter } from 'vue-router';
     import { animate, timeline, inView, scroll } from "motion";
 
@@ -27,13 +27,29 @@
     };    
 
 
+    //Cells and particles in three.js; the static cells come back if WebGL is not available
+    const cellCanvas = ref(null);
+    const cellsFallback = ref(false);
+    let cellField = null;
+    let unmounted = false;
+
+    onBeforeUnmount(() => {
+        unmounted = true;
+        cellField?.destroy();
+    });
+
     // //ON MOUNTED
 	onMounted (() => {         
+        import('../composables/useCellField.js')
+            .then(({ createCellField }) => createCellField(cellCanvas.value, document.getElementById('hero')))
+            .then((field) => { unmounted ? field.destroy() : (cellField = field); })
+            .catch((error) => {
+                console.warn('Cell field unavailable, using static cells', error);
+                cellsFallback.value = true;
+            });
+
         const sequence = [
             [".splash.particle", { y: 20 }],
-            [".splash.cell.one", { x: 20 }, { at: "<" }],
-            [".splash.cell.two", { x: -30 }, { at: "<" }],
-            [".splash.cell.three", { y: -30 }, { at: "<" }],
         ];
 
         timeline(sequence, { 
@@ -100,6 +116,9 @@
                 :strength="30"
                 axis="y"
                 type="translate"/>
+            <canvas class="cell-field" ref="cellCanvas"></canvas>
+
+            <template v-if="cellsFallback">
             <kinesis-element 
                 class="splash cell one"
                 tag="img"
@@ -125,6 +144,7 @@
                 :strength="10"
                 transformOrigin="bottom left"
                 type="translate"/>
+            </template>
 
             <kinesis-element 
                 class="splash background"
@@ -234,6 +254,15 @@
         background-size: contain;
         background-position: center;
         background-repeat: no-repeat;        
+    }
+
+.cell-field {
+        position: absolute;
+        inset: 0;
+        z-index: 3;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
     }
 
     .splash.particle {
