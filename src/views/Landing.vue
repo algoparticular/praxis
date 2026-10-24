@@ -197,7 +197,7 @@
                 type="depth"/>        
         </kinesis-container>
 
-        <kinesis-container id="oracle" tag="section" easing="cubic-bezier(0.23, 1, 0.32, 1)" event="scroll" :active="!reducedMotion">
+        <kinesis-container id="oracle" data-cursor="yellow" tag="section" easing="cubic-bezier(0.23, 1, 0.32, 1)" event="scroll" :active="!reducedMotion">
             <canvas class="star-field" ref="starCanvas"></canvas>
             <div class="corner topLeft"></div>
             <div class="corner bottomLeft"></div>

@@ -18,7 +18,7 @@
 6. **Extras** — HECHO (falta probar en un iPhone real):
    - Sonido sintetizado con Web Audio, sin archivos ni licencias (`src/audio/synth.js`, control en `src/composables/useSound.js`): acorde abierto de re mayor que respira, campanas tipo cuenco en escala pentatónica, gotas de agua, reverberación amplia; efectos de campanitas al elegir carta, giro, barajado, estrella fugaz y toque de botones. Apagado por defecto, con botón fijo abajo a la izquierda (`SoundToggle.vue`); la preferencia se guarda.
    - iOS: el audio arranca solo dentro de un gesto (click/touchend), `navigator.audioSession.type = 'playback'` para que el interruptor de silencio no lo corte (con pista silenciosa como respaldo en iOS antiguos), se reanuda tras interrupciones y hay respaldo a `webkitAudioContext`. La vibración (`navigator.vibrate`) solo funciona en Android; en iOS no existe.
-   - Cursor personalizado: una partícula circular con el resplandor de la marca, que se vuelve naranja sobre superficies claras como el footer; solo con ratón (`CustomCursor.vue`).
+   - Cursor personalizado: una partícula circular con el resplandor de la marca, que es blanca en general, amarilla en la sección del oráculo (atributo `data-cursor="yellow"` en la sección) y naranja sobre superficies claras como el footer; solo con ratón (`CustomCursor.vue`).
    - `prefers-reduced-motion` en toda la app: CSS global, parallax de `vue-kinesis` apagado, sin bucles de JavaScript.
 
 ## Para retomar: The Nine en 3D

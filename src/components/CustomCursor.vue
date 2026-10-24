@@ -21,7 +21,16 @@
     let frame = 0;
     let x = 0, y = 0, targetX = 0, targetY = 0;
     let visible = false;
+    let scrollFrame = 0;
     let cleanup = () => {};
+
+    // Orange over light surfaces, otherwise the colour of the section (a data-cursor attribute), otherwise white
+    const paint = (element) => {
+        if (!element || !cursor.value) return;
+        const theme = element.closest?.('[data-cursor]')?.dataset.cursor;
+        cursor.value.classList.toggle('light', isLight(element));
+        cursor.value.classList.toggle('yellow', theme === 'yellow');
+    };
 
     onMounted(() => {
         const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)');
@@ -52,8 +61,20 @@
             // Only worth recomputing when the pointer moves onto a different element
             if (event.target !== lastTarget) {
                 lastTarget = event.target;
-                cursor.value.classList.toggle('light', isLight(event.target));
+                paint(event.target);
             }
+        };
+        const onScroll = () => {
+            if (scrollFrame || !visible) return;
+            scrollFrame = requestAnimationFrame(() => {
+                scrollFrame = 0;
+                const under = document.elementFromPoint(targetX, targetY);
+                if (under && under !== lastTarget) {
+                    lastTarget = under;
+                    paint(under);
+                    cursor.value.classList.toggle('over', Boolean(under.closest?.(INTERACTIVE)));
+                }
+            });
         };
         const onLeave = () => { visible = false; cursor.value.classList.remove('show'); };
         const onDown = () => cursor.value.classList.add('press');
@@ -62,6 +83,7 @@
         window.addEventListener('pointermove', onMove, { passive: true });
         window.addEventListener('pointerdown', onDown, { passive: true });
         window.addEventListener('pointerup', onUp, { passive: true });
+        window.addEventListener('scroll', onScroll, { passive: true });
         document.addEventListener('pointerleave', onLeave);
         frame = requestAnimationFrame(loop);
 
@@ -71,6 +93,8 @@
             window.removeEventListener('pointermove', onMove);
             window.removeEventListener('pointerdown', onDown);
             window.removeEventListener('pointerup', onUp);
+            window.removeEventListener('scroll', onScroll);
+            cancelAnimationFrame(scrollFrame);
             document.removeEventListener('pointerleave', onLeave);
         };
     });
@@ -117,6 +141,11 @@
         box-shadow: 0 0 6px 1px rgba(247, 248, 241, 0.9), 0 0 16px 4px rgba(230, 233, 115, 0.45);
         -webkit-transition: transform 220ms ease-out, background 320ms ease-out, box-shadow 320ms ease-out;
         transition: transform 220ms ease-out, background 320ms ease-out, box-shadow 320ms ease-out;
+    }
+
+    .cursor.yellow .dot {
+        background: #E6E973;
+        box-shadow: 0 0 6px 1px rgba(230, 233, 115, 0.9), 0 0 16px 4px rgba(230, 233, 115, 0.5);
     }
 
     .cursor.light .dot {
