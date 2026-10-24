@@ -135,15 +135,16 @@ export async function createDeckRing(canvas, { cards, onFocus, onPick, onSound }
         renderer.setSize(width, height, false);
         camera.aspect = width / height;
         const half = Math.tan(THREE.MathUtils.degToRad(FOV) / 2);
-        // About three cards across on a phone, five on a wide screen
-        const visibleWidth = camera.aspect < 1 ? 3.4 : 5.6;
+        // Two and a half cards across on a phone (the front one fills half the screen, its neighbours peek in), five on a wide screen
+        const visibleWidth = camera.aspect < 1 ? 2.4 : 5.6;
         camDist = Math.max(visibleWidth / (2 * half * camera.aspect), 4);
         camera.position.set(0, 0.55, camDist);
         camera.lookAt(lookAt);
         camera.updateProjectionMatrix();
         camera.updateMatrixWorld();
         worldHeight = 2 * camDist * half;
-        pxPerCard = width / visibleWidth;
+        // One card step on screen, so a drag moves the ring as far as the finger
+        pxPerCard = (width / visibleWidth) * (CARD_W + 0.14);
     };
     const resizeObserver = new ResizeObserver(resize);
     resizeObserver.observe(canvas);
