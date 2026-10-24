@@ -1,72 +1,58 @@
 <script setup>
 	import { onMounted, ref } from 'vue';
     import { useRouter } from 'vue-router';   
-    // import { animate, scroll, inView } from "motion";
+    import { animate } from 'motion';
+    import { takePendingTransition } from '../cardTransition.js';
 
-    //Database
-    import Airtable from "airtable";
-    const base = new Airtable({ apiKey: "pat551SjcY5IJ6UAR.027a8d829d98875261ad7f6bdcddb446fd4496ba196b589724438f90608b76fd" }).base("appgHXHkRRjGjbYgM");
+    import { getCard } from '../data/cards.js';
 
     const props = defineProps({
         id: String
     });
 
     const router = useRouter();
-    const card = ref({});
-    const cover = ref('');
-    const color = ref('');
-    const colorAlt = ref('');
+    const card = ref(getCard(props.id) ?? {});
+    const cover = ref(card.value.image ? 'url(' + card.value.image[0].url + ')' : '');
+    const color = ref(card.value.color ?? '');
+    const colorAlt = ref(card.value.colorAlt ?? '');
 
-    const getCard = (id) => {
-        base('Oracle cards').select({
-            view: 'List',
-            filterByFormula: `id = "${id}"`
-        }).firstPage(function(err, records) {
-            if (err) { 
-                console.error('hubo un error ' + err); 
-                return; 
-            }
+    //Shared transition: the card picked in the oracle grows into the illustration
+    const root = ref(null);
 
-            card.value = records[0].fields;
+    onMounted(async () => {
+        const transition = takePendingTransition();
+        if (!transition) return;
 
-            cover.value = 'url(' + card.value.image[0].url + ')';
-            color.value = card.value.color;
-            colorAlt.value = card.value.colorAlt;            
-            // console.log('done ' + color.value);            
-        });
-    }
+        const target = root.value.querySelector('#illustration');
+        const rest = root.value.querySelectorAll('.textWrapper, button.action');
+        const style = getComputedStyle(target);
+        const box = target.getBoundingClientRect();
 
-    //This make possible the loading skeleton state
-    const loadCardData = async () => {
-        return new Promise((resolve) => {
-            setTimeout(() => {
-                resolve(getCard(props.id));                
-            }, 3000)
-        })
-    }
-    
-    const data = ref(await loadCardData());   
+        target.style.visibility = 'hidden';
+        rest.forEach((node) => { node.style.opacity = 0; });
 
-    /////////////////
-    // //ON MOUNTED
-	// onMounted (() => {
-        // const zoomElement = document.getElementById("scrollOn"); 
+        await animate(
+            transition.el,
+            {
+                left: box.left + 'px',
+                top: box.top + 'px',
+                width: box.width + 'px',
+                height: box.height + 'px',
+                borderRadius: style.borderTopLeftRadius,
+                borderWidth: style.borderTopWidth,
+                borderColor: style.borderTopWidth === '0px' ? transition.color : style.borderTopColor
+            },
+            { duration: 0.8, easing: [0.4, 0, 0.2, 1] }
+        ).finished;
 
-        // const scrollOptions = {
-        //     // target: zoomElement,
-        //     offset: ["start end", "end end"]
-        // }
-
-        // scroll(
-        //     animate("#illustration", { backgroundSize: "120%" }),
-        //     scrollOptions
-        // );
-    // });    
- 
+        target.style.visibility = '';
+        transition.el.remove();
+        animate(rest, { opacity: 1 }, { duration: 0.5 });
+    });
 </script>
 
 <template>
-	<main class="cardWrapper">
+	<main class="cardWrapper" ref="root">
         <div class="imageWrapper">
             <div id="illustration"></div>
             

@@ -2,18 +2,16 @@
     import Toolbar from '../components/Toolbar.vue';	
     import Header from '../components/Header.vue';	
 
-    import { onBeforeMount, ref } from 'vue';
+    import { ref } from 'vue';
     import { useRoute, useRouter } from 'vue-router';
 
-    //Database
-    import Airtable from "airtable";
-    const base = new Airtable({ apiKey: "pat551SjcY5IJ6UAR.027a8d829d98875261ad7f6bdcddb446fd4496ba196b589724438f90608b76fd" }).base("appgHXHkRRjGjbYgM");
+    import { getCard } from '../data/cards.js';
 
     const route = useRoute();
     const router = useRouter();
-    const card = ref({});
-    const cover = ref('');
-    const color = ref('');
+    const card = ref(getCard(route.params.id) ?? {});
+    const cover = ref(card.value.image ? 'url(' + card.value.image[0].url + ')' : '');
+    const color = ref(card.value.color ?? '');
     const showTooltip = ref(false);
 
     const shareUrl = window.location.origin+'/card/'+route.params.id;
@@ -30,19 +28,6 @@
     function goBack() {
         router.back();
     } 
-
-    onBeforeMount (() => {
-        base('Oracle cards').select({
-            view: 'List'
-        }).firstPage(function(err, records) {
-            if (err) { console.error(err); return; }
-
-            card.value = records[route.params.id].fields;
-
-            cover.value = 'url(' + card.value.image[0].url + ')';
-            color.value = card.value.color;
-        });
-    });  
 
 </script>
 

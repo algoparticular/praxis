@@ -1,25 +1,17 @@
 <script setup>
-	import { onMounted, ref } from 'vue';
+	import { onMounted, onBeforeUnmount, ref } from 'vue';
     import { useRouter } from 'vue-router';
-    import { animate, timeline, inView, scroll } from "motion";
+    import { timeline, inView, scroll } from "motion";
 
     import Header  from '../components/Header.vue';
     import Footer  from '../components/Footer.vue';
 
     import { KinesisContainer, KinesisElement} from 'vue-kinesis';
+    import { createStarField } from '../composables/useStarField.js';
+    import { play } from '../composables/useSound.js';
     
     const router = useRouter();
-
-    const gallery = ref([
-        'url(/assets/gallery/27.jpg)',
-        'url(/assets/gallery/4.jpg)',
-        'url(/assets/gallery/29.jpg)',
-        'url(/assets/gallery/3.jpg)',
-        'url(/assets/gallery/20.jpg)'
-    ]);
-    let currentIndex = 1;
-
-    const galleryWrapper = document.getElementById('galleryWrapper');
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     //handle navigation
     const handleNavigate = (url) => {
@@ -27,51 +19,120 @@
     };    
 
 
+    //Cells and particles in three.js; the static cells come back if WebGL is not available
+    const cellCanvas = ref(null);
+    const cellsFallback = ref(false);
+    let cellField = null;
+
+    //Night sky of the oracle block: twinkling stars and the odd shooting star
+    const starCanvas = ref(null);
+    const skyTail = ref(null);
+    const tailCanvas = ref(null);
+    let starField = null;
+    let tailField = null;
+    let unmounted = false;
+
+    const stopCorners = [];
+    const stopReveals = [];
+    const idleAnimations = [];
+
+    onBeforeUnmount(() => {
+        unmounted = true;
+        cellField?.destroy();
+        starField?.destroy();
+        tailField?.destroy();
+        stopCorners.forEach((stop) => stop());
+        stopReveals.forEach((stop) => stop());
+        idleAnimations.forEach((animation) => animation.cancel());
+    });
+
     // //ON MOUNTED
 	onMounted (() => {         
-        const sequence = [
-            [".splash.particle", { y: 20 }],
-            [".splash.cell.one", { x: 20 }, { at: "<" }],
-            [".splash.cell.two", { x: -30 }, { at: "<" }],
-            [".splash.cell.three", { y: -30 }, { at: "<" }],
-        ];
+        starField = createStarField(starCanvas.value, document.getElementById('oracle'), { onShoot: () => play('star') });
+        //The sky keeps going into the top of the next block and fades out as the background turns violet
+        tailField = createStarField(tailCanvas.value, skyTail.value, { shooting: false });
 
-        timeline(sequence, { 
-            duration: 4, 
-            direction: 'alternate-reverse', 
-            repeat: Infinity,
-            defaultOptions: { ease: "ease-out" },
-        });
-
-        setInterval(function(){
-            animate("#galleryWrapper", {
-                backgroundImage: gallery.value[currentIndex]
-            },
-            {
-                ease: "cubic-bezier(0.23, 1, 0.32, 1)"
+        import('../composables/useCellField.js')
+            .then(({ createCellField }) => createCellField(cellCanvas.value, document.getElementById('hero')))
+            .then((field) => { unmounted ? field.destroy() : (cellField = field); })
+            .catch((error) => {
+                console.warn('Cell field unavailable, using static cells', error);
+                cellsFallback.value = true;
             });
 
-            if(currentIndex+1 == gallery.value.length ) {
-                currentIndex = 0;
-            } else {
-                currentIndex++;
-            }
-            // console.log(currentIndex);
-        }, 5000);
+        const sequence = [
+            [".splash.particle", { y: 20 }],
+        ];
 
-        const colorSection = document.getElementById("uno"); 
-        
-        const scrollOptions = {
-            target: colorSection,
-            offset: ["start end", "end end"]
+        if (!reducedMotion) {
+            timeline(sequence, { 
+                duration: 4, 
+                direction: 'alternate-reverse', 
+                repeat: Infinity,
+                defaultOptions: { ease: "ease-out" },
+            });
         }
 
-        inView(colorSection, () => {            
-            scroll(
-                animate("#colorMe", { backgroundColor: "#FF6F61" }),
-                scrollOptions
-            )
-        });
+        //The oracle block frames itself while scrolling: its four corners appear one by one, clockwise.
+        //The corners are mirrored with transform, so they animate through the independent scale/translate properties.
+        if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            [
+                ['.corner.topLeft', -1, -1, ['start 55%', 'start 30%']],
+                ['.corner.topRight', 1, -1, ['start 38%', 'start 14%']],
+                ['.corner.bottomRight', 1, 1, ['start 92%', 'start 62%']],
+                ['.corner.bottomLeft', -1, 1, ['start 80%', 'start 52%']],
+            ].forEach(([selector, dx, dy, offset]) => {
+                const corner = document.querySelector(selector);
+                corner.style.opacity = 0;
+                stopCorners.push(scroll(({ y }) => {
+                    const eased = 1 - (1 - Math.min(1, Math.max(0, y.progress))) ** 3;
+                    corner.style.opacity = eased;
+                    corner.style.scale = 0.75 + 0.25 * eased;
+                    corner.style.translate = `${dx * 40 * (1 - eased)}px ${dy * 40 * (1 - eased)}px`;
+                }, { target: corner, offset }));
+            });
+        }
+
+        //Text and illustrations of the oracle block arrive one after the other when it comes into view.
+        //Independent translate/scale/rotate are used so they do not fight the parallax, which owns transform.
+        if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            const pick = (selector) => document.querySelector('#oracle ' + selector);
+            const copy = ['.copy .heading img', '.copy .heading h3', '.copy > p', '.copy > button'].map(pick);
+            const man = pick('.gfx .oracle.particle');
+            const tree = pick('.gfx .oracle.tree');
+            [...copy, man, tree].forEach((el) => { el.style.opacity = 0; });
+
+            const reveal = ({ el, y = 24, scale = 1, delay = 0, duration = 900, origin }) => {
+                if (origin) el.style.transformOrigin = origin;
+                const animation = el.animate(
+                    { opacity: [0, 1], translate: [`0 ${y}px`, '0 0'], scale: [scale, 1] },
+                    { duration, delay, easing: 'cubic-bezier(0.22, 1, 0.36, 1)', fill: 'backwards' }
+                );
+                el.style.opacity = '';
+                return animation.finished;
+            };
+            const idle = (el, keyframes, duration) => idleAnimations.push(el.animate(keyframes, {
+                duration, direction: 'alternate', iterations: Infinity, easing: 'ease-in-out'
+            }));
+
+            const quote = ['#uno h2', '#uno img'].map((selector) => document.querySelector(selector));
+            quote.forEach((el) => { el.style.opacity = 0; });
+            stopReveals.push(inView('#uno h2', () => {
+                quote.forEach((el, i) => reveal({ el, y: 32, delay: i * 350, duration: 1300 }));
+            }, { amount: 0.6 }));
+
+            stopReveals.push(inView('#oracle .copy', () => {
+                copy.forEach((el, i) => reveal({ el, delay: i * 140 }));
+            }, { amount: 0.5 }));
+
+            //The man on the rug and the bonsai are separate pieces: the man settles first, the bonsai drifts in behind him after
+            stopReveals.push(inView('#oracle .gfx', () => {
+                reveal({ el: man, y: 48, scale: 0.94, duration: 1200 })
+                    .then(() => idle(man, { translate: ['0 0', '0 -7px'] }, 4200)).catch(() => {});
+                reveal({ el: tree, y: 20, scale: 0.55, delay: 600, duration: 1400 })
+                    .then(() => idle(tree, { translate: ['0 0', '0 -12px'], rotate: ['-2deg', '2deg'] }, 6200)).catch(() => {});
+            }, { amount: 0.3 }));
+        }
     });
 </script>
 
@@ -83,7 +144,7 @@
             </template>
         </Header>
        
-        <kinesis-container id="hero" tag="section" easing="cubic-bezier(0.23, 1, 0.32, 1)" :perspective="100">
+        <kinesis-container id="hero" tag="section" easing="cubic-bezier(0.23, 1, 0.32, 1)" :perspective="100" :active="!reducedMotion">
             <a href="/praxis">
                 <kinesis-element
                     tag="h1">
@@ -100,6 +161,9 @@
                 :strength="30"
                 axis="y"
                 type="translate"/>
+            <canvas class="cell-field" ref="cellCanvas"></canvas>
+
+            <template v-if="cellsFallback">
             <kinesis-element 
                 class="splash cell one"
                 tag="img"
@@ -125,6 +189,7 @@
                 :strength="10"
                 transformOrigin="bottom left"
                 type="translate"/>
+            </template>
 
             <kinesis-element 
                 class="splash background"
@@ -132,7 +197,8 @@
                 type="depth"/>        
         </kinesis-container>
 
-        <kinesis-container id="oracle" tag="section" easing="cubic-bezier(0.23, 1, 0.32, 1)" event="scroll">
+        <kinesis-container id="oracle" data-cursor="yellow" tag="section" easing="cubic-bezier(0.23, 1, 0.32, 1)" event="scroll" :active="!reducedMotion">
+            <canvas class="star-field" ref="starCanvas"></canvas>
             <div class="corner topLeft"></div>
             <div class="corner bottomLeft"></div>
             <div class="corner topRight"></div>
@@ -165,20 +231,8 @@
         </kinesis-container>
 
         <div id="colorMe">
-            <section id="about">
-                <div id="galleryWrapper"></div>
-
-                <div class="copy">
-                    <div class="heading">
-                        <img src="../assets/icon/Brote.svg"/>
-                        <h3>{{ $t("landing.aboutTitle") }}</h3>
-                    </div>
-                    <p>{{ $t("landing.aboutDescrip") }}</p>
-                    <button @click="handleNavigate('/collaborate')">{{ $t("landing.aboutAction") }}</button>
-                </div>            
-            </section>
-            
             <section id="uno">
+                <div class="sky-tail" ref="skyTail"><canvas ref="tailCanvas"></canvas></div>
                 <h2>{{ $t("landing.uno") }}</h2>
                 <img src="../assets/icon/Seed.svg" loading="lazy"/>
             </section>
@@ -199,10 +253,12 @@
     /* HERO */
 	#hero {
         background-color: #6A428D;
-        height: 90vh;
+        height: 115vh;
         min-height: 667px;
         padding: 5vh 0;
-        box-shadow: inset 0px 6px 63px rgb(255 111 97 / 36%), inset 0px -6px 64px rgb(20 50 70 / 90%);
+        /* A coral glow at the top only: an inset shadow also leaked along the bottom edge and drew a line against the oracle block */
+        background-image: linear-gradient(180deg, rgba(255, 111, 97, 0.32) 0, rgba(255, 111, 97, 0) 120px);
+        background-repeat: no-repeat;
     }
 
     h1 {
@@ -236,6 +292,17 @@
         background-repeat: no-repeat;        
     }
 
+.cell-field {
+        position: absolute;
+        inset: 0;
+        z-index: 3;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 1.4s ease-out;
+    }
+
     .splash.particle {
         z-index: 9;        
         width: 80vw;
@@ -264,6 +331,13 @@
         left: 9vw;
     }    
 
+    /* The hero's content fades out into its own violet, which is where the oracle block begins */
+    .splash.background,
+    .cell-field {
+        -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 60%, transparent 100%);
+        mask-image: linear-gradient(to bottom, #000 0%, #000 60%, transparent 100%);
+    }
+
     .splash.background {
         background-image: url('../assets/hero/background.webp');
         background-size: cover;
@@ -271,7 +345,7 @@
         top: 0;
         z-index: 0;
         width: 100vw;
-        height: 100vh;
+        height: 100%;
     }
 
     /* DESKTOP */
@@ -315,9 +389,6 @@
             left: 3vw;
         }
 
-        .splash.background {
-            background-size: contain;
-        }
     }
 </style>
 
@@ -325,10 +396,23 @@
 <style scoped>
     /* ORACLE */
     #oracle {
-        background-color: #0381BA;   
-        background-image: url('../assets/oracle/stars.webp');
-        background-size: cover;
-        background-position: center;
+        /* Height of the zone where the hero's violet sinks into the navy. It sits above the content, which is all on the dark. */
+        --sky: 36vh;
+        box-sizing: border-box;
+        padding-top: var(--sky);
+        background-color: #143246;
+        /* The top of the block is the violet of the hero, eased down into the navy */
+        background-image: linear-gradient(180deg,
+            #6A428D 0%,
+            rgba(106, 66, 141, 0.82) 14%,
+            rgba(106, 66, 141, 0.55) 32%,
+            rgba(106, 66, 141, 0.28) 52%,
+            rgba(106, 66, 141, 0.1) 74%,
+            rgba(106, 66, 141, 0) 100%);
+        background-size: 100% var(--sky);
+        background-repeat: no-repeat;
+        isolation: isolate;
+        overflow-x: clip;
 
         display: flex;
         align-items: center;
@@ -336,7 +420,21 @@
         flex-direction: column;
         gap: 80px;
         width: 100vw;
-        min-height: 150vh;
+        min-height: calc(150vh + var(--sky));
+    }
+
+    /* The sky fades in from the top so the stars do not start on a visible edge */
+    .star-field {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        z-index: -1;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 1.2s ease-out;
+        -webkit-mask-image: linear-gradient(to bottom, transparent 0, transparent calc(var(--sky) * 0.15), #000 calc(var(--sky) * 0.95));
+        mask-image: linear-gradient(to bottom, transparent 0, transparent calc(var(--sky) * 0.15), #000 calc(var(--sky) * 0.95));
     }
 
     .copy {
@@ -394,10 +492,12 @@
         background-image: url('../assets/oracle/corner.webp');
         background-size: contain;
         background-repeat: no-repeat;
+        /* Their dark outlines would vanish into the navy */
+        filter: drop-shadow(0 0 8px rgba(164, 218, 217, 0.45));
 
         position: absolute;
         z-index: 3;
-        top: 2vw;
+        top: calc(var(--sky) + 2vw);
         left: 2vw;
         width: 30vw;
         height: 30vw;
@@ -437,10 +537,11 @@
         width: 80vw;
     }
 
+    /* The bonsai floats behind the character, to his right */
     .oracle.tree {
         position: absolute;
-        top: 5vh;
-        right: 0;
+        top: 4%;
+        right: 15%;
         z-index: -1;           
         width: 20vw;     
     }   
@@ -452,7 +553,8 @@
             align-items: center;
             justify-content: center;
             gap: 100px;
-            min-height: 100vh;
+            --sky: 46vh;
+            min-height: calc(100vh + var(--sky));
         }
 
         #oracle .copy {
@@ -475,109 +577,53 @@
 
         .oracle.tree {
             width: 11vw;
+            top: 6%;
+            right: 14%;
         }
 
-    }
-</style>
-
-<!-- About -->
-<style scoped>
-    #colorMe {
-        background-color: #F7F8F1;
-        background-image: url('../assets/noise_white.webp');
-    }
-
-    /* ABOUT */
-    #about {        
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        flex-direction: column;
-        gap: 40px;
-        height: 140vh;    
-    }
-
-    #galleryWrapper {        
-        width: 90vw;
-        height: 95vh;
-        margin-top: 5vh;
-        border-radius: 90px;
-        background-color: #A4DAD9;   
-        background-size: cover; 
-        background-position: center;
-        box-shadow: inset 0px -6px 81px rgba(255, 111, 97, 0.36), inset 0px 6px 81px rgba(20, 50, 70, 0.23);    
-
-        background-image: url('/gallery/27.jpg'); /*default*/
-    }    
-
-    #about .copy {        
-        width: 100vw;
-        height: 100%;
-        /* background-color: #F7F8F1; */
-        z-index: 1;
-        padding: 0 0 10vh;        
-    }
-
-    #about .copy .heading img {
-        filter: drop-shadow(0px 2px 3px rgba(255, 111, 97, 0.56));
-    }
-
-    #about .copy .heading h3 {
-        color: #143246;
-    }
-
-    #about .copy p {
-        color: #143246;
-    }
-
-    #about .copy button {
-        color: #F7F8F1;
-        background-color: #FF6F61;
-    }
-
-    #about .copy button:hover {
-        color: #143246;
-        background-color: #E8E974;
-    }
-
-    /* DESKTOP */
-    @media screen and (min-width: 769px) {
-        #about {
-            flex-direction: row;
-            gap: 80px;
-            height: 100vh;
-        }
-
-        #galleryWrapper {
-            width: 36vw;
-            height: 70vh;
-            margin: 0;
-        }
-
-        #about .copy {
-            width: 36vw;
-            padding: 0;
-        }
     }
 </style>
 
 <!-- UNO Quote -->
 <style scoped>
     /* UNO */
+    /* From the dark of the oracle into the orange, as the scroll goes on */
+    #colorMe {
+        background-color: #143246;
+    }
+
     #uno {
-        /* background-color: #F7F8F1; */
+        position: relative;
+        isolation: isolate;
         display: flex;
         align-items: center;
         justify-content: center;
         flex-direction: column;
         gap: 16px;
         width: 100vw;
-        height: 100vh;
+        height: 240vh;
+        padding-top: 72vh;
+        box-sizing: border-box;
+        /* A wide band of orange holds behind the quote, with room around it, and then clears into the cream of the footer */
+        background: linear-gradient(180deg, #143246 0%, #4a3a6e 20%, #c8636f 36%, #FF6F61 48%, #FF6F61 82%, #F7F8F1 100%);
+    }
 
-        /* background-image: url('../assets/icon/SeedGhost.svg');
-        background-repeat: no-repeat;
-        background-size: 135px;
-        background-position: 90% 60%; */
+    /* Stars carry on over the dark top of this block and fade out as it turns violet */
+    .sky-tail {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 55vh;
+        z-index: -1;
+        pointer-events: none;
+        -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 25%, transparent 100%);
+        mask-image: linear-gradient(to bottom, #000 0%, #000 25%, transparent 100%);
+    }
+
+    .sky-tail canvas {
+        width: 100%;
+        height: 100%;
     }
 
     #uno h2 {
@@ -593,11 +639,6 @@
 
     /* DESKTOP */
     @media screen and (min-width: 769px) {
-        #uno {
-            background-size: 180px;
-            background-position: 66% 60%;
-        }
-
         #uno h2 {
             font-size: 48px;            
         }

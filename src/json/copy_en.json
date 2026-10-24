@@ -124,6 +124,10 @@
             "chakra": {
                 "text":""
             }
+        },
+        "sound": {
+            "mute": "Mute sound",
+            "unmute": "Turn sound on"
         }
     }
 }
