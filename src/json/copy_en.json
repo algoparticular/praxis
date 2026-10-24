@@ -9,9 +9,10 @@
             "notFoundButton": "Go back to site"        
         },
         "praxis": {
-            "praxisIntro": "Welcome to the Particles' Oracle.\n\nDecide how many cards to shuffle, put true intention in whatever vibrates within you. (Cards only in Spanish)",
+            "praxisIntro": "Decide how many cards to shuffle, put true intention in whatever vibrates within you.",
             "fullDeck": "Full Deck",
-            "theNine": "The Nine"
+            "theNine": "The Nine",
+            "cardsCount": "{n} cards"
         },
         "landing": {
             "intro": "What makes you particular?",

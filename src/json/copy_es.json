@@ -9,9 +9,10 @@
             "notFoundButton": "Volver al sitio"            
         },
         "praxis": {
-            "praxisIntro": "Bienvenidx al Oráculo de las Partículas.\n\nDecide cuántas cartas mezclar, pon intención verdadera en eso que vibra en tu interior.",
+            "praxisIntro": "Decide cuántas cartas mezclar, pon intención verdadera en eso que vibra en tu interior.",
             "fullDeck": "Mazo completo",
-            "theNine": "Las Nueve"
+            "theNine": "Las Nueve",
+            "cardsCount": "{n} cartas"
         },
         "landing": {
             "intro": "¿Y tú qué tienes de particular?",

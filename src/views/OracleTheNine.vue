@@ -3,7 +3,11 @@
     import OracleTemplate from '../components/OracleTemplate.vue';
     import OracleTemplateSkeleton from '../components/OracleTemplateSkeleton.vue';
     
-    import { onBeforeMount, onMounted, ref } from 'vue';
+    import { canUse3D } from '../composables/webgl.js';
+    import { defineAsyncComponent, onBeforeMount, onMounted, ref } from 'vue';
+
+    // three.js only loads when The Nine is opened (see CardTable)
+    const CardTable = defineAsyncComponent(() => import('../components/CardTable.vue'));
     // import { isMobile } from 'mobile-device-detect';
 
     //Harcoded amount of cards.. help me :P
@@ -11,6 +15,9 @@
     //Sería genial traer este número de la DB, el lenght de la tabla de cartas
     const cardsAmount = ref(33); 
     const cardsDrawn = ref(shuffleNumbers());
+
+    // 3D table needs WebGL and no reduced-motion preference; otherwise use the 2D grid
+    const use3D = ref(canUse3D());
 
     function shuffleNumbers() {
         let deck=[];
@@ -49,7 +56,12 @@
         <Header 
             :hasBack="true"
             :hasMenu="true"/>
-        <Suspense>
+        <CardTable
+            v-if="use3D"
+            :cardsDrawn="cardsDrawn"
+            layout="grid"
+            @unsupported="use3D = false"/>
+        <Suspense v-else>
             <template #default>
                 <OracleTemplate :cardsDrawn="cardsDrawn"/>
             </template>
