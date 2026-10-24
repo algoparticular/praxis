@@ -26,7 +26,7 @@ const sparklePath = (ctx, x, y, radius, rotation, wobble) => {
     ctx.closePath();
 };
 
-export function createStarField(canvas, container, { shootingEvery = [4, 9] } = {}) {
+export function createStarField(canvas, container, { shootingEvery = [4, 9], shooting: withShooting = true } = {}) {
     const ctx = canvas.getContext('2d');
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -161,7 +161,7 @@ export function createStarField(canvas, container, { shootingEvery = [4, 9] } = 
             meteor.y += meteor.vy * dt;
             if (meteor.life >= meteor.duration) shooting.splice(i, 1);
         }
-        if (time >= nextShot) {
+        if (withShooting && time >= nextShot) {
             shoot();
             nextShot = time + rand(shootingEvery[0], shootingEvery[1]);
         }

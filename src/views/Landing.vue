@@ -24,7 +24,10 @@
 
     //Night sky of the oracle block: twinkling stars and the odd shooting star
     const starCanvas = ref(null);
+    const skyTail = ref(null);
+    const tailCanvas = ref(null);
     let starField = null;
+    let tailField = null;
     let unmounted = false;
 
     const stopCorners = [];
@@ -35,6 +38,7 @@
         unmounted = true;
         cellField?.destroy();
         starField?.destroy();
+        tailField?.destroy();
         stopCorners.forEach((stop) => stop());
         stopReveals.forEach((stop) => stop());
         idleAnimations.forEach((animation) => animation.cancel());
@@ -43,6 +47,8 @@
     // //ON MOUNTED
 	onMounted (() => {         
         starField = createStarField(starCanvas.value, document.getElementById('oracle'));
+        //The sky keeps going into the top of the next block and fades out as the background turns violet
+        tailField = createStarField(tailCanvas.value, skyTail.value, { shooting: false });
 
         import('../composables/useCellField.js')
             .then(({ createCellField }) => createCellField(cellCanvas.value, document.getElementById('hero')))
@@ -222,6 +228,7 @@
 
         <div id="colorMe">
             <section id="uno">
+                <div class="sky-tail" ref="skyTail"><canvas ref="tailCanvas"></canvas></div>
                 <h2>{{ $t("landing.uno") }}</h2>
                 <img src="../assets/icon/Seed.svg" loading="lazy"/>
             </section>
@@ -245,20 +252,9 @@
         height: 115vh;
         min-height: 667px;
         padding: 5vh 0;
-        box-shadow: inset 0px 6px 63px rgb(255 111 97 / 36%), inset 0px -6px 64px rgb(20 50 70 / 90%);
-    }
-
-    /* The hero sinks into the dark navy of the oracle block instead of ending in a hard cut */
-    #hero::after {
-        content: '';
-        position: absolute;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        height: 28%;
-        z-index: 8;
-        pointer-events: none;
-        background: linear-gradient(to bottom, rgba(20, 50, 70, 0) 0%, rgba(20, 50, 70, 0.45) 50%, #143246 100%);
+        /* A coral glow at the top only: an inset shadow also leaked along the bottom edge and drew a line against the oracle block */
+        background-image: linear-gradient(180deg, rgba(255, 111, 97, 0.32) 0, rgba(255, 111, 97, 0) 120px);
+        background-repeat: no-repeat;
     }
 
     h1 {
@@ -331,6 +327,13 @@
         left: 9vw;
     }    
 
+    /* The hero's content fades out into its own violet, which is where the oracle block begins */
+    .splash.background,
+    .cell-field {
+        -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 60%, transparent 100%);
+        mask-image: linear-gradient(to bottom, #000 0%, #000 60%, transparent 100%);
+    }
+
     .splash.background {
         background-image: url('../assets/hero/background.webp');
         background-size: cover;
@@ -390,6 +393,16 @@
     /* ORACLE */
     #oracle {
         background-color: #143246;
+        /* The top of the block is the violet of the hero, eased down into the navy */
+        background-image: linear-gradient(180deg,
+            #6A428D 0%,
+            rgba(106, 66, 141, 0.82) 14%,
+            rgba(106, 66, 141, 0.55) 32%,
+            rgba(106, 66, 141, 0.28) 52%,
+            rgba(106, 66, 141, 0.1) 74%,
+            rgba(106, 66, 141, 0) 100%);
+        background-size: 100% 70vh;
+        background-repeat: no-repeat;
         isolation: isolate;
         overflow-x: clip;
 
@@ -412,8 +425,8 @@
         pointer-events: none;
         opacity: 0;
         transition: opacity 1.2s ease-out;
-        -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 35%);
-        mask-image: linear-gradient(to bottom, transparent 0%, #000 35%);
+        -webkit-mask-image: linear-gradient(to bottom, transparent 0%, transparent 10%, #000 45%);
+        mask-image: linear-gradient(to bottom, transparent 0%, transparent 10%, #000 45%);
     }
 
     .copy {
@@ -571,6 +584,8 @@
     }
 
     #uno {
+        position: relative;
+        isolation: isolate;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -582,6 +597,24 @@
         box-sizing: border-box;
         /* A wide band of orange holds behind the quote, with room around it, and then clears into the cream of the footer */
         background: linear-gradient(180deg, #143246 0%, #4a3a6e 20%, #c8636f 36%, #FF6F61 48%, #FF6F61 82%, #F7F8F1 100%);
+    }
+
+    /* Stars carry on over the dark top of this block and fade out as it turns violet */
+    .sky-tail {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 55vh;
+        z-index: -1;
+        pointer-events: none;
+        -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 25%, transparent 100%);
+        mask-image: linear-gradient(to bottom, #000 0%, #000 25%, transparent 100%);
+    }
+
+    .sky-tail canvas {
+        width: 100%;
+        height: 100%;
     }
 
     #uno h2 {
