@@ -3,11 +3,10 @@
     import OracleTemplate from '../components/OracleTemplate.vue';
     import OracleTemplateSkeleton from '../components/OracleTemplateSkeleton.vue';
     
-    import { useRouter } from 'vue-router';
     import { defineAsyncComponent, onBeforeMount, onMounted, ref } from 'vue';
 
-    // three.js only loads when The Nine is opened
-    const TheNineScene = defineAsyncComponent(() => import('../components/TheNineScene.vue'));
+    // three.js only loads when The Nine is opened (see NineTable)
+    const NineTable = defineAsyncComponent(() => import('../components/NineTable.vue'));
     // import { isMobile } from 'mobile-device-detect';
 
     //Harcoded amount of cards.. help me :P
@@ -15,8 +14,6 @@
     //Sería genial traer este número de la DB, el lenght de la tabla de cartas
     const cardsAmount = ref(33); 
     const cardsDrawn = ref(shuffleNumbers());
-
-    const router = useRouter();
 
     // 3D scene needs WebGL and no reduced-motion preference; otherwise use the 2D grid
     function canUse3D() {
@@ -29,10 +26,6 @@
         }
     }
     const use3D = ref(canUse3D());
-
-    const handleTakeCard = (cardId) => {
-        router.push({ name: 'card', params: { id: cardId } });
-    };
 
     function shuffleNumbers() {
         let deck=[];
@@ -71,10 +64,10 @@
         <Header 
             :hasBack="true"
             :hasMenu="true"/>
-        <TheNineScene
+        <NineTable
             v-if="use3D"
             :cardsDrawn="cardsDrawn"
-            @takeCard="handleTakeCard"/>
+            @unsupported="use3D = false"/>
         <Suspense v-else>
             <template #default>
                 <OracleTemplate :cardsDrawn="cardsDrawn"/>
