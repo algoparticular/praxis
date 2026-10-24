@@ -507,11 +507,11 @@
         width: 80vw;
     }
 
-    /* The bonsai floats behind the character, to his left */
+    /* The bonsai floats behind the character, to his right */
     .oracle.tree {
         position: absolute;
         top: 4%;
-        left: 12%;
+        right: 15%;
         z-index: -1;           
         width: 20vw;     
     }   
@@ -547,7 +547,7 @@
         .oracle.tree {
             width: 11vw;
             top: 6%;
-            left: 8%;
+            right: 14%;
         }
 
     }

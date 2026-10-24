@@ -34,7 +34,7 @@ export async function createCellField(canvas, container) {
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const smallScreen = window.innerWidth < 600;
     const lowPower = (navigator.hardwareConcurrency ?? 8) <= 4;
-    const cellCount = Math.round((smallScreen ? 16 : 26) * (lowPower ? 0.65 : 1));
+    const cellCount = Math.round((smallScreen ? 9 : 14) * (lowPower ? 0.7 : 1));
     const particleCount = Math.round((smallScreen ? 150 : 260) * (lowPower ? 0.6 : 1));
 
     // Throws without WebGL; the caller falls back to the static cells
@@ -53,13 +53,13 @@ export async function createCellField(canvas, container) {
     const textures = await Promise.all(CELL_TEXTURES.map((url) => loader.loadAsync(url)));
     textures.forEach((texture) => { texture.colorSpace = THREE.SRGBColorSpace; });
 
-    // A few big cells up front, some medium ones and many small ones lost in the background
-    const big = 2;
-    const medium = Math.round(cellCount * 0.2);
+    // One bigger cell up front, a few medium ones and the rest small, lost in the background
+    const big = 1;
+    const medium = Math.round(cellCount * 0.25);
     const tiers = Array.from({ length: cellCount }, (_, i) => {
-        if (i < big) return { size: rand(0.46, 0.6), z: rand(-2.5, 1.5) };
-        if (i < big + medium) return { size: rand(0.24, 0.34), z: rand(-4, 1) };
-        return { size: rand(0.09, 0.18), z: rand(-5, -0.5) };
+        if (i < big) return { size: rand(0.3, 0.38), z: rand(-2.5, 1.5) };
+        if (i < big + medium) return { size: rand(0.17, 0.25), z: rand(-4, 1) };
+        return { size: rand(0.08, 0.14), z: rand(-5, -0.5) };
     });
 
     // Placement works in world units, biggest first, so overlaps are judged by size
