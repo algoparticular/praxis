@@ -26,7 +26,7 @@ const sparklePath = (ctx, x, y, radius, rotation, wobble) => {
     ctx.closePath();
 };
 
-export function createStarField(canvas, container, { shootingEvery = [4, 9], shooting: withShooting = true } = {}) {
+export function createStarField(canvas, container, { shootingEvery = [4, 9], shooting: withShooting = true, onShoot } = {}) {
     const ctx = canvas.getContext('2d');
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -74,6 +74,7 @@ export function createStarField(canvas, container, { shootingEvery = [4, 9], sho
 
     // A shooting star crosses the upper part of the sky on a slight downward diagonal
     const shoot = () => {
+        onShoot?.();
         const goingRight = Math.random() < 0.5;
         const angle = rand(0.35, 0.6) * (goingRight ? 1 : -1) + (goingRight ? 0 : Math.PI);
         const speed = rand(650, 950);

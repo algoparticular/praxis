@@ -8,8 +8,10 @@
 
     import { KinesisContainer, KinesisElement} from 'vue-kinesis';
     import { createStarField } from '../composables/useStarField.js';
+    import { play } from '../composables/useSound.js';
     
     const router = useRouter();
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     //handle navigation
     const handleNavigate = (url) => {
@@ -46,7 +48,7 @@
 
     // //ON MOUNTED
 	onMounted (() => {         
-        starField = createStarField(starCanvas.value, document.getElementById('oracle'));
+        starField = createStarField(starCanvas.value, document.getElementById('oracle'), { onShoot: () => play('star') });
         //The sky keeps going into the top of the next block and fades out as the background turns violet
         tailField = createStarField(tailCanvas.value, skyTail.value, { shooting: false });
 
@@ -62,12 +64,14 @@
             [".splash.particle", { y: 20 }],
         ];
 
-        timeline(sequence, { 
-            duration: 4, 
-            direction: 'alternate-reverse', 
-            repeat: Infinity,
-            defaultOptions: { ease: "ease-out" },
-        });
+        if (!reducedMotion) {
+            timeline(sequence, { 
+                duration: 4, 
+                direction: 'alternate-reverse', 
+                repeat: Infinity,
+                defaultOptions: { ease: "ease-out" },
+            });
+        }
 
         //The oracle block frames itself while scrolling: its four corners appear one by one, clockwise.
         //The corners are mirrored with transform, so they animate through the independent scale/translate properties.
@@ -140,7 +144,7 @@
             </template>
         </Header>
        
-        <kinesis-container id="hero" tag="section" easing="cubic-bezier(0.23, 1, 0.32, 1)" :perspective="100">
+        <kinesis-container id="hero" tag="section" easing="cubic-bezier(0.23, 1, 0.32, 1)" :perspective="100" :active="!reducedMotion">
             <a href="/praxis">
                 <kinesis-element
                     tag="h1">
@@ -193,7 +197,7 @@
                 type="depth"/>        
         </kinesis-container>
 
-        <kinesis-container id="oracle" tag="section" easing="cubic-bezier(0.23, 1, 0.32, 1)" event="scroll">
+        <kinesis-container id="oracle" tag="section" easing="cubic-bezier(0.23, 1, 0.32, 1)" event="scroll" :active="!reducedMotion">
             <canvas class="star-field" ref="starCanvas"></canvas>
             <div class="corner topLeft"></div>
             <div class="corner bottomLeft"></div>

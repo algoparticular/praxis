@@ -5,6 +5,7 @@
     import OracleItem from "./OracleItem.vue";
     import { getCard } from '../data/cards.js';
     import { setPendingTransition } from '../cardTransition.js';
+    import { play, vibrate } from '../composables/useSound.js';
 
     const props = defineProps({
         cardsDrawn: Array
@@ -50,6 +51,7 @@
 
     onMounted(async () => {
         if (reducedMotion()) { busy = false; return; }
+        play('shuffle');
 
         //The deck is stacked in the middle of the screen: on phones the grid is taller than the viewport
         const cx = window.innerWidth / 2;
@@ -89,6 +91,8 @@
     const handleTakeCard = async (cardId) => {
         if (busy) return;
         busy = true;
+        play('pick');
+        vibrate(18);
 
         if (reducedMotion()) return router.push({ name: 'card', params: { id: cardId } });
 
@@ -113,6 +117,8 @@
             { duration: 0.7, easing: [0.4, 0, 0.2, 1] }
         ).finished;
 
+        play('flip');
+        vibrate([10, 30, 14]);
         await chosen.flip();
 
         //A copy of the flipped card outlives this view; the card page animates it into place
