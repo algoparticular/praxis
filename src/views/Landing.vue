@@ -107,12 +107,12 @@
                 copy.forEach((el, i) => reveal({ el, delay: i * 140 }));
             }, { amount: 0.5 }));
 
-            //The man on the rug and the bonsai are separate pieces: the man settles first, the tree grows from its pot after
+            //The man on the rug and the bonsai are separate pieces: the man settles first, the bonsai drifts in behind him after
             stopReveals.push(inView('#oracle .gfx', () => {
                 reveal({ el: man, y: 48, scale: 0.94, duration: 1200 })
                     .then(() => idle(man, { translate: ['0 0', '0 -7px'] }, 4200)).catch(() => {});
-                reveal({ el: tree, y: 20, scale: 0.55, delay: 600, duration: 1400, origin: '50% 100%' })
-                    .then(() => idle(tree, { rotate: ['-1.4deg', '1.4deg'] }, 5200)).catch(() => {});
+                reveal({ el: tree, y: 20, scale: 0.55, delay: 600, duration: 1400 })
+                    .then(() => idle(tree, { translate: ['0 0', '0 -12px'], rotate: ['-2deg', '2deg'] }, 6200)).catch(() => {});
             }, { amount: 0.3 }));
         }
     });
@@ -507,10 +507,11 @@
         width: 80vw;
     }
 
+    /* The bonsai floats behind the character, to his left */
     .oracle.tree {
         position: absolute;
-        top: -9vh;
-        right: 0;
+        top: 4%;
+        left: 12%;
         z-index: -1;           
         width: 20vw;     
     }   
@@ -543,19 +544,10 @@
             width: 34vw;
         }
 
-        /* The bonsai stands beside the rug instead of on top of it */
         .oracle.tree {
             width: 11vw;
-            top: 20vh;
-            right: -11vw;
-        }
-    }
-
-    /* Narrow desktops and tablets: a smaller bonsai so it still fits next to the rug */
-    @media screen and (min-width: 769px) and (max-width: 1100px) {
-        .oracle.tree {
-            width: 8vw;
-            right: -9vw;
+            top: 6%;
+            left: 8%;
         }
 
     }
@@ -576,11 +568,11 @@
         flex-direction: column;
         gap: 16px;
         width: 100vw;
-        height: 200vh;
-        padding-top: 60vh;
+        height: 240vh;
+        padding-top: 72vh;
         box-sizing: border-box;
-        /* The orange holds behind the quote and then clears into the cream of the footer */
-        background: linear-gradient(180deg, #143246 0%, #4a3a6e 25%, #c8636f 50%, #FF6F61 62%, #FF6F61 74%, #F7F8F1 100%);
+        /* A wide band of orange holds behind the quote, with room around it, and then clears into the cream of the footer */
+        background: linear-gradient(180deg, #143246 0%, #4a3a6e 20%, #c8636f 36%, #FF6F61 48%, #FF6F61 82%, #F7F8F1 100%);
     }
 
     #uno h2 {

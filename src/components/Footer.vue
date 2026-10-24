@@ -30,7 +30,6 @@
                 :hasAbout="true"
                 :hasCollaborate="true"
                 />
-            <span class="copyright">© Algo Particular</span>
         </div>
         <div class="wrapper">
             <img src="../assets/Logo_blue.svg" loading="lazy"/>
@@ -49,6 +48,7 @@
                 </a>               
             </div>
         </div>
+        <span class="copyright">© Algo Particular</span>
     </footer>
 </template>
 
@@ -140,7 +140,11 @@
     }
     
     span.copyright {
-        color: #143246;
+        color: rgba(20, 50, 70, 0.5);
+        font-size: 13px;
+        width: 85%;
+        margin-top: -24px;
+        text-align: center;
     }
 
     /* DESKTOP */
@@ -160,8 +164,7 @@
         }
 
         span.copyright {
-            display: flex;
-            align-self: flex-end;
+            margin-top: -16px;
         }
     }
 </style>
