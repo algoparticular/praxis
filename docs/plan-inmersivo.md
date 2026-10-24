@@ -18,5 +18,4 @@
 6. **Extras:** sonido ambiente y háptica opcionales con botón de silencio, cursor personalizado, `prefers-reduced-motion`.
 
 ## Pendientes
-- Revocar el token viejo de Airtable (sigue en el historial de git; el nuevo es de solo lectura).
 - Leer las subpáginas del Notion de Algo Particular (Praxis, El Oráculo de las Partículas, Game Design Document) para ajustar el tono visual: no estaban accesibles.
