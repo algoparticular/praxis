@@ -24,6 +24,7 @@
     }
 
     function animateList() {
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
         const cards = document.querySelectorAll(".deckItem");
 
         for (var i = 0; i < cards.length; i++) {

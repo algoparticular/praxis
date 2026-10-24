@@ -6,34 +6,11 @@
     import { onBeforeMount, onMounted, ref } from 'vue';
     // import { isMobile } from 'mobile-device-detect';
 
-    //Database
-    // import Airtable from "airtable";
-    // const base = new Airtable({ apiKey: "keyLdBi48iZZkEOMG" }).base("appgHXHkRRjGjbYgM");
- 
     //***************************
     //***************************
     //Harcoded amount of cards.. help me :P
     const cardsAmount = ref(33);
     const cardsDrawn = ref(shuffleNumbers());
-
-    // function getDeck() {
-    //     let amount = 0;
-
-    //     base('Oracle cards').select({
-    //         view: 'List'
-    //     }).firstPage(function(err, records) {
-    //         if (err) { 
-    //             console.error('hubo un error ' + err); 
-    //             return; 
-    //         }
-
-    //         amount = records.length;      
-            
-    //         console.log('done ' + amount);
-    //     });
-    //     return amount;
-    // }
-    //***************************
 
     function shuffleNumbers() {
         let deck=[];

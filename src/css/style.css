@@ -727,3 +727,17 @@ button.secondary.fix {
   padding: 3vh 0 20vh;
   margin-top: 32px;
 }
+
+
+/* Less motion for those who ask for it: transitions and CSS animations collapse to nothing.
+   The animations driven from JavaScript check the same preference on their own. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
