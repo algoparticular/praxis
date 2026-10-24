@@ -21,5 +21,32 @@
    - Cursor personalizado: una partícula circular con el resplandor de la marca, que se vuelve naranja sobre superficies claras como el footer; solo con ratón (`CustomCursor.vue`).
    - `prefers-reduced-motion` en toda la app: CSS global, parallax de `vue-kinesis` apagado, sin bucles de JavaScript.
 
+## Para retomar: The Nine en 3D
+Rama: `claude/cool-heisenberg-l4fuyc`. Los pasos 1 a 6 están hechos y la landing está cerrada. Falta solo esto.
+
+**Idea del autor.** Las 9 cartas sobre una mesa en grilla de 3×3. Se puede rotar la mesa arrastrando, y las cartas quedan siempre en el centro. Se ve en `/oracleTheNine`.
+
+**Qué hay hoy y se puede reutilizar**
+- `src/views/OracleTheNine.vue`: baraja las 33 cartas, toma 9 y las muestra con `OracleTemplate` (grilla plana de 3×3).
+- `src/components/OracleTemplate.vue`: el ritual actual (barajado y reparto, elección, volteo, vuelo a `/card/:id`) con sonidos y vibración.
+- `src/cardTransition.js` + `CardTemplate.vue`: la entrega a la página de la carta. Espera una copia fija en el `body` con el rectángulo, el borde y el radio de la carta (ver `handleTakeCard`), y la anima hasta `#illustration`.
+- `src/data/cards.js`: `getCard(id)`, con la imagen en `image[0].url`, `color` y `colorAlt`.
+- `src/composables/useStarField.js`: el cielo con estrellas y fugaces, reutilizable como fondo.
+- `src/composables/useSound.js`: `play('pick' | 'flip' | 'shuffle')` y `vibrate()`.
+- `src/composables/useCellField.js`: el patrón a seguir para three.js (carga bajo demanda, respaldo sin WebGL, `prefers-reduced-motion`).
+
+**Diseño propuesto (no implementado)**
+- Un composable `useNineTable.js` y un componente `NineTable.vue`, con respaldo a `OracleTemplate` si no hay WebGL.
+- Mesa: un disco tipo alfombra, del verde azulado de la ilustración de la landing, con sombras suaves bajo las cartas. Fondo con el cielo de estrellas.
+- Cartas: planos con textura de canvas. Dorso azul oscuro con el símbolo y el borde crema. El frente se carga solo al elegir (9 imágenes de unos 250 kB).
+- Cámara orbital: arrastrar en horizontal gira la mesa, con inercia, y en vertical cambia la elevación, limitada. Distinguir toque de arrastre (menos de 8 px y menos de 350 ms). Al pasar el puntero, la carta se levanta un poco. `touch-action: none` en el canvas.
+- Elección: las demás se desvanecen, la elegida se une a la cámara, se voltea girando sobre el eje X de la cámara y se entrega al DOM calculando su rectángulo, que es proporcional 1:1.2, con borde de 10/512 del ancho y radio de 0.19 del ancho. Después `setPendingTransition` y `router.push`.
+- Ajustar la distancia de la cámara según la proporción de la pantalla, para móviles verticales. Con movimiento reducido: sin autorrotación ni animación de entrada.
+
+**Por decidir con el autor:** si las posiciones de las 9 cartas tienen un significado propio, y si las cartas empiezan boca abajo, como hoy.
+
 ## Pendientes
+- Probar el sonido en un iPhone real, con el interruptor de silencio puesto y quitado.
+- Medir batería y fluidez de las escenas de three.js en un teléfono real.
+- About y Collaborate terminan en un bloque naranja que corta en seco contra el footer crema (solo se suavizó la landing).
 - Leer las subpáginas del Notion de Algo Particular (Praxis, El Oráculo de las Partículas, Game Design Document) para ajustar el tono visual: no estaban accesibles.
