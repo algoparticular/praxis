@@ -19,6 +19,20 @@
 <template>
     <footer>
         <div class="wrapper">
+            <Menu 
+                class="inFooter"
+                @navigate="handleNavigate"
+                @langChanged="handleLangChanged"
+                :hasHome="true"
+                :hasIntro="false"
+                :hasPraxis="true"
+                :hasFullDeck="true"
+                :hasAbout="true"
+                :hasCollaborate="true"
+                />
+            <span class="copyright">© Algo Particular</span>
+        </div>
+        <div class="wrapper">
             <img src="../assets/Logo_blue.svg" loading="lazy"/>
             <div class="social-nav">
                 <a class="social twit" href="https://www.twitter.com/in/algoparticular" target="_blank">                        
@@ -34,20 +48,6 @@
                     </svg>
                 </a>               
             </div>
-        </div>
-        <div class="wrapper">
-            <Menu 
-                class="inFooter"
-                @navigate="handleNavigate"
-                @langChanged="handleLangChanged"
-                :hasHome="true"
-                :hasIntro="false"
-                :hasPraxis="true"
-                :hasFullDeck="true"
-                :hasAbout="true"
-                :hasCollaborate="true"
-                />
-            <span class="copyright">© Algo Particular</span>
         </div>
     </footer>
 </template>

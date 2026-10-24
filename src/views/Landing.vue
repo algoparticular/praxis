@@ -576,10 +576,11 @@
         flex-direction: column;
         gap: 16px;
         width: 100vw;
-        height: 170vh;
-        padding-top: 70vh;
+        height: 200vh;
+        padding-top: 60vh;
         box-sizing: border-box;
-        background: linear-gradient(180deg, #143246 0%, #4a3a6e 30%, #c8636f 60%, #FF6F61 80%);
+        /* The orange holds behind the quote and then clears into the cream of the footer */
+        background: linear-gradient(180deg, #143246 0%, #4a3a6e 25%, #c8636f 50%, #FF6F61 62%, #FF6F61 74%, #F7F8F1 100%);
     }
 
     #uno h2 {
