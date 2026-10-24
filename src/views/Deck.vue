@@ -184,6 +184,15 @@
         .chip span {
             display: none;
         }
+
+        .chip {
+            padding: 0 11px;
+            font-size: 14px;
+        }
+
+        .filters {
+            gap: 6px;
+        }
     }
 
     @media screen and (min-width: 769px) {
