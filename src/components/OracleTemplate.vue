@@ -78,6 +78,8 @@
             { duration: 0.7, delay: i * 0.025, easing: [0.22, 1, 0.36, 1] }
         )));
 
+        //Let motion commit the final styles before the CSS transition comes back, or the last card slides in again
+        await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
         grid.forEach((card) => { card.el.style.zIndex = ''; card.el.style.transition = ''; });
         busy = false;
     });
