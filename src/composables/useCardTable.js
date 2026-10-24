@@ -11,8 +11,8 @@ const CARD_H = 1.2;           // same 1:1.2 ratio as .deckItem
 const GAP_X = 0.22;
 const GAP_Z = 0.26;
 // Bounding radius of each layout, used to fit it in the screen
-const FIT_RADIUS = { grid: 2.6, spiral: 3.7 };
-const SPIRAL = { turns: 2, inner: 1.3, outer: 3.0 };
+const FIT_RADIUS = { grid: 2.35, spiral: 3.15 };
+const SPIRAL = { turns: 2, inner: 1.2, outer: 2.8 };
 
 const BORDER_RATIO = 2 / 90;  // border and radius relative to the card width, as in .deckItem
 const RADIUS_RATIO = 18 / 90;
