@@ -7,6 +7,7 @@
     import Footer  from '../components/Footer.vue';
 
     import { KinesisContainer, KinesisElement} from 'vue-kinesis';
+    import { createStarField } from '../composables/useStarField.js';
     
     const router = useRouter();
 
@@ -20,6 +21,10 @@
     const cellCanvas = ref(null);
     const cellsFallback = ref(false);
     let cellField = null;
+
+    //Night sky of the oracle block: twinkling stars and the odd shooting star
+    const starCanvas = ref(null);
+    let starField = null;
     let unmounted = false;
 
     const stopCorners = [];
@@ -29,6 +34,7 @@
     onBeforeUnmount(() => {
         unmounted = true;
         cellField?.destroy();
+        starField?.destroy();
         stopCorners.forEach((stop) => stop());
         stopReveals.forEach((stop) => stop());
         idleAnimations.forEach((animation) => animation.cancel());
@@ -36,6 +42,8 @@
 
     // //ON MOUNTED
 	onMounted (() => {         
+        starField = createStarField(starCanvas.value, document.getElementById('oracle'));
+
         import('../composables/useCellField.js')
             .then(({ createCellField }) => createCellField(cellCanvas.value, document.getElementById('hero')))
             .then((field) => { unmounted ? field.destroy() : (cellField = field); })
@@ -180,6 +188,7 @@
         </kinesis-container>
 
         <kinesis-container id="oracle" tag="section" easing="cubic-bezier(0.23, 1, 0.32, 1)" event="scroll">
+            <canvas class="star-field" ref="starCanvas"></canvas>
             <div class="corner topLeft"></div>
             <div class="corner bottomLeft"></div>
             <div class="corner topRight"></div>
@@ -393,16 +402,16 @@
         min-height: 150vh;
     }
 
-    /* Stars fade in from the top so they do not start on a visible edge */
-    #oracle::before {
-        content: '';
+    /* The sky fades in from the top so the stars do not start on a visible edge */
+    .star-field {
         position: absolute;
         inset: 0;
+        width: 100%;
+        height: 100%;
         z-index: -1;
         pointer-events: none;
-        background-image: url('../assets/oracle/stars.webp');
-        background-size: cover;
-        background-position: center;
+        opacity: 0;
+        transition: opacity 1.2s ease-out;
         -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 35%);
         mask-image: linear-gradient(to bottom, transparent 0%, #000 35%);
     }
