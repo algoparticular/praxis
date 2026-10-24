@@ -12,7 +12,7 @@
    - Componentes ya leen datos locales; se quitaron los retrasos artificiales de 2.5–3 s y la dependencia `airtable`.
    - Sync corrido: 33 cartas, imágenes convertidas a webp (19 MB → 8.5 MB). El script usa `sharp` y lee `.env.local`.
 2. **Ritual de sacar carta** — HECHO (primera versión, falta pulir el estilo visual) en `/oracle` y `/oracleTheNine`: barajado animado con `motion`, elección, volteo 3D (CSS 3D) y el color de la carta tiñendo la pantalla antes de mostrar el texto.
-3. **Transición compartida mazo → carta:** la carta tocada crece hasta ser la ilustración de `/card/:id` (View Transitions API con Vue Router, o `motion`).
+3. **Transición compartida mazo → carta** — HECHO: la carta tocada vuela hasta ser la ilustración de `/card/:id` (copia fija en el `body` + `motion`, módulo `src/cardTransition.js`; sin depender de la View Transitions API). Reemplaza la tintura de color del paso 2.
 4. **three.js** donde aporte: campo de partículas o "células" en el hero de la landing (cursor, giroscopio, scroll) y mesa 3D para The Nine. Evaluar peso y batería en móvil.
 5. **Landing:** scroll narrativo con `scroll()` de `motion`, cambiando color y ambiente entre secciones.
 6. **Extras:** sonido ambiente y háptica opcionales con botón de silencio, cursor personalizado, `prefers-reduced-motion`.

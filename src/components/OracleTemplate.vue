@@ -4,6 +4,7 @@
     import { animate, stagger } from 'motion';
     import OracleItem from "./OracleItem.vue";
     import { getCard } from '../data/cards.js';
+    import { setPendingTransition } from '../cardTransition.js';
 
     const props = defineProps({
         cardsDrawn: Array
@@ -84,13 +85,12 @@
         busy = false;
     });
 
-    //Ritual, step 2: choose a card. The rest fade, the chosen one rises, flips and tints the screen
+    //Ritual, step 2: choose a card. The rest fade, the chosen one rises, flips and flies to the card page
     const handleTakeCard = async (cardId) => {
         if (busy) return;
         busy = true;
 
-        const goToCard = () => router.push({ name: 'card', params: { id: cardId } });
-        if (reducedMotion()) return goToCard();
+        if (reducedMotion()) return router.push({ name: 'card', params: { id: cardId } });
 
         const chosen = items[cardId];
         const el = chosen.root;
@@ -115,15 +115,19 @@
 
         await chosen.flip();
 
-        //The overlay outlives this view so the card page fades in over the same colour
-        const tint = document.createElement('div');
-        tint.style.cssText = `position:fixed;inset:0;z-index:100;pointer-events:none;opacity:0;background:${getCard(cardId)?.color ?? '#143246'}`;
-        document.body.appendChild(tint);
-        await animate(tint, { opacity: 1 }, { duration: 0.6 }).finished;
+        //A copy of the flipped card outlives this view; the card page animates it into place
+        const rect = el.getBoundingClientRect();
+        const card = getCard(cardId);
+        const clone = document.createElement('div');
+        clone.style.cssText = `position:fixed;z-index:100;pointer-events:none;box-sizing:border-box;`
+            + `left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;height:${rect.height}px;`
+            + `border:${2 * scale}px solid ${card?.color ?? '#143246'};border-radius:${18 * scale}px;`
+            + `background:${card?.color ?? '#143246'} ${card?.image ? `url(${card.image[0].url})` : ''} center/cover no-repeat`;
+        document.body.appendChild(clone);
+        el.style.visibility = 'hidden';
 
-        await goToCard();
-        await animate(tint, { opacity: 0 }, { duration: 0.6, delay: 0.3 }).finished;
-        tint.remove();
+        setPendingTransition({ el: clone, color: card?.color });
+        router.push({ name: 'card', params: { id: cardId } });
     };
 </script>
 

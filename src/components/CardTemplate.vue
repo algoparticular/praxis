@@ -1,7 +1,8 @@
 <script setup>
 	import { onMounted, ref } from 'vue';
     import { useRouter } from 'vue-router';   
-    // import { animate, scroll, inView } from "motion";
+    import { animate } from 'motion';
+    import { takePendingTransition } from '../cardTransition.js';
 
     import { getCard } from '../data/cards.js';
 
@@ -15,26 +16,43 @@
     const color = ref(card.value.color ?? '');
     const colorAlt = ref(card.value.colorAlt ?? '');
 
-    /////////////////
-    // //ON MOUNTED
-	// onMounted (() => {
-        // const zoomElement = document.getElementById("scrollOn"); 
+    //Shared transition: the card picked in the oracle grows into the illustration
+    const root = ref(null);
 
-        // const scrollOptions = {
-        //     // target: zoomElement,
-        //     offset: ["start end", "end end"]
-        // }
+    onMounted(async () => {
+        const transition = takePendingTransition();
+        if (!transition) return;
 
-        // scroll(
-        //     animate("#illustration", { backgroundSize: "120%" }),
-        //     scrollOptions
-        // );
-    // });    
- 
+        const target = root.value.querySelector('#illustration');
+        const rest = root.value.querySelectorAll('.textWrapper, button.action');
+        const style = getComputedStyle(target);
+        const box = target.getBoundingClientRect();
+
+        target.style.visibility = 'hidden';
+        rest.forEach((node) => { node.style.opacity = 0; });
+
+        await animate(
+            transition.el,
+            {
+                left: box.left + 'px',
+                top: box.top + 'px',
+                width: box.width + 'px',
+                height: box.height + 'px',
+                borderRadius: style.borderTopLeftRadius,
+                borderWidth: style.borderTopWidth,
+                borderColor: style.borderTopWidth === '0px' ? transition.color : style.borderTopColor
+            },
+            { duration: 0.8, easing: [0.4, 0, 0.2, 1] }
+        ).finished;
+
+        target.style.visibility = '';
+        transition.el.remove();
+        animate(rest, { opacity: 1 }, { duration: 0.5 });
+    });
 </script>
 
 <template>
-	<main class="cardWrapper">
+	<main class="cardWrapper" ref="root">
         <div class="imageWrapper">
             <div id="illustration"></div>
             
