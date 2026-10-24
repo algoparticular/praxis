@@ -11,7 +11,6 @@
 
     const router = useRouter();
     const items = {};
-    const wrapper = ref(null);
     const heading = ref(null);
     let busy = true;
 
@@ -19,34 +18,67 @@
     const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const rand = (range) => (Math.random() - 0.5) * range;
 
-    //Ritual, step 1: the cards gather in the middle and spread out again
+    //Ritual, step 1: the deck appears stacked, is riffled twice and then dealt into the grid
+    const SPLIT = 55;
+    const done = (animations) => Promise.all(animations.map((a) => a.finished));
+    const stackPose = (card, pos) => ({ x: card.dx + pos * 0.25, y: card.dy - pos * 0.4 });
+
+    //Splits the stack in two piles and interleaves them card by card
+    const riffle = async (stack) => {
+        const half = Math.ceil(stack.length / 2);
+        const piles = [stack.slice(0, half), stack.slice(half)];
+
+        await done(stack.map((card) => {
+            const side = piles[0].includes(card) ? -1 : 1;
+            return animate(card.el, { x: card.dx + side * SPLIT, rotate: side * 5 }, { duration: 0.22, easing: 'ease-out' });
+        }));
+
+        const shuffled = [];
+        for (let i = 0; i < half; i++) {
+            if (piles[0][i]) shuffled.push(piles[0][i]);
+            if (piles[1][i]) shuffled.push(piles[1][i]);
+        }
+
+        await done(shuffled.map((card, pos) => {
+            card.el.style.zIndex = pos;
+            return animate(card.el, { ...stackPose(card, pos), rotate: rand(4) }, { duration: 0.2, delay: pos * 0.012, easing: 'ease-in-out' });
+        }));
+
+        return shuffled;
+    };
+
     onMounted(async () => {
         if (reducedMotion()) { busy = false; return; }
 
-        const box = wrapper.value.getBoundingClientRect();
-        const cx = box.left + box.width / 2;
-        const cy = box.top + box.height / 2;
+        //The deck is stacked in the middle of the screen: on phones the grid is taller than the viewport
+        const cx = window.innerWidth / 2;
+        const cy = window.innerHeight / 2;
 
-        const animations = props.cardsDrawn.map((id, i) => {
+        //Measure every card before moving any of them
+        let stack = props.cardsDrawn.map((id, i) => {
             const el = items[id].root;
             el.style.transition = 'none';
             const r = el.getBoundingClientRect();
-            const dx = cx - (r.left + r.width / 2);
-            const dy = cy - (r.top + r.height / 2);
-            return animate(
-                el,
-                {
-                    x: [dx, dx + rand(60), 0],
-                    y: [dy, dy + rand(60), 0],
-                    rotate: [rand(40), rand(40), 0],
-                    opacity: [0, 1, 1]
-                },
-                { duration: 1.1, delay: i * 0.02, easing: [0.22, 1, 0.36, 1] }
-            ).finished;
+            return { el, dx: cx - (r.left + r.width / 2), dy: cy - (r.top + r.height / 2) };
         });
+        const grid = [...stack];
 
-        await Promise.all(animations);
-        props.cardsDrawn.forEach((id) => { items[id].root.style.transition = ''; });
+        stack.forEach((card, pos) => {
+            card.el.style.zIndex = pos;
+            animate(card.el, { ...stackPose(card, pos), rotate: rand(4), opacity: 0 }, { duration: 0 });
+        });
+        await done(stack.map((card) => animate(card.el, { opacity: 1 }, { duration: 0.4 })));
+
+        stack = await riffle(stack);
+        stack = await riffle(stack);
+
+        await done(grid.map((card, i) => animate(
+            card.el,
+            { x: 0, y: 0, rotate: 0 },
+            { duration: 0.7, delay: i * 0.025, easing: [0.22, 1, 0.36, 1] }
+        )));
+
+        grid.forEach((card) => { card.el.style.zIndex = ''; card.el.style.transition = ''; });
         busy = false;
     });
 
@@ -98,7 +130,7 @@
         <div class="heading" ref="heading">
             <p class="deckIntro">{{ $t("oracle.deckCopy") }}</p>
         </div>
-        <div class="deckWrapper" ref="wrapper">
+        <div class="deckWrapper">
             <template v-for="cardItem in props.cardsDrawn" :key="cardItem">
                 <OracleItem 
                     :cardId="cardItem" 
