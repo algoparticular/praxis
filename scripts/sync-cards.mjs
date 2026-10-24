@@ -1,6 +1,7 @@
 // Airtable -> src/data/cards.json + public/cards/
 // Usage: AIRTABLE_TOKEN=... npm run sync:cards
 import { mkdir, writeFile } from 'node:fs/promises';
+import sharp from 'sharp';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -36,16 +37,16 @@ async function fetchRecords() {
     return records;
 }
 
-// Airtable attachment URLs expire, so images are downloaded and served locally.
+// Airtable attachment URLs expire, so images are downloaded, converted to webp and served locally.
 async function downloadImage(id, attachment) {
     const res = await fetch(attachment.url);
     if (!res.ok) throw new Error(`Image ${id}: ${res.status}`);
 
-    const ext = path.extname(new URL(attachment.url).pathname)
-        || '.' + (attachment.type?.split('/')[1] ?? 'jpg');
-    const file = `${id}${ext}`;
-    await writeFile(path.join(imagesDir, file), Buffer.from(await res.arrayBuffer()));
-    return { url: `/cards/${file}`, width: attachment.width, height: attachment.height };
+    const file = `${id}.webp`;
+    const { width, height } = await sharp(Buffer.from(await res.arrayBuffer()))
+        .webp({ quality: 80 })
+        .toFile(path.join(imagesDir, file));
+    return { url: `/cards/${file}`, width, height };
 }
 
 await mkdir(imagesDir, { recursive: true });
