@@ -232,10 +232,10 @@
         left: 0;
         right: 0;
         bottom: 0;
-        height: 45%;
+        height: 28%;
         z-index: 8;
         pointer-events: none;
-        background: linear-gradient(to bottom, rgba(20, 50, 70, 0) 0%, rgba(20, 50, 70, 0.7) 55%, #143246 100%);
+        background: linear-gradient(to bottom, rgba(20, 50, 70, 0) 0%, rgba(20, 50, 70, 0.45) 50%, #143246 100%);
     }
 
     h1 {
