@@ -82,14 +82,23 @@
             let scrollLift = 0;                                     //set by the scroll handler below
             const particle = document.querySelector('#hero .splash.particle');
             const hero = document.getElementById('hero');
-            const pointer = { x: 0, tx: 0 };
+            //The pointer, relative to the character: lean is -1..1 across his width, near is 1 right on him and 0 far away
+            const pointer = { x: 0, y: 0, near: 0, tx: 0, ty: 0, tnear: 0 };
             const onPointer = (event) => {
-                const box = hero.getBoundingClientRect();
-                pointer.tx = Math.max(-1, Math.min(1, (event.clientX - box.left) / box.width * 2 - 1));
+                const box = particle.getBoundingClientRect();
+                const reach = box.width * 1.2;
+                pointer.tx = Math.max(-1, Math.min(1, (event.clientX - (box.left + box.width / 2)) / reach));
+                pointer.ty = Math.max(-1, Math.min(1, (event.clientY - (box.top + box.height / 2)) / reach));
+                const distance = Math.hypot(event.clientX - (box.left + box.width / 2), event.clientY - (box.top + box.height * 0.62)) / box.width;
+                pointer.tnear = Math.min(1, Math.max(0, (1.1 - distance) / 0.9)) ** 1.5;
+                spiral?.setPointer(event.clientX, event.clientY);
             };
-            const onLeave = () => { pointer.tx = 0; };
-            hero.addEventListener('pointermove', onPointer);
-            hero.addEventListener('pointerleave', onLeave);
+            const onLeave = () => {
+                pointer.tx = pointer.ty = pointer.tnear = 0;
+                spiral?.setPointer(null);
+            };
+            ['pointermove', 'pointerdown'].forEach((type) => hero.addEventListener(type, onPointer));
+            ['pointerleave', 'pointercancel'].forEach((type) => hero.addEventListener(type, onLeave));
 
             let frame = 0;
             let visible = true;
@@ -104,13 +113,18 @@
                     const t = (now - start) / 1000;
                     const ramp = Math.min(1, t / 2);                    //amplitudes ease in so nothing jumps when the loop begins
                     pointer.x += (pointer.tx - pointer.x) * 0.06;       //the lean follows the pointer with a delay
+                    pointer.y += (pointer.ty - pointer.y) * 0.06;
+                    pointer.near += (pointer.tnear - pointer.near) * 0.07;
                     const breath = (1 - Math.cos(t * 1.75)) / 2;        //0..1, about 3.6s per breath
                     const floatX = Math.sin(t * 0.5) * 9 * ramp;
                     const floatY = (Math.cos(t * 0.5) - 1) * 6 * ramp;  //oval path, starting at rest
-                    particle.style.translate = `${floatX + pointer.x * 14}px ${floatY + scrollLift}px`;
+                    //Up close he leans in, grows a little, breathes deeper and shines brighter
+                    const excite = pointer.near;
+                    const deep = breath * (1 + 0.8 * excite);
+                    particle.style.translate = `${floatX + pointer.x * 14}px ${floatY + scrollLift + pointer.y * 8}px`;
                     particle.style.rotate = `${(pointer.x * 4 + Math.sin(t * 0.9) * 1.5 * ramp).toFixed(3)}deg`;
-                    particle.style.scale = 1 + 0.035 * breath * ramp;
-                    particle.style.filter = `drop-shadow(0 0 ${(6 + 16 * breath * ramp).toFixed(1)}px rgba(255, 150, 130, ${(0.12 + 0.38 * breath * ramp).toFixed(3)}))`;
+                    particle.style.scale = 1 + (0.035 * deep + 0.03 * excite) * ramp;
+                    particle.style.filter = `drop-shadow(0 0 ${(6 + 16 * deep * ramp + 14 * excite).toFixed(1)}px rgba(255, 150, 130, ${Math.min(0.9, 0.12 + 0.38 * deep * ramp + 0.3 * excite).toFixed(3)}))`;
                 };
                 frame = requestAnimationFrame(tick);
             };
@@ -118,8 +132,8 @@
             stopReveals.push(() => {
                 cancelAnimationFrame(frame);
                 visibility.disconnect();
-                hero.removeEventListener('pointermove', onPointer);
-                hero.removeEventListener('pointerleave', onLeave);
+                ['pointermove', 'pointerdown'].forEach((type) => hero.removeEventListener(type, onPointer));
+                ['pointerleave', 'pointercancel'].forEach((type) => hero.removeEventListener(type, onLeave));
             });
 
             //Leaving the hero: the title lifts and fades while the particle drifts up slower, so the violet hands over to the night
