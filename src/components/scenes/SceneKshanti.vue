@@ -130,12 +130,24 @@
         return `M${left.join('L')}L${cap(last, 1).join('L')}L${right.reverse().join('L')}L${cap(first, -1).reverse().join('L')}Z`;
     };
     const FRONT_D = LINE.front.map(([a, b]) => `M${Array.from({ length: b - a + 1 }, (_, k) => `${X(a + k)} ${Y(a + k)}`).join('L')}`);
-    // The strokes: each is a stretch of the route (length as a fraction of it) that travels along it at its own pace
-    // (route fractions per second); where it runs past the end it comes back at the start
-    const STROKES = [
-        { len: 0.075, speed: 1.0 }, { len: 0.05, speed: 0.82 }, { len: 0.09, speed: 1.18 }, { len: 0.06, speed: 0.9 },
-        { len: 0.07, speed: 1.1 }, { len: 0.045, speed: 0.72 }, { len: 0.08, speed: 1.0 },
-    ].map((k, i, all) => ({ ...k, count: Math.round(N * k.len), pos: ((i / all.length + 0.037 * (i % 3)) % 1) * N, grab: 0 }));
+    // The strokes: the route passes behind the pink at certain places (HIDE: the middle of each such stretch). A stroke
+    // lives between two neighbouring ones: it comes out of the first (its tail still hidden there) growing along the
+    // route, reaches the second and goes into it (its head hidden there), tail following, so it never begins or ends in
+    // the open air. Then it rests, and takes the next stretch of the route. Each has its own pace.
+    const HIDE = LINE.behind.map(([a, b]) => Math.round((a + b) / 2));
+    const SPANS = HIDE.slice(0, -1).map((a, i) => ({ a, b: HIDE[i + 1] }));
+    const STROKES = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => ({
+        span: Math.floor(i * SPANS.length / 10), p: (i * 0.37) % 1.2, dur: 4.5 + (i % 4) * 1.2, rest: 0.04 + (i % 3) * 0.07,
+        tail: 0, head: 0, grab: 0,
+    }));
+    const ease = (v) => v * v * (3 - 2 * v);
+    const clamp01 = (v) => Math.min(1, Math.max(0, v));
+    const placeStroke = (k) => {
+        const { a, b } = SPANS[k.span];
+        k.head = a + (b - a) * ease(clamp01(k.p / 0.55));
+        k.tail = a + (b - a) * ease(clamp01((k.p - 0.45) / 0.55));
+    };
+    STROKES.forEach(placeStroke);
 
     // The finger (or the mouse): where it is on the thread's square, when it last moved, and whether it is pressing
     const pointer = { u: 0, v: 0, at: -99, down: false };
@@ -149,41 +161,27 @@
         pointer.at = nowT;
     };
     const release = (event) => { track(event); pointer.down = false; };
-    const GRAB = 300;                      // how near (in the 2160 units) a stroke has to be for the finger to take it
+    const GRAB = 300;                      // how near (in the 2160 units) a stroke has to be for the finger to reach it
     const REACH = 240;                     // how far round the finger the stroke is pulled
-    // The strokes answer the finger. A mouse passing over only makes the nearest strokes lean a little towards it, and
-    // they keep travelling. Pressing (or a finger dragging) takes the nearest stroke: it slides along the route to the
-    // spot nearest the finger and is pulled towards it while it keeps moving; it goes back to travelling when it stops.
-    // The others carry on, so the line never collapses into one.
+    // The strokes answer the finger. A mouse passing over only makes the two nearest strokes lean a little towards it;
+    // pressing (or a finger dragging) pulls the nearest one right up to it, stretching it. They keep travelling, and
+    // let go when the finger stops.
     const moveStrokes = (dt, t) => {
         const active = t - pointer.at < 1.1;
         const found = [];
-        STROKES.forEach((k, n) => {
-            k.pos = (k.pos + dt * k.speed * N / 70) % N;
-            if (!active) return;
-            const c = Math.round(k.pos + k.count / 2);
-            const span = Math.round(N * 0.1);
-            let best = 0, bestD = Infinity;
-            for (let o = -span; o <= span; o += 3) {
-                const j = ((c + o) % N + N) % N;
-                const d = (X(j) - pointer.u) ** 2 + (Y(j) - pointer.v) ** 2;
-                if (d < bestD) { bestD = d; best = o; }
-            }
-            if (bestD < GRAB * GRAB) found.push({ k, best, bestD });
+        STROKES.forEach((k) => {
+            k.p += dt / k.dur;
+            if (k.p >= 1 + k.rest) { k.p = 0; k.span = (k.span + 1) % SPANS.length; }
+            placeStroke(k);
+            if (!active || k.head - k.tail < 3) return;
+            let bestD = Infinity;
+            for (let i = Math.floor(k.tail); i <= k.head; i += 4) bestD = Math.min(bestD, (X(i) - pointer.u) ** 2 + (Y(i) - pointer.v) ** 2);
+            if (bestD < GRAB * GRAB) found.push({ k, bestD });
         });
         found.sort((a, b) => a.bestD - b.bestD);
-        const taken = new Map(found.slice(0, pointer.down ? 1 : 2).map((f, i) => [f.k, { ...f, i }]));
+        const taken = new Set(found.slice(0, pointer.down ? 1 : 2).map((f) => f.k));
         STROKES.forEach((k) => {
-            const f = taken.get(k);
-            let want = 0;
-            if (f) {
-                if (pointer.down) {
-                    k.pos = ((k.pos + f.best * Math.min(1, dt * 2.2)) % N + N) % N;
-                    want = 1;
-                } else {
-                    want = 0.4;
-                }
-            }
+            const want = taken.has(k) ? (pointer.down ? 1 : 0.4) : 0;
             k.grab += (want - k.grab) * Math.min(1, dt * (want ? 4 : 2.2));
         });
     };
@@ -192,20 +190,18 @@
         const f = k.grab * 0.55 * Math.exp(-(dx * dx + dy * dy) / (REACH * REACH));
         return [dx * f, dy * f];
     };
-    // A stretch [from, to] (fractions of the stroke) of the stroke that starts at `head`
-    const strokeD = (head, count, from, to, bend) => {
-        const i0 = Math.floor(head);
-        const taper = (i) => 0.3 + 0.34 * Math.pow(Math.sin(Math.PI * Math.min(1, Math.max(0, ((i - i0 + N) % N) / count))), 0.7);
-        const s0 = i0 + Math.floor(from * count), s1 = i0 + Math.floor(to * count);
-        if (s1 < N) return ribbon(s0, s1, taper, bend);
-        if (s0 >= N) return ribbon(s0 - N, s1 - N, taper, bend);
-        return `${ribbon(s0, N - 1, taper, bend)}${ribbon(0, s1 - N, taper, bend)}`;
+    // The stretch [from, to] (fractions of the stroke) of a stroke, narrowest at its two ends
+    const strokeD = (k, from, to, bend) => {
+        const tail = Math.floor(k.tail), len = k.head - k.tail;
+        if (len < 3) return '';
+        const taper = (i) => 0.3 + 0.34 * Math.pow(Math.sin(Math.PI * clamp01((i - tail) / len)), 0.7);
+        return ribbon(tail + Math.floor(from * len), tail + Math.floor(to * len), taper, bend);
     };
     // Nested ribbons, so each stroke fades in and out along its length instead of ending abruptly
     const FADES = [[0, 1], [0.12, 0.88], [0.24, 0.76], [0.36, 0.64], [0.48, 0.52]];
     const strokesD = () => {
         const bends = STROKES.map(bendOf);
-        return FADES.map(([from, to]) => STROKES.map((k, n) => strokeD(k.pos, k.count, from, to, bends[n])).join(''));
+        return FADES.map(([from, to]) => STROKES.map((k, n) => strokeD(k, from, to, bends[n])).join(''));
     };
 
     const live = (t, ramp) => {
@@ -315,8 +311,9 @@
             let near = false;
             if (f.life > 0.9) {
                 for (const k of STROKES) {
-                    const c = Math.floor(k.pos + k.count / 2) % N;
-                    const dx = X(c) - f.cx * 21.6, dy = Y(c) - f.cy * 21.6, reach = f.r * 21.6 + 60;
+                    if (k.head - k.tail < 3) continue;
+                    const c = Math.floor((k.tail + k.head) / 2);
+                    const dx = X(c) - f.cx * 21.6, dy = Y(c) - f.cy * 21.6, reach = f.r * 21.6 + 38;
                     if (dx * dx + dy * dy < reach * reach) { near = true; break; }
                 }
             }
@@ -518,7 +515,7 @@
         fill: #aeabd9;
     }
 
-    .w0 { fill-opacity: 0.5; }
+    .w0 { fill-opacity: 0.6; }
     .w1 { fill-opacity: 0.35; }
     .w2 { fill-opacity: 0.4; }
     .w3 { fill-opacity: 0.45; }
