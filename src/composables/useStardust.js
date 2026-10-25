@@ -207,10 +207,13 @@ export async function createStardust(canvas, options = {}) {
     const groups = (options.groups ?? [options]).map(makeGroup);
 
     const resize = () => {
+        // The layout size, so a canvas inside something that turns (or is scaled) is still measured as it is drawn
         const box = canvas.getBoundingClientRect();
-        if (!box.width || !box.height) return;
-        width = box.width;
-        height = box.height;
+        const w = canvas.clientWidth || box.width;
+        const h = canvas.clientHeight || box.height;
+        if (!w || !h) return;
+        width = w;
+        height = h;
         renderer.setSize(width, height, false);
         shared.uRes.value.set(width, height);
         groups.forEach((g) => g.populate());

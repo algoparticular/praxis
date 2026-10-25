@@ -220,6 +220,11 @@
         pointer-events: none;
     }
 
+    /* On a tall screen the picture would sit at the bottom with the sky empty above it: lift it towards the middle */
+    @media (max-aspect-ratio: 1/1) {
+        .frame { bottom: calc((100svh - var(--s)) * 0.4); }
+    }
+
     .layer {
         position: absolute;
         display: block;
