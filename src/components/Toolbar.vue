@@ -5,8 +5,6 @@
     
     const isLoggedIn = ref(false);
     const showMenu = ref(false);
-    const hideAction = ref(false);
-    const isCollectionPage = ref(false);
     const isCardPage = ref(false);
 
     //Toolbar active variables
@@ -37,7 +35,7 @@
     const toggleMenu = () => {
         showMenu.value = !showMenu.value;
 
-        if(showMenu) {
+        if(showMenu.value) {
             document.addEventListener('click', closeIfClickedOutside);
         }
     };

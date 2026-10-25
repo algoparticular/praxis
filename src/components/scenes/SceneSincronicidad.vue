@@ -79,7 +79,7 @@
     };
     const spark = (step) => {
         const [x, y, w] = centreOf(step.ref.value);
-        sparks.burst(x, y, { n: step.ref === hug ? 18 : 9, colors: step.colors, speed: 60 + w * 0.25, size: 4.4, spread: w * 0.3, life: 1.8 });
+        sparks.burst(x, y, { n: step === STEPS[STEPS.length - 1] ? 18 : 9, colors: step.colors, speed: 60 + w * 0.25, size: 4.4, spread: w * 0.3, life: 1.8 });
     };
     // When the glow reaches the pair, a few sparks come out of the fire (it is drawn as it is: it does not leap)
     const ignite = () => {

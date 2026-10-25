@@ -324,7 +324,7 @@
                     <div class="next">
                         <h2>{{ $t("collaborate.whatsNext") }}</h2>
                         <ul>
-                            <li v-for="(steps, i) in 6">
+                            <li v-for="(steps, i) in 6" :key="i">
                                 {{ $t("collaborate.next["+i+"]") }}
                             </li>
                         </ul>
