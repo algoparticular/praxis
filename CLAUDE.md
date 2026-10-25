@@ -43,6 +43,8 @@ No test or lint commands are configured.
 - To give another card its own scene: add a component in `src/components/scenes/` (props `card`, `active`; start entrances when `active` turns true) and list its id in `cardScenes.js`. Layers live in `public/assets/`.
 - The card picked in the oracle grows to fill the stage (`cardTransition.js`) and then fades into the scene.
 
+**Share previews (og:image):** crawlers don't run JS, so `scripts/cardMetaPlugin.js` (Vite plugin, runs after `vite build`) writes `dist/card/<id>/index.html` with each card's own og:/twitter: tags (Spanish name and affirmation) and `dist/og/<id>.jpg` (1200x630, illustration over the card colour). Netlify serves those static files before the SPA redirect. Cards with no image are skipped and fall back to the generic tags in `index.html`.
+
 **Firebase** is initialized in `main.js` but auth guards on routes are currently commented out. Firebase is set up for future user account features but not enforced.
 
 **PWA:** Service worker is registered in `App.vue`. `public/manifest.webmanifest` configures standalone install behavior.
