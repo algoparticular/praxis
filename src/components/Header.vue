@@ -168,7 +168,9 @@
     }
 
     #menuOverlay nav a,
+    #menuOverlay nav #soundSelect label,
     #menuOverlay nav #languageSelect label,
+    #menuOverlay nav #soundSelect span,
     #menuOverlay nav #languageSelect span {
         font-size: 32px;
     }

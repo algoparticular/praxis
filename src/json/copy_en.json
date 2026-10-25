@@ -35,6 +35,8 @@
             "signIn": "Sign in",
             "register": "Create an account",
             "logout": "Leave",
+            "soundOn": "Sound on",
+            "soundOff": "Sound off",
             "skip": "to the Oracle"
         },
         "auth": {

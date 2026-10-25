@@ -35,6 +35,8 @@
             "signIn": "Ingresar",
             "register": "Crear una cuenta",
             "logout": "Salir",
+            "soundOn": "Con sonido",
+            "soundOff": "Sin sonido",
             "skip": "al Oráculo"
         },
         "auth": {
