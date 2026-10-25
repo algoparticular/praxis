@@ -12,6 +12,7 @@ const scenes = {
     3: lazy(() => import('../components/scenes/ScenePanna.vue')),
     5: lazy(() => import('../components/scenes/SceneKshanti.vue')),
     20: lazy(() => import('../components/scenes/SceneCreatividad.vue')),
+    22: lazy(() => import('../components/scenes/SceneEvolucion.vue')),
     25: lazy(() => import('../components/scenes/SceneHogar.vue')),
     27: lazy(() => import('../components/scenes/ScenePaciencia.vue')),
     29: lazy(() => import('../components/scenes/SceneSincronicidad.vue')),
