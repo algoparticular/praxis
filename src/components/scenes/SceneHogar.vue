@@ -75,7 +75,6 @@
         const angle = Math.random() * Math.PI * 2;
         return [f.x + CELL.x * f.size + Math.cos(angle) * radius, f.y + CELL.y * f.size + Math.sin(angle) * radius];
     };
-    const around = aroundOn(frontCanvas);
     const aroundBack = aroundOn(dustCanvas);
 
     // A cloud of particles from a density map of the original (the grid's cells are 3240px units): as many dots as it covered
@@ -121,8 +120,7 @@
         els[piece.id]?.animate({ scale: ['1 1', '1.14 0.88', '0.96 1.08', '1 1'] }, { duration: 700, easing: 'ease-out' });
         dust?.boost(0, 1.4);
         dust?.boost(1, 1);
-        front?.boost(0, 1);
-        play('tap');
+                play('tap');
     };
     const warm = () => dust?.boost(0, 0.4);
     const onKey = (piece) => (event) => {
@@ -178,7 +176,7 @@
             const px = -x * 18;
             const py = -y * 10 + Math.sin(t * 0.5) * 6 * ramp - s * 50;
             dust?.shift(0, px, py);
-            front?.shift(1, px + n.x * size, py + n.y * size);
+            front?.shift(0, px + n.x * size, py + n.y * size);
             // The jellyfish swims: it pulses, leans into its way, and a knock makes it squash a little
             const me = water.swimmer;
             tilt += (Math.max(-1, Math.min(1, me.vx / 0.012)) * 14 - tilt) * Math.min(1, dt * 1.5);
@@ -197,18 +195,14 @@
             groups: [
                 { points: dustPoints, look: 'hard', drift: 7, jitter: 0.9, twinkle: 0.5, reach: 120, push: 36, parallax: 0 },
                 {
-                    count: 300, colors: [0xffb069, 0xff9a5c, 0xffd29a, 0xf08a8a], size: [2.5, 6.5], look: 'hard', spawn: aroundBack,
+                    count: 380, colors: [0xffb069, 0xff9a5c, 0xffd29a, 0xf08a8a], size: [2.5, 6.5], look: 'hard', spawn: aroundBack,
                     drift: 30, jitter: 0.5, twinkle: 0.8, reach: 150, push: 46, parallax: 18,
                 },
             ],
         });
-        // In front: a few motes, the nucleus's fuzzy rim (group 1, which follows the planet by hand) and the spores
+        // In front, only the nucleus's fuzzy rim (group 0, which follows the planet by hand) and the spores: no dust ever covers a drawing
         front = startStardust(frontCanvas.value, {
             groups: [
-                {
-                    count: 80, colors: [0xffb069, 0xffd29a, 0xf08a8a], size: [2.2, 5.5], look: 'hard', spawn: around,
-                    drift: 34, jitter: 0.5, twinkle: 0.8, reach: 150, push: 46, parallax: 26,
-                },
                 { points: rimPoints, look: 'hard', drift: 2, jitter: 0.5, twinkle: 0.1, reach: 0, parallax: 0 },
                 sparks.group(),
             ],
@@ -331,5 +325,13 @@
 
     .front {
         z-index: 1;
+    }
+
+    /* On a wide screen the crown would reach up into the card's name: make it smaller and lower, under the title */
+    @media (min-aspect-ratio: 1/1) {
+        .frame {
+            --s: min(150svh, 128vw);
+            top: calc(50% - var(--s) / 2 + 8svh);
+        }
     }
 </style>
