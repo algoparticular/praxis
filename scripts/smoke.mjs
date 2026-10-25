@@ -3,6 +3,7 @@
 // the site (a 404 on its own origin), or a page that did not draw what it should. Other people's servers (fonts, icons,
 // Airtable) are not our business here and are ignored.
 // Usage: npm run build && npm run check:smoke   (needs a browser: npx playwright install chromium)
+//        SMOKE_ONLY=/card/3 npm run check:smoke   visits only the pages whose path contains that text
 import { spawn } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
@@ -62,7 +63,14 @@ const visit = async (context, label, page) => {
         found.push(`console error: ${message.text().split('\n')[0].slice(0, 200)}`);
     });
     tab.on('response', (response) => {
-        if (response.url().startsWith(ORIGIN) && response.status() >= 400) found.push(`${response.status()} for ${response.url().replace(ORIGIN, '')}`);
+        const url = response.url();
+        if (!url.startsWith(ORIGIN)) return;
+        if (response.status() >= 400) found.push(`${response.status()} for ${url.replace(ORIGIN, '')}`);
+        // The site answers any path it does not have with its main page (the single-page-app rule), status 200 included:
+        // a picture, script or style that comes back as HTML is a file that is missing
+        else if (response.request().resourceType() !== 'document' && (response.headers()['content-type'] ?? '').includes('text/html')) {
+            found.push(`missing file (answered with the page instead): ${url.replace(ORIGIN, '')}`);
+        }
     });
     try {
         await tab.goto(ORIGIN + page.path, { waitUntil: 'load', timeout: 30000 });
@@ -92,14 +100,15 @@ const runAll = async (jobs, limit = 4) => {
 try {
     const desktop = await browser.newContext({ viewport: DESKTOP });
     const phone = await browser.newContext({ viewport: PHONE, hasTouch: true, isMobile: true });
+    const only = process.env.SMOKE_ONLY;
     const jobs = [
-        ...pages.map((page) => () => visit(desktop, 'desktop', page)),
-        ...cardPages.map((page) => () => visit(desktop, 'desktop', page)),
+        ...pages.map((page) => ({ page, run: () => visit(desktop, 'desktop', page) })),
+        ...cardPages.map((page) => ({ page, run: () => visit(desktop, 'desktop', page) })),
         // On a phone: the deck and the cards that have their own scene
-        ...pages.filter((page) => page.path === '/deck').map((page) => () => visit(phone, 'phone', page)),
-        ...cardPages.filter((page) => sceneCards.includes(page.card)).map((page) => () => visit(phone, 'phone', page)),
-    ];
-    await runAll(jobs);
+        ...pages.filter((page) => page.path === '/deck').map((page) => ({ page, run: () => visit(phone, 'phone', page) })),
+        ...cardPages.filter((page) => sceneCards.includes(page.card)).map((page) => ({ page, run: () => visit(phone, 'phone', page) })),
+    ].filter((job) => !only || job.page.path.includes(only));
+    await runAll(jobs.map((job) => job.run));
     console.log(`${jobs.length} page visits`);
 } finally {
     await browser.close();
