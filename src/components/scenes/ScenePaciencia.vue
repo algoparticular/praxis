@@ -6,6 +6,8 @@
     import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
     import { createParallax, enterLayers } from '../../composables/useParallax.js';
     import { createSpores } from '../../composables/useSpores.js';
+    import { play } from '../../composables/useSound.js';
+    import cone from '../../composables/pineCone.json';
 
     const props = defineProps({
         card: { type: Object, default: () => ({}) },
@@ -18,6 +20,9 @@
     const ground = ref(null);
     const mushrooms = ref(null);
     const sporeCanvas = ref(null);
+    const sparkCanvas = ref(null);
+    const coneHit = ref(null);
+    const lit = ref(false);                 // the pine cone is being pressed
     let parallax = null;
     let spores = null;
     let entered = false;
@@ -32,6 +37,26 @@
             { el: sporeCanvas.value, y: 0, delay: 1200, duration: 2400 },
         ]);
     };
+
+    // Pressing the pine cone makes it shine: it lights up while held, fades slowly once let go, and throws sparks
+    const shine = () => {
+        lit.value = true;
+        play('star');
+        if (!reduced) {
+            const box = coneHit.value.getBoundingClientRect();
+            spores?.burst(box.left + box.width / 2, box.top + box.height / 2, 12);
+        }
+        window.addEventListener('pointerup', dim, { once: true });
+        window.addEventListener('pointercancel', dim, { once: true });
+    };
+    const dim = () => { lit.value = false; };
+    const onKey = (event) => {
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+        event.preventDefault();
+        shine();
+        setTimeout(dim, 700);
+    };
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     onMounted(() => {
         parallax = createParallax(root.value, ({ x, y, scroll, t, ramp }) => {
@@ -48,26 +73,36 @@
             ground.value.style.translate = `${-x * 40}px ${-y * 5 + s * 25}px`;
             ground.value.style.rotate = `${(Math.sin(t * 0.9) * 0.4 * ramp).toFixed(3)}deg`;
         });
-        spores = createSpores(sporeCanvas.value, { source: mushrooms.value, animate: !window.matchMedia('(prefers-reduced-motion: reduce)').matches });
+        spores = createSpores(sporeCanvas.value, { source: mushrooms.value, front: sparkCanvas.value, animate: !window.matchMedia('(prefers-reduced-motion: reduce)').matches });
         enter();
     });
     watch(() => props.active, enter);
     onBeforeUnmount(() => {
         parallax?.destroy();
         spores?.destroy();
+        window.removeEventListener('pointerup', dim);
+        window.removeEventListener('pointercancel', dim);
     });
 </script>
 
 <template>
-    <div class="scene" ref="root">
+    <div class="scene" ref="root" :class="{ lit }">
         <img class="layer sun" ref="sun" src="/assets/collaborate/sun.webp" alt="" draggable="false">
         <img class="layer boat" ref="boat" src="/assets/collaborate/boat.webp" alt="" draggable="false">
+        <!-- The spore cloud hangs in the air behind the mushrooms -->
+        <canvas class="spores" ref="sporeCanvas"></canvas>
         <!-- One piece: the grass sits behind the mushrooms at the same scale, so their stems line up -->
         <div class="ground" ref="ground">
             <img class="grass" src="/assets/collaborate/plants.webp" alt="" draggable="false">
             <img class="mushrooms" ref="mushrooms" src="/assets/collaborate/mushrooms.webp" alt="" draggable="false">
+            <!-- The pine cone: its own sprite over the same spot, a glow behind it, and a touch target over both -->
+            <div class="coneGlow" :style="{ '--bx': cone.x, '--by': cone.y, '--bw': cone.w, '--bh': cone.h }"></div>
+            <img class="cone" src="/assets/collaborate/cone.webp" alt="" draggable="false" :style="{ '--bx': cone.x, '--by': cone.y, '--bw': cone.w }">
+            <div class="coneHit" ref="coneHit" role="button" tabindex="0" :aria-label="$i18n.locale === 'en' ? 'Pine cone' : 'Piña'"
+                :style="{ '--bx': cone.x, '--by': cone.y, '--bw': cone.w, '--bh': cone.h }"
+                @pointerdown.prevent="shine" @keydown="onKey"></div>
         </div>
-        <canvas class="spores" ref="sporeCanvas"></canvas>
+        <canvas class="spores sparks" ref="sparkCanvas"></canvas>
     </div>
 </template>
 
@@ -138,6 +173,75 @@
         position: absolute;
         left: 0;
         bottom: -7%;
+    }
+
+    /* The pine cone sits exactly on its place in the mushrooms picture (positions are fractions of it) */
+    .ground .cone {
+        position: absolute;
+        left: calc(var(--bx) * 100%);
+        top: calc(var(--by) * 100%);
+        width: calc(var(--bw) * 100%);
+        pointer-events: none;
+        transition: filter 1.1s ease-out;
+    }
+
+    /* A faint warmth around the cone, no more than a hint */
+    .coneGlow {
+        position: absolute;
+        left: calc((var(--bx) + var(--bw) / 2) * 100%);
+        top: calc((var(--by) + var(--bh) / 2) * 100%);
+        width: calc(var(--bw) * 100% * 3.4);
+        aspect-ratio: 1;
+        translate: -50% -50%;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(255, 240, 140, 0.5) 0%, rgba(255, 232, 110, 0.18) 38%, rgba(255, 226, 90, 0) 70%);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 1.2s ease-out;
+    }
+
+    .coneHit {
+        position: absolute;
+        left: calc((var(--bx) - var(--bw) * 0.35) * 100%);
+        top: calc((var(--by) - var(--bh) * 0.08) * 100%);
+        width: calc(var(--bw) * 100% * 1.7);
+        height: calc(var(--bh) * 100% * 1.2);
+        border-radius: 50%;
+        cursor: pointer;
+        pointer-events: auto;
+        -webkit-tap-highlight-color: transparent;
+        touch-action: manipulation;
+        outline: none;
+    }
+
+    .coneHit:focus-visible {
+        outline: 2px solid rgba(255, 244, 150, 0.9);
+        outline-offset: 2px;
+    }
+
+    /* Held: it glows the way the hero's character does, a soft halo that breathes; let go and it fades slowly */
+    .lit .cone {
+        filter: brightness(1.18) saturate(1.12) drop-shadow(0 0 5px rgba(255, 244, 150, 0.85)) drop-shadow(0 0 14px rgba(255, 236, 110, 0.5));
+        animation: conePulse 2.8s ease-in-out infinite;
+        transition-duration: 0.35s;
+    }
+
+    .lit .coneGlow {
+        opacity: 1;
+        transition-duration: 0.35s;
+    }
+
+    @keyframes conePulse {
+        0%, 100% { filter: brightness(1.12) saturate(1.08) drop-shadow(0 0 4px rgba(255, 244, 150, 0.7)) drop-shadow(0 0 10px rgba(255, 236, 110, 0.35)); }
+        50% { filter: brightness(1.24) saturate(1.16) drop-shadow(0 0 6px rgba(255, 244, 150, 0.95)) drop-shadow(0 0 18px rgba(255, 236, 110, 0.6)); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .ground .cone,
+        .coneGlow {
+            transition: none;
+            animation: none;
+        }
     }
 
     .spores {

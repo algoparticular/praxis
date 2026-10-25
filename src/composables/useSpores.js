@@ -21,26 +21,28 @@ const REACH = 150;          // radius of the pointer's gust, in CSS pixels
 const TINTS = ['20, 82, 93', '27, 110, 122', '12, 120, 150'];   // the deep teal blues of the illustration's dots
 
 // A soft round halo, drawn once and stamped for every spore
-const makeGlow = () => {
+const makeGlow = (rgb = '20, 100, 118', core = 0.55) => {
     const size = 48;
     const sprite = document.createElement('canvas');
     sprite.width = sprite.height = size;
     const ctx = sprite.getContext('2d');
     const gradient = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
-    gradient.addColorStop(0, 'rgba(20, 100, 118, 0.55)');
-    gradient.addColorStop(0.3, 'rgba(20, 100, 118, 0.16)');
-    gradient.addColorStop(1, 'rgba(20, 100, 118, 0)');
+    gradient.addColorStop(0, `rgba(${rgb}, ${core})`);
+    gradient.addColorStop(0.3, `rgba(${rgb}, ${core * 0.3})`);
+    gradient.addColorStop(1, `rgba(${rgb}, 0)`);
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, size, size);
     return sprite;
 };
 
-export function createSpores(canvas, { source, animate = true } = {}) {
+export function createSpores(canvas, { source, animate = true, front = null } = {}) {
     const ctx = canvas.getContext('2d');
+    const ctxFront = front?.getContext('2d') ?? null;    // optional second canvas, in front of the mushrooms, for the pine cone's sparks
     const glow = makeGlow();
+    const goldGlow = makeGlow('255, 226, 110', 0.8);    // for the sparks of the pine cone
     const small = window.innerWidth < 600;
-    const TARGET = small ? 120 : 210;     // the cloud never thins out below this: it is part of the composition
-    const MAX = small ? 220 : 380;        // and the pointer can stir up a lot more on top of it
+    const TARGET = small ? 400 : 680;     // the cloud never thins out below this: it is part of the composition
+    const MAX = small ? 640 : 1050;        // and the pointer can stir up a lot more on top of it
     const spores = [];
     const cooldown = new Array(caps.length).fill(0);
     const totalWidth = caps.reduce((sum, cap) => sum + cap[2], 0);
@@ -72,21 +74,44 @@ export function createSpores(canvas, { source, animate = true } = {}) {
         canvas.width = Math.round(width * dpr);
         canvas.height = Math.round(height * dpr);
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        if (front) {
+            front.width = canvas.width;
+            front.height = canvas.height;
+            ctxFront.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
     };
 
+    // Caps that are on screen (the strip is wider than the screen, so some are out of sight)
+    const visibleCaps = () => {
+        const list = [];
+        emitters.forEach((cap, i) => { if (cap.x > -30 && cap.x < width + 30) list.push(i); });
+        return list.length ? list : emitters.map((_, i) => i);
+    };
+
+    // A cap to let go of a puff: one that can be seen, the wider ones more often
     const pickCap = () => {
-        let at = Math.random() * totalWidth;
-        for (let i = 0; i < caps.length; i++) {
-            at -= caps[i][2];
+        const list = visibleCaps();
+        let at = Math.random() * list.reduce((sum, i) => sum + emitters[i].w + 4, 0);
+        for (const i of list) {
+            at -= emitters[i].w + 4;
             if (at <= 0) return i;
         }
-        return caps.length - 1;
+        return list[list.length - 1];
+    };
+
+    // A place along the whole width of the ground for the everyday trickle, so the cloud covers the picture
+    // from edge to edge. It borrows its height from the nearest cap.
+    const spot = () => {
+        const x = Math.random() * width;
+        const list = visibleCaps();
+        const nearest = list.reduce((best, i) => (Math.abs(emitters[i].x - x) < Math.abs(emitters[best].x - x) ? i : best), list[0]);
+        return { x, y: emitters[nearest].y + rand(-6, 14), w: 30 };
     };
 
     // One spore, leaving cap `i`. `kick` is the speed of its first push, `spread` the half-angle of the cone it leaves in.
     const release = (i, kick = 6, spread = 0.9, bias = [0, 0]) => {
         if (spores.length >= MAX) spores.shift();
-        const cap = emitters[i];
+        const cap = typeof i === 'number' ? emitters[i] : i;
         const angle = -Math.PI / 2 + rand(-spread, spread);
         const speed = kick * rand(0.4, 1.2);
         const mass = rand(0.25, 1);
@@ -95,7 +120,7 @@ export function createSpores(canvas, { source, animate = true } = {}) {
             y: cap.y + rand(-2, 3),
             vx: Math.cos(angle) * speed + bias[0],
             vy: Math.sin(angle) * speed + bias[1],
-            r: rand(1.3, 3.4) * (0.7 + 0.5 * mass),
+            r: rand(0.6, 1.8) * (0.7 + 0.5 * mass),
             mass,
             age: 0,
             life: rand(9, 20),
@@ -138,10 +163,10 @@ export function createSpores(canvas, { source, animate = true } = {}) {
         // Moving through the low air stirs more spores up around the pointer, carried the way it moves
         const groundTop = Math.min(...emitters.map((cap) => cap.y));
         if (speed > 60 && y > groundTop - 170 && y < height + 20) {
-            const stir = Math.min(4, 1 + Math.floor(speed / 220));
+            const stir = Math.min(2, 1 + Math.floor(speed / 420));
             for (let n = 0; n < stir && spores.length < MAX; n++) {
                 const near = emitters.reduce((best, cap, i) => (Math.abs(cap.x - x) < Math.abs(emitters[best].x - x) ? i : best), 0);
-                release(near, 8, 1.2, [pointer.vx * 0.1, pointer.vy * 0.05 - 6]);
+                release(near, 6, 1.1, [pointer.vx * 0.05, pointer.vy * 0.03 - 4]);
                 const s = spores[spores.length - 1];
                 s.x = x + rand(-34, 34);
                 s.y = y + rand(-24, 24);
@@ -152,7 +177,7 @@ export function createSpores(canvas, { source, animate = true } = {}) {
                 if (clock < cooldown[i]) return;
                 if (Math.hypot(cap.x - x, cap.y - y) < Math.max(46, cap.w * 0.7)) {
                     cooldown[i] = clock + 0.7;
-                    puff(i, Math.round(rand(10, 20)), rand(18, 34), [pointer.vx * 0.12, pointer.vy * 0.06 - 4]);
+                    puff(i, Math.round(rand(4, 8)), rand(12, 22), [pointer.vx * 0.06, pointer.vy * 0.03 - 3]);
                 }
             });
         }
@@ -172,10 +197,10 @@ export function createSpores(canvas, { source, animate = true } = {}) {
 
     const step = (dt, t) => {
         // Release. First the baseline: whenever the cloud is below its usual size, a few more come out of the caps
-        for (let n = 0; n < 3 && spores.length < TARGET; n++) release(pickCap(), 5);
+        for (let n = 0; n < 8 && spores.length < TARGET; n++) release(spot(), 5);
         if (t > nextTrickle) {
-            release(pickCap(), 5);
-            nextTrickle = t + rand(0.04, 0.14);
+            release(spot(), 5);
+            nextTrickle = t + rand(0.02, 0.06);
         }
         if (t > nextPuff) {
             puff(pickCap(), Math.round(rand(10, 22)), rand(16, 34), [0, 0]);
@@ -211,8 +236,8 @@ export function createSpores(canvas, { source, animate = true } = {}) {
                 if (distance < REACH) {
                     const f = (1 - distance / REACH) ** 2;
                     const light = 1.25 - s.mass * 0.6;           // the lightest are the most carried away
-                    s.vx += (dx / distance * 520 + (-dy / distance) * 260 + pointer.vx * 2.6) * f * light * dt;
-                    s.vy += (dy / distance * 520 + (dx / distance) * 260 + pointer.vy * 2.6) * f * light * dt;
+                    s.vx += (dx / distance * 300 + (-dy / distance) * 150 + pointer.vx * 1.5) * f * light * dt;
+                    s.vy += (dy / distance * 300 + (dx / distance) * 150 + pointer.vy * 1.5) * f * light * dt;
                 }
             }
 
@@ -229,6 +254,7 @@ export function createSpores(canvas, { source, animate = true } = {}) {
 
     const draw = (t, { ceiling, vanish }) => {
         ctx.clearRect(0, 0, width, height);
+        ctxFront?.clearRect(0, 0, width, height);
         for (const s of spores) {
             const born = smooth(0, 0.7, s.age);
             const dying = 1 - smooth(s.life * 0.65, s.life, s.age);
@@ -236,18 +262,22 @@ export function createSpores(canvas, { source, animate = true } = {}) {
             const alpha = born * dying * altitude * (0.8 + 0.2 * Math.sin(t * s.twinkle + s.phase));
             if (alpha < 0.02) continue;
 
+            const g = s.gold && ctxFront ? ctxFront : ctx;
             // A soft halo of the same blue (as if slightly out of focus), then the solid core
-            const reach = s.r * 3.6;
-            ctx.globalAlpha = alpha * 0.55;
-            ctx.drawImage(glow, s.x - reach, s.y - reach, reach * 2, reach * 2);
+            if (s.r > 1.1 || s.gold) {          // the tiniest ones are too small for a halo to show
+                const reach = s.r * 3.4;
+                g.globalAlpha = alpha * 0.55;
+                g.drawImage(s.gold ? goldGlow : glow, s.x - reach, s.y - reach, reach * 2, reach * 2);
+            }
 
-            ctx.globalAlpha = alpha;
-            ctx.fillStyle = `rgb(${s.tint})`;
-            ctx.beginPath();
-            ctx.arc(s.x, s.y, s.r, 0, TAU);
-            ctx.fill();
+            g.globalAlpha = alpha;
+            g.fillStyle = `rgb(${s.tint})`;
+            g.beginPath();
+            g.arc(s.x, s.y, s.r, 0, TAU);
+            g.fill();
         }
         ctx.globalAlpha = 1;
+        if (ctxFront) ctxFront.globalAlpha = 1;
     };
 
     const tick = (now) => {
@@ -270,7 +300,7 @@ export function createSpores(canvas, { source, animate = true } = {}) {
     if (animate) {
         // Start with the air already seeded, so the first look is not an empty field
         for (let n = 0; n < TARGET; n++) {
-            release(pickCap(), 5);
+            release(spot(), 5);
             const s = spores[spores.length - 1];
             s.age = rand(0, s.life * 0.5);
             s.y -= rand(0, height * 0.3);
@@ -283,7 +313,7 @@ export function createSpores(canvas, { source, animate = true } = {}) {
     } else {
         // Reduced motion: a still handful of spores, no movement
         for (let n = 0; n < 36; n++) {
-            release(pickCap(), 0);
+            release(spot(), 0);
             const s = spores[spores.length - 1];
             s.age = s.life * 0.3;
             s.y -= rand(0, height * 0.1);
@@ -292,6 +322,22 @@ export function createSpores(canvas, { source, animate = true } = {}) {
     }
 
     return {
+        // Sparks of light thrown out of a point (viewport coordinates): the pine cone shining
+        burst(clientX, clientY, count = 26) {
+            const box = canvas.getBoundingClientRect();
+            const x = clientX - box.left, y = clientY - box.top;
+            for (let n = 0; n < count; n++) {
+                if (spores.length >= MAX) spores.shift();
+                const angle = rand(0, TAU);
+                const speed = rand(22, 70);
+                spores.push({
+                    x: x + Math.cos(angle) * rand(0, 14), y: y + Math.sin(angle) * rand(0, 18),
+                    vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed - 18,
+                    r: rand(1.1, 2.4), mass: 0.3, age: 0, life: rand(1.4, 2.6),
+                    phase: rand(0, TAU), twinkle: rand(3, 6), tint: '255, 232, 120', gold: true,
+                });
+            }
+        },
         destroy() {
             cancelAnimationFrame(frame);
             resizeObserver.disconnect();
