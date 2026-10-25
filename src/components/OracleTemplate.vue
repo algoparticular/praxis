@@ -185,7 +185,7 @@
     }
 
     p.deckIntro {
-        font-family: 'particular', 'Inter', helvetica, sans-serif;
+        font-family: 'Caveat', 'Inter', helvetica, sans-serif;
         font-size: 24px;
         color: #F7F8F1;
         text-align: center;

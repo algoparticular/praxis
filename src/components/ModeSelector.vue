@@ -134,7 +134,7 @@
     }
 
     .mode .name {
-        font-family: 'particular', 'Inter', helvetica, sans-serif;
+        font-family: 'Caveat', 'Inter', helvetica, sans-serif;
         font-size: 24px;
         line-height: 1.1;
         white-space: nowrap;

@@ -12,12 +12,15 @@ const CELL_TEXTURES = [
 const PALETTE = [[0.5, 0.91, 0.95], [0.85, 0.78, 0.96], [1, 0.42, 0.84], [1, 1, 1]];
 const TINTS = [0xffffff, 0xd6f2ff, 0xffd9f2, 0xf0e6ff, 0xe2fff6];
 const MURK = 0x6a428d; // hero background, what distant matter fades into
+// What a touched cell throws, per illustration (cyan, lavender, pink), as CSS colours
+const SPARK_COLORS = [['#8fe8f2', '#d8f8ff', '#ffffff'], ['#d9c7f5', '#f0e6ff', '#ffffff'], ['#ff6bd6', '#ffb3ea', '#ffffff']];
 
 const CAMERA_Z = 10;
 const FOV = 45;
 const Z_NEAR = 2.5;
 const Z_FAR = -5;
 
+const WHITE = { r: 1, g: 1, b: 1 };
 const rand = (min, max) => min + Math.random() * (max - min);
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 
@@ -88,6 +91,20 @@ export async function createCellField(canvas, container) {
         cell.texture = conflict.indexOf(Math.min(...conflict));
     });
 
+    // Soft light that blooms behind a cell when it is touched
+    const haloTexture = (() => {
+        const art = document.createElement('canvas');
+        art.width = art.height = 128;
+        const ctx = art.getContext('2d');
+        const gradient = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+        gradient.addColorStop(0, 'rgba(255, 255, 255, 0.95)');
+        gradient.addColorStop(0.3, 'rgba(255, 255, 255, 0.4)');
+        gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, 128, 128);
+        return new THREE.CanvasTexture(art);
+    })();
+
     const murk = new THREE.Color(MURK);
     const cells = placed.map(({ nx, ny, tier, texture: textureIndex }) => {
         const texture = textures[textureIndex];
@@ -104,8 +121,20 @@ export async function createCellField(canvas, container) {
         });
         const sprite = new THREE.Sprite(material);
         root.add(sprite);
+        const halo = new THREE.Sprite(new THREE.SpriteMaterial({
+            map: haloTexture,
+            color: new THREE.Color(...PALETTE[textureIndex]),
+            transparent: true,
+            depthWrite: false,
+            blending: THREE.AdditiveBlending,
+            opacity: 0,
+        }));
+        halo.visible = false;
+        root.add(halo);
         return {
-            sprite, nx, ny, z: tier.z, baseRotation,
+            sprite, halo, textureIndex, flare: 0,
+            baseColor: material.color.clone(), baseOpacity: material.opacity,
+            nx, ny, z: tier.z, baseRotation,
             aspect: (texture.image.width / texture.image.height) * rand(0.85, 1.18),
             flip: Math.random() < 0.5 ? -1 : 1,
             size: tier.size,
@@ -360,8 +389,20 @@ export async function createCellField(canvas, container) {
             cell.y = cell.ny * viewH * 0.5 + cell.offset.y;
             cell.sprite.position.set(cell.x, cell.y, cell.z);
 
+            // A touched cell glows: brighter and fuller, with light blooming behind it, then it settles back
+            cell.flare = cell.flare > 0.002 ? cell.flare * Math.exp(-dt * 1.3) : 0;
+            const glowing = cell.flare;
+            cell.sprite.material.color.copy(cell.baseColor).lerp(WHITE, glowing * 0.7);
+            cell.sprite.material.opacity = cell.baseOpacity + (1 - cell.baseOpacity) * glowing;
+            cell.halo.visible = glowing > 0.01;
+            if (cell.halo.visible) {
+                cell.halo.position.set(cell.x, cell.y, cell.z - 0.01);
+                cell.halo.scale.setScalar(cell.height * (2.4 + 1.2 * (1 - glowing)));
+                cell.halo.material.opacity = glowing * 0.85;
+            }
+
             // Soft bodies: they breathe, squashing and stretching, and sway instead of spinning
-            const breath = Math.sin(time * cell.pulse + cell.phase) * 0.04;
+            const breath = Math.sin(time * cell.pulse + cell.phase) * 0.04 + glowing * 0.09;
             cell.sprite.scale.set(cell.width * (1 + breath) * cell.flip, cell.height * (1 - breath), 1);
             cell.sprite.material.rotation = cell.baseRotation + Math.sin(time * cell.sway + cell.phase) * 0.25;
         });
@@ -479,7 +520,49 @@ export async function createCellField(canvas, container) {
         start();
     }
 
+    // ---- Touch: the cell under a viewport point, if any
+    const raycaster = new THREE.Raycaster();
+    const ndc = new THREE.Vector2();
+    const sprites = cells.map((cell) => cell.sprite);
+    const cellAt = (clientX, clientY) => {
+        const rect = container.getBoundingClientRect();
+        if (!rect.width || !rect.height) return null;
+        ndc.set(((clientX - rect.left) / rect.width) * 2 - 1, -(((clientY - rect.top) / rect.height) * 2 - 1));
+        if (Math.abs(ndc.x) > 1 || Math.abs(ndc.y) > 1) return null;
+        scene.updateMatrixWorld();
+        raycaster.setFromCamera(ndc, camera);
+        // The sprites are quads: only the round body of the cell counts
+        const hit = raycaster.intersectObjects(sprites).find(({ uv }) => uv && Math.hypot(uv.x - 0.5, uv.y - 0.5) <= 0.5);
+        return hit ? cells[sprites.indexOf(hit.object)] : null;
+    };
+
+    const worldPoint = new THREE.Vector3();
+
     return {
+        // True when a cell lies under the point (for the cursor)
+        isOverCell: (clientX, clientY) => !reducedMotion && !!cellAt(clientX, clientY),
+        // Presses the cell under the point: it glows, is shoved and the screen position and colours of its sparks come back
+        poke(clientX, clientY) {
+            if (reducedMotion) return null;
+            const cell = cellAt(clientX, clientY);
+            if (!cell) return null;
+            cell.flare = 1;
+            // A small shove away from the finger
+            const rect = container.getBoundingClientRect();
+            const dx = cell.x - ((clientX - rect.left) / rect.width * 2 - 1) * viewW * 0.5;
+            const dy = cell.y - (-((clientY - rect.top) / rect.height * 2 - 1)) * viewH * 0.5;
+            const away = Math.hypot(dx, dy) || 1;
+            cell.velocity.x += (dx / away) * unit * 0.25 / cell.mass;
+            cell.velocity.y += (dy / away) * unit * 0.25 / cell.mass;
+            cell.sprite.getWorldPosition(worldPoint);
+            worldPoint.project(camera);
+            return {
+                x: rect.left + (worldPoint.x * 0.5 + 0.5) * rect.width,
+                y: rect.top + (-worldPoint.y * 0.5 + 0.5) * rect.height,
+                radius: (cell.width * 0.5 / viewW) * rect.width * (CAMERA_Z / (CAMERA_Z - cell.z)),
+                colors: SPARK_COLORS[cell.textureIndex],
+            };
+        },
         destroy() {
             stop();
             observer.disconnect();
@@ -496,7 +579,8 @@ export async function createCellField(canvas, container) {
             pointMaterial.dispose();
             rays.geometry.dispose();
             raysMaterial.dispose();
-            cells.forEach((cell) => cell.sprite.material.dispose());
+            cells.forEach((cell) => { cell.sprite.material.dispose(); cell.halo.material.dispose(); });
+            haloTexture.dispose();
             textures.forEach((texture) => texture.dispose());
             renderer.dispose();
         },

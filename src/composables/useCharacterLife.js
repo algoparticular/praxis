@@ -24,6 +24,10 @@ export function createCharacterLife(particle, hero, { spiral = null, getLift = (
     ['pointermove', 'pointerdown'].forEach((type) => hero.addEventListener(type, onPointer));
     ['pointerleave', 'pointercancel'].forEach((type) => hero.addEventListener(type, onLeave));
 
+    // A press on him: a surge of glow that fades by itself
+    let pulse = 0;
+    let lastNow = 0;
+
     let frame = 0;
     let visible = true;
     const visibility = new IntersectionObserver(([entry]) => { visible = entry.isIntersecting; });
@@ -35,6 +39,8 @@ export function createCharacterLife(particle, hero, { spiral = null, getLift = (
             frame = requestAnimationFrame(tick);
             if (!visible) return;
             const t = (now - begin) / 1000;
+            pulse *= Math.exp(-Math.min(0.1, (now - lastNow) / 1000) * 1.5);
+            lastNow = now;
             const ramp = Math.min(1, t / 2);                    // amplitudes ease in so nothing jumps when the loop begins
             pointer.x += (pointer.tx - pointer.x) * 0.04;       // the lean follows the pointer with a delay
             pointer.y += (pointer.ty - pointer.y) * 0.04;
@@ -46,14 +52,15 @@ export function createCharacterLife(particle, hero, { spiral = null, getLift = (
             const deep = breath * (1 + 0.8 * excite);
             particle.style.translate = `${floatX + pointer.x * 14}px ${floatY + getLift() + pointer.y * 8}px`;
             particle.style.rotate = `${(pointer.x * 4 + Math.sin(t * 0.45) * ramp).toFixed(3)}deg`;
-            particle.style.scale = 1 + (0.022 * deep + 0.03 * excite) * ramp;
-            particle.style.filter = `drop-shadow(0 0 ${(6 + 16 * deep * ramp + 14 * excite).toFixed(1)}px rgba(${glow}, ${Math.min(0.9, 0.12 + 0.38 * deep * ramp + 0.3 * excite).toFixed(3)}))`;
+            particle.style.scale = 1 + (0.022 * deep + 0.03 * excite + 0.05 * pulse) * ramp;
+            particle.style.filter = `drop-shadow(0 0 ${(6 + 16 * deep * ramp + 14 * excite + 34 * pulse).toFixed(1)}px rgba(${glow}, ${Math.min(0.95, 0.12 + 0.38 * deep * ramp + 0.3 * excite + 0.45 * pulse).toFixed(3)}))`;
         };
         frame = requestAnimationFrame(tick);
     };
 
     return {
         start,
+        flare() { pulse = 1; },
         destroy() {
             cancelAnimationFrame(frame);
             visibility.disconnect();
