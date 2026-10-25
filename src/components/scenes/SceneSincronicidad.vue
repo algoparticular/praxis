@@ -2,10 +2,9 @@
     // Sincronicidad: two atoms that evolve and find each other, and where they meet a fire is lit. Four bubbles of larvae
     // float in a sequence, from the smallest egg to the embracing pair; every few seconds a glow runs along them, bubble
     // after bubble, and when it reaches the pair the camp fire leaps. Touch a bubble and the sequence starts from it.
-    // The fire sits on a small floating island: its flame is a second copy of the island's picture, clipped to the flame
-    // and made to dance. Around it, behind the drawings so they never cover them, a halo of particles taken from the
-    // flame's own shape (sincroClouds.json) and living flame particles rising from it (useFlame); the night sky is a
-    // three.js field of particles too (useStardust), all on one canvas.
+    // The fire sits on a small floating island, drawn as it is. Around it, behind the drawings so they never cover them,
+    // a halo of particles taken from the flame's own shape (sincroClouds.json) and living flame particles rising from it
+    // (useFlame); the night sky is a three.js field of particles too (useStardust), all on one canvas.
     import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
     import { createParallax, enterLayers } from '../../composables/useParallax.js';
     import { startStardust } from '../../composables/useStardust.js';
@@ -24,7 +23,6 @@
     const skyCanvas = ref(null);
     const frame = ref(null);
     const island = ref(null);
-    const flameImg = ref(null);
     const hug = ref(null);
     const meet = ref(null);
     const small = ref(null);
@@ -33,8 +31,7 @@
     let sky = null;
     let entered = false;
 
-    // The island's picture is 1115x847; its flame sits at the right, rising from behind the stones. The flame copy is
-    // clipped to the box [59.2%..87.4%] x [0..54.5%] (the base copy has that box cut out), and moves from the seam.
+    // The island's picture is 1115x847; its flame sits at the right, rising from behind the stones, from the seam below
     const ISLAND = { w: 1115, h: 847, left: 0.36, top: 0.5, width: 0.58 };
     const SEAM = { x: 0.733, y: 0.5455 };
     const glow = decodeClouds(clouds)['flame-glow'];
@@ -161,15 +158,6 @@
             island.value.style.translate = `${move[0]}px ${move[1]}px`;
             island.value.style.rotate = `${(Math.sin(t * 0.37) * 0.5 * ramp).toFixed(3)}deg`;
             sky?.shift(1, move[0], move[1]);                         // the halo follows it
-
-            // The flame itself dances: it stretches, narrows and leans, from the line where it meets the stones
-            const flick = Math.sin(t * 7.3) * 0.5 + Math.sin(t * 11.1 + 1) * 0.3 + Math.sin(t * 3.1) * 0.2;
-            const lean = Math.sin(t * 2.3) * 3 + Math.sin(t * 5.1 + 2) * 2 - x * 3;
-            const tall = 1 + 0.045 * flick * ramp + 0.2 * flare;
-            const wide = 1 - 0.02 * flick * ramp + 0.07 * flare;
-            flameImg.value.style.transform = `skewX(${lean.toFixed(2)}deg)`;
-            flameImg.value.style.scale = `${wide.toFixed(3)} ${tall.toFixed(3)}`;
-            flameImg.value.style.filter = flare > 0.02 ? `brightness(${(1 + 0.25 * flare).toFixed(3)})` : '';
         });
 
         sky = startStardust(skyCanvas.value, {
@@ -200,10 +188,9 @@
 
         <!-- A square frame, bottom-aligned; every layer is placed as a fraction of it, as in the illustration -->
         <div class="frame" ref="frame">
-            <!-- The island, drawn twice: the base without the flame, and the flame alone, which dances -->
+            <!-- The island with its fire, as drawn -->
             <div class="island" ref="island">
-                <img class="copy base" src="/assets/cocreate/isla.webp" alt="" draggable="false">
-                <img class="copy flame" ref="flameImg" src="/assets/cocreate/isla.webp" alt="" draggable="false">
+                <img class="copy" src="/assets/cocreate/isla.webp" alt="" draggable="false">
                 <div class="hit fire" role="button" tabindex="0" :aria-label="$i18n.locale === 'en' ? 'Fire' : 'Fuego'"
                     @pointerdown.prevent="touchFire" @keydown="onKey($event, touchFire)"></div>
             </div>
@@ -271,10 +258,10 @@
     }
 
     /* The bubbles, a little smaller than in the card, by their centres (left and top as fractions of the frame) */
-    .hug     { left: 12%;   top: 48.9%; width: 34%; }
-    .meet    { left: 38.3%; top: 19.9%; width: 27.5%; }
-    .smaller { left: 32.2%; top: 4.4%;  width: 6.6%; }
-    .small   { left: 16%;   top: 13%;   width: 8%; }
+    .hug     { left: 14%;   top: 50.8%; width: 30%; }
+    .meet    { left: 39.9%; top: 21.4%; width: 24.2%; }
+    .smaller { left: 32.6%; top: 4.9%;  width: 5.8%; }
+    .small   { left: 16.5%; top: 13.6%; width: 7%; }
 
     /* The floating island with the fire at its right, whole, with its crystal underneath */
     .island {
@@ -295,17 +282,6 @@
         max-width: none;
         user-select: none;
         pointer-events: none;
-    }
-
-    /* Everything but the flame's box */
-    .base {
-        clip-path: polygon(0 0, 59.2% 0, 59.2% 54.5%, 87.4% 54.5%, 87.4% 0, 100% 0, 100% 100%, 0 100%);
-    }
-
-    /* Only the flame's box, moving from the line where the flame meets the stones */
-    .flame {
-        clip-path: inset(0 12.6% 45% 59.2%);       /* a hair below the seam, so the two copies overlap */
-        transform-origin: 73.3% 54.5%;
     }
 
     .hit {
