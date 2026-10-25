@@ -222,9 +222,12 @@ export async function createDeckRing(canvas, { cards, onFocus, onPick, onSound }
         if (!wasTap) return;
         const item = pickAt(e.clientX, e.clientY);
         if (!item) return;
-        // A tap on a side card brings it to the front first; a tap on the front card opens it
-        const dist = Math.abs(item.pos - scroll.value);
-        if (dist > 0.6) goTo(item.pos);
+        // A tap on a side card brings it to the front first; a tap on the front card opens it.
+        // The distance goes the short way round the ring (as the cards are placed): a card just beside the front one
+        // can be the opposite end of the list, and measuring along the list would spin the whole deck to reach it.
+        let gap = item.pos - scroll.value;
+        if (!partial) gap -= items.length * Math.round(gap / items.length);
+        if (Math.abs(gap) > 0.6) goTo(scroll.value + gap);
         else choose(item);
     };
 

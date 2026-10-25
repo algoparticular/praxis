@@ -39,7 +39,8 @@ export function createSpores(canvas, { source, animate = true } = {}) {
     const ctx = canvas.getContext('2d');
     const glow = makeGlow();
     const small = window.innerWidth < 600;
-    const MAX = small ? 160 : 280;
+    const TARGET = small ? 120 : 210;     // the cloud never thins out below this: it is part of the composition
+    const MAX = small ? 220 : 380;        // and the pointer can stir up a lot more on top of it
     const spores = [];
     const cooldown = new Array(caps.length).fill(0);
     const totalWidth = caps.reduce((sum, cap) => sum + cap[2], 0);
@@ -94,7 +95,7 @@ export function createSpores(canvas, { source, animate = true } = {}) {
             y: cap.y + rand(-2, 3),
             vx: Math.cos(angle) * speed + bias[0],
             vy: Math.sin(angle) * speed + bias[1],
-            r: rand(1.1, 3.0) * (0.7 + 0.5 * mass),
+            r: rand(1.3, 3.4) * (0.7 + 0.5 * mass),
             mass,
             age: 0,
             life: rand(9, 20),
@@ -133,6 +134,19 @@ export function createSpores(canvas, { source, animate = true } = {}) {
         // Brushing a cap shakes a puff loose
         if (emittersAt < 0 || clock - emittersAt > 0.2) locateEmitters();
         const speed = Math.hypot(pointer.vx, pointer.vy);
+
+        // Moving through the low air stirs more spores up around the pointer, carried the way it moves
+        const groundTop = Math.min(...emitters.map((cap) => cap.y));
+        if (speed > 60 && y > groundTop - 170 && y < height + 20) {
+            const stir = Math.min(4, 1 + Math.floor(speed / 220));
+            for (let n = 0; n < stir && spores.length < MAX; n++) {
+                const near = emitters.reduce((best, cap, i) => (Math.abs(cap.x - x) < Math.abs(emitters[best].x - x) ? i : best), 0);
+                release(near, 8, 1.2, [pointer.vx * 0.1, pointer.vy * 0.05 - 6]);
+                const s = spores[spores.length - 1];
+                s.x = x + rand(-34, 34);
+                s.y = y + rand(-24, 24);
+            }
+        }
         if (speed > 90) {
             emitters.forEach((cap, i) => {
                 if (clock < cooldown[i]) return;
@@ -157,7 +171,8 @@ export function createSpores(canvas, { source, animate = true } = {}) {
     };
 
     const step = (dt, t) => {
-        // Release
+        // Release. First the baseline: whenever the cloud is below its usual size, a few more come out of the caps
+        for (let n = 0; n < 3 && spores.length < TARGET; n++) release(pickCap(), 5);
         if (t > nextTrickle) {
             release(pickCap(), 5);
             nextTrickle = t + rand(0.04, 0.14);
@@ -167,8 +182,8 @@ export function createSpores(canvas, { source, animate = true } = {}) {
             nextPuff = t + rand(1.2, 3.2);
         }
 
-        const ceiling = height * 0.64;         // spores are gone before they climb to the sky
-        const vanish = height * 0.5;
+        const ceiling = height * 0.62;         // spores are gone before they climb to the sky
+        const vanish = height * 0.44;
         const gust = pointer.active;
         for (let i = spores.length - 1; i >= 0; i--) {
             const s = spores[i];
@@ -177,7 +192,7 @@ export function createSpores(canvas, { source, animate = true } = {}) {
 
             // Air: a slow buoyant rise (the light ones), a drifting breeze and drag
             breeze(s.x, s.y, t, air);
-            const lift = (0.62 - s.mass) * 16;                   // light spores rise, the heaviest sink a little
+            const lift = (0.7 - s.mass) * 34;                    // light spores climb into the clear air, the heaviest sink a little
             const tx = air[0] * (0.6 + s.mass * 0.4);
             const ty = air[1] - lift;
             const drag = 1 - Math.exp(-(0.9 + s.mass * 1.4) * dt);
@@ -185,7 +200,7 @@ export function createSpores(canvas, { source, animate = true } = {}) {
             s.vy += (ty - s.vy) * drag;
 
             // A constant tremble
-            const tremble = 16 * Math.sqrt(dt);
+            const tremble = 20 * Math.sqrt(dt);
             s.vx += (Math.random() - 0.5) * tremble;
             s.vy += (Math.random() - 0.5) * tremble;
 
@@ -254,11 +269,11 @@ export function createSpores(canvas, { source, animate = true } = {}) {
 
     if (animate) {
         // Start with the air already seeded, so the first look is not an empty field
-        for (let n = 0; n < 90; n++) {
+        for (let n = 0; n < TARGET; n++) {
             release(pickCap(), 5);
             const s = spores[spores.length - 1];
             s.age = rand(0, s.life * 0.5);
-            s.y -= rand(0, height * 0.12);
+            s.y -= rand(0, height * 0.3);
         }
         window.addEventListener('pointermove', onPointer, { passive: true });
         window.addEventListener('pointerdown', onPress, { passive: true });
@@ -273,7 +288,7 @@ export function createSpores(canvas, { source, animate = true } = {}) {
             s.age = s.life * 0.3;
             s.y -= rand(0, height * 0.1);
         }
-        draw(0, { ceiling: height * 0.64, vanish: height * 0.5 });
+        draw(0, { ceiling: height * 0.62, vanish: height * 0.44 });
     }
 
     return {
