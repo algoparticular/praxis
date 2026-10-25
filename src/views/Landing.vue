@@ -9,6 +9,7 @@
     import { KinesisContainer, KinesisElement} from 'vue-kinesis';
     import { createStarField } from '../composables/useStarField.js';
     import { createHeroSpiral } from '../composables/useHeroSpiral.js';
+    import { createCharacterLife } from '../composables/useCharacterLife.js';
     import { oracleTop } from '../composables/oracleScroll.js';
     import ModeSelector from '../components/ModeSelector.vue';
     import { play } from '../composables/useSound.js';
@@ -83,65 +84,13 @@
             );
             enter(document.querySelector('#hero h1'), { y: 28, delay: 150 });
             enter(document.querySelector('#hero h1 span'), { y: 14, delay: 650, duration: 900 });
-            //Once settled, the character lives in a single loop that owns translate, rotate, scale and glow:
-            //it floats along a slow oval, breathes with a halo that pulses in time, and leans towards the pointer.
-            //The kinesis parallax keeps the vertical transform; everything here goes through independent properties.
+            //Once settled, the character lives (see useCharacterLife): floats, breathes and reacts to the pointer.
+            //The kinesis parallax keeps the vertical transform; everything there goes through independent properties.
             let scrollLift = 0;                                     //set by the scroll handler below
             const particle = document.querySelector('#hero .splash.particle');
-            const hero = document.getElementById('hero');
-            //The pointer, relative to the character: lean is -1..1 across his width, near is 1 right on him and 0 far away
-            const pointer = { x: 0, y: 0, near: 0, tx: 0, ty: 0, tnear: 0 };
-            const onPointer = (event) => {
-                const box = particle.getBoundingClientRect();
-                const reach = box.width * 1.2;
-                pointer.tx = Math.max(-1, Math.min(1, (event.clientX - (box.left + box.width / 2)) / reach));
-                pointer.ty = Math.max(-1, Math.min(1, (event.clientY - (box.top + box.height / 2)) / reach));
-                const distance = Math.hypot(event.clientX - (box.left + box.width / 2), event.clientY - (box.top + box.height * 0.62)) / box.width;
-                pointer.tnear = Math.min(1, Math.max(0, (1.1 - distance) / 0.9)) ** 1.5;
-                spiral?.setPointer(event.clientX, event.clientY);
-            };
-            const onLeave = () => {
-                pointer.tx = pointer.ty = pointer.tnear = 0;
-                spiral?.setPointer(null);
-            };
-            ['pointermove', 'pointerdown'].forEach((type) => hero.addEventListener(type, onPointer));
-            ['pointerleave', 'pointercancel'].forEach((type) => hero.addEventListener(type, onLeave));
-
-            let frame = 0;
-            let visible = true;
-            const visibility = new IntersectionObserver(([entry]) => { visible = entry.isIntersecting; });
-            visibility.observe(hero);
-
-            const live = () => {
-                const start = performance.now();
-                const tick = (now) => {
-                    frame = requestAnimationFrame(tick);
-                    if (!visible) return;
-                    const t = (now - start) / 1000;
-                    const ramp = Math.min(1, t / 2);                    //amplitudes ease in so nothing jumps when the loop begins
-                    pointer.x += (pointer.tx - pointer.x) * 0.04;       //the lean follows the pointer with a delay
-                    pointer.y += (pointer.ty - pointer.y) * 0.04;
-                    pointer.near += (pointer.tnear - pointer.near) * 0.07;
-                    const breath = (1 - Math.cos(t * 1.05)) / 2;        //0..1, about 6s per breath
-                    const floatX = Math.sin(t * 0.28) * 6 * ramp;
-                    const floatY = (Math.cos(t * 0.28) - 1) * 4 * ramp; //oval path, about 22s a lap, starting at rest
-                    //Up close he leans in, grows a little, breathes deeper and shines brighter
-                    const excite = pointer.near;
-                    const deep = breath * (1 + 0.8 * excite);
-                    particle.style.translate = `${floatX + pointer.x * 14}px ${floatY + scrollLift + pointer.y * 8}px`;
-                    particle.style.rotate = `${(pointer.x * 4 + Math.sin(t * 0.45) * 1 * ramp).toFixed(3)}deg`;
-                    particle.style.scale = 1 + (0.022 * deep + 0.03 * excite) * ramp;
-                    particle.style.filter = `drop-shadow(0 0 ${(6 + 16 * deep * ramp + 14 * excite).toFixed(1)}px rgba(255, 150, 130, ${Math.min(0.9, 0.12 + 0.38 * deep * ramp + 0.3 * excite).toFixed(3)}))`;
-                };
-                frame = requestAnimationFrame(tick);
-            };
-            enter(particle, { y: 40, scale: 0.88, delay: 350, duration: 1600 }).finished.then(live).catch(() => {});
-            stopReveals.push(() => {
-                cancelAnimationFrame(frame);
-                visibility.disconnect();
-                ['pointermove', 'pointerdown'].forEach((type) => hero.removeEventListener(type, onPointer));
-                ['pointerleave', 'pointercancel'].forEach((type) => hero.removeEventListener(type, onLeave));
-            });
+            const life = createCharacterLife(particle, document.getElementById('hero'), { spiral, getLift: () => scrollLift });
+            enter(particle, { y: 40, scale: 0.88, delay: 350, duration: 1600 }).finished.then(life.start).catch(() => {});
+            stopReveals.push(() => life.destroy());
 
             //Leaving the hero: the title lifts and fades while the particle drifts up slower, so the violet hands over to the night
             const heroTitle = document.querySelector('#hero > a');

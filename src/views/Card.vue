@@ -5,7 +5,7 @@
 </script>
 
 <template>    
-    <div class="content">
+    <div class="content cardPage">
         <Header 
             :hasBack="false"
             :hasDeck="true"
@@ -26,6 +26,12 @@
 </template>
 
 <style>
+    /* The page grows with the reading, so the window itself scrolls (the scenes' parallax follows window.scrollY) */
+    .content.cardPage {
+        height: auto;
+        min-height: 100vh;
+    }
+
     .fade-enter-from,
 	.fade-leave-to {
 		opacity: 0;
