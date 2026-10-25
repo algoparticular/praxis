@@ -1,7 +1,7 @@
 <script setup>
     // Sincronicidad: bubbles of larvae floating over a camp fire, under a night sky of real particles.
-    // The bubbles (public/assets/cocreate) bob and breathe at their own pace; the ground with the fire is the
-    // floating island, cut off by the bottom edge. The stars are a three.js particle field (useStardust) instead of a
+    // The bubbles (public/assets/cocreate) bob and breathe at their own pace; the camp fire sits on a small
+    // floating island that drifts on its own. The stars are a three.js particle field (useStardust) instead of a
     // picture, and a second, tiny one lets embers rise from the flame.
     import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
     import { createParallax, enterLayers } from '../../composables/useParallax.js';
@@ -51,7 +51,8 @@
             float(small.value, 16, 0.65, 7, 3, 2);
             float(meet.value, 26, 0.5, 9, 1.6, 4);
             float(hug.value, 36, 0.42, 11, 1.4, 1);
-            island.value.style.translate = `${-x * 18}px ${-y * 6 + s * 20}px`;
+            island.value.style.translate = `${-x * 18}px ${-y * 6 + Math.sin(t * 0.5 + 2) * 9 * ramp + s * 20}px`;
+            island.value.style.rotate = `${(Math.sin(t * 0.37) * 0.5 * ramp).toFixed(3)}deg`;
         });
         sky = startStardust(skyCanvas.value, {
             count: 380, colors: [0xf6e27c, 0xf6e27c, 0xee6a82, 0xfaf3d4], size: [2.2, 6.5],
@@ -77,12 +78,11 @@
 
         <!-- A square frame, bottom-aligned; every layer is placed as a fraction of it, as in the illustration -->
         <div class="frame">
-            <div class="ground"></div>
+            <img class="layer island" ref="island" src="/assets/cocreate/isla.webp" alt="" draggable="false">
             <img class="layer smaller" ref="smaller" src="/assets/cocreate/larva1.webp" alt="" draggable="false">
             <img class="layer small" ref="small" src="/assets/cocreate/larva2.webp" alt="" draggable="false">
             <img class="layer meet" ref="meet" src="/assets/cocreate/encuentro.webp" alt="" draggable="false">
             <img class="layer hug" ref="hug" src="/assets/cocreate/sincronicidad.webp" alt="" draggable="false">
-            <img class="layer island" ref="island" src="/assets/cocreate/isla.webp" alt="" draggable="false">
             <canvas class="embers" ref="emberCanvas"></canvas>
         </div>
     </div>
@@ -129,32 +129,20 @@
     .smaller { left: 31.5%; top: 4%;   width: 7.7%; }
     .small   { left: 15.5%; top: 12.5%; width: 9.3%; }
 
-    /* The floating island, with the fire at its right; only its top shows, like the ground of the card */
+    /* The floating island with the fire at its right, whole, with its crystal underneath */
     .island {
-        left: 29.5%;
-        top: 63.4%;
-        width: 66%;
-    }
-
-    /* The rest of the ground, left of the island and under it, in the card's own teal */
-    .ground {
-        position: absolute;
-        left: -100vw;
-        right: -100vw;
-        bottom: 0;
-        height: 11%;
-        background: #3fbaac;
-        border-top-left-radius: 50% 12px;
-        border-top-right-radius: 50% 12px;
+        left: 36%;
+        top: 50%;
+        width: 58%;
     }
 
     /* Embers rise from the flame */
     .embers {
         position: absolute;
-        left: 69%;
-        top: 49%;
-        width: 18%;
-        height: 16%;
+        left: 70%;
+        top: 38.5%;
+        width: 16%;
+        height: 15%;
         pointer-events: none;
     }
 </style>

@@ -36,15 +36,18 @@
         parallax = createParallax(root.value, ({ x, y, scroll, t, ramp }) => {
             const s = scroll;
             // The friends breathe, a little out of step with the flame between them
-            pair.value.style.translate = `${-x * 20}px ${-y * 8 - s * 50}px`;
+            // The island floats, and everything standing on it floats with it
+            const bob = Math.sin(t * 0.55) * 9 * ramp;
+            pair.value.style.translate = `${-x * 20}px ${-y * 8 + bob - s * 50}px`;
             pair.value.style.scale = `1 ${(1 + Math.sin(t * 0.9) * 0.006 * ramp).toFixed(4)}`;
             pair.value.style.rotate = `${(Math.sin(t * 0.35) * 0.35 * ramp).toFixed(3)}deg`;
             // The flame bobs, and sways a touch with the breeze of the pointer
             const flicker = 0.5 + 0.5 * Math.sin(t * 5.1) * Math.sin(t * 3.3 + 1);
-            flame.value.style.translate = `${-x * 28}px ${-y * 10 + Math.sin(t * 1.3) * 6 * ramp - s * 60}px`;
+            flame.value.style.translate = `${-x * 28}px ${-y * 10 + bob + Math.sin(t * 1.3) * 6 * ramp - s * 60}px`;
             flame.value.style.rotate = `${(Math.sin(t * 1.7) * 3 * ramp - x * 4).toFixed(3)}deg`;
             flame.value.style.filter = `brightness(${(1 + flicker * 0.18).toFixed(3)}) drop-shadow(0 0 ${(8 + flicker * 12).toFixed(1)}px rgba(255, 150, 110, 0.55))`;
-            island.value.style.translate = `${-x * 12}px ${-y * 4 + s * 18}px`;
+            island.value.style.translate = `${-x * 12}px ${-y * 4 + bob + s * 18}px`;
+            island.value.style.rotate = `${(Math.sin(t * 0.4) * 0.5 * ramp).toFixed(3)}deg`;
         });
         sky = startStardust(skyCanvas.value, {
             count: 380, colors: [0xf6e27c, 0xf6e27c, 0xee6a82, 0xfaf3d4], size: [2.2, 6.5],
@@ -70,7 +73,6 @@
 
         <!-- A square frame, bottom-aligned; every layer is placed as a fraction of it, as in the illustration -->
         <div class="frame">
-            <div class="ground"></div>
             <img class="layer island" ref="island" src="/assets/share/island.webp" alt="" draggable="false">
             <img class="layer pair" ref="pair" src="/assets/share/particles.webp" alt="" draggable="false">
             <img class="layer flame" ref="flame" src="/assets/share/fire.webp" alt="" draggable="false">
@@ -116,40 +118,31 @@
 
     /* Left and top as fractions of the frame, measured from the illustration */
     .pair {
-        left: 25%;
-        top: 21.5%;
-        width: 50%;
+        left: 31.25%;
+        top: 11%;
+        width: 37.5%;
         transform-origin: 50% 100%;
     }
 
     .flame {
-        left: 46.5%;
-        top: 53%;
-        width: 6.7%;
+        left: 47.4%;
+        top: 34.6%;
+        width: 5%;
     }
 
-    /* The island shows only its top, as the ground of the card does */
+    /* A small floating island, whole, with the friends standing on it */
     .island {
-        left: 4%;
-        top: 82%;
-        width: 92%;
-    }
-
-    .ground {
-        position: absolute;
-        left: -100vw;
-        right: -100vw;
-        bottom: 0;
-        height: 14%;
-        background: #4caa78;
+        left: 15.5%;
+        top: 58.3%;
+        width: 69%;
     }
 
     .sparks {
         position: absolute;
-        left: 41%;
-        top: 40%;
-        width: 17%;
-        height: 18%;
+        left: 43.4%;
+        top: 24.1%;
+        width: 13%;
+        height: 13%;
         pointer-events: none;
     }
 </style>
