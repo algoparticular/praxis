@@ -97,7 +97,7 @@
         const sn = mushrooms.value.offsetWidth;
         const kn = sn / 2160;
         const sheetTop = h + 0.04 * sn - sn;
-        const inset = Math.min(0, w / 2 - sn / 2);            // the sheets are centred, not anchored, on a narrow screen
+        const inset = 0;                                       // the sheets hang from the sides of the screen, on a narrow one too
         return {
             S, sn, kn, kf: S / 2160, fx0: (w - S) / 2, fy0: h - S, sheetTop,
             // The big square's left half: its right edge stays put while it grows 4% to the left (CSS scale 1.04, origin right)
@@ -664,8 +664,8 @@
     .half.left { left: 0; }
     .half.right { right: 0; }
 
-    /* A little wider than the screen, so the pointer can shift it sideways without a gap at the edge. When the screen
-       is narrower than the square, the picture is centred instead and its sides are cropped. */
+    /* A little wider than the screen, so the pointer can shift it sideways without a gap at the edge. Its outer edge
+       always sits on the edge of the screen, so on a narrow one the branches and leaves are not cropped away. */
     .sheet {
         position: absolute;
         bottom: 0;
@@ -674,8 +674,8 @@
         scale: 1.04 1;
     }
 
-    .left .sheet { left: min(0px, calc(50vw - var(--sn) / 2)); transform-origin: 100% 50%; }
-    .right .sheet { right: min(0px, calc(50vw - var(--sn) / 2)); transform-origin: 0% 50%; }
+    .left .sheet { left: 0; transform-origin: 100% 50%; }
+    .right .sheet { right: 0; transform-origin: 0% 50%; }
 
     /* The mirror above: sits right on top of the big square and is flipped over, so the seam is the picture's own top edge */
     .half.up {
