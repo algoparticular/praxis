@@ -5,12 +5,17 @@
     // (useCellWater): every organelle bobs about where it was drawn, and the larva floats slowly, bumping into them
     // and into the wall of the cell instead of going through, and giving them a nudge. The colour is code: the
     // interior and the nucleus are plain discs, the nucleus's stipple and the spore dust around the planet are
-    // three.js particles (useStardust), and so are the faint dots of the sky. The thick of the orange dust is still
-    // baked into the crown's picture; the animated dust is what fills the rest, behind and in front of it.
+    // three.js particles (useStardust), and so are the faint dots of the sky. As in Pañña, the orange dust is a
+    // density map of the original stipple (creatividadDust.json) drawn back as particles behind the crown; only
+    // the thin fringe hugging the mushrooms stays in the picture. Touching a mushroom throws spores (useSparks).
     import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
     import { createParallax, enterLayers } from '../../composables/useParallax.js';
     import { startStardust } from '../../composables/useStardust.js';
     import { createCellWater } from '../../composables/useCellWater.js';
+    import { createSparks } from '../../composables/useSparks.js';
+    import { play } from '../../composables/useSound.js';
+    import dustCloud from '../../composables/creatividadDust.json';
+    import CAPS from '../../composables/creatividadCaps.json';
 
     const props = defineProps({
         card: { type: Object, default: () => ({}) },
@@ -23,8 +28,7 @@
     const dustCanvas = ref(null);      // behind the planet
     const frontCanvas = ref(null);     // in front of it: a few motes and the nucleus's stipple
     const planet = ref(null);
-    const crown = ref(null);
-    const inside = ref(null);
+    const crown = ref(null);        // the crown and its touchable mushrooms, turning together
     const larva = ref(null);
     const nucleus = ref(null);
     const els = {};                    // the floating pieces by id, filled by the template
@@ -39,10 +43,12 @@
     let entered = false;
 
     // Where each layer sits, in % of the 3240px square it was drawn in (left, top, width, height)
-    const CROWN = { left: 9.475, top: 11.852, w: 78.58, h: 75.71 };
+    const CROWN = { left: 16.574, top: 22.654, w: 65.895, h: 64.506 };
     const LARVA = { left: 42.037, top: 39.167, w: 5.031, h: 9.66 };
     const boxOf = (l) => ({ left: `${l.left}%`, top: `${l.top}%`, width: `${l.w}%`, height: `${l.h}%` });
     const crownBox = boxOf(CROWN);
+    // The mushrooms that can be touched: a circle on each cap, in % of the frame
+    const caps = CAPS.map(([x, y, r]) => ({ left: `${(x - r).toFixed(3)}%`, top: `${(y - r).toFixed(3)}%`, width: `${(2 * r).toFixed(3)}%`, height: `${(2 * r).toFixed(3)}%` }));
     const larvaBox = boxOf(LARVA);
     // The pieces that float in the water. `circles` (frame fractions) are what the larva bumps into, `turn` how far
     // each rocks, in degrees, `sway` how far it wanders, in frame fractions
@@ -69,9 +75,9 @@
     const NUCLEUS = { x: 0.5359, y: 0.4694, r: 0.0585 };
     const CELL = { x: 0.5096, y: 0.5049, r: 0.18 };           // the interior disc
     const LARVA_AT = { x: 0.4454, y: 0.452, r: 0.02 };        // where the larva was drawn, and its body
-    const frameBox = () => {
+    const frameBox = (canvas = frontCanvas) => {
         const f = frame.value.getBoundingClientRect();
-        const c = frontCanvas.value.getBoundingClientRect();
+        const c = canvas.value.getBoundingClientRect();
         return { x: f.left - c.left, y: f.top - c.top, size: f.width };
     };
     // Stipple on the nucleus: thicker on its right, like the artwork
@@ -85,13 +91,64 @@
             return [f.x + (NUCLEUS.x + Math.cos(a) * d) * f.size, f.y + (NUCLEUS.y + Math.sin(a) * d) * f.size];
         }
     };
-    const around = (w, h) => {
-        const f = frameBox();
+    const aroundOn = (canvas) => () => {
+        const f = frameBox(canvas);
         const cx = f.x + PLANET.x * f.size;
         const cy = f.y + PLANET.y * f.size;
         const radius = PLANET.r * f.size * (1.02 + Math.abs((Math.random() + Math.random() + Math.random()) / 3 - 0.5) * 2.6);
         const angle = Math.random() * Math.PI * 2;
         return [cx + Math.cos(angle) * radius, cy + Math.sin(angle) * radius];
+    };
+
+    const around = aroundOn(frontCanvas);
+    const aroundBack = aroundOn(dustCanvas);
+
+    // The dust of the original, back as particles: where the density map says there is stipple, as many dots as it covered
+    const grid = { ...dustCloud, bytes: Uint8Array.from(atob(dustCloud.data), (c) => c.charCodeAt(0)) };
+    const DUST_COLORS = [0xf8a275, 0xffb069, 0xf5976a, 0xffc08a];
+    const dustPoints = () => {
+        const f = frameBox(dustCanvas);
+        const k = f.size / 3240;
+        const dot = Math.max(1.8, 9 * k);
+        const out = [];
+        for (let row = 0; row < grid.rows; row++) {
+            for (let col = 0; col < grid.cols; col++) {
+                const v = grid.bytes[row * grid.cols + col] / 255 * grid.max;
+                if (v < 0.02) continue;
+                const wanted = v * (grid.cell * k) ** 2 / (Math.PI / 4 * dot * dot) * 2.6;
+                let n = Math.floor(wanted);
+                if (Math.random() < wanted - n) n++;
+                for (let i = 0; i < n; i++) {
+                    out.push([
+                        f.x + (grid.x + (col + Math.random()) * grid.cell) * k,
+                        f.y + (grid.y + (row + Math.random()) * grid.cell) * k,
+                        dot * (0.7 + Math.random() * 0.7),
+                        DUST_COLORS[Math.floor(Math.random() * DUST_COLORS.length)],
+                    ]);
+                }
+            }
+        }
+        return out;
+    };
+
+    // Touching a mushroom: spores fly out of it and the dust around the planet flares
+    const sparks = createSparks(480);
+    const spores = (event) => {
+        const box = event.currentTarget.getBoundingClientRect();
+        const canvas = frontCanvas.value.getBoundingClientRect();
+        sparks.burst(box.left + box.width / 2 - canvas.left, box.top + box.height / 2 - canvas.top, {
+            n: 26, colors: [0xffb069, 0xff9a5c, 0xffd29a, 0xf08a8a], speed: 120, life: 2.8, size: 4.6, spread: 8, rise: 10,
+        });
+        dust?.boost(0, 1.4);
+        dust?.boost(1, 1);
+        front?.boost(0, 1);
+        play('tap');
+    };
+    const warm = () => dust?.boost(0, 0.4);
+    const onKey = (event) => {
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+        event.preventDefault();
+        spores(event);
     };
 
     const enter = () => {
@@ -118,7 +175,6 @@
             planet.value.style.translate = `${-x * 18}px ${-y * 10 + Math.sin(t * 0.5) * 6 * ramp - s * 50}px`;
             planet.value.style.scale = 1 + Math.sin(t * 0.7) * 0.012 * ramp;
             crown.value.style.rotate = `${(t * 1.8 * ramp).toFixed(3)}deg`;
-            inside.value.style.translate = `${-x * 6}px ${-y * 4}px`;
             // The water: everything inside floats, and the larva bumps into it
             const dt = last === null ? 0 : t - last;
             last = t;
@@ -131,8 +187,11 @@
             });
             const n = water.offset('nucleus');
             nucleus.value.style.translate = `${(n.x * 100).toFixed(3)}cqw ${(n.y * 100).toFixed(3)}cqw`;
-            // The nucleus's stipple follows the planet, the interior it sits on and the nucleus's own sway
-            front?.shift(1, -x * 18 - x * 6 + n.x * size, -y * 10 + Math.sin(t * 0.5) * 6 * ramp - s * 50 - y * 4 + n.y * size);
+            // What is drawn in particles follows the planet: the halo of dust, and the nucleus's stipple with its own sway
+            const px = -x * 18;
+            const py = -y * 10 + Math.sin(t * 0.5) * 6 * ramp - s * 50;
+            dust?.shift(0, px, py);
+            front?.shift(1, px + n.x * size, py + n.y * size);
             // The larva floats, leaning into its way and bobbing; a knock makes it squash a little
             const me = water.swimmer;
             tilt += (Math.max(-1, Math.min(1, me.vx / 0.012)) * 16 - tilt) * Math.min(1, dt * 1.5);
@@ -146,20 +205,28 @@
         });
         // Behind the planet: the animated dust that the baked dust of the crown's picture sits in front of
         dust = startStardust(dustCanvas.value, {
-            count: 420, colors: [0xffb069, 0xff9a5c, 0xffd29a, 0xf08a8a], size: [2.5, 6.5], look: 'hard', spawn: around,
-            drift: 30, jitter: 0.5, twinkle: 0.8, reach: 150, push: 46, parallax: 18,
+            groups: [
+                // The halo of the original stipple (group 0, which follows the planet by hand)
+                { points: dustPoints, look: 'hard', drift: 7, jitter: 0.9, twinkle: 0.5, reach: 120, push: 36, parallax: 0 },
+                {
+                    count: 300, colors: [0xffb069, 0xff9a5c, 0xffd29a, 0xf08a8a], size: [2.5, 6.5], look: 'hard', spawn: aroundBack,
+                    drift: 30, jitter: 0.5, twinkle: 0.8, reach: 150, push: 46, parallax: 18,
+                },
+            ],
         });
         // In front: a few motes drifting across, and the nucleus's stipple (group 1, which follows the planet by hand)
         front = startStardust(frontCanvas.value, {
             groups: [
                 {
-                    count: 110, colors: [0xffb069, 0xffd29a, 0xf08a8a], size: [2.2, 5.5], look: 'hard', spawn: around,
+                    count: 80, colors: [0xffb069, 0xffd29a, 0xf08a8a], size: [2.2, 5.5], look: 'hard', spawn: around,
                     drift: 34, jitter: 0.5, twinkle: 0.8, reach: 150, push: 46, parallax: 26,
                 },
                 {
                     count: 240, colors: [0x86667e, 0x93718a, 0x7d5d75], size: [1.4, 3.4], look: 'hard', spawn: nucleusStipple,
                     drift: 2, jitter: 0.4, twinkle: 0.15, reach: 0, parallax: 0, opacity: 0.8,
                 },
+                // Spores thrown from the mushrooms that are touched
+                { dynamic: sparks.group, colors: [0xffb069], look: 'hard', parallax: 0, drift: 0, twinkle: 0, reach: 0 },
             ],
         });
         enter();
@@ -181,13 +248,18 @@
         <!-- The planet's layers share one square, so the interior, the crown and the larva line up -->
         <div class="frame" ref="frame">
             <div class="planet" ref="planet">
-                <div class="inside" ref="inside">
+                <div class="inside">
                     <div class="disc interior"></div>
                     <div class="disc nucleus" ref="nucleus"></div>
                     <img v-for="p in PIECES" :key="p.id" :ref="setEl(p.id)" class="piece" :style="p.style" :src="`/assets/creatividad/${p.file}.webp`" alt="" draggable="false">
                     <img class="piece larva" ref="larva" :style="larvaBox" src="/assets/creatividad/larva.webp" alt="" draggable="false">
                 </div>
-                <img class="piece crown" ref="crown" :style="crownBox" src="/assets/creatividad/crown.webp" alt="" draggable="false">
+                <div class="spin" ref="crown">
+                    <img class="piece" :style="crownBox" src="/assets/creatividad/crown.webp" alt="" draggable="false">
+                    <div v-for="(cap, i) in caps" :key="i" class="hit" role="button" tabindex="-1" :style="cap"
+                        :aria-label="$i18n.locale === 'en' ? 'Mushroom' : 'Hongo'"
+                        @pointerdown.prevent="spores" @pointerenter="warm" @keydown="onKey"></div>
+                </div>
             </div>
         </div>
         <canvas class="sky front" ref="frontCanvas"></canvas>
@@ -257,9 +329,21 @@
         background: #72556f;
     }
 
-    /* The crown turns about the middle of the interior, which is not the middle of its own picture */
-    .crown {
-        transform-origin: 52.79% 51.04%;
+    /* The crown turns about the middle of the interior (the disc's centre, in % of the square) */
+    .spin {
+        position: absolute;
+        inset: 0;
+        transform-origin: 50.96% 50.49%;
+    }
+
+    /* A touchable mushroom: a circle on its cap, invisible */
+    .hit {
+        position: absolute;
+        border-radius: 50%;
+        cursor: pointer;
+        pointer-events: auto;
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
     }
 
     /* The larva walks about on its feet */
