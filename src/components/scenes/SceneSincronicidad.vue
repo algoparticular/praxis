@@ -245,9 +245,9 @@
     }
 
     /* The bubbles, a little smaller than in the card, by their centres (left and top as fractions of the frame) */
-    .hug     { left: 14%;   top: 46.6%; width: 30%; }
+    .hug     { left: 15.5%; top: 43.2%; width: 27%; }
     .meet    { left: 39.9%; top: 17.2%; width: 24.2%; }
-    .smaller { left: 32.6%; top: 2.8%;  width: 5.8%; }
+    .smaller { left: 32.6%; top: 6.4%;  width: 5.8%; }
     .small   { left: 16.5%; top: 9.6%;  width: 7%; }
 
     /* The floating island with the fire at its right, whole, with its crystal underneath */
