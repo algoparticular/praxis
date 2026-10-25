@@ -149,7 +149,7 @@
 
     .title {
         position: absolute;
-        top: max(104px, 14svh);
+        top: max(84px, 10.5svh);
         left: 0;
         width: 100%;
         margin: 0;
@@ -281,6 +281,10 @@
 
     /* DESKTOP */
     @media screen and (min-width: 768px) {
+        .title {
+            font-size: clamp(40px, 4.2vw, 58px);
+        }
+
         .reading {
             padding: 110px 28px 180px;
         }
