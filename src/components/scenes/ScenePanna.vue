@@ -139,7 +139,7 @@
     const TURN = 180;          // px of the path per turn of the double helix
     const STRAND_DOTS = 26;
     const DUST = 20;
-    const FLOW = 0.1;          // lengths of the path per second
+    const FLOW = 0.05;         // lengths of the path per second
     let bob = 0;               // Sid floats; the aura and the thread's end float with him
     let surge = 0;             // 1 when Sid has just been touched: the spiral rushes
     let flowPhase = 0;
@@ -170,7 +170,7 @@
             for (let strand = 0; strand < 2; strand++) {
                 for (let d = 0; d < STRAND_DOTS; d++, i++) {
                     const f = (d / STRAND_DOTS + flowPhase) % 1;
-                    const wave = Math.PI * 2 * turns * f + strand * Math.PI - t * 0.7;
+                    const wave = Math.PI * 2 * turns * f + strand * Math.PI - t * 0.4;
                     const narrowing = 1 - 0.78 * smooth(0.25, 1, f);
                     const near = 0.5 + 0.5 * Math.cos(wave);                  // 1 when the dot passes in front
                     const pulse = Math.max(0, Math.sin(f * 15 - t * 2.1)) ** 3;
