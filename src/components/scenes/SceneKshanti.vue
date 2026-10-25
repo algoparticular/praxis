@@ -61,7 +61,7 @@
 
     // The flasks with a cork: how empty each is (level 0 full .. 1 empty, easing towards the target), how far its cork
     // has popped, and which creature lives in it
-    const FLASKS = flaskData.map((f) => ({ ...f, style: place(f.box), level: 0, target: 0, pop: 0, life: 1, shown: -1 }));
+    const FLASKS = flaskData.map((f) => ({ ...f, style: place(f.box), level: 0, target: 0, pop: 0, life: 1, glow: 0, awake: false, shown: -1 }));
     const flaskOfCreature = {};
     const flaskOfCork = {};
     FLASKS.forEach((f) => { f.creatures.forEach((n) => { flaskOfCreature[n] = f; }); flaskOfCork[f.cork] = f; });
@@ -104,16 +104,19 @@
     const Y = (i) => LINE.pts[3 * i + 1];
     const W = (i) => LINE.pts[3 * i + 2];
     // A ribbon along samples a..b: the line pushed out by its thickness (times widthAt) on both sides
-    const ribbon = (a, b, widthAt) => {
+    // `bend(i)` may pull a sample off the route: [dx, dy]
+    const ribbon = (a, b, widthAt, bend) => {
         const left = [], right = [];
+        const at = bend ? (i) => { const d = bend(i); return [X(i) + d[0], Y(i) + d[1]]; } : (i) => [X(i), Y(i)];
         for (let i = a; i <= b; i++) {
             const i0 = Math.max(0, i - 1), i1 = Math.min(N - 1, i + 1);
-            let tx = X(i1) - X(i0), ty = Y(i1) - Y(i0);
+            const [x, y] = at(i), [xa, ya] = at(i0), [xb, yb] = at(i1);
+            let tx = xb - xa, ty = yb - ya;
             const n = Math.hypot(tx, ty) || 1;
             tx /= n; ty /= n;
             const w = W(i) * widthAt(i);
-            left.push(`${(X(i) - ty * w).toFixed(1)} ${(Y(i) + tx * w).toFixed(1)}`);
-            right.push(`${(X(i) + ty * w).toFixed(1)} ${(Y(i) - tx * w).toFixed(1)}`);
+            left.push(`${(x - ty * w).toFixed(1)} ${(y + tx * w).toFixed(1)}`);
+            right.push(`${(x + ty * w).toFixed(1)} ${(y - tx * w).toFixed(1)}`);
         }
         return `M${left.join('L')}L${right.reverse().join('L')}Z`;
     };
@@ -123,19 +126,64 @@
     const STROKES = [
         { len: 0.075, speed: 1.0 }, { len: 0.05, speed: 0.82 }, { len: 0.09, speed: 1.18 }, { len: 0.06, speed: 0.9 },
         { len: 0.07, speed: 1.1 }, { len: 0.045, speed: 0.72 }, { len: 0.08, speed: 1.0 },
-    ].map((k, i, all) => ({ ...k, count: Math.round(N * k.len), start: (i / all.length + 0.037 * (i % 3)) % 1 }));
+    ].map((k, i, all) => ({ ...k, count: Math.round(N * k.len), pos: ((i / all.length + 0.037 * (i % 3)) % 1) * N, grab: 0 }));
+
+    // The finger (or the mouse): where it is on the thread's square, and when it last moved
+    const pointer = { u: 0, v: 0, at: -99 };
+    let nowT = 0;
+    const track = (event) => {
+        const box = els.thread?.getBoundingClientRect();
+        if (!box || !box.width) return;
+        pointer.u = (event.clientX - box.left) / box.width * 2160;
+        pointer.v = (event.clientY - box.top) / box.height * 2160;
+        pointer.at = nowT;
+    };
+    const GRAB = 340;                      // how near (in the 2160 units) a stroke has to be for the finger to take it
+    const REACH = 270;                     // how far round the finger the stroke is pulled
+    // The strokes follow the finger: one near it slides along the route to the spot nearest the finger and is pulled
+    // towards it, staying there while the finger keeps moving, and goes back to its travelling when it stops
+    const moveStrokes = (dt, t) => {
+        const active = t - pointer.at < 1.3;
+        STROKES.forEach((k) => {
+            k.pos = (k.pos + dt * k.speed * N / 70) % N;
+            let want = 0;
+            if (active) {
+                const c = Math.round(k.pos + k.count / 2);
+                const span = Math.round(N * 0.12);
+                let best = 0, bestD = Infinity;
+                for (let o = -span; o <= span; o += 3) {
+                    const j = ((c + o) % N + N) % N;
+                    const d = (X(j) - pointer.u) ** 2 + (Y(j) - pointer.v) ** 2;
+                    if (d < bestD) { bestD = d; best = o; }
+                }
+                if (bestD < GRAB * GRAB) {
+                    k.pos = ((k.pos + best * Math.min(1, dt * 3.2)) % N + N) % N;
+                    want = 1;
+                }
+            }
+            k.grab += (want - k.grab) * Math.min(1, dt * (want ? 6 : 2.2));
+        });
+    };
+    const bendOf = (k) => k.grab < 0.02 ? null : (i) => {
+        const dx = pointer.u - X(i), dy = pointer.v - Y(i);
+        const f = k.grab * 0.55 * Math.exp(-(dx * dx + dy * dy) / (REACH * REACH));
+        return [dx * f, dy * f];
+    };
     // A stretch [from, to] (fractions of the stroke) of the stroke that starts at `head`
-    const strokeD = (head, count, from, to) => {
+    const strokeD = (head, count, from, to, bend) => {
         const i0 = Math.floor(head);
         const taper = (i) => 0.3 + 0.34 * Math.pow(Math.sin(Math.PI * Math.min(1, Math.max(0, ((i - i0 + N) % N) / count))), 0.7);
         const s0 = i0 + Math.floor(from * count), s1 = i0 + Math.floor(to * count);
-        if (s1 < N) return ribbon(s0, s1, taper);
-        if (s0 >= N) return ribbon(s0 - N, s1 - N, taper);
-        return `${ribbon(s0, N - 1, taper)}${ribbon(0, s1 - N, taper)}`;
+        if (s1 < N) return ribbon(s0, s1, taper, bend);
+        if (s0 >= N) return ribbon(s0 - N, s1 - N, taper, bend);
+        return `${ribbon(s0, N - 1, taper, bend)}${ribbon(0, s1 - N, taper, bend)}`;
     };
     // Three nested ribbons, so each stroke fades in and out along its length instead of ending abruptly
     const FADES = [[0, 1], [0.2, 0.8], [0.4, 0.6]];
-    const strokesD = (t) => FADES.map(([from, to]) => STROKES.map((k) => strokeD((((k.start + Math.max(0, t) * k.speed / 70) % 1) * N), k.count, from, to)).join(''));
+    const strokesD = () => {
+        const bends = STROKES.map(bendOf);
+        return FADES.map(([from, to]) => STROKES.map((k, n) => strokeD(k.pos, k.count, from, to, bends[n])).join(''));
+    };
 
     const live = (t, ramp) => {
         things.forEach(({ n }) => {
@@ -167,6 +215,9 @@
                 const gone = 1 - smooth(home.life);
                 ty -= gone * 1.6; sx *= 1 - gone * 0.14; sy *= 1 - gone * 0.14;
                 s.opacity = home.life >= 0.999 ? '1' : (1 - gone).toFixed(3);
+                // lit by a stroke going by
+                if (home.glow > 0.01) { s.filter = `brightness(${(1 + home.glow * 0.2).toFixed(3)}) saturate(${(1 + home.glow * 0.15).toFixed(3)})`; home.lit = true; sx *= 1 + home.glow * 0.03; sy *= 1 + home.glow * 0.03; }
+                else if (home.lit) { s.filter = ''; home.lit = false; }
                 // an empty flask's creature is not there to be touched, and must not catch the touch meant for the cork
                 const catcher = els['chit' + n];
                 if (catcher) catcher.style.pointerEvents = home.life < 0.6 ? 'none' : '';
@@ -234,6 +285,28 @@
         play('star');
     };
 
+    // A stroke passing by a flask lights the creature in it for a moment, with a few lavender sparks as it comes on
+    const wakeCreatures = (dt) => {
+        const canvas = frontCanvas.value?.getBoundingClientRect();
+        FLASKS.forEach((f) => {
+            let near = false;
+            if (f.life > 0.9) {
+                for (const k of STROKES) {
+                    const c = Math.floor(k.pos + k.count / 2) % N;
+                    const dx = X(c) - f.cx * 21.6, dy = Y(c) - f.cy * 21.6, reach = f.r * 21.6 + 60;
+                    if (dx * dx + dy * dy < reach * reach) { near = true; break; }
+                }
+            }
+            if (near && !f.awake && canvas) {
+                const el = els[f.creatures[0]];
+                const box = el?.getBoundingClientRect();
+                if (box) sparks.burst(box.left + box.width / 2 - canvas.left, box.top + box.height / 2 - canvas.top, { n: 8, colors: [0xcfcdf2, 0xb9b6ea, 0xffffff], speed: 55, life: 1.8, size: 4, spread: 12 });
+            }
+            f.awake = near;
+            f.glow += ((near ? 1 : 0) - f.glow) * Math.min(1, dt * (near ? 5 : 1.3));
+        });
+    };
+
     // Touching a creature: it flashes and throws sparks of its own colour (nothing happens if its flask is empty)
     const touch = (thing, event) => {
         const home = flaskOfCreature[thing.n];
@@ -259,17 +332,22 @@
     };
 
     onMounted(() => {
+        root.value.addEventListener('pointermove', track, { passive: true });
+        root.value.addEventListener('pointerdown', track, { passive: true });
         parallax = createParallax(root.value, ({ x, y, scroll, t, ramp }) => {
             // The network floats, its creatures floating in it, and the thread with it
             network.value.style.translate = `${-x * 14}px ${-y * 7 + Math.sin(t * 0.5) * 7 * ramp - scroll * 40}px`;
             network.value.style.rotate = `${(Math.sin(t * 0.27) * 0.35 * ramp).toFixed(3)}deg`;
             const dt = last === null ? 0 : Math.min(0.1, t - last);
             last = t;
+            nowT = t;
+            moveStrokes(dt, t);
             live(t, ramp);
             stepFlasks(dt);
+            wakeCreatures(dt);
             // The strokes of the thread, travelling (every other frame is enough)
             if (tick++ % 2 === 0 && els.wb0) {
-                strokesD(t).forEach((d, k) => {
+                strokesD().forEach((d, k) => {
                     els['wb' + k].setAttribute('d', d);
                     els['wf' + k].setAttribute('d', d);
                 });
@@ -286,6 +364,8 @@
     });
     watch(() => props.active, enter);
     onBeforeUnmount(() => {
+        root.value?.removeEventListener('pointermove', track);
+        root.value?.removeEventListener('pointerdown', track);
         parallax?.destroy();
         sky?.destroy();
         front?.destroy();
@@ -300,7 +380,7 @@
         <div class="frame">
             <div class="network" ref="network">
                 <!-- The lavender thread, under the pink: the whole line, and a bright stretch travelling along it -->
-                <svg class="thread" viewBox="0 0 2160 2160" aria-hidden="true">
+                <svg class="thread" :ref="setEl('thread')" viewBox="0 0 2160 2160" aria-hidden="true">
                     <path v-for="k in 3" :key="k" class="worm" :class="`w${k - 1}`" :ref="setEl(`wb${k - 1}`)" />
                 </svg>
 
