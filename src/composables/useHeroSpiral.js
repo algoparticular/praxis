@@ -76,6 +76,7 @@ export function createHeroSpiral(canvas, { animate = true } = {}) {
     let visible = true;
     let frame = 0;
     let start = 0;
+    let flareAt = -Infinity;    // when the last flare began, in seconds on the drawing clock
     // Pointer in picture pixels. The smoothed copy and its strength ease in and out so nothing snaps.
     const pointer = { x: 0, y: 0, tx: 0, ty: 0, strength: 0, target: 0 };
 
@@ -123,7 +124,10 @@ export function createHeroSpiral(canvas, { animate = true } = {}) {
             const depth = 0.55 * fixed + 0.45 * turning;
 
             // Slow pulse that travels from the head to the tip
-            const swell = Math.min(1, (animate ? Math.pow(Math.max(0, Math.sin(f * 0.18 - t * 1.6)), 3) : 0) + near * 1.2);
+            // A flare sends a bright wave out along the curve from his head
+            const since = t - flareAt;
+            const wave = since < 2.6 ? Math.exp(-(((f - since * 40) / 7) ** 2)) * (1 - since / 2.6) * 1.4 : 0;
+            const swell = Math.min(1, (animate ? Math.pow(Math.max(0, Math.sin(f * 0.18 - t * 1.6)), 3) : 0) + near * 1.2 + wave);
             const twinkle = animate ? 0.9 + 0.1 * Math.sin(t * 3 + k * 1.7) : 1;
 
             const item = items[count++];
@@ -188,6 +192,7 @@ export function createHeroSpiral(canvas, { animate = true } = {}) {
     }
 
     return {
+        flare() { if (animate) flareAt = (performance.now() - start) / 1000; },
         // Takes viewport coordinates (null when the pointer leaves) and maps them onto the picture
         setPointer(clientX, clientY) {
             if (clientX == null) { pointer.target = 0; return; }
