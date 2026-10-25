@@ -6,6 +6,7 @@
     import { createStarField } from '../composables/useStarField.js';
     import { canUse3D } from '../composables/webgl.js';
     import { play } from '../composables/useSound.js';
+    import { preloadThumbs } from '../composables/useDeckRing.js';
     import { deck } from '../data/cards.js';
 
     // three.js only loads when the deck is opened (see DeckRing)
@@ -13,6 +14,10 @@
 
     const cards = [...deck].sort((a, b) => a.id - b.id);
     const use3D = ref(canUse3D());
+
+    // Start fetching the cards' pictures right away, while three.js and the ring are still on their way. The ring is a
+    // circle, so the cards just before the first are as close to the front as the ones just after it.
+    if (use3D.value) preloadThumbs(cards.map((card) => card.id).sort((a, b) => Math.min(a, cards.length - a) - Math.min(b, cards.length - b)));
 
     const filters = [
         { key: 'all', label: 'deck.filterAll', category: null },

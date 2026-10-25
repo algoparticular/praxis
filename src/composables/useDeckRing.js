@@ -25,12 +25,30 @@ const makeCanvas = (w, h) => {
     return canvas;
 };
 
+// Decoded off the main thread before it is handed over, so putting it on a card does not stall the ring
 const loadImage = (url) => new Promise((resolve) => {
     const img = new Image();
-    img.onload = () => resolve(img);
-    img.onerror = () => resolve(null);
+    img.decoding = 'async';
     img.src = url;
+    img.decode().then(() => resolve(img), () => resolve(null));
 });
+
+// The thumbnails are fetched a few at a time, and each only once, so the deck page can start asking for them while
+// three.js is still downloading: by the time the ring is ready most of them are already here.
+const thumbs = new Map();
+const getThumb = (id) => {
+    if (!thumbs.has(id)) thumbs.set(id, loadImage(`/cards/thumb/${id}.webp`));
+    return thumbs.get(id);
+};
+
+// `ids` in the order they are wanted; the ones nearest the card in front go first
+export const preloadThumbs = (ids, concurrency = 6) => {
+    const queue = [...ids];
+    const worker = async () => {
+        while (queue.length) await getThumb(queue.shift());
+    };
+    for (let i = 0; i < concurrency; i++) worker();
+};
 
 export async function createDeckRing(canvas, { cards, onFocus, onPick, onSound }) {
     const THREE = await import('three');
@@ -104,8 +122,9 @@ export async function createDeckRing(canvas, { cards, onFocus, onPick, onSound }
     // Illustrations load nearest-to-the-front first
     const loadImages = async () => {
         const order = [...items].sort((a, b) => Math.abs(a.slot - Math.round(scroll.value)) - Math.abs(b.slot - Math.round(scroll.value)));
+        preloadThumbs(order.map((item) => item.card.id));
         for (const item of order) {
-            const img = await loadImage(`/cards/thumb/${item.card.id}.webp`);
+            const img = await getThumb(item.card.id);
             if (destroyed) return;
             if (!img) continue;
             const old = item.material.map;
