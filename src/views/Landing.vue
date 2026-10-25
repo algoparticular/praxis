@@ -631,8 +631,10 @@
     }
 
     .copy p {
+        /* Rounded like the titles' lettering, easier to read than Inter next to it */
+        font-family: 'Nunito', 'Inter', helvetica, sans-serif;
         color: #F7F8F1;
-        font-size: 18px;
+        font-size: 19px;
         line-height: 150%;
         text-align: center;
         max-width: 310px;

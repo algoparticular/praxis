@@ -140,6 +140,11 @@
         white-space: nowrap;
         letter-spacing: 0.02em;
         color: #F7F8F1;
+        transition: color 250ms ease-out;
+    }
+
+    .mode.active .name {
+        color: var(--accent);
     }
 
     /* DESKTOP */
@@ -152,6 +157,7 @@
 
     @media (prefers-reduced-motion: reduce) {
         .mode,
+        .mode .name,
         .mode svg {
             transition: none;
         }
