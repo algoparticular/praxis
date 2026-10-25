@@ -23,7 +23,7 @@ jobs:
           node-version: 20
           cache: npm
 
-      - run: npm ci
+      - run: npm ci --no-audit --no-fund
 
       - name: Lint
         run: npm run lint
@@ -38,7 +38,9 @@ jobs:
         run: npm run check:budget
 
       - name: Browser
-        run: npx playwright install --with-deps chromium
+        # Only the headless shell, which is what the smoke test drives: half the download
+        run: npx playwright install --with-deps --only-shell chromium
 
       - name: Smoke test (every page and card, in a real browser)
+        timeout-minutes: 8
         run: npm run check:smoke
