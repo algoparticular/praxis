@@ -22,6 +22,14 @@ const rand = (min, max) => min + Math.random() * (max - min);
 const TAU = Math.PI * 2;
 
 const REACH = 150;          // radius of the pointer's gust, in CSS pixels
+// How the pointer treats the cloud. Passing over: a little drag along its path and the faintest push aside.
+// Pressed: a real blow, outwards and swirling, that carries them along as it moves.
+const HOVER_DRAG = 0.75;
+const HOVER_PUSH = 45;
+const BLOW = 250;
+const SWIRL = 90;
+const BLOW_DRAG = 1.1;
+const BLAST = [60, 220];     // the first breath at the click: base and gain towards the centre
 const TINTS = ['20, 82, 93', '27, 110, 122', '12, 120, 150'];   // the deep teal blues of the illustration's dots
 
 // A soft round halo, drawn once and stamped for every spore
@@ -211,16 +219,16 @@ export function createSpores(canvas, { source, animate = true, front = null } = 
             if (distance > 260) continue;
             const f = (1 - distance / 260) ** 1.4;
             const light = 1.25 - s.mass * 0.6;
-            s.vx += dx / distance * (90 + 330 * f) * light;
-            s.vy += dy / distance * (90 + 330 * f) * light - 30 * f;
+            s.vx += dx / distance * (BLAST[0] + BLAST[1] * f) * light;
+            s.vy += dy / distance * (BLAST[0] + BLAST[1] * f) * light - 30 * f;
         }
         for (const m of motes) {
             const dx = m.x - pointer.x, dy = m.y - pointer.y;
             const distance = Math.hypot(dx, dy) || 1;
             if (distance > 260) continue;
             const f = (1 - distance / 260) ** 1.4;
-            m.dvx += dx / distance * (110 + 380 * f) * (0.6 + 0.5 * m.depth);
-            m.dvy += dy / distance * (110 + 380 * f) * (0.6 + 0.5 * m.depth) - 30 * f;
+            m.dvx += dx / distance * (BLAST[0] + 15 + (BLAST[1] + 30) * f) * (0.6 + 0.5 * m.depth);
+            m.dvy += dy / distance * (BLAST[0] + 15 + (BLAST[1] + 30) * f) * (0.6 + 0.5 * m.depth) - 30 * f;
         }
     };
 
@@ -266,11 +274,11 @@ export function createSpores(canvas, { source, animate = true, front = null } = 
                     const f = (1 - distance / REACH) ** 2;
                     const light = 1.25 - s.mass * 0.6;           // the lightest are the most carried away
                     if (pointer.pressed) {
-                        s.vx += (dx / distance * 380 + (-dy / distance) * 130 + pointer.vx * 1.6) * f * light * dt;
-                        s.vy += (dy / distance * 380 + (dx / distance) * 130 + pointer.vy * 1.6) * f * light * dt;
+                        s.vx += (dx / distance * BLOW + (-dy / distance) * SWIRL + pointer.vx * BLOW_DRAG) * f * light * dt;
+                        s.vy += (dy / distance * BLOW + (dx / distance) * SWIRL + pointer.vy * BLOW_DRAG) * f * light * dt;
                     } else {
-                        s.vx += pointer.vx * 0.22 * f * light * dt;
-                        s.vy += pointer.vy * 0.22 * f * light * dt;
+                        s.vx += (pointer.vx * HOVER_DRAG + dx / distance * HOVER_PUSH) * f * light * dt;
+                        s.vy += (pointer.vy * HOVER_DRAG + dy / distance * HOVER_PUSH) * f * light * dt;
                     }
                 }
             }
@@ -300,11 +308,11 @@ export function createSpores(canvas, { source, animate = true, front = null } = 
                 if (distance < REACH) {
                     const f = (1 - distance / REACH) ** 2;
                     if (pointer.pressed) {
-                        m.dvx += (dx / distance * 380 + (-dy / distance) * 130 + pointer.vx * 1.6) * f * dt;
-                        m.dvy += (dy / distance * 380 + (dx / distance) * 130 + pointer.vy * 1.6) * f * dt;
+                        m.dvx += (dx / distance * BLOW + (-dy / distance) * SWIRL + pointer.vx * BLOW_DRAG) * f * dt;
+                        m.dvy += (dy / distance * BLOW + (dx / distance) * SWIRL + pointer.vy * BLOW_DRAG) * f * dt;
                     } else {
-                        m.dvx += pointer.vx * 0.22 * f * dt;
-                        m.dvy += pointer.vy * 0.22 * f * dt;
+                        m.dvx += (pointer.vx * HOVER_DRAG + dx / distance * HOVER_PUSH) * f * dt;
+                        m.dvy += (pointer.vy * HOVER_DRAG + dy / distance * HOVER_PUSH) * f * dt;
                     }
                 }
             }
