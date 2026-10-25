@@ -173,11 +173,63 @@
                 oracleGfx.style.translate = `0 ${-p * 70}px`;
             }, { target: document.getElementById('oracle'), offset: ['end 85%', 'end 35%'] }));
 
-            //The seed turns slowly while the quote is on screen
+            //The seed of the quote is the brand mark of the header: same artwork, same size. It turns as it climbs and
+            //unwinds to zero exactly when it reaches the header's mark, where the two coincide and a flash goes off.
             const seed = document.querySelector('#uno img');
-            stopCorners.push(scroll(({ y }) => {
-                seed.style.rotate = `${y.progress * 120}deg`;
-            }, { target: document.getElementById('uno'), offset: ['start end', 'end start'] }));
+            const mark = document.querySelector('header #logo img');
+            let lastGap = null;
+
+            const flash = (box) => {
+                const x = box.left + box.width / 2, y = box.top + box.height / 2;
+                const burst = document.createElement('div');
+                Object.assign(burst.style, { position: 'fixed', left: `${x}px`, top: `${y}px`, width: '0', height: '0', zIndex: 12, pointerEvents: 'none' });
+                const piece = (css, keyframes, options) => {
+                    const el = document.createElement('div');
+                    Object.assign(el.style, { position: 'absolute', ...css });
+                    burst.appendChild(el);
+                    el.animate(keyframes, { easing: 'cubic-bezier(0.22, 1, 0.36, 1)', fill: 'both', ...options });
+                    return el;
+                };
+                //A soft light that blooms and fades
+                piece({ left: '-70px', top: '-70px', width: '140px', height: '140px', borderRadius: '50%',
+                    background: 'radial-gradient(circle, rgba(255, 250, 210, 0.95) 0%, rgba(255, 230, 170, 0.45) 35%, rgba(255, 230, 170, 0) 70%)' },
+                    { opacity: [0, 1, 0], scale: [0.3, 1.1, 1.5] }, { duration: 900 });
+                //A ring that spreads out
+                piece({ left: '-20px', top: '-20px', width: '40px', height: '40px', borderRadius: '50%', border: '2px solid rgba(247, 248, 241, 0.9)', boxSizing: 'border-box' },
+                    { opacity: [0.9, 0], scale: [0.8, 3.4] }, { duration: 800 });
+                //Six sparks flying outwards
+                for (let i = 0; i < 6; i++) {
+                    const angle = (Math.PI * 2 * i) / 6 + Math.PI / 6;
+                    const dx = Math.cos(angle) * 38, dy = Math.sin(angle) * 38;
+                    const spark = piece({ left: '-7px', top: '-9px', fontSize: '14px', lineHeight: '1', color: '#FFF6C8', textShadow: '0 0 6px #FFE9A8' },
+                        { opacity: [1, 0], translate: ['0 0', `${dx}px ${dy}px`], scale: [0.4, 1] }, { duration: 750, delay: 40 });
+                    spark.textContent = '✦';
+                }
+                document.body.appendChild(burst);
+                setTimeout(() => burst.remove(), 1100);
+                play('star');
+            };
+
+            let queued = false;
+            const align = () => {
+                queued = false;
+                if (!seed.complete || !mark.complete) return;
+                const m = mark.getBoundingClientRect();
+                const s = seed.getBoundingClientRect();
+                const gap = (s.top + s.height / 2) - (m.top + m.height / 2);             //vertical distance between the two centres
+                const sideways = (m.left + m.width / 2) - (s.left + s.width / 2);
+                const close = Math.max(0, 1 - Math.abs(gap) / 240);                       //horizontal correction only fades in near the mark
+                seed.style.rotate = `${Math.max(-160, Math.min(160, gap * 0.3))}deg`;
+                seed.style.translate = `${sideways * close}px 0`;
+                //The centres crossed: the two are on top of each other
+                if (lastGap !== null && Math.sign(gap) !== Math.sign(lastGap) && Math.abs(gap) < 240) flash(m);
+                lastGap = gap;
+            };
+            const onScroll = () => {
+                if (!queued) { queued = true; requestAnimationFrame(align); }
+            };
+            window.addEventListener('scroll', onScroll, { passive: true });
+            stopCorners.push(() => window.removeEventListener('scroll', onScroll));
         }
 
         //The oracle block frames itself while scrolling: its four corners appear one by one, clockwise.
@@ -343,7 +395,7 @@
             <section id="uno">
                 <div class="sky-tail" ref="skyTail"><canvas ref="tailCanvas"></canvas></div>
                 <h2><span class="line" v-for="(line, i) in $t('landing.uno').split('\n')" :key="i">{{ line }}</span></h2>
-                <img src="../assets/icon/Seed.svg" loading="lazy"/>
+                <img src="../assets/SeedWhite.svg" alt="" loading="lazy"/>
             </section>
         </div>
 
@@ -790,6 +842,13 @@
     .sky-tail canvas {
         width: 100%;
         height: 100%;
+    }
+
+    /* Same size and glow as the brand mark of the header, so the two can line up exactly */
+    #uno img {
+        width: 40px;
+        height: auto;
+        filter: drop-shadow(0px 2px 3px rgba(234, 234, 234, 0.36));
     }
 
     #uno h2 .line {
