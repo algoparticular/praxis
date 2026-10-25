@@ -42,7 +42,9 @@ const pages = [
 ];
 const cardPages = cards.map((card) => ({ path: `/card/${card.id}`, name: `card ${card.id}`, expect: '.cardWrapper .stage', card: card.id, draws: sceneCards.includes(card.id) }));
 
-const server = spawn('npx', ['vite', 'preview', '--port', String(PORT), '--strictPort'], { cwd: root, stdio: ['ignore', 'pipe', 'pipe'] });
+// vite itself, not through npx: npx leaves a second process behind that keeps this one from ever exiting
+const vite = path.join(root, 'node_modules', 'vite', 'bin', 'vite.js');
+const server = spawn(process.execPath, [vite, 'preview', '--port', String(PORT), '--strictPort'], { cwd: root, stdio: 'ignore' });
 const stop = () => server.kill();
 process.on('exit', stop);
 
@@ -150,3 +152,4 @@ if (problems.length) {
     process.exit(1);
 }
 console.log('Smoke test passed');
+process.exit(0);
