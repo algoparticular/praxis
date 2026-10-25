@@ -32,8 +32,6 @@
     const skyCanvas = ref(null);
     const frontCanvas = ref(null);
     const network = ref(null);
-    const wormBack = ref(null);
-    const wormFront = ref(null);
     const els = {};
     const setEl = (n) => (el) => { els[n] = el; };
     let parallax = null;
@@ -63,7 +61,7 @@
 
     // The flasks with a cork: how empty each is (level 0 full .. 1 empty, easing towards the target), how far its cork
     // has popped, and which creature lives in it
-    const FLASKS = flaskData.map((f) => ({ ...f, style: place(f.box), level: 0, target: 0, pop: 0, shown: -1 }));
+    const FLASKS = flaskData.map((f) => ({ ...f, style: place(f.box), level: 0, target: 0, pop: 0, life: 1, shown: -1 }));
     const flaskOfCreature = {};
     const flaskOfCork = {};
     FLASKS.forEach((f) => { f.creatures.forEach((n) => { flaskOfCreature[n] = f; }); flaskOfCork[f.cork] = f; });
@@ -72,8 +70,16 @@
         const [left, top, w, h] = layers[f.cork];
         const dx = left + w / 2 - f.cx, dy = top + h / 2 - f.cy, n = Math.hypot(dx, dy) || 1;
         f.away = { x: dx / n, y: dy / n };
+        // near the left or right edge of the picture (the edge of a phone's screen) it pops up or down instead
+        if (left + w / 2 > 88 || left + w / 2 < 12) f.away = { x: 0, y: f.away.y >= 0 ? 1 : -1 };
+        f.corkAt = { x: left + w / 2, y: top + h / 2, size: Math.max(w, h) };
     });
-    const corkHits = FLASKS.map((f) => ({ flask: f, hit: hitBox(f.cork, 5.2, 1.5) }));
+    // A cork's hit covers the cork and the place it pops to, so it can be pressed again to fill the flask
+    const corkHits = FLASKS.map((f) => {
+        const size = Math.max(5.2, f.corkAt.size + 1.5) + 3.4;
+        const x = f.corkAt.x + f.away.x * 1.7, y = f.corkAt.y + f.away.y * 1.7;
+        return { flask: f, hit: { left: pct((x - size / 2).toFixed(3)), top: pct((y - size / 2).toFixed(3)), width: pct(size.toFixed(3)), height: pct(size.toFixed(3)) } };
+    });
     const signHit = hitBox(SIGN, 8, 1);
     const touchable = things.filter((t) => t.area > 3500 && t.n !== SIGN && !CORKS.includes(t.n)).map((t) => ({ ...t, hit: hitBox(t.n) }));
 
@@ -118,14 +124,18 @@
         { len: 0.075, speed: 1.0 }, { len: 0.05, speed: 0.82 }, { len: 0.09, speed: 1.18 }, { len: 0.06, speed: 0.9 },
         { len: 0.07, speed: 1.1 }, { len: 0.045, speed: 0.72 }, { len: 0.08, speed: 1.0 },
     ].map((k, i, all) => ({ ...k, count: Math.round(N * k.len), start: (i / all.length + 0.037 * (i % 3)) % 1 }));
-    const THIN = 0.8;
-    const strokeD = (head, count) => {
+    // A stretch [from, to] (fractions of the stroke) of the stroke that starts at `head`
+    const strokeD = (head, count, from, to) => {
         const i0 = Math.floor(head);
-        const taper = (i) => THIN * (0.12 + 1.0 * Math.pow(Math.sin(Math.PI * Math.min(1, Math.max(0, ((i - i0 + N) % N) / count))), 0.7));
-        const end = i0 + count;
-        return end < N ? ribbon(i0, end, taper) : `${ribbon(i0, N - 1, taper)}${ribbon(0, end - N, taper)}`;
+        const taper = (i) => 0.3 + 0.34 * Math.pow(Math.sin(Math.PI * Math.min(1, Math.max(0, ((i - i0 + N) % N) / count))), 0.7);
+        const s0 = i0 + Math.floor(from * count), s1 = i0 + Math.floor(to * count);
+        if (s1 < N) return ribbon(s0, s1, taper);
+        if (s0 >= N) return ribbon(s0 - N, s1 - N, taper);
+        return `${ribbon(s0, N - 1, taper)}${ribbon(0, s1 - N, taper)}`;
     };
-    const strokesD = (t) => STROKES.map((k) => strokeD((((k.start + Math.max(0, t) * k.speed / 70) % 1) * N), k.count)).join('');
+    // Three nested ribbons, so each stroke fades in and out along its length instead of ending abruptly
+    const FADES = [[0, 1], [0.2, 0.8], [0.4, 0.6]];
+    const strokesD = (t) => FADES.map(([from, to]) => STROKES.map((k) => strokeD((((k.start + Math.max(0, t) * k.speed / 70) % 1) * N), k.count, from, to)).join(''));
 
     const live = (t, ramp) => {
         things.forEach(({ n }) => {
@@ -154,12 +164,17 @@
             // A creature whose flask is evaporating fades up and away; a popped cork jumps off its flask
             const home = flaskOfCreature[n];
             if (home) {
-                const gone = smooth(Math.min(1, home.level * 1.5));
+                const gone = 1 - smooth(home.life);
                 ty -= gone * 1.6; sx *= 1 - gone * 0.14; sy *= 1 - gone * 0.14;
-                s.opacity = (1 - gone).toFixed(3);
+                s.opacity = home.life >= 0.999 ? '1' : (1 - gone).toFixed(3);
+                // an empty flask's creature is not there to be touched, and must not catch the touch meant for the cork
+                const catcher = els['chit' + n];
+                if (catcher) catcher.style.pointerEvents = home.life < 0.6 ? 'none' : '';
             }
             const flask = flaskOfCork[n];
-            if (flask) { tx += flask.away.x * flask.pop * 3.4; ty += flask.away.y * flask.pop * 3.4; rot += (flask.away.x >= 0 ? 1 : -1) * flask.pop * 34; }
+            if (flask) {
+                tx += flask.away.x * flask.pop * 3.4; ty += flask.away.y * flask.pop * 3.4; rot += (flask.away.x >= 0 ? 1 : -1) * flask.pop * 34;
+            }
             s.translate = `${tx.toFixed(3)}cqw ${ty.toFixed(3)}cqw`;
             s.rotate = `${rot.toFixed(2)}deg`;
             s.scale = `${sx.toFixed(4)} ${sy.toFixed(4)}`;
@@ -174,6 +189,8 @@
             const rate = f.target > f.level ? dt / 3.4 : dt / 1.6;
             f.level = f.target > f.level ? Math.min(f.target, f.level + rate) : Math.max(f.target, f.level - rate);
             f.pop += ((f.target > 0 ? 1 : 0) - f.pop) * Math.min(1, dt * 7);
+            // The creature fades away early while the pink sinks, and comes back as soon as the flask is filled again
+            f.life = f.target > 0 ? Math.max(0, f.life - dt / 1.1) : Math.min(1, f.life + dt / 0.9);
             const el = els[f.id];
             if (el && Math.abs(f.level - f.shown) > 0.0005) {
                 f.shown = f.level;
@@ -251,10 +268,11 @@
             live(t, ramp);
             stepFlasks(dt);
             // The strokes of the thread, travelling (every other frame is enough)
-            if (tick++ % 2 === 0 && wormBack.value) {
-                const d = strokesD(t);
-                wormBack.value.setAttribute('d', d);
-                wormFront.value.setAttribute('d', d);
+            if (tick++ % 2 === 0 && els.wb0) {
+                strokesD(t).forEach((d, k) => {
+                    els['wb' + k].setAttribute('d', d);
+                    els['wf' + k].setAttribute('d', d);
+                });
             }
         });
         sky = startStardust(skyCanvas.value, {
@@ -283,7 +301,7 @@
             <div class="network" ref="network">
                 <!-- The lavender thread, under the pink: the whole line, and a bright stretch travelling along it -->
                 <svg class="thread" viewBox="0 0 2160 2160" aria-hidden="true">
-                    <path class="worm" ref="wormBack" />
+                    <path v-for="k in 3" :key="k" class="worm" :class="`w${k - 1}`" :ref="setEl(`wb${k - 1}`)" />
                 </svg>
 
                 <img class="layer" :style="place(layers[big.body])" src="/assets/kshanti/k3.webp" alt="" draggable="false">
@@ -300,19 +318,19 @@
                         </mask>
                     </defs>
                     <g mask="url(#kshanti-front)">
-                        <path class="worm" ref="wormFront" />
+                        <path v-for="k in 3" :key="k" class="worm" :class="`w${k - 1}`" :ref="setEl(`wf${k - 1}`)" />
                     </g>
                 </svg>
 
                 <img v-for="t in over" :key="t.n" class="layer" :ref="setEl(t.n)" :style="t.style" :src="`/assets/kshanti/k${t.n}.webp`" alt="" draggable="false">
 
                 <!-- What can be touched: the corks, the creatures and the central sign -->
+                <div v-for="t in touchable" :key="'hit' + t.n" :ref="setEl('chit' + t.n)" class="hit" role="button" tabindex="0" :style="t.hit"
+                    :aria-label="$i18n.locale === 'en' ? 'Creature' : 'Criatura'"
+                    @pointerdown.prevent="touch(t, $event)" @keydown="onKey((e) => touch(t, e))($event)"></div>
                 <div v-for="c in corkHits" :key="'cork' + c.flask.id" class="hit" role="button" tabindex="0" :style="c.hit"
                     :aria-label="$i18n.locale === 'en' ? 'Cork' : 'Tapón'"
                     @pointerdown.prevent="empty(c.flask, $event)" @keydown="onKey((e) => empty(c.flask, e))($event)"></div>
-                <div v-for="t in touchable" :key="'hit' + t.n" class="hit" role="button" tabindex="0" :style="t.hit"
-                    :aria-label="$i18n.locale === 'en' ? 'Creature' : 'Criatura'"
-                    @pointerdown.prevent="touch(t, $event)" @keydown="onKey((e) => touch(t, e))($event)"></div>
                 <div class="hit" role="button" tabindex="0" :style="signHit"
                     :aria-label="$i18n.locale === 'en' ? 'Fill everything again' : 'Volver a llenar todo'"
                     @pointerdown.prevent="refill" @keydown="onKey(refill)($event)"></div>
@@ -394,6 +412,10 @@
     .worm {
         fill: #aeabd9;
     }
+
+    .w0 { fill-opacity: 0.5; }
+    .w1 { fill-opacity: 0.5; }
+    .w2 { fill-opacity: 0.6; }
 
     .hit {
         position: absolute;
