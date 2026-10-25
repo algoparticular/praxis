@@ -1,7 +1,7 @@
 // The dotted spiral of the hero character, drawn on a 2D canvas laid over his picture.
 // The points were taken from the original illustration (heroSpiral.json, in the picture's own pixel space,
 // ordered from the character's head outwards), so the canvas and the picture share one coordinate system.
-// The dots flow out of his head along the curve, ripple sideways and swell in a travelling pulse,
+// The dots flow out of his head along the curve and swell in a travelling pulse,
 // a dust of tiny particles drifts around them, and the pointer pushes both aside and lights them up.
 
 import dots from './heroSpiral.json';
@@ -99,12 +99,7 @@ export function createHeroSpiral(canvas, { animate = true } = {}) {
             if (envelope <= 0.01) continue;
 
             point(f, here);
-            point(Math.min(LAST, f + 0.4), ahead);
-            // Sideways ripple: a wave that runs along the curve, perpendicular to it
-            const dx = ahead[0] - here[0], dy = ahead[1] - here[1];
-            const length = Math.hypot(dx, dy) || 1;
-            const ripple = animate ? Math.sin(f * 0.55 - t * 2.2) * 3.5 * envelope : 0;
-            const spot = [here[0] - (dy / length) * ripple, here[1] + (dx / length) * ripple];
+            const spot = [here[0], here[1]];
             const near = disturb(spot, PUSH);
             const [x, y] = spot;
 
