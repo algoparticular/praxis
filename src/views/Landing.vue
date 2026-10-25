@@ -669,6 +669,8 @@
 
     #uno h2 .line {
         display: block;
+        /* The global span rule paints spans grey */
+        color: inherit;
     }
 
     #uno h2 {
