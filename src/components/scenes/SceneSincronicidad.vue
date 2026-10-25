@@ -59,7 +59,7 @@
     const fire = createFlame({ count: 190, palette: [0xfbf09e, 0xf49f92, 0xe0749c, 0xe0749c], anchor, size: 5.4, rise: 1.3 });
     const sparks = createSparks(360);
 
-    // ---- The sequence: a glow runs bubble after bubble, then the fire leaps
+    // ---- The sequence: a glow runs bubble after bubble, then sparks come out of the fire
     const PERIOD = 11;
     const STEPS = [
         { ref: smaller, start: 0, colors: [0xfbf09e, 0xf49f92] },
@@ -245,10 +245,10 @@
     }
 
     /* The bubbles, a little smaller than in the card, by their centres (left and top as fractions of the frame) */
-    .hug     { left: 14%;   top: 50.8%; width: 30%; }
-    .meet    { left: 39.9%; top: 21.4%; width: 24.2%; }
-    .smaller { left: 32.6%; top: 4.9%;  width: 5.8%; }
-    .small   { left: 16.5%; top: 13.6%; width: 7%; }
+    .hug     { left: 14%;   top: 46.6%; width: 30%; }
+    .meet    { left: 39.9%; top: 17.2%; width: 24.2%; }
+    .smaller { left: 32.6%; top: 2.8%;  width: 5.8%; }
+    .small   { left: 16.5%; top: 9.6%;  width: 7%; }
 
     /* The floating island with the fire at its right, whole, with its crystal underneath */
     .island {
