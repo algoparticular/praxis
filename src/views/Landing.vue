@@ -1,7 +1,7 @@
 <script setup>
 	import { onMounted, onBeforeUnmount, ref } from 'vue';
     import { useRouter } from 'vue-router';
-    import { timeline, inView, scroll } from "motion";
+    import { inView, scroll } from "motion";
 
     import Header  from '../components/Header.vue';
     import Footer  from '../components/Footer.vue';
@@ -60,19 +60,6 @@
                 cellsFallback.value = true;
             });
 
-        const sequence = [
-            [".splash.particle", { y: 20 }],
-        ];
-
-        if (!reducedMotion) {
-            timeline(sequence, { 
-                duration: 4, 
-                direction: 'alternate-reverse', 
-                repeat: Infinity,
-                defaultOptions: { ease: "ease-out" },
-            });
-        }
-
         if (!reducedMotion) {
             //Entrance: the title rises first, its action follows, then the particle settles in.
             //translate/scale are independent properties so they do not fight the parallax, which owns transform.
@@ -82,25 +69,59 @@
             );
             enter(document.querySelector('#hero h1'), { y: 28, delay: 150 });
             enter(document.querySelector('#hero h1 span'), { y: 14, delay: 650, duration: 900 });
-            //Once settled, the character sways and breathes. Rotate and scale are separate animations with different
-            //durations so the loop does not feel mechanical.
+            //Once settled, the character lives in a single loop that owns translate, rotate, scale and glow:
+            //it floats along a slow oval, breathes with a halo that pulses in time, and leans towards the pointer.
+            //The kinesis parallax keeps the vertical transform; everything here goes through independent properties.
+            let scrollLift = 0;                                     //set by the scroll handler below
             const particle = document.querySelector('#hero .splash.particle');
-            const sway = (keyframes, duration) => idleAnimations.push(particle.animate(keyframes, {
-                duration, direction: 'alternate', iterations: Infinity, easing: 'ease-in-out'
-            }));
-            enter(particle, { y: 40, scale: 0.88, delay: 350, duration: 1600 }).finished.then(() => {
-                sway({ rotate: ['-2.5deg', '2.5deg'] }, 5200);
-                sway({ scale: ['1', '1.035'] }, 3600);
-            }).catch(() => {});
+            const hero = document.getElementById('hero');
+            const pointer = { x: 0, tx: 0 };
+            const onPointer = (event) => {
+                const box = hero.getBoundingClientRect();
+                pointer.tx = Math.max(-1, Math.min(1, (event.clientX - box.left) / box.width * 2 - 1));
+            };
+            const onLeave = () => { pointer.tx = 0; };
+            hero.addEventListener('pointermove', onPointer);
+            hero.addEventListener('pointerleave', onLeave);
+
+            let frame = 0;
+            let visible = true;
+            const visibility = new IntersectionObserver(([entry]) => { visible = entry.isIntersecting; });
+            visibility.observe(hero);
+
+            const live = () => {
+                const start = performance.now();
+                const tick = (now) => {
+                    frame = requestAnimationFrame(tick);
+                    if (!visible) return;
+                    const t = (now - start) / 1000;
+                    const ramp = Math.min(1, t / 2);                    //amplitudes ease in so nothing jumps when the loop begins
+                    pointer.x += (pointer.tx - pointer.x) * 0.06;       //the lean follows the pointer with a delay
+                    const breath = (1 - Math.cos(t * 1.75)) / 2;        //0..1, about 3.6s per breath
+                    const floatX = Math.sin(t * 0.5) * 9 * ramp;
+                    const floatY = (Math.cos(t * 0.5) - 1) * 6 * ramp;  //oval path, starting at rest
+                    particle.style.translate = `${floatX + pointer.x * 14}px ${floatY + scrollLift}px`;
+                    particle.style.rotate = `${(pointer.x * 4 + Math.sin(t * 0.9) * 1.5 * ramp).toFixed(3)}deg`;
+                    particle.style.scale = 1 + 0.035 * breath * ramp;
+                    particle.style.filter = `drop-shadow(0 0 ${(6 + 16 * breath * ramp).toFixed(1)}px rgba(255, 150, 130, ${(0.12 + 0.38 * breath * ramp).toFixed(3)}))`;
+                };
+                frame = requestAnimationFrame(tick);
+            };
+            enter(particle, { y: 40, scale: 0.88, delay: 350, duration: 1600 }).finished.then(live).catch(() => {});
+            stopReveals.push(() => {
+                cancelAnimationFrame(frame);
+                visibility.disconnect();
+                hero.removeEventListener('pointermove', onPointer);
+                hero.removeEventListener('pointerleave', onLeave);
+            });
 
             //Leaving the hero: the title lifts and fades while the particle drifts up slower, so the violet hands over to the night
             const heroTitle = document.querySelector('#hero > a');
-            const heroParticle = document.querySelector('#hero .splash.particle');
             stopCorners.push(scroll(({ y }) => {
                 const p = Math.min(1, Math.max(0, y.progress));
                 heroTitle.style.opacity = 1 - p * 1.4;
                 heroTitle.style.translate = `0 ${-p * 60}px`;
-                heroParticle.style.translate = `0 ${-p * 110}px`;
+                scrollLift = -p * 110;
             }, { target: document.getElementById('hero'), offset: ['start start', 'end 40%'] }));
 
             //Leaving the oracle block: the copy and the illustration sink into the dark before the sky turns violet
