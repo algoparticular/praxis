@@ -73,6 +73,44 @@
             });
         }
 
+        if (!reducedMotion) {
+            //Entrance: the title rises first, its action follows, then the particle settles in.
+            //translate/scale are independent properties so they do not fight the parallax, which owns transform.
+            const enter = (el, { y = 24, scale = 1, delay = 0, duration = 1100 }) => el.animate(
+                { opacity: [0, 1], translate: [`0 ${y}px`, '0 0'], scale: [scale, 1] },
+                { duration, delay, easing: 'cubic-bezier(0.22, 1, 0.36, 1)', fill: 'backwards' }
+            );
+            enter(document.querySelector('#hero h1'), { y: 28, delay: 150 });
+            enter(document.querySelector('#hero h1 span'), { y: 14, delay: 650, duration: 900 });
+            enter(document.querySelector('#hero .splash.particle'), { y: 40, scale: 0.88, delay: 350, duration: 1600 });
+
+            //Leaving the hero: the title lifts and fades while the particle drifts up slower, so the violet hands over to the night
+            const heroTitle = document.querySelector('#hero > a');
+            const heroParticle = document.querySelector('#hero .splash.particle');
+            stopCorners.push(scroll(({ y }) => {
+                const p = Math.min(1, Math.max(0, y.progress));
+                heroTitle.style.opacity = 1 - p * 1.4;
+                heroTitle.style.translate = `0 ${-p * 60}px`;
+                heroParticle.style.translate = `0 ${-p * 110}px`;
+            }, { target: document.getElementById('hero'), offset: ['start start', 'end 40%'] }));
+
+            //Leaving the oracle block: the copy and the illustration sink into the dark before the sky turns violet
+            const oracleCopy = document.querySelector('#oracle .copy');
+            const oracleGfx = document.querySelector('#oracle .gfx');
+            stopCorners.push(scroll(({ y }) => {
+                const p = Math.min(1, Math.max(0, y.progress));
+                oracleCopy.style.opacity = oracleGfx.style.opacity = 1 - p;
+                oracleCopy.style.translate = `0 ${-p * 40}px`;
+                oracleGfx.style.translate = `0 ${-p * 70}px`;
+            }, { target: document.getElementById('oracle'), offset: ['end 85%', 'end 35%'] }));
+
+            //The seed turns slowly while the quote is on screen
+            const seed = document.querySelector('#uno img');
+            stopCorners.push(scroll(({ y }) => {
+                seed.style.rotate = `${y.progress * 120}deg`;
+            }, { target: document.getElementById('uno'), offset: ['start end', 'end start'] }));
+        }
+
         //The oracle block frames itself while scrolling: its four corners appear one by one, clockwise.
         //The corners are mirrored with transform, so they animate through the independent scale/translate properties.
         if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -115,10 +153,11 @@
                 duration, direction: 'alternate', iterations: Infinity, easing: 'ease-in-out'
             }));
 
-            const quote = ['#uno h2', '#uno img'].map((selector) => document.querySelector(selector));
+            //The quote arrives line by line, and the seed after the last one
+            const quote = [...document.querySelectorAll('#uno h2 .line'), document.querySelector('#uno img')];
             quote.forEach((el) => { el.style.opacity = 0; });
             stopReveals.push(inView('#uno h2', () => {
-                quote.forEach((el, i) => reveal({ el, y: 32, delay: i * 350, duration: 1300 }));
+                quote.forEach((el, i) => reveal({ el, y: 32, delay: i * 450, duration: 1300 }));
             }, { amount: 0.6 }));
 
             stopReveals.push(inView('#oracle .copy', () => {
@@ -233,7 +272,7 @@
         <div id="colorMe">
             <section id="uno">
                 <div class="sky-tail" ref="skyTail"><canvas ref="tailCanvas"></canvas></div>
-                <h2>{{ $t("landing.uno") }}</h2>
+                <h2><span class="line" v-for="(line, i) in $t('landing.uno').split('\n')" :key="i">{{ line }}</span></h2>
                 <img src="../assets/icon/Seed.svg" loading="lazy"/>
             </section>
         </div>
@@ -276,6 +315,8 @@
     }
 
     h1 span {
+        display: inline-block;
+        margin-top: 8px;
         font-family: 'Inter', helvetica, sans-serif;
         text-transform: uppercase;
         font-size: 12px;
@@ -624,6 +665,10 @@
     .sky-tail canvas {
         width: 100%;
         height: 100%;
+    }
+
+    #uno h2 .line {
+        display: block;
     }
 
     #uno h2 {
