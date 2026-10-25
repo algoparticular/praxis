@@ -30,9 +30,12 @@ const hasWebGL = () => {
 //   reach      radius of the pointer's push, px (0 = ignore the pointer)
 //   push       how far the pointer shoves a particle at its centre, px
 //   parallax   px that near particles shift with the pointer (far ones shift less)
+//   steady     every particle moves with the flow at the same speed, so a pattern (a helix) keeps its shape
+//   edgeFade   0..0.5 fraction of the height over which particles fade in and out at top and bottom
 export async function createStardust(canvas, {
     count = 260, colors = [0xffffff], size = [1.5, 4], look = 'hard', spawn = null,
     drift = 10, flow = [0, 0], twinkle = 0.6, reach = 120, push = 38, parallax = 14, opacity = 1,
+    steady = false, edgeFade = 0,
 } = {}) {
     if (!hasWebGL()) return null;
     const THREE = await import('three');
@@ -75,6 +78,8 @@ export async function createStardust(canvas, {
         uSoft: { value: look === 'soft' ? 1 : 0 },
         uFade: { value: reduced ? 1 : 0 },
         uOpacity: { value: opacity },
+        uSteady: { value: steady ? 1 : 0 },
+        uEdge: { value: edgeFade },
     };
 
     const material = new THREE.ShaderMaterial({
@@ -98,20 +103,23 @@ export async function createStardust(canvas, {
             uniform float uReach;
             uniform float uPush;
             uniform float uFade;
+            uniform float uSteady;
+            uniform float uEdge;
             varying vec3 vTint;
             varying float vAlpha;
             void main() {
                 float phase = aSeed * ${TAU.toFixed(5)};
-                vec2 p = position.xy + uFlow * uTime * (0.4 + aDepth * 0.6);
+                vec2 p = position.xy + uFlow * uTime * mix(0.4 + aDepth * 0.6, 1.0, uSteady);
                 p = mod(p, uRes);
                 p += vec2(sin(uTime * 0.31 + phase), cos(uTime * 0.23 + phase * 1.7)) * uDrift * (0.4 + aDepth * 0.6);
                 p += uShift * aDepth;
+                float edge = uEdge > 0.0 ? smoothstep(0.0, uEdge, p.y / uRes.y) * smoothstep(0.0, uEdge, 1.0 - p.y / uRes.y) : 1.0;
                 // The pointer is a gentle gust: whatever is near is shoved away, the closer the harder
                 vec2 away = p - uPointer;
                 float near = 1.0 - smoothstep(0.0, uReach, length(away));
                 p += normalize(away + vec2(0.0001)) * near * near * uPush * (0.5 + aDepth * 0.5);
                 float shimmer = 0.5 + 0.5 * sin(uTime * (0.7 + aSeed * 1.9) + phase * 3.0);
-                vAlpha = (1.0 - uTwinkle * shimmer) * uFade;
+                vAlpha = (1.0 - uTwinkle * shimmer) * uFade * edge;
                 vTint = aTint;
                 gl_PointSize = aSize * uDpr * (0.85 + 0.3 * shimmer * uTwinkle + near * 0.5);
                 gl_Position = vec4(p.x / uRes.x * 2.0 - 1.0, 1.0 - p.y / uRes.y * 2.0, 0.0, 1.0);
