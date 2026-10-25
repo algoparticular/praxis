@@ -3,9 +3,12 @@
 // @import url("https://use.typekit.net/lni6mis.css");
 
 @font-face {
-    font-family: particular;
-    src: url(../assets/Particularfont-Regular.ttf);
-    font-style: normal;
+  font-family: Caveat;
+  src: url(../assets/Caveat-Medium.woff2) format('woff2');
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  size-adjust: 120%; /* Caveat is small for its em: this keeps the sizes tuned for the old font */
 }
 
 $color-background: #143246; //#202221
@@ -122,7 +125,7 @@ h4,h5,h6 {
 }
 
 h1 { 
-  font-family: 'particular', sans-serif;
+  font-family: 'Caveat', sans-serif;
   font-weight: 400;
   font-size: 64px;
   line-height: 1em;
@@ -131,7 +134,7 @@ h1 {
 }
 
 h2 {
-  font-family: 'particular', 'Inter', helvetica, sans-serif;
+  font-family: 'Caveat', 'Inter', helvetica, sans-serif;
   font-weight: 600;
   font-size: 48px;
   line-height: 1.1em;
@@ -140,7 +143,7 @@ h2 {
 }
 
 h3 {
-  font-family: 'particular', 'Inter', helvetica, sans-serif;
+  font-family: 'Caveat', 'Inter', helvetica, sans-serif;
   font-weight: 400;
   font-size: 40px;
   line-height: 1.2em;
@@ -149,7 +152,7 @@ h3 {
 }
 
 h4 {
-  font-family: 'particular', 'Inter', helvetica, sans-serif;
+  font-family: 'Caveat', 'Inter', helvetica, sans-serif;
     font-weight: 400;
     font-size: 32px;
     line-height: 1.5em;

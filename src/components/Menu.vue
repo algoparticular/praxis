@@ -111,7 +111,7 @@
     #soundSelect label,
     #languageSelect label {
         font-size: 21px;
-        font-family: 'particular', 'Inter', helvetica, sans-serif;
+        font-family: 'Caveat', 'Inter', helvetica, sans-serif;
         font-weight: 400;
         cursor: pointer;
     }
@@ -151,7 +151,7 @@
     #soundSelect span,
     #languageSelect span {
         font-size: 24px;
-        font-family: 'particular', 'Inter', helvetica, sans-serif;
+        font-family: 'Caveat', 'Inter', helvetica, sans-serif;
         font-weight: 400;
         color: #F7F8F1;
 

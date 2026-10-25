@@ -253,7 +253,7 @@
         color: #F7F8F1;
         font-size: 18px;
         letter-spacing: .05em;
-        font-family: 'Particular', 'Inter', helvetica, sans-serif;
+        font-family: 'Caveat', 'Inter', helvetica, sans-serif;
         text-align: center;
         filter: drop-shadow(0px 2px 3px rgb(234, 234, 234));
     }
