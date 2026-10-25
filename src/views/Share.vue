@@ -61,7 +61,7 @@
                             :url="shareUrl"
                             :title="card['name_'+$i18n.locale]"
                             :description="card['affirmation_'+$i18n.locale]"
-                            hashtags="PraxisApp"
+                            hashtags="AnimaApp"
                             class="shareButton"
                             :style="{backgroundColor: '#1877F2'}" >
                                 <i class="fab fah fa-lg fa-facebook-f"></i>
@@ -75,7 +75,7 @@
                             :url="shareUrl"
                             :title="card['affirmation_'+$i18n.locale]"
                             twitterUser="algoparticular"
-                            hashtags="PraxisApp"
+                            hashtags="AnimaApp"
                             class="shareButton"
                             :style="{backgroundColor: '#1DA1F2'}" >
                                 <i class="fab fah fa-lg fa-twitter"></i>

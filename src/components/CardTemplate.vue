@@ -1,252 +1,319 @@
 <script setup>
-	import { onMounted, ref } from 'vue';
-    import { useRouter } from 'vue-router';   
-    import { animate } from 'motion';
+	import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+    import { useRouter } from 'vue-router';
+    import { animate, inView } from 'motion';
     import { takePendingTransition } from '../cardTransition.js';
 
     import { getCard } from '../data/cards.js';
+    import { sceneFor } from '../data/cardScenes.js';
 
     const props = defineProps({
         id: String
     });
 
     const router = useRouter();
-    const card = ref(getCard(props.id) ?? {});
-    const cover = ref(card.value.image ? 'url(' + card.value.image[0].url + ')' : '');
-    const color = ref(card.value.color ?? '');
-    const colorAlt = ref(card.value.colorAlt ?? '');
+    const card = computed(() => getCard(props.id) ?? {});
+    const color = computed(() => card.value.color ?? '');
+    const colorAlt = computed(() => card.value.colorAlt ?? '');
+    const scene = computed(() => sceneFor(props.id));
 
-    //Shared transition: the card picked in the oracle grows into the illustration
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    //Shared transition: the card picked in the oracle grows until it fills the stage. It is taken here, while the
+    //page is being set up, so that nothing of the page shows before the card has landed.
+    const transition = takePendingTransition();
+    const entering = ref(!!transition);
+    const ready = ref(!transition);         //the scene is shown (and its layers come to life) once the card has landed
+
     const root = ref(null);
+    const stage = ref(null);
+    const cue = ref(null);
+    const stopReveals = [];
+
+    //The affirmation is what makes a card a full reading; special cards only carry their description
+    const hasAffirmation = computed(() => card.value.affirmation_es != null || card.value.affirmation_en != null);
+
+    const paragraphs = (text) => String(text ?? '').split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
+
+    const fadeCue = () => {
+        if (cue.value) cue.value.style.opacity = Math.max(0, 1 - window.scrollY / 160);
+    };
 
     onMounted(async () => {
-        const transition = takePendingTransition();
-        if (!transition) return;
+        window.addEventListener('scroll', fadeCue, { passive: true });
 
-        const target = root.value.querySelector('#illustration');
-        const rest = root.value.querySelectorAll('.textWrapper, button.action');
-        const style = getComputedStyle(target);
-        const box = target.getBoundingClientRect();
+        if (transition) {
+            const box = stage.value.getBoundingClientRect();
+            await animate(
+                transition.el,
+                {
+                    left: box.left + 'px',
+                    top: box.top + 'px',
+                    width: box.width + 'px',
+                    height: box.height + 'px',
+                    borderRadius: '0px',
+                    borderWidth: '0px',
+                    borderColor: transition.color
+                },
+                { duration: reducedMotion ? 0 : 0.8, easing: [0.4, 0, 0.2, 1] }
+            ).finished;
 
-        target.style.visibility = 'hidden';
-        rest.forEach((node) => { node.style.opacity = 0; });
+            //The scene fades in under the card, which fades away: no jump between the flat art and the layers
+            ready.value = true;
+            entering.value = false;
+            animate(transition.el, { opacity: 0 }, { duration: reducedMotion ? 0 : 0.9 }).finished.then(() => transition.el.remove());
+        }
 
-        await animate(
-            transition.el,
-            {
-                left: box.left + 'px',
-                top: box.top + 'px',
-                width: box.width + 'px',
-                height: box.height + 'px',
-                borderRadius: style.borderTopLeftRadius,
-                borderWidth: style.borderTopWidth,
-                borderColor: style.borderTopWidth === '0px' ? transition.color : style.borderTopColor
-            },
-            { duration: 0.8, easing: [0.4, 0, 0.2, 1] }
-        ).finished;
+        //The text arrives block by block as it comes into view
+        if (!reducedMotion) {
+            root.value.querySelectorAll('.reading > *').forEach((block) => {
+                block.style.opacity = 0;
+                stopReveals.push(inView(block, () => {
+                    animate(block, { opacity: [0, 1], transform: ['translateY(28px)', 'translateY(0px)'] }, { duration: 0.9, easing: [0.22, 1, 0.36, 1] });
+                }, { amount: 0.25 }));
+            });
+        }
+    });
 
-        target.style.visibility = '';
-        transition.el.remove();
-        animate(rest, { opacity: 1 }, { duration: 0.5 });
+    onBeforeUnmount(() => {
+        window.removeEventListener('scroll', fadeCue);
+        stopReveals.forEach((stop) => stop());
+        transition?.el.remove();
     });
 </script>
 
 <template>
-	<main class="cardWrapper" ref="root">
-        <div class="imageWrapper">
-            <div id="illustration"></div>
-            
-            <button class="action" @click="router.push({ path: '/share/'+props.id });">
-                <!-- <svg class="icon share" width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M20.0001 5.33301C20.4511 5.33301 20.8829 5.51583 21.1968 5.83972L26.7968 11.6175C27.4375 12.2785 27.421 13.3336 26.76 13.9742C26.0991 14.6149 25.0439 14.5984 24.4033 13.9374L21.6667 11.114V24.333C21.6667 25.2535 20.9205 25.9997 20.0001 25.9997C19.0796 25.9997 18.3334 25.2535 18.3334 24.333V11.114L15.5968 13.9374C14.9562 14.5984 13.9011 14.6149 13.2401 13.9742C12.5791 13.3336 12.5627 12.2785 13.2033 11.6175L18.8033 5.83972C19.1172 5.51583 19.549 5.33301 20.0001 5.33301Z"/>
-                    <path d="M5.60772 25.6021C6.50233 25.3854 7.40321 25.9349 7.61989 26.8296L8.48927 30.4189C8.55589 30.6938 8.70736 30.928 8.9082 31.0898C9.10797 31.2508 9.34651 31.3329 9.58546 31.333H30.4147C30.6536 31.3329 30.8921 31.2508 31.0919 31.0898C31.2928 30.928 31.4442 30.6939 31.5109 30.4189L32.3802 26.8296C32.5969 25.9349 33.4978 25.3854 34.3924 25.6021C35.287 25.8187 35.8366 26.7196 35.6199 27.6142L34.7505 31.2037C34.5143 32.1787 33.9666 33.0543 33.1833 33.6855C32.3989 34.3175 31.4247 34.6662 30.4149 34.6663H9.58546C8.57572 34.6662 7.60121 34.3175 6.81684 33.6855C6.03349 33.0543 5.48587 32.1788 5.24965 31.2038L4.38023 27.6142C4.16355 26.7196 4.71311 25.8187 5.60772 25.6021Z"/>
-                </svg> -->
-                <!-- <svg class="icon share" width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path fill-rule="evenodd" clip-rule="evenodd" d="M7.13916 6.33333C6.69412 6.33333 6.33333 6.69412 6.33333 7.13916V31.8641C6.33333 32.3091 6.6941 32.6699 7.13916 32.6699H31.8641C32.3091 32.6699 32.6699 32.3091 32.6699 31.8641V24.0128C32.6699 23.0924 33.4161 22.3462 34.3365 22.3462C35.257 22.3462 36.0032 23.0924 36.0032 24.0128V31.8641C36.0032 34.1501 34.1501 36.0032 31.8641 36.0032H7.13916C4.85318 36.0032 3 34.1501 3 31.8641V7.13916C3 4.85317 4.85317 3 7.13916 3H14.5566C15.4771 3 16.2233 3.74619 16.2233 4.66667C16.2233 5.58714 15.4771 6.33333 14.5566 6.33333H7.13916ZM21.1321 4.66667C21.1321 3.74619 21.8783 3 22.7987 3H34.337C35.2575 3 36.0037 3.74619 36.0037 4.66667V16.2049C36.0037 17.1254 35.2575 17.8716 34.337 17.8716C33.4165 17.8716 32.6703 17.1254 32.6703 16.2049V8.68961L22.1636 19.1963C21.5128 19.8472 20.4575 19.8472 19.8066 19.1963C19.1558 18.5454 19.1558 17.4902 19.8066 16.8393L30.3126 6.33333H22.7987C21.8783 6.33333 21.1321 5.58714 21.1321 4.66667Z"/>
-                </svg> -->
+	<main class="cardWrapper" :class="{ entering }" ref="root">
+        <section class="stage" ref="stage">
+            <div class="sceneHost" :class="{ ready }">
+                <component :is="scene" :card="card" :active="ready" />
+            </div>
+
+            <h1 class="title" v-if="hasAffirmation">{{ String(card['name_' + $i18n.locale] ?? '').trim() }}</h1>
+
+            <button class="action" @click="router.push({ path: '/share/' + props.id });" :aria-label="$t('oracle.share')">
                 <svg class="icon share" width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path fill-rule="evenodd" clip-rule="evenodd" d="M12.0002 9.66634C11.0797 9.66634 10.3335 8.92015 10.3335 7.99967C10.3335 7.0792 11.0797 6.33301 12.0002 6.33301H32.0002C32.9206 6.33301 33.6668 7.0792 33.6668 7.99967V27.9997C33.6668 28.9201 32.9206 29.6663 32.0002 29.6663C31.0797 29.6663 30.3335 28.9201 30.3335 27.9997V12.0234L9.17867 33.1782C8.5278 33.8291 7.47253 33.8291 6.82165 33.1782C6.17078 32.5273 6.17078 31.472 6.82165 30.8212L27.9765 9.66634H12.0002Z" />
                 </svg>
             </button>
-        </div>
-        
-        <div class="textWrapper"> 
-            <h4 v-if="card['affirmation_'+$i18n.locale] != null">
-                {{ card['name_'+$i18n.locale] }}
-            </h4>
-            <p :class="{onlyDescription: card['affirmation_'+$i18n.locale] == null}">
-                {{ card['description_'+$i18n.locale] }}
-            </p>            
-            <div class="bottom">
-                <div>
-                    <h5 v-if="card['affirmation_'+$i18n.locale] != null">
-                        {{ $t("oracle.cardAfirmattion") }}
-                    </h5>
-                    <p>
-                        {{ card['affirmation_'+$i18n.locale] }}
-                    </p>
-                </div>
-                <div v-if="card['invitation_'+$i18n.locale] != null">
-                    <h5>
-                        {{ $t("oracle.cardInvitation") }}
-                    </h5>
-                    <p>
-                        {{ card['invitation_'+$i18n.locale] }}
-                    </p>
-                </div>
+
+            <div class="cue" ref="cue" aria-hidden="true">
+                <svg width="28" height="28" viewBox="0 0 28 28" fill="none"><path d="M6 10.5L14 18.5L22 10.5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
             </div>
-        </div>                
+        </section>
+
+        <section class="reading">
+            <p v-for="(text, i) in paragraphs(card['description_' + $i18n.locale])" :key="i" class="description" :class="{ onlyDescription: !hasAffirmation }">{{ text }}</p>
+
+            <div class="quote" v-if="hasAffirmation">
+                <h5>{{ $t("oracle.cardAfirmattion") }}</h5>
+                <p>{{ card['affirmation_' + $i18n.locale] }}</p>
+            </div>
+
+            <div class="quote invitation" v-if="card['invitation_' + $i18n.locale] != null">
+                <h5>{{ $t("oracle.cardInvitation") }}</h5>
+                <p>{{ card['invitation_' + $i18n.locale] }}</p>
+            </div>
+        </section>
     </main>
 </template>
 
 <style scoped>
-    h4, h5, p {
-        color: v-bind(colorAlt);
-    }
-
     .cardWrapper {
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-        min-height: 100vh;
-
-        background-color: v-bind(color);
-    }    
-
-    .imageWrapper {
+        display: block;
         position: relative;
-        width: 100%;                
+        overflow-x: clip;
+        min-height: 100vh;
+        background-color: v-bind(color);
     }
 
-    #illustration {
+    /* STAGE: the scene fills the screen; its name floats over it */
+    .stage {
+        position: relative;
         width: 100%;
-        height: 0;
-        padding-top: 100%;
-        background-image: v-bind(cover);
-        background-size: cover;
-        background-position: center;
-        background-repeat: no-repeat;
-        box-shadow: 0px 4px 42px rgba(16, 16, 15, 0.18) inset, 0px -4px 42px rgba(16, 16, 15, 0.18) inset;
+        height: 100vh;
+        height: 100svh;
+        min-height: 560px;
+    }
+
+    .sceneHost {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        transition: opacity 0.9s ease-out;
+    }
+
+    .sceneHost.ready {
+        opacity: 1;
+    }
+
+    .title {
+        position: absolute;
+        top: max(84px, 10.5svh);
+        left: 0;
+        width: 100%;
+        margin: 0;
+        padding: 0 7vw;
+        box-sizing: border-box;
+        text-align: center;
+        font-size: clamp(40px, 9vw, 88px);
+        line-height: 1.05;
+        letter-spacing: 0.02em;
+        color: v-bind(colorAlt);
+        text-shadow: 0 2px 18px v-bind(color);
+        pointer-events: none;
+        transition: opacity 0.8s ease-out 0.2s;
     }
 
     button.action {
         position: absolute;
-        right: 35px;
-        bottom: -30px;
+        right: 24px;
+        bottom: 28px;
+        width: 58px;
+        height: 58px;
         filter: none;
         background-color: v-bind(colorAlt);
-        border: 5px solid v-bind(color);
-        width: 66px;
-        height: 66px;
-
-        -webkit-transition: border 270ms ease-out, 
-                    background-color 150ms ease-out,
-                    filter 150ms ease-out;
-        transition: border 270ms ease-out, 
-                    background-color 150ms ease-out,
-                    filter 150ms ease-out;
+        border: 4px solid v-bind(color);
+        transition: opacity 0.8s ease-out 0.2s, border 270ms ease-out, background-color 150ms ease-out;
     }
 
     button.action .icon path {
         fill: v-bind(color);
-    }    
+    }
 
-    .textWrapper {
-        padding: 64px 40px;
+    button.action:hover {
+        background-color: v-bind(color);
+        border-color: v-bind(colorAlt);
+    }
+
+    button.action:hover .icon path {
+        fill: v-bind(colorAlt);
+    }
+
+    .cue {
+        position: absolute;
+        left: calc(50% - 14px);
+        bottom: 22px;
+        pointer-events: none;
+        animation: nudge 2.4s ease-in-out infinite;
+        transition: opacity 0.8s ease-out 0.2s;
+    }
+
+    .cue path {
+        stroke: v-bind(colorAlt);
+    }
+
+    @keyframes nudge {
+        0%, 100% { translate: 0 0; }
+        50% { translate: 0 7px; }
+    }
+
+    /* While the card is still landing, only its colour and the card itself are there */
+    .entering .title,
+    .entering .action,
+    .entering .cue {
+        opacity: 0;
+    }
+
+    /* READING */
+    .reading {
         position: relative;
+        display: flex;
+        flex-direction: column;
+        gap: 28px;
+        max-width: 640px;
+        margin: 0 auto;
+        padding: 72px 28px 140px;
+        box-sizing: border-box;
     }
 
-    .textWrapper h4 {
-        letter-spacing: .03em;
-    }
-
-    .textWrapper p {
+    .reading p,
+    .reading h5 {
+        color: v-bind(colorAlt);
+        margin: 0;
         padding: 0;
-        text-align: justify;
+    }
+
+    .reading .description {
+        font-size: 17px;
+        line-height: 1.75;
+        text-align: left;
         white-space: pre-line;
     }
 
-    .textWrapper p.onlyDescription {
+    .reading .description.onlyDescription {
         text-align: center;
-        padding: 40px 0;
+        font-size: 19px;
     }
 
-    .bottom {
+    .quote {
         display: flex;
         flex-direction: column;
-        gap: 16px;
-        padding-top: 24px;
-    }
-
-    .bottom h5 {
+        align-items: center;
+        gap: 10px;
+        margin-top: 24px;
         text-align: center;
     }
 
-    .bottom p {
+    .quote h5 {
+        font-family: 'Inter', helvetica, sans-serif;
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        opacity: 0.75;
+    }
+
+    .quote p {
+        font-family: 'particular', 'Inter', helvetica, sans-serif;
+        font-size: 27px;
+        line-height: 1.3;
+        letter-spacing: 0.02em;
         text-align: center;
-    }    
+    }
+
+    .quote.invitation p {
+        font-family: 'Inter', helvetica, sans-serif;
+        font-size: 18px;
+        line-height: 1.6;
+        letter-spacing: 0;
+    }
 
     /* DESKTOP */
     @media screen and (min-width: 768px) {
-
-        .cardWrapper {
-            flex-direction: row;
-            align-items: flex-start;
-            justify-content: space-around;            
-            width: 82vw;
-            padding: 10vh 9vw 0;     
-            min-height: 90vh;      
+        .title {
+            font-size: clamp(40px, 4.2vw, 58px);
         }
 
-        .imageWrapper {
-            width: 360px;
+        .reading {
+            padding: 110px 28px 180px;
         }
 
-        #illustration {       
-            background-size: cover !important;
-            /* width: 360px; */
-            height: 450px;
-            padding-top: 0;
-            
-            border-radius: 24px;
-            border: 9px solid #F7F8F1;
-            filter: drop-shadow(0px 0px 3px rgb(234, 234, 234));
-            box-shadow: none;
+        .reading .description {
+            font-size: 18px;
+        }
 
-            box-sizing: border-box;
-            -moz-box-sizing: border-box;
-            -webkit-box-sizing: border-box;
+        .quote p {
+            font-size: 34px;
+        }
+
+        .quote.invitation p {
+            font-size: 19px;
         }
 
         button.action {
-            background-color: #F7F8F1;
-            border-color: #F7F8F1;
-            filter: drop-shadow(0px 0px 1px rgb(234, 234, 234));
+            right: 40px;
+            bottom: 40px;
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .cue {
+            animation: none;
         }
 
-        button.action:hover {
-            background-color: v-bind(color);
-            /* filter: drop-shadow(0px 0px 13px v-bind(colorAlt)); */
-            filter: none;
-            border-width: 3px;
-        }
-
-        button.action:hover .icon path {
-            fill: v-bind(colorAlt);
-        }
-
-        .textWrapper {
-            width: 40%;
-            padding: 0 0 40px;
-            /* height: 100vh; */
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            /* overflow: scroll; */
-        }
-
-        .textWrapper p { 
-            font-size: 16px;
+        .sceneHost {
+            transition: none;
         }
     }
 </style>

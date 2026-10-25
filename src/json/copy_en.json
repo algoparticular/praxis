@@ -10,15 +10,15 @@
         },
         "praxis": {
             "praxisIntro": "Decide how many cards to shuffle, put true intention in whatever vibrates within you.",
-            "fullDeck": "Full Deck",
+            "fullDeck": "The Particles",
             "theNine": "The Nine",
             "cardsCount": "{n} cards"
         },
         "landing": {
             "intro": "What makes you particular?",
-            "introAction": "Find it here",
-            "oracleTitle": "Guide your intuition",
-            "oracleDescrip": "Just as when navigating a place, we take guidance from a map or compass, when we consciously navigate the Universe, we need the help of tools to guide our intuition.",
+            "introAction": "Discover it",
+            "oracleTitle": "Let your intuition guide you",
+            "oracleDescrip": "Just as a map or a compass guides us in an unfamiliar place, when we navigate the Universe consciously we need tools to guide our intuition.",
             "oracleAction": "Consult the Oracle",
             "aboutTitle": "Navigate the Universe",
             "aboutDescrip": "Our mission is to invite people to take action and reflection. Using art and philosophy, we seek to connect with what makes our inner self vibrate. Seek the inner compass that guide us to a heartful path.",
@@ -35,6 +35,8 @@
             "signIn": "Sign in",
             "register": "Create an account",
             "logout": "Leave",
+            "soundOn": "Sound on",
+            "soundOff": "Sound off",
             "skip": "to the Oracle"
         },
         "auth": {
@@ -62,9 +64,9 @@
             "designedBy": "Developed & Illustrated by",
             "author": "Juan Yañez",
             "praxis": "About us",
-            "praxisDescrip": "Algo Particular is an artistic/spiritual proposal created in 2020.\n\nOur mission is to invite people to both action and reflection.\n\nThrough art and philosophy, we seek to establish contact with our intuition, that inner compass that invites us to a path with heart.\n\nAs a first interactive proposal we generated Praxis, a digital version of Oracle Cards.",
-            "oracle": "Praxis & the Oracle of the Particles Deck",
-            "oracleDescrip": "Just as when we travel through a place, we take the guidance of a map or a compass, on the path of self-discovery it is beneficial to take guidance from the so-called 'Higher Frequency', which is none other than the guidance of our deepest Self.\n\nPraxis helps to connect with what vibrates within.\n\nThe Oracle Card Deck, written by Belén Brito, is a tool for those of us who are aware of the messages that the Universe, in its divine randomness, provides to guide our steps. With her luminous calm, Belén urges us to find the answers to our inner self, using each card as a mirror to evaluate or validate our path.\n\nThus the Particles bring us those messages that our Being is needing in this moment, in this here and now.",
+            "praxisDescrip": "Algo Particular is an artistic/spiritual proposal created in 2020.\n\nOur mission is to invite people to both action and reflection.\n\nThrough art and philosophy, we seek to establish contact with our intuition, that inner compass that invites us to a path with heart.\n\nAs a first interactive proposal we generated Anima, a digital version of Oracle Cards.",
+            "oracle": "Anima & the Oracle of the Particles Deck",
+            "oracleDescrip": "Just as when we travel through a place, we take the guidance of a map or a compass, on the path of self-discovery it is beneficial to take guidance from the so-called 'Higher Frequency', which is none other than the guidance of our deepest Self.\n\nAnima helps to connect with what vibrates within.\n\nThe Oracle Card Deck, written by Belén Brito, is a tool for those of us who are aware of the messages that the Universe, in its divine randomness, provides to guide our steps. With her luminous calm, Belén urges us to find the answers to our inner self, using each card as a mirror to evaluate or validate our path.\n\nThus the Particles bring us those messages that our Being is needing in this moment, in this here and now.",
             "seed": "Press the seed to take a message",
             "brote": "Pulsa el brote\npara coleccionarlo",
             "cta": "Want to help?",

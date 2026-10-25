@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Praxis** is the first interactive proposal from *Algo Particular* — a bilingual (Spanish/English) Progressive Web App offering a digital Oracle card deck for self-discovery and reflection. The oracle deck contains 33 cards, written by Belén Brito. Hosted on Netlify, deployed from `dist/` via `vite build`.
+**Anima** is the first interactive proposal from *Algo Particular* — a bilingual (Spanish/English) Progressive Web App offering a digital Oracle card deck for self-discovery and reflection. The oracle deck contains 33 cards, written by Belén Brito. Hosted on Netlify, deployed from `dist/` via `vite build`.
 
 ## Commands
 
@@ -36,6 +36,12 @@ No test or lint commands are configured.
 - Views (`src/views/`) are page-level components mounted by the router.
 - Reusable UI lives in `src/components/`. Template components (e.g., `CardTemplate`, `OracleTemplate`, `DeckTemplate`) handle display logic; skeleton variants (e.g., `CardTemplateSkeleton`) serve as loading fallbacks used with Vue `<Suspense>`.
 - Animations use `vue-kinesis` (parallax effects) and CSS transitions for route changes (fade).
+
+**Card pages (immersive scenes):** `/card/:id` is a full-screen *stage* (`CardTemplate.vue`) with the card's name over it, and the reading (description, affirmation, invitation) below. What fills the stage is a *scene*, chosen per card in `src/data/cardScenes.js` (`sceneFor(id)`):
+- `ScenePaciencia` (id 27) and `SceneVipassana` (id 31) are built from separate layers that move with depth (pointer / tilt / scroll parallax via `useParallax.js`, plus each layer's own idle motion). Vipassana reuses the landing hero: `useCellField`, `useHeroSpiral` and `useCharacterLife`.
+- Every other card uses `SceneFlat` (its square illustration, feathered into the card colour, drifting slowly).
+- To give another card its own scene: add a component in `src/components/scenes/` (props `card`, `active`; start entrances when `active` turns true) and list its id in `cardScenes.js`. Layers live in `public/assets/`.
+- The card picked in the oracle grows to fill the stage (`cardTransition.js`) and then fades into the scene.
 
 **Firebase** is initialized in `main.js` but auth guards on routes are currently commented out. Firebase is set up for future user account features but not enforced.
 

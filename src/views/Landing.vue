@@ -1,13 +1,17 @@
 <script setup>
 	import { onMounted, onBeforeUnmount, ref } from 'vue';
     import { useRouter } from 'vue-router';
-    import { timeline, inView, scroll } from "motion";
+    import { inView, scroll } from "motion";
 
     import Header  from '../components/Header.vue';
     import Footer  from '../components/Footer.vue';
 
     import { KinesisContainer, KinesisElement} from 'vue-kinesis';
     import { createStarField } from '../composables/useStarField.js';
+    import { createHeroSpiral } from '../composables/useHeroSpiral.js';
+    import { createCharacterLife } from '../composables/useCharacterLife.js';
+    import { oracleTop } from '../composables/oracleScroll.js';
+    import ModeSelector from '../components/ModeSelector.vue';
     import { play } from '../composables/useSound.js';
     
     const router = useRouter();
@@ -16,13 +20,22 @@
     //handle navigation
     const handleNavigate = (url) => {
         router.push({ path: url }); //, replace: true
-    };    
+    };
+
+    //The hero's call to action glides down to the oracle block
+    const goToOracle = () => {
+        window.scrollTo({ top: oracleTop(), behavior: reducedMotion ? 'auto' : 'smooth' });
+    };
 
 
     //Cells and particles in three.js; the static cells come back if WebGL is not available
     const cellCanvas = ref(null);
     const cellsFallback = ref(false);
     let cellField = null;
+
+    //Dotted spiral of the hero character, drawn on a canvas over his picture
+    const spiralCanvas = ref(null);
+    let spiral = null;
 
     //Night sky of the oracle block: twinkling stars and the odd shooting star
     const starCanvas = ref(null);
@@ -39,6 +52,7 @@
     onBeforeUnmount(() => {
         unmounted = true;
         cellField?.destroy();
+        spiral?.destroy();
         starField?.destroy();
         tailField?.destroy();
         stopCorners.forEach((stop) => stop());
@@ -48,6 +62,7 @@
 
     // //ON MOUNTED
 	onMounted (() => {         
+        spiral = createHeroSpiral(spiralCanvas.value, { animate: !reducedMotion });
         starField = createStarField(starCanvas.value, document.getElementById('oracle'), { onShoot: () => play('star') });
         //The sky keeps going into the top of the next block and fades out as the background turns violet
         tailField = createStarField(tailCanvas.value, skyTail.value, { shooting: false });
@@ -60,17 +75,110 @@
                 cellsFallback.value = true;
             });
 
-        const sequence = [
-            [".splash.particle", { y: 20 }],
-        ];
-
         if (!reducedMotion) {
-            timeline(sequence, { 
-                duration: 4, 
-                direction: 'alternate-reverse', 
-                repeat: Infinity,
-                defaultOptions: { ease: "ease-out" },
-            });
+            //Entrance: the title rises first, its action follows, then the particle settles in.
+            //translate/scale are independent properties so they do not fight the parallax, which owns transform.
+            const enter = (el, { y = 24, scale = 1, delay = 0, duration = 1100 }) => el.animate(
+                { opacity: [0, 1], translate: [`0 ${y}px`, '0 0'], scale: [scale, 1] },
+                { duration, delay, easing: 'cubic-bezier(0.22, 1, 0.36, 1)', fill: 'backwards' }
+            );
+            enter(document.querySelector('#hero h1'), { y: 28, delay: 150 });
+            enter(document.querySelector('#hero h1 span'), { y: 14, delay: 650, duration: 900 });
+            //Once settled, the character lives (see useCharacterLife): floats, breathes and reacts to the pointer.
+            //The kinesis parallax keeps the vertical transform; everything there goes through independent properties.
+            let scrollLift = 0;                                     //set by the scroll handler below
+            const particle = document.querySelector('#hero .splash.particle');
+            const life = createCharacterLife(particle, document.getElementById('hero'), { spiral, getLift: () => scrollLift });
+            enter(particle, { y: 40, scale: 0.88, delay: 350, duration: 1600 }).finished.then(life.start).catch(() => {});
+            stopReveals.push(() => life.destroy());
+
+            //Leaving the hero: the title lifts and fades while the particle drifts up slower, so the violet hands over to the night
+            const heroTitle = document.querySelector('#hero > a');
+            stopCorners.push(scroll(({ y }) => {
+                const p = Math.min(1, Math.max(0, y.progress));
+                heroTitle.style.opacity = 1 - p * 1.4;
+                heroTitle.style.translate = `0 ${-p * 60}px`;
+                scrollLift = -p * 110;
+            }, { target: document.getElementById('hero'), offset: ['start start', 'end 40%'] }));
+
+            //The violet turns into the navy of the next block while the seam between them rises through the screen
+            const landing = document.querySelector('.landing');
+            stopCorners.push(scroll(({ y }) => {
+                landing.style.setProperty('--mix', Math.min(1, Math.max(0, y.progress)).toFixed(3));
+            }, { target: document.getElementById('hero'), offset: ['end end', 'end 45%'] }));
+
+            //Dawn: the navy becomes orange while the quote rises, after the seam with the oracle block has left the screen
+            stopCorners.push(scroll(({ y }) => {
+                landing.style.setProperty('--dawn', Math.min(1, Math.max(0, y.progress)).toFixed(3));
+            }, { target: document.querySelector('#uno h2'), offset: ['start 62%', 'start 18%'] }));
+
+            //Leaving the oracle block: the copy and the illustration sink into the dark before the sky turns violet
+            const oracleCopy = document.querySelector('#oracle .copy');
+            const oracleGfx = document.querySelector('#oracle .gfx');
+            stopCorners.push(scroll(({ y }) => {
+                const p = Math.min(1, Math.max(0, y.progress));
+                oracleCopy.style.opacity = oracleGfx.style.opacity = 1 - p;
+                oracleCopy.style.translate = `0 ${-p * 40}px`;
+                oracleGfx.style.translate = `0 ${-p * 70}px`;
+            }, { target: document.getElementById('oracle'), offset: ['end 85%', 'end 35%'] }));
+
+            //The seed of the quote is the brand mark of the header: same artwork, same size. It turns as it climbs and
+            //unwinds to zero exactly when it reaches the header's mark, where the two coincide and a flash goes off.
+            const seed = document.querySelector('#uno img');
+            const mark = document.querySelector('header #logo img');
+            let lastGap = null;
+
+            const flash = (box) => {
+                const x = box.left + box.width / 2, y = box.top + box.height / 2;
+                const burst = document.createElement('div');
+                Object.assign(burst.style, { position: 'fixed', left: `${x}px`, top: `${y}px`, width: '0', height: '0', zIndex: 12, pointerEvents: 'none' });
+                const piece = (css, keyframes, options) => {
+                    const el = document.createElement('div');
+                    Object.assign(el.style, { position: 'absolute', ...css });
+                    burst.appendChild(el);
+                    el.animate(keyframes, { easing: 'cubic-bezier(0.22, 1, 0.36, 1)', fill: 'both', ...options });
+                    return el;
+                };
+                //A soft light that blooms and fades
+                piece({ left: '-70px', top: '-70px', width: '140px', height: '140px', borderRadius: '50%',
+                    background: 'radial-gradient(circle, rgba(255, 250, 210, 0.95) 0%, rgba(255, 230, 170, 0.45) 35%, rgba(255, 230, 170, 0) 70%)' },
+                    { opacity: [0, 1, 0], scale: [0.3, 1.1, 1.5] }, { duration: 900 });
+                //A ring that spreads out
+                piece({ left: '-20px', top: '-20px', width: '40px', height: '40px', borderRadius: '50%', border: '2px solid rgba(247, 248, 241, 0.9)', boxSizing: 'border-box' },
+                    { opacity: [0.9, 0], scale: [0.8, 3.4] }, { duration: 800 });
+                //Six sparks flying outwards
+                for (let i = 0; i < 6; i++) {
+                    const angle = (Math.PI * 2 * i) / 6 + Math.PI / 6;
+                    const dx = Math.cos(angle) * 38, dy = Math.sin(angle) * 38;
+                    const spark = piece({ left: '-7px', top: '-9px', fontSize: '14px', lineHeight: '1', color: '#FFF6C8', textShadow: '0 0 6px #FFE9A8' },
+                        { opacity: [1, 0], translate: ['0 0', `${dx}px ${dy}px`], scale: [0.4, 1] }, { duration: 750, delay: 40 });
+                    spark.textContent = '✦';
+                }
+                document.body.appendChild(burst);
+                setTimeout(() => burst.remove(), 1100);
+                play('star');
+            };
+
+            let queued = false;
+            const align = () => {
+                queued = false;
+                if (!seed.complete || !mark.complete) return;
+                const m = mark.getBoundingClientRect();
+                const s = seed.getBoundingClientRect();
+                const gap = (s.top + s.height / 2) - (m.top + m.height / 2);             //vertical distance between the two centres
+                const sideways = (m.left + m.width / 2) - (s.left + s.width / 2);
+                const close = Math.max(0, 1 - Math.abs(gap) / 240);                       //horizontal correction only fades in near the mark
+                seed.style.rotate = `${Math.max(-160, Math.min(160, gap * 0.3))}deg`;
+                seed.style.translate = `${sideways * close}px 0`;
+                //The centres crossed: the two are on top of each other
+                if (lastGap !== null && Math.sign(gap) !== Math.sign(lastGap) && Math.abs(gap) < 240) flash(m);
+                lastGap = gap;
+            };
+            const onScroll = () => {
+                if (!queued) { queued = true; requestAnimationFrame(align); }
+            };
+            window.addEventListener('scroll', onScroll, { passive: true });
+            stopCorners.push(() => window.removeEventListener('scroll', onScroll));
         }
 
         //The oracle block frames itself while scrolling: its four corners appear one by one, clockwise.
@@ -97,7 +205,7 @@
         //Independent translate/scale/rotate are used so they do not fight the parallax, which owns transform.
         if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
             const pick = (selector) => document.querySelector('#oracle ' + selector);
-            const copy = ['.copy .heading img', '.copy .heading h3', '.copy > p', '.copy > button'].map(pick);
+            const copy = ['.copy .heading h3', '.copy > p', '.copy .modes'].map(pick);
             const man = pick('.gfx .oracle.particle');
             const tree = pick('.gfx .oracle.tree');
             [...copy, man, tree].forEach((el) => { el.style.opacity = 0; });
@@ -115,10 +223,11 @@
                 duration, direction: 'alternate', iterations: Infinity, easing: 'ease-in-out'
             }));
 
-            const quote = ['#uno h2', '#uno img'].map((selector) => document.querySelector(selector));
+            //The quote arrives line by line, and the seed after the last one
+            const quote = [...document.querySelectorAll('#uno h2 .line'), document.querySelector('#uno img')];
             quote.forEach((el) => { el.style.opacity = 0; });
             stopReveals.push(inView('#uno h2', () => {
-                quote.forEach((el, i) => reveal({ el, y: 32, delay: i * 350, duration: 1300 }));
+                quote.forEach((el, i) => reveal({ el, y: 32, delay: i * 450, duration: 1300 }));
             }, { amount: 0.6 }));
 
             stopReveals.push(inView('#oracle .copy', () => {
@@ -145,7 +254,7 @@
         </Header>
        
         <kinesis-container id="hero" tag="section" easing="cubic-bezier(0.23, 1, 0.32, 1)" :perspective="100" :active="!reducedMotion">
-            <a href="/praxis">
+            <a href="/#oraculo" @click.prevent="goToOracle">
                 <kinesis-element
                     tag="h1">
                     {{ $t("landing.intro") }}
@@ -153,14 +262,16 @@
                 </kinesis-element>                            
             </a>
             
-            <kinesis-element 
+            <!-- The character and his spiral are separate layers: the picture is just him, the dots are drawn and animated on the canvas -->
+            <kinesis-element
                 class="splash particle"
-                tag="img"
-                src="/assets/hero/particle.webp"
-                loading=”lazy”
+                tag="div"
                 :strength="30"
                 axis="y"
-                type="translate"/>
+                type="translate">
+                <img class="character" src="/assets/hero/character.webp" alt="" draggable="false">
+                <canvas class="spiral" ref="spiralCanvas"></canvas>
+            </kinesis-element>
             <canvas class="cell-field" ref="cellCanvas"></canvas>
 
             <template v-if="cellsFallback">
@@ -205,11 +316,10 @@
             <div class="corner bottomRight"></div>
             <div class="copy">
                 <div class="heading">
-                    <img loading="lazy" src="../assets/icon/Lab.svg"/>
                     <h3>{{ $t("landing.oracleTitle") }}</h3>
                 </div>
-                <p>{{ $t("landing.oracleDescrip") }}</p>
-                <button @click="handleNavigate('/praxis')">{{ $t("landing.oracleAction") }}</button>
+                <p>{{ $t("praxis.praxisIntro") }}</p>
+                <ModeSelector />
             </div>
         
             <div class="gfx">
@@ -233,8 +343,8 @@
         <div id="colorMe">
             <section id="uno">
                 <div class="sky-tail" ref="skyTail"><canvas ref="tailCanvas"></canvas></div>
-                <h2>{{ $t("landing.uno") }}</h2>
-                <img src="../assets/icon/Seed.svg" loading="lazy"/>
+                <h2><span class="line" v-for="(line, i) in $t('landing.uno').split('\n')" :key="i">{{ line }}</span></h2>
+                <img src="../assets/SeedWhite.svg" alt="" loading="lazy"/>
             </section>
         </div>
 
@@ -251,8 +361,21 @@
     }
 
     /* HERO */
-	#hero {
-        background-color: #6A428D;
+    /* As the page scrolls, the violet turns into the navy of the oracle block (--mix goes 0..1, set from the script).
+       The hero and the top of the oracle block share --tint, so the seam between them never shows a different color. */
+    .landing {
+        --mix: 0;
+        --tint: #6A428D;
+    }
+
+    @supports (color: color-mix(in srgb, red 50%, blue)) {
+        .landing {
+            --tint: color-mix(in srgb, #143246 calc(var(--mix) * 100%), #6A428D);
+        }
+    }
+
+    #hero {
+        background-color: var(--tint);
         height: 115vh;
         min-height: 667px;
         padding: 5vh 0;
@@ -276,6 +399,8 @@
     }
 
     h1 span {
+        display: inline-block;
+        margin-top: 8px;
         font-family: 'Inter', helvetica, sans-serif;
         text-transform: uppercase;
         font-size: 12px;
@@ -303,9 +428,27 @@
         transition: opacity 1.4s ease-out;
     }
 
+    .splash.particle .character {
+        display: block;
+        width: 100%;
+        height: auto;
+        user-select: none;
+    }
+
+    .splash.particle .spiral {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+    }
+
     .splash.particle {
+        /* The picture covers the title's area: clicks must go through to the hero's link */
+        pointer-events: none;
         z-index: 9;        
         width: 80vw;
+        aspect-ratio: 868 / 1027;
 
         top: 36vh;
         left: 10vw;
@@ -339,6 +482,8 @@
     }
 
     .splash.background {
+        /* Only decoration: it must not take the clicks meant for the title */
+        pointer-events: none;
         background-image: url('../assets/hero/background.webp');
         background-size: cover;
         
@@ -395,6 +540,25 @@
 <!-- Oracle -->
 <style scoped>
     /* ORACLE */
+    /* The tint at several opacities, for the soft top of the block */
+    .landing {
+        --tint-82: rgba(106, 66, 141, 0.82);
+        --tint-55: rgba(106, 66, 141, 0.55);
+        --tint-28: rgba(106, 66, 141, 0.28);
+        --tint-10: rgba(106, 66, 141, 0.1);
+        --tint-0: rgba(106, 66, 141, 0);
+    }
+
+    @supports (color: color-mix(in srgb, red 50%, blue)) {
+        .landing {
+            --tint-82: color-mix(in srgb, var(--tint) 82%, transparent);
+            --tint-55: color-mix(in srgb, var(--tint) 55%, transparent);
+            --tint-28: color-mix(in srgb, var(--tint) 28%, transparent);
+            --tint-10: color-mix(in srgb, var(--tint) 10%, transparent);
+            --tint-0: color-mix(in srgb, var(--tint) 0%, transparent);
+        }
+    }
+
     #oracle {
         /* Height of the zone where the hero's violet sinks into the navy. It sits above the content, which is all on the dark. */
         --sky: 36vh;
@@ -403,12 +567,12 @@
         background-color: #143246;
         /* The top of the block is the violet of the hero, eased down into the navy */
         background-image: linear-gradient(180deg,
-            #6A428D 0%,
-            rgba(106, 66, 141, 0.82) 14%,
-            rgba(106, 66, 141, 0.55) 32%,
-            rgba(106, 66, 141, 0.28) 52%,
-            rgba(106, 66, 141, 0.1) 74%,
-            rgba(106, 66, 141, 0) 100%);
+            var(--tint) 0%,
+            var(--tint-82) 14%,
+            var(--tint-55) 32%,
+            var(--tint-28) 52%,
+            var(--tint-10) 74%,
+            var(--tint-0) 100%);
         background-size: 100% var(--sky);
         background-repeat: no-repeat;
         isolation: isolate;
@@ -457,35 +621,25 @@
         gap: 16px;
     }
 
-    .copy .heading img {
-        width: 48px;
-        height: 48px;
-        filter: drop-shadow(0px 2px 3px #C7BE8E);        
-    }
-
     .copy .heading h3 {
         color: #F7F8F1;
         font-size: 32px;
         text-align: center;
     }
 
+    .copy .modes {
+        margin-top: 16px;
+    }
+
     .copy p {
+        /* Rounded like the titles' lettering, easier to read than Inter next to it */
+        font-family: 'Nunito', 'Inter', helvetica, sans-serif;
         color: #F7F8F1;
-        font-size: 18px;
+        font-size: 19px;
         line-height: 150%;
         text-align: center;
         max-width: 310px;
         margin-bottom: 0;
-    }
-
-    .copy button {
-        color: #0381BA;
-        min-width: 310px;
-    }
-
-    .copy button:hover {
-        /* color: #F7F8F1; */
-        background-color: #E8E974;
     }
 
     .corner {        
@@ -608,6 +762,19 @@
         background: linear-gradient(180deg, #143246 0%, #4a3a6e 20%, #c8636f 36%, #FF6F61 48%, #FF6F61 82%, #F7F8F1 100%);
     }
 
+    /* Dawn: once the seam with the oracle block is out of sight, the whole screen turns from navy to orange as the quote
+       comes up (--dawn goes 0..1, set from the script). Mixed in oklch so it passes through violet and rose, not mud. */
+    @supports (color: color-mix(in oklch, red 50%, blue)) {
+        .landing {
+            --dawn: 0;
+            --sunrise: color-mix(in oklch, #FF6F61 calc(var(--dawn) * 100%), #143246);
+        }
+
+        #uno {
+            background: linear-gradient(180deg, var(--sunrise) 0%, var(--sunrise) 82%, #F7F8F1 100%);
+        }
+    }
+
     /* Stars carry on over the dark top of this block and fade out as it turns violet */
     .sky-tail {
         position: absolute;
@@ -624,6 +791,19 @@
     .sky-tail canvas {
         width: 100%;
         height: 100%;
+    }
+
+    /* Same size and glow as the brand mark of the header, so the two can line up exactly */
+    #uno img {
+        width: 40px;
+        height: auto;
+        filter: drop-shadow(0px 2px 3px rgba(234, 234, 234, 0.36));
+    }
+
+    #uno h2 .line {
+        display: block;
+        /* The global span rule paints spans grey */
+        color: inherit;
     }
 
     #uno h2 {

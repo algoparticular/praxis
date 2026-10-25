@@ -1,9 +1,9 @@
-# Plan: Praxis más inmersivo
+# Plan: Anima más inmersivo
 
 ## Decisiones
 - **Stack:** se queda en Vue 3. three.js no depende del framework (se monta en un `<canvas>` desde un composable) y `motion` ya se usa en modo vanilla. Migrar a React no compensa: habría que reescribir router, i18n, PWA y Suspense, sin tests, y el usuario no notaría la diferencia.
 - **Datos:** las cartas pasan a ser JSON estático. Airtable queda solo como editor (las cartas se editan poco). Sin token en el cliente.
-- **Alcance:** Praxis primero (`/praxis`, `/oracle`, `/oracleTheNine`, `/card/:id`, `/share/:id`), después la landing.
+- **Alcance:** Anima primero (`/praxis`, `/oracle`, `/oracleTheNine`, `/card/:id`, `/share/:id`), después la landing.
 
 ## Pasos
 1. **Datos estáticos** — HECHO
@@ -51,4 +51,4 @@ Rama: `claude/cool-heisenberg-l4fuyc`. Los pasos 1 a 6 están hechos y la landin
 - Probar el sonido en un iPhone real, con el interruptor de silencio puesto y quitado.
 - Medir batería y fluidez de las escenas de three.js en un teléfono real.
 - About y Collaborate terminan en un bloque naranja que corta en seco contra el footer crema (solo se suavizó la landing).
-- Leer las subpáginas del Notion de Algo Particular (Praxis, El Oráculo de las Partículas, Game Design Document) para ajustar el tono visual: no estaban accesibles.
+- Leer las subpáginas del Notion de Algo Particular (Anima, El Oráculo de las Partículas, Game Design Document) para ajustar el tono visual: no estaban accesibles.

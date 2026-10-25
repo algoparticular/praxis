@@ -1,8 +1,8 @@
-import { createRouter, createWebHistory } from "vue-router";
+import { createRouter, createWebHistory, START_LOCATION } from "vue-router";
 // import { getAuth, onAuthStateChanged } from 'firebase/auth';
 
 import Landing from '../views/Landing.vue';
-import Home from '../views/Home.vue';
+import { oracleTop } from '../composables/oracleScroll.js';
 import Register from '../views/Register.vue';
 import SignIn from '../views/SignIn.vue';
 import Oracle from '../views/Oracle.vue';
@@ -18,15 +18,23 @@ import Share from '../views/Share.vue';
 // Navigation object
 const router = createRouter({
   history: createWebHistory(),
+  // /#oraculo lands on the oracle block of the landing, gliding there unless the page is just opening.
+  // (Not #oracle: the browser would jump to the element with that id by itself and fight this.)
+  scrollBehavior(to, from) {
+    if (to.hash === '#oraculo') {
+      return { top: oracleTop(), behavior: from === START_LOCATION ? 'auto' : 'smooth' };
+    }
+  },
   routes: [
     {
       path: "/",
       component: Landing,
     },
     {
+      // The choice between the full deck and The Nine now lives in the oracle block of the landing
       path: "/praxis",
-      component: Home,
-    },    
+      redirect: { path: "/", hash: "#oraculo" },
+    },
     {
       path: "/register",
       component: Register,
