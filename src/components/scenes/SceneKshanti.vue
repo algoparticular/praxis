@@ -135,15 +135,18 @@
     // route, reaches the second and goes into it (its head hidden there), tail following, so it never begins or ends in
     // the open air. Then it rests, and takes the next stretch of the route. Each has its own pace.
     const HIDE = LINE.behind.map(([a, b]) => Math.round((a + b) / 2));
-    const SPANS = HIDE.slice(0, -1).map((a, i) => ({ a, b: HIDE[i + 1] }));
-    const STROKES = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => ({
-        span: Math.floor(i * SPANS.length / 10), p: (i * 0.37) % 1.2, dur: 4.5 + (i % 4) * 1.2, rest: 0.04 + (i % 3) * 0.07,
-        tail: 0, head: 0, grab: 0,
-    }));
+    // 14 strokes; every third one is long (it goes through two stretches of the route, between three hiding places)
+    const STROKES = Array.from({ length: 14 }, (_, i) => {
+        const hops = i % 3 === 0 ? 2 : 1;
+        return {
+            hops, at: Math.floor(i * (HIDE.length - 2) / 14), p: (i * 0.37) % 1.2, dur: (4.4 + (i % 4) * 1.1) * (hops === 2 ? 1.5 : 1), rest: 0.03 + (i % 3) * 0.05,
+            tail: 0, head: 0, grab: 0,
+        };
+    });
     const ease = (v) => v * v * (3 - 2 * v);
     const clamp01 = (v) => Math.min(1, Math.max(0, v));
     const placeStroke = (k) => {
-        const { a, b } = SPANS[k.span];
+        const a = HIDE[k.at], b = HIDE[Math.min(k.at + k.hops, HIDE.length - 1)];
         k.head = a + (b - a) * ease(clamp01(k.p / 0.55));
         k.tail = a + (b - a) * ease(clamp01((k.p - 0.45) / 0.55));
     };
@@ -171,7 +174,7 @@
         const found = [];
         STROKES.forEach((k) => {
             k.p += dt / k.dur;
-            if (k.p >= 1 + k.rest) { k.p = 0; k.span = (k.span + 1) % SPANS.length; }
+            if (k.p >= 1 + k.rest) { k.p = 0; k.at += k.hops; if (k.at + k.hops > HIDE.length - 1) k.at = 0; }
             placeStroke(k);
             if (!active || k.head - k.tail < 3) return;
             let bestD = Infinity;
@@ -515,8 +518,8 @@
         fill: #aeabd9;
     }
 
-    .w0 { fill-opacity: 0.6; }
-    .w1 { fill-opacity: 0.35; }
+    .w0 { fill-opacity: 0.7; }
+    .w1 { fill-opacity: 0.4; }
     .w2 { fill-opacity: 0.4; }
     .w3 { fill-opacity: 0.45; }
     .w4 { fill-opacity: 0.5; }
