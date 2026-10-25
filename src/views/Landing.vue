@@ -8,6 +8,7 @@
 
     import { KinesisContainer, KinesisElement} from 'vue-kinesis';
     import { createStarField } from '../composables/useStarField.js';
+    import { createHeroSpiral } from '../composables/useHeroSpiral.js';
     import { play } from '../composables/useSound.js';
     
     const router = useRouter();
@@ -24,6 +25,10 @@
     const cellsFallback = ref(false);
     let cellField = null;
 
+    //Dotted spiral of the hero character, drawn on a canvas over his picture
+    const spiralCanvas = ref(null);
+    let spiral = null;
+
     //Night sky of the oracle block: twinkling stars and the odd shooting star
     const starCanvas = ref(null);
     const skyTail = ref(null);
@@ -39,6 +44,7 @@
     onBeforeUnmount(() => {
         unmounted = true;
         cellField?.destroy();
+        spiral?.destroy();
         starField?.destroy();
         tailField?.destroy();
         stopCorners.forEach((stop) => stop());
@@ -48,6 +54,7 @@
 
     // //ON MOUNTED
 	onMounted (() => {         
+        spiral = createHeroSpiral(spiralCanvas.value, { animate: !reducedMotion });
         starField = createStarField(starCanvas.value, document.getElementById('oracle'), { onShoot: () => play('star') });
         //The sky keeps going into the top of the next block and fades out as the background turns violet
         tailField = createStarField(tailCanvas.value, skyTail.value, { shooting: false });
@@ -222,14 +229,16 @@
                 </kinesis-element>                            
             </a>
             
-            <kinesis-element 
+            <!-- The character and his spiral are separate layers: the picture is just him, the dots are drawn and animated on the canvas -->
+            <kinesis-element
                 class="splash particle"
-                tag="img"
-                src="/assets/hero/particle.webp"
-                loading=”lazy”
+                tag="div"
                 :strength="30"
                 axis="y"
-                type="translate"/>
+                type="translate">
+                <img class="character" src="/assets/hero/character.webp" alt="" draggable="false">
+                <canvas class="spiral" ref="spiralCanvas"></canvas>
+            </kinesis-element>
             <canvas class="cell-field" ref="cellCanvas"></canvas>
 
             <template v-if="cellsFallback">
@@ -374,9 +383,25 @@
         transition: opacity 1.4s ease-out;
     }
 
+    .splash.particle .character {
+        display: block;
+        width: 100%;
+        height: auto;
+        user-select: none;
+    }
+
+    .splash.particle .spiral {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+    }
+
     .splash.particle {
         z-index: 9;        
         width: 80vw;
+        aspect-ratio: 868 / 1027;
 
         top: 36vh;
         left: 10vw;

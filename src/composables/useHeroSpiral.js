@@ -1,0 +1,124 @@
+// The dotted spiral of the hero character, drawn on a 2D canvas laid over his picture.
+// The points were taken from the original illustration (heroSpiral.json, in the picture's own pixel space,
+// ordered from the character's head outwards), so the canvas and the picture share one coordinate system.
+// The dots flow out of his head along the curve, ripple sideways and swell in a travelling pulse.
+
+import dots from './heroSpiral.json';
+
+const WIDTH = 868;
+const HEIGHT = 1027;
+const LAST = dots.length - 1;
+const FLOW = 1.1;       // dots per second along the spiral
+const EDGE_IN = 3;      // dots over which the spiral fades in at the head
+const EDGE_OUT = 6;     // and out at the far tip
+
+const smooth = (edge0, edge1, x) => {
+    const k = Math.min(1, Math.max(0, (x - edge0) / (edge1 - edge0)));
+    return k * k * (3 - 2 * k);
+};
+
+// Catmull-Rom through four consecutive dots, so the curve is smooth where the loops turn
+const point = (f, out) => {
+    const i = Math.min(LAST - 1, Math.floor(f));
+    const u = f - i;
+    const a = dots[Math.max(0, i - 1)], b = dots[i], c = dots[i + 1], d = dots[Math.min(LAST, i + 2)];
+    const u2 = u * u, u3 = u2 * u;
+    for (let k = 0; k < 3; k++) {
+        out[k] = 0.5 * ((2 * b[k]) + (-a[k] + c[k]) * u + (2 * a[k] - 5 * b[k] + 4 * c[k] - d[k]) * u2 + (-a[k] + 3 * b[k] - 3 * c[k] + d[k]) * u3);
+    }
+    return out;
+};
+
+const makeGlow = () => {
+    const size = 64;
+    const sprite = document.createElement('canvas');
+    sprite.width = sprite.height = size;
+    const ctx = sprite.getContext('2d');
+    const gradient = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+    gradient.addColorStop(0, 'rgba(255, 170, 210, 0.75)');
+    gradient.addColorStop(0.35, 'rgba(255, 150, 200, 0.3)');
+    gradient.addColorStop(1, 'rgba(255, 150, 200, 0)');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, size, size);
+    return sprite;
+};
+
+export function createHeroSpiral(canvas, { animate = true } = {}) {
+    const ctx = canvas.getContext('2d');
+    const glow = makeGlow();
+    const here = [0, 0, 0];
+    const ahead = [0, 0, 0];
+    let scale = 1;
+    let visible = true;
+    let frame = 0;
+    let start = 0;
+
+    const resize = () => {
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        const width = canvas.clientWidth;
+        if (!width) return;
+        canvas.width = Math.round(width * dpr);
+        canvas.height = Math.round(width * dpr * HEIGHT / WIDTH);
+        scale = canvas.width / WIDTH;
+        if (!animate) draw(0);
+    };
+
+    const draw = (t) => {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const shift = animate ? (t * FLOW) % LAST : 0;
+        for (let k = 0; k < LAST; k++) {
+            const f = (k + shift) % LAST;
+            const envelope = smooth(0, EDGE_IN, f) * smooth(0, EDGE_OUT, LAST - f);
+            if (envelope <= 0.01) continue;
+
+            point(f, here);
+            point(Math.min(LAST, f + 0.4), ahead);
+            // Sideways ripple: a wave that runs along the curve, perpendicular to it
+            const dx = ahead[0] - here[0], dy = ahead[1] - here[1];
+            const length = Math.hypot(dx, dy) || 1;
+            const ripple = animate ? Math.sin(f * 0.55 - t * 2.2) * 3.5 * envelope : 0;
+            const x = here[0] - (dy / length) * ripple;
+            const y = here[1] + (dx / length) * ripple;
+
+            // Slow pulse that travels from the head to the tip
+            const swell = animate ? Math.pow(Math.max(0, Math.sin(f * 0.18 - t * 1.6)), 3) : 0;
+            const twinkle = animate ? 0.88 + 0.12 * Math.sin(t * 3 + k * 1.7) : 1;
+            const radius = here[2] * (1 + 0.4 * swell) * scale;
+            const alpha = envelope * twinkle;
+
+            const reach = radius * 3.4;
+            ctx.globalAlpha = alpha * (0.45 + 0.4 * swell);
+            ctx.drawImage(glow, x * scale - reach, y * scale - reach, reach * 2, reach * 2);
+            ctx.globalAlpha = alpha;
+            ctx.fillStyle = swell > 0.3 ? '#FFC2DE' : '#FF9FCB';
+            ctx.beginPath();
+            ctx.arc(x * scale, y * scale, radius, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+    };
+
+    const tick = (now) => {
+        frame = requestAnimationFrame(tick);
+        if (!visible) return;
+        draw((now - start) / 1000);
+    };
+
+    const resizeObserver = new ResizeObserver(resize);
+    resizeObserver.observe(canvas);
+    const visibility = new IntersectionObserver(([entry]) => { visible = entry.isIntersecting; });
+    visibility.observe(canvas);
+    resize();
+    if (animate) {
+        start = performance.now();
+        frame = requestAnimationFrame(tick);
+    }
+
+    return {
+        destroy() {
+            cancelAnimationFrame(frame);
+            resizeObserver.disconnect();
+            visibility.disconnect();
+        },
+    };
+}
