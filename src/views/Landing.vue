@@ -112,18 +112,18 @@
                     if (!visible) return;
                     const t = (now - start) / 1000;
                     const ramp = Math.min(1, t / 2);                    //amplitudes ease in so nothing jumps when the loop begins
-                    pointer.x += (pointer.tx - pointer.x) * 0.06;       //the lean follows the pointer with a delay
-                    pointer.y += (pointer.ty - pointer.y) * 0.06;
+                    pointer.x += (pointer.tx - pointer.x) * 0.04;       //the lean follows the pointer with a delay
+                    pointer.y += (pointer.ty - pointer.y) * 0.04;
                     pointer.near += (pointer.tnear - pointer.near) * 0.07;
-                    const breath = (1 - Math.cos(t * 1.75)) / 2;        //0..1, about 3.6s per breath
-                    const floatX = Math.sin(t * 0.5) * 9 * ramp;
-                    const floatY = (Math.cos(t * 0.5) - 1) * 6 * ramp;  //oval path, starting at rest
+                    const breath = (1 - Math.cos(t * 1.05)) / 2;        //0..1, about 6s per breath
+                    const floatX = Math.sin(t * 0.28) * 6 * ramp;
+                    const floatY = (Math.cos(t * 0.28) - 1) * 4 * ramp; //oval path, about 22s a lap, starting at rest
                     //Up close he leans in, grows a little, breathes deeper and shines brighter
                     const excite = pointer.near;
                     const deep = breath * (1 + 0.8 * excite);
                     particle.style.translate = `${floatX + pointer.x * 14}px ${floatY + scrollLift + pointer.y * 8}px`;
-                    particle.style.rotate = `${(pointer.x * 4 + Math.sin(t * 0.9) * 1.5 * ramp).toFixed(3)}deg`;
-                    particle.style.scale = 1 + (0.035 * deep + 0.03 * excite) * ramp;
+                    particle.style.rotate = `${(pointer.x * 4 + Math.sin(t * 0.45) * 1 * ramp).toFixed(3)}deg`;
+                    particle.style.scale = 1 + (0.022 * deep + 0.03 * excite) * ramp;
                     particle.style.filter = `drop-shadow(0 0 ${(6 + 16 * deep * ramp + 14 * excite).toFixed(1)}px rgba(255, 150, 130, ${Math.min(0.9, 0.12 + 0.38 * deep * ramp + 0.3 * excite).toFixed(3)}))`;
                 };
                 frame = requestAnimationFrame(tick);
@@ -144,6 +144,12 @@
                 heroTitle.style.translate = `0 ${-p * 60}px`;
                 scrollLift = -p * 110;
             }, { target: document.getElementById('hero'), offset: ['start start', 'end 40%'] }));
+
+            //The violet turns into the navy of the next block while the seam between them rises through the screen
+            const landing = document.querySelector('.landing');
+            stopCorners.push(scroll(({ y }) => {
+                landing.style.setProperty('--mix', Math.min(1, Math.max(0, y.progress)).toFixed(3));
+            }, { target: document.getElementById('hero'), offset: ['end end', 'end 45%'] }));
 
             //Leaving the oracle block: the copy and the illustration sink into the dark before the sky turns violet
             const oracleCopy = document.querySelector('#oracle .copy');
@@ -343,8 +349,21 @@
     }
 
     /* HERO */
-	#hero {
-        background-color: #6A428D;
+    /* As the page scrolls, the violet turns into the navy of the oracle block (--mix goes 0..1, set from the script).
+       The hero and the top of the oracle block share --tint, so the seam between them never shows a different color. */
+    .landing {
+        --mix: 0;
+        --tint: #6A428D;
+    }
+
+    @supports (color: color-mix(in srgb, red 50%, blue)) {
+        .landing {
+            --tint: color-mix(in srgb, #143246 calc(var(--mix) * 100%), #6A428D);
+        }
+    }
+
+    #hero {
+        background-color: var(--tint);
         height: 115vh;
         min-height: 667px;
         padding: 5vh 0;
@@ -505,6 +524,25 @@
 <!-- Oracle -->
 <style scoped>
     /* ORACLE */
+    /* The tint at several opacities, for the soft top of the block */
+    .landing {
+        --tint-82: rgba(106, 66, 141, 0.82);
+        --tint-55: rgba(106, 66, 141, 0.55);
+        --tint-28: rgba(106, 66, 141, 0.28);
+        --tint-10: rgba(106, 66, 141, 0.1);
+        --tint-0: rgba(106, 66, 141, 0);
+    }
+
+    @supports (color: color-mix(in srgb, red 50%, blue)) {
+        .landing {
+            --tint-82: color-mix(in srgb, var(--tint) 82%, transparent);
+            --tint-55: color-mix(in srgb, var(--tint) 55%, transparent);
+            --tint-28: color-mix(in srgb, var(--tint) 28%, transparent);
+            --tint-10: color-mix(in srgb, var(--tint) 10%, transparent);
+            --tint-0: color-mix(in srgb, var(--tint) 0%, transparent);
+        }
+    }
+
     #oracle {
         /* Height of the zone where the hero's violet sinks into the navy. It sits above the content, which is all on the dark. */
         --sky: 36vh;
@@ -513,12 +551,12 @@
         background-color: #143246;
         /* The top of the block is the violet of the hero, eased down into the navy */
         background-image: linear-gradient(180deg,
-            #6A428D 0%,
-            rgba(106, 66, 141, 0.82) 14%,
-            rgba(106, 66, 141, 0.55) 32%,
-            rgba(106, 66, 141, 0.28) 52%,
-            rgba(106, 66, 141, 0.1) 74%,
-            rgba(106, 66, 141, 0) 100%);
+            var(--tint) 0%,
+            var(--tint-82) 14%,
+            var(--tint-55) 32%,
+            var(--tint-28) 52%,
+            var(--tint-10) 74%,
+            var(--tint-0) 100%);
         background-size: 100% var(--sky);
         background-repeat: no-repeat;
         isolation: isolate;
