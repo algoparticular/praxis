@@ -223,8 +223,8 @@
                 duration, direction: 'alternate', iterations: Infinity, easing: 'ease-in-out'
             }));
 
-            //The quote arrives line by line, and the seed after the last one
-            const quote = [...document.querySelectorAll('#uno h2 .line'), document.querySelector('#uno img')];
+            //The seed arrives first, above the quote, and the quote follows line by line
+            const quote = [document.querySelector('#uno img'), ...document.querySelectorAll('#uno h2 .line')];
             quote.forEach((el) => { el.style.opacity = 0; });
             stopReveals.push(inView('#uno h2', () => {
                 quote.forEach((el, i) => reveal({ el, y: 32, delay: i * 450, duration: 1300 }));
@@ -343,8 +343,8 @@
         <div id="colorMe">
             <section id="uno">
                 <div class="sky-tail" ref="skyTail"><canvas ref="tailCanvas"></canvas></div>
-                <h2><span class="line" v-for="(line, i) in $t('landing.uno').split('\n')" :key="i">{{ line }}</span></h2>
                 <img src="../assets/SeedWhite.svg" alt="" loading="lazy"/>
+                <h2><span class="line" v-for="(line, i) in $t('landing.uno').split('\n')" :key="i">{{ line }}</span></h2>
             </section>
         </div>
 
@@ -797,6 +797,8 @@
     #uno img {
         width: 40px;
         height: auto;
+        /* Room between the seed and the quote, for the flash when it meets the mark */
+        margin-bottom: 48px;
         filter: drop-shadow(0px 2px 3px rgba(234, 234, 234, 0.36));
     }
 
@@ -821,6 +823,10 @@
     @media screen and (min-width: 769px) {
         #uno h2 {
             font-size: 48px;            
+        }
+
+        #uno img {
+            margin-bottom: 72px;
         }
     }
 </style>
