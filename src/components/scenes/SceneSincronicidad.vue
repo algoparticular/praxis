@@ -1,7 +1,7 @@
 <script setup>
     // Sincronicidad: two atoms that evolve and find each other, and where they meet a fire is lit. Four bubbles of larvae
     // float in a sequence, from the smallest egg to the embracing pair; every few seconds a glow runs along them, bubble
-    // after bubble, and when it reaches the pair the camp fire leaps. Touch a bubble and the sequence starts from it.
+    // after bubble, and when it reaches the pair sparks come out of the camp fire. Touch a bubble and the sequence starts from it.
     // The fire sits on a small floating island, drawn as it is. Around it, behind the drawings so they never cover them,
     // a halo of particles taken from the flame's own shape (sincroClouds.json) and living flame particles rising from it
     // (useFlame); the night sky is a three.js field of particles too (useStardust), all on one canvas.
@@ -72,7 +72,6 @@
     const bump = (d) => (d <= 0 || d >= SPAN ? 0 : Math.sin(Math.PI * d / SPAN) ** 2);
     let origin = 0;                   // the clock of the sequence starts here; touching a bubble moves it
     let lastCycle = -1;
-    let flare = 0;                    // how much the fire is leaping, 0..1
 
     const centreOf = (el) => {
         const b = el.getBoundingClientRect(), page = skyCanvas.value.getBoundingClientRect();
@@ -82,11 +81,10 @@
         const [x, y, w] = centreOf(step.ref.value);
         sparks.burst(x, y, { n: step.ref === hug ? 18 : 9, colors: step.colors, speed: 60 + w * 0.25, size: 4.4, spread: w * 0.3, life: 1.8 });
     };
+    // When the glow reaches the pair, a few sparks come out of the fire (it is drawn as it is: it does not leap)
     const ignite = () => {
-        flare = 1;
-        fire.flare(1);
         const a = anchor();
-        if (a) sparks.burst(a.x, a.y - a.height * 0.3, { n: 30, colors: [0xfbf09e, 0xf49f92, 0xe0749c, 0xffffff], speed: 120, size: 5, spread: a.radius });
+        if (a) sparks.burst(a.x, a.y - a.height * 0.3, { n: 24, colors: [0xfbf09e, 0xf49f92, 0xe0749c, 0xffffff], speed: 120, size: 5, spread: a.radius });
     };
 
     // Touching a bubble starts the sequence from it
@@ -101,11 +99,6 @@
         if (event.key !== 'Enter' && event.key !== ' ') return;
         event.preventDefault();
         action();
-    };
-    // Touching the fire makes it leap
-    const touchFire = () => {
-        ignite();
-        play('star');
     };
 
     let lastT = 0;
@@ -122,13 +115,9 @@
     };
 
     onMounted(() => {
-        let lastFrame = 0;
         parallax = createParallax(root.value, ({ x, y, scroll, t, ramp }) => {
             const s = scroll;
-            const dt = Math.min(0.1, Math.max(0, t - lastFrame));
-            lastFrame = t;
             lastT = t;
-            flare = Math.max(0, flare - dt * 0.8);
 
             // Where the sequence is now; each time it crosses the start of a step, that step throws its sparks
             const cycle = (((t - origin) % PERIOD) + PERIOD) % PERIOD;
@@ -191,8 +180,6 @@
             <!-- The island with its fire, as drawn -->
             <div class="island" ref="island">
                 <img class="copy" src="/assets/cocreate/isla.webp" alt="" draggable="false">
-                <div class="hit fire" role="button" tabindex="0" :aria-label="$i18n.locale === 'en' ? 'Fire' : 'Fuego'"
-                    @pointerdown.prevent="touchFire" @keydown="onKey($event, touchFire)"></div>
             </div>
 
             <!-- The sequence, from the smallest egg to the pair that lights the fire -->
@@ -282,27 +269,5 @@
         max-width: none;
         user-select: none;
         pointer-events: none;
-    }
-
-    .hit {
-        position: absolute;
-        border-radius: 50%;
-        cursor: pointer;
-        pointer-events: auto;
-        -webkit-tap-highlight-color: transparent;
-        touch-action: manipulation;
-        outline: none;
-    }
-
-    .hit.fire {
-        left: 61%;
-        top: 8%;
-        width: 25%;
-        height: 50%;
-    }
-
-    .hit:focus-visible {
-        outline: 2px solid rgba(255, 244, 150, 0.9);
-        outline-offset: 2px;
     }
 </style>
