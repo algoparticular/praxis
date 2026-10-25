@@ -35,7 +35,7 @@
     const toggleMenu = () => {
         showMenu.value = !showMenu.value;
 
-        if(showMenu) {
+        if(showMenu.value) {
             document.addEventListener('click', closeIfClickedOutsideOnb);
         }
     };
@@ -117,6 +117,7 @@
 	<div class="content onboarding">
 		<main id="onboarding" class="slider" ref="slider" > <!-- @scroll="sliderChange" -->
 			<Slide v-for="(slide, index) in slides"
+                   :key="index"
                    :index="index"
                    :source="slide.src"
                    :color="slide.color"

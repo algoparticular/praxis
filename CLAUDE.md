@@ -12,9 +12,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 npm run dev      # Start local dev server (Vite)
 npm run build    # Production build → dist/
 npm run preview  # Preview production build locally
+npm run check    # Everything a pull request must pass (below), in order
 ```
 
-No test or lint commands are configured.
+**Checks** (run on every pull request by `.github/workflows/checks.yml`, and locally with `npm run check`):
+- `npm run lint`: ESLint (`eslint.config.js`). Errors block (undefined names, broken Vue templates); unused variables in old code are only warnings.
+- `npm run check:cards`: `scripts/check-cards.mjs`. Every card in `src/data/cards.json` is complete (texts in both languages, colours, pictures and thumbnail on disk), `cardScenes.js` only lists real cards, and after a build every card has its share page and picture in `dist/`.
+- `npm run check:budget`: `scripts/check-budget.mjs`. Size budgets for the build (gzipped JS per chunk, pictures per file and per group). When something legitimately grows, raise its line in that file in the same pull request.
+- `npm run check:smoke`: `scripts/smoke.mjs`. Serves the build and opens every page and card (cards with a scene also on a phone-sized screen) in Chromium; fails on JavaScript errors, console errors, 404s on our own files or a page that did not draw. Needs `npx playwright install chromium` once.
+
+These cannot see what a real GPU or a real phone does (flicker, disappearing layers), so scenes are still tried by hand on a phone before merging.
 
 ## Architecture
 

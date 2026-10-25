@@ -1,0 +1,44 @@
+# What a pull request has to pass before it is merged. The same steps run on a computer with `npm run check`.
+name: Checks
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      # The same Node as Netlify (netlify.toml)
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+
+      - name: Cards (data, pictures, share pages)
+        run: npm run check:cards
+
+      - name: Size budgets
+        run: npm run check:budget
+
+      - name: Browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Smoke test (every page and card, in a real browser)
+        run: npm run check:smoke
