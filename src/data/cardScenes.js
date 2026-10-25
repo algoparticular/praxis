@@ -5,7 +5,10 @@ import { defineAsyncComponent } from 'vue';
 import SceneFlat from '../components/scenes/SceneFlat.vue';
 
 const scenes = {
+    2: defineAsyncComponent(() => import('../components/scenes/SceneDana.vue')),
+    20: defineAsyncComponent(() => import('../components/scenes/SceneCreatividad.vue')),
     27: defineAsyncComponent(() => import('../components/scenes/ScenePaciencia.vue')),
+    29: defineAsyncComponent(() => import('../components/scenes/SceneSincronicidad.vue')),
     31: defineAsyncComponent(() => import('../components/scenes/SceneVipassana.vue')),
 };
 

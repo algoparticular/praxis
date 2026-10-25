@@ -39,6 +39,8 @@ No test or lint commands are configured.
 
 **Card pages (immersive scenes):** `/card/:id` is a full-screen *stage* (`CardTemplate.vue`) with the card's name over it, and the reading (description, affirmation, invitation) below. What fills the stage is a *scene*, chosen per card in `src/data/cardScenes.js` (`sceneFor(id)`):
 - `ScenePaciencia` (id 27) and `SceneVipassana` (id 31) are built from separate layers that move with depth (pointer / tilt / scroll parallax via `useParallax.js`, plus each layer's own idle motion). Vipassana reuses the landing hero: `useCellField`, `useHeroSpiral` and `useCharacterLife`.
+- `SceneDana` (id 2), `SceneSincronicidad` (29) and `SceneCreatividad` (20) are built from the layers of the Collaborate page (`public/assets/share`, `cocreate`, `inmind`), placed as fractions of a square frame so they keep the illustration's composition.
+- **Particles and stars are never pictures:** wherever an asset is a field of dots, stars or dust, the scene draws it as real particles instead, with `useStardust.js` (three.js `Points`, one draw call per field; `look: 'hard'` for the flat dots of the night skies, `'soft'` for glowing dust or embers; `startStardust` is the safe way to start one from a component).
 - Every other card uses `SceneFlat` (its square illustration, feathered into the card colour, drifting slowly).
 - To give another card its own scene: add a component in `src/components/scenes/` (props `card`, `active`; start entrances when `active` turns true) and list its id in `cardScenes.js`. Layers live in `public/assets/`.
 - The card picked in the oracle grows to fill the stage (`cardTransition.js`) and then fades into the scene.
