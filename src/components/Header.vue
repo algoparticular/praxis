@@ -79,7 +79,6 @@
                     @langChanged="handleLangChanged"
                     :hasHome="true"
                     :hasIntro="false"
-                    :hasPraxis="true"
                     :hasFullDeck="true"
                     :hasAbout="true"
                     :hasCollaborate="true" />

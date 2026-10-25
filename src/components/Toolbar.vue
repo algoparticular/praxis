@@ -101,7 +101,6 @@
                   @langChanged="handleLangChanged"
                   :hasHome="true"
                   :hasIntro="false"
-                  :hasPraxis="false"
                   :hasAbout="true"
                   :hasCollaborate="true"
                   />  
