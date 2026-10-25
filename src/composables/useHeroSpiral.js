@@ -16,6 +16,20 @@ const REACH = 190;      // radius, in picture pixels, within which the pointer d
 const PUSH = 46;        // how far the dots give way at the pointer's very centre
 const DUST = 80;        // tiny particles drifting along the spiral
 
+// Depth of every dot as drawn in the illustration: the big ones are in front, the small ones behind.
+// Smoothed over neighbours so single odd dots do not flicker, then stretched to 0..1.
+const baseDepth = (() => {
+    const smoothed = dots.map((_, i) => {
+        let sum = 0, n = 0;
+        for (let k = -3; k <= 3; k++) { const d = dots[i + k]; if (d) { sum += d[2]; n++; } }
+        return sum / n;
+    });
+    const low = Math.min(...smoothed), high = Math.max(...smoothed);
+    return smoothed.map((r) => (r - low) / (high - low));
+})();
+const DEPTH_WAVE = 0.175;   // radians per dot: one turn of the wave per loop of the spiral
+const items = Array.from({ length: dots.length - 1 }, () => ({ x: 0, y: 0, radius: 0, alpha: 0, swell: 0, depth: 0 }));
+
 // Fixed seeds so the dust is the same on every visit and in every render
 const dust = Array.from({ length: DUST }, (_, i) => {
     const r = (n) => { const x = Math.sin(i * 127.1 + n * 311.7) * 43758.5453; return x - Math.floor(x); };
@@ -93,6 +107,7 @@ export function createHeroSpiral(canvas, { animate = true } = {}) {
         pointer.y += (pointer.ty - pointer.y) * 0.2;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         const shift = animate ? (t * FLOW) % LAST : 0;
+        let count = 0;
         for (let k = 0; k < LAST; k++) {
             const f = (k + shift) % LAST;
             const envelope = smooth(0, EDGE_IN, f) * smooth(0, EDGE_OUT, LAST - f);
@@ -101,19 +116,33 @@ export function createHeroSpiral(canvas, { animate = true } = {}) {
             point(f, here);
             const spot = [here[0], here[1]];
             const near = disturb(spot, PUSH);
-            const [x, y] = spot;
+
+            // Mostly the depth drawn in the illustration, plus a slow wave that turns front and back around the loops
+            const fixed = baseDepth[Math.round(f)];
+            const turning = 0.5 + 0.5 * Math.sin(f * DEPTH_WAVE - (animate ? t * 0.8 : 0));
+            const depth = 0.55 * fixed + 0.45 * turning;
 
             // Slow pulse that travels from the head to the tip
             const swell = Math.min(1, (animate ? Math.pow(Math.max(0, Math.sin(f * 0.18 - t * 1.6)), 3) : 0) + near * 1.2);
-            const twinkle = animate ? 0.88 + 0.12 * Math.sin(t * 3 + k * 1.7) : 1;
-            const radius = here[2] * (1 + 0.4 * swell) * scale;
-            const alpha = envelope * twinkle;
+            const twinkle = animate ? 0.9 + 0.1 * Math.sin(t * 3 + k * 1.7) : 1;
 
-            const reach = radius * 3.4;
-            ctx.globalAlpha = alpha * (0.45 + 0.4 * swell);
+            const item = items[count++];
+            item.x = spot[0];
+            item.y = spot[1];
+            item.depth = depth;
+            item.swell = swell;
+            item.radius = here[2] * (0.72 + 0.56 * depth) * (1 + 0.4 * swell) * scale;
+            item.alpha = envelope * twinkle * (0.5 + 0.5 * depth);
+        }
+
+        // Far dots first, so the near ones overlap them
+        const visible = items.slice(0, count).sort((a, b) => a.depth - b.depth);
+        for (const { x, y, radius, alpha, swell, depth } of visible) {
+            const reach = radius * (2.4 + 1.6 * depth);
+            ctx.globalAlpha = alpha * (0.35 + 0.5 * depth + 0.3 * swell);
             ctx.drawImage(glow, x * scale - reach, y * scale - reach, reach * 2, reach * 2);
             ctx.globalAlpha = alpha;
-            ctx.fillStyle = swell > 0.3 ? '#FFC2DE' : '#FF9FCB';
+            ctx.fillStyle = swell > 0.3 ? '#FFC2DE' : depth < 0.35 ? '#E58FC4' : '#FF9FCB';
             ctx.beginPath();
             ctx.arc(x * scale, y * scale, radius, 0, Math.PI * 2);
             ctx.fill();
