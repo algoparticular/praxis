@@ -7,7 +7,8 @@
     //  - The lavender thread is a single long brush stroke (kshantiLine.json: a line traced from the artwork, with the
     //    thickness the brush had at each point) that winds between the pink tubes without crossing a bubble, going over
     //    one tube and under the next: it is drawn twice, once under the pink and once over it, and the copy over it only
-    //    shows where the line crosses in front (a mask). Two bright, tapering stretches of it travel along.
+    //    shows where the line crosses in front (a mask). Nothing of it stays still: several short strokes, each tapering
+    //    at both ends, travel along the route at their own pace, one after another.
     //  - Nine flasks have a cork (kshantiFlasks.json: each flask's pink is its own picture). Pressing a cork pops it and
     //    the flask empties as if it evaporated: the pink level sinks, the creature fades up and vapour rises. Pressing the
     //    central sign fills everything back.
@@ -66,6 +67,12 @@
     const flaskOfCreature = {};
     const flaskOfCork = {};
     FLASKS.forEach((f) => { f.creatures.forEach((n) => { flaskOfCreature[n] = f; }); flaskOfCork[f.cork] = f; });
+    // Each cork pops away from its flask, along the line from the flask's middle through the cork
+    FLASKS.forEach((f) => {
+        const [left, top, w, h] = layers[f.cork];
+        const dx = left + w / 2 - f.cx, dy = top + h / 2 - f.cy, n = Math.hypot(dx, dy) || 1;
+        f.away = { x: dx / n, y: dy / n };
+    });
     const corkHits = FLASKS.map((f) => ({ flask: f, hit: hitBox(f.cork, 5.2, 1.5) }));
     const signHit = hitBox(SIGN, 8, 1);
     const touchable = things.filter((t) => t.area > 3500 && t.n !== SIGN && !CORKS.includes(t.n)).map((t) => ({ ...t, hit: hitBox(t.n) }));
@@ -104,16 +111,21 @@
         }
         return `M${left.join('L')}L${right.reverse().join('L')}Z`;
     };
-    const TRACE_D = ribbon(0, N - 1, () => 1);
     const FRONT_D = LINE.front.map(([a, b]) => `M${Array.from({ length: b - a + 1 }, (_, k) => `${X(a + k)} ${Y(a + k)}`).join('L')}`);
-    // A bright stretch: swells in the middle and tapers at both ends; where it runs past the end it comes back at the start
-    const WORM = Math.round(N * 0.09);
-    const wormD = (head) => {
+    // The strokes: each is a stretch of the route (length as a fraction of it) that travels along it at its own pace
+    // (route fractions per second); where it runs past the end it comes back at the start
+    const STROKES = [
+        { len: 0.075, speed: 1.0 }, { len: 0.05, speed: 0.82 }, { len: 0.09, speed: 1.18 }, { len: 0.06, speed: 0.9 },
+        { len: 0.07, speed: 1.1 }, { len: 0.045, speed: 0.72 }, { len: 0.08, speed: 1.0 },
+    ].map((k, i, all) => ({ ...k, count: Math.round(N * k.len), start: (i / all.length + 0.037 * (i % 3)) % 1 }));
+    const THIN = 0.8;
+    const strokeD = (head, count) => {
         const i0 = Math.floor(head);
-        const taper = (i) => 0.16 + 1.0 * Math.pow(Math.sin(Math.PI * Math.min(1, Math.max(0, ((i - i0 + N) % N) / WORM))), 0.7);
-        const end = i0 + WORM;
+        const taper = (i) => THIN * (0.12 + 1.0 * Math.pow(Math.sin(Math.PI * Math.min(1, Math.max(0, ((i - i0 + N) % N) / count))), 0.7));
+        const end = i0 + count;
         return end < N ? ribbon(i0, end, taper) : `${ribbon(i0, N - 1, taper)}${ribbon(0, end - N, taper)}`;
     };
+    const strokesD = (t) => STROKES.map((k) => strokeD((((k.start + Math.max(0, t) * k.speed / 70) % 1) * N), k.count)).join('');
 
     const live = (t, ramp) => {
         things.forEach(({ n }) => {
@@ -147,7 +159,7 @@
                 s.opacity = (1 - gone).toFixed(3);
             }
             const flask = flaskOfCork[n];
-            if (flask) { ty -= flask.pop * 1.8; rot += flask.pop * 32; tx += flask.pop * 0.5; }
+            if (flask) { tx += flask.away.x * flask.pop * 3.4; ty += flask.away.y * flask.pop * 3.4; rot += (flask.away.x >= 0 ? 1 : -1) * flask.pop * 34; }
             s.translate = `${tx.toFixed(3)}cqw ${ty.toFixed(3)}cqw`;
             s.rotate = `${rot.toFixed(2)}deg`;
             s.scale = `${sx.toFixed(4)} ${sy.toFixed(4)}`;
@@ -182,8 +194,13 @@
             }
         });
     };
+    // A cork: the first press empties the flask, the next one fills it again
     const empty = (f, event) => {
-        if (f.target > 0) return;
+        if (f.target > 0) {
+            f.target = 0;
+            play('tap');
+            return;
+        }
         f.target = 1;
         const canvas = frontCanvas.value.getBoundingClientRect();
         const box = event.currentTarget.getBoundingClientRect();
@@ -233,10 +250,9 @@
             last = t;
             live(t, ramp);
             stepFlasks(dt);
-            // The bright stretches: two, half a turn apart, one turn in about a minute
+            // The strokes of the thread, travelling (every other frame is enough)
             if (tick++ % 2 === 0 && wormBack.value) {
-                const head = (Math.max(0, t) * N / 62) % N;
-                const d = `${wormD(head)}${wormD((head + N / 2) % N)}`;
+                const d = strokesD(t);
                 wormBack.value.setAttribute('d', d);
                 wormFront.value.setAttribute('d', d);
             }
@@ -267,7 +283,6 @@
             <div class="network" ref="network">
                 <!-- The lavender thread, under the pink: the whole line, and a bright stretch travelling along it -->
                 <svg class="thread" viewBox="0 0 2160 2160" aria-hidden="true">
-                    <path class="trace" :d="TRACE_D" />
                     <path class="worm" ref="wormBack" />
                 </svg>
 
@@ -285,7 +300,6 @@
                         </mask>
                     </defs>
                     <g mask="url(#kshanti-front)">
-                        <path class="trace" :d="TRACE_D" />
                         <path class="worm" ref="wormFront" />
                     </g>
                 </svg>
@@ -377,13 +391,8 @@
         pointer-events: none;
     }
 
-    .trace {
-        fill: #aaa8d2;
-        opacity: 0.55;
-    }
-
     .worm {
-        fill: #bfbcee;
+        fill: #aeabd9;
     }
 
     .hit {
