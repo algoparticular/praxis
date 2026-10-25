@@ -159,14 +159,14 @@
        grass line of the island, so they stand on it. */
     .pair {
         left: 31.25%;
-        top: 14.4%;
+        top: 16.4%;
         width: 37.5%;
         transform-origin: 50% 100%;
     }
 
     .flame {
         left: 47.4%;
-        top: 38.1%;
+        top: 40.1%;
         width: 5%;
     }
 
@@ -181,7 +181,7 @@
     .hit {
         position: absolute;
         left: 45.2%;
-        top: 38.4%;
+        top: 40.4%;
         width: 9.6%;
         aspect-ratio: 1 / 1.7;
         border-radius: 50%;
