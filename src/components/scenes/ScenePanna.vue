@@ -72,11 +72,11 @@
     // ---- The clouds: density maps of the original's stipple, turned back into particles at whatever size we draw them
     const grids = Object.fromEntries(Object.entries(clouds).map(([name, cloud]) => [name, { ...cloud, bytes: Uint8Array.from(atob(cloud.data), (c) => c.charCodeAt(0)) }]));
     const hexOf = ([r, g, b]) => (r << 16) | (g << 8) | b;
-    const DENSITY = 3.1;        // how many dots' worth of area per area where the stipple is solid
+    const DENSITY = 4.8;        // how many dots' worth of area per area where the stipple is solid
     const DOT = 5.5;            // diameter of a dot of the original, in its 2160px units
 
     // map(u, v) turns a spot of the 2160 square into canvas pixels; k is canvas pixels per unit
-    const sample = (name, map, k) => {
+    const sample = (name, map, k, boost = 1) => {
         const grid = grids[name];
         const out = [];
         const base = Math.max(1.5, DOT * k);
@@ -85,7 +85,7 @@
                 const v = grid.bytes[row * grid.cols + col] / 255;
                 if (v < 0.03) continue;
                 const dot = base * (1 + 1.3 * v ** 4);                              // the solid core gets bigger dots
-                const wanted = (grid.cell * k) ** 2 * DENSITY * v ** 1.4 / (Math.PI / 4 * dot * dot);
+                const wanted = (grid.cell * k) ** 2 * DENSITY * boost * v ** 1.3 / (Math.PI / 4 * dot * dot);
                 let n = Math.floor(wanted);
                 if (Math.random() < wanted - n) n++;
                 for (let i = 0; i < n; i++) {
@@ -120,7 +120,7 @@
     };
 
     // ---- The spiral from the sun to Sid's forehead, as particles that flow down it
-    const TURN = 92;           // px of the path per turn of the double helix
+    const TURN = 180;          // px of the path per turn of the double helix
     const STRAND_DOTS = 64;
     const DUST = 56;
     const FLOW = 0.1;          // lengths of the path per second
@@ -216,7 +216,7 @@
                 // 1: the sun
                 { colors: tone('sun'), parallax: 0, drift: 1.2, twinkle: 0.1, reach: 0, points: (w, h) => {
                     const s = sunSpot(w, h);
-                    return sample('sun', (u, v) => [s.x + (u - 1075) * s.k, s.y + (v - 425) * s.k], s.k);
+                    return sample('sun', (u, v) => [s.x + (u - 1075) * s.k, s.y + (v - 425) * s.k], s.k, 1.6);
                 } },
                 // 2: the cyan aura around Sid
                 { colors: tone('aura'), parallax: 0, drift: 1.4, twinkle: 0.12, reach: 0, points: (w, h) => {
