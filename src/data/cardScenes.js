@@ -10,6 +10,7 @@ const lazy = (loader) => defineAsyncComponent({ loader, suspensible: false });
 const scenes = {
     2: lazy(() => import('../components/scenes/SceneDana.vue')),
     3: lazy(() => import('../components/scenes/ScenePanna.vue')),
+    5: lazy(() => import('../components/scenes/SceneKshanti.vue')),
     20: lazy(() => import('../components/scenes/SceneCreatividad.vue')),
     27: lazy(() => import('../components/scenes/ScenePaciencia.vue')),
     29: lazy(() => import('../components/scenes/SceneSincronicidad.vue')),
