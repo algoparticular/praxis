@@ -1,5 +1,5 @@
 <script setup>
-    import { onMounted, ref } from 'vue';
+    import { onMounted, onBeforeUnmount, ref } from 'vue';
     import { useRouter } from 'vue-router';
     import Menu from './Menu.vue';    
 
@@ -10,6 +10,24 @@
     });
 
     const showMenu = ref(false);
+
+    //The header stays on top while scrolling. Its icons are light, so it steps aside when the cream footer reaches the top.
+    const tucked = ref(false);
+    let footer = null;
+    const checkFooter = () => {
+        tucked.value = !!footer && footer.getBoundingClientRect().top < 72 && !showMenu.value;
+    };
+    onMounted(() => {
+        footer = document.querySelector('footer');
+        if (!footer) return;
+        window.addEventListener('scroll', checkFooter, { passive: true });
+        window.addEventListener('resize', checkFooter);
+        checkFooter();
+    });
+    onBeforeUnmount(() => {
+        window.removeEventListener('scroll', checkFooter);
+        window.removeEventListener('resize', checkFooter);
+    });
 
     const router = useRouter();
     
@@ -60,7 +78,7 @@
 </script>
 
 <template>
-    <header>
+    <header :class="{ tucked }">
         <div class="navContainer">
             <button v-if="props.hasBack" class="back" @click="handleBack()"></button>
             <button v-if="props.hasDeck" class="deck" @click="handleGoToDeck()"></button>
@@ -96,13 +114,22 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        position: absolute;
+        position: fixed;
+        top: 0;
+        left: 0;
         z-index: 11;
         width: 96vw;
+        transition: opacity 300ms ease-out;
 
         /* background: rgba(247, 248, 241, 0.18); */
         /* backdrop-filter: blur(6px); */
     }    
+
+    /* Out of the way over the light footer */
+    header.tucked {
+        opacity: 0;
+        pointer-events: none;
+    }
 
     #logo {
         display: flex;
