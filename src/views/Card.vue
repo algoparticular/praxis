@@ -1,6 +1,5 @@
 <script setup>    
     import CardTemplate from '../components/CardTemplate.vue';
-    import CardTemplateSkeleton from '../components/CardTemplateSkeleton.vue';
     import Header from '../components/Header.vue';
 </script>
 
@@ -10,17 +9,10 @@
             :hasBack="false"
             :hasDeck="true"
             :hasMenu="true"/>
-        <Transition name="fade" mode="in-out">
-            <KeepAlive>
-                <Suspense>
-                    <template #default>
-                        <CardTemplate :id="$route.params.id"/>
-                    </template>
-                    <template #fallback> 
-                        <CardTemplateSkeleton :id="$route.params.id"/>
-                    </template>
-                </Suspense>
-            </KeepAlive>
+        <!-- The cards are local data, so the page needs no loading state: a scene that is still being fetched
+             just fades in over the card's colour once it arrives -->
+        <Transition name="fade" mode="out-in">
+            <CardTemplate :key="$route.params.id" :id="$route.params.id"/>
         </Transition>
     </div>
 </template>
