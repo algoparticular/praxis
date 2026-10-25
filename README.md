@@ -5,20 +5,20 @@
 Algo Particular is an artistic/spiritual proposal created in 2020.
 Our mission is to invite people to both action and reflection. Through art and philosophy, we seek to establish contact with our intuition, that inner compass that invites us to a path with heart.
 
-As a first interactive proposal we generated Praxis, a digital version of Oracle Cards.
+As a first interactive proposal we generated Anima, a digital version of Oracle Cards.
 Just as when we travel through a place, we take the guidance of a map or a compass, on the path of self-discovery it is beneficial to take guidance from the so-called 'Higher Frequency', which is none other than the guidance of our deepest Self.
 
-Praxis helps to connect with what vibrates within. The Oracle Card Deck, written by Belén Brito, is a tool for those of us who are aware of the messages that the Universe, in its divine randomness, provides to guide our steps. With her luminous calm, Belén urges us to find the answers to our inner self, using each card as a mirror to evaluate or validate our path. 
+Anima helps to connect with what vibrates within. The Oracle Card Deck, written by Belén Brito, is a tool for those of us who are aware of the messages that the Universe, in its divine randomness, provides to guide our steps. With her luminous calm, Belén urges us to find the answers to our inner self, using each card as a mirror to evaluate or validate our path. 
 
 Thus the Particles bring us those messages that our Being is needing in this moment, in this here and now.
 
 > Algo Particular es una propuesta artístico/espiritual creada en 2020.
 > Nuestra misión es invitar a las personas tanto a la acción como a la reflexión. Por medio del arte y la filosofía, buscamos establecer contacto con nuestra intuición, esa brújula interna que nos invita a un camino con corazón.
 >
-> Como primer propuesta interactiva desarrollamos Praxis, una versión digital de Cartas Oráculo.
+> Como primer propuesta interactiva desarrollamos Anima, una versión digital de Cartas Oráculo.
 Al igual que cuando recorremos un lugar, tomamos la guía de un mapa o una brújula, en el camino del autodescubrimiento es beneficiosa la orientación del llamado “Plano Superior”, que no es otra que la guía de nuestro Ser más profundo.
 >
->Praxis busca ayudar a conectar con lo que vibra en nuestro interior. Las Cartas del Oráculo, escritas por Belén Brito son una herramienta para aquellos que estamos atentos a los mensajes que el Universo, en su divino azar, brinda para guiar nuestros pasos. Con su luminosa calma, Belén nos insta a encontrar las respuestas de nuestro ser interno, utilizando cada carta como un espejo para evaluar o validar nuestro camino. 
+>Anima busca ayudar a conectar con lo que vibra en nuestro interior. Las Cartas del Oráculo, escritas por Belén Brito son una herramienta para aquellos que estamos atentos a los mensajes que el Universo, en su divino azar, brinda para guiar nuestros pasos. Con su luminosa calma, Belén nos insta a encontrar las respuestas de nuestro ser interno, utilizando cada carta como un espejo para evaluar o validar nuestro camino. 
 >
 >Es así que las Partículas nos traen esos mensajes que nuestro Ser está necesitando en este momento, en este aquí y ahora.
 

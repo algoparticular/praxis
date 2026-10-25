@@ -151,6 +151,11 @@
                 landing.style.setProperty('--mix', Math.min(1, Math.max(0, y.progress)).toFixed(3));
             }, { target: document.getElementById('hero'), offset: ['end end', 'end 45%'] }));
 
+            //Dawn: the navy becomes orange while the quote rises, after the seam with the oracle block has left the screen
+            stopCorners.push(scroll(({ y }) => {
+                landing.style.setProperty('--dawn', Math.min(1, Math.max(0, y.progress)).toFixed(3));
+            }, { target: document.querySelector('#uno h2'), offset: ['start 62%', 'start 18%'] }));
+
             //Leaving the oracle block: the copy and the illustration sink into the dark before the sky turns violet
             const oracleCopy = document.querySelector('#oracle .copy');
             const oracleGfx = document.querySelector('#oracle .gfx');
@@ -192,7 +197,7 @@
         //Independent translate/scale/rotate are used so they do not fight the parallax, which owns transform.
         if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
             const pick = (selector) => document.querySelector('#oracle ' + selector);
-            const copy = ['.copy .heading img', '.copy .heading h3', '.copy > p', '.copy > button'].map(pick);
+            const copy = ['.copy .heading img', '.copy .heading h3', '.copy > p'].map(pick);
             const man = pick('.gfx .oracle.particle');
             const tree = pick('.gfx .oracle.tree');
             [...copy, man, tree].forEach((el) => { el.style.opacity = 0; });
@@ -302,12 +307,11 @@
             <div class="corner topRight"></div>
             <div class="corner bottomRight"></div>
             <div class="copy">
-                <div class="heading">
-                    <img loading="lazy" src="../assets/icon/Lab.svg"/>
-                    <h3>{{ $t("landing.oracleTitle") }}</h3>
-                </div>
+                <a class="heading" href="/praxis" :aria-label="$t('landing.oracleAction')" @click.prevent="handleNavigate('/praxis')">
+                    <img loading="lazy" src="../assets/icon/Lab.svg" alt=""/>
+                    <h3><span class="title">{{ $t("landing.oracleTitle") }}</span>&nbsp;<span class="arrow">→</span></h3>
+                </a>
                 <p>{{ $t("landing.oracleDescrip") }}</p>
-                <button @click="handleNavigate('/praxis')">{{ $t("landing.oracleAction") }}</button>
             </div>
         
             <div class="gfx">
@@ -626,14 +630,70 @@
         margin-bottom: 0;
     }
 
-    .copy button {
-        color: #0381BA;
-        min-width: 310px;
+    /* The title is the way in: the icon and the heading are one link */
+    .copy a.heading {
+        text-decoration: none;
+        color: #F7F8F1;
+        cursor: pointer;
     }
 
-    .copy button:hover {
-        /* color: #F7F8F1; */
-        background-color: #E8E974;
+    .copy a.heading:hover,
+    .copy a.heading:focus-visible {
+        color: #F7F8F1;
+    }
+
+    .copy a.heading:focus,
+    .copy a.heading:focus-visible {
+        box-shadow: none;
+        outline: none;
+    }
+
+    /* A thin line draws itself under the title, and the arrow steps forward */
+    .copy .heading .title {
+        color: inherit;
+        background-image: linear-gradient(#E8E974, #E8E974);
+        background-repeat: no-repeat;
+        background-position: 0 100%;
+        background-size: 0% 2px;
+        padding-bottom: 6px;
+        transition: background-size 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+        -webkit-box-decoration-break: clone;
+        box-decoration-break: clone;
+    }
+
+    .copy .heading .arrow {
+        display: inline-block;
+        font-family: 'Inter', helvetica, sans-serif;
+        font-size: 0.8em;
+        color: #E8E974;
+        transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .copy .heading img {
+        transition: filter 0.5s ease, transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .copy a.heading:hover .title,
+    .copy a.heading:focus-visible .title {
+        background-size: 100% 2px;
+    }
+
+    .copy a.heading:hover .arrow,
+    .copy a.heading:focus-visible .arrow {
+        transform: translateX(6px);
+    }
+
+    .copy a.heading:hover img,
+    .copy a.heading:focus-visible img {
+        filter: drop-shadow(0px 2px 8px #E8E974);
+        transform: rotate(40deg) scale(1.08);
+    }
+
+    /* Touch screens have no hover: the line is always there so the title reads as something to press */
+    @media (hover: none) {
+        .copy .heading .title {
+            background-size: 100% 1px;
+        }
     }
 
     .corner {        
@@ -754,6 +814,19 @@
         box-sizing: border-box;
         /* A wide band of orange holds behind the quote, with room around it, and then clears into the cream of the footer */
         background: linear-gradient(180deg, #143246 0%, #4a3a6e 20%, #c8636f 36%, #FF6F61 48%, #FF6F61 82%, #F7F8F1 100%);
+    }
+
+    /* Dawn: once the seam with the oracle block is out of sight, the whole screen turns from navy to orange as the quote
+       comes up (--dawn goes 0..1, set from the script). Mixed in oklch so it passes through violet and rose, not mud. */
+    @supports (color: color-mix(in oklch, red 50%, blue)) {
+        .landing {
+            --dawn: 0;
+            --sunrise: color-mix(in oklch, #FF6F61 calc(var(--dawn) * 100%), #143246);
+        }
+
+        #uno {
+            background: linear-gradient(180deg, var(--sunrise) 0%, var(--sunrise) 82%, #F7F8F1 100%);
+        }
     }
 
     /* Stars carry on over the dark top of this block and fade out as it turns violet */
