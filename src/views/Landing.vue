@@ -197,7 +197,7 @@
         //Independent translate/scale/rotate are used so they do not fight the parallax, which owns transform.
         if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
             const pick = (selector) => document.querySelector('#oracle ' + selector);
-            const copy = ['.copy .heading img', '.copy .heading h3', '.copy > p'].map(pick);
+            const copy = ['.copy .heading h3', '.copy > p'].map(pick);
             const man = pick('.gfx .oracle.particle');
             const tree = pick('.gfx .oracle.tree');
             [...copy, man, tree].forEach((el) => { el.style.opacity = 0; });
@@ -308,7 +308,6 @@
             <div class="corner bottomRight"></div>
             <div class="copy">
                 <a class="heading" href="/praxis" :aria-label="$t('landing.oracleAction')" @click.prevent="handleNavigate('/praxis')">
-                    <img loading="lazy" src="../assets/icon/Lab.svg" alt=""/>
                     <h3><span class="title">{{ $t("landing.oracleTitle") }}</span>&nbsp;<span class="arrow">→</span></h3>
                 </a>
                 <p>{{ $t("landing.oracleDescrip") }}</p>
@@ -609,12 +608,6 @@
         gap: 16px;
     }
 
-    .copy .heading img {
-        width: 48px;
-        height: 48px;
-        filter: drop-shadow(0px 2px 3px #C7BE8E);        
-    }
-
     .copy .heading h3 {
         color: #F7F8F1;
         font-size: 32px;
@@ -630,7 +623,7 @@
         margin-bottom: 0;
     }
 
-    /* The title is the way in: the icon and the heading are one link */
+    /* The title is the way in */
     .copy a.heading {
         text-decoration: none;
         color: #F7F8F1;
@@ -669,10 +662,6 @@
         transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
     }
 
-    .copy .heading img {
-        transition: filter 0.5s ease, transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
-    }
-
     .copy a.heading:hover .title,
     .copy a.heading:focus-visible .title {
         background-size: 100% 2px;
@@ -681,12 +670,6 @@
     .copy a.heading:hover .arrow,
     .copy a.heading:focus-visible .arrow {
         transform: translateX(6px);
-    }
-
-    .copy a.heading:hover img,
-    .copy a.heading:focus-visible img {
-        filter: drop-shadow(0px 2px 8px #E8E974);
-        transform: rotate(40deg) scale(1.08);
     }
 
     /* Touch screens have no hover: the line is always there so the title reads as something to press */
