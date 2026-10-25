@@ -1,10 +1,15 @@
 <script setup>
-    // Dana (generosity): two friends on a small green island, one handing the other a little flame, under a sky of
-    // real particles. The pair, the flame and the island are separate layers (public/assets/share); the stars are a
-    // three.js field (useStardust), and a second tiny one lets sparks rise from the flame.
+    // Dana (generosity): two friends standing on a small green island, one handing the other a little flame, under a sky
+    // of real particles. The pair, the flame and the island are separate layers (public/assets/share) that move together
+    // as one group, so the friends stay planted on the island. All the particles live on one canvas behind the drawings
+    // (useStardust), so they never cover them: the stars, and the little flame's living embers (red and yellow, rising
+    // from it and circling it), which show around its edges; a touch makes it flare.
     import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
     import { createParallax, enterLayers } from '../../composables/useParallax.js';
     import { startStardust } from '../../composables/useStardust.js';
+    import { createFlame } from '../../composables/useFlame.js';
+    import { createSparks } from '../../composables/useSparks.js';
+    import { play } from '../../composables/useSound.js';
 
     const props = defineProps({
         card: { type: Object, default: () => ({}) },
@@ -13,14 +18,48 @@
 
     const root = ref(null);
     const skyCanvas = ref(null);
-    const sparkCanvas = ref(null);
+    const group = ref(null);
     const pair = ref(null);
     const flame = ref(null);
     const island = ref(null);
     let parallax = null;
     let sky = null;
-    let sparks = null;
     let entered = false;
+
+    // The fire-ball picture: where its glass ball is, as fractions of the picture (0.5 across, 0.75 down, 0.285 wide)
+    const BALL = { x: 0.5, y: 0.75, r: 0.285 };
+
+    // Where the little flame is on the canvas now
+    const anchor = () => {
+        const el = flame.value, canvas = skyCanvas.value;
+        if (!el || !canvas) return null;
+        const box = el.getBoundingClientRect(), page = canvas.getBoundingClientRect();
+        if (!box.width) return null;
+        const cx = box.left - page.left + BALL.x * box.width;
+        const cy = box.top - page.top + BALL.y * box.height;
+        const r = BALL.r * box.width;
+        return {
+            x: cx, y: cy - r * 0.55, radius: r * 0.7, height: box.height * 0.78, unit: box.width / 44,
+            halo: { x: cx, y: cy, r },
+        };
+    };
+
+    const fire = createFlame({ count: 260, halo: 120, palette: [0xffe47d, 0xffb454, 0xf0643c, 0xd93a4a], anchor, size: 6.2 });
+    const sparks = createSparks(360);
+
+    // Touching the little flame: it leaps, and sparks fly
+    const touch = () => {
+        const at = anchor();
+        if (!at) return;
+        fire.flare(1);
+        sparks.burst(at.halo.x, at.halo.y, { n: 34, colors: [0xffe47d, 0xffb454, 0xf0643c, 0xfff3b8], speed: 130, size: 5.2, spread: at.halo.r * 0.5 });
+        play('star');
+    };
+    const onKey = (event) => {
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+        event.preventDefault();
+        touch();
+    };
 
     const enter = () => {
         if (entered || !props.active) return;
@@ -35,27 +74,20 @@
     onMounted(() => {
         parallax = createParallax(root.value, ({ x, y, scroll, t, ramp }) => {
             const s = scroll;
-            // The friends breathe, a little out of step with the flame between them
-            // The island floats, and everything standing on it floats with it
+            // The island floats, and everything standing on it floats with it: one group, so the friends never lift off it
             const bob = Math.sin(t * 0.55) * 9 * ramp;
-            pair.value.style.translate = `${-x * 20}px ${-y * 8 + bob - s * 50}px`;
+            group.value.style.translate = `${-x * 14}px ${-y * 6 + bob - s * 30}px`;
+            // The friends breathe from their feet, and the flame between them bobs a little on its own
             pair.value.style.scale = `1 ${(1 + Math.sin(t * 0.9) * 0.006 * ramp).toFixed(4)}`;
-            pair.value.style.rotate = `${(Math.sin(t * 0.35) * 0.35 * ramp).toFixed(3)}deg`;
-            // The flame bobs, and sways a touch with the breeze of the pointer
-            const flicker = 0.5 + 0.5 * Math.sin(t * 5.1) * Math.sin(t * 3.3 + 1);
-            flame.value.style.translate = `${-x * 28}px ${-y * 10 + bob + Math.sin(t * 1.3) * 6 * ramp - s * 60}px`;
+            flame.value.style.translate = `${-x * 6}px ${Math.sin(t * 1.3) * 4 * ramp - y * 4}px`;
             flame.value.style.rotate = `${(Math.sin(t * 1.7) * 3 * ramp - x * 4).toFixed(3)}deg`;
-            flame.value.style.filter = `brightness(${(1 + flicker * 0.18).toFixed(3)}) drop-shadow(0 0 ${(8 + flicker * 12).toFixed(1)}px rgba(255, 150, 110, 0.55))`;
-            island.value.style.translate = `${-x * 12}px ${-y * 4 + bob + s * 18}px`;
-            island.value.style.rotate = `${(Math.sin(t * 0.4) * 0.5 * ramp).toFixed(3)}deg`;
         });
         sky = startStardust(skyCanvas.value, {
-            count: 380, colors: [0xf6e27c, 0xf6e27c, 0xee6a82, 0xfaf3d4], size: [2.2, 6.5],
-            drift: 7, twinkle: 0.55, reach: 130, push: 34, parallax: 14,
-        });
-        sparks = startStardust(sparkCanvas.value, {
-            count: 36, colors: [0xff9d78, 0xffd2a8, 0xf6e27c], size: [2, 5], look: 'soft',
-            flow: [0, -30], drift: 8, twinkle: 0.7, reach: 0, parallax: 4,
+            groups: [
+                { count: 380, colors: [0xf6e27c, 0xf6e27c, 0xee6a82, 0xfaf3d4], size: [2.2, 6.5], drift: 7, twinkle: 0.55, reach: 130, push: 34, parallax: 14 },
+                fire.group(),
+                sparks.group(),
+            ],
         });
         enter();
     });
@@ -63,20 +95,22 @@
     onBeforeUnmount(() => {
         parallax?.destroy();
         sky?.destroy();
-        sparks?.destroy();
     });
 </script>
 
 <template>
     <div class="scene" ref="root">
-        <canvas class="sky" ref="skyCanvas"></canvas>
+        <canvas class="field" ref="skyCanvas"></canvas>
 
         <!-- A square frame, bottom-aligned; every layer is placed as a fraction of it, as in the illustration -->
         <div class="frame">
-            <img class="layer island" ref="island" src="/assets/share/island.webp" alt="" draggable="false">
-            <img class="layer pair" ref="pair" src="/assets/share/particles.webp" alt="" draggable="false">
-            <img class="layer flame" ref="flame" src="/assets/share/fire.webp" alt="" draggable="false">
-            <canvas class="sparks" ref="sparkCanvas"></canvas>
+            <div class="group" ref="group">
+                <img class="layer island" ref="island" src="/assets/share/island.webp" alt="" draggable="false">
+                <img class="layer pair" ref="pair" src="/assets/share/particles.webp" alt="" draggable="false">
+                <img class="layer flame" ref="flame" src="/assets/share/fire.webp" alt="" draggable="false">
+                <div class="hit" role="button" tabindex="0" :aria-label="$i18n.locale === 'en' ? 'Little flame' : 'Llamita'"
+                    @pointerdown.prevent="touch" @keydown="onKey"></div>
+            </div>
         </div>
     </div>
 </template>
@@ -88,7 +122,7 @@
         overflow: hidden;
     }
 
-    .sky {
+    .field {
         position: absolute;
         inset: 0;
         width: 100%;
@@ -106,6 +140,11 @@
         pointer-events: none;
     }
 
+    .group {
+        position: absolute;
+        inset: 0;
+    }
+
     .layer {
         position: absolute;
         display: block;
@@ -116,33 +155,45 @@
         pointer-events: none;
     }
 
-    /* Left and top as fractions of the frame, measured from the illustration */
+    /* Left and top as fractions of the frame, measured from the illustration. The friends' feet end a hair below the
+       grass line of the island, so they stand on it. */
     .pair {
         left: 31.25%;
-        top: 11%;
+        top: 14.4%;
         width: 37.5%;
         transform-origin: 50% 100%;
     }
 
     .flame {
         left: 47.4%;
-        top: 34.6%;
+        top: 38.1%;
         width: 5%;
     }
 
-    /* A small floating island, whole, with the friends standing on it */
+    /* A small floating island, whole */
     .island {
         left: 15.5%;
         top: 58.3%;
         width: 69%;
     }
 
-    .sparks {
+    /* Over the little flame */
+    .hit {
         position: absolute;
-        left: 43.4%;
-        top: 24.1%;
-        width: 13%;
-        height: 13%;
-        pointer-events: none;
+        left: 45.2%;
+        top: 38.4%;
+        width: 9.6%;
+        aspect-ratio: 1 / 1.7;
+        border-radius: 50%;
+        cursor: pointer;
+        pointer-events: auto;
+        -webkit-tap-highlight-color: transparent;
+        touch-action: manipulation;
+        outline: none;
+    }
+
+    .hit:focus-visible {
+        outline: 2px solid rgba(255, 244, 150, 0.9);
+        outline-offset: 2px;
     }
 </style>
