@@ -104,10 +104,13 @@
     const Y = (i) => LINE.pts[3 * i + 1];
     const W = (i) => LINE.pts[3 * i + 2];
     // A ribbon along samples a..b: the line pushed out by its thickness (times widthAt) on both sides
-    // `bend(i)` may pull a sample off the route: [dx, dy]
+    // `bend(i)` may pull a sample off the route: [dx, dy]. Both ends are rounded off with a half circle, so a stroke
+    // never ends in a flat cut
     const ribbon = (a, b, widthAt, bend) => {
         const left = [], right = [];
         const at = bend ? (i) => { const d = bend(i); return [X(i) + d[0], Y(i) + d[1]]; } : (i) => [X(i), Y(i)];
+        const f = (v) => v.toFixed(1);
+        let first = null, last = null;
         for (let i = a; i <= b; i++) {
             const i0 = Math.max(0, i - 1), i1 = Math.min(N - 1, i + 1);
             const [x, y] = at(i), [xa, ya] = at(i0), [xb, yb] = at(i1);
@@ -115,10 +118,16 @@
             const n = Math.hypot(tx, ty) || 1;
             tx /= n; ty /= n;
             const w = W(i) * widthAt(i);
-            left.push(`${(x - ty * w).toFixed(1)} ${(y + tx * w).toFixed(1)}`);
-            right.push(`${(x + ty * w).toFixed(1)} ${(y - tx * w).toFixed(1)}`);
+            left.push(`${f(x - ty * w)} ${f(y + tx * w)}`);
+            right.push(`${f(x + ty * w)} ${f(y - tx * w)}`);
+            if (i === a) first = { x, y, tx, ty, w };
+            last = { x, y, tx, ty, w };
         }
-        return `M${left.join('L')}L${right.reverse().join('L')}Z`;
+        const cap = (c, sign) => Array.from({ length: 5 }, (_, k) => {
+            const th = Math.PI * (k + 1) / 6;
+            return `${f(c.x - c.ty * c.w * Math.cos(th) + sign * c.tx * c.w * Math.sin(th))} ${f(c.y + c.tx * c.w * Math.cos(th) + sign * c.ty * c.w * Math.sin(th))}`;
+        });
+        return `M${left.join('L')}L${cap(last, 1).join('L')}L${right.reverse().join('L')}L${cap(first, -1).reverse().join('L')}Z`;
     };
     const FRONT_D = LINE.front.map(([a, b]) => `M${Array.from({ length: b - a + 1 }, (_, k) => `${X(a + k)} ${Y(a + k)}`).join('L')}`);
     // The strokes: each is a stretch of the route (length as a fraction of it) that travels along it at its own pace
@@ -128,40 +137,54 @@
         { len: 0.07, speed: 1.1 }, { len: 0.045, speed: 0.72 }, { len: 0.08, speed: 1.0 },
     ].map((k, i, all) => ({ ...k, count: Math.round(N * k.len), pos: ((i / all.length + 0.037 * (i % 3)) % 1) * N, grab: 0 }));
 
-    // The finger (or the mouse): where it is on the thread's square, and when it last moved
-    const pointer = { u: 0, v: 0, at: -99 };
+    // The finger (or the mouse): where it is on the thread's square, when it last moved, and whether it is pressing
+    const pointer = { u: 0, v: 0, at: -99, down: false };
     let nowT = 0;
     const track = (event) => {
         const box = els.thread?.getBoundingClientRect();
         if (!box || !box.width) return;
         pointer.u = (event.clientX - box.left) / box.width * 2160;
         pointer.v = (event.clientY - box.top) / box.height * 2160;
+        pointer.down = event.pointerType === 'touch' || event.buttons > 0;
         pointer.at = nowT;
     };
-    const GRAB = 340;                      // how near (in the 2160 units) a stroke has to be for the finger to take it
-    const REACH = 270;                     // how far round the finger the stroke is pulled
-    // The strokes follow the finger: one near it slides along the route to the spot nearest the finger and is pulled
-    // towards it, staying there while the finger keeps moving, and goes back to its travelling when it stops
+    const release = (event) => { track(event); pointer.down = false; };
+    const GRAB = 300;                      // how near (in the 2160 units) a stroke has to be for the finger to take it
+    const REACH = 240;                     // how far round the finger the stroke is pulled
+    // The strokes answer the finger. A mouse passing over only makes the nearest strokes lean a little towards it, and
+    // they keep travelling. Pressing (or a finger dragging) takes the nearest stroke: it slides along the route to the
+    // spot nearest the finger and is pulled towards it while it keeps moving; it goes back to travelling when it stops.
+    // The others carry on, so the line never collapses into one.
     const moveStrokes = (dt, t) => {
-        const active = t - pointer.at < 1.3;
-        STROKES.forEach((k) => {
+        const active = t - pointer.at < 1.1;
+        const found = [];
+        STROKES.forEach((k, n) => {
             k.pos = (k.pos + dt * k.speed * N / 70) % N;
+            if (!active) return;
+            const c = Math.round(k.pos + k.count / 2);
+            const span = Math.round(N * 0.1);
+            let best = 0, bestD = Infinity;
+            for (let o = -span; o <= span; o += 3) {
+                const j = ((c + o) % N + N) % N;
+                const d = (X(j) - pointer.u) ** 2 + (Y(j) - pointer.v) ** 2;
+                if (d < bestD) { bestD = d; best = o; }
+            }
+            if (bestD < GRAB * GRAB) found.push({ k, best, bestD });
+        });
+        found.sort((a, b) => a.bestD - b.bestD);
+        const taken = new Map(found.slice(0, pointer.down ? 1 : 2).map((f, i) => [f.k, { ...f, i }]));
+        STROKES.forEach((k) => {
+            const f = taken.get(k);
             let want = 0;
-            if (active) {
-                const c = Math.round(k.pos + k.count / 2);
-                const span = Math.round(N * 0.12);
-                let best = 0, bestD = Infinity;
-                for (let o = -span; o <= span; o += 3) {
-                    const j = ((c + o) % N + N) % N;
-                    const d = (X(j) - pointer.u) ** 2 + (Y(j) - pointer.v) ** 2;
-                    if (d < bestD) { bestD = d; best = o; }
-                }
-                if (bestD < GRAB * GRAB) {
-                    k.pos = ((k.pos + best * Math.min(1, dt * 3.2)) % N + N) % N;
+            if (f) {
+                if (pointer.down) {
+                    k.pos = ((k.pos + f.best * Math.min(1, dt * 2.2)) % N + N) % N;
                     want = 1;
+                } else {
+                    want = 0.4;
                 }
             }
-            k.grab += (want - k.grab) * Math.min(1, dt * (want ? 6 : 2.2));
+            k.grab += (want - k.grab) * Math.min(1, dt * (want ? 4 : 2.2));
         });
     };
     const bendOf = (k) => k.grab < 0.02 ? null : (i) => {
@@ -178,8 +201,8 @@
         if (s0 >= N) return ribbon(s0 - N, s1 - N, taper, bend);
         return `${ribbon(s0, N - 1, taper, bend)}${ribbon(0, s1 - N, taper, bend)}`;
     };
-    // Three nested ribbons, so each stroke fades in and out along its length instead of ending abruptly
-    const FADES = [[0, 1], [0.2, 0.8], [0.4, 0.6]];
+    // Nested ribbons, so each stroke fades in and out along its length instead of ending abruptly
+    const FADES = [[0, 1], [0.12, 0.88], [0.24, 0.76], [0.36, 0.64], [0.48, 0.52]];
     const strokesD = () => {
         const bends = STROKES.map(bendOf);
         return FADES.map(([from, to]) => STROKES.map((k, n) => strokeD(k.pos, k.count, from, to, bends[n])).join(''));
@@ -334,6 +357,7 @@
     onMounted(() => {
         root.value.addEventListener('pointermove', track, { passive: true });
         root.value.addEventListener('pointerdown', track, { passive: true });
+        root.value.addEventListener('pointerup', release, { passive: true });
         parallax = createParallax(root.value, ({ x, y, scroll, t, ramp }) => {
             // The network floats, its creatures floating in it, and the thread with it
             network.value.style.translate = `${-x * 14}px ${-y * 7 + Math.sin(t * 0.5) * 7 * ramp - scroll * 40}px`;
@@ -366,6 +390,7 @@
     onBeforeUnmount(() => {
         root.value?.removeEventListener('pointermove', track);
         root.value?.removeEventListener('pointerdown', track);
+        root.value?.removeEventListener('pointerup', release);
         parallax?.destroy();
         sky?.destroy();
         front?.destroy();
@@ -381,7 +406,7 @@
             <div class="network" ref="network">
                 <!-- The lavender thread, under the pink: the whole line, and a bright stretch travelling along it -->
                 <svg class="thread" :ref="setEl('thread')" viewBox="0 0 2160 2160" aria-hidden="true">
-                    <path v-for="k in 3" :key="k" class="worm" :class="`w${k - 1}`" :ref="setEl(`wb${k - 1}`)" />
+                    <path v-for="k in 5" :key="k" class="worm" :class="`w${k - 1}`" :ref="setEl(`wb${k - 1}`)" />
                 </svg>
 
                 <img class="layer" :style="place(layers[big.body])" src="/assets/kshanti/k3.webp" alt="" draggable="false">
@@ -398,7 +423,7 @@
                         </mask>
                     </defs>
                     <g mask="url(#kshanti-front)">
-                        <path v-for="k in 3" :key="k" class="worm" :class="`w${k - 1}`" :ref="setEl(`wf${k - 1}`)" />
+                        <path v-for="k in 5" :key="k" class="worm" :class="`w${k - 1}`" :ref="setEl(`wf${k - 1}`)" />
                     </g>
                 </svg>
 
@@ -494,8 +519,10 @@
     }
 
     .w0 { fill-opacity: 0.5; }
-    .w1 { fill-opacity: 0.5; }
-    .w2 { fill-opacity: 0.6; }
+    .w1 { fill-opacity: 0.35; }
+    .w2 { fill-opacity: 0.4; }
+    .w3 { fill-opacity: 0.45; }
+    .w4 { fill-opacity: 0.5; }
 
     .hit {
         position: absolute;
