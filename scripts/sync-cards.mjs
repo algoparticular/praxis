@@ -48,7 +48,7 @@ async function downloadImage(id, attachment) {
         .webp({ quality: 80 })
         .toFile(path.join(imagesDir, file));
     // Small copy for the deck gallery
-    await sharp(path.join(imagesDir, file)).resize({ width: 480 }).webp({ quality: 78 }).toFile(path.join(thumbsDir, file));
+    await sharp(path.join(imagesDir, file)).resize({ width: 400 }).webp({ quality: 72 }).toFile(path.join(thumbsDir, file));
     return { url: `/cards/${file}`, width, height };
 }
 

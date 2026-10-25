@@ -23,3 +23,9 @@
 #  publish = "dist" # Folder with the static content for _redirect file
 
 ## more info on configuring this file: https://www.netlify.com/docs/netlify-toml-reference/
+
+## The card pictures change rarely: browsers keep them for a day and refresh them in the background for a week
+[[headers]]
+  for = "/cards/*"
+  [headers.values]
+    Cache-Control = "public, max-age=86400, stale-while-revalidate=604800"
