@@ -38,7 +38,8 @@ const hasWebGL = () => {
 //   steady     every particle moves with the flow at the same speed, so a pattern keeps its shape
 //   edgeFade   0..0.5 fraction of the height over which particles fade in and out at top and bottom
 //   opacity    overall opacity
-// Pass { groups: [...] } for several groups on one canvas, or a group's options directly for one.
+// Pass { groups: [...] } for several groups on one canvas, or a group's options directly for one. With { manual: true }
+// the particles stay invisible until reveal() is called, so they can wait for the pictures they belong with.
 // The result has shift(i, x, y): moves group i by (x, y) px, so a group can follow a layer that has parallax, and
 // boost(i, amount): makes group i flare (bigger, brighter, trembling more) and settle back by itself.
 export async function createStardust(canvas, options = {}) {
@@ -238,6 +239,7 @@ export async function createStardust(canvas, options = {}) {
     let raf = 0;
     let visible = true;
     let last = 0;
+    let revealAt = options.manual && !reduced ? null : 0;
     const begin = performance.now();
     const tick = (now) => {
         raf = requestAnimationFrame(tick);
@@ -246,7 +248,7 @@ export async function createStardust(canvas, options = {}) {
         const dt = Math.min(0.1, t - last);
         last = t;
         shared.uTime.value = t;
-        shared.uFade.value = Math.min(1, t / 2.5);
+        shared.uFade.value = revealAt === null ? 0 : Math.min(1, (t - revealAt) / 2.5);
         if (pointer.inside) {
             pointer.x += (pointer.tx - pointer.x) * 0.12;
             pointer.y += (pointer.ty - pointer.y) * 0.12;
@@ -274,6 +276,7 @@ export async function createStardust(canvas, options = {}) {
     return {
         shift(index, x, y) { groups[index]?.uniforms.uShift.value.set(x, y); },
         boost(index, amount) { const g = groups[index]; if (g) g.uniforms.uBoost.value = Math.max(g.uniforms.uBoost.value, amount); },
+        reveal() { if (revealAt === null) revealAt = shared.uTime.value; },
         destroy() {
             cancelAnimationFrame(raf);
             observer.disconnect();
@@ -290,12 +293,14 @@ export async function createStardust(canvas, options = {}) {
 export function startStardust(canvas, options) {
     let field = null;
     let gone = false;
+    let revealed = false;
     createStardust(canvas, options)
-        .then((made) => { if (gone) made?.destroy(); else field = made; })
+        .then((made) => { if (gone) made?.destroy(); else { field = made; if (revealed) field?.reveal(); } })
         .catch(() => {});
     return {
         shift(index, x, y) { field?.shift(index, x, y); },
         boost(index, amount) { field?.boost(index, amount); },
+        reveal() { revealed = true; field?.reveal(); },
         destroy() { gone = true; field?.destroy(); },
     };
 }

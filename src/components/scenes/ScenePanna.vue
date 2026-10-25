@@ -37,6 +37,7 @@
     let front = null;
     let resizeWatch = null;
     let entered = false;
+    let drawingsReady = false;
 
     // The groups of the particle canvas behind the line work, in drawing order
     const G = { floor: 0, sky: 1, sun: 2, aura: 3, pink: 4, fly: { tl: 5, tr: 6, bl: 7, br: 8 }, blue: { l: 9, r: 10 } };
@@ -175,7 +176,7 @@
                     const pulse = Math.max(0, Math.sin(f * 15 - t * 2.1)) ** 3;
                     data.positions[i * 3] = x0 + (x1 - x0) * f + Math.sin(wave) * amp * narrowing;
                     data.positions[i * 3 + 1] = y0 + length * f;
-                    data.sizes[i] = (3.6 + 3.4 * near + 3 * pulse + 2.5 * surge) * unit;
+                    data.sizes[i] = (3 + 2.8 * near + 2.4 * pulse + 2.2 * surge) * unit;
                     data.alphas[i] = envelope(f) * (0.45 + 0.55 * near);
                 }
             }
@@ -188,19 +189,19 @@
                 const spread = (r(4) - 0.5) * 2 * amp * 1.5 * (1 - 0.7 * smooth(0.25, 1, f));
                 data.positions[i * 3] = x0 + (x1 - x0) * f + spread + Math.sin(wave + t) * 4;
                 data.positions[i * 3 + 1] = y0 + length * f;
-                data.sizes[i] = (1.6 + r(5) * 1.8) * unit;
+                data.sizes[i] = (1.4 + r(5) * 1.5) * unit;
                 data.alphas[i] = envelope(f) * (0.35 + 0.5 * r(6)) * (0.6 + 0.4 * Math.sin(t * 2 + d));
             }
             // The dot on Sid's forehead where the thread ends
             data.positions[i * 3] = x1;
             data.positions[i * 3 + 1] = y1;
-            data.sizes[i] = (5 + 4 * surge) * unit;
+            data.sizes[i] = (4.2 + 3.6 * surge) * unit;
             data.alphas[i] = 0.6 + 0.35 * Math.sin(t * 1.6);
         },
     };
 
     // ---- Sparks, thrown when something is touched
-    const SPARKS = 360;
+    const SPARKS = 640;
     const sparks = {
         life: new Float32Array(SPARKS), span: new Float32Array(SPARKS).fill(1), size: new Float32Array(SPARKS),
         x: new Float32Array(SPARKS), y: new Float32Array(SPARKS), vx: new Float32Array(SPARKS), vy: new Float32Array(SPARKS),
@@ -292,16 +293,16 @@
         return [x + frontShift[0], y + frontShift[1]];
     };
 
-    const touch = (target, side) => {
+    const touch = (target, side, quiet = false) => {
         const [x, y] = spotOf(target.key, side);
         if (target.kind === 'fly') {
             back?.boost(target.group, 1.5);
             burst(x, y, { n: 30, colors: [0xffe47d, 0xfff3b8, 0xffffff], speed: 130, size: 5.4 });
-            play('star');
+            if (!quiet) play('star');
         } else {
             back?.boost(target.group, 1.4);
             burst(x, y, { n: 22, colors: [0x00b4d7, 0x7be3f5, 0xffffff], speed: 110, size: 5.2 });
-            play('tap');
+            if (!quiet) play('tap');
         }
     };
     const warm = (target) => back?.boost(target.group, 0.5);
@@ -313,7 +314,7 @@
 
     // Touching Sid wakes him: the aura and the sun flare, the spiral rushes, he glows and sparks fly from his forehead
     let awake = 0;
-    const wake = () => {
+    const wake = (quiet = false) => {
         awake = 1;
         surge = 1;
         back?.boost(G.aura, 1.6);
@@ -326,13 +327,52 @@
         burst(cx, L.fy0 + 0.436 * L.S + bob + sidShift[1], { n: 50, colors: [0xffe47d, 0xfff3b8, 0xffffff], speed: 160, size: 5.6, spread: 4 });
         burst(cx, L.fy0 + 0.52 * L.S + bob + sidShift[1], { n: 40, colors: [0x00a9bc, 0x7be3f5], speed: 190, size: 5.4, spread: 40 });
         burst(sun.x, sun.y + 60 * sun.k, { n: 18, colors: [0xffe47d], speed: 70, size: 5.6 });
-        play('star');
+        if (!quiet) play('star');
     };
     const warmSid = () => back?.boost(G.aura, 0.6);
 
+    // Touching the sun sends a light through everything alive: it flares, and then, nearest first, the fireflies, the
+    // blue mushrooms, Sid and the field of mushrooms answer with their own sparks
+    const timers = [];
+    const shine = () => {
+        const canvas = frontCanvas.value;
+        const w = canvas.clientWidth, h = canvas.clientHeight;
+        const L = layout(w, h);
+        const sun = sunSpot(w, h);
+        back?.boost(G.sun, 1.5);
+        burst(sun.x, sun.y + 40 * sun.k, { n: 36, colors: [0xffe47d, 0xfff3b8, 0xffffff], speed: 150, size: 5.6, spread: 40 });
+        play('star');
+
+        const answers = [];
+        sides.forEach((s) => s.targets.forEach((target) => {
+            const [x, y] = spotOf(target.key, s.side);
+            answers.push({ distance: Math.hypot(x - sun.x, y - sun.y), act: () => touch(target, s.side, true) });
+        }));
+        answers.push({ distance: Math.hypot(L.fx0 + L.S * 0.5 - sun.x, L.fy0 + L.S * 0.52 - sun.y), act: () => wake(true) });
+        // The field of mushrooms: pink sparks along it
+        answers.push({ distance: Math.hypot(0, h - sun.y), act: () => {
+            back?.boost(G.pink, 1.3);
+            [450, 800, 1080, 1360, 1700].forEach((u) => {
+                const [x, y] = L.centred(u, 1930);
+                burst(x, y + 10, { n: 12, colors: [0xcb5e95, 0xff9fcb, 0xffd1e6], speed: 100, size: 5, spread: 14 });
+            });
+        } });
+        const farthest = Math.max(...answers.map((a) => a.distance));
+        answers.forEach(({ distance, act }) => timers.push(setTimeout(act, 150 + (distance / farthest) * 1100)));
+    };
+    const warmSun = () => back?.boost(G.sun, 0.5);
+
+    // The line work is decoded before anything is shown, so the particles never arrive on their own
+    const waitForDrawings = () => Promise.race([
+        Promise.all([...root.value.querySelectorAll('img')].map((img) => img.decode().catch(() => {}))),
+        new Promise((resolve) => setTimeout(resolve, 8000)),
+    ]);
+
     const enter = () => {
-        if (entered || !props.active) return;
+        if (entered || !props.active || !drawingsReady) return;
         entered = true;
+        back?.reveal();
+        front?.reveal();
         requestAnimationFrame(() => requestAnimationFrame(() => { shown.value = true; }));
         enterLayers([
             { el: being.value, y: 70, delay: 500, duration: 2000 },
@@ -368,6 +408,7 @@
 
         const tone = (name) => [hexOf(clouds[name].color)];
         back = startStardust(backCanvas.value, {
+            manual: true,
             groups: [
                 // 0: the stippled edge of the floor, trembling
                 { colors: [0x00625e, 0x00625e, 0x00524f, 0x0a7a72], size: [2, 4.6], parallax: 0, drift: 2.2, jitter: 0.5, twinkle: 0.25, reach: 80, push: 9, points: (w, h) => {
@@ -408,6 +449,7 @@
             ],
         });
         front = startStardust(frontCanvas.value, {
+            manual: true,
             groups: [
                 { colors: [0xffe47d, 0xffe47d, 0xfff3b8], dynamic: thread, parallax: 0, drift: 0, twinkle: 0, reach: 140, push: 26, look: 'hard' },
                 { colors: [0xffffff], dynamic: sparkGroup, parallax: 0, drift: 0, twinkle: 0, reach: 0, look: 'hard' },
@@ -417,7 +459,7 @@
         buildFloor();
         resizeWatch = new ResizeObserver(buildFloor);
         resizeWatch.observe(root.value);
-        enter();
+        waitForDrawings().then(() => { drawingsReady = true; enter(); });
     });
     watch(() => props.active, enter);
     onBeforeUnmount(() => {
@@ -425,6 +467,7 @@
         back?.destroy();
         front?.destroy();
         resizeWatch?.disconnect();
+        timers.forEach(clearTimeout);
     });
 </script>
 
@@ -514,6 +557,10 @@
             </div>
         </template>
 
+        <!-- The sun: touch it and everything alive answers -->
+        <div class="hit sun" role="button" tabindex="0" :aria-label="$i18n.locale === 'en' ? 'Sun' : 'Sol'"
+            @pointerdown.prevent="shine" @pointerenter="warmSun" @keydown="onKey($event, shine)"></div>
+
         <!-- The spiral and the sparks, in front of everything -->
         <canvas class="field" ref="frontCanvas"></canvas>
     </div>
@@ -585,6 +632,16 @@
 
     .hit.sid {
         border-radius: 46% 46% 40% 40%;
+    }
+
+    /* Over the sun: 1.2% from the top, as big as its stipple (about 300 of the 2160px units each way) */
+    .hit.sun {
+        --u: calc(var(--s) * 0.95 / 2160);
+        left: 50%;
+        top: 1.2%;
+        width: calc(var(--u) * 560);
+        height: calc(var(--u) * 560);
+        translate: -50% -50%;
     }
 
     /* ---- The sides: each half shows half of the big square, from the edge of the screen inwards. It hangs a little

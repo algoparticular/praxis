@@ -24,6 +24,18 @@
         min-height: 100vh;
     }
 
+    /* The header floats over the whole top of the stage: it lets the pointer through, except on its own buttons and menu,
+       so whatever is under it (the sun of a scene) can be touched */
+    .content.cardPage header {
+        pointer-events: none;
+    }
+
+    .content.cardPage header button,
+    .content.cardPage header a,
+    .content.cardPage header #menuOverlay {
+        pointer-events: auto;
+    }
+
     .fade-enter-from,
 	.fade-leave-to {
 		opacity: 0;
