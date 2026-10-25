@@ -9,6 +9,8 @@
     import { KinesisContainer, KinesisElement} from 'vue-kinesis';
     import { createStarField } from '../composables/useStarField.js';
     import { createHeroSpiral } from '../composables/useHeroSpiral.js';
+    import { oracleTop } from '../composables/oracleScroll.js';
+    import ModeSelector from '../components/ModeSelector.vue';
     import { play } from '../composables/useSound.js';
     
     const router = useRouter();
@@ -17,7 +19,12 @@
     //handle navigation
     const handleNavigate = (url) => {
         router.push({ path: url }); //, replace: true
-    };    
+    };
+
+    //The hero's call to action glides down to the oracle block
+    const goToOracle = () => {
+        window.scrollTo({ top: oracleTop(), behavior: reducedMotion ? 'auto' : 'smooth' });
+    };
 
 
     //Cells and particles in three.js; the static cells come back if WebGL is not available
@@ -197,7 +204,7 @@
         //Independent translate/scale/rotate are used so they do not fight the parallax, which owns transform.
         if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
             const pick = (selector) => document.querySelector('#oracle ' + selector);
-            const copy = ['.copy .heading h3', '.copy > p'].map(pick);
+            const copy = ['.copy .heading h3', '.copy > p', '.copy .modes'].map(pick);
             const man = pick('.gfx .oracle.particle');
             const tree = pick('.gfx .oracle.tree');
             [...copy, man, tree].forEach((el) => { el.style.opacity = 0; });
@@ -246,7 +253,7 @@
         </Header>
        
         <kinesis-container id="hero" tag="section" easing="cubic-bezier(0.23, 1, 0.32, 1)" :perspective="100" :active="!reducedMotion">
-            <a href="/praxis">
+            <a href="/#oraculo" @click.prevent="goToOracle">
                 <kinesis-element
                     tag="h1">
                     {{ $t("landing.intro") }}
@@ -307,10 +314,11 @@
             <div class="corner topRight"></div>
             <div class="corner bottomRight"></div>
             <div class="copy">
-                <a class="heading" href="/praxis" :aria-label="$t('landing.oracleAction')" @click.prevent="handleNavigate('/praxis')">
-                    <h3><span class="title">{{ $t("landing.oracleTitle") }}</span>&nbsp;<span class="arrow">→</span></h3>
-                </a>
-                <p>{{ $t("landing.oracleDescrip") }}</p>
+                <div class="heading">
+                    <h3>{{ $t("landing.oracleTitle") }}</h3>
+                </div>
+                <p>{{ $t("praxis.praxisIntro") }}</p>
+                <ModeSelector />
             </div>
         
             <div class="gfx">
@@ -435,6 +443,8 @@
     }
 
     .splash.particle {
+        /* The picture covers the title's area: clicks must go through to the hero's link */
+        pointer-events: none;
         z-index: 9;        
         width: 80vw;
         aspect-ratio: 868 / 1027;
@@ -471,6 +481,8 @@
     }
 
     .splash.background {
+        /* Only decoration: it must not take the clicks meant for the title */
+        pointer-events: none;
         background-image: url('../assets/hero/background.webp');
         background-size: cover;
         
@@ -614,6 +626,10 @@
         text-align: center;
     }
 
+    .copy .modes {
+        margin-top: 16px;
+    }
+
     .copy p {
         color: #F7F8F1;
         font-size: 18px;
@@ -621,62 +637,6 @@
         text-align: center;
         max-width: 310px;
         margin-bottom: 0;
-    }
-
-    /* The title is the way in */
-    .copy a.heading {
-        text-decoration: none;
-        color: #F7F8F1;
-        cursor: pointer;
-    }
-
-    .copy a.heading:hover,
-    .copy a.heading:focus-visible {
-        color: #F7F8F1;
-    }
-
-    .copy a.heading:focus,
-    .copy a.heading:focus-visible {
-        box-shadow: none;
-        outline: none;
-    }
-
-    /* A thin line draws itself under the title, and the arrow steps forward */
-    .copy .heading .title {
-        color: inherit;
-        background-image: linear-gradient(#E8E974, #E8E974);
-        background-repeat: no-repeat;
-        background-position: 0 100%;
-        background-size: 0% 2px;
-        padding-bottom: 6px;
-        transition: background-size 0.5s cubic-bezier(0.22, 1, 0.36, 1);
-        -webkit-box-decoration-break: clone;
-        box-decoration-break: clone;
-    }
-
-    .copy .heading .arrow {
-        display: inline-block;
-        font-family: 'Inter', helvetica, sans-serif;
-        font-size: 0.8em;
-        color: #E8E974;
-        transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
-    }
-
-    .copy a.heading:hover .title,
-    .copy a.heading:focus-visible .title {
-        background-size: 100% 2px;
-    }
-
-    .copy a.heading:hover .arrow,
-    .copy a.heading:focus-visible .arrow {
-        transform: translateX(6px);
-    }
-
-    /* Touch screens have no hover: the line is always there so the title reads as something to press */
-    @media (hover: none) {
-        .copy .heading .title {
-            background-size: 100% 1px;
-        }
     }
 
     .corner {        

@@ -109,6 +109,15 @@
         height: auto;                               
     }  
 
+    /* Same visual weight: the oracle icon sits inside a wide margin of its box, Instagram fills its own */
+    .social .icon.instagram {
+        width: 27px;
+    }
+
+    .social .icon.lab {
+        width: 35px;
+    }
+
     .social .icon:hover {
         fill: #FF6F61;
         -webkit-transition: all 250ms ease-out;
