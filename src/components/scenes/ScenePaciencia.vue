@@ -23,6 +23,7 @@
     const sparkCanvas = ref(null);
     const coneHit = ref(null);
     const lit = ref(false);                 // the pine cone is being pressed
+    const hot = ref(false);                 // the pointer is over it
     let parallax = null;
     let spores = null;
     let entered = false;
@@ -44,7 +45,7 @@
         play('star');
         if (!reduced) {
             const box = coneHit.value.getBoundingClientRect();
-            spores?.burst(box.left + box.width / 2, box.top + box.height / 2, 12);
+            spores?.burst(box.left + box.width / 2, box.top + box.height / 2, 22);
         }
         window.addEventListener('pointerup', dim, { once: true });
         window.addEventListener('pointercancel', dim, { once: true });
@@ -86,7 +87,7 @@
 </script>
 
 <template>
-    <div class="scene" ref="root" :class="{ lit }">
+    <div class="scene" ref="root" :class="{ lit, hot }">
         <img class="layer sun" ref="sun" src="/assets/collaborate/sun.webp" alt="" draggable="false">
         <img class="layer boat" ref="boat" src="/assets/collaborate/boat.webp" alt="" draggable="false">
         <!-- The spore cloud hangs in the air behind the mushrooms -->
@@ -100,7 +101,7 @@
             <img class="cone" src="/assets/collaborate/cone.webp" alt="" draggable="false" :style="{ '--bx': cone.x, '--by': cone.y, '--bw': cone.w }">
             <div class="coneHit" ref="coneHit" role="button" tabindex="0" :aria-label="$i18n.locale === 'en' ? 'Pine cone' : 'Piña'"
                 :style="{ '--bx': cone.x, '--by': cone.y, '--bw': cone.w, '--bh': cone.h }"
-                @pointerdown.prevent="shine" @keydown="onKey"></div>
+                @pointerdown.prevent="shine" @pointerenter="hot = true" @pointerleave="hot = false" @keydown="onKey"></div>
         </div>
         <canvas class="spores sparks" ref="sparkCanvas"></canvas>
     </div>
@@ -219,21 +220,31 @@
         outline-offset: 2px;
     }
 
-    /* Held: it glows the way the hero's character does, a soft halo that breathes; let go and it fades slowly */
-    .lit .cone {
-        filter: brightness(1.18) saturate(1.12) drop-shadow(0 0 5px rgba(255, 244, 150, 0.85)) drop-shadow(0 0 14px rgba(255, 236, 110, 0.5));
-        animation: conePulse 2.8s ease-in-out infinite;
+    /* Hovered: a faint glow, as if it noticed. Held: it shines more, the way the hero's character does, and breathes. */
+    .hot .cone {
+        filter: brightness(1.08) drop-shadow(0 0 4px rgba(255, 244, 150, 0.6)) drop-shadow(0 0 10px rgba(255, 236, 110, 0.3));
         transition-duration: 0.35s;
+    }
+
+    .hot .coneGlow {
+        opacity: 0.5;
+        transition-duration: 0.35s;
+    }
+
+    .lit .cone {
+        filter: brightness(1.3) saturate(1.2) drop-shadow(0 0 7px rgba(255, 244, 150, 1)) drop-shadow(0 0 22px rgba(255, 236, 110, 0.75));
+        animation: conePulse 2.8s ease-in-out infinite;
+        transition-duration: 0.25s;
     }
 
     .lit .coneGlow {
         opacity: 1;
-        transition-duration: 0.35s;
+        transition-duration: 0.25s;
     }
 
     @keyframes conePulse {
-        0%, 100% { filter: brightness(1.12) saturate(1.08) drop-shadow(0 0 4px rgba(255, 244, 150, 0.7)) drop-shadow(0 0 10px rgba(255, 236, 110, 0.35)); }
-        50% { filter: brightness(1.24) saturate(1.16) drop-shadow(0 0 6px rgba(255, 244, 150, 0.95)) drop-shadow(0 0 18px rgba(255, 236, 110, 0.6)); }
+        0%, 100% { filter: brightness(1.22) saturate(1.14) drop-shadow(0 0 6px rgba(255, 244, 150, 0.85)) drop-shadow(0 0 16px rgba(255, 236, 110, 0.55)); }
+        50% { filter: brightness(1.38) saturate(1.24) drop-shadow(0 0 9px rgba(255, 244, 150, 1)) drop-shadow(0 0 28px rgba(255, 236, 110, 0.85)); }
     }
 
     @media (prefers-reduced-motion: reduce) {

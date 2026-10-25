@@ -7,6 +7,10 @@
 // a constant tremble (Brownian motion) and drag. The pointer is a gust: spores near it are pushed away, swirled and
 // carried along with its movement, then settle back into the drift. They stay low (they fade out before reaching
 // the sky) and never live long.
+//
+// Besides the spores that leave the caps there is a dust: a standing population of tiny motes hanging in the clear air above
+// the mushrooms, in the manner of the dust around the hero's spiral. They twinkle, drift along slow currents that differ
+// from one height to the next, wrap round the edges, and when the pointer blows they are sent flying and then drift back.
 
 import caps from './mushroomCaps.json';
 
@@ -41,16 +45,16 @@ export function createSpores(canvas, { source, animate = true, front = null } = 
     const glow = makeGlow();
     const goldGlow = makeGlow('255, 226, 110', 0.8);    // for the sparks of the pine cone
     const small = window.innerWidth < 600;
-    const TARGET = small ? 400 : 680;     // the cloud never thins out below this: it is part of the composition
-    const MAX = small ? 640 : 1050;        // and the pointer can stir up a lot more on top of it
+    const TARGET = small ? 220 : 340;     // spores leaving the caps (many are hidden among the coral)
+    const MOTES = small ? 340 : 620;      // dust in the clear air: this is what makes the cloud     // the cloud never thins out below this: it is part of the composition
+    const MAX = small ? 520 : 760;        // and the pointer can stir up a lot more on top of it
     const spores = [];
-    const cooldown = new Array(caps.length).fill(0);
     const totalWidth = caps.reduce((sum, cap) => sum + cap[2], 0);
 
     let width = 0, height = 0, dpr = 1;
     let frame = 0, visible = true, last = 0, clock = 0;
     let nextTrickle = 0, nextPuff = 1.2;
-    const pointer = { x: -9999, y: -9999, vx: 0, vy: 0, active: false, lastX: 0, lastY: 0, lastT: 0 };
+    const pointer = { x: -9999, y: -9999, vx: 0, vy: 0, active: false, pressed: false, lastX: 0, lastY: 0, lastT: 0 };
 
     // Where the caps are on screen, refreshed now and then (the picture moves with the parallax)
     const emitters = caps.map(() => ({ x: 0, y: 0, w: 0 }));
@@ -66,6 +70,33 @@ export function createSpores(canvas, { source, animate = true, front = null } = 
         emittersAt = clock;
     };
 
+    // ---- Dust ----
+    const motes = [];
+    const seedMotes = () => {
+        motes.length = 0;
+        if (!width) return;
+        const top = height * 0.36;
+        const groundTop = Math.min(...emitters.map((cap) => cap.y), height * 0.9);
+        for (let n = 0; n < MOTES; n++) {
+            const depth = rand(0.35, 1);                       // far motes are smaller, fainter and slower
+            motes.push({
+                bx: rand(0, width),
+                // denser near the ground, thinning upwards
+                by: groundTop + 4 - Math.random() ** 1.5 * (groundTop - top),
+                depth,
+                r: rand(0.7, 1.9) * (0.55 + 0.6 * depth),
+                a: rand(0.45, 1) * (0.5 + 0.5 * depth),
+                phase: rand(0, TAU), twinkle: rand(0.9, 2.8), bob: rand(0.15, 0.5), amp: rand(3, 11),
+                dx: 0, dy: 0, dvx: 0, dvy: 0,
+                x: 0, y: 0,
+                tint: TINTS[Math.floor(Math.random() * TINTS.length)],
+            });
+            const m = motes[motes.length - 1];
+            m.x = m.bx;
+            m.y = m.by;
+        }
+    };
+
     const resize = () => {
         dpr = Math.min(window.devicePixelRatio || 1, 2);
         width = canvas.clientWidth;
@@ -79,6 +110,8 @@ export function createSpores(canvas, { source, animate = true, front = null } = 
             front.height = canvas.height;
             ctxFront.setTransform(dpr, 0, 0, dpr, 0, 0);
         }
+        locateEmitters();
+        seedMotes();
     };
 
     // Caps that are on screen (the strip is wider than the screen, so some are out of sight)
@@ -120,7 +153,7 @@ export function createSpores(canvas, { source, animate = true, front = null } = 
             y: cap.y + rand(-2, 3),
             vx: Math.cos(angle) * speed + bias[0],
             vy: Math.sin(angle) * speed + bias[1],
-            r: rand(0.6, 1.8) * (0.7 + 0.5 * mass),
+            r: rand(0.8, 2.2) * (0.7 + 0.5 * mass),
             mass,
             age: 0,
             life: rand(9, 20),
@@ -156,33 +189,9 @@ export function createSpores(canvas, { source, animate = true, front = null } = 
         pointer.lastT = now;
         pointer.active = true;
 
-        // Brushing a cap shakes a puff loose
-        if (emittersAt < 0 || clock - emittersAt > 0.2) locateEmitters();
-        const speed = Math.hypot(pointer.vx, pointer.vy);
-
-        // Moving through the low air stirs more spores up around the pointer, carried the way it moves
-        const groundTop = Math.min(...emitters.map((cap) => cap.y));
-        if (speed > 60 && y > groundTop - 170 && y < height + 20) {
-            const stir = Math.min(2, 1 + Math.floor(speed / 420));
-            for (let n = 0; n < stir && spores.length < MAX; n++) {
-                const near = emitters.reduce((best, cap, i) => (Math.abs(cap.x - x) < Math.abs(emitters[best].x - x) ? i : best), 0);
-                release(near, 6, 1.1, [pointer.vx * 0.05, pointer.vy * 0.03 - 4]);
-                const s = spores[spores.length - 1];
-                s.x = x + rand(-34, 34);
-                s.y = y + rand(-24, 24);
-            }
-        }
-        if (speed > 90) {
-            emitters.forEach((cap, i) => {
-                if (clock < cooldown[i]) return;
-                if (Math.hypot(cap.x - x, cap.y - y) < Math.max(46, cap.w * 0.7)) {
-                    cooldown[i] = clock + 0.7;
-                    puff(i, Math.round(rand(4, 8)), rand(12, 22), [pointer.vx * 0.06, pointer.vy * 0.03 - 3]);
-                }
-            });
-        }
     };
-    const onLeave = () => { pointer.active = false; pointer.vx = pointer.vy = 0; pointer.x = pointer.y = -9999; };
+    const onLeave = () => { pointer.active = false; pointer.pressed = false; pointer.vx = pointer.vy = 0; pointer.x = pointer.y = -9999; };
+    const onRelease = () => { pointer.pressed = false; };
     const onPress = (event) => {
         onPointer(event);
         // A tap on the ground sends up a cloud from the nearest cap
@@ -193,6 +202,26 @@ export function createSpores(canvas, { source, animate = true, front = null } = 
             if (distance < nearest) { nearest = distance; best = i; }
         });
         if (nearest < 140) puff(best, Math.round(rand(18, 30)), rand(26, 46), [0, 0]);
+
+        // A breath at the point of the click: the spores around it are sent flying outwards, the closer the harder
+        pointer.pressed = true;
+        for (const s of spores) {
+            const dx = s.x - pointer.x, dy = s.y - pointer.y;
+            const distance = Math.hypot(dx, dy) || 1;
+            if (distance > 260) continue;
+            const f = (1 - distance / 260) ** 1.4;
+            const light = 1.25 - s.mass * 0.6;
+            s.vx += dx / distance * (90 + 330 * f) * light;
+            s.vy += dy / distance * (90 + 330 * f) * light - 30 * f;
+        }
+        for (const m of motes) {
+            const dx = m.x - pointer.x, dy = m.y - pointer.y;
+            const distance = Math.hypot(dx, dy) || 1;
+            if (distance > 260) continue;
+            const f = (1 - distance / 260) ** 1.4;
+            m.dvx += dx / distance * (110 + 380 * f) * (0.6 + 0.5 * m.depth);
+            m.dvy += dy / distance * (110 + 380 * f) * (0.6 + 0.5 * m.depth) - 30 * f;
+        }
     };
 
     const step = (dt, t) => {
@@ -229,21 +258,58 @@ export function createSpores(canvas, { source, animate = true, front = null } = 
             s.vx += (Math.random() - 0.5) * tremble;
             s.vy += (Math.random() - 0.5) * tremble;
 
-            // The pointer is a gust: it pushes away, swirls and carries
+            // The pointer: passing over only drags them a hair; pressed, it blows
             if (gust) {
                 const dx = s.x - pointer.x, dy = s.y - pointer.y;
                 const distance = Math.hypot(dx, dy) || 1;
                 if (distance < REACH) {
                     const f = (1 - distance / REACH) ** 2;
                     const light = 1.25 - s.mass * 0.6;           // the lightest are the most carried away
-                    s.vx += (dx / distance * 300 + (-dy / distance) * 150 + pointer.vx * 1.5) * f * light * dt;
-                    s.vy += (dy / distance * 300 + (dx / distance) * 150 + pointer.vy * 1.5) * f * light * dt;
+                    if (pointer.pressed) {
+                        s.vx += (dx / distance * 380 + (-dy / distance) * 130 + pointer.vx * 1.6) * f * light * dt;
+                        s.vy += (dy / distance * 380 + (dx / distance) * 130 + pointer.vy * 1.6) * f * light * dt;
+                    } else {
+                        s.vx += pointer.vx * 0.22 * f * light * dt;
+                        s.vy += pointer.vy * 0.22 * f * light * dt;
+                    }
                 }
             }
 
             s.x += s.vx * dt;
             s.y += s.vy * dt;
             if (s.x < -30 || s.x > width + 30 || s.y > height + 30) spores.splice(i, 1);
+        }
+
+        // The dust: it rides slow currents, bobs, and is thrown about by the pointer, then drifts back to where it hangs
+        for (const m of motes) {
+            const flow = (Math.sin(m.by * 0.012 + t * 0.13) * 14 + 5) * m.depth;
+            m.bx += flow * dt;
+            if (m.bx > width + 12) m.bx = -12; else if (m.bx < -12) m.bx = width + 12;
+
+            m.dvx += -m.dx * 0.5 * dt;
+            m.dvy += -m.dy * 0.5 * dt;
+            const damp = Math.exp(-1.3 * dt);
+            m.dvx *= damp;
+            m.dvy *= damp;
+            m.x = m.bx + m.dx;
+            m.y = m.by + Math.sin(t * m.bob + m.phase) * m.amp + m.dy;
+
+            if (gust) {
+                const dx = m.x - pointer.x, dy = m.y - pointer.y;
+                const distance = Math.hypot(dx, dy) || 1;
+                if (distance < REACH) {
+                    const f = (1 - distance / REACH) ** 2;
+                    if (pointer.pressed) {
+                        m.dvx += (dx / distance * 380 + (-dy / distance) * 130 + pointer.vx * 1.6) * f * dt;
+                        m.dvy += (dy / distance * 380 + (dx / distance) * 130 + pointer.vy * 1.6) * f * dt;
+                    } else {
+                        m.dvx += pointer.vx * 0.22 * f * dt;
+                        m.dvy += pointer.vy * 0.22 * f * dt;
+                    }
+                }
+            }
+            m.dx += m.dvx * dt;
+            m.dy += m.dvy * dt;
         }
 
         // The pointer's own speed fades if it stops moving
@@ -255,6 +321,25 @@ export function createSpores(canvas, { source, animate = true, front = null } = 
     const draw = (t, { ceiling, vanish }) => {
         ctx.clearRect(0, 0, width, height);
         ctxFront?.clearRect(0, 0, width, height);
+
+        // Dust first: far behind everything else. It twinkles, and thins out towards the top of its band.
+        const bandTop = height * 0.36;
+        for (const m of motes) {
+            const sparkle = 0.5 + 0.5 * Math.sin(t * m.twinkle + m.phase * 3);
+            const alpha = m.a * (0.25 + 0.75 * sparkle ** 1.4) * smooth(bandTop, bandTop + height * 0.18, m.y);
+            if (alpha < 0.02) continue;
+            if (m.r > 1.15) {
+                const reach = m.r * 3.2;
+                ctx.globalAlpha = alpha * 0.4;
+                ctx.drawImage(glow, m.x - reach, m.y - reach, reach * 2, reach * 2);
+            }
+            ctx.globalAlpha = alpha;
+            ctx.fillStyle = `rgb(${m.tint})`;
+            ctx.beginPath();
+            ctx.arc(m.x, m.y, m.r, 0, TAU);
+            ctx.fill();
+        }
+
         for (const s of spores) {
             const born = smooth(0, 0.7, s.age);
             const dying = 1 - smooth(s.life * 0.65, s.life, s.age);
@@ -295,7 +380,6 @@ export function createSpores(canvas, { source, animate = true, front = null } = 
     const visibility = new IntersectionObserver(([entry]) => { visible = entry.isIntersecting; });
     visibility.observe(canvas);
     resize();
-    locateEmitters();
 
     if (animate) {
         // Start with the air already seeded, so the first look is not an empty field
@@ -307,6 +391,7 @@ export function createSpores(canvas, { source, animate = true, front = null } = 
         }
         window.addEventListener('pointermove', onPointer, { passive: true });
         window.addEventListener('pointerdown', onPress, { passive: true });
+        window.addEventListener('pointerup', onRelease, { passive: true });
         document.addEventListener('pointerleave', onLeave);
         window.addEventListener('pointercancel', onLeave);
         frame = requestAnimationFrame(tick);
@@ -344,6 +429,7 @@ export function createSpores(canvas, { source, animate = true, front = null } = 
             visibility.disconnect();
             window.removeEventListener('pointermove', onPointer);
             window.removeEventListener('pointerdown', onPress);
+            window.removeEventListener('pointerup', onRelease);
             document.removeEventListener('pointerleave', onLeave);
             window.removeEventListener('pointercancel', onLeave);
         },
