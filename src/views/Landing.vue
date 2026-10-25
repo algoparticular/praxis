@@ -82,7 +82,16 @@
             );
             enter(document.querySelector('#hero h1'), { y: 28, delay: 150 });
             enter(document.querySelector('#hero h1 span'), { y: 14, delay: 650, duration: 900 });
-            enter(document.querySelector('#hero .splash.particle'), { y: 40, scale: 0.88, delay: 350, duration: 1600 });
+            //Once settled, the character sways and breathes. Rotate and scale are separate animations with different
+            //durations so the loop does not feel mechanical.
+            const particle = document.querySelector('#hero .splash.particle');
+            const sway = (keyframes, duration) => idleAnimations.push(particle.animate(keyframes, {
+                duration, direction: 'alternate', iterations: Infinity, easing: 'ease-in-out'
+            }));
+            enter(particle, { y: 40, scale: 0.88, delay: 350, duration: 1600 }).finished.then(() => {
+                sway({ rotate: ['-2.5deg', '2.5deg'] }, 5200);
+                sway({ scale: ['1', '1.035'] }, 3600);
+            }).catch(() => {});
 
             //Leaving the hero: the title lifts and fades while the particle drifts up slower, so the violet hands over to the night
             const heroTitle = document.querySelector('#hero > a');
