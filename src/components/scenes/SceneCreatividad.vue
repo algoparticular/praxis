@@ -137,7 +137,7 @@
         const box = event.currentTarget.getBoundingClientRect();
         const canvas = frontCanvas.value.getBoundingClientRect();
         sparks.burst(box.left + box.width / 2 - canvas.left, box.top + box.height / 2 - canvas.top, {
-            n: 26, colors: [0xffb069, 0xff9a5c, 0xffd29a, 0xf08a8a], speed: 120, life: 2.8, size: 4.6, spread: 8, rise: 10,
+            n: 26, colors: [0xffb069, 0xff9a5c, 0xffd29a, 0xf08a8a], speed: 120, life: 2.8, size: 4.6, spread: 8,
         });
         dust?.boost(0, 1.4);
         dust?.boost(1, 1);
@@ -226,7 +226,7 @@
                     drift: 2, jitter: 0.4, twinkle: 0.15, reach: 0, parallax: 0, opacity: 0.8,
                 },
                 // Spores thrown from the mushrooms that are touched
-                { dynamic: sparks.group, colors: [0xffb069], look: 'hard', parallax: 0, drift: 0, twinkle: 0, reach: 0 },
+                sparks.group(),
             ],
         });
         enter();
