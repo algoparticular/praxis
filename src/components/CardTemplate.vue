@@ -5,7 +5,8 @@
     import { takePendingTransition } from '../cardTransition.js';
 
     import { getCard } from '../data/cards.js';
-    import { sceneFor } from '../data/cardScenes.js';
+    import { sceneFor, sceneNameFor } from '../data/cardScenes.js';
+    import { setCurrentVisit, startCardVisit, track } from '../analytics.js';
 
     const props = defineProps({
         id: String
@@ -25,6 +26,14 @@
     const entering = ref(!!transition);
     const ready = ref(!transition);         //the scene is shown (and its layers come to life) once the card has landed
 
+    // What the person does here is told as one story when they leave (analytics.js): how long, whether they touched the
+    // scene, whether they read on. A card with a picked transition was chosen in the oracle; otherwise it was opened directly.
+    const visit = startCardVisit(props.id, { scene: sceneNameFor(props.id), entry: transition ? 'picked' : 'direct' });
+    setCurrentVisit(visit);
+
+    // Touching the scene counts; the share button on the stage does not
+    const onStageDown = (event) => { if (!event.target.closest('.action')) visit.touch(); };
+
     const root = ref(null);
     const stage = ref(null);
     const cue = ref(null);
@@ -37,10 +46,12 @@
 
     const fadeCue = () => {
         if (cue.value) cue.value.style.opacity = Math.max(0, 1 - window.scrollY / 160);
+        if (stage.value && window.scrollY > stage.value.offsetHeight * 0.7) visit.reading();
     };
 
     onMounted(async () => {
         window.addEventListener('scroll', fadeCue, { passive: true });
+        window.addEventListener('pagehide', visit.finish);
 
         if (transition) {
             const box = stage.value.getBoundingClientRect();
@@ -79,19 +90,22 @@
         window.removeEventListener('scroll', fadeCue);
         stopReveals.forEach((stop) => stop());
         transition?.el.remove();
+        window.removeEventListener('pagehide', visit.finish);
+        visit.finish();
+        setCurrentVisit(null);
     });
 </script>
 
 <template>
 	<main class="cardWrapper" :class="{ entering }" ref="root">
-        <section class="stage" ref="stage" @contextmenu.prevent @selectstart.prevent>
+        <section class="stage" ref="stage" @contextmenu.prevent @selectstart.prevent @pointerdown.capture="onStageDown">
             <div class="sceneHost" :class="{ ready }">
                 <component :is="scene" :card="card" :active="ready" />
             </div>
 
             <h1 class="title" v-if="hasAffirmation">{{ String(card['name_' + $i18n.locale] ?? '').trim() }}</h1>
 
-            <button class="action" @click="router.push({ path: '/share/' + props.id });" :aria-label="$t('oracle.share')">
+            <button class="action" @click="track('share_opened', { card_id: props.id }); router.push({ path: '/share/' + props.id });" :aria-label="$t('oracle.share')">
                 <svg class="icon share" width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path fill-rule="evenodd" clip-rule="evenodd" d="M12.0002 9.66634C11.0797 9.66634 10.3335 8.92015 10.3335 7.99967C10.3335 7.0792 11.0797 6.33301 12.0002 6.33301H32.0002C32.9206 6.33301 33.6668 7.0792 33.6668 7.99967V27.9997C33.6668 28.9201 32.9206 29.6663 32.0002 29.6663C31.0797 29.6663 30.3335 28.9201 30.3335 27.9997V12.0234L9.17867 33.1782C8.5278 33.8291 7.47253 33.8291 6.82165 33.1782C6.17078 32.5273 6.17078 31.472 6.82165 30.8212L27.9765 9.66634H12.0002Z" />
                 </svg>

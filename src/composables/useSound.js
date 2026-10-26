@@ -7,6 +7,7 @@
 // Vibration is not available in iOS browsers, so there it is simply skipped.
 import { ref } from 'vue';
 import * as synth from '../audio/synth.js';
+import { track } from '../analytics.js';
 
 const STORAGE_KEY = 'sound';
 
@@ -108,9 +109,10 @@ const disable = () => {
 export const toggleSound = () => {
     if (soundOn.value) {
         disable();
+        track('sound_toggled', { on: false });
         return Promise.resolve(false);
     }
-    return enable();
+    return enable().then((on) => { track('sound_toggled', { on: soundOn.value }); return on; });
 };
 
 export const play = (name) => {

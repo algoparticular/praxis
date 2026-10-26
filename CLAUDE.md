@@ -62,6 +62,8 @@ These cannot see what a real GPU or a real phone does (flicker, disappearing lay
 
 **Share previews (og:image):** crawlers don't run JS, so `scripts/cardMetaPlugin.js` (Vite plugin, runs after `vite build`) writes `dist/card/<id>/index.html` with each card's own og:/twitter: tags (Spanish name and affirmation) and `dist/og/<id>.jpg` (1200x630, illustration over the card colour). Netlify serves those static files before the SPA redirect. Cards with no image are skipped and fall back to the generic tags in `index.html`.
 
+**Analytics:** anonymous usage analytics with PostHog, cookie-less and in memory (`src/analytics.js`, off unless `VITE_POSTHOG_KEY` is set; events, funnels and privacy guarantees in `docs/analitica.md`). Card pages tell one story per visit (`startCardVisit`: time, touches on the scene, whether the reading was reached) and scenes with a game report milestones with `sceneMilestone`.
+
 **Firebase** is initialized in `main.js` but auth guards on routes are currently commented out. Firebase is set up for future user account features but not enforced.
 
 **PWA:** Service worker is registered in `App.vue`. `public/manifest.webmanifest` configures standalone install behavior.

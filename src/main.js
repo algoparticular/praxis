@@ -8,6 +8,7 @@ import { es } from "./json/copy_es.json";
 import { en } from "./json/copy_en.json";
 
 import App from "./App.vue";
+import { initAnalytics } from "./analytics.js";
 
 //Router
 import router from "./router";
@@ -49,3 +50,6 @@ app.use(VueKinesis);
 app.use(VueSocialSharing);
 
 app.mount("#app");
+
+// Anonymous, cookie-less usage analytics (does nothing without VITE_POSTHOG_KEY)
+initAnalytics({ router, i18n });

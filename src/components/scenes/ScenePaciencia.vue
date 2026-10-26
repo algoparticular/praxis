@@ -14,6 +14,7 @@
     import { createSpores } from '../../composables/useSpores.js';
     import { createRoots } from '../../composables/useRoots.js';
     import { play } from '../../composables/useSound.js';
+    import { sceneMilestone } from '../../analytics.js';
     import Rulito from '../Rulito.vue';
     import cone from '../../composables/pineCone.json';
     import rulitoAt from '../../composables/pacienciaRulito.json';
@@ -103,6 +104,7 @@
     const bloom = () => {
         play('star');
         level = Math.min(3, level + 1);
+        sceneMilestone('rulito_completed', { times: level });
         wave = 0;
         // The wave runs out of the cone along the roots; each cap lets go of its spores as the light gets to it
         const cone = coneHit.value.getBoundingClientRect();
