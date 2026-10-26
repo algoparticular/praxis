@@ -36,6 +36,7 @@ export const chord = (name = 'D') => {
         name,
         kind,
         bass,
+        intervals: tones,
         // The tones from a register upwards, across a span of semitones
         tones: (from, span) => {
             const out = [];
@@ -152,19 +153,39 @@ const swish = (ctx, out, time, { from, to, duration, level, q = 1.2 }) => {
     source.stop(time + duration + 0.05);
 };
 
-/* ---------- Effects: each one is (ctx, out, time) ---------- */
+/* ---------- Effects: each one is (ctx, out, time, harmony): harmony is the card's chord, or null outside the cards ---------- */
 
-// Picking a card: three bowl notes climbing the scale
-export const pick = (ctx, out, time) => {
-    bell(ctx, out, time, 587.33, 3.4, 0.13);
-    bell(ctx, out, time + 0.16, 880, 3.2, 0.11);
-    bell(ctx, out, time + 0.34, 1174.66, 3.4, 0.07);
+// Picking a card: three bowl notes climbing the scale. With the chosen card's chord they climb its root, fifth
+// and octave, and its third (and seventh) answer quietly on top: the card already sounds before it is turned over.
+export const pick = (ctx, out, time, harmony) => {
+    if (!harmony) {
+        bell(ctx, out, time, 587.33, 3.4, 0.13);
+        bell(ctx, out, time + 0.16, 880, 3.2, 0.11);
+        bell(ctx, out, time + 0.34, 1174.66, 3.4, 0.07);
+        return;
+    }
+    const root = harmony.bass + 24;
+    bell(ctx, out, time, hz(root), 3.4, 0.13);
+    bell(ctx, out, time + 0.16, hz(root + 7), 3.2, 0.11);
+    bell(ctx, out, time + 0.34, hz(root + 12), 3.4, 0.07);
+    harmony.intervals.slice(1).filter((step) => step !== 7).forEach((step, i) => {
+        bell(ctx, out, time + 0.6 + i * 0.18, hz(root + 12 + step), 3, 0.035);
+    });
 };
 
-// Turning the card over: a breath of air and one high note
-export const flip = (ctx, out, time) => {
+// Turning the card over: a breath of air and one high note. With the card's chord that note is its third, the
+// one that makes it major or minor, so the card shows its colour as it turns; a low bowl on its root carries it
+// (and a seventh adds its seventh, slightly late).
+export const flip = (ctx, out, time, harmony) => {
     swish(ctx, out, time, { from: 400, to: 1800, duration: 0.65, level: 0.1, q: 0.6 });
-    bell(ctx, out, time + 0.42, 739.99, 2.6, 0.06);
+    if (!harmony) {
+        bell(ctx, out, time + 0.42, 739.99, 2.6, 0.06);
+        return;
+    }
+    const root = harmony.bass + 24;
+    bell(ctx, out, time + 0.42, hz(root + harmony.intervals[1]), harmony.kind === 'm' ? 3.2 : 2.6, 0.06);
+    bell(ctx, out, time + 0.46, hz(harmony.bass + 12), 4, 0.05);
+    if (harmony.kind === '7') bell(ctx, out, time + 0.7, hz(root + 10), 2.6, 0.03);
 };
 
 // Stars come in bursts (a scene touched again and again, a sky full of shooting stars), and the same bright run
