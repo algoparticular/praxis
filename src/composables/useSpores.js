@@ -62,6 +62,7 @@ export function createSpores(canvas, { source, animate = true, front = null } = 
     let width = 0, height = 0, dpr = 1;
     let frame = 0, visible = true, last = 0, clock = 0;
     let nextTrickle = 0, nextPuff = 1.2;
+    let surge = 0, surgeFor = 1;        // 1 right after surge() and down to 0 over surgeFor seconds: the cloud swells, then settles
     const pointer = { x: -9999, y: -9999, vx: 0, vy: 0, active: false, pressed: false, lastX: 0, lastY: 0, lastT: 0 };
 
     // Where the caps are on screen, refreshed now and then (the picture moves with the parallax)
@@ -151,7 +152,7 @@ export function createSpores(canvas, { source, animate = true, front = null } = 
 
     // One spore, leaving cap `i`. `kick` is the speed of its first push, `spread` the half-angle of the cone it leaves in.
     const release = (i, kick = 6, spread = 0.9, bias = [0, 0]) => {
-        if (spores.length >= MAX) spores.shift();
+        if (spores.length >= MAX * (1 + 1.4 * surge)) spores.shift();
         const cap = typeof i === 'number' ? emitters[i] : i;
         const angle = -Math.PI / 2 + rand(-spread, spread);
         const speed = kick * rand(0.4, 1.2);
@@ -234,14 +235,16 @@ export function createSpores(canvas, { source, animate = true, front = null } = 
 
     const step = (dt, t) => {
         // Release. First the baseline: whenever the cloud is below its usual size, a few more come out of the caps
-        for (let n = 0; n < 8 && spores.length < TARGET; n++) release(spot(), 5);
+        surge = Math.max(0, surge - dt / surgeFor);
+        const target = TARGET * (1 + 2.4 * surge);
+        for (let n = 0; n < 8 + 30 * surge && spores.length < target; n++) release(spot(), 5 + 9 * surge);
         if (t > nextTrickle) {
             release(spot(), 5);
-            nextTrickle = t + rand(0.02, 0.06);
+            nextTrickle = t + rand(0.02, 0.06) * (1 - 0.6 * surge);
         }
         if (t > nextPuff) {
-            puff(pickCap(), Math.round(rand(10, 22)), rand(16, 34), [0, 0]);
-            nextPuff = t + rand(1.2, 3.2);
+            puff(pickCap(), Math.round(rand(10, 22) * (1 + 1.5 * surge)), rand(16, 34) * (1 + 0.5 * surge), [0, 0]);
+            nextPuff = t + rand(1.2, 3.2) * (1 - 0.6 * surge);
         }
 
         const ceiling = height * 0.62;         // spores are gone before they climb to the sky
@@ -430,6 +433,15 @@ export function createSpores(canvas, { source, animate = true, front = null } = 
                     phase: rand(0, TAU), twinkle: rand(3, 6), tint: '255, 232, 120', gold: true,
                 });
             }
+        },
+        // The spores multiply: a wave goes up from every cap on screen, and for `seconds` the cloud is several times
+        // denser and puffs more often, then it settles back to its usual size as they drift away
+        swell(seconds = 8) {
+            if (!animate) return;
+            locateEmitters();
+            visibleCaps().forEach((i) => puff(i, Math.round(rand(9, 15)), rand(38, 64), [0, 0]));
+            surge = 1;
+            surgeFor = seconds;
         },
         destroy() {
             cancelAnimationFrame(frame);

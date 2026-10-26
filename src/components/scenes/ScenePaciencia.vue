@@ -2,7 +2,8 @@
     // Paciencia: the little larvae in their boat, drifting over a field of coral and mushrooms under a stippled sun.
     // Its verb is Arraigar (take root): the pine cone is held, not tapped. While it is held, the rulito over the
     // central Sama's head (a stroke drawn in code, Rulito.vue) is born as a dot, stretches into a line and curls into
-    // its loop, taking GROW seconds to be whole; when it is, it flares and throws sparks. Let go and its tail starts
+    // its loop, taking GROW seconds to be whole (quick at first, easing as it gets there); when it is, it flares, throws sparks and the blue spores multiply
+    // (they swell for a few seconds and settle back). Let go and its tail starts
     // to catch up with its head (EAT seconds for the whole stroke) until it shrinks back into a dot and is gone, so
     // no hold is wasted. The next one has another shape.
     // The layers come from the artwork itself (public/assets/collaborate) and move with different depth:
@@ -47,13 +48,15 @@
         ]);
     };
 
-    const GROW = 4.5;                       // seconds of holding to draw it whole
-    const LINGER = 1.2;                     // seconds a whole rulito stays before its tail starts to go
-    const EAT = 7;                          // seconds for the tail to go all the way along it
+    const GROW = 2.6;                       // seconds of holding to draw it whole
+    const LINGER = 0.9;                     // seconds a whole rulito stays before its tail starts to go
+    const EAT = 3.4;                        // seconds for the tail to go all the way along it
     let held = false;
     let head = 0;                           // how far along its stroke the front of the rulito is (0..1)
     let tail = 0;                           // and the back of it
     let idle = 0;                           // seconds since the cone was let go
+    let grown = 0;                          // 0..1, how long it has been held, on its way to GROW
+    let pop = 0;                            // 1 when it completes, down to 0: a little bump in its size
     let full = false;                       // the flare has gone off for this rulito
     let lastT = null;
 
@@ -88,6 +91,7 @@
     // The charge is full: the rulito flares and throws sparks
     const bloom = () => {
         play('star');
+        spores?.swell(9);
         if (reduced || !rulito.value) return;
         const box = rulito.value.$el.getBoundingClientRect();
         spores?.burst(box.left + box.width / 2, box.top + box.height / 2, 36);
@@ -112,20 +116,24 @@
             // moment the tail catches up with the head. When it has, the rulito is gone and the next one has another shape.
             const dt = lastT === null ? 0 : Math.min(t - lastT, 0.1);
             lastT = t;
+            pop = Math.max(0, pop - dt * 2.2);
             if (held) {
                 idle = 0;
-                head = Math.min(1, head + dt / GROW);
-                tail = Math.max(0, tail - dt / 1.5);
+                // It starts quickly and eases in as it gets there: the dot is out at once, the stroke runs, the loop is a flick
+                grown = Math.min(1, grown + dt / GROW);
+                head = Math.max(head, 1 - (1 - grown) ** 1.6);
+                tail = Math.max(0, tail - dt / 0.8);
             } else if (head > 0) {
                 idle += dt;
-                if (idle > (head >= 1 ? LINGER : 0.3)) tail = Math.min(head, tail + dt / EAT);
+                if (idle > (head >= 1 ? LINGER : 0.2)) tail = Math.min(head, tail + dt / EAT);
             }
-            if (head >= 1 && !full) { full = true; bloom(); }
-            if (head > 0 && head - tail < 0.0005) { head = 0; tail = 0; full = false; rulito.value.reshape(); }
-            const flare = full && head - tail > 0.9 ? Math.sin(t * 3) * 0.5 + 0.5 : 0;
+            if (head >= 1 && !full) { full = true; pop = 1; bloom(); }
+            if (head > 0 && head - tail < 0.0005) { head = 0; tail = 0; grown = 0; full = false; rulito.value.reshape(); }
+            const flare = full && head - tail > 0.9 ? Math.max(pop, Math.sin(t * 4) * 0.5 + 0.5) : 0;
             root.value.style.setProperty('--charge', (head - tail).toFixed(3));
             rulito.value.frame({ head, tail, flare, t, fade: Math.min(1, (head - tail) * 14) });
-            rulito.value.$el.style.rotate = `${(Math.sin(t * 1.3) * 2.5 * ramp).toFixed(2)}deg`;
+            rulito.value.$el.style.rotate = `${(Math.sin(t * 1.8) * 3 * ramp).toFixed(2)}deg`;
+            rulito.value.$el.style.scale = (1 + 0.2 * pop * pop).toFixed(3);
         });
         spores = createSpores(sporeCanvas.value, { source: mushrooms.value, front: sparkCanvas.value, animate: !window.matchMedia('(prefers-reduced-motion: reduce)').matches });
         enter();

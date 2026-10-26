@@ -16,7 +16,7 @@ Solo **Arraigar en Paciencia** está implementado. El resto son propuestas, toma
 
 ### 1. Arraigar (Sporá, demonio: miedo) — implementado en Paciencia
 **Dinámica:** sostener. Mantener apretado un punto de la escena hasta que algo crece.
-**Cómo funciona hoy en Paciencia:** al mantener apretada la piña (dedo, clic o tecla) el rulito sobre la cabeza del Sama del centro nace como un punto, se estira en una línea, se dobla en un gancho, cierra el lazo y estira el tallo; tarda unos 4,5 segundos. Mientras tanto la piña brilla y su resplandor crece. Al completarse florece: salen chispas y suena un `star`. Si se suelta, la cola del rulito va alcanzando a la cabeza (unos 7 segundos para recorrerlo entero), el lazo se abre, queda el tallo, se encoge hasta un punto y desaparece; así ningún intento se desperdicia, y si se vuelve a sostener, la cola retrocede y el rulito sigue creciendo. Cada rulito nace con otra forma. Está inspirado en la animación `docs/Breathe.gif`, y se dibuja en código (ver `Rulito.vue`).
+**Cómo funciona hoy en Paciencia:** al mantener apretada la piña (dedo, clic o tecla) el rulito sobre la cabeza del Sama del centro nace como un punto, se estira en una línea, se dobla en un gancho, cierra el lazo y estira el tallo; tarda unos 2,6 segundos (nace rápido, el lazo es un trazo veloz y se asienta al llegar). Mientras tanto la piña brilla y su resplandor crece. Al completarse florece con un pequeño "pop": salen chispas, suena un `star` y las esporas azules se multiplican (una oleada desde los hongos y una nube varias veces más densa por unos segundos, que se va asentando). Si se suelta, la cola del rulito va alcanzando a la cabeza (unos 3,4 segundos para recorrerlo entero), el lazo se abre, queda el tallo, se encoge hasta un punto y desaparece; así ningún intento se desperdicia, y si se vuelve a sostener, la cola retrocede y el rulito sigue creciendo. Cada rulito nace con otra forma. Está inspirado en la animación `docs/Breathe.gif`, y se dibuja en código (ver `Rulito.vue`).
 **Idea pendiente, tomada de esa animación:** antes del rulito le crecen raíces a Sid debajo, y se recogen cuando aparece. Para Arraigar sería natural: raíces que crecen mientras se sostiene y, al llegar, el rulito.
 **Variantes posibles:** sostener dos puntos a la vez, o quedarse quieto sin mover el dedo (más exigente); una semilla (Sid) que crece mientras se sostiene.
 **Cartas:** Paciencia (hecha), Hogar, Compromiso, Confianza, Fe, Addhitthana.
@@ -75,5 +75,5 @@ No hay nada que leer ni decir; la invitación es sentir el corazón. Si tiene un
 5. Probarlo en un teléfono real: lo que un navegador de escritorio no muestra (GPU, dedo, interruptor de silencio) solo se ve ahí.
 
 ## Para decidir
-- Tiempo de carga de Arraigar (hoy 4,5 s) y de descarga (9 s): ajustarlo con un teléfono en la mano.
+- Tiempos de Arraigar (hoy 2,6 s para dibujarse y 3,4 s para irse): ajustarlos con un teléfono en la mano.
 - Si el rulito de la página Collaborate también pasa a dibujarse en código (hoy sigue dibujado en la imagen del bote).

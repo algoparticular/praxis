@@ -18,9 +18,9 @@
     const H = 86;
     const PAD = 14;                  // room around it for the glow and the wobble
     const LINE_AT = [[23.2, 5.3], [23.6, 8.7], [23.8, 12.1], [23.9, 15.5], [23.9, 18.9], [23.8, 22.3], [23.6, 25.7], [23.4, 29.1], [23.2, 32.4], [23, 35.8], [22.7, 39.2], [22.5, 42.5], [22.3, 45.8], [22.2, 49.1], [22, 52.4], [21.8, 55.7], [21.6, 59], [21.3, 62.2], [20.9, 65.4], [20.4, 68.6], [19.7, 71.8], [18.9, 74.9], [17.8, 78], [16.5, 81.1], [15.8, 82.7]];   // the stem, from its top to its foot
-    const LINE_W = [1.3, 1.8, 2.1, 2.5, 3, 3, 3, 3, 3.4, 3.5, 3.7, 4.2, 4.2, 4.5, 5.3, 5.5, 4.8, 4.1, 3.8, 3.7, 3.5, 3.5, 3.5, 3.2, 3.1];   // half-width of the stroke at each point
+    const LINE_W = [1.3, 1.8, 2.1, 2.5, 3, 3, 3, 3.1, 3.3, 3.4, 3.5, 3.6, 3.7, 3.7, 3.7, 3.7, 3.7, 3.6, 3.5, 3.5, 3.4, 3.4, 3.3, 3.2, 3.1];   // half-width of the stroke at each point (smoothed: the traced one swelled where the loop joins the stem)
     const LOOP_AT = [[21.6, 41.2], [18.5, 40.1], [15.6, 40.2], [13, 41.4], [10.9, 43.3], [9.3, 45.7], [8.4, 48.4], [8.2, 51.1], [8.8, 53.6], [10.2, 55.7], [12.1, 57.2], [14.6, 57.9], [17.4, 57.6], [20.5, 56.1], [22.1, 54.9]];   // the loop, from where it leaves the stem (above) to where it comes back (below)
-    const LOOP_W = [4.3, 4.1, 4, 3.9, 3.8, 3.7, 3.8, 4, 3.9, 3.9, 4, 3.9, 3.9, 4.6, 5.1];
+    const LOOP_W = [3.8, 3.9, 4, 3.9, 3.8, 3.7, 3.8, 4, 3.9, 3.9, 4, 3.9, 3.8, 3.8, 3.7];
 
     const TAU = Math.PI * 2;
     const rand = (a, b) => a + Math.random() * (b - a);
@@ -44,8 +44,6 @@
         // the stem (over itself) to its top
         const foot = [...LINE_AT].reverse(), footW = [...LINE_W].reverse();
         const j1 = nearest(foot, LOOP_AT[0]), j2 = nearest(foot, LOOP_AT[LOOP_AT.length - 1]);
-        const ctrl = [...foot.slice(0, j1 + 1), ...LOOP_AT, ...foot.slice(j2)];
-        const width = [...footW.slice(0, j1 + 1), ...LOOP_W, ...footW.slice(j2)];
 
         // This time's variation: a smooth warp of the whole shape (the stem passed twice stays on itself), a lean from
         // its foot, a stretch and a thickness
@@ -57,19 +55,27 @@
             const px = (wx - cx) * stretch, py = wy - cy;
             return [cx + px * Math.cos(lean) - py * Math.sin(lean), cy + px * Math.sin(lean) + py * Math.cos(lean)];
         };
-        const C = ctrl.map(move);
-
-        // A smooth curve through those points (Catmull-Rom), then equal steps along it
+        // A smooth curve (Catmull-Rom) through points, with the width along it
         const spline = (p0, p1, p2, p3, t) => 0.5 * (2 * p1 + (-p0 + p2) * t + (2 * p0 - 5 * p1 + 4 * p2 - p3) * t * t + (-p0 + 3 * p1 - 3 * p2 + p3) * t * t * t);
-        const dense = [];
-        for (let i = 0; i < C.length - 1; i++) {
-            const a = C[Math.max(0, i - 1)], b = C[i], c = C[i + 1], d = C[Math.min(C.length - 1, i + 2)];
-            for (let s = 0; s < 8; s++) {
-                const t = s / 8;
-                dense.push([spline(a[0], b[0], c[0], d[0], t), spline(a[1], b[1], c[1], d[1], t), (width[i] * (1 - t) + width[i + 1] * t) * thick]);
+        const curve = (pts, wid) => {
+            const out = [];
+            for (let i = 0; i < pts.length - 1; i++) {
+                const a = pts[Math.max(0, i - 1)], b = pts[i], c = pts[i + 1], d = pts[Math.min(pts.length - 1, i + 2)];
+                for (let s = 0; s < 8; s++) {
+                    const t = s / 8;
+                    out.push([spline(a[0], b[0], c[0], d[0], t), spline(a[1], b[1], c[1], d[1], t), (wid[i] * (1 - t) + wid[i + 1] * t) * thick]);
+                }
             }
-        }
-        dense.push([C[C.length - 1][0], C[C.length - 1][1], width[width.length - 1] * thick]);
+            out.push([pts[pts.length - 1][0], pts[pts.length - 1][1], wid[wid.length - 1] * thick]);
+            return out;
+        };
+        // The stem is one curve, from its foot to its top; the stroke goes up it to the loop, round the loop (which
+        // starts and ends on the stem) and up the same curve again, so the two passes lie exactly on each other
+        const stemC = foot.map(move);
+        const stem = curve(stemC, footW);
+        const loopC = [stemC[j1], ...LOOP_AT.slice(1, -1).map(move), stemC[j2]];
+        const loop = curve(loopC, [footW[j1], ...LOOP_W.slice(1, -1), footW[j2]]);
+        const dense = [...stem.slice(0, j1 * 8 + 1), ...loop, ...stem.slice(j2 * 8)];
         const cum = [0];
         for (let i = 1; i < dense.length; i++) cum.push(cum[i - 1] + Math.hypot(dense[i][0] - dense[i - 1][0], dense[i][1] - dense[i - 1][1]));
         L = cum[cum.length - 1];
@@ -117,11 +123,11 @@
         for (let i = Math.ceil(a / ds); i <= Math.floor(b / ds); i++) if (i * ds > a + 0.01 && i * ds < b - 0.01) S.push(at(i * ds));
         S.push(at(b));
         // The back end is pointed once the tail has started to go; the front end is always a little pointed
-        const tailBite = clamp(tail * L / 4);
+        const tailBite = clamp(tail * L / 1.5);
         S.forEach((s) => {
-            const behind = ease(clamp((s.u - a) / 10)), ahead = ease(clamp((b - s.u) / 8));
-            s.k = (1 - tailBite * (1 - (0.3 + 0.7 * behind))) * (0.35 + 0.65 * ahead);
-            const breath = (Math.sin(t * 1.2 + s.u * 0.09) * 0.5 + Math.sin(t * 0.7 + s.u * 0.04) * 0.4) * clamp(head * 2);
+            const behind = ease(clamp((s.u - a) / 16)), ahead = ease(clamp((b - s.u) / 12));
+            s.k = (1 - tailBite * (1 - (0.05 + 0.95 * behind))) * (0.22 + 0.78 * ahead);
+            const breath = (Math.sin(t * 2.6 + s.u * 0.11) * 0.7 + Math.sin(t * 1.5 + s.u * 0.05) * 0.5) * clamp(head * 2);
             s.px = s.x + s.nx * breath;
             s.py = s.y + s.ny * breath;
         });
@@ -134,7 +140,7 @@
             // Round ends (a dot when it is only being born)
             [S[0], S[S.length - 1]].forEach((s) => {
                 ctx.beginPath();
-                ctx.arc(s.px, s.py, Math.max(s.w * s.k * mul, 0.4 * mul), 0, TAU);
+                ctx.arc(s.px, s.py, Math.max(s.w * s.k * mul, 0.15 * mul), 0, TAU);
                 ctx.fill();
             });
         };
