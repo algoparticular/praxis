@@ -16,6 +16,8 @@ let ctx = null;
 let master = null;
 let ambient = null;
 let silentTrack = null;
+// The chord of the card on screen (null outside the cards): the touch sounds play in it and the ambience follows it
+let cardChord = null;
 
 const readPreference = () => {
     try { return localStorage.getItem(STORAGE_KEY) === 'on'; } catch { return false; }
@@ -88,7 +90,7 @@ const enable = () => {
     writePreference(true);
     return resumed.then(() => {
         if (!ambient && soundOn.value) {
-            ambient = synth.createAmbient(ctx, master);
+            ambient = synth.createAmbient(ctx, master, cardChord?.name);
             ambient.start();
         }
         return true;
@@ -113,7 +115,14 @@ export const toggleSound = () => {
 
 export const play = (name) => {
     if (!soundOn.value || !ctx || ctx.state !== 'running' || typeof synth[name] !== 'function') return;
-    synth[name](ctx, master, ctx.currentTime + 0.02);
+    synth[name](ctx, master, ctx.currentTime + 0.02, cardChord);
+};
+
+// Called when a card comes on screen with its chord (src/data/cardChords.js), and with nothing when it leaves
+export const setCardChord = (name = null) => {
+    if ((cardChord?.name ?? null) === name) return;
+    cardChord = name ? synth.chord(name) : null;
+    if (ambient && ctx) ambient.setChord(name ?? 'D');
 };
 
 export const vibrate = (pattern) => {
