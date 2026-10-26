@@ -67,7 +67,6 @@
 
         <header class="deckHead">
             <h1>{{ $t("nav.deck") }}</h1>
-            <p>{{ $t("about.oracleDeck") }} {{ $t("about.oracleAuthor") }}</p>
             <nav class="filters">
                 <button v-for="filter in filters" :key="filter.key"
                     class="chip" :class="{ active: filter.key === active }"
@@ -149,17 +148,9 @@
     }
 
     .deckHead h1 {
-        margin: 0;
+        margin: 0 0 8px;
         font-size: 44px;
         color: #F7F8F1;
-        text-align: center;
-    }
-
-    .deckHead p {
-        margin: 0 0 8px;
-        font-size: 16px;
-        color: #F7F8F1;
-        opacity: 0.8;
         text-align: center;
     }
 
