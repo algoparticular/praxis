@@ -252,10 +252,14 @@ export async function createDeckRing(canvas, { cards, onFocus, onPick, onSound }
 
     const onPointerLeave = () => { if (!down && !busy) setHover(null); };
 
+    // The wheel turns the ring while the page is at its top. Once the page has been scrolled down (to what comes below
+    // the ring) the wheel scrolls the page, so it can be scrolled back up; a sideways scroll always turns the ring.
     const onWheel = (e) => {
         if (busy) return;
+        const sideways = Math.abs(e.deltaX) > Math.abs(e.deltaY);
+        if (!sideways && !e.shiftKey && window.scrollY > 4) return;
         e.preventDefault();
-        const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+        const delta = sideways ? e.deltaX : e.deltaY;
         scroll.target = partial ? clamp(scroll.target + delta / 220, 0, lastIndex()) : scroll.target + delta / 220;
         clearTimeout(wheelTimer);
         wheelTimer = setTimeout(() => goTo(scroll.target), 140);

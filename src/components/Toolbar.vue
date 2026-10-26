@@ -99,8 +99,6 @@
                   @langChanged="handleLangChanged"
                   :hasHome="true"
                   :hasIntro="false"
-                  :hasAbout="true"
-                  :hasCollaborate="true"
                   />  
         </transition>
 	</div>

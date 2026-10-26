@@ -30,7 +30,6 @@
             "praxis": "The Oracle",
             "deck": "The deck",
             "intro": "Intro",
-            "about": "What's this?",
             "collaborate": "Want to help?",
             "signIn": "Sign in",
             "register": "Create an account",
@@ -60,19 +59,13 @@
             "3": ""
         },
         "about": {
-            "intro": "Algo Particular is a project by",
-            "oracleDeck": "Cartas oráculo escritas por",
+            "oracleDeck": "Oracle cards written by",
             "oracleAuthor": "Belén Brito",
-            "designedBy": "Developed & Illustrated by",
+            "writtenBy": "Cards written by",
+            "designedBy": "Development & illustration",
             "author": "Juan Yañez",
-            "praxis": "About us",
-            "praxisDescrip": "Algo Particular is an artistic/spiritual proposal created in 2020.\n\nOur mission is to invite people to both action and reflection.\n\nThrough art and philosophy, we seek to establish contact with our intuition, that inner compass that invites us to a path with heart.\n\nAs a first interactive proposal we generated Anima, a digital version of Oracle Cards.",
-            "oracle": "Anima & the Oracle of the Particles Deck",
-            "oracleDescrip": "Just as when we travel through a place, we take the guidance of a map or a compass, on the path of self-discovery it is beneficial to take guidance from the so-called 'Higher Frequency', which is none other than the guidance of our deepest Self.\n\nAnima helps to connect with what vibrates within.\n\nThe Oracle Card Deck, written by Belén Brito, is a tool for those of us who are aware of the messages that the Universe, in its divine randomness, provides to guide our steps. With her luminous calm, Belén urges us to find the answers to our inner self, using each card as a mirror to evaluate or validate our path.\n\nThus the Particles bring us those messages that our Being is needing in this moment, in this here and now.",
-            "seed": "Press the seed to take a message",
-            "brote": "Pulsa el brote\npara coleccionarlo",
-            "cta": "Want to help?",
-            "sustent": "Collaborate with us to develop this universe"
+            "oracleDescrip": "Anima is the digital version of the Oracle of the Particles: 33 cards for those of us who listen to the messages the Universe, in its divine randomness, brings to guide our steps.\n\nWith her luminous calm, Belén Brito invites us to look for the answers within, using each card as a mirror of what our Being needs here and now.",
+            "more": "About the deck"
         },
         "collaborate": {
             "intro": "With your help we can grow this universe",

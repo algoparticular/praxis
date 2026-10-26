@@ -10,7 +10,6 @@ import OracleTheNine from '../views/OracleTheNine.vue';
 import Card from '../views/Card.vue';
 import Deck from '../views/Deck.vue';
 import PageNotFound from '../views/PageNotFound.vue';
-import About from '../views/About.vue';
 import Collaborate from '../views/Collaborate.vue';
 import Onboarding from '../views/Onboarding.vue';
 import Share from '../views/Share.vue';
@@ -44,8 +43,9 @@ const router = createRouter({
       component: SignIn,
     },
     {
+      // "¿Qué es esto?" is gone: what it said about the cards now lives on the deck page
       path: "/about",
-      component: About,
+      redirect: "/deck",
     },
     {
       path: "/collaborate",

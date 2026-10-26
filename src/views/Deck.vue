@@ -34,6 +34,10 @@
     // Ids of the filtered cards for the ring; null means the whole deck
     const ids = computed(() => (active.value === 'all' ? null : current.value.cards.map((card) => card.id)));
 
+    // Below the ring, what the deck is and who made it
+    const about = ref(null);
+    const showAbout = () => about.value?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
     const choose = (key) => {
         if (key === active.value) return;
         play('tap');
@@ -76,6 +80,22 @@
 
         <DeckRing v-if="use3D" :cards="cards" :ids="ids" @unsupported="use3D = false"/>
         <DeckTemplate v-else :cards="current.cards"/>
+        <button v-if="use3D" class="more" @click="showAbout">{{ $t("about.more") }}</button>
+
+        <section class="deckAbout" ref="about">
+            <h2>{{ $t("deck.name") }}</h2>
+            <p>{{ $t("about.oracleDescrip") }}</p>
+            <div class="credits">
+                <div>
+                    <p>{{ $t("about.writtenBy") }}</p>
+                    <p class="by">{{ $t("about.oracleAuthor") }}</p>
+                </div>
+                <div>
+                    <p>{{ $t("about.designedBy") }}</p>
+                    <p class="by">{{ $t("about.author") }}</p>
+                </div>
+            </div>
+        </section>
     </div>
 </template>
 
@@ -87,11 +107,11 @@
         min-height: 100vh;
     }
 
-    /* The 3D ring fills the screen and does not scroll */
-    .content.deckPage.is3d {
-        position: fixed;
-        inset: 0;
-        overflow: hidden;
+    /* The 3D ring fills the first screen; what the deck is comes below it */
+    .content.deckPage.is3d :deep(#deckRing) {
+        position: relative;
+        height: 100vh;
+        height: 100svh;
     }
 
     .sky {
@@ -184,6 +204,86 @@
         color: #143246;
     }
 
+    /* Under the card's name, at the foot of the ring: leads to what the deck is */
+    .more {
+        position: absolute;
+        top: calc(100svh - 64px);
+        left: 50%;
+        translate: -50% 0;
+        z-index: 2;
+        height: 36px;
+        padding: 0 16px;
+        border: none;
+        background: none;
+        box-shadow: none;
+        color: #F7F8F1;
+        opacity: 0.7;
+        font-family: 'Caveat', 'Inter', helvetica, sans-serif;
+        font-size: 21px;
+        transition: opacity 200ms ease-out;
+    }
+
+    .more::after {
+        content: ' ↓';
+    }
+
+    .more:hover,
+    .more:focus-visible {
+        background: none;
+        box-shadow: none;
+        color: #F7F8F1;
+        opacity: 1;
+    }
+
+    .deckAbout {
+        position: relative;
+        z-index: 2;
+        max-width: 420px;
+        margin: 0 auto;
+        padding: 72px 24px 120px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 24px;
+        color: #F7F8F1;
+        text-align: center;
+        scroll-margin-top: 48px;
+    }
+
+    .deckAbout h2 {
+        margin: 0;
+        color: #F7F8F1;
+    }
+
+    .deckAbout p {
+        margin: 0;
+        line-height: 160%;
+        white-space: pre-line;
+        color: #F7F8F1;
+    }
+
+    .deckAbout .credits {
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+        margin-top: 24px;
+    }
+
+    .deckAbout .credits div {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .deckAbout .credits p:first-child {
+        opacity: 0.8;
+    }
+
+    .deckAbout .by {
+        font-weight: 600;
+        color: #F7F8F1;
+    }
+
     /* On phones the four chips only fit in one row without the counts */
     @media screen and (max-width: 480px) {
         .chip span {
@@ -211,6 +311,6 @@
     }
 
     @media (prefers-reduced-motion: reduce) {
-        .chip { transition: none; }
+        .chip, .more { transition: none; }
     }
 </style>

@@ -26,8 +26,6 @@
                 :hasHome="true"
                 :hasIntro="false"
                 :hasFullDeck="true"
-                :hasAbout="true"
-                :hasCollaborate="true"
                 />
         </div>
         <div class="wrapper">
