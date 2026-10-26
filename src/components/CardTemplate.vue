@@ -84,7 +84,7 @@
 
 <template>
 	<main class="cardWrapper" :class="{ entering }" ref="root">
-        <section class="stage" ref="stage">
+        <section class="stage" ref="stage" @contextmenu.prevent @selectstart.prevent>
             <div class="sceneHost" :class="{ ready }">
                 <component :is="scene" :card="card" :active="ready" />
             </div>
@@ -134,6 +134,12 @@
         height: 100vh;
         height: 100svh;
         min-height: 560px;
+        /* The stage is played with a finger that stays down (Paciencia): on a phone a long press must not select the
+           picture or text, show the callout or the context menu. The reading below the stage stays selectable. */
+        -webkit-user-select: none;
+        user-select: none;
+        -webkit-touch-callout: none;
+        -webkit-tap-highlight-color: transparent;
     }
 
     .sceneHost {

@@ -94,7 +94,7 @@ export function createRoots(canvas) {
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
 
-        const alive = (0.4 + 0.1 * level) * (0.86 + 0.14 * Math.sin(t * 1.6));
+        const alive = (0.55 + 0.1 * level) * (0.86 + 0.14 * Math.sin(t * 1.6));
         const thick = 1 + 0.14 * level;
 
         // The light of each cap the roots have reached: a flash when the wave gets to it, and a glow that stays
@@ -132,11 +132,15 @@ export function createRoots(canvas) {
                 break;
             }
             if (line.length < 2) return;
-            const width = 0.0115 * (1 - 0.22 * p.depth) * thick;
+            const width = 0.016 * (1 - 0.22 * p.depth) * thick;
             ctx.beginPath();
             line.forEach((q, i) => ctx[i ? 'lineTo' : 'moveTo'](q.x, q.y));
-            ctx.strokeStyle = `rgba(${GOLD}, ${alive * 0.1})`;           // a soft halo
-            ctx.lineWidth = width * 3;
+            // Behind the coral the roots are mostly hidden, so they glow wide: the light spills round the stems
+            ctx.strokeStyle = `rgba(${GOLD}, ${alive * 0.1})`;
+            ctx.lineWidth = width * 9;
+            ctx.stroke();
+            ctx.strokeStyle = `rgba(${GOLD}, ${alive * 0.2})`;
+            ctx.lineWidth = width * 3.4;
             ctx.stroke();
             ctx.strokeStyle = `rgba(${GOLD}, ${alive * (1 - 0.1 * p.depth)})`;
             ctx.lineWidth = width;
