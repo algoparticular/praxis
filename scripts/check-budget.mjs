@@ -28,6 +28,8 @@ for (const { file, rel } of scripts) {
     const name = path.basename(rel);
     if (/^three\.module/.test(name)) check(`JS ${name} (three.js)`, gzipKb(file), 215);
     else if (/^index-/.test(name)) check(`JS ${name} (the app)`, gzipKb(file), 205);
+    // PostHog's SDK: fetched after the app is idle, and only when a key is configured (src/analytics.js)
+    else if (/^module-/.test(name)) check(`JS ${name} (PostHog)`, gzipKb(file), 115);
     else check(`JS ${name}`, gzipKb(file), 40);
 }
 

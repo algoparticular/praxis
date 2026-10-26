@@ -7,6 +7,7 @@
     import { setPendingTransition } from '../cardTransition.js';
     import { play, setCardChord, vibrate } from '../composables/useSound.js';
     import { chordFor } from '../data/cardChords.js';
+    import { track } from '../analytics.js';
 
     const props = defineProps({
         cardsDrawn: Array
@@ -92,6 +93,7 @@
     const handleTakeCard = async (cardId) => {
         if (busy) return;
         busy = true;
+        track('card_picked', { card_id: cardId, mode: router.currentRoute.value.path === '/oracleTheNine' ? 'nine' : 'full' });
         // Picking a card tunes everything to its chord: it already sounds in it as it rises and turns over
         setCardChord(chordFor(cardId));
         play('pick');

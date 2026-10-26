@@ -19,6 +19,7 @@
     import { startStardust } from '../../composables/useStardust.js';
     import { createSparks } from '../../composables/useSparks.js';
     import { play } from '../../composables/useSound.js';
+    import { sceneMilestone } from '../../analytics.js';
     import layers from '../../composables/kshantiLayers.json';
     import flaskData from '../../composables/kshantiFlasks.json';
     import LINE from '../../composables/kshantiLine.json';
@@ -292,6 +293,7 @@
             return;
         }
         f.target = 1;
+        sceneMilestone('cork_popped');
         const canvas = frontCanvas.value.getBoundingClientRect();
         const box = event.currentTarget.getBoundingClientRect();
         sparks.burst(box.left + box.width / 2 - canvas.left, box.top + box.height / 2 - canvas.top, { n: 14, colors: [0xffc470, 0xffe3a8, 0xffffff], speed: 90, size: 4.4, spread: 5 });
@@ -300,6 +302,7 @@
     // The central sign: everything is filled again
     const refill = (event) => {
         FLASKS.forEach((f) => { f.target = 0; });
+        sceneMilestone('refill_all');
         const canvas = frontCanvas.value.getBoundingClientRect();
         const box = event.currentTarget.getBoundingClientRect();
         sparks.burst(box.left + box.width / 2 - canvas.left, box.top + box.height / 2 - canvas.top, { n: 40, colors: [0xffffff, 0xcfeff0, 0xffd1dc], speed: 150, size: 5.2, spread: 10 });

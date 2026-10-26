@@ -20,3 +20,7 @@ const scenes = {
 };
 
 export const sceneFor = (id) => scenes[id] ?? SceneFlat;
+
+// The scene's name for analytics (the components are async and anonymous)
+const names = { 2: 'dana', 3: 'panna', 5: 'kshanti', 20: 'creatividad', 22: 'evolucion', 25: 'hogar', 27: 'paciencia', 29: 'sincronicidad', 31: 'vipassana' };
+export const sceneNameFor = (id) => names[id] ?? 'flat';

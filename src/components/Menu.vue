@@ -1,6 +1,7 @@
 <script setup>
     import { onMounted, onUpdated, ref } from 'vue';
     import { useRouter } from 'vue-router';
+    import { track } from '../analytics.js';
     import { getAuth, onAuthStateChanged, signOut } from 'firebase/auth';
 
     const isLoggedIn = ref(false);
@@ -30,6 +31,7 @@
 
     const langChanged = (lang) => {
         emit('langChanged', lang);
+        track('language_changed', { to: lang });
     }
 
     //ON MOUNTED

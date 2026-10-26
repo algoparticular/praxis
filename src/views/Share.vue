@@ -6,6 +6,7 @@
     import { useRoute, useRouter } from 'vue-router';
 
     import { getCard } from '../data/cards.js';
+    import { track } from '../analytics.js';
 
     const route = useRoute();
     const router = useRouter();
@@ -16,7 +17,10 @@
 
     const shareUrl = window.location.origin+'/card/'+route.params.id;
 
+    const shared = (channel) => track('share_clicked', { card_id: route.params.id, channel });
+
     const copyUrl = () => {
+        shared('link');
         navigator.clipboard.writeText(shareUrl);
         showTooltip.value = true;
 
@@ -57,7 +61,8 @@
 
                     <div class="social">
                         <ShareNetwork
-                            network="facebook"                    
+                            network="facebook"
+                            @open="shared('facebook')"                    
                             :url="shareUrl"
                             :title="card['name_'+$i18n.locale]"
                             :description="card['affirmation_'+$i18n.locale]"
@@ -72,6 +77,7 @@
                     <div class="social">
                         <ShareNetwork
                             network="twitter"
+                            @open="shared('twitter')"
                             :url="shareUrl"
                             :title="card['affirmation_'+$i18n.locale]"
                             twitterUser="algoparticular"
@@ -86,6 +92,7 @@
                     <div class="social">
                         <ShareNetwork
                             network="whatsapp"
+                            @open="shared('whatsapp')"
                             :url="shareUrl"
                             :title="card['name_'+$i18n.locale]"
                             :description="card['affirmation_'+$i18n.locale]"
