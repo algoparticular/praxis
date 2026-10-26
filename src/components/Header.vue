@@ -102,9 +102,7 @@
                     @langChanged="handleLangChanged"
                     :hasHome="true"
                     :hasIntro="false"
-                    :hasFullDeck="true"
-                    :hasAbout="true"
-                    :hasCollaborate="true" />
+                    :hasFullDeck="true"/>
             </div>
         </Transition>
         <div class="navContainer right">
