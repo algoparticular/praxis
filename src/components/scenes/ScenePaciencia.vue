@@ -1,13 +1,22 @@
 <script setup>
     // Paciencia: the little larvae in their boat, drifting over a field of coral and mushrooms under a stippled sun.
+    // Its verb is Arraigar (take root): the pine cone is held, not tapped. While it is held, the rulito over the
+    // central Sama's head (a stroke drawn in code, Rulito.vue) is born as a dot, stretches into a line and curls into
+    // its loop, taking GROW seconds to be whole (quick at first, easing as it gets there); when it is, it flares, throws sparks and the blue spores multiply
+    // (they swell for a few seconds and settle back). Let go and its tail starts
+    // to catch up with its head (EAT seconds for the whole stroke) until it shrinks back into a dot and is gone, so
+    // no hold is wasted. The next one has another shape. When it is completed the card's name lights up too.
     // The layers come from the artwork itself (public/assets/collaborate) and move with different depth:
     // the ground (mushrooms with the grass behind them) travels most with the pointer, the sun least. The air
     // above the mushrooms is a spore system drawn on a canvas (useSpores), not a picture.
     import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
     import { createParallax, enterLayers } from '../../composables/useParallax.js';
     import { createSpores } from '../../composables/useSpores.js';
+    import { createRoots } from '../../composables/useRoots.js';
     import { play } from '../../composables/useSound.js';
+    import Rulito from '../Rulito.vue';
     import cone from '../../composables/pineCone.json';
+    import rulitoAt from '../../composables/pacienciaRulito.json';
 
     const props = defineProps({
         card: { type: Object, default: () => ({}) },
@@ -22,10 +31,14 @@
     const sporeCanvas = ref(null);
     const sparkCanvas = ref(null);
     const coneHit = ref(null);
+    const rootsCanvas = ref(null);
+    let stageEl = null;                     // the card's stage, where the name is lit from (--name-glow)
+    const rulito = ref(null);
     const lit = ref(false);                 // the pine cone is being pressed
     const hot = ref(false);                 // the pointer is over it
     let parallax = null;
     let spores = null;
+    let roots = null;
     let entered = false;
 
     const enter = () => {
@@ -39,23 +52,64 @@
         ]);
     };
 
-    // Pressing the pine cone makes it shine: it lights up while held, fades slowly once let go, and throws sparks
-    const shine = () => {
+    const ROOT_TIME = 2.4;                  // seconds of holding for the roots to spread all the way
+    const PULSE_TIME = 1.8;                 // seconds the wave of light takes to run along them
+    const GROW = 2.6;                       // seconds of holding to draw it whole
+    const LINGER = 0.9;                     // seconds a whole rulito stays before its tail starts to go
+    const EAT = 3.4;                        // seconds for the tail to go all the way along it
+    let held = false;
+    let head = 0;                           // how far along its stroke the front of the rulito is (0..1)
+    let tail = 0;                           // and the back of it
+    let idle = 0;                           // seconds since the cone was let go
+    let grown = 0;                          // 0..1, how long it has been held, on its way to GROW
+    let rootGrow = 0;                       // 0..1, how far the roots have spread: they stay once grown
+    let level = 0;                          // 0..3, times it has been completed: the roots shine more each time
+    let wave = -1;                          // where the wave of light is along the roots (0..1), or -1
+    let pop = 0;                            // 1 when it completes, down to 0: a little bump in its size
+    let full = false;                       // the flare has gone off for this rulito
+    let lastT = null;
+
+    // Pressing the pine cone: it lights up while held (and the charge starts to fill)
+    const hold = () => {
+        if (held) return;
+        held = true;
         lit.value = true;
-        play('star');
+        play('tap');
+        // Pressing again while the rulito is still whole celebrates again: the cloud swells anew
+        if (head >= 1) { pop = 1; bloom(); }
         if (!reduced) {
             const box = coneHit.value.getBoundingClientRect();
-            spores?.burst(box.left + box.width / 2, box.top + box.height / 2, 22);
+            spores?.burst(box.left + box.width / 2, box.top + box.height / 2, 12);
         }
-        window.addEventListener('pointerup', dim, { once: true });
-        window.addEventListener('pointercancel', dim, { once: true });
+        window.addEventListener('pointerup', release);
+        window.addEventListener('pointercancel', release);
     };
-    const dim = () => { lit.value = false; };
-    const onKey = (event) => {
+    const release = () => {
+        held = false;
+        lit.value = false;
+        window.removeEventListener('pointerup', release);
+        window.removeEventListener('pointercancel', release);
+    };
+    // With the keyboard the key is the finger: held down it charges, let go it releases
+    const onKeyDown = (event) => {
         if (event.key !== 'Enter' && event.key !== ' ') return;
         event.preventDefault();
-        shine();
-        setTimeout(dim, 700);
+        if (!event.repeat) hold();
+    };
+    const onKeyUp = (event) => {
+        if (event.key === 'Enter' || event.key === ' ') release();
+    };
+    // The charge is full: the rulito flares and throws sparks
+    const bloom = () => {
+        play('star');
+        level = Math.min(3, level + 1);
+        wave = 0;
+        // The wave runs out of the cone along the roots; each cap lets go of its spores as the light gets to it
+        const cone = coneHit.value.getBoundingClientRect();
+        spores?.swell(14, cone.left + cone.width / 2, (ground.value.offsetWidth * 0.45) / PULSE_TIME);
+        if (reduced || !rulito.value) return;
+        const box = rulito.value.$el.getBoundingClientRect();
+        spores?.burst(box.left + box.width / 2, box.top + box.height / 2, 36);
     };
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -73,7 +127,42 @@
             // The ground is one piece, so the grass behind the mushrooms always lines up with them
             ground.value.style.translate = `${-x * 40}px ${-y * 5 + s * 25}px`;
             ground.value.style.rotate = `${(Math.sin(t * 0.9) * 0.4 * ramp).toFixed(3)}deg`;
+            // Held, the head of the rulito moves on (and its tail comes back if it had started to go); let go, after a
+            // moment the tail catches up with the head. When it has, the rulito is gone and the next one has another shape.
+            const dt = lastT === null ? 0 : Math.min(t - lastT, 0.1);
+            lastT = t;
+            pop = Math.max(0, pop - dt * 2.2);
+            if (wave >= 0) { wave += dt / PULSE_TIME; if (wave > 1.4) wave = -1; }
+            if (held) {
+                idle = 0;
+                // First the roots take hold; once they have (a third of the way), the rulito is born. When the roots
+                // are already there, from an earlier time, it is born at once.
+                rootGrow = Math.min(1, rootGrow + dt / ROOT_TIME);
+                if (rootGrow >= 0.3) {
+                    // It starts quickly and eases in as it gets there: the dot is out at once, the stroke runs, the loop is a flick
+                    grown = Math.min(1, grown + dt / GROW);
+                    head = Math.max(head, 1 - (1 - grown) ** 1.6);
+                }
+                tail = Math.max(0, tail - dt / 0.8);
+            } else if (head > 0) {
+                idle += dt;
+                if (idle > (head >= 1 ? LINGER : 0.2)) tail = Math.min(head, tail + dt / EAT);
+            }
+            if (head >= 1 && !full) { full = true; pop = 1; bloom(); }
+            if (head > 0 && head - tail < 0.0005) { head = 0; tail = 0; grown = 0; full = false; rulito.value.reshape(); }
+            const flare = full && head - tail > 0.9 ? Math.max(pop, Math.sin(t * 4) * 0.5 + 0.5) : 0;
+            root.value.style.setProperty('--charge', Math.max(head - tail, rootGrow * 0.6).toFixed(3));
+            roots.frame({ grow: rootGrow, pulse: wave, level, t });
+            // The card's name lights up when the rulito is completed: a flash, and it stays lit while the rulito is
+            // nearly whole, going out with it
+            const whole = Math.min(1, Math.max(0, (head - tail - 0.6) / 0.4));
+            stageEl?.style.setProperty('--name-glow', Math.max(pop, 0.8 * whole * whole * (3 - 2 * whole)).toFixed(3));
+            rulito.value.frame({ head, tail, flare, t, fade: Math.min(1, (head - tail) * 14) });
+            rulito.value.$el.style.rotate = `${(Math.sin(t * 1.8) * 3 * ramp).toFixed(2)}deg`;
+            rulito.value.$el.style.scale = (1 + 0.2 * pop * pop).toFixed(3);
         });
+        stageEl = root.value.closest('.stage');
+        roots = createRoots(rootsCanvas.value);
         spores = createSpores(sporeCanvas.value, { source: mushrooms.value, front: sparkCanvas.value, animate: !window.matchMedia('(prefers-reduced-motion: reduce)').matches });
         enter();
     });
@@ -81,27 +170,34 @@
     onBeforeUnmount(() => {
         parallax?.destroy();
         spores?.destroy();
-        window.removeEventListener('pointerup', dim);
-        window.removeEventListener('pointercancel', dim);
+        window.removeEventListener('pointerup', release);
+        window.removeEventListener('pointercancel', release);
     });
 </script>
 
 <template>
     <div class="scene" ref="root" :class="{ lit, hot }">
         <img class="layer sun" ref="sun" src="/assets/collaborate/sun.webp" alt="" draggable="false">
-        <img class="layer boat" ref="boat" src="/assets/collaborate/boat.webp" alt="" draggable="false">
+        <!-- The boat without its rulito (that one is drawn in code), and the rulito over the central Sama's head -->
+        <div class="layer boat" ref="boat">
+            <img class="hull" src="/assets/collaborate/boat-bare.webp" alt="" draggable="false">
+            <Rulito ref="rulito" class="rulito" :style="{ '--rx': rulitoAt.x, '--ry': rulitoAt.y, '--rw': rulitoAt.w }" />
+        </div>
         <!-- The spore cloud hangs in the air behind the mushrooms -->
         <canvas class="spores" ref="sporeCanvas"></canvas>
         <!-- One piece: the grass sits behind the mushrooms at the same scale, so their stems line up -->
         <div class="ground" ref="ground">
             <img class="grass" src="/assets/collaborate/plants.webp" alt="" draggable="false">
             <img class="mushrooms" ref="mushrooms" src="/assets/collaborate/mushrooms.webp" alt="" draggable="false">
+            <!-- The roots: a glowing network over the field, drawn on a canvas of the same size as the mushrooms picture -->
+            <canvas class="roots" ref="rootsCanvas"></canvas>
             <!-- The pine cone: its own sprite over the same spot, a glow behind it, and a touch target over both -->
             <div class="coneGlow" :style="{ '--bx': cone.x, '--by': cone.y, '--bw': cone.w, '--bh': cone.h }"></div>
             <img class="cone" src="/assets/collaborate/cone.webp" alt="" draggable="false" :style="{ '--bx': cone.x, '--by': cone.y, '--bw': cone.w }">
             <div class="coneHit" ref="coneHit" role="button" tabindex="0" :aria-label="$i18n.locale === 'en' ? 'Pine cone' : 'Piña'"
                 :style="{ '--bx': cone.x, '--by': cone.y, '--bw': cone.w, '--bh': cone.h }"
-                @pointerdown.prevent="shine" @pointerenter="hot = true" @pointerleave="hot = false" @keydown="onKey"></div>
+                @pointerdown.prevent="hold" @pointerenter="hot = true" @pointerleave="hot = false"
+                @keydown="onKeyDown" @keyup="onKeyUp" @blur="release"></div>
         </div>
         <canvas class="spores sparks" ref="sparkCanvas"></canvas>
     </div>
@@ -148,6 +244,22 @@
 
     /* The mushrooms strip, with the grass behind it. Wider than the screen so it can slide without showing its ends;
        it runs past the bottom edge, so the stems are cut there, as in the illustration. */
+    .boat .hull {
+        display: block;
+        width: 100%;
+        height: auto;
+    }
+
+    /* The rulito sits on the central Sama's head: positions are fractions of the boat picture */
+    .boat .rulito {
+        position: absolute;
+        left: calc(var(--rx) * 100%);
+        top: calc(var(--ry) * 100%);
+        width: calc(var(--rw) * 100%);
+        height: auto;
+        transform-origin: 50% 100%;
+    }
+
     .ground {
         --w: max(130vw, calc(var(--strip) * 10.67 * 1.1));
         position: absolute;
@@ -168,6 +280,16 @@
 
     .ground .mushrooms {
         position: relative;
+    }
+
+    .ground .roots {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        aspect-ratio: 2400 / 225;
+        mix-blend-mode: screen;
+        pointer-events: none;
     }
 
     .ground .grass {
@@ -194,6 +316,7 @@
         width: calc(var(--bw) * 100% * 3.4);
         aspect-ratio: 1;
         translate: -50% -50%;
+        scale: calc(1 + var(--charge, 0) * 0.8);
         border-radius: 50%;
         background: radial-gradient(circle, rgba(255, 240, 140, 0.5) 0%, rgba(255, 232, 110, 0.18) 38%, rgba(255, 226, 90, 0) 70%);
         opacity: 0;

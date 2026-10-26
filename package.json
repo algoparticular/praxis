@@ -8,7 +8,6 @@
     "build": "vite build",
     "preview": "vite preview",
     "thumbs": "node scripts/make-thumbs.mjs",
-    "sync:cards": "node --env-file-if-exists=.env.local scripts/sync-cards.mjs",
     "lint": "eslint .",
     "check:cards": "node scripts/check-cards.mjs",
     "check:budget": "node scripts/check-budget.mjs",

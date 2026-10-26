@@ -8,6 +8,7 @@
     "invitation_en": "Practice renunciation, let go of some of the things that you no longer need and seek to walk lightly.",
     "affirmation_en": "I acknowledge that I am a sacred being making a human experience ",
     "category": "Paramis",
+    "verb": "soltar",
     "colorAlt": "#D9EFED",
     "affirmation_es": "Reconozco que soy un ser sagrado haciendo una experiencia humana.",
     "image": [
@@ -32,6 +33,7 @@
     "invitation_en": "In secret, seek to do an action that is beneficial to others. ",
     "affirmation_en": "I find peace in doing good in resonance with the voice of my soul. ",
     "category": "Paramis",
+    "verb": "resonar",
     "colorAlt": "#046132",
     "affirmation_es": "Encuentro paz al hacer el bien en resonancia con la voz de mi alma. ",
     "image": [
@@ -56,6 +58,7 @@
     "invitation_en": "Today practice altruism and give the gift of your time and energy to someone who really needs it. ",
     "affirmation_en": "I listen to the child within me and I am happy giving without expecting anything in return. ",
     "category": "Paramis",
+    "verb": "dar-recibir",
     "colorAlt": "#F0FAF1",
     "affirmation_es": " Escucho al niño que llevo dentro y soy feliz al dar sin esperar nada a cambio.",
     "image": [
@@ -80,6 +83,7 @@
     "invitation_en": "Ask your inner wisdom, \"What should I do about this situation or person that is disturbing me?\" Listen in silence. ",
     "affirmation_en": "My calm and silent center listens to the divine instance within me.",
     "category": "Paramis",
+    "verb": "ver",
     "colorAlt": "#FFE47D",
     "affirmation_es": "Mi centro calmo y silencio escucha la instancia Divina dentro de mí.",
     "image": [
@@ -104,6 +108,7 @@
     "invitation_en": "Today be diligent with the change you long to make.",
     "affirmation_en": "I listen to my heart and follow its truth with determination.",
     "category": "Paramis",
+    "verb": "encender",
     "colorAlt": "#FAC795",
     "affirmation_es": "Escucho mi corazón y sigo su verdad con determinación.",
     "image": [
@@ -128,6 +133,7 @@
     "invitation_en": "Today be tolerant and patient with yourself. Respect your time without any demands. ",
     "affirmation_en": "My divinity expands by being tolerant of my spiritual path and that of others.",
     "category": "Paramis",
+    "verb": "fluir",
     "colorAlt": "#007096",
     "affirmation_es": "Mi divinidad se expande al ser tolerante con mi camino espiritual y el de los otros.",
     "image": [
@@ -152,6 +158,7 @@
     "invitation_en": "Pay attention to the synchronicities that surround you when you let the truth guide you.",
     "affirmation_en": "I commit to my truth and open the door to my purpose.",
     "category": "Paramis",
+    "verb": "resonar",
     "colorAlt": "#FFFBD6",
     "affirmation_es": "Me comprometo con mi verdad y le abro la puerta a mi próposito. ",
     "image": [
@@ -176,6 +183,7 @@
     "invitation_en": "For 21 days commit to implementing that habit that from long ago you've been wishing to do.",
     "affirmation_en": "I am determined in nurturing habits that add to my happiness and plenitude. ",
     "category": "Paramis",
+    "verb": "arraigar",
     "colorAlt": "#72CBCF",
     "affirmation_es": "Soy determinada en nutrir hábitos que hagan a mi felicidad y plenitud.",
     "image": [
@@ -200,6 +208,7 @@
     "invitation_en": "This week do an action that will benefit someone else without expecting anything in return. ",
     "affirmation_en": "I am infinite Love, I recognize my purest essence. ",
     "category": "Paramis",
+    "verb": "dar-recibir",
     "colorAlt": "#FFFFFF",
     "affirmation_es": "Soy Amor infinito, reconozco mi escencia más pura.",
     "image": [
@@ -224,6 +233,7 @@
     "invitation_en": "Today, flow with the current of life and let go of excess control.",
     "affirmation_en": "The only thing that is permanent is the impermanence of everything. ",
     "category": "Paramis",
+    "verb": "soltar",
     "colorAlt": "#208F9E",
     "affirmation_es": "Lo único permanente es la impermanencia de todas las cosas.",
     "image": [
@@ -268,6 +278,7 @@
     "invitation_en": "Today let go of the control and accept what surrounds you here and now. ",
     "affirmation_en": "I accept and honour who I am.",
     "category": "Regular",
+    "verb": "dar-recibir",
     "colorAlt": "#F4EFC7",
     "affirmation_es": "Acepto y honro quién soy.",
     "image": [
@@ -292,6 +303,7 @@
     "invitation_en": "Create a harmonious space and give yourself the gift of finding yourself within.",
     "affirmation_en": "I vibrate in harmony and in my here and now.",
     "category": "Regular",
+    "verb": "resonar",
     "colorAlt": "#39509E",
     "affirmation_es": "Vibro en armonía en mi aquí y ahora.",
     "image": [
@@ -316,6 +328,7 @@
     "invitation_en": "Today, search for 3 beautiful aspects of yourself. ",
     "affirmation_en": "I recognize my beauty and the beauty of others. ",
     "category": "Regular",
+    "verb": "fluir",
     "colorAlt": "#0F6995",
     "affirmation_es": "Reconozco mi belleza y la de los otros.",
     "image": [
@@ -340,6 +353,7 @@
     "invitation_en": "Today, find a reason to celebrate and celebrate yourself.",
     "affirmation_en": "I celebrate life, its transits, and this particular moment. ",
     "category": "Regular",
+    "verb": "fluir",
     "colorAlt": "#D2F4FD",
     "affirmation_es": "Celebro la vida, sus tránsitos y este instante particular.",
     "image": [
@@ -364,6 +378,7 @@
     "invitation_en": "What is it time to let go of? What new beginning does your heart seek? ",
     "affirmation_en": "I appreciate who I was, I honour who I am, and I project who I want to be.",
     "category": "Regular",
+    "verb": "ver",
     "colorAlt": "#64A57A",
     "affirmation_es": "Agradezco quien fui, honro quien soy y proyecto quien quiero ser. ",
     "image": [
@@ -388,6 +403,7 @@
     "invitation_en": "Today, commit to following the path of your heart. ",
     "affirmation_en": "I am committed to what I seek and my vision ",
     "category": "Regular",
+    "verb": "arraigar",
     "colorAlt": "#FFFFFF",
     "affirmation_es": "Estoy comprometida con mi búsqueda y visión.",
     "image": [
@@ -412,6 +428,7 @@
     "invitation_en": "Give yourself 15 minutes of meditative silence to listen to your true self within.  ",
     "affirmation_en": "I listen to my truth and through her, I communicate with clarity and honesty. ",
     "category": "Regular",
+    "verb": "resonar",
     "colorAlt": "#F0C873",
     "affirmation_es": "Escucho mi verdad y desde ella, me comunico con claridad y honestidad.",
     "image": [
@@ -436,6 +453,7 @@
     "invitation_en": "Stop to remember the times you overcame adversity, put value in those experiences and trust the power that dwells in you.",
     "affirmation_en": "I trust in myself and I let my wisdom guide my steps. ",
     "category": "Regular",
+    "verb": "arraigar",
     "colorAlt": "#00709A",
     "affirmation_es": "Confío en mi y dejo que mi sabiduría guíe mis pasos.",
     "image": [
@@ -460,6 +478,7 @@
     "invitation_en": "Inhale courage. Breathe out fear. Repeat, \"I breathe in love. I breathe out fear.\"",
     "affirmation_en": "I recognize my bravery and my inner strength guides my steps.",
     "category": "Regular",
+    "verb": "encender",
     "colorAlt": "#CEE8E5",
     "affirmation_es": "Reconozco mi valentia y mi fuerza interior guía mis pasos. ",
     "image": [
@@ -484,7 +503,8 @@
     "invitation_en": "Today dedicate at least an hour to create something new, in the way that you most enjoy.",
     "affirmation_en": "I put in practice my creativity and I create the life that I dream of.",
     "category": "Regular",
-    "colorAlt": "#F8A476",
+    "verb": "resonar",
+    "colorAlt": "#F9A477",
     "affirmation_es": "Pongo en practica mi creatividad y creo la vida que sueño.",
     "image": [
       {
@@ -493,7 +513,7 @@
         "height": 2160
       }
     ],
-    "color": "#71838F",
+    "color": "#7E5E76",
     "Status": "ready",
     "description_en": "As you allow the creative power to flow within you, you feed the energy of change. The possibility of adaptation in the face of adversity, and the magic of creating the life you dream of every day.\n\nBy channeling your creativity, you give and receive life, since creativity is not a solitary movement. Wherever it passes, it attracts those who know how to hear, see and perceive; to return to you in abundance. Leaving judgments and demands aside, you recognize yourself as a co-creator of the Divine, thus exploring your immense and particular potential.\n\nIf this card has reached you today, it is to urge you to add creativity to your routines to fill them with charm, to your thoughts to open new doors, and to your relationships to create healthy bonds.\n\nExpand your creative power and fill your life with charm, spreading beauty wherever you go.",
     "author": "Belén Brito",
@@ -508,6 +528,7 @@
     "invitation_en": "Transform that challenge that you are going through today into an opportunity for your self-awareness.",
     "affirmation_en": "I respond to my challenges with confidence and I discover new talents. ",
     "category": "Regular",
+    "verb": "encender",
     "colorAlt": "#6E8FC0",
     "affirmation_es": "Respondo a mis desafios con confianza y descubro nuevos talentos. ",
     "image": [
@@ -532,6 +553,7 @@
     "invitation_en": "Ask yourself, \"Does my path have a heart?\"",
     "affirmation_en": "My soul evolves everyday and contributes to the spiritual growth of the universe. ",
     "category": "Regular",
+    "verb": "encender",
     "colorAlt": "#59263D",
     "affirmation_es": "Mi alma evoluciona cada día y contribuye al crecimiento espiritual del universo.",
     "image": [
@@ -556,6 +578,7 @@
     "invitation_en": "Make that step/change that you have been waiting for a long time with confidence in yourself and in the assistance of the universe.",
     "affirmation_en": "I have faith in the unshakeable strength of my soul and the support of the universe.",
     "category": "Regular",
+    "verb": "arraigar",
     "colorAlt": "#FFFFFF",
     "affirmation_es": "Tengo fe en la fuerza inconmovible de mi alma y el apoyo del universo.",
     "image": [
@@ -580,6 +603,7 @@
     "invitation_en": "Today give thanks to that special loved one.",
     "affirmation_en": "I am grateful for who I am and all the experiences that brought me here.",
     "category": "Regular",
+    "verb": "dar-recibir",
     "colorAlt": "#023A5A",
     "affirmation_es": "Agradezco quién soy y todas las experiencias que me trajeron hasta aquí. ",
     "image": [
@@ -604,7 +628,8 @@
     "invitation_en": "This week find time to rest in you, enjoying being in contact with yourself.",
     "affirmation_en": "Every day I return to my home and nurture my relationship with the Divine spark that lives in me.",
     "category": "Regular",
-    "colorAlt": "#F9A477",
+    "verb": "arraigar",
+    "colorAlt": "#F8A476",
     "affirmation_es": "Cada día regreso a mi hogar y nutro mi relación con la chispa Divina que habita en mi. ",
     "image": [
       {
@@ -613,7 +638,7 @@
         "height": 2160
       }
     ],
-    "color": "#7E5E76",
+    "color": "#71838F",
     "Status": "ready",
     "description_en": "Home is that place of yours, unique and special, that travels with you wherever you go. It is that space inside you where your mystical being resides, your ancestral wisdom.\n\nBy taking a moment each day to nurture your inner world, you are creating your home, giving rise to hearing answers, envisioning the future you want to create, remembering and honoring who you really are, a divine being undergoing an experience in a human body.\n\nThe physical places that we usually call home are just the vehicle to reach the true home that is your interior. There are many doors that you can open to reach it: contemplation, silence, conscious movement, music, art, stopping to hear and see the sea, touching the earth with your bare feet, or letting the water of rain bathe your face. Doors that invite you to stop time, to travel in them in order to return and nurture your connection with yourself.\n\nRemember that you can always return to your home because it travels with you wherever you go. Happy reunion!",
     "author": "Belén Brito",
@@ -628,6 +653,7 @@
     "invitation_en": "Today dedicate 15 minutes to listen to your deeper self, let your truth tell you. ",
     "affirmation_en": "I am honest with myself and the truth guides my steps. ",
     "category": "Regular",
+    "verb": "resonar",
     "colorAlt": "#FFE47D",
     "affirmation_es": "Soy honesta conmigo misma y la Verdad guía mis pasos.",
     "image": [
@@ -652,6 +678,7 @@
     "invitation_en": "Observe nature and its cycles, learn from its patient wisdom in each transition.",
     "affirmation_en": "I am patient with myself and discover miracles every moment.",
     "category": "Regular",
+    "verb": "arraigar",
     "colorAlt": "#14525D",
     "affirmation_es": "Soy paciente conmigo mismo y descubro milagros a cada instante.",
     "image": [
@@ -676,6 +703,7 @@
     "invitation_en": "I inhale love. I exhale forgiveness. ",
     "affirmation_en": "I forgive myself and others.",
     "category": "Regular",
+    "verb": "soltar",
     "colorAlt": "#E9ECD7",
     "affirmation_es": "Me perdono a mi mismo y a los otros. ",
     "image": [
@@ -700,6 +728,7 @@
     "invitation_en": "Recognize the constant flow of synchronicities in your life.",
     "affirmation_en": "I am in the right moment and place for my self growth. ",
     "category": "Regular",
+    "verb": "ver",
     "colorAlt": "#FAF2A1",
     "affirmation_es": "Estoy en el momento y lugar indicado para mi crecimiento. ",
     "image": [
@@ -724,6 +753,7 @@
     "invitation_en": "Calm your anxiety by perceiving the presence of your guides and ancestors accompanying each step. Remember, you are not alone.",
     "affirmation_en": "I have hope in myself and in the assistance of the Universe. ",
     "category": "Regular",
+    "verb": "fluir",
     "colorAlt": "#039BA9",
     "affirmation_es": "Tengo esperanza en mi mismo y en la asistencia del Universo.",
     "image": [
@@ -748,6 +778,7 @@
     "invitation_en": "Stop for 10 minutes to observe yourself internally, scan your body back and forth, from head to toe. And start again...",
     "affirmation_en": "Today I remember that everything happens and I observe reality as it is without getting attached to anything or anyone.",
     "category": "Special",
+    "verb": "soltar",
     "colorAlt": "#D6E8CE",
     "affirmation_es": "Hoy recuerdo que todo pasa y observo la realidad tal cual es sin apegarme a nada ni nadie.",
     "image": [
@@ -772,6 +803,7 @@
     "invitation_en": "Today trust in the transitions and cycles of your life.",
     "affirmation_en": "My heart flows with joy in the course of the change.",
     "category": "Regular",
+    "verb": "fluir",
     "colorAlt": "#47456D",
     "affirmation_es": "Mi corazón fluye con alegría en el transcurso del cambio.",
     "image": [

@@ -2,12 +2,12 @@
 
 ## Decisiones
 - **Stack:** se queda en Vue 3. three.js no depende del framework (se monta en un `<canvas>` desde un composable) y `motion` ya se usa en modo vanilla. Migrar a React no compensa: habría que reescribir router, i18n, PWA y Suspense, sin tests, y el usuario no notaría la diferencia.
-- **Datos:** las cartas pasan a ser JSON estático. Airtable queda solo como editor (las cartas se editan poco). Sin token en el cliente.
+- **Datos:** las cartas pasan a ser JSON estático. Antes venían de Airtable; desde ahora `src/data/cards.json` es la fuente de verdad y se edita a mano (ver `docs/editar-cartas.md`). Sin token en el cliente.
 - **Alcance:** Anima primero (`/praxis`, `/oracle`, `/oracleTheNine`, `/card/:id`, `/share/:id`), después la landing.
 
 ## Pasos
 1. **Datos estáticos** — HECHO
-   - `scripts/sync-cards.mjs`: Airtable → `src/data/cards.json` + `public/cards/`. Se corre con `AIRTABLE_TOKEN=... npm run sync:cards`.
+   - `scripts/sync-cards.mjs` (ya eliminado) traía las cartas de Airtable a `src/data/cards.json` + `public/cards/`; esa sincronización se hizo por última vez antes de salir de Airtable.
    - `src/data/cards.js`: exporta `deck` y `getCard(id)`.
    - Componentes ya leen datos locales; se quitaron los retrasos artificiales de 2.5–3 s y la dependencia `airtable`.
    - Sync corrido: 33 cartas, imágenes convertidas a webp (19 MB → 8.5 MB). El script usa `sharp` y lee `.env.local`.

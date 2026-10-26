@@ -2,7 +2,6 @@
     import { onMounted, onUpdated, ref } from 'vue';
     import { useRouter } from 'vue-router';
     import { getAuth, onAuthStateChanged, signOut } from 'firebase/auth';
-    import { soundOn, toggleSound } from '../composables/useSound.js';
 
     const isLoggedIn = ref(false);
     const router = useRouter();
@@ -28,11 +27,6 @@
     const navigate = (path) => {
         emit('navigate', path);
     }
-
-    //sound lives here now, next to the language: two choices, the active one highlighted
-    const setSound = (wanted) => {
-        if (wanted !== soundOn.value) toggleSound();
-    };
 
     const langChanged = (lang) => {
         emit('langChanged', lang);
@@ -74,16 +68,6 @@
             <label for="lang-en" :class="{active: $i18n.locale == 'en'}">English</label>
         </div>
 
-        <div id="soundSelect" role="radiogroup">
-            <label :class="{active: soundOn}">
-                <input type="radio" name="sound-choice" :checked="soundOn" @change="setSound(true)"/>{{ $t("nav.soundOn") }}
-            </label>
-            <span>|</span>
-            <label :class="{active: !soundOn}">
-                <input type="radio" name="sound-choice" :checked="!soundOn" @change="setSound(false)"/>{{ $t("nav.soundOff") }}
-            </label>
-        </div>
-
         <!-- <div v-if="isLoggedIn">
             <a class="logout" @click="handleSignOut" v-if="isLoggedIn">{{ $t("nav.logout") }}</a>
         </div>
@@ -108,7 +92,6 @@
     }
 
     nav a,
-    #soundSelect label,
     #languageSelect label {
         font-size: 21px;
         font-family: 'Caveat', 'Inter', helvetica, sans-serif;
@@ -117,7 +100,6 @@
     }
 
     nav a:hover,
-    #soundSelect label:hover,
     #languageSelect label:hover {
         color: #143246;
     }
@@ -127,28 +109,23 @@
     }
 
     /* Language */
-    #soundSelect,
     #languageSelect {
         display: flex;
         flex-direction: row;
     }
 
-    #soundSelect input,
     #languageSelect input {
         display: none;
     }
 
-    #soundSelect label,
     #languageSelect label {
         color: #F7F8F1;
     }
 
-    #soundSelect label.active,
     #languageSelect label.active {
         color: #143246;
     }
 
-    #soundSelect span,
     #languageSelect span {
         font-size: 24px;
         font-family: 'Caveat', 'Inter', helvetica, sans-serif;

@@ -1,7 +1,8 @@
 <script setup>
-    import { onMounted, onBeforeUnmount, ref } from 'vue';
-    import { useRouter } from 'vue-router';
+    import { computed, onMounted, onBeforeUnmount, ref } from 'vue';
+    import { useRoute, useRouter } from 'vue-router';
     import Menu from './Menu.vue';    
+    import { soundOn, toggleSound } from '../composables/useSound.js';
 
     const props = defineProps({
         hasBack: Boolean,
@@ -30,6 +31,10 @@
     });
 
     const router = useRouter();
+    const route = useRoute();
+
+    // The deck button takes the person back to the deck they came from: the spiral is the full deck, the chakana The Nine
+    const fromNine = computed(() => route.fullPath && router.options.history.state?.back === '/oracleTheNine');
     
     //handle menu
     const toggleMenu = () => {
@@ -80,8 +85,8 @@
 <template>
     <header :class="{ tucked }">
         <div class="navContainer">
-            <button v-if="props.hasBack" class="back" @click="handleBack()"></button>
-            <button v-if="props.hasDeck" class="deck" @click="handleGoToDeck()"></button>
+            <button v-if="props.hasBack" class="back" :aria-label="$t('nav.back')" @click="handleBack()"></button>
+            <button v-if="props.hasDeck" class="deck" :class="{ nine: fromNine }" :aria-label="fromNine ? $t('praxis.theNine') : $t('praxis.fullDeck')" @click="handleGoToDeck()"></button>
         </div>
 
         <div id="logo">
@@ -102,7 +107,10 @@
                     :hasCollaborate="true" />
             </div>
         </Transition>
-        <div class="navContainer">
+        <div class="navContainer right">
+            <!-- The sound switch lives outside the menu, beside it (it has to be pressed by a finger for iOS to let audio start) -->
+            <button v-if="props.hasMenu" id="soundButton" class="secondary sound" :class="{active: showMenu, off: !soundOn}"
+                :aria-label="$t('nav.sound')" :aria-pressed="soundOn" :title="soundOn ? $t('nav.soundOn') : $t('nav.soundOff')" @click="toggleSound()"></button>
 		    <button v-if="props.hasMenu" id="menuButton" class="secondary menu" :class="{active: showMenu}" @click="toggleMenu()"></button>	                         
         </div>
     </header>
@@ -143,11 +151,16 @@
         width: 40px;
     }
 
+    /* The two sides are as wide as the sound and menu buttons together, so the logo stays in the middle */
     .navContainer {
-        width: 50px;
+        width: 100px;
         display: flex;
         align-items: center;
-        justify-content: center;
+        justify-content: flex-start;
+    }
+
+    .navContainer.right {
+        justify-content: flex-end;
     }
 
     #menuOverlay {
@@ -168,9 +181,7 @@
     }
 
     #menuOverlay nav a,
-    #menuOverlay nav #soundSelect label,
     #menuOverlay nav #languageSelect label,
-    #menuOverlay nav #soundSelect span,
     #menuOverlay nav #languageSelect span {
         font-size: 32px;
     }
@@ -180,5 +191,9 @@
         background-color: transparent;
         background-image: url('../assets/icon/deck.svg');
         filter: drop-shadow(0px 2px 3px rgb(199, 190, 142));
+    }
+
+    button.deck.nine {
+        background-image: url('../assets/icon/deckNine.svg');
     }
 </style>
