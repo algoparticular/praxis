@@ -514,6 +514,23 @@ button.secondary:focus {
           box-shadow: none;
 }
 
+/* The sound switch, beside the menu button: the same thin line, with a mark when it is off */
+button.secondary.sound {
+  background-image: url("../assets/icon/Sound.svg");
+}
+
+button.secondary.sound.off {
+  background-image: url("../assets/icon/SoundOff.svg");
+}
+
+button.secondary.sound.active {
+  background-image: url("../assets/icon/active/Sound.svg");
+}
+
+button.secondary.sound.off.active {
+  background-image: url("../assets/icon/active/SoundOff.svg");
+}
+
 button.secondary.home {
   background-image: url("../assets/icon/home.svg");
 }

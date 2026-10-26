@@ -129,15 +129,12 @@
         /* gap: 24px; */
     }
 
-    nav.inFooter #soundSelect,
     nav.inFooter #languageSelect {
         gap: 16px;
     }
 
     nav.inFooter a,
-    nav.inFooter #soundSelect label,
     nav.inFooter #languageSelect label,
-    nav.inFooter #soundSelect span,
     nav.inFooter #languageSelect span {
         color: #143246;
         font-family: 'Inter', Helvetica, sans-serif;
@@ -146,7 +143,6 @@
     }
 
     nav.inFooter a:hover,
-    nav.inFooter #soundSelect label:hover,
     nav.inFooter #languageSelect label:hover {
         color: #FF6F61;
     }
