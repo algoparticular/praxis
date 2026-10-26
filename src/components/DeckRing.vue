@@ -3,7 +3,8 @@
     import { useRouter } from 'vue-router';
     import { getCard } from '../data/cards.js';
     import { handOffCard } from '../cardTransition.js';
-    import { play, vibrate } from '../composables/useSound.js';
+    import { play, setCardChord, vibrate } from '../composables/useSound.js';
+    import { chordFor } from '../data/cardChords.js';
 
     const props = defineProps({
         cards: Array,
@@ -20,7 +21,9 @@
     let ring = null;
     let destroyed = false;
 
-    const handleSound = (name, haptic) => {
+    // Picking a card tunes everything to its chord: it already sounds in it as it rises and turns over
+    const handleSound = (name, haptic, cardId) => {
+        if (cardId != null) setCardChord(chordFor(cardId));
         play(name);
         if (haptic) vibrate(haptic);
     };

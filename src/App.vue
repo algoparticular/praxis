@@ -1,10 +1,15 @@
 <script setup>	
-	import { onMounted, ref } from 'vue';  	
-	import { useRouter } from 'vue-router';
+	import { onMounted, ref, watch } from 'vue';  	
+	import { useRoute, useRouter } from 'vue-router';
 	import CustomCursor from './components/CustomCursor.vue';
-	import { initSound, play } from './composables/useSound.js';
+	import { initSound, play, setCardChord } from './composables/useSound.js';
+	import { chordFor } from './data/cardChords.js';
 
 	const router = useRouter();	
+	const route = useRoute();
+
+	// Each card sounds in its own chord; everywhere else the app keeps its base one
+	watch(() => route.name === 'card' ? chordFor(route.params.id) : null, setCardChord, { immediate: true });
 
 	//ON MOUNTED
 	onMounted (() => {
