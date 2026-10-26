@@ -66,6 +66,8 @@
         held = true;
         lit.value = true;
         play('tap');
+        // Pressing again while the rulito is still whole celebrates again: the cloud swells anew
+        if (head >= 1) { pop = 1; bloom(); }
         if (!reduced) {
             const box = coneHit.value.getBoundingClientRect();
             spores?.burst(box.left + box.width / 2, box.top + box.height / 2, 12);
@@ -91,7 +93,7 @@
     // The charge is full: the rulito flares and throws sparks
     const bloom = () => {
         play('star');
-        spores?.swell(9);
+        spores?.swell(14);
         if (reduced || !rulito.value) return;
         const box = rulito.value.$el.getBoundingClientRect();
         spores?.burst(box.left + box.width / 2, box.top + box.height / 2, 36);

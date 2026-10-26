@@ -152,7 +152,7 @@ export function createSpores(canvas, { source, animate = true, front = null } = 
 
     // One spore, leaving cap `i`. `kick` is the speed of its first push, `spread` the half-angle of the cone it leaves in.
     const release = (i, kick = 6, spread = 0.9, bias = [0, 0]) => {
-        if (spores.length >= MAX * (1 + 1.4 * surge)) spores.shift();
+        if (spores.length >= MAX * (1 + 2.2 * surge)) spores.shift();
         const cap = typeof i === 'number' ? emitters[i] : i;
         const angle = -Math.PI / 2 + rand(-spread, spread);
         const speed = kick * rand(0.4, 1.2);
@@ -236,8 +236,8 @@ export function createSpores(canvas, { source, animate = true, front = null } = 
     const step = (dt, t) => {
         // Release. First the baseline: whenever the cloud is below its usual size, a few more come out of the caps
         surge = Math.max(0, surge - dt / surgeFor);
-        const target = TARGET * (1 + 2.4 * surge);
-        for (let n = 0; n < 8 + 30 * surge && spores.length < target; n++) release(spot(), 5 + 9 * surge);
+        const target = TARGET * (1 + 4 * surge);
+        for (let n = 0; n < 8 + 40 * surge && spores.length < target; n++) release(spot(), 5 + 12 * surge);
         if (t > nextTrickle) {
             release(spot(), 5);
             nextTrickle = t + rand(0.02, 0.06) * (1 - 0.6 * surge);
@@ -247,8 +247,9 @@ export function createSpores(canvas, { source, animate = true, front = null } = 
             nextPuff = t + rand(1.2, 3.2) * (1 - 0.6 * surge);
         }
 
-        const ceiling = height * 0.62;         // spores are gone before they climb to the sky
-        const vanish = height * 0.44;
+        // Spores are gone before they climb to the sky; when the cloud swells it climbs much higher, into the boat's air
+        const ceiling = height * (0.62 + 0.24 * surge);
+        const vanish = height * (0.44 - 0.16 * surge);
         const gust = pointer.active;
         for (let i = spores.length - 1; i >= 0; i--) {
             const s = spores[i];
@@ -326,10 +327,10 @@ export function createSpores(canvas, { source, animate = true, front = null } = 
         // The pointer's own speed fades if it stops moving
         pointer.vx *= Math.exp(-3 * dt);
         pointer.vy *= Math.exp(-3 * dt);
-        return { ceiling, vanish };
+        return { ceiling, vanish, bold: surge };
     };
 
-    const draw = (t, { ceiling, vanish }) => {
+    const draw = (t, { ceiling, vanish, bold = 0 }) => {
         ctx.clearRect(0, 0, width, height);
         ctxFront?.clearRect(0, 0, width, height);
 
@@ -355,13 +356,14 @@ export function createSpores(canvas, { source, animate = true, front = null } = 
             const born = smooth(0, 0.7, s.age);
             const dying = 1 - smooth(s.life * 0.65, s.life, s.age);
             const altitude = smooth(vanish, ceiling, s.y);        // 0 up in the sky, 1 near the ground
-            const alpha = born * dying * altitude * (0.8 + 0.2 * Math.sin(t * s.twinkle + s.phase));
+            const alpha = Math.min(1, born * dying * altitude * (0.8 + 0.2 * Math.sin(t * s.twinkle + s.phase)) * (1 + 0.5 * bold));
             if (alpha < 0.02) continue;
 
             const g = s.gold && ctxFront ? ctxFront : ctx;
+            const r = s.gold ? s.r : s.r * (1 + 0.9 * bold);          // swollen, they are bigger and show more
             // A soft halo of the same blue (as if slightly out of focus), then the solid core
-            if (s.r > 1.1 || s.gold) {          // the tiniest ones are too small for a halo to show
-                const reach = s.r * 3.4;
+            if (r > 1.1 || s.gold) {          // the tiniest ones are too small for a halo to show
+                const reach = r * 3.4;
                 g.globalAlpha = alpha * 0.55;
                 g.drawImage(s.gold ? goldGlow : glow, s.x - reach, s.y - reach, reach * 2, reach * 2);
             }
@@ -369,7 +371,7 @@ export function createSpores(canvas, { source, animate = true, front = null } = 
             g.globalAlpha = alpha;
             g.fillStyle = `rgb(${s.tint})`;
             g.beginPath();
-            g.arc(s.x, s.y, s.r, 0, TAU);
+            g.arc(s.x, s.y, r, 0, TAU);
             g.fill();
         }
         ctx.globalAlpha = 1;
@@ -435,11 +437,11 @@ export function createSpores(canvas, { source, animate = true, front = null } = 
             }
         },
         // The spores multiply: a wave goes up from every cap on screen, and for `seconds` the cloud is several times
-        // denser and puffs more often, then it settles back to its usual size as they drift away
-        swell(seconds = 8) {
+        // denser, bigger and higher, and puffs more often, then it settles back to its usual size as they drift away
+        swell(seconds = 14) {
             if (!animate) return;
             locateEmitters();
-            visibleCaps().forEach((i) => puff(i, Math.round(rand(9, 15)), rand(38, 64), [0, 0]));
+            visibleCaps().forEach((i) => puff(i, Math.round(rand(16, 26)), rand(50, 90), [0, 0]));
             surge = 1;
             surgeFor = seconds;
         },
