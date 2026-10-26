@@ -188,9 +188,10 @@
         <!-- One piece: the grass sits behind the mushrooms at the same scale, so their stems line up -->
         <div class="ground" ref="ground">
             <img class="grass" src="/assets/collaborate/plants.webp" alt="" draggable="false">
-            <img class="mushrooms" ref="mushrooms" src="/assets/collaborate/mushrooms.webp" alt="" draggable="false">
-            <!-- The roots: a glowing network over the field, drawn on a canvas of the same size as the mushrooms picture -->
+            <!-- The roots: a glowing network behind the coral and the mushrooms (it shows through their gaps), drawn on a
+                 canvas of the same size as the mushrooms picture -->
             <canvas class="roots" ref="rootsCanvas"></canvas>
+            <img class="mushrooms" ref="mushrooms" src="/assets/collaborate/mushrooms.webp" alt="" draggable="false">
             <!-- The pine cone: its own sprite over the same spot, a glow behind it, and a touch target over both -->
             <div class="coneGlow" :style="{ '--bx': cone.x, '--by': cone.y, '--bw': cone.w, '--bh': cone.h }"></div>
             <img class="cone" src="/assets/collaborate/cone.webp" alt="" draggable="false" :style="{ '--bx': cone.x, '--by': cone.y, '--bw': cone.w }">
@@ -288,7 +289,6 @@
         top: 0;
         width: 100%;
         aspect-ratio: 2400 / 225;
-        mix-blend-mode: screen;
         pointer-events: none;
     }
 
