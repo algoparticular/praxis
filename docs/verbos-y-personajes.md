@@ -33,7 +33,7 @@ Sale del texto de la afirmación de cada carta. Marcado `?` donde dudo.
 | Dar y recibir (4) | Dana 2, Metta 8, Aceptación 11, Gratitud 24 |
 | Resonar (6) | Sila 1, Sacca 6, Armonía 12?, Comunicación 17, Creatividad 20, Honestidad 26 |
 | Ver (3) | Pañña 3, Ciclos 15, Sincronicidad 29 |
-| Soltar (4) | Nekkhamma 0, Upekkha 9, Perdón 28, Vipassana 31? (podría ir en Ver) |
+| Soltar (4) | Nekkhamma 0, Upekkha 9, Perdón 28, Vipassana 31 |
 | Por definir (1) | Carta 10 (`" ... "`, especial) |
 
 Total: 6 + 5 + 4 + 4 + 6 + 3 + 4 + 1 = 33. Belleza podría ir también en Ver.
@@ -44,8 +44,10 @@ Total: 6 + 5 + 4 + 4 + 6 + 3 + 4 + 1 = 33. Belleza podría ir también en Ver.
 - El bichito con pelos y antenas es un Sama. El ser dentro de la célula de Evolución es Sid.
 - Khanti es **Fluir** (Samas), no Soltar: los corchos que vacían los frascos quedan como la parte de soltar dentro de ese juego.
 - Creatividad y Hogar intercambian la ilustración entera (corona, personaje, imagen de la carta y colores). Creatividad: corales y medusa (Aura). Hogar: hongos y larva (Sama).
+- Vipassana es **Soltar** (el "ver las cosas tal cual son" lleva al desapego).
+- Hogar se queda con la larva (Sama). Sid va dentro de Evolución Espiritual, que es donde mejor calza.
 
 ## Abierto
-- Vipassana: ¿Ver (Huit) o Soltar? El texto empieza con "ver las cosas tal cual son".
-- Hogar: ¿Sid en vez de la larva? El texto habla del ser divino que vive en el interior.
 - Fichas de Huit y Sid no tienen texto de historia, solo la tabla.
+- Carta 10 (el silencio): verbo y forma de juego por definir.
+- Reparto de las 33: sigue siendo una propuesta, marcada con `?` donde hay duda.
