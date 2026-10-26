@@ -11,7 +11,7 @@ Las cartas viven en el proyecto. Airtable ya no se usa: no hay token, sincroniza
 | Escena de la carta (si la tiene) | `src/data/cardScenes.js` y `src/components/scenes/` |
 
 ## Campos de cada carta
-`id`, `name_es`, `name_en`, `description_es`, `description_en`, `affirmation_es`, `affirmation_en`, `invitation_es`, `invitation_en`, `category` (`Paramis`, `Regular` o `Special`), `rarity`, `color`, `colorAlt` (formato `#rrggbb`), `image` (`[{ "url": "/cards/<id>.webp", "width": 2160, "height": 2160 }]`), `Status` (debe ser `ready`) y `author`.
+`id`, `name_es`, `name_en`, `description_es`, `description_en`, `affirmation_es`, `affirmation_en`, `invitation_es`, `invitation_en`, `category` (`Paramis`, `Regular` o `Special`), `verb` (uno de los siete de `src/data/verbs.js`: `arraigar`, `fluir`, `encender`, `dar-recibir`, `resonar`, `ver`, `soltar`; la carta 10, el silencio, no lleva), `rarity`, `color`, `colorAlt` (formato `#rrggbb`), `image` (`[{ "url": "/cards/<id>.webp", "width": 2160, "height": 2160 }]`), `Status` (debe ser `ready`) y `author`.
 
 Las cartas `Special` solo llevan descripción: no necesitan afirmación ni invitación.
 

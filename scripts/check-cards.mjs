@@ -4,6 +4,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { VERBS } from '../src/data/verbs.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const at = (...parts) => path.join(root, ...parts);
@@ -14,6 +15,8 @@ const fail = (card, message) => errors.push(`card ${card?.id ?? '?'}${card?.name
 
 const HEX = /^#[0-9a-f]{6}$/i;
 const CATEGORIES = ['Paramis', 'Regular', 'Special'];
+// Every card has one of the seven verbs, except the silence (card 10), which has no game
+const NO_VERB = [10];
 const filled = (value) => typeof value === 'string' && value.trim() !== '';
 
 const seen = new Set();
@@ -32,6 +35,11 @@ for (const card of cards) {
         }
     }
     if (!CATEGORIES.includes(card.category)) fail(card, `unknown category "${card.category}"`);
+    if (NO_VERB.includes(card.id)) {
+        if (card.verb !== undefined) fail(card, 'the silence has no verb');
+    } else if (!Object.hasOwn(VERBS, card.verb)) {
+        fail(card, `unknown verb "${card.verb}" (one of: ${Object.keys(VERBS).join(', ')})`);
+    }
     if (card.Status !== 'ready') fail(card, `its status is "${card.Status}", not "ready"`);
     for (const key of ['color', 'colorAlt']) {
         if (!HEX.test(card[key] ?? '')) fail(card, `${key} is not a #rrggbb colour ("${card[key]}")`);

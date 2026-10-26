@@ -35,7 +35,7 @@ These cannot see what a real GPU or a real phone does (flicker, disappearing lay
 - `/card/:id` → Individual card detail
 - `/share/:id` → Social sharing page
 
-**Data layer:** the cards are static data, no database. `src/data/cards.json` is the source of truth (texts in both languages, colours, picture) and `public/cards/` holds the illustrations (`N.webp`) and thumbnails (`thumb/N.webp`); `src/data/cards.js` exposes `deck` and `getCard(id)`. Airtable is no longer used. How to edit a card: `docs/editar-cartas.md`.
+**Data layer:** the cards are static data, no database. `src/data/cards.json` is the source of truth (texts in both languages, colours, picture) and `public/cards/` holds the illustrations (`N.webp`) and thumbnails (`thumb/N.webp`); `src/data/cards.js` exposes `deck` and `getCard(id)`. Airtable is no longer used. Each card also has a `verb` (one of the seven in `src/data/verbs.js`, see `docs/verbos-y-personajes.md`): the dynamic of its future game. How to edit a card: `docs/editar-cartas.md`.
 
 **Internationalization:** `vue-i18n` with `src/json/en.json` and `src/json/es.json`. Default language is Spanish or whatever is stored in `localStorage`. Language switching is handled in the `Menu` component.
 

@@ -22,19 +22,19 @@ Decisión: los juegos de las cartas se organizan en **7 verbos**, uno por person
 
 Las notas siguen la correspondencia tradicional Do–Si; la decisión de música se toma aparte.
 
-## Reparto propuesto de las 33 (para corregir)
-Sale del texto de la afirmación de cada carta. Marcado `?` donde dudo.
+## Reparto de las 33 (guardado)
+Está en el campo `verb` de `src/data/cards.json` y los verbos en `src/data/verbs.js`. Salió del texto de cada carta; se puede corregir editando el JSON. `?` marca las que tenían duda al armarlo.
 
 | Verbo | Cartas |
 |-------|--------|
 | Arraigar (6) | Addhitthana 7, Compromiso 16, Confianza 18, Fe 23, Hogar 25, Paciencia 27 |
 | Fluir (5) | Khanti 5, Belleza 13?, Celebración 14, Esperanza 30?, Transformación 32? |
-| Encender (4) | Viriya 4, Coraje 19, Desafío 21, Evolución Espiritual 22? |
+| Encender (4) | Viriya 4, Coraje 19, Desafío 21, Evolución Espiritual 22 |
 | Dar y recibir (4) | Dana 2, Metta 8, Aceptación 11, Gratitud 24 |
 | Resonar (6) | Sila 1, Sacca 6, Armonía 12?, Comunicación 17, Creatividad 20, Honestidad 26 |
 | Ver (3) | Pañña 3, Ciclos 15, Sincronicidad 29 |
 | Soltar (4) | Nekkhamma 0, Upekkha 9, Perdón 28, Vipassana 31 |
-| Por definir (1) | Carta 10 (`" ... "`, especial) |
+| Sin verbo (1) | Carta 10 (el silencio) |
 
 Total: 6 + 5 + 4 + 4 + 6 + 3 + 4 + 1 = 33. Belleza podría ir también en Ver.
 
@@ -50,4 +50,3 @@ Total: 6 + 5 + 4 + 4 + 6 + 3 + 4 + 1 = 33. Belleza podría ir también en Ver.
 ## Abierto
 - Fichas de Huit y Sid no tienen texto de historia, solo la tabla.
 - Carta 10 (el silencio): verbo y forma de juego por definir.
-- Reparto de las 33: sigue siendo una propuesta, marcada con `?` donde hay duda.
