@@ -1,8 +1,8 @@
 <script setup>
-    // Creatividad: a living cell-planet crowned with mushrooms, a little jellyfish inside it, in a quiet grey sky.
+    // Creatividad: a living cell-planet crowned with mushrooms, a little larva inside it, in a quiet grey sky.
     // The layers come from the artwork (public/assets/creatividad, cropped from sheets of 3240px: PIECES gives each
     // one's box as a percentage of that square). The crown of mushrooms turns slowly. The inside is a watery system
-    // (useCellWater): every organelle bobs about where it was drawn, and the jellyfish floats and pulses, bumping into them
+    // (useCellWater): every organelle bobs about where it was drawn, and the larva floats slowly, bumping into them
     // and into the wall of the cell instead of going through, and giving them a nudge. The colour is code: the
     // interior and the nucleus are plain discs, the nucleus's stipple and the spore dust around the planet are
     // three.js particles (useStardust), and so are the faint dots of the sky. As in Pañña, the orange dust is a
@@ -29,7 +29,7 @@
     const frontCanvas = ref(null);     // in front of it: a few motes and the nucleus's stipple
     const planet = ref(null);
     const crown = ref(null);        // the crown and its touchable mushrooms, turning together
-    const jelly = ref(null);
+    const larva = ref(null);
     const nucleus = ref(null);
     const els = {};                    // the floating pieces by id, filled by the template
     const setEl = (id) => (el) => { els[id] = el; };
@@ -44,13 +44,13 @@
 
     // Where each layer sits, in % of the 3240px square it was drawn in (left, top, width, height)
     const CROWN = { left: 16.574, top: 22.654, w: 65.895, h: 64.506 };
-    const JELLY = { left: 42.04, top: 42.208, w: 11.698, h: 12.963 };
+    const LARVA = { left: 42.037, top: 39.167, w: 5.031, h: 9.66 };
     const boxOf = (l) => ({ left: `${l.left}%`, top: `${l.top}%`, width: `${l.w}%`, height: `${l.h}%` });
     const crownBox = boxOf(CROWN);
     // The mushrooms that can be touched: a circle on each cap, in % of the frame
     const caps = CAPS.map(([x, y, r]) => ({ left: `${(x - r).toFixed(3)}%`, top: `${(y - r).toFixed(3)}%`, width: `${(2 * r).toFixed(3)}%`, height: `${(2 * r).toFixed(3)}%` }));
-    const jellyBox = boxOf(JELLY);
-    // The pieces that float in the water. `circles` (frame fractions) are what the jellyfish bumps into, `turn` how far
+    const larvaBox = boxOf(LARVA);
+    // The pieces that float in the water. `circles` (frame fractions) are what the larva bumps into, `turn` how far
     // each rocks, in degrees, `sway` how far it wanders, in frame fractions
     const PIECES = [
         { id: 'motas', file: 'motas', box: { left: 34.66, top: 33.704, w: 32.407, h: 32.778 }, sway: 0.004, turn: 1 },
@@ -74,7 +74,7 @@
     // The nucleus, a disc inside it
     const NUCLEUS = { x: 0.5359, y: 0.4694, r: 0.0585 };
     const CELL = { x: 0.5096, y: 0.5049, r: 0.18 };           // the interior disc
-    const JELLY_AT = { x: 0.4454, y: 0.452, r: 0.0252 };      // where the jellyfish starts (its bell), and its body
+    const LARVA_AT = { x: 0.4454, y: 0.452, r: 0.02 };        // where the larva was drawn, and its body
     const frameBox = (canvas = frontCanvas) => {
         const f = frame.value.getBoundingClientRect();
         const c = canvas.value.getBoundingClientRect();
@@ -156,14 +156,14 @@
         entered = true;
         enterLayers([
             { el: planet.value, y: 60, scale: 0.7, duration: 2200 },
-            { el: jelly.value, y: 0, scale: 0.4, delay: 1200, duration: 1600 },
+            { el: larva.value, y: 0, scale: 0.4, delay: 1200, duration: 1600 },
         ]);
     };
 
     onMounted(() => {
         water = createCellWater({
             bounds: CELL,
-            swimmer: JELLY_AT,
+            swimmer: LARVA_AT,
             bodies: [
                 { id: 'nucleus', circles: [[NUCLEUS.x, NUCLEUS.y, NUCLEUS.r]], mass: 12, sway: 0.004 },
                 ...PIECES.map(({ id, circles = [], mass, sway }) => ({ id, circles, mass, sway })),
@@ -175,7 +175,7 @@
             planet.value.style.translate = `${-x * 18}px ${-y * 10 + Math.sin(t * 0.5) * 6 * ramp - s * 50}px`;
             planet.value.style.scale = 1 + Math.sin(t * 0.7) * 0.012 * ramp;
             crown.value.style.rotate = `${(t * 1.8 * ramp).toFixed(3)}deg`;
-            // The water: everything inside floats, and the jellyfish bumps into it
+            // The water: everything inside floats, and the larva bumps into it
             const dt = last === null ? 0 : t - last;
             last = t;
             water.step(dt * ramp, t);
@@ -192,14 +192,12 @@
             const py = -y * 10 + Math.sin(t * 0.5) * 6 * ramp - s * 50;
             dust?.shift(0, px, py);
             front?.shift(1, px + n.x * size, py + n.y * size);
-            // The jellyfish swims: it pulses, leans into its way, and a knock makes it squash a little
+            // The larva floats, leaning into its way and bobbing; a knock makes it squash a little
             const me = water.swimmer;
-            tilt += (Math.max(-1, Math.min(1, me.vx / 0.012)) * 14 - tilt) * Math.min(1, dt * 1.5);
-            const pulse = Math.sin(t * 2.2);
-            jelly.value.style.translate = `${((me.x - JELLY_AT.x) * 100).toFixed(3)}cqw ${((me.y - JELLY_AT.y) * 100 - pulse * 0.1).toFixed(3)}cqw`;
-            jelly.value.style.rotate = `${(tilt + Math.sin(t * 0.6) * 3 * ramp).toFixed(2)}deg`;
-            const squash = 1 + Math.min(me.hit, 0.3) * 0.12;
-            jelly.value.style.scale = `${((1 - pulse * 0.025 * ramp) * squash).toFixed(4)} ${((1 + pulse * 0.045 * ramp) / squash).toFixed(4)}`;
+            tilt += (Math.max(-1, Math.min(1, me.vx / 0.012)) * 16 - tilt) * Math.min(1, dt * 1.5);
+            larva.value.style.translate = `${((me.x - LARVA_AT.x) * 100).toFixed(3)}cqw ${((me.y - LARVA_AT.y) * 100 + Math.sin(t * 0.9) * 0.25).toFixed(3)}cqw`;
+            larva.value.style.rotate = `${(tilt + Math.sin(t * 0.6) * 4 * ramp).toFixed(2)}deg`;
+            larva.value.style.scale = 1 + Math.min(me.hit, 0.3) * 0.12;
         });
         sky = startStardust(skyCanvas.value, {
             count: 150, colors: [0x7c4a6e, 0x8e4f72, 0xa95b78], size: [2, 5],
@@ -247,14 +245,14 @@
         <canvas class="sky" ref="skyCanvas"></canvas>
         <canvas class="sky" ref="dustCanvas"></canvas>
 
-        <!-- The planet's layers share one square, so the interior, the crown and the jellyfish line up -->
+        <!-- The planet's layers share one square, so the interior, the crown and the larva line up -->
         <div class="frame" ref="frame">
             <div class="planet" ref="planet">
                 <div class="inside">
                     <div class="disc interior"></div>
                     <div class="disc nucleus" ref="nucleus"></div>
                     <img v-for="p in PIECES" :key="p.id" :ref="setEl(p.id)" class="piece" :style="p.style" :src="`/assets/creatividad/${p.file}.webp`" alt="" draggable="false">
-                    <img class="piece" ref="jelly" :style="jellyBox" src="/assets/creatividad/medusa.webp" alt="" draggable="false">
+                    <img class="piece larva" ref="larva" :style="larvaBox" src="/assets/creatividad/larva.webp" alt="" draggable="false">
                 </div>
                 <div class="spin" ref="crown">
                     <img class="piece" :style="crownBox" src="/assets/creatividad/crown.webp" alt="" draggable="false">
@@ -346,6 +344,11 @@
         pointer-events: auto;
         touch-action: manipulation;
         -webkit-tap-highlight-color: transparent;
+    }
+
+    /* The larva walks about on its feet */
+    .larva {
+        transform-origin: 50% 80%;
     }
 
     .front {

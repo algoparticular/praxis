@@ -1,9 +1,9 @@
 <script setup>
-    // Hogar (home): a cell-planet crowned with corals and sea grass, a little larva (a Sama) inside it. It is built
+    // Hogar (home): a cell-planet crowned with corals and sea grass, a little jellyfish swimming inside it. It is built
     // like Creatividad: the layers of the artwork (public/assets/hogar, cropped from sheets of 3240px; hogarScene.json
     // gives each one's box in % of that square) are laid on a square frame. The crown of corals and weeds turns slowly,
     // and every piece sways from the spot where it hangs; touching one makes it squash and throw orange spores. The
-    // inside is a watery system (useCellWater): the organelles bob about, the larva floats and walks about, bumping into
+    // inside is a watery system (useCellWater): the organelles bob about, the jellyfish floats and pulses, bumping into
     // them and into the wall of the cell. The colour is code: the interior is the drawn silhouette of the original disc,
     // the nucleus a disc whose fuzzy rim is particles, and the orange halo of dust a density map of the original stipple
     // (hogarDust.json) drawn back as particles behind the crown, like the dots of the sky (useStardust).
@@ -28,7 +28,7 @@
     const frontCanvas = ref(null);     // in front of it: a few motes, the nucleus's rim and the spores
     const planet = ref(null);
     const crown = ref(null);           // the crown and its touchable pieces, turning together
-    const larva = ref(null);
+    const jelly = ref(null);
     const nucleus = ref(null);
     const els = {};                    // the floating pieces by id, filled by the template
     const setEl = (id) => (el) => { els[id] = el; };
@@ -41,7 +41,7 @@
     let tilt = 0;
     let entered = false;
 
-    const { cell: CELL, nucleus: NUC, larva: LARVA, interior, outline, specks } = scene;
+    const { cell: CELL, nucleus: NUC, jelly: JELLY, interior, outline, specks } = scene;
     const pct = (v) => `${v}%`;
     const boxStyle = ([left, top, w, h]) => ({ left: pct(left), top: pct(top), width: pct(w), height: pct(h) });
     const frac = (v) => `${(v * 100).toFixed(3)}%`;
@@ -56,12 +56,12 @@
     const WEEDS = CROWN.filter((p) => p.kind === 'algae');
     const CORALS = CROWN.filter((p) => p.kind === 'coral');
 
-    // The pieces that float in the water; `circles` (frame fractions) are what the larva bumps into
+    // The pieces that float in the water; `circles` (frame fractions) are what the jellyfish bumps into
     const FLOAT = [
         { id: 'motas', file: specks.file, box: specks.box, sway: 0.004, turn: 1 },
         ...scene.organelles.map((o) => ({ ...o, sway: 0.005, turn: 2, mass: o.circles.length > 3 ? 6 : 2 })),
     ].map((p) => ({ ...p, style: boxStyle(p.box) }));
-    const larvaBox = boxStyle(LARVA.box);
+    const jellyBox = boxStyle(JELLY.box);
     const outlineBox = boxStyle(outline.box);
 
     const frameBox = (canvas = frontCanvas) => {
@@ -134,14 +134,14 @@
         entered = true;
         enterLayers([
             { el: planet.value, y: 60, scale: 0.7, duration: 2200 },
-            { el: larva.value, y: 0, scale: 0.4, delay: 1200, duration: 1600 },
+            { el: jelly.value, y: 0, scale: 0.4, delay: 1200, duration: 1600 },
         ]);
     };
 
     onMounted(() => {
         water = createCellWater({
             bounds: { x: CELL.x, y: CELL.y, r: CELL.r - 0.004 },
-            swimmer: { x: LARVA.x, y: LARVA.y, r: LARVA.r },
+            swimmer: { x: JELLY.x, y: JELLY.y, r: JELLY.r },
             bodies: [
                 { id: 'nucleus', circles: [[NUC.x, NUC.y, NUC.r]], mass: 12, sway: 0.004 },
                 ...FLOAT.map(({ id, circles = [], mass, sway }) => ({ id, circles, mass, sway })),
@@ -160,7 +160,7 @@
             CORALS.forEach((p) => {
                 els[p.id].style.rotate = `${(Math.sin(t * 0.55 + p.phase) * 2.2 * ramp).toFixed(2)}deg`;
             });
-            // The water: everything inside floats, and the larva bumps into it
+            // The water: everything inside floats, and the jellyfish bumps into it
             const dt = last === null ? 0 : t - last;
             last = t;
             water.step(dt * ramp, t);
@@ -177,12 +177,14 @@
             const py = -y * 10 + Math.sin(t * 0.5) * 6 * ramp - s * 50;
             dust?.shift(0, px, py);
             front?.shift(0, px + n.x * size, py + n.y * size);
-            // The larva floats, leaning into its way and bobbing; a knock makes it squash a little
+            // The jellyfish swims: it pulses, leans into its way, and a knock makes it squash a little
             const me = water.swimmer;
-            tilt += (Math.max(-1, Math.min(1, me.vx / 0.012)) * 16 - tilt) * Math.min(1, dt * 1.5);
-            larva.value.style.translate = `${((me.x - LARVA.x) * 100).toFixed(3)}cqw ${((me.y - LARVA.y) * 100 + Math.sin(t * 0.9) * 0.25).toFixed(3)}cqw`;
-            larva.value.style.rotate = `${(tilt + Math.sin(t * 0.6) * 4 * ramp).toFixed(2)}deg`;
-            larva.value.style.scale = 1 + Math.min(me.hit, 0.3) * 0.12;
+            tilt += (Math.max(-1, Math.min(1, me.vx / 0.012)) * 14 - tilt) * Math.min(1, dt * 1.5);
+            const pulse = Math.sin(t * 2.2);
+            jelly.value.style.translate = `${((me.x - JELLY.x) * 100).toFixed(3)}cqw ${((me.y - JELLY.y) * 100 - pulse * 0.1).toFixed(3)}cqw`;
+            jelly.value.style.rotate = `${(tilt + Math.sin(t * 0.6) * 3 * ramp).toFixed(2)}deg`;
+            const squash = 1 + Math.min(me.hit, 0.3) * 0.12;
+            jelly.value.style.scale = `${((1 - pulse * 0.025 * ramp) * squash).toFixed(4)} ${((1 + pulse * 0.045 * ramp) / squash).toFixed(4)}`;
         });
         sky = startStardust(skyCanvas.value, {
             count: 150, colors: [0x7d5e75, 0x8a6a82, 0x6f5169], size: [2, 5],
@@ -221,14 +223,14 @@
         <canvas class="sky" ref="skyCanvas"></canvas>
         <canvas class="sky" ref="dustCanvas"></canvas>
 
-        <!-- The planet's layers share one square, so the interior, the crown and the larva line up -->
+        <!-- The planet's layers share one square, so the interior, the crown and the jellyfish line up -->
         <div class="frame" ref="frame">
             <div class="planet" ref="planet">
                 <div class="inside">
                     <svg class="fill" viewBox="0 0 3240 3240" aria-hidden="true"><path :d="interior.path" :fill="'#' + interior.color" /></svg>
                     <div class="disc" ref="nucleus" :style="{ left: frac(NUC.x - NUC.r), top: frac(NUC.y - NUC.r), width: frac(2 * NUC.r), height: frac(2 * NUC.r), background: '#' + NUC.color }"></div>
                     <img v-for="p in FLOAT" :key="p.id" :ref="setEl(p.id)" class="piece" :style="p.style" :src="`/assets/hogar/${p.file}.webp`" alt="" draggable="false">
-                    <img class="piece larva" ref="larva" :style="larvaBox" src="/assets/hogar/larva.webp" alt="" draggable="false">
+                    <img class="piece" ref="jelly" :style="jellyBox" src="/assets/hogar/medusa.webp" alt="" draggable="false">
                 </div>
                 <div class="spin" ref="crown">
                     <img v-for="p in WEEDS" :key="p.id" :ref="setEl(p.id)" class="piece" :style="p.style" :src="`/assets/hogar/${p.id}.webp`" alt="" draggable="false">
@@ -275,11 +277,6 @@
     .inside {
         position: absolute;
         inset: 0;
-    }
-
-    /* The larva walks about on its feet */
-    .larva {
-        transform-origin: 50% 80%;
     }
 
     .fill {

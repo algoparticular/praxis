@@ -38,12 +38,9 @@ Sale del texto de la afirmación de cada carta. Marcado `?` donde dudo.
 
 Total: 6 + 4 + 4 + 4 + 6 + 3 + 5 + 1 = 33. Belleza podría ir también en Ver.
 
-## Decidido
-- Carta 10 (`" ... "`): es el silencio. No hay nada que leer ni decir, la invitación es sentir el corazón. Su juego, si lo tiene, es quedarse en silencio; verbo y forma por definir.
-- Nombre del personaje: **Sid** (Seed, semilla).
-- El bichito con pelos y antenas es un Sama. El ser dentro de la célula de Evolución es Sid.
-- Hecho: Creatividad nada ahora con la medusa (Aura) y Hogar con la larva (Sama).
-
 ## Abierto
-- Fichas de Huit y Particular/Sid no tienen texto de historia, solo la tabla.
-- Revisar si otros dibujos deberían cambiar según el texto de la carta (ver conversación).
+- Nombre del personaje: Particular o Sid (semilla / Seed). En el código solo aparece "Sid" en Pañña.
+- Creatividad (hoy una larva) y Hogar (hoy una medusa, Aura): intercambiar los dibujos nadadores. Parece factible, ambas usan `useCellWater`; falta mover también los movimientos de cada uno.
+- ¿La larva de Creatividad es un Sama? ¿Qué es el ser enroscado de Evolución?
+- Carta 10: qué verbo.
+- Fichas de Huit y Particular no tienen texto de historia, solo la tabla.
