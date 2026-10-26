@@ -10,7 +10,7 @@
 
     defineProps({
         color: { type: String, default: '#f37b85' },
-        faint: { type: Number, default: 0.36 },     // opacity of the copy that is always there
+        faint: { type: Number, default: 0 },     // opacity of the copy that is always there (none: it is not there until it is drawn)
     });
 
     const W = 32;
