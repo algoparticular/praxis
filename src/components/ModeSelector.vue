@@ -2,7 +2,6 @@
     import { ref } from 'vue';
     import { useRouter } from 'vue-router';
     import { play } from '../composables/useSound.js';
-    import { track } from '../analytics.js';
 
     const router = useRouter();
 
@@ -19,7 +18,6 @@
     //handle navigation
     const navigate = (url) => {
         play('tap');
-        track('oracle_mode_chosen', { mode: url === '/oracleTheNine' ? 'nine' : 'full' });
         router.push({ path: url });
     };
 </script>

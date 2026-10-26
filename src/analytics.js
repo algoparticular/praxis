@@ -5,6 +5,8 @@
 //  - nothing is sent if the browser asks not to be tracked (Do Not Track / Global Privacy Control);
 //  - nothing happens at all without VITE_POSTHOG_KEY (dev, CI and the smoke test never call out);
 //  - the SDK is fetched after the app is up, so it never delays a first paint. Events that happen meanwhile wait.
+import { START_LOCATION } from 'vue-router';
+
 const KEY = import.meta.env.VITE_POSTHOG_KEY;
 const HOST = import.meta.env.VITE_POSTHOG_HOST || 'https://us.i.posthog.com';
 
@@ -12,7 +14,8 @@ const optedOut = () => navigator.doNotTrack === '1' || window.doNotTrack === '1'
 
 let client = null;
 let getLang = () => undefined;
-const waiting = [];                         // events that came before the SDK did
+const waiting = [];                         // events that came before the SDK did (capped: if the SDK never loads, an ad blocker say, it must not grow)
+const MAX_WAITING = 100;
 
 const standalone = () => window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
 
@@ -21,16 +24,21 @@ export const track = (event, props = {}) => {
     if (!KEY || optedOut()) return;
     const payload = { lang: getLang(), installed: standalone(), ...props };
     if (client) client.capture(event, payload);
-    else waiting.push([event, payload]);
+    else if (waiting.length < MAX_WAITING) waiting.push([event, payload]);
 };
 
 export const initAnalytics = ({ router, i18n }) => {
     if (!KEY || optedOut()) return;
     getLang = () => i18n.global.locale;
 
-    // Each page the router lands on is a page view (the SDK would only see the first load)
-    router.afterEach((to, from) => {
-        track('$pageview', { route: to.name ?? to.path, card_id: to.params.id, from_route: from.name ?? from.path });
+    // Each page the router lands on is a page view (the SDK would only see the first load). Failed navigations (the same
+    // page again) and a change of #hash alone (the landing gliding to its oracle block) are not new pages.
+    router.afterEach((to, from, failure) => {
+        if (failure) return;
+        if (from !== START_LOCATION && to.path === from.path) return;
+        track('$pageview', { route: to.name ?? to.path, card_id: to.params.id, from_route: from === START_LOCATION ? undefined : (from.name ?? from.path) });
+        // Opening the oracle is choosing a deck, whichever way in: the landing, the toolbar, the intro or a direct link
+        if (to.path === '/oracle' || to.path === '/oracleTheNine') track('oracle_mode_chosen', { mode: to.path === '/oracleTheNine' ? 'nine' : 'full' });
     });
     window.addEventListener('appinstalled', () => track('pwa_installed'));
 

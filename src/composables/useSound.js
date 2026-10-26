@@ -112,7 +112,7 @@ export const toggleSound = () => {
         track('sound_toggled', { on: false });
         return Promise.resolve(false);
     }
-    return enable().then((on) => { track('sound_toggled', { on: soundOn.value }); return on; });
+    return enable().then((on) => { if (on) track('sound_toggled', { on: true }); return on; });
 };
 
 export const play = (name) => {

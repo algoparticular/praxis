@@ -31,8 +31,12 @@
     const visit = startCardVisit(props.id, { scene: sceneNameFor(props.id), entry: transition ? 'picked' : 'direct' });
     setCurrentVisit(visit);
 
-    // Touching the scene counts; the share button on the stage does not
-    const onStageDown = (event) => { if (!event.target.closest('.action')) visit.touch(); };
+    // Touching the scene counts: its touchable zones are role="button" (a finger that only drags the page to the reading
+    // also lands a pointerdown on the stage, and that is not playing). Vipassana answers a click anywhere on it.
+    const onStageDown = (event) => { if (event.target.closest('[role="button"]') && !event.target.closest('.action')) visit.touch(); };
+    const onStageClick = (event) => { if (sceneNameFor(props.id) === 'vipassana' && !event.target.closest('[role="button"]')) visit.touch(); };
+    // On a phone a page is rarely unloaded (the app is just hidden), so leaving is reported when it is hidden too
+    const onHidden = () => { if (document.visibilityState === 'hidden') visit.finish(); };
 
     const root = ref(null);
     const stage = ref(null);
@@ -52,6 +56,7 @@
     onMounted(async () => {
         window.addEventListener('scroll', fadeCue, { passive: true });
         window.addEventListener('pagehide', visit.finish);
+        document.addEventListener('visibilitychange', onHidden);
 
         if (transition) {
             const box = stage.value.getBoundingClientRect();
@@ -91,6 +96,7 @@
         stopReveals.forEach((stop) => stop());
         transition?.el.remove();
         window.removeEventListener('pagehide', visit.finish);
+        document.removeEventListener('visibilitychange', onHidden);
         visit.finish();
         setCurrentVisit(null);
     });
@@ -98,7 +104,7 @@
 
 <template>
 	<main class="cardWrapper" :class="{ entering }" ref="root">
-        <section class="stage" ref="stage" @contextmenu.prevent @selectstart.prevent @pointerdown.capture="onStageDown">
+        <section class="stage" ref="stage" @contextmenu.prevent @selectstart.prevent @pointerdown.capture="onStageDown" @click.capture="onStageClick">
             <div class="sceneHost" :class="{ ready }">
                 <component :is="scene" :card="card" :active="ready" />
             </div>
