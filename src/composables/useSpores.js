@@ -62,6 +62,7 @@ export function createSpores(canvas, { source, animate = true, front = null } = 
     let width = 0, height = 0, dpr = 1;
     let frame = 0, visible = true, last = 0, clock = 0;
     let nextTrickle = 0, nextPuff = 1.2;
+    const pending = [];                 // puffs that wait for the wave of the swell to get to their cap: { cap, at }
     let surge = 0, surgeFor = 1;        // 1 right after surge() and down to 0 over surgeFor seconds: the cloud swells, then settles
     const pointer = { x: -9999, y: -9999, vx: 0, vy: 0, active: false, pressed: false, lastX: 0, lastY: 0, lastT: 0 };
 
@@ -235,6 +236,11 @@ export function createSpores(canvas, { source, animate = true, front = null } = 
 
     const step = (dt, t) => {
         // Release. First the baseline: whenever the cloud is below its usual size, a few more come out of the caps
+        for (let i = pending.length - 1; i >= 0; i--) {
+            if (t < pending[i].at) continue;
+            puff(pending[i].cap, Math.round(rand(16, 26)), rand(50, 90), [0, 0]);
+            pending.splice(i, 1);
+        }
         surge = Math.max(0, surge - dt / surgeFor);
         const target = TARGET * (1 + 4 * surge);
         for (let n = 0; n < 8 + 40 * surge && spores.length < target; n++) release(spot(), 5 + 12 * surge);
@@ -438,10 +444,16 @@ export function createSpores(canvas, { source, animate = true, front = null } = 
         },
         // The spores multiply: a wave goes up from every cap on screen, and for `seconds` the cloud is several times
         // denser, bigger and higher, and puffs more often, then it settles back to its usual size as they drift away
-        swell(seconds = 14) {
+        // With `fromX` (viewport coordinates) the wave starts there and runs outwards at `speed` pixels per second, each
+        // cap letting go of its puff when it gets there; without it they all go at once.
+        swell(seconds = 14, fromX = null, speed = 400) {
             if (!animate) return;
             locateEmitters();
-            visibleCaps().forEach((i) => puff(i, Math.round(rand(16, 26)), rand(50, 90), [0, 0]));
+            const left = canvas.getBoundingClientRect().left;
+            visibleCaps().forEach((i) => {
+                if (fromX === null) puff(i, Math.round(rand(16, 26)), rand(50, 90), [0, 0]);
+                else pending.push({ cap: i, at: clock + Math.abs(left + emitters[i].x - fromX) / speed });
+            });
             surge = 1;
             surgeFor = seconds;
         },
