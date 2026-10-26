@@ -27,6 +27,79 @@ La BIO de Samas no dice su chakra. Lo tomamos como sacro porque sus temas son lo
 
 **La nota de abajo (la fundamental) es el chakra que manda.** Las otras notas lo acompañan. Por ejemplo, en Re menor el sacro (Re) aporta la emoción, el corazón (Fa) la suaviza con compasión y el tercer ojo (La) le da dirección y claridad.
 
+## Qué significa cada acorde
+
+Esta sección resume la conversación de teoría musical de la que sale todo el sistema, con su contenido tal como vino. Cada acorde trae sus notas con sus chakras, los colores de esos chakras, dos aromas y su uso.
+
+### Acordes mayores
+
+Tienen una energía expansiva y positiva. Promueven confianza, claridad y conexión.
+
+| Acorde | Notas → chakras | Color | Aroma | Uso |
+|---|---|---|---|---|
+| Do mayor (C) | Do (raíz), Mi (plexo solar), Sol (garganta) | rojo, amarillo, azul claro | sándalo (estabilidad), bergamota (confianza) | Refuerza seguridad, expresión auténtica y poder personal. |
+| Re mayor (D) | Re (sacro), Fa# (corazón), La (tercer ojo) | naranja, verde, índigo | ylang-ylang (creatividad), lavanda (intuición) | Fomenta creatividad, apertura emocional y visión clara. |
+| Mi mayor (E) | Mi (plexo solar), Sol# (garganta), Si (corona) | amarillo, azul claro, violeta | limón (energía), incienso (trascendencia) | Empodera, favorece comunicación y conexión espiritual. |
+| Fa mayor (F) | Fa (corazón), La (tercer ojo), Do (raíz) | verde, índigo, rojo | rosa (amor), pachuli (conexión terrenal) | Abre el corazón mientras se cultiva estabilidad e intuición. |
+| Sol mayor (G) | Sol (garganta), Si (corona), Re (sacro) | azul claro, violeta, naranja | menta (claridad), jazmín (creatividad) | Potencia expresión, creatividad y conexión espiritual. |
+| La mayor (A) | La (tercer ojo), Do# (raíz), Mi (plexo solar) | índigo, rojo, amarillo | romero (foco), cítricos (vitalidad) | Equilibra la intuición con energía y confianza. |
+| Si mayor (B) | Si (corona), Re# (sacro), Fa# (corazón) | violeta, naranja, verde | mirra (espiritualidad), neroli (apertura emocional) | Facilita conexión trascendental y creatividad emocional. |
+
+### Acordes menores
+
+Tienen una energía introspectiva, ideal para liberar emociones retenidas y sanar bloqueos.
+
+| Acorde | Notas → chakras | Color | Aroma | Uso |
+|---|---|---|---|---|
+| Do menor (Cm) | Do (raíz), Mib (plexo solar), Sol (garganta) | rojo, amarillo apagado, azul claro | cedro (estabilidad), lavanda (calma) | Ayuda a sanar inseguridades y a fortalecer la comunicación. |
+| Re menor (Dm) | Re (sacro), Fa (corazón), La (tercer ojo) | naranja, verde, índigo | canela (pasión), rosa (amor) | Facilita el flujo emocional y la introspección creativa. |
+| Mi menor (Em) | Mi (plexo solar), Sol (garganta), Si (corona) | amarillo, azul claro, violeta | eucalipto (limpieza), sándalo (centrado) | Empodera desde la introspección y el equilibrio espiritual. |
+| Fa menor (Fm) | Fa (corazón), Lab (tercer ojo), Do (raíz) | verde oscuro, índigo apagado, rojo | geranio (armonía), pachuli (estabilidad) | Ayuda a liberar heridas emocionales profundas. |
+| Sol menor (Gm) | Sol (garganta), Sib (corona), Re (sacro) | azul claro, violeta oscuro, naranja | albahaca (claridad), incienso (intuición) | Promueve comunicación introspectiva y creatividad emocional. |
+| La menor (Am) | La (tercer ojo), Do (raíz), Mi (plexo solar) | índigo, rojo, amarillo apagado | salvia (purificación), limón (vitalidad) | Facilita claridad mental y confianza desde un lugar introspectivo. |
+| Si menor (Bm) | Si (corona), Re (sacro), Fa# (corazón) | violeta oscuro, naranja apagado, verde oscuro | jazmín (apertura), mirra (trascendencia) | Potencia la conexión espiritual con raíces emocionales. |
+
+### Acordes de séptima
+
+Aportan riqueza y complejidad, ideales para desbloquear energía y trabajar la transformación personal. Hay cuatro tipos (dominante, mayor, menor y disminuida). Las cartas usan solo la **séptima dominante** (mayor más séptima menor).
+
+| Acorde | Notas → chakras | Color | Aroma | Uso |
+|---|---|---|---|---|
+| Do7 (C7) | Do (raíz), Mi (plexo solar), Sol (garganta), Sib (corona) | rojo, amarillo, azul claro, violeta | bergamota, sándalo | Expansión creativa con estabilidad y confianza. |
+| Mi7 (E7) | Mi (plexo solar), Sol# (garganta), Si (corona), Re (sacro) | — | — | Integra la fuerza interior con la expresión espiritual. |
+
+La conversación no detalla las demás séptimas. Para las tres que usan las cartas, la tabla da solo sus notas y chakras; su sentido es el de su acorde mayor más la transformación que agrega la séptima.
+
+| Acorde | Notas → chakras | Cartas |
+|---|---|---|
+| Sol7 (G7) | Sol (garganta), Si (corona), Re (sacro), Fa (corazón) | Ciclos, Confianza |
+| Re7 (D7) | Re (sacro), Fa# (corazón), La (tercer ojo), Do (raíz) | Desafío, Transformación |
+| Si7 (B7) | Si (corona), Re# (sacro), Fa# (corazón), La (tercer ojo) | Evolución Espiritual |
+
+### Cómo trabajan las notas dentro de un acorde
+
+En un acorde, la fundamental es la base energética. La tercera define su carácter: la tercera mayor lo ilumina y la tercera menor le da su tono introspectivo y melancólico. La quinta le da estabilidad. La conversación analiza dos acordes en detalle.
+
+**Re menor (Re, Fa, La):**
+- **Re, sacro, la fundamental.** Es la base emocional del acorde: deseo, flujo y capacidad de sentir.
+- **Fa, corazón, la tercera menor.** Define el carácter introspectivo del acorde. Ayuda a que la energía cruda del sacro encuentre suavidad y empatía, e integra las emociones personales con un amor más universal.
+- **La, tercer ojo, la quinta.** Lleva la creatividad del sacro a un nivel más consciente: transforma emociones crudas en inspiración o visión. Le agrega claridad y perspectiva a lo que el corazón procesa.
+- **Juntos:** es un acorde para la introspección emocional. Sirve para liberar bloqueos creativos o transformar emociones intensas en intuición e inspiración.
+
+**Fa mayor (Fa, La, Do):**
+- **Fa, corazón, la fundamental.** Pone la energía principal: amor, apertura y equilibrio emocional.
+- **La, tercer ojo, la tercera mayor.** Le da al acorde una cualidad luminosa: la intuición guiada por el amor.
+- **Do, raíz, la quinta.** Ancla el amor y la intuición para que se expresen de manera estable y práctica.
+- **Juntos:** es un acorde para la apertura emocional con claridad mental y estabilidad. Sirve para la compasión hacia uno mismo y hacia otros.
+
+### Secuencias para trabajar en uno mismo
+
+La conversación propone tres progresiones. Hoy la app no las usa, pero son parte de la misma teoría.
+
+1. **Estabilidad y confianza:** Do → Fa → Sol → Do. Establece una base firme, abre el corazón y fomenta la expresión.
+2. **Liberar emociones:** Re menor → La menor → Mi menor → Fa mayor. Invita a fluir con las emociones y a conectar con la intuición.
+3. **Conexión espiritual:** Si menor → Sol mayor → Mi7 → La menor. Promueve introspección, expresión y conexión trascendental.
+
 ## Cómo se elige el acorde de una carta
 
 1. **El texto de la carta manda.** La descripción, la afirmación y la invitación dicen qué chakra se trabaja y con qué energía (abrir, mirar hacia adentro, transformar). De ahí sale el acorde.
