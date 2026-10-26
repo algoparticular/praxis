@@ -17,6 +17,23 @@ let getLang = () => undefined;
 const waiting = [];                         // events that came before the SDK did (capped: if the SDK never loads, an ad blocker say, it must not grow)
 const MAX_WAITING = 100;
 
+// Netlify serves a card opened directly as /card/27/ (a static page, for the share previews) while the router moves to
+// /card/27: without this PostHog would count them as two different pages
+const withoutTrailingSlash = (path) => (path.length > 1 ? path.replace(/\/+$/, '') : path);
+const normalizeUrls = (event) => {
+    const props = event?.properties;
+    if (!props) return event;
+    if (typeof props.$pathname === 'string') props.$pathname = withoutTrailingSlash(props.$pathname);
+    if (typeof props.$current_url === 'string') {
+        try {
+            const url = new URL(props.$current_url);
+            url.pathname = withoutTrailingSlash(url.pathname);
+            props.$current_url = url.toString();
+        } catch { /* leave it as it came */ }
+    }
+    return event;
+};
+
 const standalone = () => window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
 
 // Every event knows the language and whether the app runs installed; a call can add its own properties
@@ -61,6 +78,7 @@ export const initAnalytics = ({ router, i18n }) => {
             save_campaign_params: false,
             save_referrer: false,
             advanced_disable_flags: true,
+            before_send: normalizeUrls,
         });
         client = posthog;
         waiting.splice(0).forEach(([event, payload]) => client.capture(event, payload));

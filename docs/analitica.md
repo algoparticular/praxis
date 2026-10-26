@@ -10,6 +10,7 @@ Anónima y sin cookies. Todo el código está en `src/analytics.js`; sin `VITE_P
 - Sin cookies ni `localStorage`: el id vive en memoria y muere con la visita. Se cuentan **visitas**, no personas (no hay retención entre días, a propósito).
 - Sin autocapture, replay, encuestas ni perfiles de persona (`$process_person_profile: false`): solo los eventos de abajo.
 - Respeta Do Not Track y Global Privacy Control.
+- `$current_url` y `$pathname` van sin barra final (`/card/27`, no `/card/27/`): Netlify sirve una carta abierta directamente con barra y el router la quita, y así no cuentan como dos páginas.
 - El SDK se baja cuando la app está en reposo (chunk aparte, tope en `scripts/check-budget.mjs`).
 - PostHog descarta por su cuenta los user-agents que parecen bots (incluido Chromium automatizado), así que en pruebas locales con Playwright no llega nada salvo que se oculte `navigator.webdriver` y `userAgentData`.
 
