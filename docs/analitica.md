@@ -20,7 +20,7 @@ Todos llevan `lang` (`es`/`en`) e `installed` (la app corre como PWA instalada).
 |---|---|---|
 | `$pageview` | cada página a la que llega el router | `route`, `card_id`, `from_route` |
 | `oracle_mode_chosen` | elige mazo completo o Los Nueve | `mode`: `full` / `nine` |
-| `card_picked` | saca una carta en el oráculo | `card_id`, `mode` |
+| `card_picked` | saca una carta (oráculo, The Nine, anillo del mazo o `/deck`) | `card_id`, `mode`: `full` / `nine` / `deck` |
 | `card_viewed` | abre la página de una carta | `card_id`, `scene`, `entry`: `picked` (la sacó) / `direct` (enlace compartido) |
 | `scene_interacted` | primer toque a la escena | `card_id`, `scene`, `seconds_to_first` |
 | `scene_milestone` | hito de una escena con dinámica | `card_id`, `scene`, `action` (`rulito_completed` con `times`, `cork_popped`, `refill_all`) |
