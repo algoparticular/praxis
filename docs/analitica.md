@@ -18,14 +18,14 @@ Todos llevan `lang` (`es`/`en`) e `installed` (la app corre como PWA instalada).
 
 | Evento | Cuándo | Propiedades |
 |---|---|---|
-| `$pageview` | cada página a la que llega el router | `route`, `card_id`, `from_route` |
-| `oracle_mode_chosen` | elige mazo completo o Los Nueve | `mode`: `full` / `nine` |
-| `card_picked` | saca una carta en el oráculo | `card_id`, `mode` |
+| `$pageview` | cada página a la que llega el router (un cambio solo de `#hash` o una navegación fallida no cuentan) | `route`, `card_id`, `from_route` |
+| `oracle_mode_chosen` | entra al oráculo (mazo completo o Los Nueve), desde donde sea: la portada, la barra, la intro o un enlace | `mode`: `full` / `nine` |
+| `card_picked` | saca una carta (oráculo, The Nine, anillo del mazo o `/deck`) | `card_id`, `mode`: `full` / `nine` / `deck` |
 | `card_viewed` | abre la página de una carta | `card_id`, `scene`, `entry`: `picked` (la sacó) / `direct` (enlace compartido) |
-| `scene_interacted` | primer toque a la escena | `card_id`, `scene`, `seconds_to_first` |
+| `scene_interacted` | primer toque a una zona táctil de la escena (arrastrar la página para bajar a la lectura no cuenta) | `card_id`, `scene`, `seconds_to_first` |
 | `scene_milestone` | hito de una escena con dinámica | `card_id`, `scene`, `action` (`rulito_completed` con `times`, `cork_popped`, `refill_all`) |
 | `card_reading_reached` | baja hasta la lectura | `card_id`, `seconds` |
-| `card_left` | se va de la carta (o cierra la página) | `card_id`, `scene`, `seconds`, `touches`, `milestones`, `read` |
+| `card_left` | una vez por visita: se va de la carta, la oculta (cambia de app o de pestaña) o cierra la página; `seconds` llega hasta ese momento | `card_id`, `scene`, `seconds`, `touches`, `milestones`, `read` |
 | `share_opened` | abre la pantalla de compartir | `card_id` |
 | `share_clicked` | elige un canal | `card_id`, `channel` (`link`, `facebook`, `twitter`, `whatsapp`) |
 | `language_changed` | cambia el idioma | `to` |

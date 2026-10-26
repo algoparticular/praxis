@@ -1,3 +1,5 @@
+import { track } from './analytics.js';
+
 // Hands the flipped card from the oracle grid to the card page, which animates it into place.
 let pending = null;
 
@@ -25,6 +27,9 @@ export const takePendingTransition = () => {
 // `frameColor` is the frame the user sees now; `color` is where it ends up on the card page.
 export const handOffCard = ({ router, card, rect, frameColor, hideCard }) => {
     const color = card?.color ?? '#143246';
+    // Every way of picking a card (the 3D table of The Nine, the deck ring, /deck) goes through here
+    const path = router.currentRoute.value.path;
+    track('card_picked', { card_id: card.id, mode: path === '/oracleTheNine' ? 'nine' : path === '/oracle' ? 'full' : 'deck' });
     const border = rect.width * 2 / 90;
     const radius = rect.width * 18 / 90;
     const full = card?.image ? `url(${card.image[0].url})` : '';
