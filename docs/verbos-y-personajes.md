@@ -28,19 +28,24 @@ Sale del texto de la afirmación de cada carta. Marcado `?` donde dudo.
 | Verbo | Cartas |
 |-------|--------|
 | Arraigar (6) | Addhitthana 7, Compromiso 16, Confianza 18, Fe 23, Hogar 25, Paciencia 27 |
-| Fluir (4) | Belleza 13?, Celebración 14, Esperanza 30?, Transformación 32? |
+| Fluir (5) | Khanti 5, Belleza 13?, Celebración 14, Esperanza 30?, Transformación 32? |
 | Encender (4) | Viriya 4, Coraje 19, Desafío 21, Evolución Espiritual 22? |
 | Dar y recibir (4) | Dana 2, Metta 8, Aceptación 11, Gratitud 24 |
 | Resonar (6) | Sila 1, Sacca 6, Armonía 12?, Comunicación 17, Creatividad 20, Honestidad 26 |
 | Ver (3) | Pañña 3, Ciclos 15, Sincronicidad 29 |
-| Soltar (5) | Nekkhamma 0, Khanti 5?, Upekkha 9, Perdón 28, Vipassana 31 |
+| Soltar (4) | Nekkhamma 0, Upekkha 9, Perdón 28, Vipassana 31? (podría ir en Ver) |
 | Por definir (1) | Carta 10 (`" ... "`, especial) |
 
-Total: 6 + 4 + 4 + 4 + 6 + 3 + 5 + 1 = 33. Belleza podría ir también en Ver.
+Total: 6 + 5 + 4 + 4 + 6 + 3 + 4 + 1 = 33. Belleza podría ir también en Ver.
+
+## Decidido
+- Carta 10 (`" ... "`): es el silencio. No hay nada que leer ni decir, la invitación es sentir el corazón. Verbo y forma por definir.
+- Nombre del personaje: **Sid** (Seed, semilla).
+- El bichito con pelos y antenas es un Sama. El ser dentro de la célula de Evolución es Sid.
+- Khanti es **Fluir** (Samas), no Soltar: los corchos que vacían los frascos quedan como la parte de soltar dentro de ese juego.
+- Creatividad y Hogar intercambian la ilustración entera (corona, personaje, imagen de la carta y colores). Creatividad: corales y medusa (Aura). Hogar: hongos y larva (Sama).
 
 ## Abierto
-- Nombre del personaje: Particular o Sid (semilla / Seed). En el código solo aparece "Sid" en Pañña.
-- Creatividad (hoy una larva) y Hogar (hoy una medusa, Aura): intercambiar los dibujos nadadores. Parece factible, ambas usan `useCellWater`; falta mover también los movimientos de cada uno.
-- ¿La larva de Creatividad es un Sama? ¿Qué es el ser enroscado de Evolución?
-- Carta 10: qué verbo.
-- Fichas de Huit y Particular no tienen texto de historia, solo la tabla.
+- Vipassana: ¿Ver (Huit) o Soltar? El texto empieza con "ver las cosas tal cual son".
+- Hogar: ¿Sid en vez de la larva? El texto habla del ser divino que vive en el interior.
+- Fichas de Huit y Sid no tienen texto de historia, solo la tabla.
