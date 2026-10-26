@@ -13,12 +13,12 @@ export const BASE_CHORD = 'G';
 
 const CHORDS = {
     0: 'Bm',    // Nekkhamma: letting go, a sacred being (crown, inwards)
-    1: 'G',     // Sila: "the voice of my soul" (throat)
+    1: 'G7',    // Sila: "the voice of my soul" (throat), listening to the heart (Sid's heart, Fa)
     2: 'B',     // Dana: crown, the inner child (sacral) and giving (heart)
     3: 'Em',    // Pañña: spiritual balance from within
     4: 'E',     // Viriya: energy, determination (solar plexus)
     5: 'B',     // Khanti: "my divinity expands" (crown)
-    6: 'G',     // Sacca: truth (throat) and the crown
+    6: 'G7',    // Sacca: truth (throat) and the crown, heard in the heart (Sid's heart, Fa)
     7: 'E',     // Addhitthana: will
     8: 'B',     // Metta: crown and heart
     9: 'Em',    // Upekkha: balance, letting go of control

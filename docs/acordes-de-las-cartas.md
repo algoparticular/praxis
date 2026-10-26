@@ -61,20 +61,88 @@ Tienen una energía introspectiva, ideal para liberar emociones retenidas y sana
 
 ### Acordes de séptima
 
-Aportan riqueza y complejidad, ideales para desbloquear energía y trabajar la transformación personal. Hay cuatro tipos (dominante, mayor, menor y disminuida). Las cartas usan solo la **séptima dominante** (mayor más séptima menor).
+Aportan riqueza y complejidad, ideales para desbloquear energía y trabajar la transformación personal. Se arman agregando a un acorde una cuarta nota, la séptima. Hay cuatro tipos, y en los siete acordes naturales dan 28.
+
+La conversación detalla solo **Do7** y da el uso de **Mi7**. Todo lo demás de esta sección está **inferido** con el mismo método que usa la conversación en los acordes que sí describe:
+- **Colores:** los de los chakras de sus notas. Las notas rebajadas de un acorde menor o disminuido van con el color "apagado" u "oscuro", como en los menores del chat.
+- **Aroma:** uno del chakra de la fundamental y otro del chakra de la nota que caracteriza al acorde, que en las séptimas es la propia séptima. Es el patrón de los mayores del chat (Do mayor: sándalo de la raíz y bergamota del plexo).
+- **Uso:** el del acorde base, más lo que aporta el chakra de la séptima y el tipo de séptima.
+
+**Aromas por chakra**, tal como los usa la conversación:
+
+| Chakra | Aromas |
+|---|---|
+| raíz | sándalo, pachuli, cedro |
+| sacro | ylang-ylang, jazmín, canela |
+| plexo solar | limón, bergamota, cítricos |
+| corazón | rosa, neroli, geranio |
+| garganta | menta, eucalipto, albahaca |
+| tercer ojo | lavanda, romero, salvia |
+| corona | incienso, mirra |
+
+**Qué aporta cada posición dentro del acorde:**
+- **Fundamental:** el chakra que manda, la base energética.
+- **Tercera:** el carácter. La mayor ilumina y la menor mira hacia adentro.
+- **Quinta:** estabilidad, sostiene la estructura.
+- **Séptima:** el chakra que se suma para mover y transformar. Es una tensión que pide ir hacia algún lado.
+
+Una nota con alteración conserva el chakra de su letra. Por eso, en los siete acordes naturales, las cuatro séptimas que se arman sobre una misma fundamental tocan los mismos cuatro chakras. Lo que cambia es cómo se relacionan entre sí.
+
+#### Séptima dominante (7): mayor con séptima menor
+
+Es una tensión que pide resolverse: transformación en movimiento, empuja hacia lo próximo. **Es la única séptima que usan las cartas.**
+
+| Acorde | Notas → chakras | Color | Aroma | Uso | Cartas |
+|---|---|---|---|---|---|
+| Do7 (C7) | Do (raíz), Mi (plexo), Sol (garganta), Sib (corona) | rojo, amarillo, azul claro, violeta | bergamota, sándalo | Expansión creativa con estabilidad y confianza. *(chat)* | Creatividad |
+| Re7 (D7) | Re (sacro), Fa# (corazón), La (tercer ojo), Do (raíz) | naranja, verde, índigo, rojo | ylang-ylang, sándalo | *Inferido:* la creatividad y la apertura emocional de Re mayor, con la raíz como séptima que pide bajarlas a tierra. Transformar lo que se siente en un paso concreto. | Desafío, Transformación |
+| Mi7 (E7) | Mi (plexo), Sol# (garganta), Si (corona), Re (sacro) | amarillo, azul claro, violeta, naranja *(inferido)* | limón, jazmín *(inferido)* | Integra la fuerza interior con la expresión espiritual. *(chat)* | — |
+| Fa7 (F7) | Fa (corazón), La (tercer ojo), Do (raíz), Mib (plexo) | verde, índigo, rojo, amarillo | rosa, bergamota | *Inferido:* el amor anclado de Fa mayor, con el plexo como séptima que lo pone en acción. Amor que se vuelve voluntad. | — |
+| Sol7 (G7) | Sol (garganta), Si (corona), Re (sacro), Fa (corazón) | azul claro, violeta, naranja, verde | menta, rosa | *Inferido:* la expresión y la conexión espiritual de Sol mayor, con el corazón como séptima. Hablar y actuar escuchando al corazón; la voz se transforma cuando nace de lo que se siente. | Sila, Sacca, Ciclos, Confianza |
+| La7 (A7) | La (tercer ojo), Do# (raíz), Mi (plexo), Sol (garganta) | índigo, rojo, amarillo, azul claro | romero, menta | *Inferido:* la intuición con confianza de La mayor, con la garganta como séptima. La visión que busca su voz y se dice. | — |
+| Si7 (B7) | Si (corona), Re# (sacro), Fa# (corazón), La (tercer ojo) | violeta, naranja, verde, índigo | mirra, salvia | *Inferido:* la conexión trascendental de Si mayor, con el tercer ojo como séptima. Evolución espiritual guiada por la intuición. | Evolución Espiritual |
+
+#### Séptima mayor (maj7): mayor con séptima mayor (inferido)
+
+La séptima queda medio tono debajo de la octava. Suena luminosa y contemplativa, con una nostalgia serena: es expansión en calma, como un sueño despierto. La app no la usa.
 
 | Acorde | Notas → chakras | Color | Aroma | Uso |
 |---|---|---|---|---|
-| Do7 (C7) | Do (raíz), Mi (plexo solar), Sol (garganta), Sib (corona) | rojo, amarillo, azul claro, violeta | bergamota, sándalo | Expansión creativa con estabilidad y confianza. |
-| Mi7 (E7) | Mi (plexo solar), Sol# (garganta), Si (corona), Re (sacro) | — | — | Integra la fuerza interior con la expresión espiritual. |
+| Domaj7 (Cmaj7) | Do (raíz), Mi (plexo), Sol (garganta), Si (corona) | rojo, amarillo, azul claro, violeta | sándalo, incienso | Seguridad y expresión que se abren con calma a lo espiritual. |
+| Remaj7 (Dmaj7) | Re (sacro), Fa# (corazón), La (tercer ojo), Do# (raíz) | naranja, verde, índigo, rojo | ylang-ylang, cedro | Creatividad y visión que echan raíz sin apuro. |
+| Mimaj7 (Emaj7) | Mi (plexo), Sol# (garganta), Si (corona), Re# (sacro) | amarillo, azul claro, violeta, naranja | limón, ylang-ylang | Poder personal suave, que se disfruta en vez de imponerse. |
+| Famaj7 (Fmaj7) | Fa (corazón), La (tercer ojo), Do (raíz), Mi (plexo) | verde, índigo, rojo, amarillo | rosa, bergamota | Amor sereno que confía en sí mismo. |
+| Solmaj7 (Gmaj7) | Sol (garganta), Si (corona), Re (sacro), Fa# (corazón) | azul claro, violeta, naranja, verde | menta, neroli | Expresión que nace del corazón con calma y apertura. |
+| Lamaj7 (Amaj7) | La (tercer ojo), Do# (raíz), Mi (plexo), Sol# (garganta) | índigo, rojo, amarillo, azul claro | romero, eucalipto | Intuición que se dice con claridad y sin urgencia. |
+| Simaj7 (Bmaj7) | Si (corona), Re# (sacro), Fa# (corazón), La# (tercer ojo) | violeta, naranja, verde, índigo | mirra, lavanda | Contemplación trascendental, la ensoñación de la visión interior. |
 
-La conversación no detalla las demás séptimas. Para las tres que usan las cartas, la tabla da solo sus notas y chakras; su sentido es el de su acorde mayor más la transformación que agrega la séptima.
+#### Séptima menor (m7): menor con séptima menor (inferido)
 
-| Acorde | Notas → chakras | Cartas |
-|---|---|---|
-| Sol7 (G7) | Sol (garganta), Si (corona), Re (sacro), Fa (corazón) | Ciclos, Confianza |
-| Re7 (D7) | Re (sacro), Fa# (corazón), La (tercer ojo), Do (raíz) | Desafío, Transformación |
-| Si7 (B7) | Si (corona), Re# (sacro), Fa# (corazón), La (tercer ojo) | Evolución Espiritual |
+Es la introspección del acorde menor, más tibia y menos melancólica: una reflexión serena que deja una puerta abierta. La app no la usa.
+
+| Acorde | Notas → chakras | Color | Aroma | Uso |
+|---|---|---|---|---|
+| Dom7 (Cm7) | Do (raíz), Mib (plexo), Sol (garganta), Sib (corona) | rojo, amarillo apagado, azul claro, violeta oscuro | cedro, incienso | Sanar inseguridades abriéndose a algo más grande. |
+| Rem7 (Dm7) | Re (sacro), Fa (corazón), La (tercer ojo), Do (raíz) | naranja, verde, índigo, rojo | canela, pachuli | Un flujo emocional que se asienta y encuentra suelo. |
+| Mim7 (Em7) | Mi (plexo), Sol (garganta), Si (corona), Re (sacro) | amarillo, azul claro, violeta, naranja | eucalipto, jazmín | Fuerza interior desde la introspección, con lugar para el disfrute. |
+| Fam7 (Fm7) | Fa (corazón), Lab (tercer ojo), Do (raíz), Mib (plexo) | verde oscuro, índigo apagado, rojo, amarillo apagado | geranio, bergamota | Liberar heridas profundas mientras se recupera la fuerza propia. |
+| Solm7 (Gm7) | Sol (garganta), Sib (corona), Re (sacro), Fa (corazón) | azul claro, violeta oscuro, naranja, verde | albahaca, rosa | Una comunicación introspectiva que escucha al corazón. |
+| Lam7 (Am7) | La (tercer ojo), Do (raíz), Mi (plexo), Sol (garganta) | índigo, rojo, amarillo apagado, azul claro | salvia, menta | Claridad mental que, desde adentro, encuentra palabras. |
+| Sim7 (Bm7) | Si (corona), Re (sacro), Fa# (corazón), La (tercer ojo) | violeta oscuro, naranja apagado, verde oscuro, índigo | jazmín, lavanda | Conexión espiritual con raíces emocionales, guiada por la intuición. |
+
+#### Séptima disminuida (dim7): cuatro notas a igual distancia (inferido)
+
+Es la tensión más suspendida: no tiene un centro claro y puede ir hacia cualquier lado. Es un umbral, el momento de incertidumbre justo antes de una transformación. Todos sus colores van apagados. La app no la usa.
+
+| Acorde | Notas → chakras | Color | Aroma | Uso |
+|---|---|---|---|---|
+| Dodim7 (Cdim7) | Do (raíz), Mib (plexo), Solb (garganta), Sibb (corona) | rojo oscuro, amarillo apagado, azul apagado, violeta apagado | cedro, incienso | Atravesar el miedo cuando falta el suelo. |
+| Redim7 (Ddim7) | Re (sacro), Fa (corazón), Lab (tercer ojo), Dob (raíz) | naranja apagado, verde oscuro, índigo apagado, rojo oscuro | canela, cedro | Emociones intensas que todavía no encuentran cauce. |
+| Midim7 (Edim7) | Mi (plexo), Sol (garganta), Sib (corona), Reb (sacro) | amarillo apagado, azul apagado, violeta oscuro, naranja apagado | limón, canela | La voluntad en crisis, buscando una nueva dirección. |
+| Fadim7 (Fdim7) | Fa (corazón), Lab (tercer ojo), Dob (raíz), Mibb (plexo) | verde oscuro, índigo apagado, rojo oscuro, amarillo apagado | geranio, limón | El duelo, el corazón en el umbral antes de sanar. |
+| Soldim7 (Gdim7) | Sol (garganta), Sib (corona), Reb (sacro), Fab (corazón) | azul apagado, violeta oscuro, naranja apagado, verde oscuro | albahaca, geranio | Lo que todavía no se puede decir. |
+| Ladim7 (Adim7) | La (tercer ojo), Do (raíz), Mib (plexo), Solb (garganta) | índigo apagado, rojo oscuro, amarillo apagado, azul apagado | salvia, albahaca | La confusión antes de la claridad: no ver todavía. |
+| Sidim7 (Bdim7) | Si (corona), Re (sacro), Fa (corazón), Lab (tercer ojo) | violeta oscuro, naranja apagado, verde oscuro, índigo apagado | mirra, salvia | La noche oscura del alma, la desconexión antes de la reconexión. |
 
 ### Cómo trabajan las notas dentro de un acorde
 
@@ -118,12 +186,12 @@ También es la base que mejor se lleva con las cartas. Comparte al menos una not
 | # | Carta | Acorde | Notas → chakras | Por qué este acorde | Personajes en la ilustración |
 |---|---|---|---|---|---|
 | 0 | Nekkhamma | Si menor | Si, Re, Fa# → corona, sacro, corazón | Renuncia, soltar, "un ser sagrado haciendo una experiencia humana". La corona manda (lo sagrado) y el modo menor mira hacia adentro (soltar). | Particular (tres, deshaciéndose) |
-| 1 | Sila | Sol mayor | Sol, Si, Re → garganta, corona, sacro | "Encuentro paz al hacer el bien en resonancia con la voz de mi alma". La voz del alma es la garganta, acompañada por la corona. | Particular y el corazón de Sid (Fa, que no está en el acorde: ver Pendiente) |
+| 1 | Sila | Sol7 | Sol, Si, Re, Fa → garganta, corona, sacro, corazón | "Encuentro paz al hacer el bien en resonancia con la voz de mi alma". La voz del alma es la garganta, acompañada por la corona. Para hacer el bien hay que escuchar al corazón, así que el Fa del corazón de Sid entra como séptima. | Particular y el corazón de Sid (Fa) |
 | 2 | Dana | Si mayor | Si, Re#, Fa# → corona, sacro, corazón | "Escucho al niño que llevo dentro y soy feliz al dar". El niño interior es el sacro y dar es el corazón. La teoría dice que este acorde facilita la conexión trascendental y la creatividad emocional. | Particular (dos) |
 | 3 | Pañña | Mi menor | Mi, Sol, Si → plexo, garganta, corona | Sabiduría que se escucha en silencio. Para la teoría, este acorde empodera desde la introspección y el equilibrio espiritual. | Sid (Particular), hongos y bosque (Sporá) |
 | 4 | Viriya | Mi mayor | Mi, Sol#, Si → plexo, garganta, corona | Energía y determinación: "sigo su verdad con determinación". La voluntad es el plexo solar. | Particular (caminante con báculo) |
 | 5 | Khanti | Si mayor | Si, Re#, Fa# → corona, sacro, corazón | "Mi divinidad se expande al ser tolerante". La corona en modo mayor, que se expande. | Varios personajes dentro de los frascos |
-| 6 | Sacca | Sol mayor | Sol, Si, Re → garganta, corona, sacro | Comprometerse con la propia verdad y abrirle la puerta al propósito. La verdad se dice con la garganta, y la corona la acompaña. | Particular en la barca y el corazón de Sid (Fa, que no está en el acorde: ver Pendiente) |
+| 6 | Sacca | Sol7 | Sol, Si, Re, Fa → garganta, corona, sacro, corazón | Comprometerse con la propia verdad y abrirle la puerta al propósito. La verdad se dice con la garganta y la corona la acompaña; es la verdad que se escucha en el corazón, por eso el corazón de Sid (Fa) entra como séptima. | Particular en la barca y el corazón de Sid (Fa) |
 | 7 | Addhitthana | Mi mayor | Mi, Sol#, Si → plexo, garganta, corona | Determinación para nutrir hábitos. Es la voluntad, el plexo solar en modo mayor. | Particular en el bote, bajo la tormenta |
 | 8 | Metta | Si mayor | Si, Re#, Fa# → corona, sacro, corazón | "Soy Amor infinito, reconozco mi esencia más pura". La esencia es la corona y el amor es el corazón. | Particular y otros, con un zorrito (Vulpes) |
 | 9 | Upekkha | Mi menor | Mi, Sol, Si → plexo, garganta, corona | Ecuanimidad e impermanencia: soltar el exceso de control. Es el equilibrio espiritual desde la introspección. | Particular, hongos (Sporá) |
@@ -168,6 +236,5 @@ Se cambia una línea en `src/data/cardChords.js`, por ejemplo `28: 'Em'`. Se esc
 ## Pendiente
 
 - **Huit (tercer ojo, La)** no aparece en ninguna ilustración actual. El autor va a cambiarlo.
-- **El corazón de Sid** (la criatura rosa con orejas de Sila y Sacca) es el chakra del corazón, Fa. Ninguna de esas dos cartas tiene Fa en su acorde, Sol mayor. Falta decidir si el texto pide quedarse en Sol mayor o si conviene un acorde que lo incluya.
 
 Ya se escuchó en un teléfono y suena bien.
