@@ -35,7 +35,7 @@ These cannot see what a real GPU or a real phone does (flicker, disappearing lay
 - `/card/:id` → Individual card detail
 - `/share/:id` → Social sharing page
 
-**Data layer:** Airtable is the sole database, queried directly from components (primarily `CardTemplate.vue` and `OracleItem.vue`). There is no service/API abstraction layer — Airtable calls are inline in component `setup()` or `onMounted()`. The Airtable token and base ID are stored inline in these components.
+**Data layer:** the cards are static data, no database. `src/data/cards.json` is the source of truth (texts in both languages, colours, picture) and `public/cards/` holds the illustrations (`N.webp`) and thumbnails (`thumb/N.webp`); `src/data/cards.js` exposes `deck` and `getCard(id)`. Airtable is no longer used. How to edit a card: `docs/editar-cartas.md`.
 
 **Internationalization:** `vue-i18n` with `src/json/en.json` and `src/json/es.json`. Default language is Spanish or whatever is stored in `localStorage`. Language switching is handled in the `Menu` component.
 
@@ -69,8 +69,8 @@ These cannot see what a real GPU or a real phone does (flicker, disappearing lay
 |------|---------|
 | `src/main.js` | App entry point — initializes Vue, i18n, Firebase, router |
 | `src/router/index.js` | All route definitions |
-| `src/components/CardTemplate.vue` | Fetches and displays individual card data from Airtable |
-| `src/components/OracleItem.vue` | Card item for deck; also queries Airtable |
+| `src/components/CardTemplate.vue` | Displays an individual card (data from `src/data/cards.js`) |
+| `src/data/cards.json` | The 33 cards: the source of truth, edited by hand (`docs/editar-cartas.md`) |
 | `src/json/es.json` / `en.json` | All UI string translations |
 | `netlify.toml` | Build config and SPA redirect rule |
 | `public/serviceWorker.js` | Minimal PWA service worker |

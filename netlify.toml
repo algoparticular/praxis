@@ -4,7 +4,7 @@
   functions = "netlify/functions"
   publish = "dist"
 
-  # sharp (used by scripts/sync-cards.mjs) needs Node 20.9 or newer
+  # sharp (used by scripts/make-thumbs.mjs and the share-picture plugin) needs Node 20.9 or newer
   [build.environment]
     NODE_VERSION = "20"
 

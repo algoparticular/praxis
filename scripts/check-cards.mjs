@@ -1,4 +1,4 @@
-// Checks the card data (src/data/cards.json, brought from Airtable by `npm run sync:cards`) against what the app needs:
+// Checks the card data (src/data/cards.json, the source of truth for the cards: see docs/editar-cartas.md) against what the app needs:
 // every card complete, its pictures on disk, its scene (if any) pointing at a real card and, after a build, its
 // share page and share picture in dist/. Usage: npm run check:cards
 import { existsSync, readFileSync } from 'node:fs';
