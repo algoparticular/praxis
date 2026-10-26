@@ -377,7 +377,7 @@ export async function createDeckRing(canvas, { cards, onFocus, onPick, onSound }
         busy = true;
         chosen = item;
         setHover(null);
-        onSound?.('pick', 18);
+        onSound?.('pick', 18, item.card.id);
         if (reducedMotion) { onPick(item.card.id, null); return; }
 
         // The rest fade out while the card comes to the camera

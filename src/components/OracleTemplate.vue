@@ -5,7 +5,8 @@
     import OracleItem from "./OracleItem.vue";
     import { getCard } from '../data/cards.js';
     import { setPendingTransition } from '../cardTransition.js';
-    import { play, vibrate } from '../composables/useSound.js';
+    import { play, setCardChord, vibrate } from '../composables/useSound.js';
+    import { chordFor } from '../data/cardChords.js';
 
     const props = defineProps({
         cardsDrawn: Array
@@ -91,6 +92,8 @@
     const handleTakeCard = async (cardId) => {
         if (busy) return;
         busy = true;
+        // Picking a card tunes everything to its chord: it already sounds in it as it rises and turns over
+        setCardChord(chordFor(cardId));
         play('pick');
         vibrate(18);
 

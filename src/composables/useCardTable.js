@@ -426,7 +426,7 @@ export async function createCardTable(canvas, { cardsDrawn, layout = 'grid', onP
         chosen = card;
         setHover(null);
         orbit.vTheta = orbit.vPhi = 0;
-        onSound?.('pick', 18);
+        onSound?.('pick', 18, card.id);
 
         if (reducedMotion) { onPick(card.id, null); return; }
 
