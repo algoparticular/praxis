@@ -1,6 +1,6 @@
 <script setup>
-    import { onMounted, onBeforeUnmount, ref } from 'vue';
-    import { useRouter } from 'vue-router';
+    import { computed, onMounted, onBeforeUnmount, ref } from 'vue';
+    import { useRoute, useRouter } from 'vue-router';
     import Menu from './Menu.vue';    
     import { soundOn, toggleSound } from '../composables/useSound.js';
 
@@ -31,6 +31,10 @@
     });
 
     const router = useRouter();
+    const route = useRoute();
+
+    // The deck button takes the person back to the deck they came from: the spiral is the full deck, the chakana The Nine
+    const fromNine = computed(() => route.fullPath && router.options.history.state?.back === '/oracleTheNine');
     
     //handle menu
     const toggleMenu = () => {
@@ -81,8 +85,8 @@
 <template>
     <header :class="{ tucked }">
         <div class="navContainer">
-            <button v-if="props.hasBack" class="back" @click="handleBack()"></button>
-            <button v-if="props.hasDeck" class="deck" @click="handleGoToDeck()"></button>
+            <button v-if="props.hasBack" class="back" :aria-label="$t('nav.back')" @click="handleBack()"></button>
+            <button v-if="props.hasDeck" class="deck" :class="{ nine: fromNine }" :aria-label="fromNine ? $t('praxis.theNine') : $t('praxis.fullDeck')" @click="handleGoToDeck()"></button>
         </div>
 
         <div id="logo">
@@ -187,5 +191,9 @@
         background-color: transparent;
         background-image: url('../assets/icon/deck.svg');
         filter: drop-shadow(0px 2px 3px rgb(199, 190, 142));
+    }
+
+    button.deck.nine {
+        background-image: url('../assets/icon/deckNine.svg');
     }
 </style>

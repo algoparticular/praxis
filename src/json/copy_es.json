@@ -35,6 +35,7 @@
             "signIn": "Ingresar",
             "register": "Crear una cuenta",
             "logout": "Salir",
+            "back": "Volver",
             "sound": "Sonido",
             "soundOn": "Con sonido",
             "soundOff": "Sin sonido",
