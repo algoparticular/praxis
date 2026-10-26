@@ -165,6 +165,16 @@
         transition: opacity 0.8s ease-out 0.2s;
     }
 
+    /* A scene can light the name: it sets --name-glow (0..1) on the stage (Paciencia does when its rulito is whole) */
+    .stage .title {
+        color: color-mix(in srgb, v-bind(colorAlt), #fff6cf calc(var(--name-glow, 0) * 88%));
+        text-shadow:
+            0 2px 18px v-bind(color),
+            0 0 calc(var(--name-glow, 0) * 22px) rgba(255, 226, 120, calc(var(--name-glow, 0) * 0.9)),
+            0 0 calc(var(--name-glow, 0) * 56px) rgba(255, 226, 120, calc(var(--name-glow, 0) * 0.55));
+        filter: brightness(calc(1 + var(--name-glow, 0) * 0.3));
+    }
+
     button.action {
         position: absolute;
         right: 24px;

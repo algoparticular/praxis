@@ -5,7 +5,7 @@
     // its loop, taking GROW seconds to be whole (quick at first, easing as it gets there); when it is, it flares, throws sparks and the blue spores multiply
     // (they swell for a few seconds and settle back). Let go and its tail starts
     // to catch up with its head (EAT seconds for the whole stroke) until it shrinks back into a dot and is gone, so
-    // no hold is wasted. The next one has another shape.
+    // no hold is wasted. The next one has another shape. When it is completed the card's name lights up too.
     // The layers come from the artwork itself (public/assets/collaborate) and move with different depth:
     // the ground (mushrooms with the grass behind them) travels most with the pointer, the sun least. The air
     // above the mushrooms is a spore system drawn on a canvas (useSpores), not a picture.
@@ -32,6 +32,7 @@
     const sparkCanvas = ref(null);
     const coneHit = ref(null);
     const rootsCanvas = ref(null);
+    let stageEl = null;                     // the card's stage, where the name is lit from (--name-glow)
     const rulito = ref(null);
     const lit = ref(false);                 // the pine cone is being pressed
     const hot = ref(false);                 // the pointer is over it
@@ -152,10 +153,15 @@
             const flare = full && head - tail > 0.9 ? Math.max(pop, Math.sin(t * 4) * 0.5 + 0.5) : 0;
             root.value.style.setProperty('--charge', Math.max(head - tail, rootGrow * 0.6).toFixed(3));
             roots.frame({ grow: rootGrow, pulse: wave, level, t });
+            // The card's name lights up when the rulito is completed: a flash, and it stays lit while the rulito is
+            // nearly whole, going out with it
+            const whole = Math.min(1, Math.max(0, (head - tail - 0.6) / 0.4));
+            stageEl?.style.setProperty('--name-glow', Math.max(pop, 0.8 * whole * whole * (3 - 2 * whole)).toFixed(3));
             rulito.value.frame({ head, tail, flare, t, fade: Math.min(1, (head - tail) * 14) });
             rulito.value.$el.style.rotate = `${(Math.sin(t * 1.8) * 3 * ramp).toFixed(2)}deg`;
             rulito.value.$el.style.scale = (1 + 0.2 * pop * pop).toFixed(3);
         });
+        stageEl = root.value.closest('.stage');
         roots = createRoots(rootsCanvas.value);
         spores = createSpores(sporeCanvas.value, { source: mushrooms.value, front: sparkCanvas.value, animate: !window.matchMedia('(prefers-reduced-motion: reduce)').matches });
         enter();
