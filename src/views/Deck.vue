@@ -92,7 +92,7 @@
                 </div>
                 <div>
                     <p>{{ $t("about.designedBy") }}</p>
-                    <a class="by" :href="$t('about.authorLink')" target="_blank" rel="noopener">{{ $t("about.author") }}</a>
+                    <p class="by">{{ $t("about.author") }}</p>
                 </div>
             </div>
         </section>

@@ -1,5 +1,5 @@
 // three.js ring for the deck gallery: the cards stand face up on a circle, the camera looks at the front of it.
-// Drag, scroll sideways or use the arrow keys to turn the ring; it settles on the nearest card. Tap a card to open it:
+// Drag, scroll or use the arrow keys to turn the ring; it settles on the nearest card. Tap a card to open it:
 // the others fade, the chosen one comes to the camera and is handed over to the DOM (rect, border and radius)
 // so the card page can animate it in place, as in the oracle tables.
 // three is imported on demand so it does not weigh on the first load.
@@ -252,11 +252,12 @@ export async function createDeckRing(canvas, { cards, onFocus, onPick, onSound }
 
     const onPointerLeave = () => { if (!down && !busy) setHover(null); };
 
-    // The page scrolls on below the ring, so only a sideways scroll (a trackpad, or shift + wheel) turns it
+    // The wheel turns the ring while the page is at its top. Once the page has been scrolled down (to what comes below
+    // the ring) the wheel scrolls the page, so it can be scrolled back up; a sideways scroll always turns the ring.
     const onWheel = (e) => {
         if (busy) return;
         const sideways = Math.abs(e.deltaX) > Math.abs(e.deltaY);
-        if (!sideways && !e.shiftKey) return;
+        if (!sideways && !e.shiftKey && window.scrollY > 4) return;
         e.preventDefault();
         const delta = sideways ? e.deltaX : e.deltaY;
         scroll.target = partial ? clamp(scroll.target + delta / 220, 0, lastIndex()) : scroll.target + delta / 220;
