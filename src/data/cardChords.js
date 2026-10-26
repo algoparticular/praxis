@@ -7,8 +7,8 @@
 // Inside a card its chord sets the pitch of the touch sounds and the ambience moves to it, so nothing clashes.
 
 // G major: Sol (throat, Aura, whose element is sound), Si (crown, Particular) and Re (sacral, Samas): expression,
-// creativity and spiritual connection. It also shares a note with every card's chord but one (Fm, Perdón), so
-// the step into a card is always soft.
+// creativity and spiritual connection. It also shares a note with every card's chord but one (A, Compromiso), so
+// the step into a card is almost always soft. Why each card has its chord: docs/acordes-de-las-cartas.md
 export const BASE_CHORD = 'G';
 
 const CHORDS = {
