@@ -7,18 +7,18 @@
 // Inside a card its chord sets the pitch of the touch sounds and the ambience moves to it, so nothing clashes.
 
 // G major: Sol (throat, Aura, whose element is sound), Si (crown, Particular) and Re (sacral, Samas): expression,
-// creativity and spiritual connection. It also shares a note with every card's chord but one (Fm, Perdón), so
-// the step into a card is always soft.
+// creativity and spiritual connection. It also shares a note with every card's chord but one (A, Compromiso), so
+// the step into a card is almost always soft. Why each card has its chord: docs/acordes-de-las-cartas.md
 export const BASE_CHORD = 'G';
 
 const CHORDS = {
     0: 'Bm',    // Nekkhamma: letting go, a sacred being (crown, inwards)
-    1: 'G',     // Sila: "the voice of my soul" (throat)
+    1: 'G7',    // Sila: "the voice of my soul" (throat), listening to the heart (Sid's heart, Fa)
     2: 'B',     // Dana: crown, the inner child (sacral) and giving (heart)
     3: 'Em',    // Pañña: spiritual balance from within
     4: 'E',     // Viriya: energy, determination (solar plexus)
     5: 'B',     // Khanti: "my divinity expands" (crown)
-    6: 'G',     // Sacca: truth (throat) and the crown
+    6: 'G7',    // Sacca: truth (throat) and the crown, heard in the heart (Sid's heart, Fa)
     7: 'E',     // Addhitthana: will
     8: 'B',     // Metta: crown and heart
     9: 'Em',    // Upekkha: balance, letting go of control
