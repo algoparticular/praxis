@@ -2,6 +2,8 @@
 
 Decisión: los juegos de las cartas se organizan en **7 verbos**, uno por personaje / chakra / nota. Cada verbo es la dinámica básica de una familia de juegos; cada carta toma el verbo que le calza por su significado y lo viste con su propia ilustración. Fuente de los personajes: Notion, Algo Particular / BIOs.
 
+Qué dinámica propone cada verbo: `dinamicas-de-juego.md`.
+
 ## Reglas
 - **El verbo lo decide el significado de la carta.** El personaje dibujado puede ser otro (la asignación de personajes a cartas a veces es libre). Por eso serían dos campos distintos en `cards.json`: `verb` y `character`. Todavía no se agregaron.
 - **Sin perder, sin puntaje.** El gesto se completa o se vuelve a intentar.

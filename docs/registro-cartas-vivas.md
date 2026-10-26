@@ -12,7 +12,7 @@ Estado a 2026-10-26. Verbos: ver `verbos-y-personajes.md` (ya guardados en `card
 | 20 | Creatividad | Regular | `SceneCreatividad` | Corales y algas que se aplastan y lanzan esporas; interior acuoso con orgánulos y una medusa (Aura) que pulsa y rebota | `tap` | pendiente | Resonar |
 | 22 | Evolución Espiritual | Regular | `SceneEvolucion` | Ocho bulbos y cuatro hongos que se mecen; al tocarlos el brillo se enciende y salen chispas; ser enroscado que rebota | `star` (bulbo), `tap` (hongo) | pendiente | Encender |
 | 25 | Hogar | Regular | `SceneHogar` | Hongos de la corona lanzan esporas; interior acuoso con orgánulos y una larva (un Sama) que camina y rebota | `tap` | pendiente | Arraigar |
-| 27 | Paciencia | Regular | `ScenePaciencia` | Mantener apretada la piña: brilla mientras se sostiene y se apaga despacio | `star` | pendiente | Arraigar |
+| 27 | Paciencia | Regular | `ScenePaciencia` | Mantener apretada la piña (~4,5 s): brilla, y el rulito sobre el Sama del centro se dibuja y florece; si se suelta, baja despacio. Cada rulito sale distinto | `star` | pendiente | Arraigar |
 | 29 | Sincronicidad | Regular | `SceneSincronicidad` | Secuencia de cuatro burbujas que se iluminan en ciclo de 11 s; tocar una reinicia la secuencia desde ella | `tap` | pendiente | Ver |
 | 31 | Vipassana | Especial | `SceneVipassana` | El personaje brilla y una onda recorre su espiral; las células se empujan y sueltan chispas de su color | `star`, `tap` | pendiente | Soltar |
 

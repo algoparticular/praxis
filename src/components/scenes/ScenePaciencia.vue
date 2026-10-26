@@ -1,5 +1,8 @@
 <script setup>
     // Paciencia: the little larvae in their boat, drifting over a field of coral and mushrooms under a stippled sun.
+    // Its verb is Arraigar (take root): the pine cone is held, not tapped. While it is held its charge fills (CHARGE
+    // seconds), and the rulito over the central Sama's head (drawn in code, Rulito.vue) draws itself as it does; when
+    // it is whole it flares and throws sparks. Let go and the charge drains slowly (DRAIN seconds), so nothing is lost.
     // The layers come from the artwork itself (public/assets/collaborate) and move with different depth:
     // the ground (mushrooms with the grass behind them) travels most with the pointer, the sun least. The air
     // above the mushrooms is a spore system drawn on a canvas (useSpores), not a picture.
@@ -7,7 +10,9 @@
     import { createParallax, enterLayers } from '../../composables/useParallax.js';
     import { createSpores } from '../../composables/useSpores.js';
     import { play } from '../../composables/useSound.js';
+    import Rulito from '../Rulito.vue';
     import cone from '../../composables/pineCone.json';
+    import rulitoAt from '../../composables/pacienciaRulito.json';
 
     const props = defineProps({
         card: { type: Object, default: () => ({}) },
@@ -22,6 +27,7 @@
     const sporeCanvas = ref(null);
     const sparkCanvas = ref(null);
     const coneHit = ref(null);
+    const rulito = ref(null);
     const lit = ref(false);                 // the pine cone is being pressed
     const hot = ref(false);                 // the pointer is over it
     let parallax = null;
@@ -39,23 +45,48 @@
         ]);
     };
 
-    // Pressing the pine cone makes it shine: it lights up while held, fades slowly once let go, and throws sparks
-    const shine = () => {
+    const CHARGE = 4.5;                     // seconds of holding to fill it
+    const DRAIN = 9;                        // seconds to empty it once let go
+    let held = false;
+    let charge = 0;                         // 0..1
+    let full = false;                       // the flare has gone off for this charge
+    let lastT = null;
+    let drawn = false;                      // it has been charged since it was last reshaped
+
+    // Pressing the pine cone: it lights up while held (and the charge starts to fill)
+    const hold = () => {
+        if (held) return;
+        held = true;
         lit.value = true;
-        play('star');
+        play('tap');
         if (!reduced) {
             const box = coneHit.value.getBoundingClientRect();
-            spores?.burst(box.left + box.width / 2, box.top + box.height / 2, 22);
+            spores?.burst(box.left + box.width / 2, box.top + box.height / 2, 12);
         }
-        window.addEventListener('pointerup', dim, { once: true });
-        window.addEventListener('pointercancel', dim, { once: true });
+        window.addEventListener('pointerup', release);
+        window.addEventListener('pointercancel', release);
     };
-    const dim = () => { lit.value = false; };
-    const onKey = (event) => {
+    const release = () => {
+        held = false;
+        lit.value = false;
+        window.removeEventListener('pointerup', release);
+        window.removeEventListener('pointercancel', release);
+    };
+    // With the keyboard the key is the finger: held down it charges, let go it releases
+    const onKeyDown = (event) => {
         if (event.key !== 'Enter' && event.key !== ' ') return;
         event.preventDefault();
-        shine();
-        setTimeout(dim, 700);
+        if (!event.repeat) hold();
+    };
+    const onKeyUp = (event) => {
+        if (event.key === 'Enter' || event.key === ' ') release();
+    };
+    // The charge is full: the rulito flares and throws sparks
+    const bloom = () => {
+        play('star');
+        if (reduced || !rulito.value) return;
+        const box = rulito.value.$el.getBoundingClientRect();
+        spores?.burst(box.left + box.width / 2, box.top + box.height / 2, 36);
     };
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -73,6 +104,22 @@
             // The ground is one piece, so the grass behind the mushrooms always lines up with them
             ground.value.style.translate = `${-x * 40}px ${-y * 5 + s * 25}px`;
             ground.value.style.rotate = `${(Math.sin(t * 0.9) * 0.4 * ramp).toFixed(3)}deg`;
+            // The charge fills while the cone is held and drains slowly after; the rulito follows it
+            const dt = lastT === null ? 0 : Math.min(t - lastT, 0.1);
+            lastT = t;
+            charge = Math.min(1, Math.max(0, charge + (held ? dt / CHARGE : -dt / DRAIN)));
+            if (charge >= 1 && !full) { full = true; bloom(); } else if (charge < 0.6) full = false;
+            // Once it has drained completely the rulito takes a new shape: it is never the same twice
+            if (charge > 0.05) drawn = true;
+            else if (drawn && charge === 0) { drawn = false; rulito.value.reshape(); }
+            const k = charge * charge * (3 - 2 * charge);
+            const flare = full ? Math.sin(t * 3) * 0.5 + 0.5 : 0;
+            root.value.style.setProperty('--charge', k.toFixed(3));
+            rulito.value.draw(k);
+            const mark = rulito.value.$el.style;
+            mark.rotate = `${(Math.sin(t * 1.3) * 2.5 * ramp).toFixed(2)}deg`;
+            mark.scale = (1 + 0.12 * k + 0.06 * flare).toFixed(3);
+            mark.filter = k < 0.01 ? 'none' : `drop-shadow(0 0 ${(2 + 12 * k + 8 * flare).toFixed(1)}px rgba(255, 150, 175, ${(0.9 * k).toFixed(2)}))`;
         });
         spores = createSpores(sporeCanvas.value, { source: mushrooms.value, front: sparkCanvas.value, animate: !window.matchMedia('(prefers-reduced-motion: reduce)').matches });
         enter();
@@ -81,15 +128,19 @@
     onBeforeUnmount(() => {
         parallax?.destroy();
         spores?.destroy();
-        window.removeEventListener('pointerup', dim);
-        window.removeEventListener('pointercancel', dim);
+        window.removeEventListener('pointerup', release);
+        window.removeEventListener('pointercancel', release);
     });
 </script>
 
 <template>
     <div class="scene" ref="root" :class="{ lit, hot }">
         <img class="layer sun" ref="sun" src="/assets/collaborate/sun.webp" alt="" draggable="false">
-        <img class="layer boat" ref="boat" src="/assets/collaborate/boat.webp" alt="" draggable="false">
+        <!-- The boat without its rulito (that one is drawn in code), and the rulito over the central Sama's head -->
+        <div class="layer boat" ref="boat">
+            <img class="hull" src="/assets/collaborate/boat-bare.webp" alt="" draggable="false">
+            <Rulito ref="rulito" class="rulito" :style="{ '--rx': rulitoAt.x, '--ry': rulitoAt.y, '--rw': rulitoAt.w }" />
+        </div>
         <!-- The spore cloud hangs in the air behind the mushrooms -->
         <canvas class="spores" ref="sporeCanvas"></canvas>
         <!-- One piece: the grass sits behind the mushrooms at the same scale, so their stems line up -->
@@ -101,7 +152,8 @@
             <img class="cone" src="/assets/collaborate/cone.webp" alt="" draggable="false" :style="{ '--bx': cone.x, '--by': cone.y, '--bw': cone.w }">
             <div class="coneHit" ref="coneHit" role="button" tabindex="0" :aria-label="$i18n.locale === 'en' ? 'Pine cone' : 'Piña'"
                 :style="{ '--bx': cone.x, '--by': cone.y, '--bw': cone.w, '--bh': cone.h }"
-                @pointerdown.prevent="shine" @pointerenter="hot = true" @pointerleave="hot = false" @keydown="onKey"></div>
+                @pointerdown.prevent="hold" @pointerenter="hot = true" @pointerleave="hot = false"
+                @keydown="onKeyDown" @keyup="onKeyUp" @blur="release"></div>
         </div>
         <canvas class="spores sparks" ref="sparkCanvas"></canvas>
     </div>
@@ -148,6 +200,22 @@
 
     /* The mushrooms strip, with the grass behind it. Wider than the screen so it can slide without showing its ends;
        it runs past the bottom edge, so the stems are cut there, as in the illustration. */
+    .boat .hull {
+        display: block;
+        width: 100%;
+        height: auto;
+    }
+
+    /* The rulito sits on the central Sama's head: positions are fractions of the boat picture */
+    .boat .rulito {
+        position: absolute;
+        left: calc(var(--rx) * 100%);
+        top: calc(var(--ry) * 100%);
+        width: calc(var(--rw) * 100%);
+        height: auto;
+        transform-origin: 50% 100%;
+    }
+
     .ground {
         --w: max(130vw, calc(var(--strip) * 10.67 * 1.1));
         position: absolute;
@@ -194,6 +262,7 @@
         width: calc(var(--bw) * 100% * 3.4);
         aspect-ratio: 1;
         translate: -50% -50%;
+        scale: calc(1 + var(--charge, 0) * 0.8);
         border-radius: 50%;
         background: radial-gradient(circle, rgba(255, 240, 140, 0.5) 0%, rgba(255, 232, 110, 0.18) 38%, rgba(255, 226, 90, 0) 70%);
         opacity: 0;
