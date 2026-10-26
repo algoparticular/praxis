@@ -122,7 +122,7 @@ export const play = (name) => {
 export const setCardChord = (name = null) => {
     if ((cardChord?.name ?? null) === name) return;
     cardChord = name ? synth.chord(name) : null;
-    if (ambient && ctx) ambient.setChord(name ?? 'D');
+    if (ambient && ctx) ambient.setChord(name ?? undefined);
 };
 
 export const vibrate = (pattern) => {

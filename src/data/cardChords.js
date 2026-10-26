@@ -6,7 +6,10 @@
 // it only have to be in it, never the other way round. Outside the cards the app sounds in BASE_CHORD.
 // Inside a card its chord sets the pitch of the touch sounds and the ambience moves to it, so nothing clashes.
 
-export const BASE_CHORD = 'D';
+// G major: Sol (throat, Aura, whose element is sound), Si (crown, Particular) and Re (sacral, Samas): expression,
+// creativity and spiritual connection. It also shares a note with every card's chord but one (Fm, Perdón), so
+// the step into a card is always soft.
+export const BASE_CHORD = 'G';
 
 const CHORDS = {
     0: 'Bm',    // Nekkhamma: letting go, a sacred being (crown, inwards)
@@ -19,7 +22,7 @@ const CHORDS = {
     7: 'E',     // Addhitthana: will
     8: 'B',     // Metta: crown and heart
     9: 'Em',    // Upekkha: balance, letting go of control
-    10: 'D',    // " ... ": the blank card keeps the base sound
+    10: BASE_CHORD, // " ... ": the blank card keeps the base sound
     11: 'Bm',   // Aceptación
     12: 'C',    // Armonía: root, plexus and throat, "here and now"
     13: 'G',    // Belleza

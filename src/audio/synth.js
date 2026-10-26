@@ -1,8 +1,10 @@
 // Procedural sound for the whole app. Nothing is downloaded: every sound is synthesised with Web Audio.
 // It is meant to feel calm and open: a soft pad whose voices swell slowly, singing-bowl chimes on a
-// pentatonic scale, the odd drop of water, all in a wide reverb. The app sounds in D major; inside a card
+// pentatonic scale, the odd drop of water, all in a wide reverb. The app sounds in G major; inside a card
 // everything moves to that card's chord (src/data/cardChords.js). Every function takes the context
 // (a real or an offline one) so it can be rendered and checked without speakers.
+
+import { BASE_CHORD } from '../data/cardChords.js';
 
 const rand = (min, max) => min + Math.random() * (max - min);
 
@@ -24,18 +26,21 @@ const KINDS = {
     7: { tones: [0, 4, 7, 10], scale: [0, 2, 4, 7, 10] },    // seventh: transforms
 };
 
-// 'D', 'Bm', 'G7', 'F#m'... The bass falls between G2 and F#3; every other register is counted from it
-// (D major gives the pad and chimes the app always had: D3 A3 D4 F#4 A4 D5, and D5 E5 F#5 A5 B5 D6).
-export const chord = (name = 'D') => {
-    const [, letter = 'D', accidental = '', kind = ''] = /^([A-G])([#b]?)(m|7)?$/.exec(name) ?? [];
+// 'D', 'Bm', 'G7', 'F#m'... The pad's bass falls between A2 and G#3, and the voice of the chimes and the touch
+// sounds (its root) between E4 and D#5; every other note is counted from those two. G major, the app's own
+// chord, gives a pad of G3 D4 G4 B4 D5 G5 and chimes of G4 A4 B4 D5 E5 G5.
+export const chord = (name = BASE_CHORD) => {
+    const [, letter = 'G', accidental = '', kind = ''] = /^([A-G])([#b]?)(m|7)?$/.exec(name) ?? [];
     const root = (LETTERS[letter] + (accidental === '#' ? 1 : accidental === 'b' ? -1 : 0) + 12) % 12;
-    const bass = 43 + ((root - 7 + 12) % 12);
+    const bass = 45 + ((root - 9 + 12) % 12);
+    const voice = 64 + ((root - 4 + 12) % 12);
     const { tones, scale } = KINDS[kind];
     const third = tones[1];
     return {
         name,
         kind,
         bass,
+        voice,
         intervals: tones,
         // The tones from a register upwards, across a span of semitones
         tones: (from, span) => {
@@ -49,9 +54,12 @@ export const chord = (name = 'D') => {
             [bass, 0.28], [bass + 7, 0.4], [bass + 12, 0.34], [bass + 12 + third, 0.26], [bass + 19, 0.18],
             kind === '7' ? [bass + 22, 0.12] : [bass + 24, 0.08],
         ],
-        chimes: [...scale, 12].map((step) => hz(bass + 24 + step)),
+        chimes: [...scale, 12].map((step) => hz(voice + step)),
     };
 };
+
+// The app's own chord, outside the cards
+const PLAIN = chord(BASE_CHORD);
 
 // White noise: flat across the spectrum, for swishes, ticks and the airy layer
 const whiteBuffer = (ctx, seconds = 1) => {
@@ -159,12 +167,12 @@ const swish = (ctx, out, time, { from, to, duration, level, q = 1.2 }) => {
 // and octave, and its third (and seventh) answer quietly on top: the card already sounds before it is turned over.
 export const pick = (ctx, out, time, harmony) => {
     if (!harmony) {
-        bell(ctx, out, time, 587.33, 3.4, 0.13);
-        bell(ctx, out, time + 0.16, 880, 3.2, 0.11);
-        bell(ctx, out, time + 0.34, 1174.66, 3.4, 0.07);
+        bell(ctx, out, time, hz(PLAIN.voice), 3.4, 0.13);
+        bell(ctx, out, time + 0.16, hz(PLAIN.voice + 7), 3.2, 0.11);
+        bell(ctx, out, time + 0.34, hz(PLAIN.voice + 12), 3.4, 0.07);
         return;
     }
-    const root = harmony.bass + 24;
+    const root = harmony.voice;
     bell(ctx, out, time, hz(root), 3.4, 0.13);
     bell(ctx, out, time + 0.16, hz(root + 7), 3.2, 0.11);
     bell(ctx, out, time + 0.34, hz(root + 12), 3.4, 0.07);
@@ -179,12 +187,12 @@ export const pick = (ctx, out, time, harmony) => {
 export const flip = (ctx, out, time, harmony) => {
     swish(ctx, out, time, { from: 400, to: 1800, duration: 0.65, level: 0.1, q: 0.6 });
     if (!harmony) {
-        bell(ctx, out, time + 0.42, 739.99, 2.6, 0.06);
+        bell(ctx, out, time + 0.42, hz(PLAIN.voice + PLAIN.intervals[1]), 2.6, 0.06);
         return;
     }
-    const root = harmony.bass + 24;
+    const root = harmony.voice;
     bell(ctx, out, time + 0.42, hz(root + harmony.intervals[1]), harmony.kind === 'm' ? 3.2 : 2.6, 0.06);
-    bell(ctx, out, time + 0.46, hz(harmony.bass + 12), 4, 0.05);
+    bell(ctx, out, time + 0.46, hz(root - 12), 4, 0.05);
     if (harmony.kind === '7') bell(ctx, out, time + 0.7, hz(root + 10), 2.6, 0.03);
 };
 
@@ -212,9 +220,10 @@ export const star = (ctx, out, time, harmony) => {
     if (!weight) return;
     const length = 0.6 + 0.4 * weight;
     if (!harmony) {
-        bell(ctx, out, time, 2960, 2.4 * length, 0.022 * weight);
-        bell(ctx, out, time + 0.1, 2349.3, 2.6 * length, 0.027 * weight);
-        bell(ctx, out, time + 0.2, 1760, 2.8 * length, 0.03 * weight);
+        // Third, root and fifth high up, falling: B6 G6 D6
+        bell(ctx, out, time, hz(PLAIN.voice + 24 + PLAIN.intervals[1]), 2.4 * length, 0.022 * weight);
+        bell(ctx, out, time + 0.1, hz(PLAIN.voice + 24), 2.6 * length, 0.027 * weight);
+        bell(ctx, out, time + 0.2, hz(PLAIN.voice + 19), 2.8 * length, 0.03 * weight);
         swish(ctx, out, time, { from: 7000, to: 9500, duration: 0.7, level: 0.012 * weight, q: 0.6 });
         return;
     }
@@ -222,8 +231,8 @@ export const star = (ctx, out, time, harmony) => {
     const seventh = harmony.kind === '7';
     // Chord notes from the fifth octave up (A5 D6 F#6 for D major), sometimes one more below so the run is
     // not always the same length; mostly falling, now and then rising
-    let notes = harmony.tones(harmony.bass + 31, 11);
-    if (Math.random() < 0.5) notes = [...harmony.tones(harmony.bass + 19, 11).slice(-1), ...notes];
+    let notes = harmony.tones(harmony.voice + 7, 11);
+    if (Math.random() < 0.5) notes = [...harmony.tones(harmony.voice - 5, 11).slice(-1), ...notes];
     if (Math.random() < 0.7) notes.reverse();
     const gap = minor ? 0.14 : 0.1;
     notes.forEach((midi, i) => {
@@ -232,7 +241,7 @@ export const star = (ctx, out, time, harmony) => {
         bell(ctx, out, at, hz(midi), (minor ? 3.2 : 2.6) * length, level);
         if (seventh) bell(ctx, out, at + 0.01, hz(midi) * 1.004, 2.4 * length, level * 0.5);
     });
-    bell(ctx, out, time + 0.05, hz(harmony.bass + 24), (minor ? 4.5 : 3.6) * length, 0.035 * weight);
+    bell(ctx, out, time + 0.05, hz(harmony.voice), (minor ? 4.5 : 3.6) * length, 0.035 * weight);
     if (minor) swish(ctx, out, time, { from: 3000, to: 4200, duration: 1.1, level: 0.008 * weight, q: 0.6 });
     else swish(ctx, out, time, { from: 5000, to: 7000, duration: 0.7, level: 0.01 * weight, q: 0.6 });
 };
@@ -258,7 +267,7 @@ export const tap = (ctx, out, time, harmony) => {
         drop(ctx, out, time, 0.08);
         return;
     }
-    const notes = harmony.tones(harmony.bass + 24, 14);
+    const notes = harmony.tones(harmony.voice, 14);
     lastTap = Math.max(0, Math.min(notes.length - 1, lastTap + any([-2, -1, 1, 1, 2])));
     const target = hz(notes[lastTap]);
 
@@ -284,7 +293,7 @@ export const tap = (ctx, out, time, harmony) => {
 
 /* ---------- Ambience ---------- */
 
-export const createAmbient = (ctx, out, name = 'D') => {
+export const createAmbient = (ctx, out, name = BASE_CHORD) => {
     const fade = ctx.createGain();
     fade.gain.value = 0;
     fade.connect(out);
@@ -399,7 +408,7 @@ export const createAmbient = (ctx, out, name = 'D') => {
             [...sources, ...pad.voices].forEach((source) => { try { source.stop(now + seconds + 0.1); } catch { /* already stopped */ } });
         },
         // Moves the pad and the chimes to another chord: the new pad swells in as the old one fades away
-        setChord(next = 'D', seconds = 5, time = ctx.currentTime) {
+        setChord(next = BASE_CHORD, seconds = 5, time = ctx.currentTime) {
             if (next === harmony.name) return;
             harmony = chord(next);
             const old = pad;
