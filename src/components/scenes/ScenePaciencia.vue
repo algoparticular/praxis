@@ -1,8 +1,10 @@
 <script setup>
     // Paciencia: the little larvae in their boat, drifting over a field of coral and mushrooms under a stippled sun.
-    // Its verb is Arraigar (take root): the pine cone is held, not tapped. While it is held its charge fills (CHARGE
-    // seconds), and the rulito over the central Sama's head (drawn in code, Rulito.vue) draws itself as it does; when
-    // it is whole it flares and throws sparks. Let go and the charge drains slowly (DRAIN seconds), so nothing is lost.
+    // Its verb is Arraigar (take root): the pine cone is held, not tapped. While it is held, the rulito over the
+    // central Sama's head (a stroke drawn in code, Rulito.vue) is born as a dot, stretches into a line and curls into
+    // its loop, taking GROW seconds to be whole; when it is, it flares and throws sparks. Let go and its tail starts
+    // to catch up with its head (EAT seconds for the whole stroke) until it shrinks back into a dot and is gone, so
+    // no hold is wasted. The next one has another shape.
     // The layers come from the artwork itself (public/assets/collaborate) and move with different depth:
     // the ground (mushrooms with the grass behind them) travels most with the pointer, the sun least. The air
     // above the mushrooms is a spore system drawn on a canvas (useSpores), not a picture.
@@ -45,13 +47,15 @@
         ]);
     };
 
-    const CHARGE = 4.5;                     // seconds of holding to fill it
-    const DRAIN = 9;                        // seconds to empty it once let go
+    const GROW = 4.5;                       // seconds of holding to draw it whole
+    const LINGER = 1.2;                     // seconds a whole rulito stays before its tail starts to go
+    const EAT = 7;                          // seconds for the tail to go all the way along it
     let held = false;
-    let charge = 0;                         // 0..1
-    let full = false;                       // the flare has gone off for this charge
+    let head = 0;                           // how far along its stroke the front of the rulito is (0..1)
+    let tail = 0;                           // and the back of it
+    let idle = 0;                           // seconds since the cone was let go
+    let full = false;                       // the flare has gone off for this rulito
     let lastT = null;
-    let drawn = false;                      // it has been charged since it was last reshaped
 
     // Pressing the pine cone: it lights up while held (and the charge starts to fill)
     const hold = () => {
@@ -104,22 +108,24 @@
             // The ground is one piece, so the grass behind the mushrooms always lines up with them
             ground.value.style.translate = `${-x * 40}px ${-y * 5 + s * 25}px`;
             ground.value.style.rotate = `${(Math.sin(t * 0.9) * 0.4 * ramp).toFixed(3)}deg`;
-            // The charge fills while the cone is held and drains slowly after; the rulito follows it
+            // Held, the head of the rulito moves on (and its tail comes back if it had started to go); let go, after a
+            // moment the tail catches up with the head. When it has, the rulito is gone and the next one has another shape.
             const dt = lastT === null ? 0 : Math.min(t - lastT, 0.1);
             lastT = t;
-            charge = Math.min(1, Math.max(0, charge + (held ? dt / CHARGE : -dt / DRAIN)));
-            if (charge >= 1 && !full) { full = true; bloom(); } else if (charge < 0.6) full = false;
-            // Once it has drained completely the rulito takes a new shape: it is never the same twice
-            if (charge > 0.05) drawn = true;
-            else if (drawn && charge === 0) { drawn = false; rulito.value.reshape(); }
-            const k = charge * charge * (3 - 2 * charge);
-            const flare = full ? Math.sin(t * 3) * 0.5 + 0.5 : 0;
-            root.value.style.setProperty('--charge', k.toFixed(3));
-            rulito.value.draw(k);
-            const mark = rulito.value.$el.style;
-            mark.rotate = `${(Math.sin(t * 1.3) * 2.5 * ramp).toFixed(2)}deg`;
-            mark.scale = (1 + 0.12 * k + 0.06 * flare).toFixed(3);
-            mark.filter = k < 0.01 ? 'none' : `drop-shadow(0 0 ${(2 + 12 * k + 8 * flare).toFixed(1)}px rgba(255, 150, 175, ${(0.9 * k).toFixed(2)}))`;
+            if (held) {
+                idle = 0;
+                head = Math.min(1, head + dt / GROW);
+                tail = Math.max(0, tail - dt / 1.5);
+            } else if (head > 0) {
+                idle += dt;
+                if (idle > (head >= 1 ? LINGER : 0.3)) tail = Math.min(head, tail + dt / EAT);
+            }
+            if (head >= 1 && !full) { full = true; bloom(); }
+            if (head > 0 && head - tail < 0.0005) { head = 0; tail = 0; full = false; rulito.value.reshape(); }
+            const flare = full && head - tail > 0.9 ? Math.sin(t * 3) * 0.5 + 0.5 : 0;
+            root.value.style.setProperty('--charge', (head - tail).toFixed(3));
+            rulito.value.frame({ head, tail, flare, t, fade: Math.min(1, (head - tail) * 14) });
+            rulito.value.$el.style.rotate = `${(Math.sin(t * 1.3) * 2.5 * ramp).toFixed(2)}deg`;
         });
         spores = createSpores(sporeCanvas.value, { source: mushrooms.value, front: sparkCanvas.value, animate: !window.matchMedia('(prefers-reduced-motion: reduce)').matches });
         enter();

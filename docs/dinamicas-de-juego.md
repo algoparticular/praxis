@@ -6,7 +6,7 @@ Solo **Arraigar en Paciencia** está implementado. El resto son propuestas, toma
 
 ## Reglas comunes
 - **Nada se pierde ni se falla.** No hay puntaje, tiempo límite ni "game over". Si el gesto no se completa, la escena sigue viva y se puede intentar de nuevo.
-- **El premio es el rulito.** Completar el gesto es "uy, me conecté con el Todo": el rulito aparece, se dibuja o se enciende. Cada conexión es distinta: el rulito nunca sale con la misma forma dos veces.
+- **El premio es el rulito.** Completar el gesto es "uy, me conecté con el Todo": el rulito aparece, se dibuja o se enciende. Cada conexión es distinta: el rulito nunca sale con la misma forma dos veces. No se ve hasta que se empieza a jugar.
 - **La lectura no se bloquea.** La descripción, la afirmación y la invitación están siempre disponibles. El juego no es una puerta.
 - **Se puede jugar sin tocar la pantalla:** con teclado (Enter o espacio) y con `prefers-reduced-motion` (sin chispas ni animaciones largas, pero el gesto funciona).
 - **Suena en el acorde de la carta** (`src/data/cardChords.js`): los toques son notas de ese acorde, el cierre del gesto es un `star`.
@@ -16,7 +16,8 @@ Solo **Arraigar en Paciencia** está implementado. El resto son propuestas, toma
 
 ### 1. Arraigar (Sporá, demonio: miedo) — implementado en Paciencia
 **Dinámica:** sostener. Mantener apretado un punto de la escena hasta que algo crece.
-**Cómo funciona hoy en Paciencia:** al mantener apretada la piña (dedo, clic o tecla) se llena una carga en unos 4,5 segundos. Mientras tanto la piña brilla y su resplandor crece, y el rulito sobre la cabeza del Sama del centro se va dibujando. Al llenarse florece: el rulito se enciende, salen chispas y suena un `star`. Si se suelta, la carga baja despacio (unos 9 segundos), así que ningún intento se desperdicia. Cuando se apaga del todo, el próximo rulito nace con otra forma.
+**Cómo funciona hoy en Paciencia:** al mantener apretada la piña (dedo, clic o tecla) el rulito sobre la cabeza del Sama del centro nace como un punto, se estira en una línea, se dobla en un gancho, cierra el lazo y estira el tallo; tarda unos 4,5 segundos. Mientras tanto la piña brilla y su resplandor crece. Al completarse florece: salen chispas y suena un `star`. Si se suelta, la cola del rulito va alcanzando a la cabeza (unos 7 segundos para recorrerlo entero), el lazo se abre, queda el tallo, se encoge hasta un punto y desaparece; así ningún intento se desperdicia, y si se vuelve a sostener, la cola retrocede y el rulito sigue creciendo. Cada rulito nace con otra forma. Está inspirado en la animación `docs/Breathe.gif`, y se dibuja en código (ver `Rulito.vue`).
+**Idea pendiente, tomada de esa animación:** antes del rulito le crecen raíces a Sid debajo, y se recogen cuando aparece. Para Arraigar sería natural: raíces que crecen mientras se sostiene y, al llegar, el rulito.
 **Variantes posibles:** sostener dos puntos a la vez, o quedarse quieto sin mover el dedo (más exigente); una semilla (Sid) que crece mientras se sostiene.
 **Cartas:** Paciencia (hecha), Hogar, Compromiso, Confianza, Fe, Addhitthana.
 
@@ -60,7 +61,7 @@ Solo **Arraigar en Paciencia** está implementado. El resto son propuestas, toma
 No hay nada que leer ni decir; la invitación es sentir el corazón. Si tiene un juego, sería no jugar: la escena responde solo si se deja de tocar.
 
 ## Piezas de código que ya sirven
-- `src/components/Rulito.vue`: el rulito dibujado en código. `draw(p)` lo revela de 0 a 1 y `reshape()` le da una forma nueva. Es el premio común a todos los verbos.
+- `src/components/Rulito.vue`: el rulito dibujado en código sobre un canvas 2D, como una línea que viaja (punto, línea, lazo, y luego la cola alcanza a la cabeza). `frame({ head, tail, flare, t })` lo dibuja y `reshape()` le da una forma nueva. Es el premio común a todos los verbos.
 - `useSparks.js` y `useStardust.js`: chispas y partículas. `useSpores.js`: esporas en Paciencia.
 - `useCellWater.js`: el agua de las células, con un nadador que choca con las cosas.
 - `useParallax.js`: el reloj de cada escena (`t`, `ramp`) y las entradas por capas.
