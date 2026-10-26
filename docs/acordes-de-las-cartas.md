@@ -45,12 +45,12 @@ También es la base que mejor se lleva con las cartas. Comparte al menos una not
 | # | Carta | Acorde | Notas → chakras | Por qué este acorde | Personajes en la ilustración |
 |---|---|---|---|---|---|
 | 0 | Nekkhamma | Si menor | Si, Re, Fa# → corona, sacro, corazón | Renuncia, soltar, "un ser sagrado haciendo una experiencia humana". La corona manda (lo sagrado) y el modo menor mira hacia adentro (soltar). | Particular (tres, deshaciéndose) |
-| 1 | Sila | Sol mayor | Sol, Si, Re → garganta, corona, sacro | "Encuentro paz al hacer el bien en resonancia con la voz de mi alma". La voz del alma es la garganta, acompañada por la corona. | Particular y una criatura rosa con orejas (sin identificar) |
+| 1 | Sila | Sol mayor | Sol, Si, Re → garganta, corona, sacro | "Encuentro paz al hacer el bien en resonancia con la voz de mi alma". La voz del alma es la garganta, acompañada por la corona. | Particular y el corazón de Sid (Fa, que no está en el acorde: ver Pendiente) |
 | 2 | Dana | Si mayor | Si, Re#, Fa# → corona, sacro, corazón | "Escucho al niño que llevo dentro y soy feliz al dar". El niño interior es el sacro y dar es el corazón. La teoría dice que este acorde facilita la conexión trascendental y la creatividad emocional. | Particular (dos) |
 | 3 | Pañña | Mi menor | Mi, Sol, Si → plexo, garganta, corona | Sabiduría que se escucha en silencio. Para la teoría, este acorde empodera desde la introspección y el equilibrio espiritual. | Sid (Particular), hongos y bosque (Sporá) |
 | 4 | Viriya | Mi mayor | Mi, Sol#, Si → plexo, garganta, corona | Energía y determinación: "sigo su verdad con determinación". La voluntad es el plexo solar. | Particular (caminante con báculo) |
 | 5 | Khanti | Si mayor | Si, Re#, Fa# → corona, sacro, corazón | "Mi divinidad se expande al ser tolerante". La corona en modo mayor, que se expande. | Varios personajes dentro de los frascos |
-| 6 | Sacca | Sol mayor | Sol, Si, Re → garganta, corona, sacro | Comprometerse con la propia verdad y abrirle la puerta al propósito. La verdad se dice con la garganta, y la corona la acompaña. | Particular en la barca y una criatura rosa (sin identificar) |
+| 6 | Sacca | Sol mayor | Sol, Si, Re → garganta, corona, sacro | Comprometerse con la propia verdad y abrirle la puerta al propósito. La verdad se dice con la garganta, y la corona la acompaña. | Particular en la barca y el corazón de Sid (Fa, que no está en el acorde: ver Pendiente) |
 | 7 | Addhitthana | Mi mayor | Mi, Sol#, Si → plexo, garganta, corona | Determinación para nutrir hábitos. Es la voluntad, el plexo solar en modo mayor. | Particular en el bote, bajo la tormenta |
 | 8 | Metta | Si mayor | Si, Re#, Fa# → corona, sacro, corazón | "Soy Amor infinito, reconozco mi esencia más pura". La esencia es la corona y el amor es el corazón. | Particular y otros, con un zorrito (Vulpes) |
 | 9 | Upekkha | Mi menor | Mi, Sol, Si → plexo, garganta, corona | Ecuanimidad e impermanencia: soltar el exceso de control. Es el equilibrio espiritual desde la introspección. | Particular, hongos (Sporá) |
@@ -94,6 +94,7 @@ Se cambia una línea en `src/data/cardChords.js`, por ejemplo `28: 'Em'`. Se esc
 
 ## Pendiente
 
-- **Huit (tercer ojo, La)** no aparece en ninguna ilustración actual.
-- **La criatura rosa con orejas** de Sila (1) y Sacca (6) no está identificada.
-- **Falta escucharlo en un teléfono**, sobre todo el paso de Sol mayor a las cartas más lejanas: Compromiso (La mayor), Coraje (Mi mayor) y Hogar (Do mayor).
+- **Huit (tercer ojo, La)** no aparece en ninguna ilustración actual. El autor va a cambiarlo.
+- **El corazón de Sid** (la criatura rosa con orejas de Sila y Sacca) es el chakra del corazón, Fa. Ninguna de esas dos cartas tiene Fa en su acorde, Sol mayor. Falta decidir si el texto pide quedarse en Sol mayor o si conviene un acorde que lo incluya.
+
+Ya se escuchó en un teléfono y suena bien.
