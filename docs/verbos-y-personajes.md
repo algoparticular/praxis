@@ -41,7 +41,7 @@ Está en el campo `verb` de `src/data/cards.json` y los verbos en `src/data/verb
 Total: 6 + 5 + 4 + 4 + 6 + 3 + 4 + 1 = 33. Belleza podría ir también en Ver.
 
 ## Decidido
-- Carta 10 (`" ... "`): es el silencio. No hay nada que leer ni decir, la invitación es sentir el corazón. Verbo y forma por definir.
+- Carta 10 (`" ... "`): es el silencio. No hay nada que leer ni decir, la invitación es sentir el corazón. Su verbo va entre Fa, Sol o La (por decidir); la forma, por definir.
 - Nombre del personaje: **Sid** (Seed, semilla).
 - El bichito con pelos y antenas es un Sama. El ser dentro de la célula de Evolución es Sid.
 - Khanti es **Fluir** (Samas), no Soltar: los corchos que vacían los frascos quedan como la parte de soltar dentro de ese juego.
@@ -51,4 +51,4 @@ Total: 6 + 5 + 4 + 4 + 6 + 3 + 4 + 1 = 33. Belleza podría ir también en Ver.
 
 ## Abierto
 - Fichas de Huit y Sid no tienen texto de historia, solo la tabla.
-- Carta 10 (el silencio): verbo y forma de juego por definir.
+- Carta 10 (el silencio): el verbo va entre Fa (Dar y recibir), Sol (Resonar) o La (Ver); falta elegirlo y definir su forma de juego.
