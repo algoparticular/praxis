@@ -4,7 +4,8 @@
 // three is imported on demand so it does not weigh on the first load.
 // On the Vipassana card it can also be touched: ripple() sends a ring through the liquid that shoves the cells,
 // popCell() bursts the one under the finger into dots that drift away and stay gone, gather() brings every
-// cell back, and breathe() draws the whole field in towards the character and lets it out.
+// cell back, and breathe() (held in, the cells and matter that are left fall into concentric rings that turn around
+// the character, a cosmic mandala, until it is let go)  draws the whole field in towards the character and lets it out.
 
 import { breathEnvelope, BREATH, INHALE } from './breathCurve.js';
 
@@ -176,6 +177,9 @@ export async function createCellField(canvas, container, { onEvent = null } = {}
             size: 0.006 + Math.random() ** 2 * 0.022, // mostly tiny, a few bokeh-like specks
             twinkle: rand(0, Math.PI * 2),
             buoyancy: rand(-0.012, 0.02),      // some matter sinks, some rises
+            ring: Math.floor(rand(0, 5)),      // the ring of the mandala it falls into while the breath is held
+            ringAngle: rand(0, Math.PI * 2),
+            ringJitter: rand(-0.015, 0.015),     // in ring-radius units, so the rings are fuzzy bands and not wires
             x: 0, y: 0, vx: 0, vy: 0,
         };
     });
@@ -384,6 +388,17 @@ export async function createCellField(canvas, container, { onEvent = null } = {}
         }
     };
 
+    // The cells still there take the rings in order of size, spread evenly round each; the gone ones keep out of it
+    const assignRings = () => {
+        cells.forEach((cell) => { cell.ring = -1; });
+        const alive = cells.filter((cell) => cell.state === 'whole' || cell.state === 'in').sort((a, b) => b.size - a.size);
+        const counts = new Array(RING_COUNT).fill(0);
+        alive.forEach((cell, i) => { cell.ring = i % RING_COUNT; counts[cell.ring]++; });
+        const seen = new Array(RING_COUNT).fill(0);
+        alive.forEach((cell) => { cell.ringAngle = (seen[cell.ring]++ / counts[cell.ring]) * Math.PI * 2 + cell.ring * 0.9; });
+        ringsAssigned = true;
+    };
+
     // ---- Letting go: how long each stretch of it takes (seconds)
     const OUT = 1.5, IN = 2.8;
     const ease = (k) => k * k * (3 - 2 * k);
@@ -418,6 +433,13 @@ export async function createCellField(canvas, container, { onEvent = null } = {}
     let breathT = -1;
     let breathHeld = false;
     let breathE = 0;
+    // The mandala: held in, the breath makes what is left orbit the character in concentric rings turning in
+    // alternate directions. holdT is how long it has been held at the top, orbitW how much of the mandala is formed.
+    const RING_COUNT = 5;
+    let holdT = 0;
+    let orbitW = 0;
+    let ringsAssigned = false;
+    let orbitSized = false;
 
     // ---- Layout
     let viewW = 1, viewH = 1, unit = 1;
@@ -497,6 +519,16 @@ export async function createCellField(canvas, container, { onEvent = null } = {}
         }
         breathE = breathEnvelope(breathT);
 
+        if (breathHeld && breathT >= INHALE - 0.01) holdT += dt; else holdT = 0;
+        const orbitTarget = holdT > 0.8 ? ease(Math.min(1, (holdT - 0.8) / 2.4)) : 0;
+        orbitW += (orbitTarget - orbitW) * Math.min(1, dt * (orbitTarget > orbitW ? 1.5 : 2.5));
+        if (orbitW > 0.02 && !ringsAssigned) assignRings();
+        else if (orbitW <= 0.02) ringsAssigned = false;
+        // Rings fit the frame whatever its shape: the outer one nearly touches the nearer edge, the inner one hugs him
+        const ringBase = Math.min(viewW * 0.5, viewH * 0.42);
+        const ringRadius = (k) => ringBase * (0.5 + 0.12 * k);
+        const ringSpeed = (k) => (k % 2 ? -1 : 1) * (0.5 - 0.06 * k);
+
         raysMaterial.uniforms.uTime.value = time;
         raysMaterial.uniforms.uShift.value = parallax.x * 0.05;
         raysMaterial.uniforms.uFade.value = (1 - scrollProgress * 0.85) * (1 + 0.7 * breathE);
@@ -551,11 +583,18 @@ export async function createCellField(canvas, container, { onEvent = null } = {}
             }
 
             // The breath draws the cells in towards the character and lets them out
-            ax += (0 - cell.x) * 0.35 * breathE;
-            ay += (pullY - cell.y) * 0.35 * breathE;
+            ax += (0 - cell.x) * 0.35 * breathE * (1 - orbitW);
+            ay += (pullY - cell.y) * 0.35 * breathE * (1 - orbitW);
 
             // A ring shoves a cell as it goes through it, and a cell it reaches lets go of its shape
             const depthScale = CAMERA_Z / (CAMERA_Z - cell.z);
+            if (orbitW > 0.01 && cell.ring >= 0) {
+                // On its ring (the target is where it must look to be on the circle, whatever its depth)
+                const angle = cell.ringAngle + time * ringSpeed(cell.ring);
+                const radius = ringRadius(cell.ring);
+                ax += ((Math.cos(angle) * radius) / depthScale - cell.x) * 6 * orbitW;
+                ay += ((pullY + Math.sin(angle) * radius * 0.85) / depthScale - cell.y) * 6 * orbitW;
+            }
             cell.swell = 0;
             ripples.forEach((ripple) => {
                 const dx = cell.x * depthScale - ripple.x, dy = cell.y * depthScale - ripple.y;
@@ -626,8 +665,18 @@ export async function createCellField(canvas, container, { onEvent = null } = {}
                 ay += (wake.y * 2.4 + (dy / distance) * unit * 1.6) * falloff;
             }
 
-            ax += (0 - particle.x) * 0.8 * breathE;
-            ay += (pullY - particle.y) * 0.8 * breathE;
+            ax += (0 - particle.x) * 0.8 * breathE * (1 - orbitW);
+            ay += (pullY - particle.y) * 0.8 * breathE * (1 - orbitW);
+            if (orbitW > 0.01) {
+                const angle = particle.ringAngle + time * ringSpeed(particle.ring);
+                const radius = ringRadius(particle.ring) + particle.ringJitter * ringBase;
+                const depthScale = CAMERA_Z / (CAMERA_Z - particle.z);
+                ax += ((Math.cos(angle) * radius) / depthScale - particle.x) * 5 * orbitW;
+                ay += ((pullY + Math.sin(angle) * radius * 0.85) / depthScale - particle.y) * 5 * orbitW;
+                // Damped, so it settles on its ring instead of swinging through it
+                ax -= particle.vx * 2.5 * orbitW;
+                ay -= particle.vy * 2.5 * orbitW;
+            }
 
             particle.vx += ax * dt;
             particle.vy += ay * dt;
@@ -648,10 +697,14 @@ export async function createCellField(canvas, container, { onEvent = null } = {}
             positions[i * 3 + 2] = particle.z;
             // Far matter is dimmer, as if seen through the liquid
             const depth = 1 - 0.55 * clamp((Z_NEAR - particle.z) / (Z_NEAR - Z_FAR), 0, 1);
-            alphas[i] = (0.5 + 0.45 * (0.5 + 0.5 * Math.sin(time * 1.1 + particle.twinkle))) * depth;
+            alphas[i] = (0.5 + 0.45 * (0.5 + 0.5 * Math.sin(time * 1.1 + particle.twinkle))) * depth * (1 + 0.6 * orbitW);
+            // In the mandala the matter is bigger, so the rings can be read
+            if (orbitW > 0.001 || orbitSized) sizes[i] = particle.size * unit * (1 + 1.1 * orbitW);
         });
         geometry.attributes.position.needsUpdate = true;
         geometry.attributes.alpha.needsUpdate = true;
+        if (orbitW > 0.001 || orbitSized) geometry.attributes.size.needsUpdate = true;
+        orbitSized = orbitW > 0.001;
 
         // The dots of the cells that have let go: they leave their shape upwards on the current and fade, and come back the same way
         let dotsChanged = false;
