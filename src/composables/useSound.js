@@ -20,6 +20,8 @@ const readVolume = (key, fallback) => {
         return Number.isFinite(value) ? Math.min(1, Math.max(0, value)) : fallback;
     } catch { return fallback; }
 };
+// The sliders are in loudness steps, not in amplitude: squared, so the lower half of a slider is really quieter
+const gainOf = (value) => value * value;
 export const musicVolume = ref(readVolume('musicVolume', 0.5));      // the music starts at half
 export const effectsVolume = ref(readVolume('effectsVolume', 1));
 
@@ -28,6 +30,8 @@ let master = null;
 let musicBus = null;
 let effectsBus = null;
 let ambient = null;
+// Every ambience ever started, so that turning the sound off stops all of them and no instance can be left playing
+const ambients = new Set();
 let silentTrack = null;
 // The chord of the card on screen (null outside the cards): the touch sounds play in it and the ambience follows it
 let cardChord = null;
@@ -88,8 +92,8 @@ const ensureContext = () => {
     master = synth.createMaster(ctx);
     musicBus = ctx.createGain();
     effectsBus = ctx.createGain();
-    musicBus.gain.value = musicVolume.value;
-    effectsBus.gain.value = effectsVolume.value;
+    musicBus.gain.value = gainOf(musicVolume.value);
+    effectsBus.gain.value = gainOf(effectsVolume.value);
     musicBus.connect(master);
     effectsBus.connect(master);
     return ctx;
@@ -110,6 +114,7 @@ const enable = () => {
     return resumed.then(() => {
         if (!ambient && soundOn.value) {
             ambient = synth.createAmbient(ctx, musicBus, cardChord?.name);
+            ambients.add(ambient);
             ambient.start();
         }
         return true;
@@ -117,7 +122,8 @@ const enable = () => {
 };
 
 const disable = () => {
-    ambient?.stop();
+    ambients.forEach((each) => each.stop());
+    ambients.clear();
     ambient = null;
     silentTrack?.pause();
     soundOn.value = false;
@@ -143,7 +149,7 @@ export const play = (name, level) => {
 const setVolume = (key, ref, bus, value) => {
     ref.value = Math.min(1, Math.max(0, value));
     try { localStorage.setItem(key, String(ref.value)); } catch { /* storage can be blocked */ }
-    if (bus && ctx) bus.gain.setTargetAtTime(ref.value, ctx.currentTime, 0.05);
+    if (bus && ctx) bus.gain.setTargetAtTime(gainOf(ref.value), ctx.currentTime, 0.05);
 };
 export const setMusicVolume = (value) => setVolume('musicVolume', musicVolume, musicBus, value);
 export const setEffectsVolume = (value) => setVolume('effectsVolume', effectsVolume, effectsBus, value);

@@ -68,11 +68,13 @@
             <label>
                 <span>{{ $t("nav.music") }}</span>
                 <input type="range" min="0" max="100" step="5" :value="Math.round(musicVolume * 100)"
+                    :style="{ '--fill': Math.round(musicVolume * 100) + '%' }" :aria-label="$t('nav.music')"
                     @input="setMusicVolume($event.target.value / 100)" />
             </label>
             <label>
                 <span>{{ $t("nav.effects") }}</span>
                 <input type="range" min="0" max="100" step="5" :value="Math.round(effectsVolume * 100)"
+                    :style="{ '--fill': Math.round(effectsVolume * 100) + '%' }" :aria-label="$t('nav.effects')"
                     @input="setEffectsVolume($event.target.value / 100)" @change="effectsHeard" />
             </label>
         </div>
@@ -121,18 +123,20 @@
         color: #143246;
     }
 
-    /* Audio */
+    /* Audio: each channel is a menu line of its own, the same size and hand as the links, with a fine line and a glowing
+       round thumb as its slider (the filled part of the line is the navy of the active language) */
     #audioMixer {
-        gap: 14px;
+        gap: 24px;
     }
 
     #audioMixer label {
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 4px;
+        gap: 10px;
         font-family: 'Caveat', 'Inter', helvetica, sans-serif;
-        font-size: 19px;
+        font-size: 21px;
+        font-weight: 400;
         color: #F7F8F1;
     }
 
@@ -142,9 +146,64 @@
     }
 
     #audioMixer input[type="range"] {
-        width: 160px;
-        accent-color: #143246;
+        -webkit-appearance: none;
+        appearance: none;
+        width: 168px;
+        height: 22px;
+        margin: 0;
+        background: transparent;
         cursor: pointer;
+        --fill: 50%;
+    }
+
+    #audioMixer input[type="range"]::-webkit-slider-runnable-track {
+        height: 2px;
+        border-radius: 2px;
+        background: linear-gradient(to right, #143246 var(--fill), rgba(247, 248, 241, 0.55) var(--fill));
+    }
+
+    #audioMixer input[type="range"]::-moz-range-track {
+        height: 2px;
+        border-radius: 2px;
+        background: rgba(247, 248, 241, 0.55);
+    }
+
+    #audioMixer input[type="range"]::-moz-range-progress {
+        height: 2px;
+        border-radius: 2px;
+        background: #143246;
+    }
+
+    #audioMixer input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 14px;
+        height: 14px;
+        margin-top: -6px;
+        border: 0;
+        border-radius: 50%;
+        background: #F7F8F1;
+        box-shadow: 0 0 0 4px rgba(247, 248, 241, 0.28), 0 0 14px rgba(247, 248, 241, 0.7);
+        transition: box-shadow 0.2s ease;
+    }
+
+    #audioMixer input[type="range"]::-moz-range-thumb {
+        width: 14px;
+        height: 14px;
+        border: 0;
+        border-radius: 50%;
+        background: #F7F8F1;
+        box-shadow: 0 0 0 4px rgba(247, 248, 241, 0.28), 0 0 14px rgba(247, 248, 241, 0.7);
+    }
+
+    #audioMixer input[type="range"]:hover::-webkit-slider-thumb,
+    #audioMixer input[type="range"]:active::-webkit-slider-thumb {
+        box-shadow: 0 0 0 7px rgba(247, 248, 241, 0.3), 0 0 20px rgba(247, 248, 241, 0.9);
+    }
+
+    #audioMixer input[type="range"]:focus-visible {
+        outline: 1px dashed #F7F8F1;
+        outline-offset: 4px;
     }
 
     a.logout {

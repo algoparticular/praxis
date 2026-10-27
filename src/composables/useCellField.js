@@ -177,9 +177,7 @@ export async function createCellField(canvas, container, { onEvent = null } = {}
             size: 0.006 + Math.random() ** 2 * 0.022, // mostly tiny, a few bokeh-like specks
             twinkle: rand(0, Math.PI * 2),
             buoyancy: rand(-0.012, 0.02),      // some matter sinks, some rises
-            ring: Math.floor(rand(0, 5)),      // the ring of the mandala it falls into while the breath is held
-            ringAngle: rand(0, Math.PI * 2),
-            ringJitter: rand(-0.015, 0.015),     // in ring-radius units, so the rings are fuzzy bands and not wires
+            ring: 0, ringAngle: 0,             // its place in the mandala while the breath is held (see below)
             x: 0, y: 0, vx: 0, vy: 0,
         };
     });
@@ -388,16 +386,57 @@ export async function createCellField(canvas, container, { onEvent = null } = {}
         }
     };
 
-    // The cells still there take the rings in order of size, spread evenly round each; the gone ones keep out of it
+    // The cells still there take the orbits, the biggest on the outer ones, spread evenly along each; the gone ones keep out
     const assignRings = () => {
         cells.forEach((cell) => { cell.ring = -1; });
+        const order = [1, 3, 5, 0, 2, 4];
         const alive = cells.filter((cell) => cell.state === 'whole' || cell.state === 'in').sort((a, b) => b.size - a.size);
-        const counts = new Array(RING_COUNT).fill(0);
-        alive.forEach((cell, i) => { cell.ring = i % RING_COUNT; counts[cell.ring]++; });
-        const seen = new Array(RING_COUNT).fill(0);
-        alive.forEach((cell) => { cell.ringAngle = (seen[cell.ring]++ / counts[cell.ring]) * Math.PI * 2 + cell.ring * 0.9; });
+        const counts = new Array(ORBITS).fill(0);
+        alive.forEach((cell, i) => { cell.ring = order[i % ORBITS]; counts[cell.ring]++; });
+        const seen = new Array(ORBITS).fill(0);
+        alive.forEach((cell) => { cell.ringAngle = (seen[cell.ring]++ / counts[cell.ring]) * Math.PI * 2 + cell.ring * 0.37; });
         ringsAssigned = true;
     };
+
+    // The skeleton of the mandala: the six orbits drawn as fine lines (the same ellipses the electrons follow), faint
+    const orbitUniforms = {
+        uAspect: { value: 1 }, uOrbit: { value: 0 }, uBase: { value: 0.3 }, uCenter: { value: new THREE.Vector2(0.5, 0.46) },
+    };
+    const orbitMaterial = new THREE.ShaderMaterial({
+        transparent: true,
+        depthTest: false,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+        uniforms: orbitUniforms,
+        vertexShader: ringVertex,
+        fragmentShader: `
+            varying vec2 vUv;
+            uniform float uAspect;
+            uniform float uOrbit;
+            uniform float uBase;
+            uniform vec2 uCenter;
+            void main() {
+                vec2 p = vec2(vUv.x * uAspect, vUv.y) - uCenter;
+                float line = 0.0;
+                for (int i = 0; i < 6; i++) {
+                    float fi = float(i);
+                    float a = uBase * (mod(fi, 2.0) > 0.5 ? 0.95 : 0.6);
+                    float b = a * 0.38;
+                    float t = fi * 0.5236;
+                    vec2 q = vec2(p.x * cos(t) + p.y * sin(t), -p.x * sin(t) + p.y * cos(t));
+                    float g = (q.x * q.x) / (a * a) + (q.y * q.y) / (b * b) - 1.0;
+                    vec2 grad = 2.0 * vec2(q.x / (a * a), q.y / (b * b));
+                    float d = abs(g) / max(length(grad), 0.0001);
+                    line += exp(-(d * d) / (0.0018 * 0.0018));
+                }
+                gl_FragColor = vec4(0.95, 0.86, 1.0, min(line, 1.0) * 0.22 * uOrbit);
+            }`,
+    });
+    const orbitLines = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), orbitMaterial);
+    orbitLines.frustumCulled = false;
+    orbitLines.renderOrder = 4;
+    orbitLines.visible = false;
+    scene.add(orbitLines);
 
     // ---- Letting go: how long each stretch of it takes (seconds)
     const OUT = 1.5, IN = 2.8;
@@ -433,9 +472,29 @@ export async function createCellField(canvas, container, { onEvent = null } = {}
     let breathT = -1;
     let breathHeld = false;
     let breathE = 0;
-    // The mandala: held in, the breath makes what is left orbit the character in concentric rings turning in
-    // alternate directions. holdT is how long it has been held at the top, orbitW how much of the mandala is formed.
-    const RING_COUNT = 5;
+    // The mandala is an atom: held in, the breath makes what is left orbit the character, the nucleus, as electrons do:
+    // six elliptical orbits crossing at him, turned 30 degrees from one another (so the whole has the symmetry of a
+    // twelve-pointed star), three small and fast ones between three wide and slow ones, each turning the other way
+    // from its neighbours. holdT is how long it has been held at the top, orbitW how much of the mandala is formed.
+    const ORBITS = 6;
+    const orbitOuter = (k) => k % 2 === 1;
+    const orbitSize = (k) => (orbitOuter(k) ? 0.95 : 0.6);                       // semi-major axis, in frames' ringBase
+    const orbitSpeed = (k) => (orbitOuter(k) ? 0.12 : 0.2) * (orbitOuter(k) ? -1 : 1); // rad/s: slow, the near ones quicker
+    const orbitTilt = (k) => k * Math.PI / 6;
+    const ORBIT_FLATNESS = 0.38;                                                  // semi-minor over semi-major
+    // Each orbit holds electrons in proportion to its length, evenly spaced along it (the last one takes the rest)
+    const sizeSum = Array.from({ length: ORBITS }, (_, k) => orbitSize(k)).reduce((a, b) => a + b, 0);
+    const perOrbit = Array.from({ length: ORBITS }, (_, k) => Math.round(particles.length * orbitSize(k) / sizeSum));
+    perOrbit[ORBITS - 1] = Math.max(3, particles.length - perOrbit.slice(0, ORBITS - 1).reduce((a, b) => a + b, 0));
+    (() => {
+        let orbit = 0, slot = 0;
+        particles.forEach((particle) => {
+            if (slot >= perOrbit[orbit] && orbit < ORBITS - 1) { orbit++; slot = 0; }
+            particle.ring = orbit;
+            particle.ringAngle = (slot / perOrbit[orbit]) * Math.PI * 2 + orbit * 0.37;
+            slot++;
+        });
+    })();
     let holdT = 0;
     let orbitW = 0;
     let ringsAssigned = false;
@@ -457,6 +516,7 @@ export async function createCellField(canvas, container, { onEvent = null } = {}
         unit = Math.min(viewW, viewH);
         raysMaterial.uniforms.uAspect.value = camera.aspect;
         ringUniforms.uAspect.value = camera.aspect;
+        orbitUniforms.uAspect.value = camera.aspect;
         rippleSpeed = Math.hypot(viewW, viewH) / 2.6;
         pointMaterial.uniforms.uPixelsPerUnit.value = renderer.domElement.height / (2 * Math.tan((FOV * Math.PI) / 360));
 
@@ -524,10 +584,23 @@ export async function createCellField(canvas, container, { onEvent = null } = {}
         orbitW += (orbitTarget - orbitW) * Math.min(1, dt * (orbitTarget > orbitW ? 1.5 : 2.5));
         if (orbitW > 0.02 && !ringsAssigned) assignRings();
         else if (orbitW <= 0.02) ringsAssigned = false;
-        // Rings fit the frame whatever its shape: the outer one nearly touches the nearer edge, the inner one hugs him
+        const pullY = -viewH * 0.04; // the character sits a little below the middle
+        // The orbits fit the frame whatever its shape: the wide ones nearly touch the nearer edge
         const ringBase = Math.min(viewW * 0.5, viewH * 0.42);
-        const ringRadius = (k) => ringBase * (0.5 + 0.12 * k);
-        const ringSpeed = (k) => (k % 2 ? -1 : 1) * (0.5 - 0.06 * k);
+        const spot = { x: 0, y: 0 };
+        // Where an electron of orbit k, at a phase, is now (an ellipse about the nucleus, turned by the orbit's tilt)
+        const orbitSpot = (k, phase) => {
+            const a = ringBase * orbitSize(k), b = a * ORBIT_FLATNESS;
+            const angle = phase + time * orbitSpeed(k);
+            const lx = Math.cos(angle) * a, ly = Math.sin(angle) * b;
+            const c = Math.cos(orbitTilt(k)), s = Math.sin(orbitTilt(k));
+            spot.x = lx * c - ly * s;
+            spot.y = lx * s + ly * c;
+        };
+        orbitLines.visible = orbitW > 0.01;
+        orbitUniforms.uOrbit.value = orbitW;
+        orbitUniforms.uCenter.value.set(0.5 * camera.aspect, 0.5 + pullY / viewH);
+        orbitUniforms.uBase.value = ringBase / viewH;
 
         raysMaterial.uniforms.uTime.value = time;
         raysMaterial.uniforms.uShift.value = parallax.x * 0.05;
@@ -550,7 +623,6 @@ export async function createCellField(canvas, container, { onEvent = null } = {}
             slot.set((ripple.x / viewW + 0.5) * camera.aspect, ripple.y / viewH + 0.5, ripple.radius / viewH, life ** 1.4 * Math.min(1, ripple.age * 12));
         });
         const ringBand = unit * 0.1;
-        const pullY = -viewH * 0.04; // the character sits a little below the middle
 
         // How fast the cursor drags the liquid, limited so a flick does not throw everything away
         const px = pointer.x * viewW * 0.5;
@@ -589,11 +661,10 @@ export async function createCellField(canvas, container, { onEvent = null } = {}
             // A ring shoves a cell as it goes through it, and a cell it reaches lets go of its shape
             const depthScale = CAMERA_Z / (CAMERA_Z - cell.z);
             if (orbitW > 0.01 && cell.ring >= 0) {
-                // On its ring (the target is where it must look to be on the circle, whatever its depth)
-                const angle = cell.ringAngle + time * ringSpeed(cell.ring);
-                const radius = ringRadius(cell.ring);
-                ax += ((Math.cos(angle) * radius) / depthScale - cell.x) * 6 * orbitW;
-                ay += ((pullY + Math.sin(angle) * radius * 0.85) / depthScale - cell.y) * 6 * orbitW;
+                // On its orbit (the target is where it must look to be on the ellipse, whatever its depth)
+                orbitSpot(cell.ring, cell.ringAngle);
+                ax += (spot.x / depthScale - cell.x) * 6 * orbitW;
+                ay += ((pullY + spot.y) / depthScale - cell.y) * 6 * orbitW;
             }
             cell.swell = 0;
             ripples.forEach((ripple) => {
@@ -668,12 +739,11 @@ export async function createCellField(canvas, container, { onEvent = null } = {}
             ax += (0 - particle.x) * 0.8 * breathE * (1 - orbitW);
             ay += (pullY - particle.y) * 0.8 * breathE * (1 - orbitW);
             if (orbitW > 0.01) {
-                const angle = particle.ringAngle + time * ringSpeed(particle.ring);
-                const radius = ringRadius(particle.ring) + particle.ringJitter * ringBase;
+                orbitSpot(particle.ring, particle.ringAngle);
                 const depthScale = CAMERA_Z / (CAMERA_Z - particle.z);
-                ax += ((Math.cos(angle) * radius) / depthScale - particle.x) * 5 * orbitW;
-                ay += ((pullY + Math.sin(angle) * radius * 0.85) / depthScale - particle.y) * 5 * orbitW;
-                // Damped, so it settles on its ring instead of swinging through it
+                ax += (spot.x / depthScale - particle.x) * 5 * orbitW;
+                ay += ((pullY + spot.y) / depthScale - particle.y) * 5 * orbitW;
+                // Damped, so it settles on its orbit instead of swinging through it
                 ax -= particle.vx * 2.5 * orbitW;
                 ay -= particle.vy * 2.5 * orbitW;
             }
@@ -900,6 +970,8 @@ export async function createCellField(canvas, container, { onEvent = null } = {}
             geometry.dispose();
             dotGeometry.dispose();
             rings.forEach((mesh) => mesh.geometry.dispose());
+            orbitLines.geometry.dispose();
+            orbitMaterial.dispose();
             ringMaterials.forEach((material) => material.dispose());
             pointMaterial.dispose();
             rays.geometry.dispose();

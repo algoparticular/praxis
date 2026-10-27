@@ -433,10 +433,13 @@ export const createAmbient = (ctx, out, name = BASE_CHORD) => {
     filter.Q.value = 0.4;
     filter.connect(bus);
 
+    // Every oscillator the pad has ever had (it is rebuilt at each chord change), so stopping really stops them all
+    const everyVoice = [];
     const makePad = (harmony) => {
         const level = ctx.createGain();
         level.connect(filter);
         const voices = [];
+        everyVoice.push(voices);
         harmony.pad.forEach(([midi, share]) => {
             const voiceGain = ctx.createGain();
             voiceGain.gain.value = share * 0.55;
@@ -526,10 +529,13 @@ export const createAmbient = (ctx, out, name = BASE_CHORD) => {
         stop(seconds = 1.5) {
             clearInterval(timer);
             const now = ctx.currentTime;
+            // Fades from wherever it is (without reading the parameter, which some browsers answer with a stale value)
             fade.gain.cancelScheduledValues(now);
-            fade.gain.setValueAtTime(fade.gain.value, now);
-            fade.gain.linearRampToValueAtTime(0, now + seconds);
-            [...sources, ...pad.voices].forEach((source) => { try { source.stop(now + seconds + 0.1); } catch { /* already stopped */ } });
+            fade.gain.setTargetAtTime(0, now, seconds / 4);
+            [...sources, ...everyVoice.flat()].forEach((source) => { try { source.stop(now + seconds + 0.1); } catch { /* already stopped or never started */ } });
+            // Whatever happens to the parameter or the clock (a context that was suspended halfway), after the fade
+            // nothing of this ambience can reach the speakers: it is cut from the graph
+            setTimeout(() => fade.disconnect(), (seconds + 0.3) * 1000);
         },
         // Moves the pad and the chimes to another chord: the new pad swells in as the old one fades away
         setChord(next = BASE_CHORD, seconds = 5, time = ctx.currentTime) {
