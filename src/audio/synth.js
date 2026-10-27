@@ -385,6 +385,35 @@ export const breath = (ctx, out, time, harmony) => {
     });
 };
 
+// Holding Sid: the breath goes in (air rising, the chord's root and fifth swelling and then thinning out as it is held)
+// and, when he is let go, comes out (air falling, the same two notes swelling and fading). Together they are `breath`.
+const breathTones = (ctx, out, time, harmony, from, to, rise, fall, level) => {
+    const h = harmony ?? PLAIN;
+    [h.bass + 12, h.bass + 19].forEach((midi, i) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = hz(midi);
+        gain.gain.setValueAtTime(from, time);
+        gain.gain.exponentialRampToValueAtTime((level - i * 0.012), time + rise);
+        gain.gain.exponentialRampToValueAtTime(to, time + rise + fall);
+        osc.connect(gain);
+        gain.connect(out);
+        osc.start(time);
+        osc.stop(time + rise + fall + 0.1);
+    });
+};
+
+export const inhale = (ctx, out, time, harmony) => {
+    swish(ctx, out, time, { from: 350, to: 1500, duration: INHALE, level: 0.05, q: 0.5 });
+    breathTones(ctx, out, time, harmony, 0.0001, 0.0001, INHALE, 1.6, 0.035);
+};
+
+export const exhale = (ctx, out, time, harmony) => {
+    swish(ctx, out, time, { from: 1500, to: 350, duration: EXHALE, level: 0.045, q: 0.5 });
+    breathTones(ctx, out, time, harmony, 0.0001, 0.0001, 0.9, EXHALE - 0.9, 0.03);
+};
+
 /* ---------- Ambience ---------- */
 
 export const createAmbient = (ctx, out, name = BASE_CHORD) => {

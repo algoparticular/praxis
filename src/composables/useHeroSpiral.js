@@ -15,8 +15,9 @@ const EDGE_OUT = 6;     // and out at the far tip
 const REACH = 190;      // radius, in picture pixels, within which the pointer disturbs the dots
 const PUSH = 46;        // how far the dots give way at the pointer's very centre
 const DUST = 80;        // tiny particles drifting along the spiral
-const HEAD = dots[0];   // where it comes out of his head
-const SQUEEZE = 0.4;    // how much of its length it draws in towards his head when he breathes in
+const HEAD = dots[0];   // where it comes out of his head: his third eye
+const HOLD_TIME = 3.2;  // seconds of holding for the spiral to shorten all the way down to a point
+const REGROW_TIME = 1.8; // and seconds it takes to come back out when let go
 
 // Depth of every dot as drawn in the illustration: the big ones are in front, the small ones behind.
 // Smoothed over neighbours so single odd dots do not flicker, then stretched to 0..1.
@@ -79,7 +80,9 @@ export function createHeroSpiral(canvas, { animate = true } = {}) {
     let frame = 0;
     let start = 0;
     let flareAt = -Infinity;    // when the last flare began, in seconds on the drawing clock
-    let squeeze = 0;            // 0..1, how far he has breathed in: the spiral gathers towards his head
+    let held = false;           // being held: the spiral shortens towards his third eye
+    let length = 1;             // 0..1, how much of the spiral is out
+    let lastT = null;
     // Pointer in picture pixels. The smoothed copy and its strength ease in and out so nothing snaps.
     const pointer = { x: 0, y: 0, tx: 0, ty: 0, strength: 0, target: 0 };
 
@@ -105,15 +108,14 @@ export function createHeroSpiral(canvas, { animate = true } = {}) {
         return closeness;
     };
 
-    // Draws the curve in towards the head as he breathes in
-    const gather = (at) => {
-        const k = 1 - SQUEEZE * squeeze;
-        at[0] = HEAD[0] + (at[0] - HEAD[0]) * k;
-        at[1] = HEAD[1] + (at[1] - HEAD[1]) * k;
-        return at;
-    };
-
     const draw = (t) => {
+        // Held, the spiral draws in towards his third eye until it is a point; let go, it comes back out
+        const dt = lastT === null ? 0 : Math.min(t - lastT, 0.1);
+        lastT = t;
+        length = Math.min(1, Math.max(0, length + (held ? -dt / HOLD_TIME : dt / REGROW_TIME)));
+        const shown = length * length * (3 - 2 * length);
+        const tip = LAST * shown;           // how far along the curve it reaches
+        const gathered = 1 - shown;         // 0 when whole, 1 when it is only a point
         pointer.strength += (pointer.target - pointer.strength) * 0.08;
         pointer.x += (pointer.tx - pointer.x) * 0.2;
         pointer.y += (pointer.ty - pointer.y) * 0.2;
@@ -122,11 +124,10 @@ export function createHeroSpiral(canvas, { animate = true } = {}) {
         let count = 0;
         for (let k = 0; k < LAST; k++) {
             const f = (k + shift) % LAST;
-            const envelope = smooth(0, EDGE_IN, f) * smooth(0, EDGE_OUT, LAST - f);
+            const envelope = smooth(0, EDGE_IN, f) * smooth(0, EDGE_OUT, tip - f);
             if (envelope <= 0.01) continue;
 
             point(f, here);
-            gather(here);
             const spot = [here[0], here[1]];
             const near = disturb(spot, PUSH);
 
@@ -139,7 +140,7 @@ export function createHeroSpiral(canvas, { animate = true } = {}) {
             // A flare sends a bright wave out along the curve from his head
             const since = t - flareAt;
             const wave = since < 2.6 ? Math.exp(-(((f - since * 40) / 7) ** 2)) * (1 - since / 2.6) * 1.4 : 0;
-            const swell = Math.min(1, (animate ? Math.pow(Math.max(0, Math.sin(f * 0.18 - t * 1.6)), 3) : 0) + near * 1.2 + wave + squeeze * 0.3);
+            const swell = Math.min(1, (animate ? Math.pow(Math.max(0, Math.sin(f * 0.18 - t * 1.6)), 3) : 0) + near * 1.2 + wave + gathered * 0.6);
             const twinkle = animate ? 0.9 + 0.1 * Math.sin(t * 3 + k * 1.7) : 1;
 
             const item = items[count++];
@@ -169,12 +170,10 @@ export function createHeroSpiral(canvas, { animate = true } = {}) {
             ctx.fillStyle = '#FFD9EC';
             for (const mote of dust) {
                 const f = (mote.f + t * mote.speed) % LAST;
-                const envelope = smooth(0, EDGE_IN, f) * smooth(0, EDGE_OUT, LAST - f);
+                const envelope = smooth(0, EDGE_IN, f) * smooth(0, EDGE_OUT, tip - f);
                 if (envelope <= 0.01) continue;
                 point(f, here);
                 point(Math.min(LAST, f + 0.4), ahead);
-                gather(here);
-                gather(ahead);
                 const dx = ahead[0] - here[0], dy = ahead[1] - here[1];
                 const length = Math.hypot(dx, dy) || 1;
                 const side = mote.lateral + Math.sin(t * mote.wobble + mote.phase) * 7;
@@ -185,6 +184,18 @@ export function createHeroSpiral(canvas, { animate = true } = {}) {
                 ctx.arc(spot[0] * scale, spot[1] * scale, mote.size * (1 + near) * scale, 0, Math.PI * 2);
                 ctx.fill();
             }
+        }
+        // What is left of it at the end is a bright point at his third eye
+        const core = 1 - smooth(0.04, 0.55, shown);
+        if (core > 0.01) {
+            const pulse = animate ? 0.85 + 0.15 * Math.sin(t * 3.2) : 1;
+            const reach = (20 + 16 * pulse) * scale;
+            ctx.globalAlpha = core;
+            ctx.drawImage(glow, HEAD[0] * scale - reach, HEAD[1] * scale - reach, reach * 2, reach * 2);
+            ctx.fillStyle = '#FFE3F0';
+            ctx.beginPath();
+            ctx.arc(HEAD[0] * scale, HEAD[1] * scale, 6 * pulse * scale, 0, Math.PI * 2);
+            ctx.fill();
         }
         ctx.globalAlpha = 1;
     };
@@ -207,8 +218,12 @@ export function createHeroSpiral(canvas, { animate = true } = {}) {
 
     return {
         flare() { if (animate) flareAt = (performance.now() - start) / 1000; },
-        // How far he has breathed in, 0..1: the spiral draws in towards his head and glows a little
-        setBreath(value) { squeeze = value; },
+        // Held, it shortens until it is a point at his third eye; let go, it comes back out shining
+        hold(on) {
+            if (!animate || held === on) return;
+            held = on;
+            if (!on) flareAt = (performance.now() - start) / 1000;
+        },
         // Takes viewport coordinates (null when the pointer leaves) and maps them onto the picture
         setPointer(clientX, clientY) {
             if (clientX == null) { pointer.target = 0; return; }

@@ -6,7 +6,7 @@
 // popCell() bursts the one under the finger into dots that drift away and stay gone, gather() brings every
 // cell back, and breathe() draws the whole field in towards the character and lets it out.
 
-import { breathEnvelope, BREATH } from './breathCurve.js';
+import { breathEnvelope, BREATH, INHALE } from './breathCurve.js';
 
 const CELL_TEXTURES = [
     '/assets/hero/cell-one.webp',
@@ -416,6 +416,7 @@ export async function createCellField(canvas, container, { onEvent = null } = {}
 
     // The breath: -1 when idle, else seconds since it began
     let breathT = -1;
+    let breathHeld = false;
     let breathE = 0;
 
     // ---- Layout
@@ -490,7 +491,10 @@ export async function createCellField(canvas, container, { onEvent = null } = {}
         camera.position.y = parallax.y * unit * 0.05 + Math.cos(time * 0.13) * unit * 0.015;
         camera.lookAt(0, 0, 0);
 
-        if (breathT >= 0) breathT = breathT + dt < BREATH ? breathT + dt : -1;
+        if (breathT >= 0) {
+            const next = breathHeld ? Math.min(INHALE, breathT + dt) : breathT + dt;
+            breathT = next < BREATH ? next : -1;
+        }
         breathE = breathEnvelope(breathT);
 
         raysMaterial.uniforms.uTime.value = time;
@@ -819,12 +823,14 @@ export async function createCellField(canvas, container, { onEvent = null } = {}
             return count;
         },
         // One slow breath (breathCurve.js): the cells, the matter and the light lean in towards the character and let go.
-        // False when one is already going.
-        breathe() {
+        // False when one is already going. With hold it waits full at the top until releaseBreath().
+        breathe(hold = false) {
             if (reducedMotion || breathT >= 0) return false;
             breathT = 0;
+            breathHeld = hold;
             return true;
         },
+        releaseBreath() { breathHeld = false; },
         destroy() {
             stop();
             observer.disconnect();

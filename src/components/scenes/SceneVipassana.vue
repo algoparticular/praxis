@@ -4,10 +4,11 @@
     // the dotted spiral and the character's behaviour (useCharacterLife).
     // Unlike the hero, it can be touched. A press anywhere is one slow breath of the whole scene: a ring runs out
     // through the water from the finger and shoves the cells; when the ring reaches the character he breathes in (his
-    // spiral draws in towards his head), the cells and the light lean in towards him, and everything lets out (his
-    // spiral lights up). A cell pressed on does not make a ring: it only bursts into dots and stays gone. Pressing
-    // the character himself starts his breath at once and, as he lets it out, a soft ring runs from him and every
-    // cell that had gone gathers itself again.
+    // spiral lights up), the cells and the light lean in towards him, and everything lets out. A cell pressed on does
+    // not make a ring: it only bursts into dots and stays gone. Holding the character himself is holding his breath in:
+    // his spiral shortens towards his third eye until it is a point, and the cells and the light lean in; let go, he
+    // breathes out, the spiral comes back out shining, a soft ring runs from him and every cell that had gone gathers
+    // itself again.
     import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
     import { createCellField } from '../../composables/useCellField.js';
     import { createHeroSpiral } from '../../composables/useHeroSpiral.js';
@@ -35,6 +36,8 @@
     let parallax = null;
     let breathTimer = 0;
     let regenerate = false;      // the breath in progress is the one that brings the cells back
+    let sidBreath = false;       // that breath is being held in by a finger on him
+    let sidReleasedAt = -Infinity;
     let unmounted = false;
     let scrollLift = 0;
     let entered = false;
@@ -107,6 +110,28 @@
         press.start = performance.now();
         press.pressure = 0;
         notePressure(event);
+        if (!entered || reducedMotion || !onCharacter(event.clientX, event.clientY)) return;
+        // A finger on him: the spiral starts to draw in and he breathes in and holds it
+        spiral?.hold(true);
+        if (life?.inhale(true)) {
+            sidBreath = true;
+            regenerate = true;
+            cellField?.breathe(true);
+            play('inhale');
+        }
+        window.addEventListener('pointerup', onUp);
+        window.addEventListener('pointercancel', onUp);
+    };
+    const onUp = () => {
+        window.removeEventListener('pointerup', onUp);
+        window.removeEventListener('pointercancel', onUp);
+        sidReleasedAt = performance.now();
+        spiral?.hold(false);
+        if (!sidBreath) return;
+        sidBreath = false;
+        life?.release();
+        cellField?.releaseBreath();
+        play('exhale');
     };
     const notePressure = (event) => {
         const real = event.pressure > 0 && event.pressure !== 0.5 && event.pressure !== 1;
@@ -124,15 +149,8 @@
             if (onSid) { life?.flare(); spiral?.flare(); play('star'); }
             return;
         }
-        if (onSid) {
-            // He breathes in (the spiral gathers, the field leans in); letting it out is onExhale
-            if (life?.inhale()) {
-                regenerate = true;
-                cellField?.breathe();
-                play('breath');
-            }
-            return;
-        }
+        // Holding him is handled by onDown / onUp; the click that ends it is not a press on the water
+        if (onSid || performance.now() - sidReleasedAt < 150) return;
         // A cell: it only bursts (its own sound comes with it), no ring
         if (cellField?.popCell(event.clientX, event.clientY)) return;
 
@@ -180,6 +198,8 @@
         parallax?.destroy();
         life?.destroy();
         clearTimeout(breathTimer);
+        window.removeEventListener('pointerup', onUp);
+        window.removeEventListener('pointercancel', onUp);
         spiral?.destroy();
         cellField?.destroy();
     });

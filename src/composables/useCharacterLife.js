@@ -31,6 +31,8 @@ export function createCharacterLife(particle, hero, { spiral = null, getLift = (
     let lastNow = 0;
     // A deep breath on demand (inhale()): he swells and shines as it fills and settles as it goes out
     let breathT = -1;
+    let breathHeld = false;     // the breath is being held in: it waits at the top until release()
+    let exhaled = true;         // the exhale of this breath has already been announced
     // A shove (a ring of water going through him): a spring that carries him a little and brings him back
     const shove = { x: 0, y: 0, vx: 0, vy: 0 };
 
@@ -48,12 +50,14 @@ export function createCharacterLife(particle, hero, { spiral = null, getLift = (
             const dt = Math.min(0.1, (now - lastNow) / 1000);
             pulse *= Math.exp(-dt * 1.5);
             lastNow = now;
-            const before = breathT;
-            if (breathT >= 0) breathT = breathT + dt < BREATH ? breathT + dt : -1;
+            if (breathT >= 0) {
+                const next = breathHeld ? Math.min(INHALE, breathT + dt) : breathT + dt;
+                breathT = next < BREATH ? next : -1;
+            }
             const deepBreath = Math.max(0, breathEnvelope(breathT));
-            // As he breathes in his spiral draws in towards his head; as he lets go it lights up and opens again
-            spiral?.setBreath(deepBreath);
-            if (before >= 0 && before < INHALE && breathT >= INHALE) {
+            // Letting it out: his spiral lights up and whoever asked is told
+            if (!exhaled && breathT >= INHALE && !breathHeld) {
+                exhaled = true;
                 spiral?.flare();
                 onExhale?.();
             }
@@ -83,12 +87,16 @@ export function createCharacterLife(particle, hero, { spiral = null, getLift = (
         flare() { pulse = 1; },
         // A push in px per second, away from where something hit him; he swings and settles
         nudge(vx, vy) { shove.vx += vx; shove.vy += vy; },
-        // One slow breath (breathCurve.js); false when he is already in the middle of one
-        inhale() {
+        // One slow breath (breathCurve.js); false when he is already in the middle of one. With hold he stays full
+        // at the top of it until release().
+        inhale(hold = false) {
             if (breathT >= 0) return false;
             breathT = 0;
+            breathHeld = hold;
+            exhaled = false;
             return true;
         },
+        release() { breathHeld = false; },
         destroy() {
             cancelAnimationFrame(frame);
             visibility.disconnect();
