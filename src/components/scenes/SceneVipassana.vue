@@ -172,7 +172,15 @@
         root.value.style.cursor = over ? 'pointer' : '';
     };
 
+    // A finger on him must not be taken over by the browser (scroll, the long-press menu): that cancels the press and
+    // would read as letting go
+    const onTouchStart = (event) => {
+        const touch = event.touches[0];
+        if (entered && event.cancelable && touch && onCharacter(touch.clientX, touch.clientY)) event.preventDefault();
+    };
+
     onMounted(() => {
+        root.value.addEventListener('touchstart', onTouchStart, { passive: false });
         loadMask();
         spiral = createHeroSpiral(spiralCanvas.value, { animate: !reducedMotion });
         life = createCharacterLife(character.value, root.value, { spiral, getLift: () => scrollLift, onExhale });
@@ -198,6 +206,7 @@
         parallax?.destroy();
         life?.destroy();
         clearTimeout(breathTimer);
+        root.value?.removeEventListener('touchstart', onTouchStart);
         window.removeEventListener('pointerup', onUp);
         window.removeEventListener('pointercancel', onUp);
         spiral?.destroy();
@@ -206,7 +215,7 @@
 </script>
 
 <template>
-    <div class="scene" ref="root" @click="onClick" @pointerdown="onDown" @pointermove="onMove">
+    <div class="scene" ref="root" @click="onClick" @pointerdown="onDown" @pointermove="onMove" @contextmenu.prevent>
         <div class="rays" ref="rays"></div>
         <canvas class="cell-field" ref="cellCanvas"></canvas>
         <template v-if="cellsFallback">
@@ -226,6 +235,8 @@
         position: absolute;
         inset: 0;
         overflow: hidden;
+        -webkit-touch-callout: none;
+        user-select: none;
     }
 
     /* The light rays of the hero, a little larger than the screen so they can drift */

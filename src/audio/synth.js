@@ -10,7 +10,7 @@ import { INHALE, EXHALE } from '../composables/breathCurve.js';
 const rand = (min, max) => min + Math.random() * (max - min);
 
 // How loud the ambience gets, so the effects always stand above it
-const AMBIENT_LEVEL = 0.15;
+const AMBIENT_LEVEL = 0.12;
 
 /* ---------- Chords ---------- */
 
@@ -365,18 +365,19 @@ export const bloom = (ctx, out, time, harmony) => {
 };
 
 // One slow breath, the length of breathCurve.js: air that rises as it fills and falls as it goes out, and the chord's
-// root and fifth swelling underneath, low, to peak with the inhale and fade with the exhale
+// root and fifth swelling underneath (an octave above the pad's bass, so a phone's small speaker plays them) to peak
+// with the inhale and fade with the exhale
 export const breath = (ctx, out, time, harmony) => {
     const h = harmony ?? PLAIN;
-    swish(ctx, out, time, { from: 350, to: 1500, duration: INHALE, level: 0.05, q: 0.5 });
-    swish(ctx, out, time + INHALE, { from: 1500, to: 350, duration: EXHALE, level: 0.04, q: 0.5 });
-    [h.bass + 12, h.bass + 19].forEach((midi, i) => {
+    swish(ctx, out, time, { from: 350, to: 1500, duration: INHALE, level: 0.16, q: 0.5 });
+    swish(ctx, out, time + INHALE, { from: 1500, to: 350, duration: EXHALE, level: 0.13, q: 0.5 });
+    [h.bass + 24, h.bass + 31].forEach((midi, i) => {
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.type = 'sine';
         osc.frequency.value = hz(midi);
         gain.gain.setValueAtTime(0.0001, time);
-        gain.gain.exponentialRampToValueAtTime(0.035 - i * 0.012, time + INHALE);
+        gain.gain.exponentialRampToValueAtTime(0.07 - i * 0.025, time + INHALE);
         gain.gain.exponentialRampToValueAtTime(0.0001, time + INHALE + EXHALE);
         osc.connect(gain);
         gain.connect(out);
@@ -389,13 +390,13 @@ export const breath = (ctx, out, time, harmony) => {
 // and, when he is let go, comes out (air falling, the same two notes swelling and fading). Together they are `breath`.
 const breathTones = (ctx, out, time, harmony, from, to, rise, fall, level) => {
     const h = harmony ?? PLAIN;
-    [h.bass + 12, h.bass + 19].forEach((midi, i) => {
+    [h.bass + 24, h.bass + 31].forEach((midi, i) => {
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.type = 'sine';
         osc.frequency.value = hz(midi);
         gain.gain.setValueAtTime(from, time);
-        gain.gain.exponentialRampToValueAtTime((level - i * 0.012), time + rise);
+        gain.gain.exponentialRampToValueAtTime(level - i * 0.025, time + rise);
         gain.gain.exponentialRampToValueAtTime(to, time + rise + fall);
         osc.connect(gain);
         gain.connect(out);
@@ -405,13 +406,13 @@ const breathTones = (ctx, out, time, harmony, from, to, rise, fall, level) => {
 };
 
 export const inhale = (ctx, out, time, harmony) => {
-    swish(ctx, out, time, { from: 350, to: 1500, duration: INHALE, level: 0.05, q: 0.5 });
-    breathTones(ctx, out, time, harmony, 0.0001, 0.0001, INHALE, 1.6, 0.035);
+    swish(ctx, out, time, { from: 350, to: 1500, duration: INHALE, level: 0.16, q: 0.5 });
+    breathTones(ctx, out, time, harmony, 0.0001, 0.0001, INHALE, 1.6, 0.07);
 };
 
 export const exhale = (ctx, out, time, harmony) => {
-    swish(ctx, out, time, { from: 1500, to: 350, duration: EXHALE, level: 0.045, q: 0.5 });
-    breathTones(ctx, out, time, harmony, 0.0001, 0.0001, 0.9, EXHALE - 0.9, 0.03);
+    swish(ctx, out, time, { from: 1500, to: 350, duration: EXHALE, level: 0.14, q: 0.5 });
+    breathTones(ctx, out, time, harmony, 0.0001, 0.0001, 0.9, EXHALE - 0.9, 0.065);
 };
 
 /* ---------- Ambience ---------- */
