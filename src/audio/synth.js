@@ -312,23 +312,24 @@ const releaseWeight = crowd(0.1, 2);
 const bloomWeight = crowd(0.14, 2.5);
 
 // A press on the water: a round note that falls like a stone dropped in, a little moving water and a low bowl
-// on the chord's root that stays
-export const ripple = (ctx, out, time, harmony) => {
+// on the chord's root that stays (softer the lighter the press)
+export const ripple = (ctx, out, time, harmony, level = 1) => {
     const h = harmony ?? PLAIN;
+    const k = 0.35 + 0.65 * level;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.type = 'sine';
     osc.frequency.setValueAtTime(hz(h.voice), time);
     osc.frequency.exponentialRampToValueAtTime(hz(h.voice - 12), time + 0.5);
     gain.gain.setValueAtTime(0.0001, time);
-    gain.gain.exponentialRampToValueAtTime(0.09, time + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.09 * k, time + 0.02);
     gain.gain.exponentialRampToValueAtTime(0.0001, time + 1.4);
     osc.connect(gain);
     gain.connect(out);
     osc.start(time);
     osc.stop(time + 1.5);
-    swish(ctx, out, time, { from: 1200, to: 300, duration: 1.3, level: 0.03, q: 0.8 });
-    bell(ctx, out, time + 0.03, hz(h.voice - 12), 3.6, 0.04);
+    swish(ctx, out, time, { from: 1200, to: 300, duration: 1.3, level: 0.03 * k, q: 0.8 });
+    bell(ctx, out, time + 0.03, hz(h.voice - 12), 3.6, 0.04 * k);
 };
 
 // A cell lets go of its shape: one high, glassy note of the chord (with a detuned twin) and a breath of air going up

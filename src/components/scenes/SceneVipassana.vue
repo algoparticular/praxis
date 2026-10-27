@@ -86,6 +86,24 @@
         }
     };
 
+    // How hard a press was: a quick tap is soft and holding it makes the ring grow to its full size (0.6s). Where the
+    // device really reports pressure (a pen, a force-sensitive trackpad or screen; most touch screens send a fixed
+    // 0, 0.5 or 1) the stronger of the two counts.
+    const press = { start: 0, pressure: 0 };
+    const onDown = (event) => {
+        press.start = performance.now();
+        press.pressure = 0;
+        notePressure(event);
+    };
+    const notePressure = (event) => {
+        const real = event.pressure > 0 && event.pressure !== 0.5 && event.pressure !== 1;
+        if (real) press.pressure = Math.max(press.pressure, event.pressure);
+    };
+    const pressStrength = () => {
+        const held = Math.min(1, (performance.now() - press.start) / 600);
+        return 0.4 + 0.6 * Math.max(held, press.pressure);
+    };
+
     const onClick = (event) => {
         if (!entered) return;
         const onSid = onCharacter(event.clientX, event.clientY);
@@ -97,8 +115,9 @@
         }
         if (reducedMotion) return;
 
-        const wave = cellField?.ripple(event.clientX, event.clientY);
-        play('ripple');
+        const strength = pressStrength();
+        const wave = cellField?.ripple(event.clientX, event.clientY, strength);
+        play('ripple', strength);
         // He breathes in when the ring reaches him (at once if it started on him)
         const box = character.value.getBoundingClientRect();
         const dx = box.left + box.width / 2 - event.clientX, dy = box.top + box.height * 0.55 - event.clientY;
@@ -109,6 +128,7 @@
     };
 
     const onMove = (event) => {
+        if (event.buttons) notePressure(event);
         const over = onCharacter(event.clientX, event.clientY) || !!cellField?.isOverCell(event.clientX, event.clientY);
         root.value.style.cursor = over ? 'pointer' : '';
     };
@@ -145,7 +165,7 @@
 </script>
 
 <template>
-    <div class="scene" ref="root" @click="onClick" @pointermove="onMove">
+    <div class="scene" ref="root" @click="onClick" @pointerdown="onDown" @pointermove="onMove">
         <div class="rays" ref="rays"></div>
         <canvas class="cell-field" ref="cellCanvas"></canvas>
         <template v-if="cellsFallback">

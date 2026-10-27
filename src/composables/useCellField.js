@@ -340,7 +340,7 @@ export async function createCellField(canvas, container, { onEvent = null } = {}
             }
             ${shade
         ? 'gl_FragColor = vec4(0.2, 0.08, 0.36, clamp(-slope * 0.01, 0.0, 1.0) * 0.28);'
-        : 'vec3 light = mix(vec3(1.0, 0.8, 0.9), vec3(0.65, 0.95, 1.0), clamp(vUv.y, 0.0, 1.0));\n            gl_FragColor = vec4(light, clamp(slope * 0.012, 0.0, 1.0) * 0.6);'}
+        : 'vec3 light = mix(vec3(1.0, 0.8, 0.9), vec3(0.65, 0.95, 1.0), clamp(vUv.y, 0.0, 1.0));\n            gl_FragColor = vec4(light, clamp(slope * 0.012, 0.0, 1.0) * 0.5);'}
         }`;
     const ringVertex = `
         varying vec2 vUv;
@@ -378,7 +378,7 @@ export async function createCellField(canvas, container, { onEvent = null } = {}
             const distance = Math.hypot(dx, dy) || 0.001;
             const off = Math.abs(distance - ripple.radius);
             if (off >= band) continue;
-            const push = (1 - off / band) ** 2 * (1 - ripple.age / RIPPLE_LIFE) * unit * 0.05;
+            const push = (1 - off / band) ** 2 * (1 - ripple.age / RIPPLE_LIFE) * ripple.strength * unit * 0.05;
             bump.x += (dx / distance) * push;
             bump.y += (dy / distance) * push;
         }
@@ -510,7 +510,7 @@ export async function createCellField(canvas, container, { onEvent = null } = {}
         rippleUniform.forEach((slot, i) => {
             const ripple = ripples[i];
             if (!ripple) { slot.set(0, 0, 0, 0); return; }
-            const life = 1 - ripple.age / RIPPLE_LIFE;
+            const life = (1 - ripple.age / RIPPLE_LIFE) * ripple.strength;
             slot.set((ripple.x / viewW + 0.5) * camera.aspect, ripple.y / viewH + 0.5, ripple.radius / viewH, life ** 1.4 * Math.min(1, ripple.age * 12));
         });
         const ringBand = unit * 0.1;
@@ -558,7 +558,7 @@ export async function createCellField(canvas, container, { onEvent = null } = {}
                 const distance = Math.hypot(dx, dy) || 0.001;
                 const off = Math.abs(distance - ripple.radius);
                 if (off < ringBand) {
-                    const strength = (1 - off / ringBand) ** 2 * (1 - ripple.age / RIPPLE_LIFE);
+                    const strength = (1 - off / ringBand) ** 2 * (1 - ripple.age / RIPPLE_LIFE) * ripple.strength;
                     cell.swell = Math.max(cell.swell, strength);
                     const push = strength * unit * 2 / cell.mass;
                     ax += (dx / distance) * push;
@@ -788,7 +788,8 @@ export async function createCellField(canvas, container, { onEvent = null } = {}
         // A ring through the liquid from a viewport point: it shoves the cells and the ones it crosses let go of their
         // shape. Comes back with how fast it travels (px per second) so the caller can time what the ring reaches;
         // null when the field cannot animate.
-        ripple(clientX, clientY) {
+        // strength 0..1 is how hard it was pressed: a soft one is a small, faint ring that shoves little
+        ripple(clientX, clientY, strength = 1) {
             if (reducedMotion) return null;
             const rect = container.getBoundingClientRect();
             if (!rect.width || !rect.height) return null;
@@ -799,7 +800,7 @@ export async function createCellField(canvas, container, { onEvent = null } = {}
             ripples.push({
                 x: ((clientX - rect.left) / rect.width - 0.5) * viewW,
                 y: (0.5 - (clientY - rect.top) / rect.height) * viewH,
-                age: 0, radius: 0,
+                age: 0, radius: 0, strength: clamp(strength, 0.1, 1),
             });
             return { speed: rippleSpeed * rect.width / viewW };
         },

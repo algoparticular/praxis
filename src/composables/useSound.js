@@ -115,9 +115,10 @@ export const toggleSound = () => {
     return enable().then((on) => { if (on) track('sound_toggled', { on: true }); return on; });
 };
 
-export const play = (name) => {
+// level (0..1) is for the sounds that can be played softer, like a press on the water of Vipassana
+export const play = (name, level) => {
     if (!soundOn.value || !ctx || ctx.state !== 'running' || typeof synth[name] !== 'function') return;
-    synth[name](ctx, master, ctx.currentTime + 0.02, cardChord);
+    synth[name](ctx, master, ctx.currentTime + 0.02, cardChord, level);
 };
 
 // Called when a card comes on screen with its chord (src/data/cardChords.js), and with nothing when it leaves
