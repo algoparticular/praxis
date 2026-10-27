@@ -14,14 +14,14 @@ const STORAGE_KEY = 'sound';
 export const soundOn = ref(false);
 
 // Two channels the person can set apart: the music (pad, chimes and drops) and the effects (touch sounds). 0..1.
-const readVolume = (key) => {
+const readVolume = (key, fallback) => {
     try {
         const value = parseFloat(localStorage.getItem(key));
-        return Number.isFinite(value) ? Math.min(1, Math.max(0, value)) : 1;
-    } catch { return 1; }
+        return Number.isFinite(value) ? Math.min(1, Math.max(0, value)) : fallback;
+    } catch { return fallback; }
 };
-export const musicVolume = ref(readVolume('musicVolume'));
-export const effectsVolume = ref(readVolume('effectsVolume'));
+export const musicVolume = ref(readVolume('musicVolume', 0.5));      // the music starts at half
+export const effectsVolume = ref(readVolume('effectsVolume', 1));
 
 let ctx = null;
 let master = null;

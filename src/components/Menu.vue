@@ -18,8 +18,7 @@
 
     const emit = defineEmits(['navigate','langChanged']); 
 
-    // The audio submenu: one slider for the music, one for the effects. Letting go of the effects one plays a sample.
-    const audioOpen = ref(false);
+    // The audio sliders: one for the music, one for the effects. Letting go of the effects one plays a sample.
     const effectsHeard = () => play('tap');
 
     //handle sign out
@@ -65,8 +64,7 @@
         
         <a v-if="props.hasCollaborate" @click="navigate('/collaborate')">{{ $t("nav.collaborate") }}</a>
 
-        <a class="audioToggle" :class="{open: audioOpen}" role="button" :aria-expanded="audioOpen" @click="audioOpen = !audioOpen">{{ $t("nav.audio") }}</a>
-        <div v-if="audioOpen" id="audioMixer">
+        <div id="audioMixer">
             <label>
                 <span>{{ $t("nav.music") }}</span>
                 <input type="range" min="0" max="100" step="5" :value="Math.round(musicVolume * 100)"
@@ -123,23 +121,7 @@
         color: #143246;
     }
 
-    /* Audio submenu */
-    .audioToggle::after {
-        content: '';
-        display: inline-block;
-        margin-left: 8px;
-        width: 7px;
-        height: 7px;
-        border-right: 2px solid currentColor;
-        border-bottom: 2px solid currentColor;
-        transform: translateY(-3px) rotate(45deg);
-        transition: transform 0.2s ease;
-    }
-
-    .audioToggle.open::after {
-        transform: translateY(1px) rotate(225deg);
-    }
-
+    /* Audio */
     #audioMixer {
         gap: 14px;
     }
