@@ -154,7 +154,7 @@ export async function createCellField(canvas, container, { onEvent = null } = {}
             width: 1, height: 1,
             // Letting go: 'whole' -> 'out' (turning into dots) -> 'hold' (gone, until gather()) -> 'in' (gathering again)
             // -> 'whole'. dis is how far from its shape it is, 0..1
-            state: 'whole', dis: 0, timer: 0, hold: Infinity, comeBack: false, dotsLit: false, swell: 0,
+            state: 'whole', dis: 0, timer: 0, hold: Infinity, comeBack: false, dotsLit: false, swell: 0, front: 0.5,
         };
     });
 
@@ -177,7 +177,7 @@ export async function createCellField(canvas, container, { onEvent = null } = {}
             size: 0.006 + Math.random() ** 2 * 0.022, // mostly tiny, a few bokeh-like specks
             twinkle: rand(0, Math.PI * 2),
             buoyancy: rand(-0.012, 0.02),      // some matter sinks, some rises
-            ring: 0, ringAngle: 0,             // its place in the mandala while the breath is held (see below)
+            ring: 0, ringAngle: 0, front: 0.5, // its place in the mandala while the breath is held (see below)
             x: 0, y: 0, vx: 0, vy: 0,
         };
     });
@@ -398,46 +398,6 @@ export async function createCellField(canvas, container, { onEvent = null } = {}
         ringsAssigned = true;
     };
 
-    // The skeleton of the mandala: the six orbits drawn as fine lines (the same ellipses the electrons follow), faint
-    const orbitUniforms = {
-        uAspect: { value: 1 }, uOrbit: { value: 0 }, uBase: { value: 0.3 }, uCenter: { value: new THREE.Vector2(0.5, 0.46) },
-    };
-    const orbitMaterial = new THREE.ShaderMaterial({
-        transparent: true,
-        depthTest: false,
-        depthWrite: false,
-        blending: THREE.AdditiveBlending,
-        uniforms: orbitUniforms,
-        vertexShader: ringVertex,
-        fragmentShader: `
-            varying vec2 vUv;
-            uniform float uAspect;
-            uniform float uOrbit;
-            uniform float uBase;
-            uniform vec2 uCenter;
-            void main() {
-                vec2 p = vec2(vUv.x * uAspect, vUv.y) - uCenter;
-                float line = 0.0;
-                for (int i = 0; i < 6; i++) {
-                    float fi = float(i);
-                    float a = uBase * (mod(fi, 2.0) > 0.5 ? 0.95 : 0.6);
-                    float b = a * 0.38;
-                    float t = fi * 0.5236;
-                    vec2 q = vec2(p.x * cos(t) + p.y * sin(t), -p.x * sin(t) + p.y * cos(t));
-                    float g = (q.x * q.x) / (a * a) + (q.y * q.y) / (b * b) - 1.0;
-                    vec2 grad = 2.0 * vec2(q.x / (a * a), q.y / (b * b));
-                    float d = abs(g) / max(length(grad), 0.0001);
-                    line += exp(-(d * d) / (0.0018 * 0.0018));
-                }
-                gl_FragColor = vec4(0.95, 0.86, 1.0, min(line, 1.0) * 0.22 * uOrbit);
-            }`,
-    });
-    const orbitLines = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), orbitMaterial);
-    orbitLines.frustumCulled = false;
-    orbitLines.renderOrder = 4;
-    orbitLines.visible = false;
-    scene.add(orbitLines);
-
     // ---- Letting go: how long each stretch of it takes (seconds)
     const OUT = 1.5, IN = 2.8;
     const ease = (k) => k * k * (3 - 2 * k);
@@ -473,9 +433,9 @@ export async function createCellField(canvas, container, { onEvent = null } = {}
     let breathHeld = false;
     let breathE = 0;
     // The mandala is an atom: held in, the breath makes what is left orbit the character, the nucleus, as electrons do:
-    // six elliptical orbits crossing at him, turned 30 degrees from one another (so the whole has the symmetry of a
+    // six orbits crossing at him, turned 30 degrees from one another (so the whole has the symmetry of a
     // twelve-pointed star), three small and fast ones between three wide and slow ones, each turning the other way
-    // from its neighbours. holdT is how long it has been held at the top, orbitW how much of the mandala is formed.
+    // from its neighbours. Nothing draws the orbits: they are only in the way the cells and the matter move. holdT is how long it has been held at the top, orbitW how much of the mandala is formed.
     const ORBITS = 6;
     const orbitOuter = (k) => k % 2 === 1;
     const orbitSize = (k) => (orbitOuter(k) ? 0.95 : 0.6);                       // semi-major axis, in frames' ringBase
@@ -516,7 +476,6 @@ export async function createCellField(canvas, container, { onEvent = null } = {}
         unit = Math.min(viewW, viewH);
         raysMaterial.uniforms.uAspect.value = camera.aspect;
         ringUniforms.uAspect.value = camera.aspect;
-        orbitUniforms.uAspect.value = camera.aspect;
         rippleSpeed = Math.hypot(viewW, viewH) / 2.6;
         pointMaterial.uniforms.uPixelsPerUnit.value = renderer.domElement.height / (2 * Math.tan((FOV * Math.PI) / 360));
 
@@ -587,8 +546,10 @@ export async function createCellField(canvas, container, { onEvent = null } = {}
         const pullY = -viewH * 0.04; // the character sits a little below the middle
         // The orbits fit the frame whatever its shape: the wide ones nearly touch the nearer edge
         const ringBase = Math.min(viewW * 0.5, viewH * 0.42);
-        const spot = { x: 0, y: 0 };
-        // Where an electron of orbit k, at a phase, is now (an ellipse about the nucleus, turned by the orbit's tilt)
+        const spot = { x: 0, y: 0, front: 0.5 };
+        // Where an electron of orbit k, at a phase, is now (an ellipse about the nucleus, turned by the orbit's tilt),
+        // and how far towards us it is (0 at the far side of its orbit, 1 at the near side: each orbit is a circle
+        // tipped away from us, so the electron comes forward and goes back as it goes round)
         const orbitSpot = (k, phase) => {
             const a = ringBase * orbitSize(k), b = a * ORBIT_FLATNESS;
             const angle = phase + time * orbitSpeed(k);
@@ -596,11 +557,8 @@ export async function createCellField(canvas, container, { onEvent = null } = {}
             const c = Math.cos(orbitTilt(k)), s = Math.sin(orbitTilt(k));
             spot.x = lx * c - ly * s;
             spot.y = lx * s + ly * c;
+            spot.front = 0.5 + 0.5 * Math.sin(angle);
         };
-        orbitLines.visible = orbitW > 0.01;
-        orbitUniforms.uOrbit.value = orbitW;
-        orbitUniforms.uCenter.value.set(0.5 * camera.aspect, 0.5 + pullY / viewH);
-        orbitUniforms.uBase.value = ringBase / viewH;
 
         raysMaterial.uniforms.uTime.value = time;
         raysMaterial.uniforms.uShift.value = parallax.x * 0.05;
@@ -660,11 +618,16 @@ export async function createCellField(canvas, container, { onEvent = null } = {}
 
             // A ring shoves a cell as it goes through it, and a cell it reaches lets go of its shape
             const depthScale = CAMERA_Z / (CAMERA_Z - cell.z);
+            cell.front = 0.5;
             if (orbitW > 0.01 && cell.ring >= 0) {
-                // On its orbit (the target is where it must look to be on the ellipse, whatever its depth)
+                // On its orbit: the currents and the spring to its place give way, so the path is clean (the target
+                // is where it must look to be on the ellipse, whatever its depth)
+                ax *= 1 - 0.9 * orbitW;
+                ay *= 1 - 0.9 * orbitW;
                 orbitSpot(cell.ring, cell.ringAngle);
-                ax += (spot.x / depthScale - cell.x) * 6 * orbitW;
-                ay += ((pullY + spot.y) / depthScale - cell.y) * 6 * orbitW;
+                cell.front = spot.front;
+                ax += (spot.x / depthScale - cell.x) * 8 * orbitW - cell.velocity.x * 3 * orbitW;
+                ay += ((pullY + spot.y) / depthScale - cell.y) * 8 * orbitW - cell.velocity.y * 3 * orbitW;
             }
             cell.swell = 0;
             ripples.forEach((ripple) => {
@@ -695,7 +658,9 @@ export async function createCellField(canvas, container, { onEvent = null } = {}
             const glowing = cell.flare;
             cell.sprite.material.color.copy(cell.baseColor).lerp(WHITE, glowing * 0.7);
             const share = 1 - ease(clamp(cell.dis / 0.55, 0, 1)); // how much of its shape is left
-            cell.sprite.material.opacity = (cell.baseOpacity + (1 - cell.baseOpacity) * glowing) * share;
+            // On its orbit it comes forward (a little bigger, brighter) and goes back (smaller, dimmer)
+            const depthLook = orbitW * (cell.front - 0.5);
+            cell.sprite.material.opacity = (cell.baseOpacity + (1 - cell.baseOpacity) * glowing) * share * (1 + 0.9 * depthLook);
             cell.sprite.visible = share > 0.01;
             cell.halo.visible = glowing > 0.01 && share > 0.05;
             if (cell.halo.visible) {
@@ -707,7 +672,8 @@ export async function createCellField(canvas, container, { onEvent = null } = {}
             // Soft bodies: they breathe, squashing and stretching, and sway instead of spinning
             const breath = Math.sin(time * cell.pulse + cell.phase) * 0.04 + glowing * 0.09 + cell.dis * 0.12;
             const swell = cell.swell * 0.14; // the ring lifts it as it goes through
-            cell.sprite.scale.set(cell.width * (1 + breath + swell) * cell.flip, cell.height * (1 - breath + swell), 1);
+            const nearness = 1 + 0.6 * depthLook;
+            cell.sprite.scale.set(cell.width * (1 + breath + swell) * cell.flip * nearness, cell.height * (1 - breath + swell) * nearness, 1);
             cell.sprite.material.rotation = cell.baseRotation + Math.sin(time * cell.sway + cell.phase) * 0.25;
         });
 
@@ -736,16 +702,21 @@ export async function createCellField(canvas, container, { onEvent = null } = {}
                 ay += (wake.y * 2.4 + (dy / distance) * unit * 1.6) * falloff;
             }
 
+            // On its orbit the currents give way too, so the electrons keep their even spacing
+            ax *= 1 - 0.9 * orbitW;
+            ay *= 1 - 0.9 * orbitW;
+            particle.front = 0.5;
             ax += (0 - particle.x) * 0.8 * breathE * (1 - orbitW);
             ay += (pullY - particle.y) * 0.8 * breathE * (1 - orbitW);
             if (orbitW > 0.01) {
                 orbitSpot(particle.ring, particle.ringAngle);
                 const depthScale = CAMERA_Z / (CAMERA_Z - particle.z);
-                ax += (spot.x / depthScale - particle.x) * 5 * orbitW;
-                ay += ((pullY + spot.y) / depthScale - particle.y) * 5 * orbitW;
+                particle.front = spot.front;
+                ax += (spot.x / depthScale - particle.x) * 9 * orbitW;
+                ay += ((pullY + spot.y) / depthScale - particle.y) * 9 * orbitW;
                 // Damped, so it settles on its orbit instead of swinging through it
-                ax -= particle.vx * 2.5 * orbitW;
-                ay -= particle.vy * 2.5 * orbitW;
+                ax -= particle.vx * 4 * orbitW;
+                ay -= particle.vy * 4 * orbitW;
             }
 
             particle.vx += ax * dt;
@@ -767,9 +738,9 @@ export async function createCellField(canvas, container, { onEvent = null } = {}
             positions[i * 3 + 2] = particle.z;
             // Far matter is dimmer, as if seen through the liquid
             const depth = 1 - 0.55 * clamp((Z_NEAR - particle.z) / (Z_NEAR - Z_FAR), 0, 1);
-            alphas[i] = (0.5 + 0.45 * (0.5 + 0.5 * Math.sin(time * 1.1 + particle.twinkle))) * depth * (1 + 0.6 * orbitW);
+            alphas[i] = (0.5 + 0.45 * (0.5 + 0.5 * Math.sin(time * 1.1 + particle.twinkle))) * depth * (1 + orbitW * (0.3 + 0.9 * (particle.front - 0.5)));
             // In the mandala the matter is bigger, so the rings can be read
-            if (orbitW > 0.001 || orbitSized) sizes[i] = particle.size * unit * (1 + 1.1 * orbitW);
+            if (orbitW > 0.001 || orbitSized) sizes[i] = particle.size * unit * (1 + orbitW * (0.9 + 1.0 * (particle.front - 0.5)));
         });
         geometry.attributes.position.needsUpdate = true;
         geometry.attributes.alpha.needsUpdate = true;
@@ -970,8 +941,6 @@ export async function createCellField(canvas, container, { onEvent = null } = {}
             geometry.dispose();
             dotGeometry.dispose();
             rings.forEach((mesh) => mesh.geometry.dispose());
-            orbitLines.geometry.dispose();
-            orbitMaterial.dispose();
             ringMaterials.forEach((material) => material.dispose());
             pointMaterial.dispose();
             rays.geometry.dispose();
