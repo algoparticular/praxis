@@ -103,6 +103,7 @@
     // The charge is full: the rulito flares and throws sparks
     const bloom = () => {
         play('star');
+        play('bloom');
         level = Math.min(3, level + 1);
         sceneMilestone('rulito_completed', { times: level });
         wave = 0;
@@ -151,7 +152,7 @@
                 if (idle > (head >= 1 ? LINGER : 0.2)) tail = Math.min(head, tail + dt / EAT);
             }
             if (head >= 1 && !full) { full = true; pop = 1; bloom(); }
-            if (head > 0 && head - tail < 0.0005) { head = 0; tail = 0; grown = 0; full = false; rulito.value.reshape(); }
+            if (head > 0 && head - tail < 0.0005) { head = 0; tail = 0; grown = 0; full = false; rulito.value.reshape(); play('release'); }
             const flare = full && head - tail > 0.9 ? Math.max(pop, Math.sin(t * 4) * 0.5 + 0.5) : 0;
             root.value.style.setProperty('--charge', Math.max(head - tail, rootGrow * 0.6).toFixed(3));
             roots.frame({ grow: rootGrow, pulse: wave, level, t });

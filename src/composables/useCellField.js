@@ -153,7 +153,7 @@ export async function createCellField(canvas, container, { onEvent = null } = {}
             width: 1, height: 1,
             // Letting go: 'whole' -> 'out' (turning into dots) -> 'hold' (gone) -> 'in' (gathering again) -> 'whole'.
             // dis is how far from its shape it is, 0..1
-            state: 'whole', dis: 0, timer: 0, hold: 0, dotsLit: false,
+            state: 'whole', dis: 0, timer: 0, hold: 0, dotsLit: false, swell: 0,
         };
     });
 
@@ -316,43 +316,73 @@ export async function createCellField(canvas, container, { onEvent = null } = {}
     const RIPPLE_LIFE = 3.2;
     const ripples = [];
     const rippleUniform = Array.from({ length: MAX_RIPPLES }, () => new THREE.Vector4());
-    const ringMaterial = new THREE.ShaderMaterial({
+    // The wave is a height field: a crest at the front of each ring with a couple of wavelets trailing behind it,
+    // fading as they go. Its slope is what the eye reads as water: light where the surface tilts towards us, shade
+    // where it tilts away. Two layers draw that, one additive (light) and one normal (shade).
+    const rippleShader = (shade) => `
+        varying vec2 vUv;
+        uniform float uAspect;
+        uniform vec4 uRipples[${MAX_RIPPLES}];
+        float height(float x, float w) {
+            float env = x > 0.0 ? exp(-(x * x) / (w * w)) : exp(x / (w * 5.0));
+            return cos(x * 90.0) * env;
+        }
+        void main() {
+            vec2 p = vec2(vUv.x * uAspect, vUv.y);
+            float slope = 0.0;
+            for (int i = 0; i < ${MAX_RIPPLES}; i++) {
+                vec4 r = uRipples[i];
+                if (r.w <= 0.0) continue;
+                float x = distance(p, r.xy) - r.z;
+                float w = 0.02 + r.z * 0.02;
+                float e = 0.004;
+                slope += (height(x + e, w) - height(x, w)) / e * r.w / (1.0 + r.z * 3.0);
+            }
+            ${shade
+        ? 'gl_FragColor = vec4(0.2, 0.08, 0.36, clamp(-slope * 0.01, 0.0, 1.0) * 0.28);'
+        : 'vec3 light = mix(vec3(1.0, 0.8, 0.9), vec3(0.65, 0.95, 1.0), clamp(vUv.y, 0.0, 1.0));\n            gl_FragColor = vec4(light, clamp(slope * 0.012, 0.0, 1.0) * 0.6);'}
+        }`;
+    const ringVertex = `
+        varying vec2 vUv;
+        void main() {
+            vUv = uv;
+            gl_Position = vec4(position.xy, 0.0, 1.0);
+        }`;
+    const ringUniforms = { uAspect: { value: 1 }, uRipples: { value: rippleUniform } };
+    const ringMaterials = [false, true].map((shade) => new THREE.ShaderMaterial({
         transparent: true,
         depthTest: false,
         depthWrite: false,
-        blending: THREE.AdditiveBlending,
-        uniforms: { uAspect: { value: 1 }, uRipples: { value: rippleUniform } },
-        vertexShader: `
-            varying vec2 vUv;
-            void main() {
-                vUv = uv;
-                gl_Position = vec4(position.xy, 0.0, 1.0);
-            }`,
-        fragmentShader: `
-            varying vec2 vUv;
-            uniform float uAspect;
-            uniform vec4 uRipples[${MAX_RIPPLES}];
-            void main() {
-                vec2 p = vec2(vUv.x * uAspect, vUv.y);
-                float ring = 0.0;
-                for (int i = 0; i < ${MAX_RIPPLES}; i++) {
-                    vec4 r = uRipples[i];
-                    if (r.w <= 0.0) continue;
-                    float x = distance(p, r.xy) - r.z;
-                    float w = 0.012 + r.z * 0.02;
-                    float front = exp(-(x * x) / (w * w));
-                    float t = x + w * 3.5;
-                    float tail = exp(-(t * t) / (w * w * 5.0)) * 0.35;
-                    ring += (front * 0.9 + tail) * r.w;
-                }
-                vec3 color = mix(vec3(1.0, 0.72, 0.86), vec3(0.62, 0.95, 1.0), clamp(vUv.y, 0.0, 1.0));
-                gl_FragColor = vec4(color, ring * 0.4);
-            }`,
+        blending: shade ? THREE.NormalBlending : THREE.AdditiveBlending,
+        uniforms: ringUniforms,
+        vertexShader: ringVertex,
+        fragmentShader: rippleShader(shade),
+    }));
+    const rings = ringMaterials.map((material, k) => {
+        const mesh = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), material);
+        mesh.frustumCulled = false;
+        mesh.renderOrder = 5 + k;
+        scene.add(mesh);
+        return mesh;
     });
-    const ring = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), ringMaterial);
-    ring.frustumCulled = false;
-    ring.renderOrder = 5;
-    scene.add(ring);
+
+    // Where a ring pushes whatever floats at a point, as a displacement (read right after the call)
+    const bump = { x: 0, y: 0 };
+    const ringBump = (x, y, z) => {
+        bump.x = 0;
+        bump.y = 0;
+        const depthScale = CAMERA_Z / (CAMERA_Z - z);
+        const band = unit * 0.1;
+        for (const ripple of ripples) {
+            const dx = x * depthScale - ripple.x, dy = y * depthScale - ripple.y;
+            const distance = Math.hypot(dx, dy) || 0.001;
+            const off = Math.abs(distance - ripple.radius);
+            if (off >= band) continue;
+            const push = (1 - off / band) ** 2 * (1 - ripple.age / RIPPLE_LIFE) * unit * 0.05;
+            bump.x += (dx / distance) * push;
+            bump.y += (dy / distance) * push;
+        }
+    };
 
     // ---- Letting go: how long each stretch of it takes (seconds)
     const OUT = 2.2, HOLD = 1, IN = 2.8;
@@ -398,7 +428,7 @@ export async function createCellField(canvas, container, { onEvent = null } = {}
         viewW = viewH * camera.aspect;
         unit = Math.min(viewW, viewH);
         raysMaterial.uniforms.uAspect.value = camera.aspect;
-        ringMaterial.uniforms.uAspect.value = camera.aspect;
+        ringUniforms.uAspect.value = camera.aspect;
         rippleSpeed = Math.hypot(viewW, viewH) / 2.6;
         pointMaterial.uniforms.uPixelsPerUnit.value = renderer.domElement.height / (2 * Math.tan((FOV * Math.PI) / 360));
 
@@ -517,16 +547,19 @@ export async function createCellField(canvas, container, { onEvent = null } = {}
 
             // A ring shoves a cell as it goes through it, and a cell it reaches lets go of its shape
             const depthScale = CAMERA_Z / (CAMERA_Z - cell.z);
+            cell.swell = 0;
             ripples.forEach((ripple) => {
                 const dx = cell.x * depthScale - ripple.x, dy = cell.y * depthScale - ripple.y;
                 const distance = Math.hypot(dx, dy) || 0.001;
-                if (!ripple.hit.has(cell) && distance - cell.width * 0.5 * depthScale <= ripple.radius && ripple.radius <= unit * 0.85) {
+                if (!ripple.hit.has(cell) && distance - cell.width * 0.5 * depthScale <= ripple.radius) {
                     ripple.hit.add(cell);
                     dissolve(cell);
                 }
                 const off = Math.abs(distance - ripple.radius);
                 if (off < ringBand) {
-                    const push = (1 - off / ringBand) ** 2 * (1 - ripple.age / RIPPLE_LIFE) * unit * 2 / cell.mass;
+                    const strength = (1 - off / ringBand) ** 2 * (1 - ripple.age / RIPPLE_LIFE);
+                    cell.swell = Math.max(cell.swell, strength);
+                    const push = strength * unit * 2 / cell.mass;
                     ax += (dx / distance) * push;
                     ay += (dy / distance) * push;
                 }
@@ -558,7 +591,8 @@ export async function createCellField(canvas, container, { onEvent = null } = {}
 
             // Soft bodies: they breathe, squashing and stretching, and sway instead of spinning
             const breath = Math.sin(time * cell.pulse + cell.phase) * 0.04 + glowing * 0.09 + cell.dis * 0.12;
-            cell.sprite.scale.set(cell.width * (1 + breath) * cell.flip, cell.height * (1 - breath), 1);
+            const swell = cell.swell * 0.14; // the ring lifts it as it goes through
+            cell.sprite.scale.set(cell.width * (1 + breath + swell) * cell.flip, cell.height * (1 - breath + swell), 1);
             cell.sprite.material.rotation = cell.baseRotation + Math.sin(time * cell.sway + cell.phase) * 0.25;
         });
 
@@ -603,8 +637,9 @@ export async function createCellField(canvas, container, { onEvent = null } = {}
                 if (particle.y < -halfH) particle.y = halfH;
             }
 
-            positions[i * 3] = particle.x;
-            positions[i * 3 + 1] = particle.y;
+            ringBump(particle.x, particle.y, particle.z);
+            positions[i * 3] = particle.x + bump.x;
+            positions[i * 3 + 1] = particle.y + bump.y;
             positions[i * 3 + 2] = particle.z;
             // Far matter is dimmer, as if seen through the liquid
             const depth = 1 - 0.55 * clamp((Z_NEAR - particle.z) / (Z_NEAR - Z_FAR), 0, 1);
@@ -625,10 +660,13 @@ export async function createCellField(canvas, container, { onEvent = null } = {}
                 const dot = dots[i];
                 const travel = cell.dotsLit ? clamp(cell.dis * 1.25 - dot.delay, 0, 1) : 0;
                 const radius = cell.width * 0.5 * dot.reach * 0.9;
-                dotPositions[i * 3] = cell.x + Math.cos(dot.angle) * radius
+                const dotX = cell.x + Math.cos(dot.angle) * radius
                     + (dot.dx * 0.5 + current.x * 0.4 + Math.sin(time * 1.3 + dot.phase) * 0.05) * unit * 0.5 * travel;
-                dotPositions[i * 3 + 1] = cell.y + Math.sin(dot.angle) * radius * 0.85
+                const dotY = cell.y + Math.sin(dot.angle) * radius * 0.85
                     + (0.35 + dot.dy * 0.6 + current.y * 0.2) * unit * 0.55 * travel;
+                ringBump(dotX, dotY, cell.z);
+                dotPositions[i * 3] = dotX + bump.x;
+                dotPositions[i * 3 + 1] = dotY + bump.y;
                 dotPositions[i * 3 + 2] = cell.z + 0.02;
                 dotAlphas[i] = Math.sin(Math.PI * travel) ** 0.8 * 0.9 * dot.bright;
             }
@@ -782,8 +820,8 @@ export async function createCellField(canvas, container, { onEvent = null } = {}
             canvas.removeEventListener('webglcontextrestored', onContextRestored);
             geometry.dispose();
             dotGeometry.dispose();
-            ring.geometry.dispose();
-            ringMaterial.dispose();
+            rings.forEach((mesh) => mesh.geometry.dispose());
+            ringMaterials.forEach((material) => material.dispose());
             pointMaterial.dispose();
             rays.geometry.dispose();
             raysMaterial.dispose();

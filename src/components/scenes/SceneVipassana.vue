@@ -76,7 +76,9 @@
     // The cells that let go and gather again each ring their own note
     const onFieldEvent = (type) => play(type === 'dissolve' ? 'release' : 'bloom');
 
-    const breatheIn = () => {
+    const breatheIn = (awayX, awayY) => {
+        // The ring jostles him as it goes through, away from where it came from
+        life?.nudge(awayX * 150, awayY * 150);
         // One breath at a time: a press in the middle of one lets it finish
         if (life?.inhale()) {
             cellField?.breathe();
@@ -98,9 +100,11 @@
         play('ripple');
         // He breathes in when the ring reaches him (at once if it started on him)
         const box = character.value.getBoundingClientRect();
-        const reach = Math.hypot(event.clientX - (box.left + box.width / 2), event.clientY - (box.top + box.height * 0.55)) - box.width * 0.3;
+        const dx = box.left + box.width / 2 - event.clientX, dy = box.top + box.height * 0.55 - event.clientY;
+        const away = Math.hypot(dx, dy) || 1;
+        const reach = away - box.width * 0.3;
         clearTimeout(breathTimer);
-        breathTimer = setTimeout(breatheIn, onSid || !wave ? 0 : Math.max(0, reach / wave.speed) * 1000);
+        breathTimer = setTimeout(() => breatheIn(onSid ? 0 : dx / away, onSid ? 0 : dy / away), onSid || !wave ? 0 : Math.max(0, reach / wave.speed) * 1000);
     };
 
     const onMove = (event) => {
