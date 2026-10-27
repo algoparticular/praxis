@@ -38,6 +38,9 @@
             "sound": "Sound",
             "soundOn": "Sound on",
             "soundOff": "Sound off",
+            "audio": "Audio",
+            "music": "Music",
+            "effects": "Effects",
             "skip": "to the Oracle"
         },
         "auth": {

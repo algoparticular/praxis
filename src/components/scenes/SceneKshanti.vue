@@ -289,7 +289,7 @@
     const empty = (f, event) => {
         if (f.target > 0) {
             f.target = 0;
-            play('tap');
+            play('bloom');          // the flask fills again
             return;
         }
         f.target = 1;
@@ -297,7 +297,7 @@
         const canvas = frontCanvas.value.getBoundingClientRect();
         const box = event.currentTarget.getBoundingClientRect();
         sparks.burst(box.left + box.width / 2 - canvas.left, box.top + box.height / 2 - canvas.top, { n: 14, colors: [0xffc470, 0xffe3a8, 0xffffff], speed: 90, size: 4.4, spread: 5 });
-        play('tap');
+        play('release');            // the cork pops and the flask evaporates
     };
     // The central sign: everything is filled again
     const refill = (event) => {
@@ -307,7 +307,7 @@
         const box = event.currentTarget.getBoundingClientRect();
         sparks.burst(box.left + box.width / 2 - canvas.left, box.top + box.height / 2 - canvas.top, { n: 40, colors: [0xffffff, 0xcfeff0, 0xffd1dc], speed: 150, size: 5.2, spread: 10 });
         els[SIGN]?.animate({ filter: ['brightness(1)', 'brightness(1.6)', 'brightness(1)'], scale: ['1', '1.16', '1'] }, { duration: 900, easing: 'ease-out' });
-        play('star');
+        play('breath');
     };
 
     // A stroke passing by a flask lights the creature in it for a moment, with a few lavender sparks as it comes on

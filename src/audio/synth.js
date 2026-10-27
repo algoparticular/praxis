@@ -5,11 +5,12 @@
 // (a real or an offline one) so it can be rendered and checked without speakers.
 
 import { BASE_CHORD } from '../data/cardChords.js';
+import { INHALE, EXHALE } from '../composables/breathCurve.js';
 
 const rand = (min, max) => min + Math.random() * (max - min);
 
 // How loud the ambience gets, so the effects always stand above it
-const AMBIENT_LEVEL = 0.15;
+const AMBIENT_LEVEL = 0.12;
 
 /* ---------- Chords ---------- */
 
@@ -291,6 +292,129 @@ export const tap = (ctx, out, time, harmony) => {
     if (harmony.kind === '7') bell(ctx, out, time + 0.07, target * 1.004, 1.2, 0.022);
 };
 
+/* ---------- Vipassana: a ring through the water, cells letting go and gathering again, one slow breath ---------- */
+
+// Like the stars, these come in groups (a ring crosses a dozen cells), so each one counts how many came just before
+// it and is quieter the more there were; one almost on top of the last is not played
+const crowd = (gap, memory) => {
+    let last = -Infinity;
+    let count = 0;
+    return (time) => {
+        const since = time - last;
+        if (since < 0) count = 0;           // another context (an offline render) with its own clock
+        else if (since < gap) return 0;
+        count = count * Math.exp(-since / memory) + 1;
+        last = time;
+        return 1 / (1 + 0.5 * (count - 1));
+    };
+};
+const releaseWeight = crowd(0.1, 2);
+const bloomWeight = crowd(0.14, 2.5);
+
+// A press on the water: a round note that falls like a stone dropped in, a little moving water and a low bowl
+// on the chord's root that stays (softer the lighter the press)
+export const ripple = (ctx, out, time, harmony, level = 1) => {
+    const h = harmony ?? PLAIN;
+    const k = 0.35 + 0.65 * level;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(hz(h.voice), time);
+    osc.frequency.exponentialRampToValueAtTime(hz(h.voice - 12), time + 0.5);
+    gain.gain.setValueAtTime(0.0001, time);
+    gain.gain.exponentialRampToValueAtTime(0.09 * k, time + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, time + 1.4);
+    osc.connect(gain);
+    gain.connect(out);
+    osc.start(time);
+    osc.stop(time + 1.5);
+    swish(ctx, out, time, { from: 1200, to: 300, duration: 1.3, level: 0.03 * k, q: 0.8 });
+    bell(ctx, out, time + 0.03, hz(h.voice - 12), 3.6, 0.04 * k);
+};
+
+// A cell lets go of its shape: one high, glassy note of the chord (with a detuned twin) and a breath of air going up
+export const release = (ctx, out, time, harmony) => {
+    const weight = releaseWeight(time);
+    if (!weight) return;
+    const h = harmony ?? PLAIN;
+    const midi = any(h.tones(h.voice + 12, 14));
+    bell(ctx, out, time, hz(midi), 2.4, 0.032 * weight);
+    bell(ctx, out, time + 0.012, hz(midi) * 1.004, 2, 0.015 * weight);
+    swish(ctx, out, time, { from: 3500, to: 7000, duration: 1.2, level: 0.007 * weight, q: 0.6 });
+};
+
+// A cell gathers itself again: a low note of the chord that glides up into place and settles with a small bowl
+export const bloom = (ctx, out, time, harmony) => {
+    const weight = bloomWeight(time);
+    if (!weight) return;
+    const h = harmony ?? PLAIN;
+    const target = hz(any(h.tones(h.voice - 12, 14)));
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(target * 0.6, time);
+    osc.frequency.exponentialRampToValueAtTime(target, time + 0.5);
+    gain.gain.setValueAtTime(0.0001, time);
+    gain.gain.exponentialRampToValueAtTime(0.045 * weight, time + 0.25);
+    gain.gain.exponentialRampToValueAtTime(0.0001, time + 1.4);
+    osc.connect(gain);
+    gain.connect(out);
+    osc.start(time);
+    osc.stop(time + 1.5);
+    bell(ctx, out, time + 0.45, target, 2.4, 0.02 * weight);
+};
+
+// One slow breath, the length of breathCurve.js: air that rises as it fills and falls as it goes out, and the chord's
+// root and fifth swelling underneath (an octave above the pad's bass, so a phone's small speaker plays them) to peak
+// with the inhale and fade with the exhale
+export const breath = (ctx, out, time, harmony) => {
+    const h = harmony ?? PLAIN;
+    swish(ctx, out, time, { from: 350, to: 1500, duration: INHALE, level: 0.16, q: 0.5 });
+    swish(ctx, out, time + INHALE, { from: 1500, to: 350, duration: EXHALE, level: 0.13, q: 0.5 });
+    [h.bass + 24, h.bass + 31].forEach((midi, i) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = hz(midi);
+        gain.gain.setValueAtTime(0.0001, time);
+        gain.gain.exponentialRampToValueAtTime(0.07 - i * 0.025, time + INHALE);
+        gain.gain.exponentialRampToValueAtTime(0.0001, time + INHALE + EXHALE);
+        osc.connect(gain);
+        gain.connect(out);
+        osc.start(time);
+        osc.stop(time + INHALE + EXHALE + 0.1);
+    });
+};
+
+// Holding Sid: the breath goes in (air rising, the chord's root and fifth swelling and then thinning out as it is held)
+// and, when he is let go, comes out (air falling, the same two notes swelling and fading). Together they are `breath`.
+const breathTones = (ctx, out, time, harmony, from, to, rise, fall, level) => {
+    const h = harmony ?? PLAIN;
+    [h.bass + 24, h.bass + 31].forEach((midi, i) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = hz(midi);
+        gain.gain.setValueAtTime(from, time);
+        gain.gain.exponentialRampToValueAtTime(level - i * 0.025, time + rise);
+        gain.gain.exponentialRampToValueAtTime(to, time + rise + fall);
+        osc.connect(gain);
+        gain.connect(out);
+        osc.start(time);
+        osc.stop(time + rise + fall + 0.1);
+    });
+};
+
+export const inhale = (ctx, out, time, harmony) => {
+    swish(ctx, out, time, { from: 350, to: 1500, duration: INHALE, level: 0.16, q: 0.5 });
+    breathTones(ctx, out, time, harmony, 0.0001, 0.0001, INHALE, 1.6, 0.07);
+};
+
+export const exhale = (ctx, out, time, harmony) => {
+    swish(ctx, out, time, { from: 1500, to: 350, duration: EXHALE, level: 0.14, q: 0.5 });
+    breathTones(ctx, out, time, harmony, 0.0001, 0.0001, 0.9, EXHALE - 0.9, 0.065);
+};
+
 /* ---------- Ambience ---------- */
 
 export const createAmbient = (ctx, out, name = BASE_CHORD) => {
@@ -309,10 +433,13 @@ export const createAmbient = (ctx, out, name = BASE_CHORD) => {
     filter.Q.value = 0.4;
     filter.connect(bus);
 
+    // Every oscillator the pad has ever had (it is rebuilt at each chord change), so stopping really stops them all
+    const everyVoice = [];
     const makePad = (harmony) => {
         const level = ctx.createGain();
         level.connect(filter);
         const voices = [];
+        everyVoice.push(voices);
         harmony.pad.forEach(([midi, share]) => {
             const voiceGain = ctx.createGain();
             voiceGain.gain.value = share * 0.55;
@@ -402,10 +529,13 @@ export const createAmbient = (ctx, out, name = BASE_CHORD) => {
         stop(seconds = 1.5) {
             clearInterval(timer);
             const now = ctx.currentTime;
+            // Fades from wherever it is (without reading the parameter, which some browsers answer with a stale value)
             fade.gain.cancelScheduledValues(now);
-            fade.gain.setValueAtTime(fade.gain.value, now);
-            fade.gain.linearRampToValueAtTime(0, now + seconds);
-            [...sources, ...pad.voices].forEach((source) => { try { source.stop(now + seconds + 0.1); } catch { /* already stopped */ } });
+            fade.gain.setTargetAtTime(0, now, seconds / 4);
+            [...sources, ...everyVoice.flat()].forEach((source) => { try { source.stop(now + seconds + 0.1); } catch { /* already stopped or never started */ } });
+            // Whatever happens to the parameter or the clock (a context that was suspended halfway), after the fade
+            // nothing of this ambience can reach the speakers: it is cut from the graph
+            setTimeout(() => fade.disconnect(), (seconds + 0.3) * 1000);
         },
         // Moves the pad and the chimes to another chord: the new pad swells in as the old one fades away
         setChord(next = BASE_CHORD, seconds = 5, time = ctx.currentTime) {

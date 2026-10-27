@@ -13,9 +13,25 @@ const STORAGE_KEY = 'sound';
 
 export const soundOn = ref(false);
 
+// Two channels the person can set apart: the music (pad, chimes and drops) and the effects (touch sounds). 0..1.
+const readVolume = (key, fallback) => {
+    try {
+        const value = parseFloat(localStorage.getItem(key));
+        return Number.isFinite(value) ? Math.min(1, Math.max(0, value)) : fallback;
+    } catch { return fallback; }
+};
+// The sliders are in loudness steps, not in amplitude: squared, so the lower half of a slider is really quieter
+const gainOf = (value) => value * value;
+export const musicVolume = ref(readVolume('musicVolume', 0.5));      // the music starts at half
+export const effectsVolume = ref(readVolume('effectsVolume', 1));
+
 let ctx = null;
 let master = null;
+let musicBus = null;
+let effectsBus = null;
 let ambient = null;
+// Every ambience ever started, so that turning the sound off stops all of them and no instance can be left playing
+const ambients = new Set();
 let silentTrack = null;
 // The chord of the card on screen (null outside the cards): the touch sounds play in it and the ambience follows it
 let cardChord = null;
@@ -74,6 +90,12 @@ const ensureContext = () => {
     if (!Context) return null;
     ctx = new Context();
     master = synth.createMaster(ctx);
+    musicBus = ctx.createGain();
+    effectsBus = ctx.createGain();
+    musicBus.gain.value = gainOf(musicVolume.value);
+    effectsBus.gain.value = gainOf(effectsVolume.value);
+    musicBus.connect(master);
+    effectsBus.connect(master);
     return ctx;
 };
 
@@ -91,7 +113,8 @@ const enable = () => {
     writePreference(true);
     return resumed.then(() => {
         if (!ambient && soundOn.value) {
-            ambient = synth.createAmbient(ctx, master, cardChord?.name);
+            ambient = synth.createAmbient(ctx, musicBus, cardChord?.name);
+            ambients.add(ambient);
             ambient.start();
         }
         return true;
@@ -99,7 +122,8 @@ const enable = () => {
 };
 
 const disable = () => {
-    ambient?.stop();
+    ambients.forEach((each) => each.stop());
+    ambients.clear();
     ambient = null;
     silentTrack?.pause();
     soundOn.value = false;
@@ -115,10 +139,20 @@ export const toggleSound = () => {
     return enable().then((on) => { if (on) track('sound_toggled', { on: true }); return on; });
 };
 
-export const play = (name) => {
+// level (0..1) is for the sounds that can be played softer, like a press on the water of Vipassana
+export const play = (name, level) => {
     if (!soundOn.value || !ctx || ctx.state !== 'running' || typeof synth[name] !== 'function') return;
-    synth[name](ctx, master, ctx.currentTime + 0.02, cardChord);
+    synth[name](ctx, effectsBus, ctx.currentTime + 0.02, cardChord, level);
 };
+
+// The sliders in the menu: 0..1 each, remembered, and applied smoothly if the audio is already running
+const setVolume = (key, ref, bus, value) => {
+    ref.value = Math.min(1, Math.max(0, value));
+    try { localStorage.setItem(key, String(ref.value)); } catch { /* storage can be blocked */ }
+    if (bus && ctx) bus.gain.setTargetAtTime(gainOf(ref.value), ctx.currentTime, 0.05);
+};
+export const setMusicVolume = (value) => setVolume('musicVolume', musicVolume, musicBus, value);
+export const setEffectsVolume = (value) => setVolume('effectsVolume', effectsVolume, effectsBus, value);
 
 // Called when a card comes on screen with its chord (src/data/cardChords.js), and with nothing when it leaves
 export const setCardChord = (name = null) => {
