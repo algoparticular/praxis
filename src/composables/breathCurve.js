@@ -6,6 +6,10 @@ export const INHALE = 1.8;
 export const EXHALE = 2.6;
 export const BREATH = INHALE + EXHALE;
 
+// How far Sid rises while the mandala is formed, as a share of the frame's height: he and the centre of the orbits
+// move together, so he is always in the middle of them
+export const RISE = 0.08;
+
 const ease = (k) => k * k * (3 - 2 * k);
 
 // t is the time since the breath began; outside of it the envelope is 0

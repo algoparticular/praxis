@@ -187,7 +187,7 @@
         root.value.addEventListener('touchstart', onTouchStart, { passive: false });
         loadMask();
         spiral = createHeroSpiral(spiralCanvas.value, { animate: !reducedMotion });
-        life = createCharacterLife(character.value, root.value, { spiral, getLift: () => scrollLift, onExhale });
+        life = createCharacterLife(character.value, root.value, { spiral, getLift: () => scrollLift, onExhale, getRise: () => cellField?.orbit() ?? 0 });
 
         createCellField(cellCanvas.value, root.value, { onEvent: onFieldEvent })
             .then((field) => { unmounted ? field.destroy() : (cellField = field); })
