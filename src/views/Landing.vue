@@ -382,6 +382,8 @@
         /* A coral glow at the top only: an inset shadow also leaked along the bottom edge and drew a line against the oracle block */
         background-image: linear-gradient(180deg, rgba(255, 111, 97, 0.32) 0, rgba(255, 111, 97, 0) 120px);
         background-repeat: no-repeat;
+        /* The background layer overflows on purpose (see .splash.background): that must not make the page scroll sideways */
+        overflow-x: clip;
     }
 
     h1 {
@@ -487,10 +489,13 @@
         background-image: url('../assets/hero/background.webp');
         background-size: cover;
         
-        top: 0;
+        /* Bigger than the hero on every side: this layer is tilted in 3D by the pointer (kinesis "depth"), and a layer
+           exactly the size of the screen shows its own edge as a hard vertical cut when it turns */
+        top: -8%;
+        left: -12vw;
         z-index: 0;
-        width: 100vw;
-        height: 100%;
+        width: 124vw;
+        height: 116%;
     }
 
     /* DESKTOP */
