@@ -39,8 +39,6 @@
             "soundOn": "Con sonido",
             "soundOff": "Sin sonido",
             "audio": "Audio",
-            "music": "Música",
-            "effects": "Efectos",
             "skip": "al Oráculo"
         },
         "auth": {
