@@ -3,10 +3,10 @@
     // Everything here is shared with the hero: the rays, the three.js cell field, the character picture,
     // the dotted spiral and the character's behaviour (useCharacterLife).
     // Unlike the hero, it can be touched. A press anywhere is one slow breath of the whole scene: a ring runs out
-    // through the water from the finger, shoves the cells and makes each one it crosses let go of its shape (it turns
-    // into dots that drift away and gathers itself again); when the ring reaches the character he breathes in, the
-    // cells and the light lean in towards him, and everything lets out. Pressing the character himself also makes
-    // him shine (his halo surges, a bright wave runs along his spiral).
+    // through the water from the finger and shoves the cells; a cell under the finger lets go of its shape (it turns
+    // into dots that drift away and stays gone). When the ring reaches the character he breathes in, the cells and
+    // the light lean in towards him, and everything lets out. Pressing the character himself also makes him shine
+    // (his halo surges, a bright wave runs along his spiral) and every cell that had gone gathers itself again.
     import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
     import { createCellField } from '../../composables/useCellField.js';
     import { createHeroSpiral } from '../../composables/useHeroSpiral.js';
@@ -92,6 +92,7 @@
         if (onSid) {
             life?.flare();
             spiral?.flare();
+            cellField?.gather();
             play('star');
         }
         if (reducedMotion) return;

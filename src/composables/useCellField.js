@@ -2,9 +2,9 @@
 // The scene is the inside of a body seen by a tiny character: a watery medium where cells drift on
 // slow currents and the cursor drags the liquid. Cells reuse the hero illustrations as sprites.
 // three is imported on demand so it does not weigh on the first load.
-// On the Vipassana card it can also be touched: ripple() sends a ring through the liquid that shoves the cells and
-// makes each one it crosses let go of its shape (it turns into dots that drift away and gathers itself again), and
-// breathe() draws the whole field in towards the character and lets it out.
+// On the Vipassana card it can also be touched: ripple() sends a ring through the liquid that shoves the cells (and
+// lets go of the one under the finger: it turns into dots that drift away and stays gone), gather() brings every
+// cell back, and breathe() draws the whole field in towards the character and lets it out.
 
 import { breathEnvelope, BREATH } from './breathCurve.js';
 
@@ -151,9 +151,9 @@ export async function createCellField(canvas, container, { onEvent = null } = {}
             velocity: { x: 0, y: 0 },
             x: 0, y: 0, // current world position, read by the particles
             width: 1, height: 1,
-            // Letting go: 'whole' -> 'out' (turning into dots) -> 'hold' (gone) -> 'in' (gathering again) -> 'whole'.
-            // dis is how far from its shape it is, 0..1
-            state: 'whole', dis: 0, timer: 0, hold: 0, dotsLit: false, swell: 0,
+            // Letting go: 'whole' -> 'out' (turning into dots) -> 'hold' (gone, until gather()) -> 'in' (gathering again)
+            // -> 'whole'. dis is how far from its shape it is, 0..1
+            state: 'whole', dis: 0, timer: 0, hold: Infinity, comeBack: false, dotsLit: false, swell: 0,
         };
     });
 
@@ -385,20 +385,25 @@ export async function createCellField(canvas, container, { onEvent = null } = {}
     };
 
     // ---- Letting go: how long each stretch of it takes (seconds)
-    const OUT = 2.2, HOLD = 1, IN = 2.8;
+    const OUT = 2.2, IN = 2.8;
     const ease = (k) => k * k * (3 - 2 * k);
     const dissolve = (cell) => {
         if (cell.state !== 'whole') return;
         cell.state = 'out';
         cell.timer = 0;
-        cell.hold = HOLD + Math.random() * 0.8;
+        cell.hold = Infinity;
+        cell.comeBack = false;
         onEvent?.('dissolve', cell);
     };
     const stepCell = (cell, dt) => {
         if (cell.state === 'out') {
             cell.timer += dt / OUT;
             cell.dis = ease(Math.min(1, cell.timer));
-            if (cell.timer >= 1) { cell.state = 'hold'; cell.timer = 0; }
+            if (cell.timer >= 1) {
+                cell.state = 'hold';
+                cell.timer = 0;
+                if (cell.comeBack) cell.hold = Math.random() * 0.6; // gather() was called while it was still going
+            }
         } else if (cell.state === 'hold') {
             cell.timer += dt;
             if (cell.timer >= cell.hold) { cell.state = 'in'; cell.timer = 0; onEvent?.('form', cell); }
@@ -551,10 +556,6 @@ export async function createCellField(canvas, container, { onEvent = null } = {}
             ripples.forEach((ripple) => {
                 const dx = cell.x * depthScale - ripple.x, dy = cell.y * depthScale - ripple.y;
                 const distance = Math.hypot(dx, dy) || 0.001;
-                if (!ripple.hit.has(cell) && distance - cell.width * 0.5 * depthScale <= ripple.radius) {
-                    ripple.hit.add(cell);
-                    dissolve(cell);
-                }
                 const off = Math.abs(distance - ripple.radius);
                 if (off < ringBand) {
                     const strength = (1 - off / ringBand) ** 2 * (1 - ripple.age / RIPPLE_LIFE);
@@ -791,13 +792,25 @@ export async function createCellField(canvas, container, { onEvent = null } = {}
             if (reducedMotion) return null;
             const rect = container.getBoundingClientRect();
             if (!rect.width || !rect.height) return null;
+            // The cell under the finger lets go of its shape (and stays gone until gather())
+            const cell = cellAt(clientX, clientY);
+            if (cell) dissolve(cell);
             if (ripples.length >= MAX_RIPPLES) ripples.shift();
             ripples.push({
                 x: ((clientX - rect.left) / rect.width - 0.5) * viewW,
                 y: (0.5 - (clientY - rect.top) / rect.height) * viewH,
-                age: 0, radius: 0, hit: new Set(),
+                age: 0, radius: 0,
             });
             return { speed: rippleSpeed * rect.width / viewW };
+        },
+        // Every cell that has let go gathers itself again, one after the other; the number of them
+        gather() {
+            let count = 0;
+            cells.forEach((cell) => {
+                if (cell.state === 'hold') { cell.hold = cell.timer + Math.random() * 1.2; count++; }
+                else if (cell.state === 'out') { cell.comeBack = true; count++; }
+            });
+            return count;
         },
         // One slow breath (breathCurve.js): the cells, the matter and the light lean in towards the character and let go.
         // False when one is already going.
