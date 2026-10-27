@@ -444,7 +444,7 @@ export async function createCellField(canvas, container, { onEvent = null } = {}
     const ORBIT_FLATNESS = 0.38;                                                  // semi-minor over semi-major
     // The enormous cells shrink while the mandala is formed so that Sid is what matters; the ones already this small
     // or smaller (a cell's size is its height over the frame's short side) stay as they are. They grow back as it fades.
-    const ORBIT_CELL_MAX = 0.19;
+    const ORBIT_CELL_MAX = 0.15;
     // Each orbit holds electrons in proportion to its length, evenly spaced along it (the last one takes the rest)
     const sizeSum = Array.from({ length: ORBITS }, (_, k) => orbitSize(k)).reduce((a, b) => a + b, 0);
     const perOrbit = Array.from({ length: ORBITS }, (_, k) => Math.round(particles.length * orbitSize(k) / sizeSum));
