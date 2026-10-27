@@ -4,9 +4,9 @@
 // Shared by the landing hero and the Vipassana card. It only uses independent transform properties, so it
 // coexists with parallax libraries that own `transform`.
 
-import { breathEnvelope, BREATH } from './breathCurve.js';
+import { breathEnvelope, BREATH, INHALE } from './breathCurve.js';
 
-export function createCharacterLife(particle, hero, { spiral = null, getLift = () => 0, glow = '255, 150, 130' } = {}) {
+export function createCharacterLife(particle, hero, { spiral = null, getLift = () => 0, glow = '255, 150, 130', onExhale = null } = {}) {
     // The pointer, relative to the character: lean is -1..1 across his width, near is 1 right on him and 0 far away
     const pointer = { x: 0, y: 0, near: 0, tx: 0, ty: 0, tnear: 0 };
 
@@ -48,8 +48,15 @@ export function createCharacterLife(particle, hero, { spiral = null, getLift = (
             const dt = Math.min(0.1, (now - lastNow) / 1000);
             pulse *= Math.exp(-dt * 1.5);
             lastNow = now;
+            const before = breathT;
             if (breathT >= 0) breathT = breathT + dt < BREATH ? breathT + dt : -1;
             const deepBreath = Math.max(0, breathEnvelope(breathT));
+            // As he breathes in his spiral draws in towards his head; as he lets go it lights up and opens again
+            spiral?.setBreath(deepBreath);
+            if (before >= 0 && before < INHALE && breathT >= INHALE) {
+                spiral?.flare();
+                onExhale?.();
+            }
             shove.vx += (-shove.x * 40 - shove.vx * 5) * dt;
             shove.vy += (-shove.y * 40 - shove.vy * 5) * dt;
             shove.x += shove.vx * dt;

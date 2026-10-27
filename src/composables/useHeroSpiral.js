@@ -15,6 +15,8 @@ const EDGE_OUT = 6;     // and out at the far tip
 const REACH = 190;      // radius, in picture pixels, within which the pointer disturbs the dots
 const PUSH = 46;        // how far the dots give way at the pointer's very centre
 const DUST = 80;        // tiny particles drifting along the spiral
+const HEAD = dots[0];   // where it comes out of his head
+const SQUEEZE = 0.4;    // how much of its length it draws in towards his head when he breathes in
 
 // Depth of every dot as drawn in the illustration: the big ones are in front, the small ones behind.
 // Smoothed over neighbours so single odd dots do not flicker, then stretched to 0..1.
@@ -77,6 +79,7 @@ export function createHeroSpiral(canvas, { animate = true } = {}) {
     let frame = 0;
     let start = 0;
     let flareAt = -Infinity;    // when the last flare began, in seconds on the drawing clock
+    let squeeze = 0;            // 0..1, how far he has breathed in: the spiral gathers towards his head
     // Pointer in picture pixels. The smoothed copy and its strength ease in and out so nothing snaps.
     const pointer = { x: 0, y: 0, tx: 0, ty: 0, strength: 0, target: 0 };
 
@@ -102,6 +105,14 @@ export function createHeroSpiral(canvas, { animate = true } = {}) {
         return closeness;
     };
 
+    // Draws the curve in towards the head as he breathes in
+    const gather = (at) => {
+        const k = 1 - SQUEEZE * squeeze;
+        at[0] = HEAD[0] + (at[0] - HEAD[0]) * k;
+        at[1] = HEAD[1] + (at[1] - HEAD[1]) * k;
+        return at;
+    };
+
     const draw = (t) => {
         pointer.strength += (pointer.target - pointer.strength) * 0.08;
         pointer.x += (pointer.tx - pointer.x) * 0.2;
@@ -115,6 +126,7 @@ export function createHeroSpiral(canvas, { animate = true } = {}) {
             if (envelope <= 0.01) continue;
 
             point(f, here);
+            gather(here);
             const spot = [here[0], here[1]];
             const near = disturb(spot, PUSH);
 
@@ -127,7 +139,7 @@ export function createHeroSpiral(canvas, { animate = true } = {}) {
             // A flare sends a bright wave out along the curve from his head
             const since = t - flareAt;
             const wave = since < 2.6 ? Math.exp(-(((f - since * 40) / 7) ** 2)) * (1 - since / 2.6) * 1.4 : 0;
-            const swell = Math.min(1, (animate ? Math.pow(Math.max(0, Math.sin(f * 0.18 - t * 1.6)), 3) : 0) + near * 1.2 + wave);
+            const swell = Math.min(1, (animate ? Math.pow(Math.max(0, Math.sin(f * 0.18 - t * 1.6)), 3) : 0) + near * 1.2 + wave + squeeze * 0.3);
             const twinkle = animate ? 0.9 + 0.1 * Math.sin(t * 3 + k * 1.7) : 1;
 
             const item = items[count++];
@@ -161,6 +173,8 @@ export function createHeroSpiral(canvas, { animate = true } = {}) {
                 if (envelope <= 0.01) continue;
                 point(f, here);
                 point(Math.min(LAST, f + 0.4), ahead);
+                gather(here);
+                gather(ahead);
                 const dx = ahead[0] - here[0], dy = ahead[1] - here[1];
                 const length = Math.hypot(dx, dy) || 1;
                 const side = mote.lateral + Math.sin(t * mote.wobble + mote.phase) * 7;
@@ -193,6 +207,8 @@ export function createHeroSpiral(canvas, { animate = true } = {}) {
 
     return {
         flare() { if (animate) flareAt = (performance.now() - start) / 1000; },
+        // How far he has breathed in, 0..1: the spiral draws in towards his head and glows a little
+        setBreath(value) { squeeze = value; },
         // Takes viewport coordinates (null when the pointer leaves) and maps them onto the picture
         setPointer(clientX, clientY) {
             if (clientX == null) { pointer.target = 0; return; }

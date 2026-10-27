@@ -2,8 +2,8 @@
 // The scene is the inside of a body seen by a tiny character: a watery medium where cells drift on
 // slow currents and the cursor drags the liquid. Cells reuse the hero illustrations as sprites.
 // three is imported on demand so it does not weigh on the first load.
-// On the Vipassana card it can also be touched: ripple() sends a ring through the liquid that shoves the cells (and
-// lets go of the one under the finger: it turns into dots that drift away and stays gone), gather() brings every
+// On the Vipassana card it can also be touched: ripple() sends a ring through the liquid that shoves the cells,
+// popCell() bursts the one under the finger into dots that drift away and stay gone, gather() brings every
 // cell back, and breathe() draws the whole field in towards the character and lets it out.
 
 import { breathEnvelope, BREATH } from './breathCurve.js';
@@ -385,7 +385,7 @@ export async function createCellField(canvas, container, { onEvent = null } = {}
     };
 
     // ---- Letting go: how long each stretch of it takes (seconds)
-    const OUT = 2.2, IN = 2.8;
+    const OUT = 1.5, IN = 2.8;
     const ease = (k) => k * k * (3 - 2 * k);
     const dissolve = (cell) => {
         if (cell.state !== 'whole') return;
@@ -793,9 +793,6 @@ export async function createCellField(canvas, container, { onEvent = null } = {}
             if (reducedMotion) return null;
             const rect = container.getBoundingClientRect();
             if (!rect.width || !rect.height) return null;
-            // The cell under the finger lets go of its shape (and stays gone until gather())
-            const cell = cellAt(clientX, clientY);
-            if (cell) dissolve(cell);
             if (ripples.length >= MAX_RIPPLES) ripples.shift();
             ripples.push({
                 x: ((clientX - rect.left) / rect.width - 0.5) * viewW,
@@ -803,6 +800,14 @@ export async function createCellField(canvas, container, { onEvent = null } = {}
                 age: 0, radius: 0, strength: clamp(strength, 0.1, 1),
             });
             return { speed: rippleSpeed * rect.width / viewW };
+        },
+        // A press on a cell: it bursts into dots and stays gone until gather(). True when there was a cell to burst.
+        popCell(clientX, clientY) {
+            if (reducedMotion) return false;
+            const cell = cellAt(clientX, clientY);
+            if (!cell || cell.state !== 'whole') return false;
+            dissolve(cell);
+            return true;
         },
         // Every cell that has let go gathers itself again, one after the other; the number of them
         gather() {

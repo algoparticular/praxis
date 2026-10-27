@@ -3,10 +3,11 @@
     // Everything here is shared with the hero: the rays, the three.js cell field, the character picture,
     // the dotted spiral and the character's behaviour (useCharacterLife).
     // Unlike the hero, it can be touched. A press anywhere is one slow breath of the whole scene: a ring runs out
-    // through the water from the finger and shoves the cells; a cell under the finger lets go of its shape (it turns
-    // into dots that drift away and stays gone). When the ring reaches the character he breathes in, the cells and
-    // the light lean in towards him, and everything lets out. Pressing the character himself also makes him shine
-    // (his halo surges, a bright wave runs along his spiral) and every cell that had gone gathers itself again.
+    // through the water from the finger and shoves the cells; when the ring reaches the character he breathes in (his
+    // spiral draws in towards his head), the cells and the light lean in towards him, and everything lets out (his
+    // spiral lights up). A cell pressed on does not make a ring: it only bursts into dots and stays gone. Pressing
+    // the character himself starts his breath at once and, as he lets it out, a soft ring runs from him and every
+    // cell that had gone gathers itself again.
     import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
     import { createCellField } from '../../composables/useCellField.js';
     import { createHeroSpiral } from '../../composables/useHeroSpiral.js';
@@ -33,6 +34,7 @@
     let life = null;
     let parallax = null;
     let breathTimer = 0;
+    let regenerate = false;      // the breath in progress is the one that brings the cells back
     let unmounted = false;
     let scrollLift = 0;
     let entered = false;
@@ -76,6 +78,17 @@
     // The cells that let go and gather again each ring their own note
     const onFieldEvent = (type) => play(type === 'dissolve' ? 'release' : 'bloom');
 
+    // He lets the breath out: his spiral lights up (the life does that), and if he was asked by a press on him, a soft
+    // ring runs out from him and every cell that had gone comes back
+    const onExhale = () => {
+        if (!regenerate) return;
+        regenerate = false;
+        const box = character.value.getBoundingClientRect();
+        cellField?.ripple(box.left + box.width / 2, box.top + box.height * 0.55, 0.45);
+        cellField?.gather();
+        play('ripple', 0.5);
+    };
+
     const breatheIn = (awayX, awayY) => {
         // The ring jostles him as it goes through, away from where it came from
         life?.nudge(awayX * 150, awayY * 150);
@@ -107,24 +120,32 @@
     const onClick = (event) => {
         if (!entered) return;
         const onSid = onCharacter(event.clientX, event.clientY);
-        if (onSid) {
-            life?.flare();
-            spiral?.flare();
-            cellField?.gather();
-            play('star');
+        if (reducedMotion) {
+            if (onSid) { life?.flare(); spiral?.flare(); play('star'); }
+            return;
         }
-        if (reducedMotion) return;
+        if (onSid) {
+            // He breathes in (the spiral gathers, the field leans in); letting it out is onExhale
+            if (life?.inhale()) {
+                regenerate = true;
+                cellField?.breathe();
+                play('breath');
+            }
+            return;
+        }
+        // A cell: it only bursts (its own sound comes with it), no ring
+        if (cellField?.popCell(event.clientX, event.clientY)) return;
 
         const strength = pressStrength();
         const wave = cellField?.ripple(event.clientX, event.clientY, strength);
         play('ripple', strength);
-        // He breathes in when the ring reaches him (at once if it started on him)
+        // He breathes in when the ring reaches him
         const box = character.value.getBoundingClientRect();
         const dx = box.left + box.width / 2 - event.clientX, dy = box.top + box.height * 0.55 - event.clientY;
         const away = Math.hypot(dx, dy) || 1;
         const reach = away - box.width * 0.3;
         clearTimeout(breathTimer);
-        breathTimer = setTimeout(() => breatheIn(onSid ? 0 : dx / away, onSid ? 0 : dy / away), onSid || !wave ? 0 : Math.max(0, reach / wave.speed) * 1000);
+        breathTimer = setTimeout(() => breatheIn(dx / away, dy / away), wave ? Math.max(0, reach / wave.speed) * 1000 : 0);
     };
 
     const onMove = (event) => {
@@ -136,7 +157,7 @@
     onMounted(() => {
         loadMask();
         spiral = createHeroSpiral(spiralCanvas.value, { animate: !reducedMotion });
-        life = createCharacterLife(character.value, root.value, { spiral, getLift: () => scrollLift });
+        life = createCharacterLife(character.value, root.value, { spiral, getLift: () => scrollLift, onExhale });
 
         createCellField(cellCanvas.value, root.value, { onEvent: onFieldEvent })
             .then((field) => { unmounted ? field.destroy() : (cellField = field); })
