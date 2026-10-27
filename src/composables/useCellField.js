@@ -7,7 +7,7 @@
 // cell back, and breathe() (held in, the cells and matter that are left fall into concentric rings that turn around
 // the character, a cosmic mandala, until it is let go)  draws the whole field in towards the character and lets it out.
 
-import { breathEnvelope, BREATH, INHALE, RISE } from './breathCurve.js';
+import { breathEnvelope, BREATH, INHALE } from './breathCurve.js';
 
 const CELL_TEXTURES = [
     '/assets/hero/cell-one.webp',
@@ -544,8 +544,6 @@ export async function createCellField(canvas, container, { onEvent = null } = {}
         if (orbitW > 0.02 && !ringsAssigned) assignRings();
         else if (orbitW <= 0.02) ringsAssigned = false;
         const pullY = -viewH * 0.04; // the character sits a little below the middle
-        // The orbits are centred on him, and he rises as they form (see RISE)
-        const centerY = pullY + RISE * viewH * orbitW;
         // The orbits fit the frame whatever its shape: the wide ones nearly touch the nearer edge
         const ringBase = Math.min(viewW * 0.5, viewH * 0.42);
         const spot = { x: 0, y: 0, front: 0.5 };
@@ -629,7 +627,7 @@ export async function createCellField(canvas, container, { onEvent = null } = {}
                 orbitSpot(cell.ring, cell.ringAngle);
                 cell.front = spot.front;
                 ax += (spot.x / depthScale - cell.x) * 8 * orbitW - cell.velocity.x * 3 * orbitW;
-                ay += ((centerY + spot.y) / depthScale - cell.y) * 8 * orbitW - cell.velocity.y * 3 * orbitW;
+                ay += ((pullY + spot.y) / depthScale - cell.y) * 8 * orbitW - cell.velocity.y * 3 * orbitW;
             }
             cell.swell = 0;
             ripples.forEach((ripple) => {
@@ -715,7 +713,7 @@ export async function createCellField(canvas, container, { onEvent = null } = {}
                 const depthScale = CAMERA_Z / (CAMERA_Z - particle.z);
                 particle.front = spot.front;
                 ax += (spot.x / depthScale - particle.x) * 9 * orbitW;
-                ay += ((centerY + spot.y) / depthScale - particle.y) * 9 * orbitW;
+                ay += ((pullY + spot.y) / depthScale - particle.y) * 9 * orbitW;
                 // Damped, so it settles on its orbit instead of swinging through it
                 ax -= particle.vx * 4 * orbitW;
                 ay -= particle.vy * 4 * orbitW;
@@ -928,7 +926,7 @@ export async function createCellField(canvas, container, { onEvent = null } = {}
             return true;
         },
         releaseBreath() { breathHeld = false; },
-        // How formed the mandala is, 0..1 (the character rises with it)
+        // How formed the mandala is, 0..1 (the character rises into the middle of it)
         orbit: () => orbitW,
         destroy() {
             stop();

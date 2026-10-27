@@ -6,9 +6,13 @@ export const INHALE = 1.8;
 export const EXHALE = 2.6;
 export const BREATH = INHALE + EXHALE;
 
-// How far Sid rises while the mandala is formed, as a share of the frame's height: he and the centre of the orbits
-// move together, so he is always in the middle of them
-export const RISE = 0.08;
+// How far Sid rises while the mandala is formed, as a share of his own height. The orbits stay where they are, centred
+// on the middle of his picture; his body is not (the mass of it, measured on the picture, is at 0.67 of its height),
+// so he goes up by the difference and his body ends in the middle of the orbits.
+export const RISE = 0.17;
+// and how far he goes to the left, as a share of his own width: the mass of his body is 0.539 of the way across his
+// picture, not 0.5
+export const SIDE = 0.07;
 
 const ease = (k) => k * k * (3 - 2 * k);
 

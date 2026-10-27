@@ -4,7 +4,7 @@
 // Shared by the landing hero and the Vipassana card. It only uses independent transform properties, so it
 // coexists with parallax libraries that own `transform`.
 
-import { breathEnvelope, BREATH, INHALE, RISE } from './breathCurve.js';
+import { breathEnvelope, BREATH, INHALE, RISE, SIDE } from './breathCurve.js';
 
 export function createCharacterLife(particle, hero, { spiral = null, getLift = () => 0, glow = '255, 150, 130', onExhale = null, getRise = () => 0 } = {}) {
     // The pointer, relative to the character: lean is -1..1 across his width, near is 1 right on him and 0 far away
@@ -74,8 +74,8 @@ export function createCharacterLife(particle, hero, { spiral = null, getLift = (
             const floatY = (Math.cos(t * 0.28) - 1) * 4 * ramp; // oval path, about 22s a lap, starting at rest
             const excite = pointer.near;
             const deep = breath * (1 + 0.8 * excite);
-            // getRise is 0..1: how far he has gone up to the middle of the orbits (the mandala of a held breath)
-            particle.style.translate = `${floatX + pointer.x * 14 + shove.x}px ${floatY + getLift() + pointer.y * 8 + shove.y - getRise() * RISE * hero.clientHeight}px`;
+            // getRise is 0..1: how far he has gone up to be in the middle of the orbits (the mandala of a held breath)
+            particle.style.translate = `${floatX + pointer.x * 14 + shove.x - getRise() * SIDE * particle.offsetWidth}px ${floatY + getLift() + pointer.y * 8 + shove.y - getRise() * RISE * particle.offsetHeight}px`;
             particle.style.rotate = `${(pointer.x * 4 + Math.sin(t * 0.45) * ramp).toFixed(3)}deg`;
             particle.style.scale = 1 + (0.022 * deep + 0.03 * excite + 0.05 * pulse + 0.07 * deepBreath) * ramp;
             particle.style.filter = `drop-shadow(0 0 ${(6 + 16 * deep * ramp + 14 * excite + 34 * pulse + 26 * deepBreath).toFixed(1)}px rgba(${glow}, ${Math.min(0.95, 0.12 + 0.38 * deep * ramp + 0.3 * excite + 0.45 * pulse + 0.3 * deepBreath).toFixed(3)}))`;
