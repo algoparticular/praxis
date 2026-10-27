@@ -2,6 +2,7 @@
     import { onMounted, onUpdated, ref } from 'vue';
     import { useRouter } from 'vue-router';
     import { track } from '../analytics.js';
+    import { musicVolume, effectsVolume, setMusicVolume, setEffectsVolume, play } from '../composables/useSound.js';
     import { getAuth, onAuthStateChanged, signOut } from 'firebase/auth';
 
     const isLoggedIn = ref(false);
@@ -16,6 +17,10 @@
     });
 
     const emit = defineEmits(['navigate','langChanged']); 
+
+    // The audio submenu: one slider for the music, one for the effects. Letting go of the effects one plays a sample.
+    const audioOpen = ref(false);
+    const effectsHeard = () => play('tap');
 
     //handle sign out
     const handleSignOut = () => {
@@ -60,6 +65,20 @@
         
         <a v-if="props.hasCollaborate" @click="navigate('/collaborate')">{{ $t("nav.collaborate") }}</a>
 
+        <a class="audioToggle" :class="{open: audioOpen}" role="button" :aria-expanded="audioOpen" @click="audioOpen = !audioOpen">{{ $t("nav.audio") }}</a>
+        <div v-if="audioOpen" id="audioMixer">
+            <label>
+                <span>{{ $t("nav.music") }}</span>
+                <input type="range" min="0" max="100" step="5" :value="Math.round(musicVolume * 100)"
+                    @input="setMusicVolume($event.target.value / 100)" />
+            </label>
+            <label>
+                <span>{{ $t("nav.effects") }}</span>
+                <input type="range" min="0" max="100" step="5" :value="Math.round(effectsVolume * 100)"
+                    @input="setEffectsVolume($event.target.value / 100)" @change="effectsHeard" />
+            </label>
+        </div>
+
         <div id="languageSelect">
             <input type="radio" id="lang-es" value="es" v-model="$i18n.locale" @change="langChanged($i18n.locale)"/>
             <label for="lang-es" :class="{active: $i18n.locale == 'es'}">Español</label>
@@ -102,6 +121,48 @@
     nav a:hover,
     #languageSelect label:hover {
         color: #143246;
+    }
+
+    /* Audio submenu */
+    .audioToggle::after {
+        content: '';
+        display: inline-block;
+        margin-left: 8px;
+        width: 7px;
+        height: 7px;
+        border-right: 2px solid currentColor;
+        border-bottom: 2px solid currentColor;
+        transform: translateY(-3px) rotate(45deg);
+        transition: transform 0.2s ease;
+    }
+
+    .audioToggle.open::after {
+        transform: translateY(1px) rotate(225deg);
+    }
+
+    #audioMixer {
+        gap: 14px;
+    }
+
+    #audioMixer label {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+        font-family: 'Caveat', 'Inter', helvetica, sans-serif;
+        font-size: 19px;
+        color: #F7F8F1;
+    }
+
+    #audioMixer label span {
+        color: #F7F8F1;
+        font: inherit;
+    }
+
+    #audioMixer input[type="range"] {
+        width: 160px;
+        accent-color: #143246;
+        cursor: pointer;
     }
 
     a.logout {

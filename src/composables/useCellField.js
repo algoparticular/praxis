@@ -378,7 +378,7 @@ export async function createCellField(canvas, container, { onEvent = null } = {}
             const distance = Math.hypot(dx, dy) || 0.001;
             const off = Math.abs(distance - ripple.radius);
             if (off >= band) continue;
-            const push = (1 - off / band) ** 2 * (1 - ripple.age / RIPPLE_LIFE) * ripple.strength * unit * 0.05;
+            const push = (1 - off / band) ** 2 * (1 - ripple.age / RIPPLE_LIFE) * ripple.strength * ripple.impact * unit * 0.05;
             bump.x += (dx / distance) * push;
             bump.y += (dy / distance) * push;
         }
@@ -563,8 +563,8 @@ export async function createCellField(canvas, container, { onEvent = null } = {}
                 const off = Math.abs(distance - ripple.radius);
                 if (off < ringBand) {
                     const strength = (1 - off / ringBand) ** 2 * (1 - ripple.age / RIPPLE_LIFE) * ripple.strength;
-                    cell.swell = Math.max(cell.swell, strength);
-                    const push = strength * unit * 2 / cell.mass;
+                    cell.swell = Math.max(cell.swell, Math.min(1, strength * ripple.impact));
+                    const push = strength * ripple.impact * unit * 2 / cell.mass;
                     ax += (dx / distance) * push;
                     ay += (dy / distance) * push;
                 }
@@ -792,8 +792,9 @@ export async function createCellField(canvas, container, { onEvent = null } = {}
         // A ring through the liquid from a viewport point: it shoves the cells and the ones it crosses let go of their
         // shape. Comes back with how fast it travels (px per second) so the caller can time what the ring reaches;
         // null when the field cannot animate.
-        // strength 0..1 is how hard it was pressed: a soft one is a small, faint ring that shoves little
-        ripple(clientX, clientY, strength = 1) {
+        // strength 0..1 is how hard it was pressed: a soft one is a small, faint ring that shoves little. impact (1 or
+        // more) is how hard it throws what it crosses, without making the ring itself any brighter.
+        ripple(clientX, clientY, strength = 1, impact = 1) {
             if (reducedMotion) return null;
             const rect = container.getBoundingClientRect();
             if (!rect.width || !rect.height) return null;
@@ -801,7 +802,7 @@ export async function createCellField(canvas, container, { onEvent = null } = {}
             ripples.push({
                 x: ((clientX - rect.left) / rect.width - 0.5) * viewW,
                 y: (0.5 - (clientY - rect.top) / rect.height) * viewH,
-                age: 0, radius: 0, strength: clamp(strength, 0.1, 1),
+                age: 0, radius: 0, strength: clamp(strength, 0.1, 1), impact,
             });
             return { speed: rippleSpeed * rect.width / viewW };
         },

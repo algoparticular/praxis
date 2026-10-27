@@ -7,8 +7,8 @@
     // spiral lights up), the cells and the light lean in towards him, and everything lets out. A cell pressed on does
     // not make a ring: it only bursts into dots and stays gone. Holding the character himself is holding his breath in:
     // his spiral shortens towards his third eye until it is a point, and the cells and the light lean in; let go, he
-    // breathes out, the spiral comes back out shining, a soft ring runs from him and every cell that had gone gathers
-    // itself again.
+    // breathes out, the spiral comes back out shining, a big ring runs from him throwing everything about and, when it has
+    // crossed, every cell that had gone gathers itself again.
     import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
     import { createCellField } from '../../composables/useCellField.js';
     import { createHeroSpiral } from '../../composables/useHeroSpiral.js';
@@ -35,6 +35,7 @@
     let life = null;
     let parallax = null;
     let breathTimer = 0;
+    let gatherTimer = 0;
     let regenerate = false;      // the breath in progress is the one that brings the cells back
     let sidBreath = false;       // that breath is being held in by a finger on him
     let sidReleasedAt = -Infinity;
@@ -81,15 +82,18 @@
     // The cells that let go and gather again each ring their own note
     const onFieldEvent = (type) => play(type === 'dissolve' ? 'release' : 'bloom');
 
-    // He lets the breath out: his spiral lights up (the life does that), and if he was asked by a press on him, a soft
-    // ring runs out from him and every cell that had gone comes back
+    // He lets the breath out: his spiral lights up (the life does that), and if he was asked by a press on him, the
+    // big ring runs out from him, throwing the cells and the matter about; when it has crossed the frame every cell
+    // that had gone comes back and everything settles into its place
+    const RING_CROSSING = 2300; // ms for the ring to cross the frame
     const onExhale = () => {
         if (!regenerate) return;
         regenerate = false;
         const box = character.value.getBoundingClientRect();
-        cellField?.ripple(box.left + box.width / 2, box.top + box.height * 0.55, 0.45);
-        cellField?.gather();
-        play('ripple', 0.5);
+        cellField?.ripple(box.left + box.width / 2, box.top + box.height * 0.55, 1, 2.6);
+        play('ripple', 1);
+        clearTimeout(gatherTimer);
+        gatherTimer = setTimeout(() => cellField?.gather(), RING_CROSSING);
     };
 
     const breatheIn = (awayX, awayY) => {
@@ -206,6 +210,7 @@
         parallax?.destroy();
         life?.destroy();
         clearTimeout(breathTimer);
+        clearTimeout(gatherTimer);
         root.value?.removeEventListener('touchstart', onTouchStart);
         window.removeEventListener('pointerup', onUp);
         window.removeEventListener('pointercancel', onUp);
