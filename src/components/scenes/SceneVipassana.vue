@@ -2,14 +2,16 @@
     // Vipassana: the character in the cell-filled water of the landing's hero, same life, same spiral.
     // Everything here is shared with the hero: the rays, the three.js cell field, the character picture,
     // the dotted spiral and the character's behaviour (useCharacterLife).
-    // Unlike the hero, it can be touched: pressing the character makes him shine (his halo surges, a bright wave runs
-    // along his spiral, sparks fly) and pressing a cell makes it glow, shoves it and throws sparks of its colour.
+    // Unlike the hero, it can be touched. A press anywhere is one slow breath of the whole scene: a ring runs out
+    // through the water from the finger, shoves the cells and makes each one it crosses let go of its shape (it turns
+    // into dots that drift away and gathers itself again); when the ring reaches the character he breathes in, the
+    // cells and the light lean in towards him, and everything lets out. Pressing the character himself also makes
+    // him shine (his halo surges, a bright wave runs along his spiral).
     import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
     import { createCellField } from '../../composables/useCellField.js';
     import { createHeroSpiral } from '../../composables/useHeroSpiral.js';
     import { createCharacterLife } from '../../composables/useCharacterLife.js';
     import { createParallax, enterLayers } from '../../composables/useParallax.js';
-    import { createGlowSparks } from '../../composables/useGlowSparks.js';
     import { play } from '../../composables/useSound.js';
 
     const props = defineProps({
@@ -24,14 +26,13 @@
     const cellCanvas = ref(null);
     const character = ref(null);
     const spiralCanvas = ref(null);
-    const sparkCanvas = ref(null);
     const cellsFallback = ref(false);
 
     let cellField = null;
     let spiral = null;
     let life = null;
     let parallax = null;
-    let sparks = null;
+    let breathTimer = 0;
     let unmounted = false;
     let scrollLift = 0;
     let entered = false;
@@ -72,21 +73,34 @@
         return false;
     };
 
+    // The cells that let go and gather again each ring their own note
+    const onFieldEvent = (type) => play(type === 'dissolve' ? 'release' : 'bloom');
+
+    const breatheIn = () => {
+        // One breath at a time: a press in the middle of one lets it finish
+        if (life?.inhale()) {
+            cellField?.breathe();
+            play('breath');
+        }
+    };
+
     const onClick = (event) => {
         if (!entered) return;
-        if (onCharacter(event.clientX, event.clientY)) {
+        const onSid = onCharacter(event.clientX, event.clientY);
+        if (onSid) {
             life?.flare();
             spiral?.flare();
-            const box = character.value.getBoundingClientRect();
-            sparks?.burst(event.clientX, event.clientY, { colors: ['#ffb3d6', '#ff9fcb', '#ffe0ee', '#ffffff'], n: 26, speed: 170, radius: box.width * 0.18 });
             play('star');
-            return;
         }
-        const cell = cellField?.poke(event.clientX, event.clientY);
-        if (cell) {
-            sparks?.burst(cell.x, cell.y, { colors: cell.colors, n: 20, speed: 130, radius: Math.max(24, cell.radius) });
-            play('tap');
-        }
+        if (reducedMotion) return;
+
+        const wave = cellField?.ripple(event.clientX, event.clientY);
+        play('ripple');
+        // He breathes in when the ring reaches him (at once if it started on him)
+        const box = character.value.getBoundingClientRect();
+        const reach = Math.hypot(event.clientX - (box.left + box.width / 2), event.clientY - (box.top + box.height * 0.55)) - box.width * 0.3;
+        clearTimeout(breathTimer);
+        breathTimer = setTimeout(breatheIn, onSid || !wave ? 0 : Math.max(0, reach / wave.speed) * 1000);
     };
 
     const onMove = (event) => {
@@ -96,11 +110,10 @@
 
     onMounted(() => {
         loadMask();
-        sparks = createGlowSparks(sparkCanvas.value);
         spiral = createHeroSpiral(spiralCanvas.value, { animate: !reducedMotion });
         life = createCharacterLife(character.value, root.value, { spiral, getLift: () => scrollLift });
 
-        createCellField(cellCanvas.value, root.value)
+        createCellField(cellCanvas.value, root.value, { onEvent: onFieldEvent })
             .then((field) => { unmounted ? field.destroy() : (cellField = field); })
             .catch((error) => {
                 console.warn('Cell field unavailable, using static cells', error);
@@ -120,7 +133,7 @@
         unmounted = true;
         parallax?.destroy();
         life?.destroy();
-        sparks?.destroy();
+        clearTimeout(breathTimer);
         spiral?.destroy();
         cellField?.destroy();
     });
@@ -139,7 +152,6 @@
             <img class="body" src="/assets/hero/character.webp" alt="" draggable="false">
             <canvas class="spiral" ref="spiralCanvas"></canvas>
         </div>
-        <canvas class="sparks" ref="sparkCanvas"></canvas>
     </div>
 </template>
 
@@ -194,14 +206,6 @@
         width: 100%;
         height: auto;
         user-select: none;
-    }
-
-    .sparks {
-        position: absolute;
-        inset: 0;
-        width: 100%;
-        height: 100%;
-        pointer-events: none;
     }
 
     .character .spiral {

@@ -5,6 +5,7 @@
 // (a real or an offline one) so it can be rendered and checked without speakers.
 
 import { BASE_CHORD } from '../data/cardChords.js';
+import { INHALE, EXHALE } from '../composables/breathCurve.js';
 
 const rand = (min, max) => min + Math.random() * (max - min);
 
@@ -289,6 +290,98 @@ export const tap = (ctx, out, time, harmony) => {
 
     bell(ctx, out, time + 0.06, target, harmony.kind === 'm' ? 1.8 : 1.3, 0.05);
     if (harmony.kind === '7') bell(ctx, out, time + 0.07, target * 1.004, 1.2, 0.022);
+};
+
+/* ---------- Vipassana: a ring through the water, cells letting go and gathering again, one slow breath ---------- */
+
+// Like the stars, these come in groups (a ring crosses a dozen cells), so each one counts how many came just before
+// it and is quieter the more there were; one almost on top of the last is not played
+const crowd = (gap, memory) => {
+    let last = -Infinity;
+    let count = 0;
+    return (time) => {
+        const since = time - last;
+        if (since < 0) count = 0;           // another context (an offline render) with its own clock
+        else if (since < gap) return 0;
+        count = count * Math.exp(-since / memory) + 1;
+        last = time;
+        return 1 / (1 + 0.5 * (count - 1));
+    };
+};
+const releaseWeight = crowd(0.1, 2);
+const bloomWeight = crowd(0.14, 2.5);
+
+// A press on the water: a round note that falls like a stone dropped in, a little moving water and a low bowl
+// on the chord's root that stays
+export const ripple = (ctx, out, time, harmony) => {
+    const h = harmony ?? PLAIN;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(hz(h.voice), time);
+    osc.frequency.exponentialRampToValueAtTime(hz(h.voice - 12), time + 0.5);
+    gain.gain.setValueAtTime(0.0001, time);
+    gain.gain.exponentialRampToValueAtTime(0.09, time + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, time + 1.4);
+    osc.connect(gain);
+    gain.connect(out);
+    osc.start(time);
+    osc.stop(time + 1.5);
+    swish(ctx, out, time, { from: 1200, to: 300, duration: 1.3, level: 0.03, q: 0.8 });
+    bell(ctx, out, time + 0.03, hz(h.voice - 12), 3.6, 0.04);
+};
+
+// A cell lets go of its shape: one high, glassy note of the chord (with a detuned twin) and a breath of air going up
+export const release = (ctx, out, time, harmony) => {
+    const weight = releaseWeight(time);
+    if (!weight) return;
+    const h = harmony ?? PLAIN;
+    const midi = any(h.tones(h.voice + 12, 14));
+    bell(ctx, out, time, hz(midi), 2.4, 0.032 * weight);
+    bell(ctx, out, time + 0.012, hz(midi) * 1.004, 2, 0.015 * weight);
+    swish(ctx, out, time, { from: 3500, to: 7000, duration: 1.2, level: 0.007 * weight, q: 0.6 });
+};
+
+// A cell gathers itself again: a low note of the chord that glides up into place and settles with a small bowl
+export const bloom = (ctx, out, time, harmony) => {
+    const weight = bloomWeight(time);
+    if (!weight) return;
+    const h = harmony ?? PLAIN;
+    const target = hz(any(h.tones(h.voice - 12, 14)));
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(target * 0.6, time);
+    osc.frequency.exponentialRampToValueAtTime(target, time + 0.5);
+    gain.gain.setValueAtTime(0.0001, time);
+    gain.gain.exponentialRampToValueAtTime(0.045 * weight, time + 0.25);
+    gain.gain.exponentialRampToValueAtTime(0.0001, time + 1.4);
+    osc.connect(gain);
+    gain.connect(out);
+    osc.start(time);
+    osc.stop(time + 1.5);
+    bell(ctx, out, time + 0.45, target, 2.4, 0.02 * weight);
+};
+
+// One slow breath, the length of breathCurve.js: air that rises as it fills and falls as it goes out, and the chord's
+// root and fifth swelling underneath, low, to peak with the inhale and fade with the exhale
+export const breath = (ctx, out, time, harmony) => {
+    const h = harmony ?? PLAIN;
+    swish(ctx, out, time, { from: 350, to: 1500, duration: INHALE, level: 0.05, q: 0.5 });
+    swish(ctx, out, time + INHALE, { from: 1500, to: 350, duration: EXHALE, level: 0.04, q: 0.5 });
+    [h.bass + 12, h.bass + 19].forEach((midi, i) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = hz(midi);
+        gain.gain.setValueAtTime(0.0001, time);
+        gain.gain.exponentialRampToValueAtTime(0.035 - i * 0.012, time + INHALE);
+        gain.gain.exponentialRampToValueAtTime(0.0001, time + INHALE + EXHALE);
+        osc.connect(gain);
+        gain.connect(out);
+        osc.start(time);
+        osc.stop(time + INHALE + EXHALE + 0.1);
+    });
 };
 
 /* ---------- Ambience ---------- */

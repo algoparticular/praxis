@@ -2,6 +2,11 @@
 // The scene is the inside of a body seen by a tiny character: a watery medium where cells drift on
 // slow currents and the cursor drags the liquid. Cells reuse the hero illustrations as sprites.
 // three is imported on demand so it does not weigh on the first load.
+// On the Vipassana card it can also be touched: ripple() sends a ring through the liquid that shoves the cells and
+// makes each one it crosses let go of its shape (it turns into dots that drift away and gathers itself again), and
+// breathe() draws the whole field in towards the character and lets it out.
+
+import { breathEnvelope, BREATH } from './breathCurve.js';
 
 const CELL_TEXTURES = [
     '/assets/hero/cell-one.webp',
@@ -31,7 +36,7 @@ const sampleCurrent = (x, y, t) => {
     current.y = Math.cos(x * 0.8 + t * 0.27) + Math.cos((x - y) * 0.6 + t * 0.19) * 0.6;
 };
 
-export async function createCellField(canvas, container) {
+export async function createCellField(canvas, container, { onEvent = null } = {}) {
     const THREE = await import('three');
 
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -146,6 +151,9 @@ export async function createCellField(canvas, container) {
             velocity: { x: 0, y: 0 },
             x: 0, y: 0, // current world position, read by the particles
             width: 1, height: 1,
+            // Letting go: 'whole' -> 'out' (turning into dots) -> 'hold' (gone) -> 'in' (gathering again) -> 'whole'.
+            // dis is how far from its shape it is, 0..1
+            state: 'whole', dis: 0, timer: 0, hold: 0, dotsLit: false,
         };
     });
 
@@ -275,8 +283,109 @@ export async function createCellField(canvas, container) {
     rays.renderOrder = -10;
     scene.add(rays);
 
+    // ---- Dots: what a cell turns into while it has let go of its shape. They share the particles' material.
+    const DOTS = smallScreen ? 34 : 54;
+    const dotCount = cells.length * DOTS;
+    const dotPositions = new Float32Array(dotCount * 3);
+    const dotSizes = new Float32Array(dotCount);
+    const dotAlphas = new Float32Array(dotCount);
+    const dotColors = new Float32Array(dotCount * 3);
+    const dots = [];
+    cells.forEach((cell, c) => {
+        const [r, g, b] = PALETTE[cell.textureIndex];
+        for (let k = 0; k < DOTS; k++) {
+            dotColors.set([r + (1 - r) * 0.4, g + (1 - g) * 0.4, b + (1 - b) * 0.4], (c * DOTS + k) * 3);
+            dots.push({
+                angle: rand(0, Math.PI * 2), reach: Math.sqrt(Math.random()),
+                dx: rand(-1, 1), dy: rand(0.2, 1), delay: rand(0, 0.25), phase: rand(0, Math.PI * 2),
+                size: 0.008 + Math.random() ** 2 * 0.018, bright: rand(0.6, 1),
+            });
+        }
+    });
+    const dotGeometry = new THREE.BufferGeometry();
+    dotGeometry.setAttribute('position', new THREE.BufferAttribute(dotPositions, 3));
+    dotGeometry.setAttribute('size', new THREE.BufferAttribute(dotSizes, 1));
+    dotGeometry.setAttribute('alpha', new THREE.BufferAttribute(dotAlphas, 1));
+    dotGeometry.setAttribute('aColor', new THREE.BufferAttribute(dotColors, 3));
+    const dotPoints = new THREE.Points(dotGeometry, pointMaterial);
+    dotPoints.frustumCulled = false;
+    root.add(dotPoints);
+
+    // ---- Ripples: rings of light that cross the whole frame (up to four at once)
+    const MAX_RIPPLES = 4;
+    const RIPPLE_LIFE = 3.2;
+    const ripples = [];
+    const rippleUniform = Array.from({ length: MAX_RIPPLES }, () => new THREE.Vector4());
+    const ringMaterial = new THREE.ShaderMaterial({
+        transparent: true,
+        depthTest: false,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+        uniforms: { uAspect: { value: 1 }, uRipples: { value: rippleUniform } },
+        vertexShader: `
+            varying vec2 vUv;
+            void main() {
+                vUv = uv;
+                gl_Position = vec4(position.xy, 0.0, 1.0);
+            }`,
+        fragmentShader: `
+            varying vec2 vUv;
+            uniform float uAspect;
+            uniform vec4 uRipples[${MAX_RIPPLES}];
+            void main() {
+                vec2 p = vec2(vUv.x * uAspect, vUv.y);
+                float ring = 0.0;
+                for (int i = 0; i < ${MAX_RIPPLES}; i++) {
+                    vec4 r = uRipples[i];
+                    if (r.w <= 0.0) continue;
+                    float x = distance(p, r.xy) - r.z;
+                    float w = 0.012 + r.z * 0.02;
+                    float front = exp(-(x * x) / (w * w));
+                    float t = x + w * 3.5;
+                    float tail = exp(-(t * t) / (w * w * 5.0)) * 0.35;
+                    ring += (front * 0.9 + tail) * r.w;
+                }
+                vec3 color = mix(vec3(1.0, 0.72, 0.86), vec3(0.62, 0.95, 1.0), clamp(vUv.y, 0.0, 1.0));
+                gl_FragColor = vec4(color, ring * 0.4);
+            }`,
+    });
+    const ring = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), ringMaterial);
+    ring.frustumCulled = false;
+    ring.renderOrder = 5;
+    scene.add(ring);
+
+    // ---- Letting go: how long each stretch of it takes (seconds)
+    const OUT = 2.2, HOLD = 1, IN = 2.8;
+    const ease = (k) => k * k * (3 - 2 * k);
+    const dissolve = (cell) => {
+        if (cell.state !== 'whole') return;
+        cell.state = 'out';
+        cell.timer = 0;
+        cell.hold = HOLD + Math.random() * 0.8;
+        onEvent?.('dissolve', cell);
+    };
+    const stepCell = (cell, dt) => {
+        if (cell.state === 'out') {
+            cell.timer += dt / OUT;
+            cell.dis = ease(Math.min(1, cell.timer));
+            if (cell.timer >= 1) { cell.state = 'hold'; cell.timer = 0; }
+        } else if (cell.state === 'hold') {
+            cell.timer += dt;
+            if (cell.timer >= cell.hold) { cell.state = 'in'; cell.timer = 0; onEvent?.('form', cell); }
+        } else if (cell.state === 'in') {
+            cell.timer += dt / IN;
+            cell.dis = 1 - ease(Math.min(1, cell.timer));
+            if (cell.timer >= 1) { cell.state = 'whole'; cell.dis = 0; }
+        }
+    };
+
+    // The breath: -1 when idle, else seconds since it began
+    let breathT = -1;
+    let breathE = 0;
+
     // ---- Layout
     let viewW = 1, viewH = 1, unit = 1;
+    let rippleSpeed = 1; // world units per second: the ring crosses the frame's diagonal in 2.6s
 
     const layout = () => {
         const width = container.clientWidth;
@@ -289,6 +398,8 @@ export async function createCellField(canvas, container) {
         viewW = viewH * camera.aspect;
         unit = Math.min(viewW, viewH);
         raysMaterial.uniforms.uAspect.value = camera.aspect;
+        ringMaterial.uniforms.uAspect.value = camera.aspect;
+        rippleSpeed = Math.hypot(viewW, viewH) / 2.6;
         pointMaterial.uniforms.uPixelsPerUnit.value = renderer.domElement.height / (2 * Math.tan((FOV * Math.PI) / 360));
 
         cells.forEach((cell) => {
@@ -297,6 +408,8 @@ export async function createCellField(canvas, container) {
         });
         particles.forEach((particle, i) => { sizes[i] = particle.size * unit; });
         geometry.attributes.size.needsUpdate = true;
+        dots.forEach((dot, i) => { dotSizes[i] = dot.size * unit; });
+        dotGeometry.attributes.size.needsUpdate = true;
     };
 
     // ---- Input: cursor, gyroscope, scroll
@@ -342,13 +455,31 @@ export async function createCellField(canvas, container) {
         camera.position.y = parallax.y * unit * 0.05 + Math.cos(time * 0.13) * unit * 0.015;
         camera.lookAt(0, 0, 0);
 
+        if (breathT >= 0) breathT = breathT + dt < BREATH ? breathT + dt : -1;
+        breathE = breathEnvelope(breathT);
+
         raysMaterial.uniforms.uTime.value = time;
         raysMaterial.uniforms.uShift.value = parallax.x * 0.05;
-        raysMaterial.uniforms.uFade.value = 1 - scrollProgress * 0.85;
+        raysMaterial.uniforms.uFade.value = (1 - scrollProgress * 0.85) * (1 + 0.7 * breathE);
 
-        // The field rises and approaches while the hero scrolls away
+        // The field rises and approaches while the hero scrolls away, and a breath brings it a little closer
         root.position.y = scrollProgress * unit * 0.8;
-        root.position.z = scrollProgress * 3;
+        root.position.z = scrollProgress * 3 + breathE * 0.6;
+
+        // Rings: they grow, fade and leave; the uniforms are read by the shader in uv units (a frame's height is 1)
+        for (let i = ripples.length - 1; i >= 0; i--) {
+            ripples[i].age += dt;
+            ripples[i].radius = ripples[i].age * rippleSpeed;
+            if (ripples[i].age >= RIPPLE_LIFE) ripples.splice(i, 1);
+        }
+        rippleUniform.forEach((slot, i) => {
+            const ripple = ripples[i];
+            if (!ripple) { slot.set(0, 0, 0, 0); return; }
+            const life = 1 - ripple.age / RIPPLE_LIFE;
+            slot.set((ripple.x / viewW + 0.5) * camera.aspect, ripple.y / viewH + 0.5, ripple.radius / viewH, life ** 1.4 * Math.min(1, ripple.age * 12));
+        });
+        const ringBand = unit * 0.1;
+        const pullY = -viewH * 0.04; // the character sits a little below the middle
 
         // How fast the cursor drags the liquid, limited so a flick does not throw everything away
         const px = pointer.x * viewW * 0.5;
@@ -380,6 +511,28 @@ export async function createCellField(canvas, container) {
                 ay += (wake.y * 0.9 + (dy / distance) * unit * 0.8) * falloff / cell.mass;
             }
 
+            // The breath draws the cells in towards the character and lets them out
+            ax += (0 - cell.x) * 0.35 * breathE;
+            ay += (pullY - cell.y) * 0.35 * breathE;
+
+            // A ring shoves a cell as it goes through it, and a cell it reaches lets go of its shape
+            const depthScale = CAMERA_Z / (CAMERA_Z - cell.z);
+            ripples.forEach((ripple) => {
+                const dx = cell.x * depthScale - ripple.x, dy = cell.y * depthScale - ripple.y;
+                const distance = Math.hypot(dx, dy) || 0.001;
+                if (!ripple.hit.has(cell) && distance - cell.width * 0.5 * depthScale <= ripple.radius && ripple.radius <= unit * 0.85) {
+                    ripple.hit.add(cell);
+                    dissolve(cell);
+                }
+                const off = Math.abs(distance - ripple.radius);
+                if (off < ringBand) {
+                    const push = (1 - off / ringBand) ** 2 * (1 - ripple.age / RIPPLE_LIFE) * unit * 2 / cell.mass;
+                    ax += (dx / distance) * push;
+                    ay += (dy / distance) * push;
+                }
+            });
+            stepCell(cell, dt);
+
             cell.velocity.x += ax * dt;
             cell.velocity.y += ay * dt;
             cell.offset.x += cell.velocity.x * dt;
@@ -393,16 +546,18 @@ export async function createCellField(canvas, container) {
             cell.flare = cell.flare > 0.002 ? cell.flare * Math.exp(-dt * 1.3) : 0;
             const glowing = cell.flare;
             cell.sprite.material.color.copy(cell.baseColor).lerp(WHITE, glowing * 0.7);
-            cell.sprite.material.opacity = cell.baseOpacity + (1 - cell.baseOpacity) * glowing;
-            cell.halo.visible = glowing > 0.01;
+            const share = 1 - ease(clamp(cell.dis / 0.55, 0, 1)); // how much of its shape is left
+            cell.sprite.material.opacity = (cell.baseOpacity + (1 - cell.baseOpacity) * glowing) * share;
+            cell.sprite.visible = share > 0.01;
+            cell.halo.visible = glowing > 0.01 && share > 0.05;
             if (cell.halo.visible) {
                 cell.halo.position.set(cell.x, cell.y, cell.z - 0.01);
                 cell.halo.scale.setScalar(cell.height * (2.4 + 1.2 * (1 - glowing)));
-                cell.halo.material.opacity = glowing * 0.85;
+                cell.halo.material.opacity = glowing * 0.85 * share;
             }
 
             // Soft bodies: they breathe, squashing and stretching, and sway instead of spinning
-            const breath = Math.sin(time * cell.pulse + cell.phase) * 0.04 + glowing * 0.09;
+            const breath = Math.sin(time * cell.pulse + cell.phase) * 0.04 + glowing * 0.09 + cell.dis * 0.12;
             cell.sprite.scale.set(cell.width * (1 + breath) * cell.flip, cell.height * (1 - breath), 1);
             cell.sprite.material.rotation = cell.baseRotation + Math.sin(time * cell.sway + cell.phase) * 0.25;
         });
@@ -432,6 +587,9 @@ export async function createCellField(canvas, container) {
                 ay += (wake.y * 2.4 + (dy / distance) * unit * 1.6) * falloff;
             }
 
+            ax += (0 - particle.x) * 0.8 * breathE;
+            ay += (pullY - particle.y) * 0.8 * breathE;
+
             particle.vx += ax * dt;
             particle.vy += ay * dt;
             particle.x += particle.vx * dt;
@@ -454,6 +612,31 @@ export async function createCellField(canvas, container) {
         });
         geometry.attributes.position.needsUpdate = true;
         geometry.attributes.alpha.needsUpdate = true;
+
+        // The dots of the cells that have let go: they leave their shape upwards on the current and fade, and come back the same way
+        let dotsChanged = false;
+        cells.forEach((cell, c) => {
+            if (cell.state === 'whole' && !cell.dotsLit) return;
+            dotsChanged = true;
+            cell.dotsLit = cell.state !== 'whole';
+            sampleCurrent(cell.x * 0.35, cell.y * 0.35, time);
+            for (let k = 0; k < DOTS; k++) {
+                const i = c * DOTS + k;
+                const dot = dots[i];
+                const travel = cell.dotsLit ? clamp(cell.dis * 1.25 - dot.delay, 0, 1) : 0;
+                const radius = cell.width * 0.5 * dot.reach * 0.9;
+                dotPositions[i * 3] = cell.x + Math.cos(dot.angle) * radius
+                    + (dot.dx * 0.5 + current.x * 0.4 + Math.sin(time * 1.3 + dot.phase) * 0.05) * unit * 0.5 * travel;
+                dotPositions[i * 3 + 1] = cell.y + Math.sin(dot.angle) * radius * 0.85
+                    + (0.35 + dot.dy * 0.6 + current.y * 0.2) * unit * 0.55 * travel;
+                dotPositions[i * 3 + 2] = cell.z + 0.02;
+                dotAlphas[i] = Math.sin(Math.PI * travel) ** 0.8 * 0.9 * dot.bright;
+            }
+        });
+        if (dotsChanged) {
+            dotGeometry.attributes.position.needsUpdate = true;
+            dotGeometry.attributes.alpha.needsUpdate = true;
+        }
     };
 
     // Particles start where they belong instead of flying out of the centre
@@ -532,7 +715,7 @@ export async function createCellField(canvas, container) {
         scene.updateMatrixWorld();
         raycaster.setFromCamera(ndc, camera);
         // The sprites are quads: only the round body of the cell counts
-        const hit = raycaster.intersectObjects(sprites).find(({ uv }) => uv && Math.hypot(uv.x - 0.5, uv.y - 0.5) <= 0.5);
+        const hit = raycaster.intersectObjects(sprites.filter((sprite) => sprite.visible)).find(({ uv }) => uv && Math.hypot(uv.x - 0.5, uv.y - 0.5) <= 0.5);
         return hit ? cells[sprites.indexOf(hit.object)] : null;
     };
 
@@ -563,6 +746,28 @@ export async function createCellField(canvas, container) {
                 colors: SPARK_COLORS[cell.textureIndex],
             };
         },
+        // A ring through the liquid from a viewport point: it shoves the cells and the ones it crosses let go of their
+        // shape. Comes back with how fast it travels (px per second) so the caller can time what the ring reaches;
+        // null when the field cannot animate.
+        ripple(clientX, clientY) {
+            if (reducedMotion) return null;
+            const rect = container.getBoundingClientRect();
+            if (!rect.width || !rect.height) return null;
+            if (ripples.length >= MAX_RIPPLES) ripples.shift();
+            ripples.push({
+                x: ((clientX - rect.left) / rect.width - 0.5) * viewW,
+                y: (0.5 - (clientY - rect.top) / rect.height) * viewH,
+                age: 0, radius: 0, hit: new Set(),
+            });
+            return { speed: rippleSpeed * rect.width / viewW };
+        },
+        // One slow breath (breathCurve.js): the cells, the matter and the light lean in towards the character and let go.
+        // False when one is already going.
+        breathe() {
+            if (reducedMotion || breathT >= 0) return false;
+            breathT = 0;
+            return true;
+        },
         destroy() {
             stop();
             observer.disconnect();
@@ -576,6 +781,9 @@ export async function createCellField(canvas, container) {
             canvas.removeEventListener('webglcontextlost', onContextLost);
             canvas.removeEventListener('webglcontextrestored', onContextRestored);
             geometry.dispose();
+            dotGeometry.dispose();
+            ring.geometry.dispose();
+            ringMaterial.dispose();
             pointMaterial.dispose();
             rays.geometry.dispose();
             raysMaterial.dispose();

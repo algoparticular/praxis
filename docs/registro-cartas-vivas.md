@@ -14,7 +14,7 @@ Estado a 2026-10-26. Verbos: ver `verbos-y-personajes.md` (ya guardados en `card
 | 25 | Hogar | Regular | `SceneHogar` | Hongos de la corona lanzan esporas; interior acuoso con orgánulos y una larva (un Sama) que camina y rebota | `tap` | pendiente | Arraigar |
 | 27 | Paciencia | Regular | `ScenePaciencia` | Mantener apretada la piña: crecen raíces doradas bajo el campo de hongos (se quedan), brilla, y el rulito sobre el Sama del centro nace como punto, se estira y hace el lazo, y florece (con chispas y una oleada de esporas azules); al soltar, la cola lo alcanza hasta que desaparece. Cada rulito sale distinto | `star` | pendiente | Arraigar |
 | 29 | Sincronicidad | Regular | `SceneSincronicidad` | Secuencia de cuatro burbujas que se iluminan en ciclo de 11 s; tocar una reinicia la secuencia desde ella | `tap` | pendiente | Ver |
-| 31 | Vipassana | Especial | `SceneVipassana` | El personaje brilla y una onda recorre su espiral; las células se empujan y sueltan chispas de su color | `star`, `tap` | pendiente | Soltar |
+| 31 | Vipassana | Especial | `SceneVipassana` | Un toque es una respiración: una onda recorre el agua y empuja las células, cada una que cruza se deshace en puntos y se vuelve a formar; al llegar la onda a Sid, él inhala y el campo se acerca y se suelta. Sobre Sid también brilla su espiral | `ripple`, `release`, `bloom`, `breath`, `star` | pendiente | Soltar |
 
 Todas: parallax por puntero / giroscopio / scroll, entrada por capas, teclado (Enter / espacio) y `prefers-reduced-motion`.
 
