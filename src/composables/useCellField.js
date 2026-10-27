@@ -442,6 +442,9 @@ export async function createCellField(canvas, container, { onEvent = null } = {}
     const orbitSpeed = (k) => (orbitOuter(k) ? 0.12 : 0.2) * (orbitOuter(k) ? -1 : 1); // rad/s: slow, the near ones quicker
     const orbitTilt = (k) => k * Math.PI / 6;
     const ORBIT_FLATNESS = 0.38;                                                  // semi-minor over semi-major
+    // The enormous cells shrink while the mandala is formed so that Sid is what matters; the ones already this small
+    // or smaller (a cell's size is its height over the frame's short side) stay as they are. They grow back as it fades.
+    const ORBIT_CELL_MAX = 0.15;
     // Each orbit holds electrons in proportion to its length, evenly spaced along it (the last one takes the rest)
     const sizeSum = Array.from({ length: ORBITS }, (_, k) => orbitSize(k)).reduce((a, b) => a + b, 0);
     const perOrbit = Array.from({ length: ORBITS }, (_, k) => Math.round(particles.length * orbitSize(k) / sizeSum));
@@ -672,7 +675,7 @@ export async function createCellField(canvas, container, { onEvent = null } = {}
             // Soft bodies: they breathe, squashing and stretching, and sway instead of spinning
             const breath = Math.sin(time * cell.pulse + cell.phase) * 0.04 + glowing * 0.09 + cell.dis * 0.12;
             const swell = cell.swell * 0.14; // the ring lifts it as it goes through
-            const nearness = 1 + 0.6 * depthLook;
+            const nearness = (1 + 0.6 * depthLook) * (1 + orbitW * (Math.min(1, ORBIT_CELL_MAX / cell.size) - 1));
             cell.sprite.scale.set(cell.width * (1 + breath + swell) * cell.flip * nearness, cell.height * (1 - breath + swell) * nearness, 1);
             cell.sprite.material.rotation = cell.baseRotation + Math.sin(time * cell.sway + cell.phase) * 0.25;
         });
