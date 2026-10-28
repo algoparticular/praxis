@@ -63,7 +63,7 @@ Aportan riqueza y complejidad, ideales para desbloquear energía y trabajar la t
 La conversación detalla solo **Do7** y da el uso de **Mi7**. Todo lo demás de esta sección está **inferido** con el mismo método que usa la conversación en los acordes que sí describe:
 - **Colores:** los de los chakras de sus notas. Las notas rebajadas de un acorde menor o disminuido van con el color "apagado" u "oscuro", como en los menores del chat.
 - **Aroma:** uno del chakra de la fundamental y otro del chakra de la nota que caracteriza al acorde, que en las séptimas es la propia séptima. Es el patrón de los mayores del chat (Do mayor: sándalo de la raíz y bergamota del plexo).
-- **Uso:** el del acorde base, más lo que aporta el chakra de la séptima y el tipo de séptima.
+- **Uso:** lo decide la ley de cada tipo, no una regla única para todas las séptimas. La **dominante** es una tensión que resuelve: va al acorde que está una quinta abajo, y su séptima baja un paso. Su uso es el del acorde base en camino hacia ese destino. La **mayor** y la **menor** son estables: no piden ir a ningún lado, así que su uso es el del acorde base con el color que suma el chakra de la séptima, y resuenan como cualquier otro acorde. La **disminuida** es la tensión sin centro.
 
 **Aromas por chakra**, tal como los usa la conversación:
 
@@ -81,7 +81,7 @@ La conversación detalla solo **Do7** y da el uso de **Mi7**. Todo lo demás de 
 - **Fundamental:** el chakra que manda, la base energética.
 - **Tercera:** el carácter. La mayor ilumina y la menor mira hacia adentro.
 - **Quinta:** estabilidad, sostiene la estructura.
-- **Séptima:** el chakra que se suma para mover y transformar. Es una tensión que pide ir hacia algún lado.
+- **Séptima:** el chakra que se suma. En la séptima dominante es una tensión que pide resolver; en la mayor y en la menor es un color estable, que no pide ir a ningún lado.
 
 Una nota con alteración conserva el chakra de su letra. Por eso, en los siete acordes naturales, las cuatro séptimas que se arman sobre una misma fundamental tocan los mismos cuatro chakras. Lo que cambia es cómo se relacionan entre sí.
 
@@ -89,19 +89,21 @@ Una nota con alteración conserva el chakra de su letra. Por eso, en los siete a
 
 Es una tensión que pide resolverse: transformación en movimiento, empuja hacia lo próximo. Las cartas usan seis acordes de este tipo; también usan la séptima mayor y la menor.
 
+**La ley de resolución** es lo que permite inferir su uso: el acorde va al que está una quinta abajo (Sol7 va a Do), su séptima baja un paso (Fa baja a Mi) y su tercera, la sensible, sube a la fundamental del destino (Si sube a Do). Así que cada séptima dominante es su acorde base en camino hacia otro chakra. Do7 y Mi7 traen su uso del chat; acá se les suma el destino.
+
 | Acorde | Notas → chakras | Color | Aroma | Uso | Cartas |
 |---|---|---|---|---|---|
-| Do7 (C7) | Do (raíz), Mi (plexo), Sol (garganta), Sib (corona) | rojo, amarillo, azul claro, violeta | bergamota, sándalo | Expansión creativa con estabilidad y confianza. *(chat)* | Creatividad |
-| Re7 (D7) | Re (sacro), Fa# (corazón), La (tercer ojo), Do (raíz) | naranja, verde, índigo, rojo | ylang-ylang, sándalo | *Inferido:* la creatividad y la apertura emocional de Re mayor, con la raíz como séptima que pide bajarlas a tierra. Transformar lo que se siente en un paso concreto. | Desafío |
-| Mi7 (E7) | Mi (plexo), Sol# (garganta), Si (corona), Re (sacro) | amarillo, azul claro, violeta, naranja *(inferido)* | limón, jazmín *(inferido)* | Integra la fuerza interior con la expresión espiritual. *(chat)* | Coraje |
-| Fa7 (F7) | Fa (corazón), La (tercer ojo), Do (raíz), Mib (plexo) | verde, índigo, rojo, amarillo | rosa, bergamota | *Inferido:* el amor anclado de Fa mayor, con el plexo como séptima que lo pone en acción. Amor que se vuelve voluntad. | Ciclos |
-| Sol7 (G7) | Sol (garganta), Si (corona), Re (sacro), Fa (corazón) | azul claro, violeta, naranja, verde | menta, rosa | *Inferido:* la expresión y la conexión espiritual de Sol mayor, con el corazón como séptima. Hablar y actuar escuchando al corazón; la voz se transforma cuando nace de lo que se siente. | Sila, Sacca |
-| La7 (A7) | La (tercer ojo), Do# (raíz), Mi (plexo), Sol (garganta) | índigo, rojo, amarillo, azul claro | romero, menta | *Inferido:* la intuición con confianza de La mayor, con la garganta como séptima. La visión que busca su voz y se dice. | — |
-| Si7 (B7) | Si (corona), Re# (sacro), Fa# (corazón), La (tercer ojo) | violeta, naranja, verde, índigo | mirra, salvia | *Inferido:* la conexión trascendental de Si mayor, con el tercer ojo como séptima. Evolución espiritual guiada por la intuición. | Evolución Espiritual |
+| Do7 (C7) | Do (raíz), Mi (plexo), Sol (garganta), Sib (corona) | rojo, amarillo, azul claro, violeta | bergamota, sándalo | Expansión creativa con estabilidad y confianza. *(chat)* Va a Fa mayor: el corazón. | Creatividad |
+| Re7 (D7) | Re (sacro), Fa# (corazón), La (tercer ojo), Do (raíz) | naranja, verde, índigo, rojo | ylang-ylang, sándalo | *Inferido (resolución):* va a Sol mayor, la garganta. La creatividad y la apertura emocional de Re mayor piden decirse. Su séptima, Do (raíz), baja a Si (corona): lo que estaba aferrado se suelta hacia arriba. | Desafío |
+| Mi7 (E7) | Mi (plexo), Sol# (garganta), Si (corona), Re (sacro) | amarillo, azul claro, violeta, naranja *(inferido)* | limón, jazmín *(inferido)* | Integra la fuerza interior con la expresión espiritual. *(chat)* Va a La mayor: el tercer ojo. | Coraje |
+| Fa7 (F7) | Fa (corazón), La (tercer ojo), Do (raíz), Mib (plexo) | verde, índigo, rojo, amarillo | rosa, bergamota | *Inferido (resolución):* va a Sib mayor, la corona. El amor anclado de Fa mayor empuja hacia lo trascendente. Su séptima, Mib (plexo), baja a Re (sacro): la voluntad se ablanda en emoción. Cerrar un ciclo desde el corazón para abrir el siguiente más arriba. | Ciclos |
+| Sol7 (G7) | Sol (garganta), Si (corona), Re (sacro), Fa (corazón) | azul claro, violeta, naranja, verde | menta, rosa | *Inferido (resolución):* va a Do mayor, la raíz. La expresión y la conexión espiritual de Sol mayor bajan a tierra. Su séptima, Fa (corazón), baja a Mi (plexo): lo que se siente se vuelve fuerza para actuar. La voz del alma hecha acto. | Sila, Sacca |
+| La7 (A7) | La (tercer ojo), Do# (raíz), Mi (plexo), Sol (garganta) | índigo, rojo, amarillo, azul claro | romero, menta | *Inferido (resolución):* va a Re mayor, el sacro. La intuición con confianza de La mayor se vuelve movimiento y emoción. Su séptima, Sol (garganta), baja a Fa# (corazón): lo que se dice se ablanda en el corazón. | — |
+| Si7 (B7) | Si (corona), Re# (sacro), Fa# (corazón), La (tercer ojo) | violeta, naranja, verde, índigo | mirra, salvia | *Inferido (resolución):* va a Mi mayor, el plexo. La conexión trascendental de Si mayor baja a la voluntad y al fuego. Su séptima, La (tercer ojo), baja a Sol# (garganta): la visión se vuelve palabra. La evolución espiritual que se encarna. | Evolución Espiritual |
 
 #### Séptima mayor (maj7): mayor con séptima mayor (inferido)
 
-La séptima queda medio tono debajo de la octava. Suena luminosa y contemplativa, con una nostalgia serena: es expansión en calma, como un sueño despierto. La usan Khanti (Remaj7), Metta (Famaj7), Armonía (Domaj7), Celebración (Mimaj7), Gratitud (Solmaj7) y Vipassana (Simaj7).
+La séptima queda medio tono debajo de la octava. Suena luminosa y contemplativa, con una nostalgia serena: es expansión en calma, como un sueño despierto. La usan Khanti (Remaj7), Metta (Famaj7), Armonía (Domaj7), Celebración (Mimaj7), Gratitud (Solmaj7) y Vipassana (Simaj7). Es estable: no pide resolver, así que resuena como cualquier otro acorde, con el color de su séptima.
 
 | Acorde | Notas → chakras | Color | Aroma | Uso |
 |---|---|---|---|---|
@@ -115,7 +117,7 @@ La séptima queda medio tono debajo de la octava. Suena luminosa y contemplativa
 
 #### Séptima menor (m7): menor con séptima menor (inferido)
 
-Es la introspección del acorde menor, más tibia y menos melancólica: una reflexión serena que deja una puerta abierta. La usan Pañña (Lam7), Honestidad (Solm7), Esperanza (Sim7) y Transformación (Rem7).
+Es la introspección del acorde menor, más tibia y menos melancólica: una reflexión serena que deja una puerta abierta. La usan Pañña (Lam7), Honestidad (Solm7), Esperanza (Sim7) y Transformación (Rem7). También es estable: resuena como cualquier otro acorde, con el color de su séptima.
 
 | Acorde | Notas → chakras | Color | Aroma | Uso |
 |---|---|---|---|---|
@@ -183,6 +185,7 @@ También es la base que mejor se lleva con las cartas. Comparte al menos una not
   - El fondo y las campanitas quedan en el acorde de la carta.
   - Cada toque (`tap`) cae en una nota del acorde, así que tocar varias veces arma una melodía.
   - Cada estrella (`star`) rasguea el acorde. El mayor brilla, el menor es más lento y suave, y la séptima "late".
+  - Cuando aparece el rulito de un juego suena `rulito`: el acorde sube de la fundamental a la fundamental de arriba y ahí suena entero, una octava sobre el de la carta (la ley de octava).
 - **Al salir de la carta**, el sonido vuelve a Sol mayor.
 
 ## Secuencias para trabajar en uno mismo
@@ -195,12 +198,14 @@ La conversación propone tres progresiones, parte de la misma teoría:
 2. **Liberar emociones:** Re menor → La menor → Mi menor → Fa mayor. Invita a fluir con las emociones y a conectar con la intuición.
 3. **Conexión espiritual:** Si menor → Sol mayor → Mi7 → La menor. Promueve introspección, expresión y conexión trascendental.
 
-### La ley de octava
+### La ley de octava (Gurdjieff)
 
-Gurdjieff describe toda evolución como una octava que sube de do a do. Hay dos lugares, mi–fa y si–do, donde el proceso no puede seguir con su propia energía: necesita un choque que venga de afuera, y el de si–do tiene que ser más fuerte. En la escala de Do mayor esos son justo los dos semitonos: en el piano de la pestaña Teoría, los dos lugares donde no hay tecla negra. Lo que sigue es lectura nuestra, no algo que Gurdjieff diga de los chakras.
+Gurdjieff describe toda evolución como una octava que sube de do a do (la ley de siete). Hay dos lugares, **mi-fa** y **si-do**, donde el proceso no puede seguir con su propia energía: necesita un "choque" que venga de afuera. El de si-do tiene que ser más fuerte, porque las vibraciones son más altas. En la escala de Do mayor esos son justo los dos semitonos: en un piano, los dos lugares donde no hay una tecla negra entre dos blancas.
 
-- **Mi–fa: de Kätus a Vulpes.** Del plexo, la voluntad propia, al corazón. El verbo de Vulpes es Dar y recibir: lo que hace falta para cruzar viene de otro.
-- **Si–do: de Particular a la octava siguiente.** De la corona al do de arriba: la raíz de un nivel nuevo. Es el choque más grande, el que cierra una octava y abre otra.
-- **El rulito suena en la octava siguiente.** Completar un gesto es llegar al do de arriba: cuando aparece el rulito, el acorde de la carta sube hasta su fundamental una octava más alta y ahí suena entero. Ya está en la app.
+En nuestro mapa (esto es lectura nuestra, no algo que Gurdjieff diga de los chakras):
+- **Mi-fa** es el paso de Kätus (plexo, la voluntad propia) a Vulpes (corazón). Y el verbo de Vulpes es Dar y recibir: lo que hace falta para cruzar viene de otro.
+- **Si-do** es el paso de Particular (corona) a la octava siguiente: el do de arriba, la raíz de un nivel nuevo.
 
-Para las secuencias (por diseñar): una secuencia que suba por los chakras necesitaría un gesto distinto en los dos pasos sin tecla negra. Mi–fa podría pedir algo de otro, como en Dar y recibir, y si–do, el choque más grande, cerrar la octava.
+Qué hace con esto la app y qué podría hacer:
+- **El rulito suena en la octava siguiente** (hecho, `rulito` en `src/audio/synth.js`): completar un gesto es llegar al do de arriba, así que el cierre es el acorde de la carta subiendo hasta su fundamental una octava más alta.
+- **Secuencias** (por hacer): una secuencia de acordes que suba por los chakras necesitaría un gesto distinto en los dos pasos sin tecla negra; mi-fa podría pedir algo de otro (dar y recibir) y si-do, el choque más grande, cerrar la octava.

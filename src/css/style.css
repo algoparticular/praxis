@@ -644,7 +644,7 @@ button.secondary.fix {
 }
 
 .formWrapper .form span {
-  color: #F18B7E;
+  color: #FF6F61;
 }
 
 .formWrapper .form input {
@@ -659,7 +659,7 @@ button.secondary.fix {
 }
 
 .formWrapper .form input:hover {
-  border-color: #F4844C;
+  border-color: #FF6F61;
   -webkit-transition: all 250ms ease-out;
   transition: all 250ms ease-out;
 }
@@ -731,8 +731,8 @@ button.secondary.fix {
 }
 
 #notFound .button:hover {
-  color: #E9EDD8;
-  background: #F4844C;
+  color: #143246;
+  background: #FF6F61;
 }
 
 #notFound .textContainer {

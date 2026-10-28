@@ -2,20 +2,13 @@
     import { onMounted, ref } from 'vue';  
     import OracleItem from "./OracleItem.vue";
     import { animate } from "motion";
+    import { CHAKRA_WHEEL } from "../data/chakraColors.js";
 
     const props = defineProps({
         cardsDrawn: Array
     });
 
-    const colorWheel = ref([
-                    '#E49414',
-                    '#F55F4B',
-                    '#FF7E39',
-                    '#FFF04D',
-                    '#75D090',
-                    '#46DBDD',
-                    '#B112B1',
-                ]);
+    const colorWheel = ref(CHAKRA_WHEEL);
 
     function getRandomColor() {
         const randomIndex = Math.floor(Math.random() * 7); //+ 1

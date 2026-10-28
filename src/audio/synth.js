@@ -95,14 +95,29 @@ const reverbImpulse = (ctx, seconds = 3.6) => {
 export const createMaster = (ctx) => {
     const input = ctx.createGain();
     input.gain.value = 0.9;
+    // Around 2.8 kHz the ear (and a phone's speaker) is at its most sensitive: the high bowls of the stars, of a cell
+    // letting go and of the rulito sounded harsh there, so that band is softened for everything
+    const tone = ctx.createBiquadFilter();
+    tone.type = 'peaking';
+    tone.frequency.value = 2800;
+    tone.Q.value = 0.7;
+    tone.gain.value = -5;
+    // Only a gentle limiter for the odd pile-up. The browser's default compressor (ratio 12, 3 ms attack) grabs every
+    // touch sound and bends its wave as it does: on an iPhone's speaker that was heard as distortion
     const compressor = ctx.createDynamicsCompressor();
+    compressor.threshold.value = -12;
+    compressor.knee.value = 6;
+    compressor.ratio.value = 3;
+    compressor.attack.value = 0.02;
+    compressor.release.value = 0.3;
     const room = ctx.createConvolver();
     const wet = ctx.createGain();
     room.buffer = reverbImpulse(ctx);
     wet.gain.value = 0.4;
 
-    input.connect(compressor);
-    input.connect(room);
+    input.connect(tone);
+    tone.connect(compressor);
+    tone.connect(room);
     room.connect(wet);
     wet.connect(compressor);
     compressor.connect(ctx.destination);
@@ -368,6 +383,26 @@ export const unravel = (ctx, out, time, harmony) => {
     const notes = h.tones(h.voice - 12, 26).reverse();
     notes.forEach((midi, i) => bell(ctx, out, time + i * (1.2 / notes.length), hz(midi), 1.8, 0.02 * (1 - 0.6 * i / notes.length)));
     swish(ctx, out, time, { from: 5000, to: 900, duration: 1.4, level: 0.007, q: 0.5 });
+};
+
+// The rulito, the reward of every verb: the card's chord one octave up. As in Gurdjieff's law of octaves, a process
+// that is completed starts again on the do above: the chord's notes climb from its root to the root an octave
+// higher, and there the whole chord rings at once, an octave over the one the card has been sounding in, with a bowl
+// on the root it started from underneath so the leap is heard. Minor climbs slower; a seventh shimmers.
+export const rulito = (ctx, out, time, harmony) => {
+    const h = harmony ?? PLAIN;
+    const minor = isMinor(h.kind);
+    const seventh = hasSeventh(h);
+    const climb = h.tones(h.voice, 12);
+    const gap = minor ? 0.13 : 0.1;
+    climb.forEach((midi, i) => bell(ctx, out, time + i * gap, hz(midi), 1.6, 0.018 + 0.006 * (i / climb.length)));
+    const at = time + climb.length * gap;
+    h.tones(h.voice + 12, 11).forEach((midi, i) => {
+        bell(ctx, out, at + i * 0.018, hz(midi), minor ? 4.2 : 3.6, 0.026);
+        if (seventh) bell(ctx, out, at + i * 0.018 + 0.01, hz(midi) * 1.004, 3, 0.012);
+    });
+    bell(ctx, out, at, hz(h.voice - 12), 4.5, 0.03);
+    swish(ctx, out, time, { from: 2500, to: 8000, duration: climb.length * gap + 0.6, level: 0.009, q: 0.6 });
 };
 
 // The third eye opens: a low bowl on the chord's root and fifth, and a high shimmer over them

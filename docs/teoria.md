@@ -23,12 +23,13 @@ Palabras del libro. Cada chakra se recorre en dos sentidos: subiendo, de la mate
 
 ## De dónde viene este sistema
 
-Las tres correspondencias, siete notas, siete colores y siete chakras, son una síntesis moderna, no una tradición antigua. Para Anima eso no le quita valor: es un sistema simbólico para el arte y el juego.
+Las tres correspondencias (siete notas, siete colores, siete chakras) son una síntesis moderna, no una tradición antigua. Para Anima eso no le quita valor: es un sistema simbólico para el arte y el juego, pero no conviene presentarlo como milenario.
+- **Notas y chakras.** En la música india, Sa (el "do") no es una nota fija: es la tónica de cada escala, como el do móvil. Asociar las siete notas a los siete chakras en orden ascendente aparece en fuentes esotéricas modernas, no en textos clásicos. Que Do sea la raíz es una convención: la tónica como base.
+- **Notas y colores.** Newton eligió siete colores para que coincidieran con las siete notas de la escala, y sumó el naranja y el índigo justo donde están los semitonos. Su rueda arrancaba en Re (modo dórico), y él mismo dijo que la correspondencia no era exacta.
+- **Colores y chakras.** El arcoíris aplicado a los chakras es occidental, de los años 1920 a 1970; lo popularizó Christopher Hills (*Nuclear Evolution*, 1977). En las fuentes indias los chakras tienen colores, pero no forman un arcoíris.
+- **La ley de octava** viene de Gurdjieff (ver "La ley de octava" en `musica.md`).
 
-- **Notas y chakras.** En la música india, Sa (el "do") no es una nota fija: es la tónica de cada escala. Asociar las siete notas a los siete chakras en orden aparece en fuentes esotéricas modernas, no en textos clásicos. Que Do sea la raíz es una convención: la tónica como base.
-- **Notas y colores.** Newton eligió siete colores para que coincidieran con las siete notas, y sumó el naranja y el índigo justo donde están los semitonos. Su rueda arrancaba en Re, y él mismo dijo que la correspondencia no era exacta.
-- **Colores y chakras.** El arcoíris aplicado a los chakras es occidental, de los años 1920 a 1970, y lo popularizó Christopher Hills en 1977. En las fuentes indias los chakras tienen colores, pero no forman un arcoíris.
-- **La ley de octava.** Viene de Gurdjieff: una evolución sube de do a do y necesita choques de afuera en mi–fa y si–do. Está en `musica.md`, en las secuencias.
+Fuentes: [Svara](https://en.wikipedia.org/wiki/Svara), [ROYGBIV](https://en.wikipedia.org/wiki/ROYGBIV), [Musical Scales and Color Spectra](https://colorphilia.alwaysdata.net/musical-scales-and-color-spectra), [The Rainbow Body (Quest)](https://www.theosophical.org/publications/quest-magazine/the-rainbow-body-how-the-western-chakra-system-came-to-be), [Fragments, cap. 7](https://journalgurdjieffstudies.substack.com/p/fragments-chapter-7-pp130-5-reading).
 
 ## Los nadis
 

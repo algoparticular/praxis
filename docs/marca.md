@@ -19,7 +19,7 @@ El coral tiene una luz y una saturación medidas (OKLCH: luz 0,72, croma 0,18). 
 
 Seis colores tienen la luz y la saturación del coral, así ninguno pesa más que otro y se ven como una familia. Sporá es la excepción: un carmín más oscuro e intenso, cercano al coral pero sin confundirse con él ni con el naranja de Samas (al lado del naranja, el coral parecía otra versión del mismo color). La raíz queda como el color más pesado, y el coral sigue siendo solo el acento de la marca. Samas es el naranja del logo, que deja de ser color de Algo Particular y queda para él. Kätus va un poco más claro que el resto, para que su amarillo se lea dorado y no mostaza.
 
-Cada color tiene dos versiones: **luz**, para rellenos, ilustración y fondos azul-negro, y **tinta**, más oscura, para texto y líneas sobre crema.
+Cada color tiene dos versiones: **luz**, para rellenos, ilustración y fondos azul-negro, y **tinta**, más oscura, para texto y líneas sobre crema. En la app viven en `src/data/chakraColors.js`: las cartas del oráculo se iluminan con ellos.
 
 | Personaje | Nota y chakra | Luz | Luz sobre crema | Luz sobre azul-negro | Tinta | Tinta sobre crema |
 |---|---|---|---|---|---|---|
