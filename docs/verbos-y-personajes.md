@@ -52,15 +52,15 @@ Las palabras del libro para cada chakra, subiendo y bajando:
 | Soltar | Corona | Entendimiento | Existencia |
 
 ## Reparto de las 33 (guardado)
-Está en el campo `verb` de `src/data/cards.json` y los verbos en `src/data/verbs.js`. Salió del texto de cada carta; se puede corregir editando el JSON. `?` marca las que tenían duda al armarlo.
+Está en el campo `verb` de `src/data/cards.json` y los verbos en `src/data/verbs.js`. Salió del texto de cada carta; se puede corregir editando el JSON. Las dudas del primer reparto ya se revisaron (ver "Decidido").
 
 | Verbo | Cartas |
 |-------|--------|
 | Arraigar (6) | Addhitthana 7, Compromiso 16, Confianza 18, Fe 23, Hogar 25, Paciencia 27 |
-| Fluir (4) | Khanti 5, Aceptación 11, Celebración 14, Transformación 32? |
+| Fluir (4) | Khanti 5, Aceptación 11, Celebración 14, Transformación 32 |
 | Encender (4) | Viriya 4, Coraje 19, Desafío 21, Evolución Espiritual 22 |
 | Dar y recibir (3) | Dana 2, Metta 8, Gratitud 24 |
-| Resonar (7) | Sila 1, Sacca 6, Armonía 12?, Comunicación 17, Creatividad 20, Honestidad 26, Sincronicidad 29 |
+| Resonar (7) | Sila 1, Sacca 6, Armonía 12, Comunicación 17, Creatividad 20, Honestidad 26, Sincronicidad 29 |
 | Ver (3) | Pañña 3, Belleza 13, Esperanza 30 |
 | Soltar (5) | Nekkhamma 0, Upekkha 9, Ciclos 15, Perdón 28, Vipassana 31 |
 | Sin verbo (1) | Carta 10 (el silencio) |
