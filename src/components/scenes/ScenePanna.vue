@@ -144,48 +144,50 @@
         floorPath.value = `${d} L ${w + 10} ${h + 40} Z`;
     };
 
-    // ---- The spiral from the sun to Sid's forehead, as particles that flow down it. It is also the first thread of the
-    // game: the lights of the scene are joined with threads made just like it (see "Ver" below)
-    const TURN = 180;          // px of the path per turn of the double helix
-    const STRAND_DOTS = 26;    // of the spiral from the sun; the threads between lights can have more (SLOT_DOTS)
-    const SLOT_DOTS = 44;
+    // ---- The threads: spirals of dots that join one light to another. A thread starts as a point at the light it leaves,
+    // swells into a double helix and closes into a point at the light it reaches, and its dots take the colours of the
+    // two lights as they flow from one to the other (see "Ver" below)
+    const TURN = 100;          // px of a thread per turn of the helix
+    const DOTS = 72;           // dots in each strand of a thread (the shorter ones use fewer)
     const DUST = 20;
-    const PER = SLOT_DOTS * 2 + DUST + 1;       // the particles of one thread
-    const MAX_LINKS = 28;                          // as many as there are pairs of lights
-    const SLOTS = 2 + MAX_LINKS;                   // 0 is the spiral from the sun, 1 the thread that follows the finger
-    const FLOW = 0.05;         // lengths of the path per second
-    let bob = 0;               // Sid floats; the aura and the thread's end float with him
-    let surge = 0;             // 1 when Sid has just been touched: the spiral rushes
+    const PER = DOTS * 2 + DUST;                   // the particles of one thread
+    const MAX_LINKS = 36;                          // as many as there are pairs of lights
+    const SLOTS = 1 + MAX_LINKS;                   // slot 0 is the thread that follows the finger
+    const FLOW = 0.05;         // lengths of a thread per second
+    let bob = 0;               // Sid floats; the aura and the third eye float with him
+    let surge = 0;             // 1 when Sid has just been touched: the threads rush
     let flowPhase = 0;
     let lastT = 0;
-    let threadFade = 1;        // the spiral from the sun gives way to the rulito and comes back
-    let linksFade = 1;
-    const fadeGoal = { thread: 1, links: 1 };
+    let linksFade = 1;         // the threads go out together when the rulito leaves
     const smooth = (a, b, x) => { const u = Math.min(1, Math.max(0, (x - a) / (b - a))); return u * u * (3 - 2 * u); };
+    const rgbOf = (hex) => [(hex >> 16 & 255) / 255, (hex >> 8 & 255) / 255, (hex & 255) / 255];
 
     // One thread from one point to another (group coordinates), written into its slot of the particle buffers: a double
-    // helix of dots flowing from the first point to the second. `grow` is how much of it is drawn, `funnel` how much it
-    // narrows towards its end (the spiral from the sun does, like a funnel into the third eye), `strength` its brightness
-    const helix = (slot, data, t, [x0, y0], [x1, y1], { unit, amp, funnel = 1, grow = 1, strength = 1, strands = STRAND_DOTS, dust = DUST, turn = TURN }) => {
+    // helix of dots flowing from the first point to the second, as wide as it is at the middle (`amp`) and a point at
+    // both ends. `colours` are the tints of the two ends, `strength` its brightness
+    const helix = (slot, data, t, [x0, y0], [x1, y1], [ca, cb], { unit, amp, strength = 1, strands = DOTS, dust = DUST }) => {
         const dx = x1 - x0, dy = y1 - y0;
         const length = Math.max(1, Math.hypot(dx, dy));
-        const nx = dy / length, ny = -dx / length;          // sideways: for a thread that goes straight down it is +x
-        const turns = length / turn;
-        const envelope = (f) => smooth(0, 0.14, f) * smooth(0, 0.07, 1 - f) * (grow >= 1 ? 1 : smooth(grow, grow - 0.1, f)) * strength;
+        const nx = dy / length, ny = -dx / length;          // sideways
+        const turns = length / TURN;
         let i = slot * PER;
+        const place = (f, side, size, alpha) => {
+            data.positions[i * 3] = x0 + dx * f + nx * side;
+            data.positions[i * 3 + 1] = y0 + dy * f + ny * side;
+            data.sizes[i] = size;
+            data.alphas[i] = alpha;
+            for (let c = 0; c < 3; c++) data.tints[i * 3 + c] = ca[c] + (cb[c] - ca[c]) * f;
+        };
         for (let strand = 0; strand < 2; strand++) {
-            for (let d = 0; d < SLOT_DOTS; d++, i++) {
+            for (let d = 0; d < DOTS; d++, i++) {
                 if (d >= strands) { data.alphas[i] = 0; continue; }
                 const f = (d / strands + flowPhase) % 1;
+                const lens = Math.sin(Math.PI * f) ** 0.7;                // 0 at both ends: a point
                 const wave = Math.PI * 2 * turns * f + strand * Math.PI - t * 0.4;
-                const narrowing = 1 - 0.78 * funnel * smooth(0.25, 1, f);
                 const near = 0.5 + 0.5 * Math.cos(wave);                  // 1 when the dot passes in front
                 const pulse = Math.max(0, Math.sin(f * 15 - t * 2.1)) ** 3;
-                const side = Math.sin(wave) * amp * narrowing;
-                data.positions[i * 3] = x0 + dx * f + nx * side;
-                data.positions[i * 3 + 1] = y0 + dy * f + ny * side;
-                data.sizes[i] = (3 + 2.8 * near + 2.4 * pulse + 2.2 * surge) * unit;
-                data.alphas[i] = envelope(f) * (0.45 + 0.55 * near);
+                place(f, Math.sin(wave) * amp * lens, (3.8 + 3 * near + 2.4 * pulse + 2.2 * surge) * unit * (0.4 + 0.6 * lens),
+                    smooth(0, 0.08, f) * smooth(0, 0.08, 1 - f) * strength * (0.7 + 0.3 * near));
             }
         }
         // Dust: tinier and quicker, loosely following the helix
@@ -194,20 +196,17 @@
             const seed = d * 12.9898;
             const r = (n) => { const v = Math.sin(seed + n * 78.233) * 43758.5453; return v - Math.floor(v); };
             const f = (r(1) + flowPhase * (1.6 + r(2) * 1.6)) % 1;
+            const lens = Math.sin(Math.PI * f) ** 0.7;
             const wave = Math.PI * 2 * turns * f + r(3) * 6.28;
-            const side = (r(4) - 0.5) * 2 * amp * 1.5 * (1 - 0.7 * funnel * smooth(0.25, 1, f)) + Math.sin(wave + t) * 4;
-            data.positions[i * 3] = x0 + dx * f + nx * side;
-            data.positions[i * 3 + 1] = y0 + dy * f + ny * side;
-            data.sizes[i] = (1.4 + r(5) * 1.5) * unit;
-            data.alphas[i] = envelope(f) * (0.35 + 0.5 * r(6)) * (0.6 + 0.4 * Math.sin(t * 2 + d));
+            place(f, (r(4) - 0.5) * 2 * amp * 1.5 * lens + Math.sin(wave + t) * 4 * lens, (1.4 + r(5) * 1.5) * unit,
+                smooth(0, 0.08, f) * smooth(0, 0.08, 1 - f) * strength * (0.35 + 0.5 * r(6)) * (0.6 + 0.4 * Math.sin(t * 2 + d)));
         }
-        data.alphas[i] = 0;
     };
     const hide = (slot, data) => { data.alphas.fill(0, slot * PER, (slot + 1) * PER); };
 
     let threadShift = [0, 0];  // how far the threads' canvas is shifted by the pointer (the lights are not)
     const thread = {
-        count: SLOTS * PER,
+        count: SLOTS * PER + 1,
         update(t, data) {
             const canvas = frontCanvas.value;
             if (!canvas || !canvas.clientWidth || !frame.value) return;
@@ -215,42 +214,37 @@
             lastT = t;
             surge = Math.max(0, surge - dt * 0.35);
             flowPhase += dt * FLOW * (1 + surge * 3);
-            threadFade += (fadeGoal.thread - threadFade) * Math.min(1, dt * 3);
-            linksFade += (fadeGoal.links - linksFade) * Math.min(1, dt * 2);
+            linksFade += ((linksOut ? 0 : 1) - linksFade) * Math.min(1, dt * 2);
 
-            const w = canvas.clientWidth, h = canvas.clientHeight;
-            const L = layout(w, h);
-            const sun = sunSpot(w, h);
+            const L = layout(canvas.clientWidth, canvas.clientHeight);
             const unit = Math.max(1, L.S / 765);
-
-            // The spiral from the sun to Sid's forehead
-            const x0 = w / 2, y0 = sun.y + 150 * sun.k;            // inside the sun, so the thread seems to leave it
-            const x1 = L.fx0 + 0.5 * L.S, y1 = L.fy0 + 0.436 * L.S + bob;
-            if (threadFade > 0.01) helix(0, data, t, [x0, y0], [x1, y1], { unit, amp: 0.034 * L.S, strength: threadFade });
-            else hide(0, data);
-            // The dot on Sid's forehead where the thread ends: the third eye
-            const eye = 0 * PER + PER - 1;
-            data.positions[eye * 3] = x1;
-            data.positions[eye * 3 + 1] = y1;
-            data.sizes[eye] = (4.2 + 3.6 * surge) * unit;
-            data.alphas[eye] = 0.6 + 0.35 * Math.sin(t * 1.6);
-
-            // The threads the person has joined, each growing out of the light it left
             const spots = lightSpots().map(([x, y]) => [x - threadShift[0], y - threadShift[1]]);
-            const draw = (slot, from, to, extra) => {
-                const length = Math.hypot(to[0] - from[0], to[1] - from[1]);
-                helix(slot, data, t, from, to, {
-                    unit, funnel: 0, turn: TURN * 0.55, amp: Math.min(0.02 * L.S, length * 0.07),
-                    strands: Math.min(SLOT_DOTS, Math.max(8, Math.round(length / 8))), dust: Math.min(DUST, Math.max(3, Math.round(length / 24))), ...extra,
+            const draw = (slot, from, to, colours, strength, grow = 1) => {
+                const length = Math.hypot(to[0] - from[0], to[1] - from[1]) * grow;
+                helix(slot, data, t, from, [from[0] + (to[0] - from[0]) * grow, from[1] + (to[1] - from[1]) * grow], colours, {
+                    unit, amp: Math.min(0.028 * L.S, length * 0.1), strength,
+                    strands: Math.min(DOTS, Math.max(8, Math.round(length / 6))), dust: Math.min(DUST, Math.max(3, Math.round(length / 24))),
                 });
             };
-            links.forEach((link, k) => draw(2 + k, spots[link.a], spots[link.b], { grow: smooth(0, 0.9, t - link.born), strength: 0.9 * linksFade }));
-            for (let k = links.length; k < MAX_LINKS; k++) hide(2 + k, data);
+            // The threads the person has joined, each growing out of the light it left
+            links.forEach((link, k) => {
+                const grow = smooth(0, 1, smooth(0, 0.9, t - link.born));
+                draw(1 + k, spots[link.a], spots[link.b], [TINTS[link.a], TINTS[link.b]], 0.9 * linksFade, grow);
+            });
+            for (let k = links.length; k < MAX_LINKS; k++) hide(1 + k, data);
             // The thread that follows the finger, locking on to a light that is near enough
             if (drag && drag.moved) {
-                const target = drag.snap >= 0 ? spots[drag.snap] : [drag.x - threadShift[0], drag.y - threadShift[1]];
-                draw(1, spots[drag.from], target, { strength: drag.snap >= 0 ? 0.9 : 0.6 });
-            } else hide(1, data);
+                const snapped = drag.snap >= 0;
+                draw(0, spots[drag.from], snapped ? spots[drag.snap] : [drag.x - threadShift[0], drag.y - threadShift[1]],
+                    [TINTS[drag.from], TINTS[snapped ? drag.snap : drag.from]], snapped ? 0.9 : 0.6);
+            } else hide(0, data);
+            // The dot on Sid's forehead: his third eye
+            const eye = SLOTS * PER;
+            data.positions[eye * 3] = spots[EYE][0];
+            data.positions[eye * 3 + 1] = spots[EYE][1];
+            data.sizes[eye] = (4.2 + 3.6 * surge) * unit;
+            data.alphas[eye] = 0.6 + 0.35 * Math.sin(t * 1.6);
+            data.tints.set(TINTS[EYE], eye * 3);
         },
     };
 
@@ -404,38 +398,36 @@
         }));
         answers.push({ distance: Math.hypot(L.fx0 + L.S * 0.5 - sun.x, L.fy0 + L.S * 0.52 - sun.y), act: () => wake(true) });
         // The field of mushrooms: pink sparks along it
-        answers.push({ distance: Math.hypot(0, h - sun.y), act: () => {
-            back?.boost(G.pink, 1.3);
-            [450, 800, 1080, 1360, 1700].forEach((u) => {
-                const [x, y] = L.centred(u, 1930);
-                burst(x, y + 10, { n: 12, colors: [0xcb5e95, 0xff9fcb, 0xffd1e6], speed: 100, size: 5, spread: 14 });
-            });
-        } });
+        answers.push({ distance: Math.hypot(0, h - sun.y), act: fieldSparks });
         const farthest = Math.max(...answers.map((a) => a.distance));
         answers.forEach(({ distance, act }) => timers.push(setTimeout(act, 150 + (distance / farthest) * 1100)));
     };
     const warmSun = () => back?.boost(G.sun, 0.5);
 
     // ---- Ver: joining the lights
-    // The eight lights are the sun, Sid's third eye, and the fireflies and blue mushrooms of both sides. The sun and the
-    // eye are already joined by the spiral. Dragging from one light to another joins them with a thread; when every
-    // light is part of one network the pattern is seen: the spiral gives way to the rulito over Sid's head, which stays
-    // a moment and goes, and everything can be joined again.
-    const SUN = 0, EYE = 1;
+    // The nine lights are the sun, Sid's third eye, the mushrooms of the field, and the fireflies and blue mushrooms of
+    // both sides. Nothing is joined at the start. Dragging from one light to another joins them with a thread; when every
+    // light is part of one network the pattern is seen: the rulito is drawn over Sid's head, stays a moment and goes,
+    // the threads go out with it, and everything can be joined again.
+    const SUN = 0, EYE = 1, FIELD = 2;
     const LIGHTS = [
-        { key: 'sun' },
-        { key: 'eye' },
-        ...sides.flatMap((s) => s.targets.map((target) => ({ key: target.key, target, side: s.side }))),
+        { key: 'sun', tint: 0xffe47d },
+        { key: 'eye', tint: 0x9deaf7 },
+        { key: 'field', tint: 0xff9fcb },
+        ...sides.flatMap((s) => s.targets.map((target) => ({ key: target.key, target, side: s.side, tint: target.kind === 'fly' ? 0xffe47d : 0x7be3f5 }))),
     ];
     LIGHTS.forEach((light, i) => { if (light.target) light.target.light = i; });
+    const TINTS = LIGHTS.map((light) => rgbOf(light.tint));
     const links = [];                              // { a, b, born }: the threads the person has joined
     let sunShift = [0, 0];
+    let mushShift = [0, 0];
     let win = null;                                // the rulito: { age, head, tail, full, fullAt, back, pop }, until it is gone
     let wins = 0;
     let drag = null;                               // { from, x, y, startX, startY, moved, snap, tap }
     let kbFrom = -1;                               // the light picked with the keyboard, waiting for the one to join it to
     let idle = 0;                                  // seconds since the last touch
     let hintIn = 0;
+    let hintTurn = 0;
 
     // Where each light is on the canvas now
     const lightSpots = () => {
@@ -443,32 +435,47 @@
         const w = canvas.clientWidth, h = canvas.clientHeight;
         const L = layout(w, h);
         const sun = sunSpot(w, h);
+        const field = L.centred(1080, 1900);                  // the top of the big mushroom in the middle
         return [
             [sun.x + sunShift[0], sun.y + 150 * sun.k + sunShift[1]],
             [L.fx0 + 0.5 * L.S + sidShift[0], L.fy0 + 0.436 * L.S + sidShift[1]],
-            ...LIGHTS.slice(2).map((light) => spotOf(light.target.key, light.side)),
+            [field[0] + mushShift[0], field[1] + mushShift[1]],
+            ...LIGHTS.slice(3).map((light) => spotOf(light.target.key, light.side)),
         ];
     };
 
+    // The pink sparks along the field of mushrooms, when it is touched or answers the sun
+    const fieldSparks = () => {
+        const canvas = frontCanvas.value;
+        const L = layout(canvas.clientWidth, canvas.clientHeight);
+        back?.boost(G.pink, 1.3);
+        [450, 800, 1080, 1360, 1700].forEach((u) => {
+            const [x, y] = L.centred(u, 1930);
+            burst(x + mushShift[0], y + 10 + mushShift[1], { n: 12, colors: [0xcb5e95, 0xff9fcb, 0xffd1e6], speed: 100, size: 5, spread: 14 });
+        });
+    };
+    const touchField = () => { fieldSparks(); play('tap'); };
+
     // The groups of particles that flare when a light is touched or told apart
-    const groupOf = (i) => (i === SUN ? G.sun : i === EYE ? G.aura : LIGHTS[i].target.group);
+    const groupOf = (i) => (i === SUN ? G.sun : i === EYE ? G.aura : i === FIELD ? G.pink : LIGHTS[i].target.group);
     const warmLight = (i, amount = 0.5) => back?.boost(groupOf(i), amount);
     const flare = (i) => {
         const light = LIGHTS[i];
         if (light.target) return touch(light.target, light.side, true);
+        if (i === FIELD) return fieldSparks();
         const [x, y] = lightSpots()[i];
         back?.boost(groupOf(i), 1.2);
         burst(x, y, { n: 18, colors: [0xffe47d, 0xfff3b8, 0xffffff], speed: 110, size: 5.4 });
     };
 
-    // Which lights are joined to which (the sun and the eye start joined)
+    // Which lights are joined to which
     const network = () => {
         const group = LIGHTS.map((_, i) => i);
         const root = (i) => (group[i] === i ? i : (group[i] = root(group[i])));
-        [[SUN, EYE], ...links.map((l) => [l.a, l.b])].forEach(([a, b]) => { group[root(a)] = root(b); });
+        links.forEach((l) => { group[root(l.a)] = root(l.b); });
         return root;
     };
-    const joined = (a, b) => (a === SUN && b === EYE) || (a === EYE && b === SUN) || links.some((l) => (l.a === a && l.b === b) || (l.a === b && l.b === a));
+    const joined = (a, b) => links.some((l) => (l.a === a && l.b === b) || (l.a === b && l.b === a));
 
     const join = (a, b) => {
         if (win || reducedMotion || a === b || joined(a, b) || links.length >= MAX_LINKS) return;
@@ -482,13 +489,12 @@
         if (LIGHTS.every((_, i) => root(i) === root(SUN))) seen();
     };
 
-    // The pattern is seen: every light answers, nearest to the eye first, the spiral gives way and the rulito is drawn
-    // over Sid's head (GROW seconds), shines for a moment (LINGER) and goes as its tail catches up with its head (EAT)
+    // The pattern is seen: every light answers, nearest to the eye first, and the rulito is drawn over Sid's head (GROW
+    // seconds), shines for a moment (LINGER) and goes as its tail catches up with its head (EAT), taking the threads with it
     const GROW = 2.6, LINGER = 2.2, EAT = 3.4;
     const seen = () => {
         wins += 1;
         win = { age: 0, head: 0, tail: 0, full: false, fullAt: 0, back: false, pop: 0 };
-        fadeGoal.thread = 0;
         rulito.value?.reshape();
         sceneMilestone('pattern_seen', { times: wins });
         const spots = lightSpots();
@@ -501,7 +507,7 @@
         win.age += dt;
         win.pop = Math.max(0, win.pop - dt * 2.2);
         // It starts once the lights have answered, quickly, and eases in as it gets there
-        if (win.age > 1.1 && win.head < 1) win.head = 1 - (1 - Math.min(1, (win.age - 1.1) / GROW)) ** 1.6;
+        if (win.age > 1.3 && win.head < 1) win.head = 1 - (1 - Math.min(1, (win.age - 1.3) / GROW)) ** 1.6;
         if (win.head >= 1 && !win.full) {
             win.full = true;
             win.fullAt = win.age;
@@ -511,11 +517,8 @@
             back?.boost(G.sun, 1.2);
             play('star');
         }
-        if (win.full && !win.back && win.age - win.fullAt > LINGER) { win.back = true; fadeGoal.links = 0; }
-        if (win.back) {
-            win.tail = Math.min(win.head, win.tail + dt / EAT);
-            if (win.tail > 0.7) fadeGoal.thread = 1;
-        }
+        if (win.full && !win.back && win.age - win.fullAt > LINGER) { win.back = true; linksOut = true; }
+        if (win.back) win.tail = Math.min(win.head, win.tail + dt / EAT);
         const whole = Math.min(1, Math.max(0, (win.head - win.tail - 0.6) / 0.4));
         stageEl?.style.setProperty('--name-glow', Math.max(win.pop, 0.8 * whole * whole * (3 - 2 * whole)).toFixed(3));
         const glow = win.full && win.head - win.tail > 0.9 ? Math.max(win.pop, Math.sin(t * 4) * 0.5 + 0.5) : 0;
@@ -527,19 +530,33 @@
             rulito.value.frame({});
             stageEl?.style.setProperty('--name-glow', '0');
             links.length = 0;
-            fadeGoal.links = 1;
+            linksOut = false;
         }
     };
+    let linksOut = false;                          // the threads fade out while the rulito goes
 
-    // No words: after a while without touching anything, a light that is not joined yet glows now and then
+    // The lights that are joined stay lit, so the network is seen growing
+    const keepLit = () => {
+        if (win) return;
+        const lit = new Set();
+        links.forEach((l) => { lit.add(l.a); lit.add(l.b); });
+        lit.forEach((i) => warmLight(i, 0.5));
+    };
+
+    // No words: after a while without touching anything a light that is not joined yet glows now and then, first the sun
+    // and the eye, which are the ones to join first
     const hint = (dt) => {
         if (win || drag || reducedMotion || !entered) return;
         idle += dt;
         hintIn -= dt;
         if (idle < 8 || hintIn > 0) return;
         hintIn = 3.5;
+        if (!links.length) { warmLight(hintTurn++ % 2 ? EYE : SUN, 1); return; }
         const root = network();
-        const apart = LIGHTS.map((_, i) => i).filter((i) => root(i) !== root(SUN));
+        const size = {};
+        LIGHTS.forEach((_, i) => { size[root(i)] = (size[root(i)] ?? 0) + 1; });
+        const main = Object.keys(size).sort((a, b) => size[b] - size[a])[0];
+        const apart = LIGHTS.map((_, i) => i).filter((i) => String(root(i)) !== main);
         if (apart.length) warmLight(apart[Math.floor(Math.random() * apart.length)], 1);
     };
 
@@ -576,20 +593,20 @@
         drag = null;
         stopDrag();
         if (!done) return;
-        if (!done.moved) done.tap?.();                          // a tap: the sun and the eye answer as they always did
+        if (!done.moved) done.tap?.();                          // a tap: the light answers as it always did
         else if (done.snap >= 0) join(done.from, done.snap);
     };
     const dragCancel = () => { drag = null; stopDrag(); };
 
-    // A light is pressed: the fireflies and the mushrooms answer at once, the sun and the eye only if it was a tap
+    // What a tap does on the lights that answer on release (the fireflies and the mushrooms answer as they are pressed)
+    const taps = { [SUN]: () => shine(), [EYE]: () => wake(), [FIELD]: () => touchField() };
     const press = (i, event) => {
         const light = LIGHTS[i];
         if (light.target) touch(light.target, light.side);
-        const tap = i === SUN ? shine : i === EYE ? () => wake() : null;
         idle = 0;
-        if (reducedMotion) { tap?.(); return; }
+        if (reducedMotion) { taps[i]?.(); return; }
         const [x, y] = toCanvas(event);
-        drag = { from: i, x, y, startX: event.clientX, startY: event.clientY, moved: false, snap: -1, tap };
+        drag = { from: i, x, y, startX: event.clientX, startY: event.clientY, moved: false, snap: -1, tap: taps[i] };
         window.addEventListener('pointermove', dragMove);
         window.addEventListener('pointerup', dragUp);
         window.addEventListener('pointercancel', dragCancel);
@@ -603,8 +620,7 @@
         kbFrom = kbFrom === i ? -1 : i;
         const light = LIGHTS[i];
         if (light.target) touch(light.target, light.side);
-        else if (i === SUN) shine();
-        else wake();
+        else taps[i]();
     };
 
     // The line work is decoded before anything is shown, so the particles never arrive on their own
@@ -636,7 +652,8 @@
             backSheets.value.forEach((el) => { el.style.translate = `${-x * 6}px ${-y * 3 - s * 14}px`; });
             frontShift = [-x * 16, -y * 8 - s * 40];
             frontSheets.value.forEach((el) => { el.style.translate = `${frontShift[0]}px ${frontShift[1]}px`; });
-            mushrooms.value.style.translate = `${-x * 10}px ${-y * 3 - s * 10}px`;
+            mushShift = [-x * 10, -y * 3 - s * 10];
+            mushrooms.value.style.translate = `${mushShift[0]}px ${mushShift[1]}px`;
             // Sid, with his aura; when woken he glows a little, swells and settles
             awake = Math.max(0, awake - dt * 0.4);
             bob = Math.sin(t * 0.75) * 0.009 * frame.value.offsetWidth * ramp;
@@ -653,6 +670,7 @@
             threadShift = [-x * 9, -y * 5 - s * 22];
             front?.shift(0, threadShift[0], threadShift[1]);        // the threads
             winTick(t, dt);
+            keepLit();
             hint(dt);
         });
 
@@ -773,6 +791,9 @@
             <img class="piece" :src="IMG('mush-caps')" :style="place('mush-caps')" alt="" draggable="false">
             <img class="piece" :src="IMG('mush-shade')" :style="place('mush-shade')" alt="" draggable="false">
             <img class="piece" :src="IMG('mush-outline')" :style="place('mush-outline')" alt="" draggable="false">
+            <!-- The big mushroom in the middle: one more light to join -->
+            <div class="hit field" role="button" tabindex="0" :aria-label="$i18n.locale === 'en' ? 'Pink mushrooms' : 'Hongos rosados'"
+                @pointerdown.prevent="press(FIELD, $event)" @pointerenter="warmLight(FIELD)" @keydown="pressKey(FIELD, $event)"></div>
         </div>
 
         <!-- In front: leaves, branches and the fireflies' stems, anchored to the sides -->
@@ -898,6 +919,15 @@
         top: 43.6%;
         width: 13%;
         height: 13%;
+        translate: -50% -50%;
+    }
+
+    /* Over the top of the big pink mushroom: 88% down the square of the mushrooms, in the middle */
+    .hit.field {
+        left: 50%;
+        top: 88%;
+        width: 18.5%;
+        height: 18.5%;
         translate: -50% -50%;
     }
 
