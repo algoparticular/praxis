@@ -28,7 +28,7 @@ Orden de los verbos: Arraigar (raíz) y Soltar (corona) son los dos polos, la co
 **Dinámica:** seguir y acompañar. Dejarse llevar por una corriente o por una criatura sin cortarla.
 **Punto de partida:** en Khanti las pinceladas lavanda ya siguen el dedo, y las criaturas destellan cuando una pincelada pasa cerca. Los Samas se mueven en pares.
 **Idea:** arrastrar el dedo acompañando un movimiento; cuando se acompasa, la escena "entra en ritmo" y aparece el rulito. Los corchos de Khanti que vacían los frascos quedan como la parte de soltar dentro del mismo juego.
-**Cartas:** Khanti, Belleza, Celebración, Esperanza, Transformación, Aceptación (a confirmar: su ilustración es un río entre dos seres iguales bajo cielos distintos, y su texto pide no luchar contra lo que no se controla).
+**Cartas:** Khanti, Belleza, Celebración, Esperanza, Transformación, Aceptación (su ilustración es un río entre dos seres iguales bajo cielos distintos, y su texto pide no luchar contra lo que no se controla).
 
 ### 3. Encender (Kätus, demonio: vergüenza)
 **Dinámica:** cargar y soltar. Juntar energía y lanzarla, o encender cosas hasta que todas estén encendidas.
@@ -50,7 +50,7 @@ Orden de los verbos: Arraigar (raíz) y Soltar (corona) son los dos polos, la co
 - *Teclado.* Cada uno es un botón: Enter le da su luz. Enter en la llama la hace saltar.
 - *Movimiento reducido.* La escena queda estática y todavía no se puede jugar (como Vipassana y Pañña): los toques hacen saltar la llama, como antes.
 **Dónde se tocó:** `SceneDana.vue` (`GIFTS`, `give()`, `receive()`, `giveBack()`, `balance()`), `give` en `synth.js`. El rulito que estaba dibujado sobre el de la derecha se sacó de su capa: ahora es el premio.
-**Cartas:** Dana (en prueba), Metta, Gratitud. Aceptación está en este verbo en `cards.json`, pero calza mejor en Fluir (por confirmar, ver ahí).
+**Cartas:** Dana (en prueba), Metta, Gratitud.
 
 ### 5. Resonar (Aura, demonio: mentiras)
 **Dinámica:** escuchar y responder. Ritmo, eco, secuencia.

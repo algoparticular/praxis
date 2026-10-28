@@ -57,20 +57,21 @@ Está en el campo `verb` de `src/data/cards.json` y los verbos en `src/data/verb
 | Verbo | Cartas |
 |-------|--------|
 | Arraigar (6) | Addhitthana 7, Compromiso 16, Confianza 18, Fe 23, Hogar 25, Paciencia 27 |
-| Fluir (5) | Khanti 5, Belleza 13?, Celebración 14, Esperanza 30?, Transformación 32? |
+| Fluir (6) | Khanti 5, Aceptación 11, Belleza 13?, Celebración 14, Esperanza 30?, Transformación 32? |
 | Encender (4) | Viriya 4, Coraje 19, Desafío 21, Evolución Espiritual 22 |
-| Dar y recibir (4) | Dana 2, Metta 8, Aceptación 11, Gratitud 24 |
+| Dar y recibir (3) | Dana 2, Metta 8, Gratitud 24 |
 | Resonar (6) | Sila 1, Sacca 6, Armonía 12?, Comunicación 17, Creatividad 20, Honestidad 26 |
 | Ver (3) | Pañña 3, Ciclos 15, Sincronicidad 29 |
 | Soltar (4) | Nekkhamma 0, Upekkha 9, Perdón 28, Vipassana 31 |
 | Sin verbo (1) | Carta 10 (el silencio) |
 
-Total: 6 + 5 + 4 + 4 + 6 + 3 + 4 + 1 = 33. Belleza podría ir también en Ver.
+Total: 6 + 6 + 4 + 3 + 6 + 3 + 4 + 1 = 33. Belleza podría ir también en Ver.
 
 ## Decidido
 - Carta 10 (`" ... "`): es el silencio. No hay nada que leer ni decir, la invitación es sentir el corazón. Su verbo va entre Fa, Sol o La (por decidir); la forma, por definir.
 - Nombre del personaje: **Sid** (Seed, semilla).
 - El bichito con pelos y antenas es un Sama. El ser dentro de la célula de Evolución es Sid.
+- Aceptación es **Fluir**, no Dar y recibir: su ilustración es un río entre dos seres iguales y su texto pide no luchar contra lo que no se controla.
 - Khanti es **Fluir** (Samas), no Soltar: los corchos que vacían los frascos quedan como la parte de soltar dentro de ese juego.
 - Creatividad y Hogar intercambian la ilustración entera (corona, personaje, imagen de la carta y colores). Creatividad: corales y medusa (Aura). Hogar: hongos y larva (Sama).
 - Vipassana es **Soltar** (el "ver las cosas tal cual son" lleva al desapego).
