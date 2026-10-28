@@ -2,7 +2,7 @@
 
 Cada carta tiene un verbo (`verb` en `src/data/cards.json`, lista en `src/data/verbs.js`). El verbo define la **dinámica**: qué hace la persona con la escena. La ilustración, el sonido y el significado los pone cada carta. Los siete verbos son uno por personaje y chakra (ver `verbos-y-personajes.md`).
 
-Dos verbos se probaron en una escena: **Arraigar en Paciencia** y **Soltar en Vipassana**. Lo implementado no es fijo: son ideas probadas y pueden cambiar. El resto son propuestas, tomando como punto de partida lo que ya hacen las escenas.
+Tres verbos se probaron en una escena: **Arraigar en Paciencia**, **Soltar en Vipassana** y **Ver en Pañña**. Lo implementado no es fijo: son ideas probadas y pueden cambiar. El resto son propuestas, tomando como punto de partida lo que ya hacen las escenas.
 
 ## Reglas comunes
 - **Nada se pierde ni se falla.** No hay puntaje, tiempo límite ni "game over". Si el gesto no se completa, la escena sigue viva y se puede intentar de nuevo.
@@ -48,11 +48,18 @@ Orden de los verbos: Arraigar (raíz) y Soltar (corona) son los dos polos, la co
 **Idea:** la escena toca una frase corta con las notas del acorde de la carta y la persona la responde tocando; si no coincide, la escena la vuelve a tocar con paciencia. En Creatividad no hay respuesta correcta: cada toque agrega una nota y se compone libremente.
 **Cartas:** Sila, Sacca, Armonía, Comunicación, Creatividad, Honestidad.
 
-### 6. Ver (Huit, demonio: ilusión)
-**Dinámica:** descubrir lo oculto. Revelar, unir puntos, reconocer un patrón.
-**Punto de partida:** en Pañña se despierta a las luciérnagas, los hongos, Sid y el sol, y la espiral llega a la frente de Sid (el tercer ojo).
-**Idea:** pasar el puntero para despejar la niebla que cubre algo, o unir puntos hasta que aparece una constelación. En Sincronicidad, reconocer el patrón de las burbujas y tocarlas en el momento justo.
-**Cartas:** Pañña, Ciclos, Sincronicidad.
+### 6. Ver (Huit, demonio: ilusión): implementado en Pañña
+**Dinámica:** descubrir lo oculto, unir puntos, reconocer un patrón.
+**Cómo funciona hoy en Pañña:** las ocho luces de la escena (el sol, el tercer ojo de Sid, las cuatro luciérnagas y los dos hongos azules) se unen arrastrando de una a otra.
+- *La espiral ya es el primer hilo.* La espiral de puntos del sol al tercer ojo es el hilo con el que empieza el juego: el sol y el ojo vienen unidos. No se toca ni se esconde.
+- *Unir.* Se apoya el dedo en una luz y se arrastra: un hilo de puntos dorados, una espiral doble como la del sol, sigue al dedo, y al llegar cerca de otra luz se engancha a ella (la luz se enciende). Al soltar, el hilo queda tendido y fluye de la primera luz a la segunda; suena un `tap` en el acorde. No hay orden correcto ni se falla: unir dos luces que ya estaban unidas no hace nada, y soltar en el aire deshace el hilo. Un toque corto, sin arrastrar, hace lo de siempre: las luciérnagas y los hongos echan chispas, tocar el sol hace que todo responda y tocar el ojo despierta a Sid.
+- *El patrón.* Cuando todas las luces forman una sola red (con el sol y el ojo ya unidos bastan seis hilos), cada luz responde con chispas, de la más cercana al ojo a la más lejana. La espiral del sol cede su lugar: el rulito dorado se dibuja sobre la cabeza de Sid (`Rulito.vue`), el nombre de la carta se ilumina y suena un `star`. Después el rulito se va a medida que su cola alcanza a su cabeza, los hilos se desvanecen y la espiral vuelve. Se puede volver a jugar. Hito de analítica: `pattern_seen`.
+- *La pista, sin palabras.* Si pasa un rato sin tocar nada (8 s), una de las luces que todavía no está unida a la red brilla de a ratos.
+- *Teclado.* Enter en una luz la elige y Enter en otra las une; Enter otra vez en la misma la suelta.
+- *Movimiento reducido.* La escena queda estática y todavía no se puede jugar (como Vipassana): los toques siguen haciendo lo de siempre.
+**Dónde se tocó:** `ScenePanna.vue` (todos los hilos son un solo grupo de partículas, `helix()`; `LIGHTS`, `join()`, `seen()`). No cubre ni agrega ningún dibujo: son solo partículas.
+**Variante posible:** despejar una niebla de partículas para revelar las luces (cubriría el arte de Pañña; encajaría mejor en Honestidad, que tiene burbujas) o primero descubrir y después unir.
+**Cartas:** Pañña (hecha), Ciclos, Sincronicidad, Honestidad.
 
 ### 7. Soltar (Sid, demonio: apego): implementado en Vipassana
 **Dinámica:** dejar ir. Que las cosas se vayan sin agarrarlas, y que vuelvan.
