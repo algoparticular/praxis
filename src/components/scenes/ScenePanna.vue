@@ -603,7 +603,7 @@
             surge = 1;
             back?.boost(G.aura, 1.6);
             back?.boost(G.sun, 1.2);
-            play('star');
+            play('rulito');
         }
         if (win.full && !win.back && win.age - win.fullAt > LINGER) { win.back = true; linksOut = true; }
         if (win.back) win.tail = Math.min(win.head, win.tail + dt / EAT);
