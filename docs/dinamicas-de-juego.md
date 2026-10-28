@@ -56,7 +56,7 @@ Orden de los verbos: Arraigar (raíz) y Soltar (corona) son los dos polos, la co
 **Dinámica:** escuchar y responder. Ritmo, eco, secuencia.
 **Punto de partida:** Sincronicidad ya tiene una secuencia de cuatro burbujas que se iluminan en orden; y cada carta tiene su acorde.
 **Idea:** la escena toca una frase corta con las notas del acorde de la carta y la persona la responde tocando; si no coincide, la escena la vuelve a tocar con paciencia. En Creatividad no hay respuesta correcta: cada toque agrega una nota y se compone libremente.
-**Cartas:** Sila, Sacca, Armonía, Comunicación, Creatividad, Honestidad.
+**Cartas:** Sila, Sacca, Armonía, Comunicación, Creatividad, Honestidad, Sincronicidad (estar en el momento justo: tocar cada burbuja cuando el brillo llega a ella).
 
 ### 6. Ver (Huit, demonio: ilusión): implementado en Pañña
 **Dinámica:** descubrir lo oculto, unir puntos, reconocer un patrón.
@@ -73,7 +73,7 @@ Orden de los verbos: Arraigar (raíz) y Soltar (corona) son los dos polos, la co
 - *Movimiento reducido.* La escena queda estática y todavía no se puede jugar (como Vipassana): los toques siguen haciendo lo de siempre.
 **Dónde se tocó:** `ScenePanna.vue` (todos los hilos son un solo grupo de partículas, `helix()`; `LIGHTS`, `join()`, `seen()`). No cubre ni agrega ningún dibujo: son solo partículas.
 **Variante posible:** despejar una niebla de partículas para revelar las luces (cubriría el arte de Pañña; encajaría mejor en Honestidad, que tiene burbujas) o primero descubrir y después unir.
-**Cartas:** Pañña (hecha), Ciclos, Sincronicidad, Honestidad.
+**Cartas:** Pañña (hecha), Ciclos.
 
 ### 7. Soltar (Sid, demonio: apego): implementado en Vipassana
 **Dinámica:** dejar ir. Que las cosas se vayan sin agarrarlas, y que vuelvan.
