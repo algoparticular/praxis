@@ -5,6 +5,7 @@
 // three is imported on demand so it does not weigh on the first load.
 
 import { getCard } from '../data/cards.js';
+import { CHAKRA_WHEEL } from '../data/chakraColors.js';
 
 const CARD_W = 1;
 const CARD_H = 1.2;           // same 1:1.2 ratio as .deckItem
@@ -25,8 +26,8 @@ const BACK = '#143246';
 const CREAM = '#F7F8F1';
 const EDGE = 'rgba(252, 252, 252, 0.42)';
 const RUG = ['#1d6a6e', '#144a5a', '#0e2e44'];
-// Same palette as OracleItem hover
-const HOVER_COLORS = ['#E49414', '#F55F4B', '#FF7E39', '#FFF04D', '#75D090', '#46DBDD', '#B112B1'];
+// Same palette as OracleItem hover: the seven chakra colours
+const HOVER_COLORS = CHAKRA_WHEEL;
 
 // Icon from OracleItem.vue (40x40 viewBox)
 const ICON = [
