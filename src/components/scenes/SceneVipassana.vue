@@ -3,7 +3,7 @@
     // Everything here is shared with the hero: the rays, the three.js cell field, the character picture,
     // the dotted spiral and the character's behaviour (useCharacterLife).
     // Unlike the hero, it can be touched, and its verb is Soltar (let go): every cell is something to let go of, and
-    // when there is nothing left to hold on to the rulito is born (see docs/dinamicas-de-juego.md).
+    // when there is nothing left to hold on to the rulito is born (see docs/verbos-y-dinamicas.md).
     // - A press on a cell lets go of it: it bursts into dots and stays gone. That is the main gesture. The dotted spiral
     //   at his third eye is the count: it gets shorter with every cell that goes. If nothing is touched for a while one
     //   of the cells that are left glows, with no words.

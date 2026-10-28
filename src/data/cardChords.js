@@ -10,7 +10,7 @@
 // G major: Sol (throat, Aura, whose element is sound), Si (crown, Particular) and Re (sacral, Samas): expression,
 // creativity and spiritual connection. It shares a note with the chord of 28 of the 33 cards, so the step into a
 // card is mostly soft (the five that share none: Metta, Ciclos, Compromiso, Confianza and Perdón).
-// Why each card has its chord: docs/acordes-de-las-cartas.md
+// Why each card has its chord: docs/musica.md
 export const BASE_CHORD = 'G';
 
 const CHORDS = {

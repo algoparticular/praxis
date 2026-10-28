@@ -1,6 +1,6 @@
 # Registro de cartas vivas e interactivas
 
-Estado a 2026-10-26. Verbos: ver `verbos-y-personajes.md` (ya guardados en `cards.json`). Fuente de verdad en el código: `src/data/cardScenes.js` (`sceneFor(id)`). Si una carta no está ahí, usa `SceneFlat` (ilustración plana que deriva lento). Cuando una carta pase a viva, se agrega una fila acá en el mismo PR.
+Estado a 2026-10-26. Verbos: ver `verbos-y-dinamicas.md` (ya guardados en `cards.json`). Fuente de verdad en el código: `src/data/cardScenes.js` (`sceneFor(id)`). Si una carta no está ahí, usa `SceneFlat` (ilustración plana que deriva lento). Cuando una carta pase a viva, se agrega una fila acá en el mismo PR.
 
 **9 de 33 cartas vivas.** 24 siguen con `SceneFlat`.
 

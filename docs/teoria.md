@@ -1,8 +1,24 @@
-# Los acordes de las cartas
+# Teoría
 
-Cada carta de Anima suena en su propio acorde. Este documento explica de dónde sale cada uno. El código vive en `src/data/cardChords.js` y el sonido en `src/audio/synth.js`.
+Primera pestaña de "Anima por dentro" (el artefacto que junta las ideas del proyecto). Es la base de todo lo demás: cada carta tiene un verbo, ese verbo propone qué hace la persona con la escena, y todo suena en el acorde de la carta. Lo que sigue explica de dónde sale cada pieza. Es un sistema simbólico para el arte y el juego, no una tradición antigua (ver "De dónde viene este sistema").
 
-## La teoría
+> 7 personajes, 7 notas, 7 movimientos, 7 colores. Cada uno por separado nos enseña algo de nosotros y del mundo. Combinados en acordes cuentan una historia. Una con distintos caminos, dependiendo de la secuencia de dichos acordes.
+> (Notas de Notion, 25 de enero de 2025)
+
+Los siete movimientos son los verbos de las cartas: Arraigar, Fluir, Encender, Dar y recibir, Resonar, Ver y Soltar (ver `verbos-y-dinamicas.md`).
+
+## A qué aspira Anima
+
+Que quien la usa se haga preguntas como:
+- ¿Cómo soy un mejor ser humano?
+- ¿Cómo obtengo la mejor versión de mí mismo?
+- ¿Cómo me responsabilizo de mis acciones y de mis palabras?
+- ¿Cómo puedo ser respetuoso y armónico con la Pachamama?
+- ¿Cómo puedo hacer del mundo un lugar mejor?
+
+## Las siete notas, los siete chakras y los siete personajes
+
+Do, Re, Mi, Fa, Sol, La, Si y el Do de la octava siguiente, como un piano. Cada tecla negra tiene dos nombres, Do# o Re♭, y suena igual con los dos: está entre dos chakras, y como sostenido es del de abajo y como bemol, del de arriba.
 
 **Cada nota es un chakra, y cada chakra es un personaje de Algo Particular.** La relación nota-chakra viene de una conversación de teoría musical. La relación chakra-personaje viene de las BIOs del universo (Notion, *Algo Particular / BIOs*).
 
@@ -27,7 +43,24 @@ La BIO de Samas no dice su chakra. Lo tomamos como sacro porque sus temas son lo
 
 **La nota de abajo (la fundamental) es el chakra que manda.** Las otras notas lo acompañan. Por ejemplo, en Re menor el sacro (Re) aporta la emoción, el corazón (Fa) la suaviza con compasión y el tercer ojo (La) le da dirección y claridad.
 
-## Qué significa cada acorde
+## Cómo se arma un acorde
+
+Cada acorde tiene la impronta raíz de su nota principal y los matices de sus terceras y quintas.
+
+| Posición | Qué aporta |
+|---|---|
+| Fundamental | El chakra que manda: la base energética del acorde. |
+| Tercera | El carácter: la mayor ilumina, la menor mira hacia adentro. |
+| Quinta | La estabilidad: sostiene la estructura. |
+| Séptima | Un chakra más. En la séptima dominante es una tensión que resuelve en el acorde una quinta abajo; en la mayor y la menor es un color estable. |
+
+- **7 mayores:** energía expansiva y positiva, para equilibrar chakras.
+- **7 menores:** introspectiva y emocional, para liberar bloqueos.
+- **28 séptimas:** energía compleja y rica, para trabajar más profundo. Solo la dominante es tensión y va hacia otro acorde; la mayor y la menor son estables y resuenan como cualquier otro acorde.
+
+Siete acordes básicos, 12 si usamos todas las tonalidades cromáticas. 42 acordes en total, 72 con todas las tonalidades. Las cartas usan 27 de los 42.
+
+## Los 42 acordes
 
 Esta sección resume la conversación de teoría musical de la que sale todo el sistema, con su contenido tal como vino. Cada acorde trae sus notas con sus chakras, los colores de esos chakras, dos aromas y su uso.
 
@@ -160,82 +193,35 @@ En un acorde, la fundamental es la base energética. La tercera define su carác
 - **Do, raíz, la quinta.** Ancla el amor y la intuición para que se expresen de manera estable y práctica.
 - **Juntos:** es un acorde para la apertura emocional con claridad mental y estabilidad. Sirve para la compasión hacia uno mismo y hacia otros.
 
-### Secuencias para trabajar en uno mismo
+## Qué es un chakra
 
-La conversación propone tres progresiones. Hoy la app no las usa, pero son parte de la misma teoría.
+Un chakra es un centro de organización que recibe, asimila y expresa energía de la fuerza vital. Los chakras son las ruedas del vehículo que conducen al yo en su búsqueda de evolución, a través del puente del arcoíris, con el fin de recuperar la naturaleza divina.
 
-1. **Estabilidad y confianza:** Do → Fa → Sol → Do. Establece una base firme, abre el corazón y fomenta la expresión.
-2. **Liberar emociones:** Re menor → La menor → Mi menor → Fa mayor. Invita a fluir con las emociones y a conectar con la intuición.
-3. **Conexión espiritual:** Si menor → Sol mayor → Mi7 → La menor. Promueve introspección, expresión y conexión trascendental.
+Los siete colores del arcoíris expresan la diversidad de la luz cuando pasa de su origen a su manifestación: siete modalidades vibratorias de la existencia humana, en relación con los siete chakras de la tradición yóguica. En turco, la palabra para arcoíris es literalmente "puente". La fuerza que los recorre, Kundalini, la serpiente, se despierta en la tierra y serpentea a través de cada chakra. (Notas de Notion)
 
-## Cómo se elige el acorde de una carta
+## Los siete chakras
 
-1. **El texto de la carta manda.** La descripción, la afirmación y la invitación dicen qué chakra se trabaja y con qué energía (abrir, mirar hacia adentro, transformar). De ahí sale el acorde.
-2. **Los personajes de la ilustración no deciden el acorde.** Particular, Sporá, Samas, Kätus, Vulpes, Aura y Huit son expresiones de lo mismo, partículas que evolucionaron en el universo, y Particular es el protagonista de todo el viaje. Que su nota esté o no en el acorde es solo una pista, nunca una condición.
-3. **Las cartas que resuenan pueden compartir acorde.** Es mejor respetar esa afinidad que forzar un acorde distinto para cada una. Hoy 33 cartas usan 27 acordes: se repiten Si menor (Nekkhamma, Aceptación), Sol7 (Sila, Sacca), Si mayor (Dana, Fe), Mi mayor (Viriya, Addhitthana), Sol mayor (carta 10, Belleza) y Re mayor (Paciencia, Sincronicidad).
+Lo que le asignamos a cada personaje (nota, propósito, demonio, verbo) y lo que dice la tabla del libro *Cuerpo de Oriente, mente de Occidente* (introducción, pp. 32 y 33), de donde salen los demonios y los elementos, está en `verbos-y-dinamicas.md`, sección "Los 7".
 
-## El acorde de base: Sol mayor
+## El viaje completo
 
-Fuera de las cartas, toda la app suena en **Sol mayor**: Sol (garganta, Aura), Si (corona, Particular) y Re (sacro, Samas). Según la teoría, ese acorde potencia la expresión, la creatividad y la conexión espiritual. Hay dos razones más:
-- **Aura:** su elemento es el **sonido**, y con ella nació la idea de organizar el universo por chakras.
-- **Particular:** es el protagonista y representa la conexión con el Todo (el rulito).
+Palabras del libro. Cada chakra se recorre en dos sentidos: subiendo, de la materia al entendimiento, y bajando, de la existencia a la manifestación. La tabla con las palabras de cada chakra y las dos corrientes (manifestación y liberación) están en `verbos-y-dinamicas.md`, sección "Dos corrientes".
 
-También es la base que mejor se lleva con las cartas. Comparte al menos una nota con el acorde de 28 de las 33, así que entrar a una carta casi siempre es una entrada suave. Las cinco que no comparten ninguna son Metta (Famaj7), Ciclos (Fa7), Compromiso (La mayor), Confianza (La menor) y Perdón (Fa menor): el texto manda antes que la suavidad de la entrada.
+## De dónde viene este sistema
 
-## La tabla
+Las tres correspondencias, siete notas, siete colores y siete chakras, son una síntesis moderna, no una tradición antigua. Para Anima eso no le quita valor: es un sistema simbólico para el arte y el juego.
 
-| # | Carta | Acorde | Notas → chakras | Por qué este acorde | Personajes en la ilustración |
-|---|---|---|---|---|---|
-| 0 | Nekkhamma | Si menor | Si, Re, Fa# → corona, sacro, corazón | Renuncia, soltar, "un ser sagrado haciendo una experiencia humana". La corona manda (lo sagrado) y el modo menor mira hacia adentro (soltar). | Particular (tres, deshaciéndose) |
-| 1 | Sila | Sol7 | Sol, Si, Re, Fa → garganta, corona, sacro, corazón | "Encuentro paz al hacer el bien en resonancia con la voz de mi alma". La voz del alma es la garganta, acompañada por la corona. Para hacer el bien hay que escuchar al corazón, así que el Fa del corazón de Sid entra como séptima. | Particular y el corazón de Sid (Fa) |
-| 2 | Dana | Si mayor | Si, Re#, Fa# → corona, sacro, corazón | "Escucho al niño que llevo dentro y soy feliz al dar". El niño interior es el sacro y dar es el corazón. La teoría dice que este acorde facilita la conexión trascendental y la creatividad emocional. | Particular (dos) |
-| 3 | Pañña | Lam7 | La, Do, Mi, Sol → tercer ojo, raíz, plexo, garganta | Sabiduría que se pregunta y se escucha en silencio: "Escucha en silencio", "mi centro calmo". El tercer ojo manda, y el acorde es claridad mental que, desde adentro, encuentra sus respuestas. | Sid (Particular), hongos y bosque (Sporá) |
-| 4 | Viriya | Mi mayor | Mi, Sol#, Si → plexo, garganta, corona | Energía y determinación: "sigo su verdad con determinación". La voluntad es el plexo solar. | Particular (caminante con báculo) |
-| 5 | Khanti | Remaj7 | Re, Fa#, La, Do# → sacro, corazón, tercer ojo, raíz | Tolerancia y paciencia con el propio proceso: "respeta tus tiempos sin exigencias", soltar culpas, mirar con perspectiva más amplia. El sacro manda (culpa) y la séptima mayor le da calma, sin apuro. | Varios personajes dentro de los frascos |
-| 6 | Sacca | Sol7 | Sol, Si, Re, Fa → garganta, corona, sacro, corazón | Comprometerse con la propia verdad y abrirle la puerta al propósito. La verdad se dice con la garganta y la corona la acompaña; es la verdad que se escucha en el corazón, por eso el corazón de Sid (Fa) entra como séptima. | Particular en la barca y el corazón de Sid (Fa) |
-| 7 | Addhitthana | Mi mayor | Mi, Sol#, Si → plexo, garganta, corona | Determinación para nutrir hábitos. Es la voluntad, el plexo solar en modo mayor. | Particular en el bote, bajo la tormenta |
-| 8 | Metta | Famaj7 | Fa, La, Do, Mi → corazón, tercer ojo, raíz, plexo | Amar primero a uno mismo para después dar: "soy Amor infinito". El corazón manda, y el acorde es amor sereno que confía en sí mismo. | Particular y otros, con un zorrito (Vulpes) |
-| 9 | Upekkha | Mi menor | Mi, Sol, Si → plexo, garganta, corona | Ecuanimidad e impermanencia: soltar el exceso de control. Es el equilibrio espiritual desde la introspección. | Particular, hongos (Sporá) |
-| 10 | " ... " | Sol mayor (base) | — | La carta en blanco no tiene texto que elija un acorde, así que se queda en el sonido de base. | — |
-| 11 | Aceptación | Si menor | Si, Re, Fa# → corona, sacro, corazón | "Acepto y honro quién soy", soltar el control. La teoría lo describe como conexión espiritual con raíces emocionales, mirando hacia adentro. | Particular (dos) |
-| 12 | Armonía | Domaj7 | Do, Mi, Sol, Si → raíz, plexo, garganta, corona | "Vibro en armonía en mi aquí y ahora": equilibrio entre sonido y pausa, pausa de silencio interior. La raíz y la garganta se abren con calma, sin tensión. | Aura (dos medusas) |
-| 13 | Belleza | Sol mayor | Sol, Si, Re → garganta, corona, sacro | Reconocer la belleza propia y la de los demás. Expresión y conexión espiritual, con el sacro (lo sensible). | Particular (dos, abrazados), árboles |
-| 14 | Celebración | Mimaj7 | Mi, Sol#, Si, Re# → plexo, garganta, corona, sacro | "Celebro la vida… celebrarTE": placer, disfrute y pequeños rituales. Es el poder personal del plexo, suave, que se disfruta en vez de imponerse. | Particular, gatitos (Kätus), zorritos (Vulpes), fuego |
-| 15 | Ciclos | Fa7 | Fa, La, Do, Mib → corazón, tercer ojo, raíz, plexo | "Agradezco quien fui, honro quien soy y proyecto quien quiero ser": cerrar un ciclo dejando que el corazón guíe. El amor se vuelve voluntad: la séptima empuja hacia el próximo ciclo. | Particular, paisaje |
-| 16 | Compromiso | La mayor | La, Do#, Mi → tercer ojo, raíz, plexo | "Estoy comprometida con mi búsqueda y visión". La visión es el tercer ojo, que manda, y el compromiso se apoya en la raíz y la voluntad. | Paisaje con plantas (Sporá; Do# cuenta como raíz) |
-| 17 | Comunicación | Sol menor | Sol, Sib, Re → garganta, corona, sacro | El primer paso para comunicarte es escucharte a vos mismo, en silencio, antes de hablar con claridad y honestidad. Es comunicación introspectiva, la garganta mirando hacia adentro. | Aura (tres) en el bosque rosa |
-| 18 | Confianza | La menor | La, Do, Mi → tercer ojo, raíz, plexo solar | Confiar en la propia intuición y en las señales del cuerpo, dejar que la sabiduría guíe los pasos. Es confianza desde un lugar introspectivo, con el tercer ojo al mando. | Particular (Si), Aura (Sol), Vulpes (Fa) |
-| 19 | Coraje | Mi7 | Mi, Sol#, Si, Re → plexo, garganta, corona, sacro | "Mi fuerza interior guía mis pasos": valentía para seguir el camino del corazón. Es el plexo de Kätus, el fuego que se abre paso, integrado con la expresión y lo espiritual. | Kätus en el borde del acantilado |
-| 20 | Creatividad | Do7 | Do, Mi, Sol, Sib → raíz, plexo, garganta, corona | "Pongo en práctica mi creatividad y creo la vida que sueño". La teoría describe este acorde como expansión creativa con estabilidad y confianza. | Corona de hongos (Sporá) |
-| 21 | Desafío | Re7 | Re, Fa#, La, Do → sacro, corazón, tercer ojo, raíz | Transformar el desafío en una oportunidad para conocerse. Corazón y transformación. | Vulpes frente al laberinto |
-| 22 | Evolución Espiritual | Si7 | Si, Re#, Fa#, La → corona, sacro, corazón, tercer ojo | "Mi alma evoluciona cada día". Es la corona transformándose. | Corona de helechos y hongos (Sporá), ser acurrucado dentro |
-| 23 | Fe | Si mayor | Si, Re#, Fa# → corona, sacro, corazón | "Tengo fe en la fuerza inconmovible de mi alma y el apoyo del universo". La corona en modo mayor. | Particular brillando, hongos gigantes (Sporá) |
-| 24 | Gratitud | Solmaj7 | Sol, Si, Re, Fa# → garganta, corona, sacro, corazón | Gratitud que se expresa: agradecer quién soy y a un ser querido. Es expresión que nace del corazón agradecido, con calma y apertura. | Particular en su isla |
-| 25 | Hogar | Do mayor | Do, Mi, Sol → raíz, plexo, garganta | "Cada día regreso a mi hogar". El hogar es la raíz. El acorde incluye a Sporá (Do) y a Aura (Sol). | Célula de corales (Sporá) con una medusa (Aura) |
-| 26 | Honestidad | Solm7 | Sol, Sib, Re, Fa → garganta, corona, sacro, corazón | "¿Qué siento?": acallar voces externas y escuchar al cuerpo para conocer la verdad. Es comunicación introspectiva que escucha al corazón. | Aura bajo el sol, corales |
-| 27 | Paciencia | Re mayor | Re, Fa#, La → sacro, corazón, tercer ojo | "Descubro milagros a cada instante", aprendiendo de los ciclos de la naturaleza. La teoría habla de creatividad, apertura emocional y visión clara. | Los Samas en su bote |
-| 28 | Perdón | Fa menor | Fa, Lab, Do → corazón, tercer ojo, raíz | "Me perdono a mí mismo y a los otros": sanar vínculos y dejar culpas y rencores. El corazón mirando hacia adentro, para liberar heridas emocionales profundas. | Particular en el borde, junto a la luna |
-| 29 | Sincronicidad | Re mayor | Re, Fa#, La → sacro, corazón, tercer ojo | "Estoy en el momento y lugar indicado". Es el fluir: el sacro, con intuición y corazón. | Samas en pareja dentro de burbujas, fuego |
-| 30 | Esperanza | Sim7 | Si, Re, Fa#, La → corona, sacro, corazón, tercer ojo | No estás solo, te acompañan guías y ancestros. La corona y las raíces emocionales (el sacro y el corazón de Vulpes), guiadas por la intuición del tercer ojo. | Vulpes en las dunas, la luna |
-| 31 | Vipassana | Simaj7 | Si, Re#, Fa#, La# → corona, sacro, corazón, tercer ojo | "Observar con el corazón": contemplación de uno mismo, desapego, ver las cosas tal cual son. Es contemplación trascendental, la visión interior; la corona manda. | Particular con su rulito, células |
-| 32 | Transformación | Rem7 | Re, Fa, La, Do → sacro, corazón, tercer ojo, raíz | "Mi corazón fluye con alegría en el transcurso del cambio": encontrar equilibrio en medio del movimiento. Un flujo emocional que se asienta y encuentra suelo. | Samas, palmera (Sporá) |
+- **Notas y chakras.** En la música india, Sa (el "do") no es una nota fija: es la tónica de cada escala. Asociar las siete notas a los siete chakras en orden aparece en fuentes esotéricas modernas, no en textos clásicos. Que Do sea la raíz es una convención: la tónica como base.
+- **Notas y colores.** Newton eligió siete colores para que coincidieran con las siete notas, y sumó el naranja y el índigo justo donde están los semitonos. Su rueda arrancaba en Re, y él mismo dijo que la correspondencia no era exacta.
+- **Colores y chakras.** El arcoíris aplicado a los chakras es occidental, de los años 1920 a 1970, y lo popularizó Christopher Hills en 1977. En las fuentes indias los chakras tienen colores, pero no forman un arcoíris.
+- **La ley de octava.** Viene de Gurdjieff: una evolución sube de do a do y necesita choques de afuera en mi–fa y si–do. Está en `musica.md`.
 
-## Cómo suena
+## Los nadis
 
-- **Fuera de las cartas** suena Sol mayor: un colchón de fondo, campanitas en pentatónica y gotas de agua.
-- **Al tomar una carta en el oráculo**, el fondo empieza a moverse hacia el acorde de esa carta. Las notas de `pick` suben por la fundamental, la quinta y la octava. `flip` cae en la tercera, la nota que define si el acorde es mayor o menor, así la carta "muestra su color" al darse vuelta.
-- **Dentro de la carta**:
-  - El fondo y las campanitas quedan en el acorde de la carta.
-  - Cada toque (`tap`) cae en una nota del acorde, así que tocar varias veces arma una melodía.
-  - Cada estrella (`star`) rasguea el acorde. El mayor brilla, el menor es más lento y suave, y la séptima "late".
-- **Al salir de la carta**, el sonido vuelve a Sol mayor.
+Canales psíquico-energéticos: trayectorias de energía, no tubos por donde pasa la energía. Hay unos 72.000, y tres controlan a los demás: Sushumna, Ida y Pingala.
 
-## Para cambiar un acorde
+- **Sushumna.** El canal principal, por donde circula la energía espiritual. Se relaciona con el sistema nervioso central. Va del primer chakra (Muladhara) al séptimo (Sahasrara).
+- **Ida.** Conduce la energía mental. Sale del lado izquierdo del primer chakra y asciende serpenteando. Rige el sistema parasimpático y los procesos mentales, intelectuales y analíticos. Se asocia a la fosa nasal izquierda y al hemisferio derecho: orientación, espacio, intuición, creatividad.
+- **Pingala.** Conduce la energía vital. Sale del lado derecho del primer chakra y asciende serpenteando. Se asocia al sistema simpático, que prepara al cuerpo para interactuar con el exterior. Se asocia a la fosa nasal derecha y al análisis lógico y matemático.
 
-Se cambia una línea en `src/data/cardChords.js`, por ejemplo `28: 'Em'`. Se escriben como `C`, `Dm`, `G7` o `F#m`. Si cambia el motivo, también hay que actualizar esta tabla.
-
-## Pendiente
-
-- **Huit (tercer ojo, La)** no aparece en ninguna ilustración actual. El autor va a cambiarlo.
-
-Ya se escuchó en un teléfono y suena bien.
+Las fosas nasales no funcionan a la vez: mientras una domina, la otra descansa. En el cambio fluyen las dos, hay equilibrio entre energía mental y vital, y en ese instante se activa Sushumna: llega gran cantidad de energía al cerebro, un momento de plenitud. Ida y Pingala nacen en el primer chakra, se cruzan en el sexto y se unen en el séptimo.
