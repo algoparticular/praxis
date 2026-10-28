@@ -2,7 +2,7 @@
 
 Cada carta tiene un verbo (`verb` en `src/data/cards.json`, lista en `src/data/verbs.js`). El verbo define la **dinámica**: qué hace la persona con la escena. La ilustración, el sonido y el significado los pone cada carta. Los siete verbos son uno por personaje y chakra (ver `verbos-y-personajes.md`).
 
-Solo **Arraigar en Paciencia** está implementado. El resto son propuestas, tomando como punto de partida lo que ya hacen las escenas.
+Dos verbos se probaron en una escena: **Arraigar en Paciencia** y **Soltar en Vipassana**. Lo implementado no es fijo: son ideas probadas y pueden cambiar. El resto son propuestas, tomando como punto de partida lo que ya hacen las escenas.
 
 ## Reglas comunes
 - **Nada se pierde ni se falla.** No hay puntaje, tiempo límite ni "game over". Si el gesto no se completa, la escena sigue viva y se puede intentar de nuevo.
@@ -52,14 +52,18 @@ Solo **Arraigar en Paciencia** está implementado. El resto son propuestas, toma
 **Idea:** pasar el puntero para despejar la niebla que cubre algo, o unir puntos hasta que aparece una constelación. En Sincronicidad, reconocer el patrón de las burbujas y tocarlas en el momento justo.
 **Cartas:** Pañña, Ciclos, Sincronicidad.
 
-### 7. Soltar (Sid, demonio: apego)
-**Dinámica:** dejar ir. Que las cosas se vayan sin agarrarlas.
-**Punto de partida:** en Khanti los corchos saltan y los frascos se vacían como si se evaporaran; en Vipassana las células pasan.
-**Idea:** tocar para dejar ir y que cada cosa se disuelva; o simplemente observar sin tocar y dejar pasar. El rulito aparece cuando ya no queda nada que agarrar.
-**Cartas:** Nekkhamma, Upekkha, Perdón, Vipassana.
+### 7. Soltar (Sid, demonio: apego): probado en Vipassana
+**Dinámica:** dejar ir. Que las cosas se vayan sin agarrarlas, y que vuelvan.
+**Cómo funciona hoy en Vipassana:** acá la persona no completa un gesto sino que respira con la escena.
+- *Un toque es una respiración.* Una onda recorre el agua desde el dedo y empuja las células (más fuerte cuanto más se mantiene apretado). Al llegar a Sid él inhala y el campo se acerca; al exhalar su espiral se enciende. Suenan `ripple` y `breath`.
+- *Una célula se suelta.* Tocar una célula no hace onda: explota en puntos y queda así (`release`).
+- *Retener el aire.* Mantener apretado a Sid: su espiral se acorta hasta ser un punto en el tercer ojo (3,2 s) y el campo se inclina hacia él. Un rato más y lo que queda de las células y la materia orbita a su alrededor como electrones, en seis órbitas que forman un mandala; Sid sube al centro de las órbitas. Suena `inhale`.
+- *Dejar ir.* Al soltarlo exhala (`exhale`): la espiral vuelve a salir brillante, sale una onda grande desde Sid que golpea todo (`ripple`) y, cuando termina de cruzar, vuelven todas las células (`bloom`). Nada queda perdido.
+**Podría seguir:** que la espiral encendida sea el rulito de la carta, o que soltar varias células seguidas cambie algo en la escena.
+**Cartas:** Nekkhamma, Upekkha, Perdón, Vipassana (hecha).
 
-### Sin verbo: el silencio (carta 10)
-No hay nada que leer ni decir; la invitación es sentir el corazón. Si tiene un juego, sería no jugar: la escena responde solo si se deja de tocar.
+### Sin verbo todavía: el silencio (carta 10)
+No hay nada que leer ni decir; la invitación es sentir el corazón. Su verbo va entre Fa (Dar y recibir), Sol (Resonar) o La (Ver), por decidir. Si tiene un juego, sería no jugar: la escena responde solo si se deja de tocar.
 
 ## Piezas de código que ya sirven
 - `src/components/Rulito.vue`: el rulito dibujado en código sobre un canvas 2D, como una línea que viaja (punto, línea, lazo, y luego la cola alcanza a la cabeza). `frame({ head, tail, flare, t })` lo dibuja y `reshape()` le da una forma nueva. Es el premio común a todos los verbos.
