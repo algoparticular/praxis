@@ -95,14 +95,29 @@ const reverbImpulse = (ctx, seconds = 3.6) => {
 export const createMaster = (ctx) => {
     const input = ctx.createGain();
     input.gain.value = 0.9;
+    // Around 2.8 kHz the ear (and a phone's speaker) is at its most sensitive: the high bowls of the stars, of a cell
+    // letting go and of the rulito sounded harsh there, so that band is softened for everything
+    const tone = ctx.createBiquadFilter();
+    tone.type = 'peaking';
+    tone.frequency.value = 2800;
+    tone.Q.value = 0.7;
+    tone.gain.value = -5;
+    // Only a gentle limiter for the odd pile-up. The browser's default compressor (ratio 12, 3 ms attack) grabs every
+    // touch sound and bends its wave as it does: on an iPhone's speaker that was heard as distortion
     const compressor = ctx.createDynamicsCompressor();
+    compressor.threshold.value = -12;
+    compressor.knee.value = 6;
+    compressor.ratio.value = 3;
+    compressor.attack.value = 0.02;
+    compressor.release.value = 0.3;
     const room = ctx.createConvolver();
     const wet = ctx.createGain();
     room.buffer = reverbImpulse(ctx);
     wet.gain.value = 0.4;
 
-    input.connect(compressor);
-    input.connect(room);
+    input.connect(tone);
+    tone.connect(compressor);
+    tone.connect(room);
     room.connect(wet);
     wet.connect(compressor);
     compressor.connect(ctx.destination);
