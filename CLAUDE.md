@@ -21,7 +21,7 @@ npm run check    # Everything a pull request must pass (below), in order
 - `npm run check:budget`: `scripts/check-budget.mjs`. Size budgets for the build (gzipped JS per chunk, pictures per file and per group). When something legitimately grows, raise its line in that file in the same pull request.
 - `npm run check:smoke`: `scripts/smoke.mjs`. Serves the build and opens every page and card (cards with a scene also on a phone-sized screen) in Chromium; fails on JavaScript errors, console errors, 404s on our own files or a page that did not draw. Needs `npx playwright install chromium` once.
 
-These cannot see what a real GPU or a real phone does (flicker, disappearing layers), so scenes are still tried by hand on a phone before merging.
+These cannot see what a real GPU or a real phone does (flicker, disappearing layers), so scenes are still tried by hand on a phone before merging. Adding `?fps` to any address (e.g. `/card/31?fps`) shows a frame counter (`FpsMeter.vue`, mounted in `App.vue`): frames per second, slow frames (over 25 ms), stutters (over 50 ms), the worst frame and the time measured; it stays on for the tab (`sessionStorage`), starts again on every page or when touched, and `?fps=0` turns it off.
 
 ## Architecture
 
