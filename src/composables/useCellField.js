@@ -43,7 +43,10 @@ export async function createCellField(canvas, container, { onEvent = null } = {}
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const smallScreen = window.innerWidth < 600;
     const lowPower = (navigator.hardwareConcurrency ?? 8) <= 4;
-    const cellCount = Math.round((smallScreen ? 9 : 14) * (lowPower ? 0.7 : 1));
+    // Letting go of every one of them is the goal of Vipassana, and holding the breath catches a third of them
+    const cellCount = Math.round(21 * (lowPower ? 0.7 : 1));
+    const CATCH = Math.ceil(cellCount / 3);          // cells that one held breath catches
+    const CATCH_TIME = 2.4;                           // seconds of holding to have caught them all
     const particleCount = Math.round((smallScreen ? 150 : 260) * (lowPower ? 0.6 : 1));
 
     // Throws without WebGL; the caller falls back to the static cells
@@ -155,6 +158,8 @@ export async function createCellField(canvas, container, { onEvent = null } = {}
             // Letting go: 'whole' -> 'out' (turning into dots) -> 'hold' (gone, until gather()) -> 'in' (gathering again)
             // -> 'whole'. dis is how far from its shape it is, 0..1
             state: 'whole', dis: 0, timer: 0, hold: Infinity, comeBack: false, dotsLit: false, swell: 0, front: 0.5,
+            // Held close by a held breath (it orbits the character), and the seconds before it lets go when the breath goes out (-1: not yet)
+            caught: false, letGoIn: -1,
         };
     });
 
@@ -386,11 +391,11 @@ export async function createCellField(canvas, container, { onEvent = null } = {}
         }
     };
 
-    // The cells still there take the orbits, the biggest on the outer ones, spread evenly along each; the gone ones keep out
+    // The cells that were caught take the orbits, the biggest on the outer ones, spread evenly along each; the rest keep out
     const assignRings = () => {
         cells.forEach((cell) => { cell.ring = -1; });
         const order = [1, 3, 5, 0, 2, 4];
-        const alive = cells.filter((cell) => cell.state === 'whole' || cell.state === 'in').sort((a, b) => b.size - a.size);
+        const alive = cells.filter((cell) => cell.caught && (cell.state === 'whole' || cell.state === 'in')).sort((a, b) => b.size - a.size);
         const counts = new Array(ORBITS).fill(0);
         alive.forEach((cell, i) => { cell.ring = order[i % ORBITS]; counts[cell.ring]++; });
         const seen = new Array(ORBITS).fill(0);
@@ -404,6 +409,7 @@ export async function createCellField(canvas, container, { onEvent = null } = {}
     const dissolve = (cell) => {
         if (cell.state !== 'whole') return;
         cell.state = 'out';
+        cell.caught = false;
         cell.timer = 0;
         cell.hold = Infinity;
         cell.comeBack = false;
@@ -431,6 +437,8 @@ export async function createCellField(canvas, container, { onEvent = null } = {}
     // The breath: -1 when idle, else seconds since it began
     let breathT = -1;
     let breathHeld = false;
+    let breathIsHeld = false;   // this breath was begun with the breath held in (it catches cells; a press on the water does not)
+    let heldFor = 0;            // seconds the breath has been held
     let breathE = 0;
     // The mandala is an atom: held in, the breath makes what is left orbit the character, the nucleus, as electrons do:
     // six orbits crossing at him, turned 30 degrees from one another (so the whole has the symmetry of a
@@ -538,6 +546,7 @@ export async function createCellField(canvas, container, { onEvent = null } = {}
         if (breathT >= 0) {
             const next = breathHeld ? Math.min(INHALE, breathT + dt) : breathT + dt;
             breathT = next < BREATH ? next : -1;
+            if (breathT < 0) { breathIsHeld = false; heldFor = 0; }
         }
         breathE = breathEnvelope(breathT);
 
@@ -547,6 +556,23 @@ export async function createCellField(canvas, container, { onEvent = null } = {}
         if (orbitW > 0.02 && !ringsAssigned) assignRings();
         else if (orbitW <= 0.02) ringsAssigned = false;
         const pullY = -viewH * 0.04; // the character sits a little below the middle
+        // Holding the breath in closes in on what is nearest to the character, one cell after another, up to CATCH
+        if (breathHeld) {
+            heldFor += dt;
+            const want = Math.min(CATCH, Math.ceil(heldFor / CATCH_TIME * CATCH));
+            let have = cells.filter((cell) => cell.caught).length;
+            while (have < want) {
+                let best = null, bestDistance = Infinity;
+                cells.forEach((cell) => {
+                    if (cell.caught || cell.state !== 'whole') return;
+                    const distance = Math.hypot(cell.x, cell.y - pullY);
+                    if (distance < bestDistance) { best = cell; bestDistance = distance; }
+                });
+                if (!best) break;
+                best.caught = true;
+                have++;
+            }
+        }
         // The orbits fit the frame whatever its shape: the wide ones nearly touch the nearer edge
         const ringBase = Math.min(viewW * 0.5, viewH * 0.42);
         const spot = { x: 0, y: 0, front: 0.5 };
@@ -616,8 +642,9 @@ export async function createCellField(canvas, container, { onEvent = null } = {}
             }
 
             // The breath draws the cells in towards the character and lets them out
-            ax += (0 - cell.x) * 0.35 * breathE * (1 - orbitW);
-            ay += (pullY - cell.y) * 0.35 * breathE * (1 - orbitW);
+            const pull = breathIsHeld ? (cell.caught ? 1.6 : 0.12) : 1;
+            ax += (0 - cell.x) * 0.35 * pull * breathE * (1 - orbitW);
+            ay += (pullY - cell.y) * 0.35 * pull * breathE * (1 - orbitW);
 
             // A ring shoves a cell as it goes through it, and a cell it reaches lets go of its shape
             const depthScale = CAMERA_Z / (CAMERA_Z - cell.z);
@@ -645,6 +672,10 @@ export async function createCellField(canvas, container, { onEvent = null } = {}
                     ay += (dy / distance) * push;
                 }
             });
+            if (cell.letGoIn >= 0) {
+                cell.letGoIn -= dt;
+                if (cell.letGoIn < 0) dissolve(cell);
+            }
             stepCell(cell, dt);
 
             cell.velocity.x += ax * dt;
@@ -675,7 +706,7 @@ export async function createCellField(canvas, container, { onEvent = null } = {}
             // Soft bodies: they breathe, squashing and stretching, and sway instead of spinning
             const breath = Math.sin(time * cell.pulse + cell.phase) * 0.04 + glowing * 0.09 + cell.dis * 0.12;
             const swell = cell.swell * 0.14; // the ring lifts it as it goes through
-            const nearness = (1 + 0.6 * depthLook) * (1 + orbitW * (Math.min(1, ORBIT_CELL_MAX / cell.size) - 1));
+            const nearness = (1 + 0.6 * depthLook) * (1 + (cell.ring >= 0 ? orbitW : 0) * (Math.min(1, ORBIT_CELL_MAX / cell.size) - 1));
             cell.sprite.scale.set(cell.width * (1 + breath + swell) * cell.flip * nearness, cell.height * (1 - breath + swell) * nearness, 1);
             cell.sprite.material.rotation = cell.baseRotation + Math.sin(time * cell.sway + cell.phase) * 0.25;
         });
@@ -921,14 +952,55 @@ export async function createCellField(canvas, container, { onEvent = null } = {}
             return count;
         },
         // One slow breath (breathCurve.js): the cells, the matter and the light lean in towards the character and let go.
-        // False when one is already going. With hold it waits full at the top until releaseBreath().
+        // False when one is already going. With hold it waits full at the top until releaseBreath(), and while it waits it
+        // catches the cells nearest to the character (CATCH of them, one after the other); a breath that is not held
+        // draws all the cells in a little and catches none.
         breathe(hold = false) {
             if (reducedMotion || breathT >= 0) return false;
             breathT = 0;
             breathHeld = hold;
+            breathIsHeld = hold;
+            heldFor = 0;
             return true;
         },
         releaseBreath() { breathHeld = false; },
+        // The breath goes out: every cell it caught lets go, one after the other as the ring from the character reaches
+        // it. The number of them.
+        letGoCaught() {
+            let count = 0;
+            cells.forEach((cell) => {
+                if (!cell.caught) return;
+                cell.caught = false;
+                if (cell.state === 'whole') {
+                    cell.letGoIn = Math.hypot(cell.x, cell.y + viewH * 0.04) / rippleSpeed + 0.05;
+                    count++;
+                }
+            });
+            return count;
+        },
+        // Where each cell that is still whole is, in viewport pixels (a test uses it to find them)
+        cellPoints() {
+            const rect = container.getBoundingClientRect();
+            scene.updateMatrixWorld();
+            return cells.filter((cell) => cell.state === 'whole').map((cell) => {
+                cell.sprite.getWorldPosition(worldPoint);
+                worldPoint.project(camera);
+                return { x: rect.left + (worldPoint.x * 0.5 + 0.5) * rect.width, y: rect.top + (-worldPoint.y * 0.5 + 0.5) * rect.height };
+            });
+        },
+        // How many cells are still whole (not yet let go of), and how many there are
+        remaining: () => cells.filter((cell) => cell.state === 'whole' || cell.state === 'in').length,
+        total: cells.length,
+        // The hint, with no words: one of the cells that is left glows for a moment (the biggest, so it is easy to see).
+        // The caller repeats it while the player does nothing. False when there is none left.
+        hint() {
+            if (reducedMotion) return false;
+            const left = cells.filter((cell) => cell.state === 'whole' && !cell.caught);
+            if (!left.length) return false;
+            const target = left.reduce((best, cell) => (cell.size > best.size ? cell : best), left[0]);
+            target.flare = Math.max(target.flare, 0.8);
+            return true;
+        },
         // How formed the mandala is, 0..1 (the character rises into the middle of it)
         orbit: () => orbitW,
         destroy() {

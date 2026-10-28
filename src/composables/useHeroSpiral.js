@@ -82,6 +82,9 @@ export function createHeroSpiral(canvas, { animate = true } = {}) {
     let flareAt = -Infinity;    // when the last flare began, in seconds on the drawing clock
     let held = false;           // being held: the spiral shortens towards his third eye
     let length = 1;             // 0..1, how much of the spiral is out
+    let ceiling = 1;            // 0..1, the most of it that may be out: it shortens as the cells are let go (see progress())
+    let presence = 1;           // 0..1, how much of it is there at all (it goes when the rulito is born), and its target
+    let presenceTarget = 1;
     let lastT = null;
     // Pointer in picture pixels. The smoothed copy and its strength ease in and out so nothing snaps.
     const pointer = { x: 0, y: 0, tx: 0, ty: 0, strength: 0, target: 0 };
@@ -112,7 +115,9 @@ export function createHeroSpiral(canvas, { animate = true } = {}) {
         // Held, the spiral draws in towards his third eye until it is a point; let go, it comes back out
         const dt = lastT === null ? 0 : Math.min(t - lastT, 0.1);
         lastT = t;
-        length = Math.min(1, Math.max(0, length + (held ? -dt / HOLD_TIME : dt / REGROW_TIME)));
+        // Held, it draws in; otherwise it settles at its ceiling (which is lower the fewer cells are left to let go of)
+        length = held ? Math.max(0, length - dt / HOLD_TIME) : length < ceiling ? Math.min(ceiling, length + dt / REGROW_TIME) : Math.max(ceiling, length - dt / REGROW_TIME);
+        presence += (presenceTarget - presence) * Math.min(1, dt * 4);
         const shown = length * length * (3 - 2 * length);
         const tip = LAST * shown;           // how far along the curve it reaches
         const gathered = 1 - shown;         // 0 when whole, 1 when it is only a point
@@ -120,6 +125,7 @@ export function createHeroSpiral(canvas, { animate = true } = {}) {
         pointer.x += (pointer.tx - pointer.x) * 0.2;
         pointer.y += (pointer.ty - pointer.y) * 0.2;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+        if (presence < 0.01) return;
         const shift = animate ? (t * FLOW) % LAST : 0;
         let count = 0;
         for (let k = 0; k < LAST; k++) {
@@ -149,7 +155,7 @@ export function createHeroSpiral(canvas, { animate = true } = {}) {
             item.depth = depth;
             item.swell = swell;
             item.radius = here[2] * (0.72 + 0.56 * depth) * (1 + 0.4 * swell) * scale;
-            item.alpha = envelope * twinkle * (0.5 + 0.5 * depth);
+            item.alpha = envelope * twinkle * (0.5 + 0.5 * depth) * presence;
         }
 
         // Far dots first, so the near ones overlap them
@@ -179,7 +185,7 @@ export function createHeroSpiral(canvas, { animate = true } = {}) {
                 const side = mote.lateral + Math.sin(t * mote.wobble + mote.phase) * 7;
                 const spot = [here[0] - (dy / length) * side, here[1] + (dx / length) * side];
                 const near = disturb(spot, PUSH * 1.8);
-                ctx.globalAlpha = envelope * mote.alpha * (0.55 + 0.45 * Math.sin(t * 2.3 + mote.phase)) * (1 + near);
+                ctx.globalAlpha = envelope * mote.alpha * (0.55 + 0.45 * Math.sin(t * 2.3 + mote.phase)) * (1 + near) * presence;
                 ctx.beginPath();
                 ctx.arc(spot[0] * scale, spot[1] * scale, mote.size * (1 + near) * scale, 0, Math.PI * 2);
                 ctx.fill();
@@ -190,7 +196,7 @@ export function createHeroSpiral(canvas, { animate = true } = {}) {
         if (core > 0.01) {
             const pulse = animate ? 0.85 + 0.15 * Math.sin(t * 3.2) : 1;
             const reach = (20 + 16 * pulse) * scale;
-            ctx.globalAlpha = core;
+            ctx.globalAlpha = core * presence;
             ctx.drawImage(glow, HEAD[0] * scale - reach, HEAD[1] * scale - reach, reach * 2, reach * 2);
             ctx.fillStyle = '#FFE3F0';
             ctx.beginPath();
@@ -224,6 +230,11 @@ export function createHeroSpiral(canvas, { animate = true } = {}) {
             held = on;
             if (!on) flareAt = (performance.now() - start) / 1000;
         },
+        // How much of what there is to let go of is left, 0..1: the spiral is the count, so it gets shorter with every cell
+        // that goes (never quite to nothing: it goes when the rulito is born, see fade())
+        progress(fraction) { ceiling = 0.1 + 0.9 * Math.min(1, Math.max(0, fraction)); },
+        // It goes (false) or comes back (true), softly
+        fade(on) { presenceTarget = on ? 1 : 0; },
         // Takes viewport coordinates (null when the pointer leaves) and maps them onto the picture
         setPointer(clientX, clientY) {
             if (clientX == null) { pointer.target = 0; return; }

@@ -54,20 +54,15 @@ Orden de los verbos: Arraigar (raíz) y Soltar (corona) son los dos polos, la co
 **Idea:** pasar el puntero para despejar la niebla que cubre algo, o unir puntos hasta que aparece una constelación. En Sincronicidad, reconocer el patrón de las burbujas y tocarlas en el momento justo.
 **Cartas:** Pañña, Ciclos, Sincronicidad.
 
-### 7. Soltar (Sid, demonio: apego): probado en Vipassana
+### 7. Soltar (Sid, demonio: apego): implementado en Vipassana
 **Dinámica:** dejar ir. Que las cosas se vayan sin agarrarlas, y que vuelvan.
-**Cómo funciona hoy en Vipassana:** acá la persona no completa un gesto sino que respira con la escena.
-- *Un toque es una respiración.* Una onda recorre el agua desde el dedo y empuja las células (más fuerte cuanto más se mantiene apretado). Al llegar a Sid él inhala y el campo se acerca; al exhalar su espiral se enciende. Suenan `ripple` y `breath`.
-- *Una célula se suelta.* Tocar una célula no hace onda: explota en puntos y queda así (`release`).
-- *Retener el aire.* Mantener apretado a Sid: su espiral se acorta hasta ser un punto en el tercer ojo (3,2 s) y el campo se inclina hacia él. Un rato más y lo que queda de las células y la materia orbita a su alrededor como electrones, en seis órbitas que forman un mandala; Sid sube al centro de las órbitas. Suena `inhale`.
-- *Dejar ir.* Al soltarlo exhala (`exhale`): la espiral vuelve a salir brillante, sale una onda grande desde Sid que golpea todo (`ripple`) y, cuando termina de cruzar, vuelven todas las células (`bloom`). Nada queda perdido.
-**Propuesta con objetivo:** hoy la escena de Vipassana no tiene un objetivo: es una respiración que se siente, y el premio (la espiral encendida) no depende de nada. Para que como jugador tenga sentido, la propuesta es:
-- **Objetivo:** soltar todo lo que hay en la escena (21 células en la demo; 30 eran demasiadas). Cada célula es algo a lo que se aferra; tocarla la suelta: explota en puntos y queda así.
-- **Premio:** cuando no queda nada que agarrar, la espiral de puntos de Sid se va y solo queda la animación del rulito, en el color de la carta (el violeta, `#6B428E`). Después todo lo que se soltó vuelve y el rulito se va, igual que en Arraigar. Es la misma regla de siempre (el premio es el rulito), pero acá llega por vaciar y no por acumular.
-- **Respirar (tocar el agua):** el ritmo de la escena. No hace falta para ganar.
-- **Retener el aire y exhalar:** apoyo y contraste. Retener es aferrarse (el demonio del séptimo chakra es el apego): la espiral se acorta y el campo se cierra sobre lo que Sid tiene cerca, y cuanto más se retiene más células caen dentro, las más cercanas primero y hasta 7. Al exhalar las suelta todas juntas. Con tres respiraciones alcanza para soltar las 21.
-- **Pista, sin palabras:** arriba hay una hilera de 21 células chicas que se van apagando a medida que se sueltan, así se ve cuánto falta. Si pasa un rato sin tocar nada (poco al empezar), una célula que queda late con un anillo: esa es la que hay que soltar.
-Está probado en la demo del artefacto "Anima por dentro", no en la escena.
+**Cómo funciona hoy en Vipassana:** tiene un objetivo, soltar todo lo que hay en la escena. Cada célula es algo a lo que se aferra (hay 21; 15 en equipos de poca potencia).
+- *Soltar una célula.* Tocarla la suelta: explota en puntos y queda así (`release`). Es el gesto principal y no hay nada que perder ni tiempo límite.
+- *La pista, sin palabras.* La espiral de puntos de Sid es el contador: se acorta con cada célula que se suelta. Si pasa un rato sin tocar nada (poco al empezar), una de las células que quedan se ilumina de a ratos: esa es la que hay que soltar.
+- *Respirar (tocar el agua).* Una onda recorre el agua desde el dedo y empuja las células (más fuerte cuanto más se mantiene apretado). Al llegar a Sid él inhala y todo se acerca; al exhalar su espiral se enciende. Es el ritmo de la escena y no hace falta para ganar. Suenan `ripple` y `breath`.
+- *Retener el aire y exhalar.* Retener es aferrarse (el demonio del séptimo chakra es el apego). Mantener apretado a Sid: su espiral se acorta hasta ser un punto en el tercer ojo (3,2 s), el campo se cierra sobre él y atrapa, una tras otra, las células más cercanas, un tercio del total (7 de 21). Un rato más y esas células y la materia orbitan a su alrededor como electrones, en seis órbitas que forman un mandala; Sid sube al centro. Suena `inhale`. Al soltarlo exhala (`exhale`): la espiral vuelve a salir brillante, sale una onda grande desde Sid (`ripple`) y suelta de golpe todas las células que había atrapado, a medida que la onda llega a cada una. Con tres respiraciones alcanza para soltar todas, pero también se puede tocar de a una.
+- *Cuando no queda nada que agarrar.* La espiral de puntos se va y solo queda la animación del rulito sobre la cabeza de Sid, chico y separado de ella, en el rosa de la espiral. Se ilumina el nombre de la carta y suena una estrella (`star`). Después todo lo que se soltó vuelve (`bloom`) a medida que la cola del rulito alcanza a su cabeza, hasta que se va, y la espiral vuelve. Se puede volver a jugar. Hito de analítica: `all_released`.
+La escena sigue estática con movimiento reducido, así que todavía no se puede jugar así, y tampoco con teclado.
 **Cartas:** Nekkhamma, Upekkha, Perdón, Vipassana (hecha).
 
 ### Sin verbo todavía: el silencio (carta 10)
@@ -88,6 +83,6 @@ No hay nada que leer ni decir; la invitación es sentir el corazón. Su verbo va
 5. Probarlo en un teléfono real: lo que un navegador de escritorio no muestra (GPU, dedo, interruptor de silencio) solo se ve ahí.
 
 ## Para decidir
-- Si el objetivo de Soltar (soltar todo, y el rulito violeta al final) se lleva a la escena real de Vipassana, y qué pasa con el mandala de órbitas al retener el aire (en la demo las órbitas solo las hacen las células atrapadas).
+- Que Vipassana se pueda jugar con teclado y con movimiento reducido (hoy la escena queda estática). Y el color del rulito de Vipassana: es el rosa de la espiral porque el fondo de la escena ya es el violeta de la carta.
 - Tiempos de Arraigar (hoy 2,6 s para dibujarse y 3,4 s para irse): ajustarlos con un teléfono en la mano.
 - Si el rulito de la página Collaborate también pasa a dibujarse en código (hoy sigue dibujado en la imagen del bote).

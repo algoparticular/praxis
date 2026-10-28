@@ -2,19 +2,28 @@
     // Vipassana: the character in the cell-filled water of the landing's hero, same life, same spiral.
     // Everything here is shared with the hero: the rays, the three.js cell field, the character picture,
     // the dotted spiral and the character's behaviour (useCharacterLife).
-    // Unlike the hero, it can be touched. A press anywhere is one slow breath of the whole scene: a ring runs out
-    // through the water from the finger and shoves the cells; when the ring reaches the character he breathes in (his
-    // spiral lights up), the cells and the light lean in towards him, and everything lets out. A cell pressed on does
-    // not make a ring: it only bursts into dots and stays gone. Holding the character himself is holding his breath in:
-    // his spiral shortens towards his third eye until it is a point, and the cells and the light lean in; let go, he
-    // breathes out, the spiral comes back out shining, a big ring runs from him throwing everything about and, when it has
-    // crossed, every cell that had gone gathers itself again.
+    // Unlike the hero, it can be touched, and its verb is Soltar (let go): every cell is something to let go of, and
+    // when there is nothing left to hold on to the rulito is born (see docs/dinamicas-de-juego.md).
+    // - A press on a cell lets go of it: it bursts into dots and stays gone. That is the main gesture. The dotted spiral
+    //   at his third eye is the count: it gets shorter with every cell that goes. If nothing is touched for a while one
+    //   of the cells that are left glows, with no words.
+    // - A press on the water is one slow breath of the whole scene: a ring runs out through it from the finger and
+    //   shoves the cells; when the ring reaches the character he breathes in (his spiral lights up), the cells and the
+    //   light lean in towards him, and everything lets out. It is the rhythm of the scene and is not needed to finish it.
+    // - Holding the character himself is holding his breath in (clinging): his spiral shortens towards his third eye until
+    //   it is a point, the cells nearest to him are caught one after the other (a third of them) and, held a moment
+    //   longer, they orbit him like electrons round a nucleus. Let go, he breathes out, a big ring runs from him and
+    //   lets go of every cell he had caught, at once.
+    // - When no cell is left, the dotted spiral goes and the rulito (Rulito.vue, in the pink of the spiral) is drawn over
+    //   his head. Then everything that was let go gathers itself again as the rulito's tail catches up with its head.
     import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
     import { createCellField } from '../../composables/useCellField.js';
     import { createHeroSpiral } from '../../composables/useHeroSpiral.js';
     import { createCharacterLife } from '../../composables/useCharacterLife.js';
     import { createParallax, enterLayers } from '../../composables/useParallax.js';
     import { play } from '../../composables/useSound.js';
+    import { sceneMilestone } from '../../analytics.js';
+    import Rulito from '../Rulito.vue';
 
     const props = defineProps({
         card: { type: Object, default: () => ({}) },
@@ -28,6 +37,7 @@
     const cellCanvas = ref(null);
     const character = ref(null);
     const spiralCanvas = ref(null);
+    const rulito = ref(null);
     const cellsFallback = ref(false);
 
     let cellField = null;
@@ -35,9 +45,15 @@
     let life = null;
     let parallax = null;
     let breathTimer = 0;
-    let gatherTimer = 0;
-    let regenerate = false;      // the breath in progress is the one that brings the cells back
+    let hintTimer = 0;
+    let frame = 0;
+    let stageEl = null;
+    let heldBreath = false;      // the breath in progress was begun by a finger on him: when it goes out it lets go of what it caught
     let sidBreath = false;       // that breath is being held in by a finger on him
+    let lastAct = performance.now();   // when the player last did something, for the hint
+    let acted = false;
+    let win = null;              // the rulito: { age, head, tail, full, fullAt, back }, from the last cell let go until it is gone
+    let wins = 0;
     let sidReleasedAt = -Infinity;
     let unmounted = false;
     let scrollLift = 0;
@@ -79,22 +95,84 @@
         return false;
     };
 
-    // The cells that let go and gather again each ring their own note
-    const onFieldEvent = (type) => play(type === 'dissolve' ? 'release' : 'bloom');
+    // The cells that let go and gather again each ring their own note. Every cell let go of shortens the spiral, and the last
+    // one gives birth to the rulito
+    const onFieldEvent = (type) => {
+        if (type !== 'dissolve') { play('bloom'); return; }
+        play('release');
+        if (!cellField) return;
+        const left = cellField.remaining();
+        spiral?.progress(left / cellField.total);
+        if (left === 0) startWin();
+    };
 
     // He lets the breath out: his spiral lights up (the life does that), and if he was asked by a press on him, the
-    // big ring runs out from him, throwing the cells and the matter about; when it has crossed the frame every cell
-    // that had gone comes back and everything settles into its place
-    const RING_CROSSING = 2300; // ms for the ring to cross the frame
+    // big ring runs out from him, throwing the cells and the matter about, and lets go of every cell he had caught as
+    // it reaches them
     const onExhale = () => {
-        if (!regenerate) return;
-        regenerate = false;
+        if (!heldBreath) return;
+        heldBreath = false;
         const box = character.value.getBoundingClientRect();
         cellField?.ripple(box.left + box.width / 2, box.top + box.height * 0.55, 1, 2.6);
         play('ripple', 1);
-        clearTimeout(gatherTimer);
-        gatherTimer = setTimeout(() => cellField?.gather(), RING_CROSSING);
+        cellField?.letGoCaught();
     };
+
+    // Nothing is left to hold on to: the dotted spiral goes and the rulito is drawn over his head (GROW seconds), shines for
+    // a moment (LINGER) and then everything that was let go comes back as its tail catches up with its head (EAT)
+    const GROW = 2.6, LINGER = 2.2, EAT = 3.4;
+    const startWin = () => {
+        if (win || reducedMotion) return;
+        wins += 1;
+        win = { age: 0, head: 0, tail: 0, full: false, fullAt: 0, back: false, pop: 0 };
+        spiral?.fade(false);
+        rulito.value?.reshape();
+        sceneMilestone('all_released', { times: wins });
+    };
+    let lastT = null;
+    const tick = (now) => {
+        frame = requestAnimationFrame(tick);
+        const dt = lastT === null ? 0 : Math.min((now - lastT) / 1000, 0.1);
+        lastT = now;
+        if (!win || !rulito.value) return;
+        const t = now / 1000;
+        win.age += dt;
+        win.pop = Math.max(0, win.pop - dt * 2.2);
+        // It starts quickly and eases in as it gets there, as in Paciencia
+        if (win.age > 0.4 && win.head < 1) win.head = 1 - (1 - Math.min(1, (win.age - 0.4) / GROW)) ** 1.6;
+        if (win.head >= 1 && !win.full) { win.full = true; win.fullAt = win.age; win.pop = 1; play('star'); }
+        if (win.full && !win.back && win.age - win.fullAt > LINGER) {
+            win.back = true;
+            cellField?.gather();
+            spiral?.progress(1);
+        }
+        if (win.back) {
+            win.tail = Math.min(win.head, win.tail + dt / EAT);
+            if (win.tail > 0.7) spiral?.fade(true);
+        }
+        const whole = Math.min(1, Math.max(0, (win.head - win.tail - 0.6) / 0.4));
+        stageEl?.style.setProperty('--name-glow', Math.max(win.pop, 0.8 * whole * whole * (3 - 2 * whole)).toFixed(3));
+        const flare = win.full && win.head - win.tail > 0.9 ? Math.max(win.pop, Math.sin(t * 4) * 0.5 + 0.5) : 0;
+        rulito.value.frame({ head: win.head, tail: win.tail, flare, t, fade: Math.min(1, (win.head - win.tail) * 14) });
+        rulito.value.$el.style.rotate = `${(Math.sin(t * 1.8) * 3).toFixed(2)}deg`;
+        rulito.value.$el.style.scale = (1 + 0.2 * win.pop * win.pop).toFixed(3);
+        if (win.back && win.tail >= win.head) {
+            win = null;
+            rulito.value.frame({});
+            stageEl?.style.setProperty('--name-glow', '0');
+            // If every cell was let go of again while the rulito was going, there is a new one to be born
+            if (cellField && cellField.remaining() === 0) startWin();
+        }
+    };
+
+    // With no words: while nothing is touched, one of the cells that are left glows now and then (sooner at the start)
+    const startHints = () => {
+        hintTimer = setInterval(() => {
+            if (!cellField || win || sidBreath || reducedMotion) return;
+            if ((performance.now() - lastAct) / 1000 > (acted ? 6 : 3)) cellField.hint();
+        }, 1400);
+    };
+    const touched = () => { lastAct = performance.now(); acted = true; };
 
     const breatheIn = (awayX, awayY) => {
         // The ring jostles him as it goes through, away from where it came from
@@ -113,13 +191,14 @@
     const onDown = (event) => {
         press.start = performance.now();
         press.pressure = 0;
+        touched();
         notePressure(event);
         if (!entered || reducedMotion || !onCharacter(event.clientX, event.clientY)) return;
         // A finger on him: the spiral starts to draw in and he breathes in and holds it
         spiral?.hold(true);
         if (life?.inhale(true)) {
             sidBreath = true;
-            regenerate = true;
+            heldBreath = true;
             cellField?.breathe(true);
             play('inhale');
         }
@@ -130,6 +209,7 @@
         window.removeEventListener('pointerup', onUp);
         window.removeEventListener('pointercancel', onUp);
         sidReleasedAt = performance.now();
+        touched();
         spiral?.hold(false);
         if (!sidBreath) return;
         sidBreath = false;
@@ -148,6 +228,7 @@
 
     const onClick = (event) => {
         if (!entered) return;
+        touched();
         const onSid = onCharacter(event.clientX, event.clientY);
         if (reducedMotion) {
             if (onSid) { life?.flare(); spiral?.flare(); play('star'); }
@@ -201,6 +282,11 @@
             rays.value.style.translate = `${-x * 10}px ${-y * 8}px`;
             scrollLift = -scroll * 70;
         });
+        stageEl = root.value.closest('.stage');
+        startHints();
+        frame = requestAnimationFrame(tick);
+        // Only in development: lets a test look at the game
+        if (import.meta.env.DEV) root.value.__game = { get field() { return cellField; }, get win() { return win; }, get spiral() { return spiral; }, get holding() { return sidBreath; } };
         enter();
     });
     watch(() => props.active, enter);
@@ -210,7 +296,9 @@
         parallax?.destroy();
         life?.destroy();
         clearTimeout(breathTimer);
-        clearTimeout(gatherTimer);
+        clearInterval(hintTimer);
+        cancelAnimationFrame(frame);
+        stageEl?.style.removeProperty('--name-glow');
         root.value?.removeEventListener('touchstart', onTouchStart);
         window.removeEventListener('pointerup', onUp);
         window.removeEventListener('pointercancel', onUp);
@@ -231,6 +319,8 @@
         <div class="character" ref="character">
             <img class="body" src="/assets/hero/character.webp" alt="" draggable="false">
             <canvas class="spiral" ref="spiralCanvas"></canvas>
+            <!-- The rulito over his head, in the pink of his spiral -->
+            <Rulito ref="rulito" class="rulito" color="#FFC2DE" />
         </div>
     </div>
 </template>
@@ -288,6 +378,17 @@
         width: 100%;
         height: auto;
         user-select: none;
+    }
+
+    /* His head is at 47% of his picture, a little right of the middle. The rulito is small (19% of its height) and floats
+       clear of his head, with a gap of about 5% between them */
+    .character .rulito {
+        position: absolute;
+        left: 53%;
+        top: 23.5%;
+        width: 8.2%;
+        translate: -50% 0;
+        transform-origin: 50% 100%;
     }
 
     .character .spiral {
