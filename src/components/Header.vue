@@ -87,13 +87,14 @@
         <div class="navContainer">
             <button v-if="props.hasBack" class="back" :aria-label="$t('nav.back')" @click="handleBack()"></button>
             <button v-if="props.hasDeck" class="deck" :class="{ nine: fromNine }" :aria-label="fromNine ? $t('praxis.theNine') : $t('praxis.fullDeck')" @click="handleGoToDeck()"></button>
+            <!-- The brand mark takes the left corner on the pages with nowhere to go back to (landing, collaborate),
+                 so every header has the same shape: the way out on the left, the tools on the right -->
+            <div id="logo" v-if="$slots.logo">
+                <a href="/praxis">
+                    <slot name="logo"></slot>
+                </a>
+            </div>
         </div>
-
-        <div id="logo">
-            <a href="/praxis">
-                <slot name="logo"></slot>
-            </a>
-        </div>  
 
         <Transition name="fade" mode="out-in">
             <div id="menuOverlay" class="glass" v-if="showMenu">
@@ -139,7 +140,6 @@
 
     #logo {
         display: flex;
-        justify-content: center;
         align-items: center;
         /* filter: drop-shadow(0px 2px 3px rgba(16, 16, 15, .36)); */
         filter: drop-shadow(0px 2px 3px rgba(234, 234, 234, 0.36));
@@ -149,7 +149,7 @@
         width: 40px;
     }
 
-    /* The two sides are as wide as the sound and menu buttons together, so the logo stays in the middle */
+    /* The two sides are as wide as the sound and menu buttons together, so whatever a page puts in the middle stays centred */
     .navContainer {
         width: 100px;
         display: flex;
