@@ -7,10 +7,10 @@
     // whose shapes come from density maps of the original stipple (pannaClouds.json); the floor itself is a drawn
     // silhouette. The spiral from the sun to Sid's forehead is a moving group of particles, and a last group throws
     // sparks when the fireflies, the blue mushrooms or Sid are touched.
-    // Its verb is Ver (see): the eight lights of the scene (the sun, Sid's third eye, the four fireflies and the two blue
-    // mushrooms) are joined by dragging from one to another. Each thread is a spiral like the one from the sun to the third
-    // eye, which is already the first of them. When every light is part of one network the pattern is seen: the rulito is
-    // born over Sid's head (see docs/dinamicas-de-juego.md).
+    // Its verb is Ver (see): the nine lights of the scene (the sun, Sid's third eye, the big pink mushroom, the four
+    // fireflies and the two blue mushrooms) are joined by dragging from one to another with threads of dots. The pattern
+    // to see is a star, every light joined to the third eye: then the rulito is born over Sid's head (see
+    // docs/dinamicas-de-juego.md).
     // Two scales give depth: the centre lives in a square frame; the surroundings are a slightly bigger square whose
     // left and right halves are anchored to the sides of the screen, so on a wide screen the forest still hugs the edges.
     import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
@@ -151,8 +151,9 @@
     const DOTS = 72;           // dots in each strand of a thread (the shorter ones use fewer)
     const DUST = 20;
     const PER = DOTS * 2 + DUST;                   // the particles of one thread
-    const MAX_LINKS = 36;                          // as many as there are pairs of lights
-    const SLOTS = 1 + MAX_LINKS;                   // slot 0 is the thread that follows the finger
+    const MAX_LINKS = 6;                           // the most threads a figure has
+    const GHOST_SLOT = 1 + MAX_LINKS;              // the ghost of the figure has a slot for each of its threads
+    const SLOTS = 1 + 2 * MAX_LINKS;               // slot 0 is the thread that follows the finger
     const FLOW = 0.05;         // lengths of a thread per second
     let bob = 0;               // Sid floats; the aura and the third eye float with him
     let surge = 0;             // 1 when Sid has just been touched: the threads rush
@@ -237,9 +238,16 @@
             // The threads the person has joined, each growing out of the light it left
             links.forEach((link, k) => {
                 const grow = smooth(0, 1, smooth(0, 0.9, t - link.born));
-                draw(1 + k, spots[link.a], spots[link.b], [TINTS[link.a], TINTS[link.b]], 0.9 * linksFade, grow, link.dir);
+                draw(1 + k, spots[link.a], spots[link.b], [TINTS[link.a], TINTS[link.b]], (inFigure(link) ? 0.95 : 0.4) * linksFade, grow, link.dir);
             });
             for (let k = links.length; k < MAX_LINKS; k++) hide(1 + k, data);
+            // The ghost of the figure: its threads that are not joined yet draw themselves one after another, faint, and go
+            const ghosts = ghost ? figure.links.filter(([a, b]) => !joined(a, b)) : [];
+            ghosts.forEach(([a, b], k) => {
+                const fade = smooth(0, 0.6, ghost.age) * smooth(0, 0.8, GHOST_LEN - ghost.age);
+                draw(GHOST_SLOT + k, spots[a], spots[b], [TINTS[a], TINTS[b]], 0.5 * fade, smooth(0, 1, smooth(0, 0.9, ghost.age - k * 0.2)));
+            });
+            for (let k = ghosts.length; k < MAX_LINKS; k++) hide(GHOST_SLOT + k, data);
             // The thread that follows the finger, locking on to a light that is near enough
             if (drag && drag.moved) {
                 const snapped = drag.snap >= 0;
@@ -438,9 +446,11 @@
 
     // ---- Ver: joining the lights
     // The nine lights are the sun, Sid's third eye, the mushrooms of the field, and the fireflies and blue mushrooms of
-    // both sides. Nothing is joined at the start. Dragging from one light to another joins them with a thread; when every
-    // light is part of one network the pattern is seen: the rulito is drawn over Sid's head, stays a moment and goes,
-    // the threads go out with it, and everything can be joined again.
+    // both sides. Nothing is joined at the start. Dragging from one light to another joins them with a thread. There is
+    // one pattern, a star: every light joined to the third eye, which takes eight threads. The threads that touch the eye
+    // are firm and bright and the others dim, so the pattern can be learned. At the eighth thread the try is judged: if
+    // it is the star the pattern is seen (the rulito is drawn over Sid's head, stays a moment and goes with the threads),
+    // and if it is not the threads go out softly and it starts again.
     const SUN = 0, EYE = 1, FIELD = 2;
     const LIGHTS = [
         { key: 'sun', tint: 0xffe47d },
@@ -456,13 +466,14 @@
     const links = [];                              // { a, b, born }: the threads the person has joined
     let sunShift = [0, 0];
     let mushShift = [0, 0];
+    let parting = false;                           // the threads of a try that was not the pattern are going out
     let win = null;                                // the rulito: { age, head, tail, full, fullAt, back, pop }, until it is gone
     let wins = 0;
     let drag = null;                               // { from, x, y, startX, startY, moved, snap, tap }
     let kbFrom = -1;                               // the light picked with the keyboard, waiting for the one to join it to
     let idle = 0;                                  // seconds since the last touch
-    let hintIn = 0;
-    let hintTurn = 0;
+    let ghost = null;                              // { age }: the figure drawing itself, faint, when nothing has been touched for a while
+    let ghostIn = 0;
 
     // Where each light is on the canvas now
     const lightSpots = () => {
@@ -503,25 +514,49 @@
         burst(x, y, { n: 18, colors: [0xffe47d, 0xfff3b8, 0xffffff], speed: 110, size: 5.4 });
     };
 
-    // Which lights are joined to which
-    const network = () => {
-        const group = LIGHTS.map((_, i) => i);
-        const root = (i) => (group[i] === i ? i : (group[i] = root(group[i])));
-        links.forEach((l) => { group[root(l.a)] = root(l.b); });
-        return root;
+    // The figures to see, each a set of threads. One is drawn at random for a try and stays until it is seen, and then another
+    // comes. Not every light is in every figure: the others are decoys
+    const at = (key) => LIGHTS.findIndex((light) => light.key === key);
+    const loop = (keys) => keys.map((key, i) => [at(key), at(keys[(i + 1) % keys.length])]);
+    const FIGURES = [
+        { name: 'cross', links: ['sun', 'field', 'blue-l', 'blue-r'].map((key) => [EYE, at(key)]) },
+        { name: 'diamond', links: loop(['sun', 'blue-r', 'field', 'blue-l']) },
+        { name: 'hexagon', links: loop(['sun', 'fly-tr', 'fly-br', 'field', 'fly-bl', 'fly-tl']) },
+        { name: 'triangles', links: [...loop(['sun', 'fly-bl', 'fly-br']), ...loop(['field', 'fly-tl', 'fly-tr'])] },
+    ];
+    let figure = null;
+    let lastFigure = -1;
+    const nextFigure = () => {
+        let i;
+        do { i = Math.floor(Math.random() * FIGURES.length); } while (i === lastFigure);
+        lastFigure = i;
+        figure = FIGURES[i];
     };
+    nextFigure();
+    const inFigure = (link) => figure.links.some(([a, b]) => (a === link.a && b === link.b) || (a === link.b && b === link.a));
     const joined = (a, b) => links.some((l) => (l.a === a && l.b === b) || (l.a === b && l.b === a));
 
     const join = (a, b) => {
-        if (win || reducedMotion || a === b || joined(a, b) || links.length >= MAX_LINKS) return;
+        if (win || parting || reducedMotion || a === b || joined(a, b) || links.length >= MAX_LINKS) return;
         links.push({ a, b, born: lastT });
         idle = 0;
         surge = Math.max(surge, 0.5);
         flare(a);
         flare(b);
-        play('link', { from: LIGHTS[a].pitch, to: LIGHTS[b].pitch });
-        const root = network();
-        if (LIGHTS.every((_, i) => root(i) === root(SUN))) seen();
+        play('link', { from: LIGHTS[a].pitch, to: LIGHTS[b].pitch, level: inFigure(links[links.length - 1]) ? 1 : 0.45 });
+        if (links.length === figure.links.length) {
+            if (figure.links.every(([x, y]) => joined(x, y))) seen();
+            else unravel();
+        }
+    };
+
+    // The threads were as many as the figure has but not the figure: after a moment to see it they go out softly and it
+    // starts again, with the same figure
+    const unravel = () => {
+        parting = true;
+        sceneMilestone('pattern_reset', { figure: figure.name });
+        timers.push(setTimeout(() => { linksOut = true; play('unravel'); }, 1100));
+        timers.push(setTimeout(() => { links.length = 0; linksOut = false; parting = false; idle = 0; }, 3200));
     };
 
     // The pattern is seen: every light answers, nearest to the eye first, and the rulito is drawn over Sid's head (GROW
@@ -531,21 +566,12 @@
         wins += 1;
         win = { age: 0, head: 0, tail: 0, full: false, fullAt: 0, back: false, pop: 0, opened: false };
         rulito.value?.reshape();
-        sceneMilestone('pattern_seen', { times: wins });
-        // The threads carry their light to the third eye: each one flows from the light farther from it to the nearer one
-        const depth = LIGHTS.map(() => Infinity);
-        depth[EYE] = 0;
-        const queue = [EYE];
-        while (queue.length) {
-            const here = queue.shift();
-            links.forEach((l) => {
-                const other = l.a === here ? l.b : l.b === here ? l.a : -1;
-                if (other >= 0 && depth[other] === Infinity) { depth[other] = depth[here] + 1; queue.push(other); }
-            });
-        }
-        links.forEach((l) => { l.dir = depth[l.b] > depth[l.a] ? -1 : 1; });
-        play('converge');
+        sceneMilestone('pattern_seen', { times: wins, figure: figure.name });
+        // The threads carry their light to the third eye: each one flows from its end farther from it to the nearer one
         const spots = lightSpots();
+        const far = (i) => Math.hypot(spots[i][0] - spots[EYE][0], spots[i][1] - spots[EYE][1]);
+        links.forEach((l) => { l.dir = far(l.b) > far(l.a) ? -1 : 1; });
+        play('converge');
         spots.map(([x, y], i) => ({ i, d: Math.hypot(x - spots[EYE][0], y - spots[EYE][1]) }))
             .sort((a, b) => a.d - b.d)
             .forEach(({ i }, k) => timers.push(setTimeout(() => flare(i), 150 + k * 120)));
@@ -593,20 +619,25 @@
             stageEl?.style.setProperty('--name-glow', '0');
             links.length = 0;
             linksOut = false;
+            nextFigure();
         }
     };
     let auraGoal = 0;                              // 0..1, how much of the network is joined
     let aura = 0;                                  // the aura's swelling, easing towards it
     let linksOut = false;                          // the threads fade out while the rulito goes
 
-    // The lights that are joined stay lit, so the network is seen growing
+    // The lights that are joined stay lit, so the network is seen growing: the ones joined by the figure's threads fully, the
+    // others less. Sid's aura grows with the threads that are right
     const keepLit = () => {
         if (win) return;
-        const lit = new Set();
-        links.forEach((l) => { lit.add(l.a); lit.add(l.b); });
-        lit.forEach((i) => warmLight(i, 0.5));
-        // Sid's aura grows with the lights that are joined, and he glows a little more
-        const level = lit.size / LIGHTS.length;
+        let right = 0;
+        links.forEach((l) => {
+            const good = inFigure(l);
+            warmLight(l.a, good ? 0.5 : 0.25);
+            warmLight(l.b, good ? 0.5 : 0.25);
+            if (good) right += 1;
+        });
+        const level = right / figure.links.length;
         back?.boost(G.aura, 0.15 + 1.1 * level);
         awake = Math.max(awake, 0.45 * level);
         auraGoal = level;
@@ -623,21 +654,21 @@
         back?.grow(G.aura, 0.14 * aura, L.fx0 + 1072 * L.kf, L.fy0 + 1123 * L.kf);
     };
 
-    // No words: after a while without touching anything a light that is not joined yet glows now and then, first the sun
-    // and the eye, which are the ones to join first
+    // No words: after a while without touching anything the figure draws itself, faint, and goes (GHOST_LEN seconds); to
+    // see it is to notice what was there. Touching again makes it go quickly
+    const GHOST_LEN = 3.6;
     const hint = (dt) => {
-        if (win || drag || reducedMotion || !entered) return;
+        if (ghost) {
+            ghost.age += dt;
+            if (ghost.age > GHOST_LEN) ghost = null;
+        }
+        if (win || parting || drag || reducedMotion || !entered) return;
         idle += dt;
-        hintIn -= dt;
-        if (idle < 8 || hintIn > 0) return;
-        hintIn = 3.5;
-        if (!links.length) { warmLight(hintTurn++ % 2 ? EYE : SUN, 1); return; }
-        const root = network();
-        const size = {};
-        LIGHTS.forEach((_, i) => { size[root(i)] = (size[root(i)] ?? 0) + 1; });
-        const main = Object.keys(size).sort((a, b) => size[b] - size[a])[0];
-        const apart = LIGHTS.map((_, i) => i).filter((i) => String(root(i)) !== main);
-        if (apart.length) warmLight(apart[Math.floor(Math.random() * apart.length)], 1);
+        ghostIn -= dt;
+        if (!ghost && idle > 9 && ghostIn <= 0) {
+            ghost = { age: 0 };
+            ghostIn = 13;
+        }
     };
 
     // Dragging: the light is grabbed where the finger goes down, and the thread follows until it is let go
@@ -684,6 +715,7 @@
         const light = LIGHTS[i];
         if (light.target) touch(light.target, light.side);
         idle = 0;
+        if (ghost) ghost.age = Math.max(ghost.age, GHOST_LEN - 0.5);
         if (reducedMotion) { taps[i]?.(); return; }
         const [x, y] = toCanvas(event);
         drag = { from: i, x, y, startX: event.clientX, startY: event.clientY, moved: false, snap: -1, tap: taps[i] };
