@@ -59,7 +59,7 @@ Propuestas que salieron al ordenar la documentación. Son hipótesis, no decisio
 **Antes de construirlo.** La analítica ya reporta hitos (`pattern_seen`, `all_released`; ver `docs/analitica.md`). Mirar cuánta gente completa un juego y cuánta llega a la lectura ayuda a decidir qué vale la pena. La opción 1 es la más barata y la que menos cambia lo que la app promete.
 
 **Otras.**
-- Probar el verbo del centro, Dar y recibir, que es el único que no se probó en una escena (ver `verbos-y-dinamicas.md`). 24 de las 33 cartas siguen con ilustración plana: conviene llevar un verbo por vez a las cartas de su familia.
+- Dar y recibir, el verbo del centro, se está probando en Dana (ver `verbos-y-dinamicas.md`). 24 de las 33 cartas siguen con ilustración plana: conviene llevar un verbo por vez a las cartas de su familia.
 - Accesibilidad de Pañña y Vipassana (movimiento reducido y teclado), anotada en `abierto.md` como "más adelante".
 - Dos presupuestos de tamaño están justos (otras imágenes y ilustraciones de cartas, `scripts/check-budget.mjs`): cada escena nueva con capas WebP los va a pedir.
 

@@ -6,7 +6,7 @@ Estado a 2026-10-26. Verbos: ver `verbos-y-dinamicas.md` (ya guardados en `cards
 
 | id | Carta | Tipo | Escena | Qué hace al tocarla | Sonido hoy | Música | Verbo |
 |----|-------|------|--------|---------------------|------------|--------|---|
-| 2 | Dana | Pāramī | `SceneDana` | La llamita salta y lanza chispas | `star` | pendiente | Dar y recibir |
+| 2 | Dana | Pāramī | `SceneDana` | Se agarra la llamita y se lanza al otro, que la atrapa con un toque; a la tercera ida y vuelta los dos brillan igual y nacen los rulitos | `give`, `link`, `rulito` | pendiente | Dar y recibir |
 | 3 | Pañña | Pāramī | `ScenePanna` | Se tocan luciérnagas, hongos azules, Sid y el sol (el sol hace que todo responda); espiral del sol a la frente de Sid | `star`, `tap` | pendiente | Ver |
 | 5 | Khanti | Pāramī | `SceneKhanti` | Corchos que saltan y vacían su frasco (evaporan); pincelada lavanda que sigue el dedo; criaturas que destellan; el signo central rellena todo | `tap`, `star` | pendiente | Fluir |
 | 20 | Creatividad | Regular | `SceneCreatividad` | Corales y algas que se aplastan y lanzan esporas; interior acuoso con orgánulos y una medusa (Aura) que pulsa y rebota | `tap` | pendiente | Resonar |
