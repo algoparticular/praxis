@@ -61,16 +61,17 @@ Está en el campo `verb` de `src/data/cards.json` y los verbos en `src/data/verb
 | Encender (4) | Viriya 4, Coraje 19, Desafío 21, Evolución Espiritual 22 |
 | Dar y recibir (3) | Dana 2, Metta 8, Gratitud 24 |
 | Resonar (7) | Sila 1, Sacca 6, Armonía 12?, Comunicación 17, Creatividad 20, Honestidad 26, Sincronicidad 29 |
-| Ver (4) | Pañña 3, Belleza 13, Ciclos 15, Esperanza 30 |
-| Soltar (4) | Nekkhamma 0, Upekkha 9, Perdón 28, Vipassana 31 |
+| Ver (3) | Pañña 3, Belleza 13, Esperanza 30 |
+| Soltar (5) | Nekkhamma 0, Upekkha 9, Ciclos 15, Perdón 28, Vipassana 31 |
 | Sin verbo (1) | Carta 10 (el silencio) |
 
-Total: 6 + 4 + 4 + 3 + 7 + 4 + 4 + 1 = 33. Ciclos podría ir en Soltar (*"¿Qué es tiempo de dejar ir?"*).
+Total: 6 + 4 + 4 + 3 + 7 + 3 + 5 + 1 = 33.
 
 ## Decidido
 - Carta 10 (`" ... "`): es el silencio. No hay nada que leer ni decir, la invitación es sentir el corazón. Su verbo va entre Fa, Sol o La (por decidir); la forma, por definir.
 - Nombre del personaje: **Sid** (Seed, semilla).
 - El bichito con pelos y antenas es un Sama. El ser dentro de la célula de Evolución es Sid.
+- Ciclos es **Soltar**, no Ver: *"¿Qué es tiempo de dejar ir?"*, *"sólo puedes avanzar si sos capaz de soltar lo viejo"*. Fluir se queda con Transformación, que habla de atravesar el cambio; Ciclos habla de cerrarlo.
 - Belleza y Esperanza son **Ver**: *"poder ver lo bello"*; *"hilos invisibles de luz"* bajo un cielo de estrellas.
 - Upekkha se queda en **Soltar** (la impermanencia, soltar el ancla), aunque su invitación diga "fluí".
 - Sila se queda en **Resonar**: es la conducta ética (en el Noble Óctuple Sendero, *sīla* reúne recta palabra, recta acción y recto modo de vida) y la carta la plantea "en resonancia con la voz de tu sabiduría interior".

@@ -73,7 +73,7 @@ Orden de los verbos: Arraigar (raíz) y Soltar (corona) son los dos polos, la co
 - *Movimiento reducido.* La escena queda estática y todavía no se puede jugar (como Vipassana): los toques siguen haciendo lo de siempre.
 **Dónde se tocó:** `ScenePanna.vue` (todos los hilos son un solo grupo de partículas, `helix()`; `LIGHTS`, `join()`, `seen()`). No cubre ni agrega ningún dibujo: son solo partículas.
 **Variante posible:** despejar una niebla de partículas para revelar las luces (cubriría el arte de Pañña; encajaría mejor en Honestidad, que tiene burbujas) o primero descubrir y después unir.
-**Cartas:** Pañña (hecha), Ciclos, Belleza, Esperanza. Esperanza es la que mejor toma el motor de Pañña: su texto habla de *"hilos invisibles de luz"* y su ilustración es un cielo lleno de estrellas (unirlas en una constelación). Belleza (*"poder ver lo bello"*) no tiene luces dibujadas: necesita otro gesto, como descubrir lo bello escondido en el bosque.
+**Cartas:** Pañña (hecha), Belleza, Esperanza. Esperanza es la que mejor toma el motor de Pañña: su texto habla de *"hilos invisibles de luz"* y su ilustración es un cielo lleno de estrellas (unirlas en una constelación). Belleza (*"poder ver lo bello"*) no tiene luces dibujadas: necesita otro gesto, como descubrir lo bello escondido en el bosque.
 
 ### 7. Soltar (Sid, demonio: apego): implementado en Vipassana
 **Dinámica:** dejar ir. Que las cosas se vayan sin agarrarlas, y que vuelvan.
@@ -86,7 +86,7 @@ Orden de los verbos: Arraigar (raíz) y Soltar (corona) son los dos polos, la co
 - *Cuando no queda nada que agarrar.* La espiral de puntos se va y solo queda la animación del rulito sobre la cabeza de Sid, chico y separado de ella, en el rosa de la espiral. Se ilumina el nombre de la carta y suena el acorde en la octava siguiente (`rulito`). Después todo lo que se soltó vuelve (`bloom`) a medida que la cola del rulito alcanza a su cabeza, hasta que se va, y la espiral vuelve. Se puede volver a jugar. Hito de analítica: `all_released`.
 Dónde está Sid se decide con una máscara precalculada (`characterMask.js`, hecha con `scripts/make-character-mask.mjs`), no leyendo píxeles de un canvas en ejecución, que Safari de escritorio puede devolver vacío.
 La escena sigue estática con movimiento reducido, así que todavía no se puede jugar así, y tampoco con teclado.
-**Cartas:** Nekkhamma, Upekkha, Perdón, Vipassana (hecha).
+**Cartas:** Nekkhamma, Upekkha, Ciclos, Perdón, Vipassana (hecha).
 
 ### Sin verbo todavía: el silencio (carta 10)
 No hay nada que leer ni decir; la invitación es sentir el corazón. Su verbo va entre Fa (Dar y recibir), Sol (Resonar) o La (Ver), por decidir. Si tiene un juego, sería no jugar: la escena responde solo si se deja de tocar.
