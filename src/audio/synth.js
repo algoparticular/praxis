@@ -25,13 +25,19 @@ const KINDS = {
     '': { tones: [0, 4, 7], scale: [0, 2, 4, 7, 9] },        // major: opens, expands
     m: { tones: [0, 3, 7], scale: [0, 3, 5, 7, 10] },        // minor: turns inwards
     7: { tones: [0, 4, 7, 10], scale: [0, 2, 4, 7, 10] },    // seventh: transforms
+    maj7: { tones: [0, 4, 7, 11], scale: [0, 2, 4, 7, 11] }, // major seventh: opens, calmly
+    m7: { tones: [0, 3, 7, 10], scale: [0, 3, 5, 7, 10] },   // minor seventh: inwards, with an open door
 };
 
-// 'D', 'Bm', 'G7', 'F#m'... The pad's bass falls between A2 and G#3, and the voice of the chimes and the touch
+// A minor chord (with or without its seventh) turns inwards; any chord with four notes has a seventh
+const isMinor = (kind) => kind === 'm' || kind === 'm7';
+const hasSeventh = (harmony) => harmony.intervals.length === 4;
+
+// 'D', 'Bm', 'G7', 'F#m', 'Cmaj7', 'Am7'... The pad's bass falls between A2 and G#3, and the voice of the chimes and the touch
 // sounds (its root) between E4 and D#5; every other note is counted from those two. G major, the app's own
 // chord, gives a pad of G3 D4 G4 B4 D5 G5 and chimes of G4 A4 B4 D5 E5 G5.
 export const chord = (name = BASE_CHORD) => {
-    const [, letter = 'G', accidental = '', kind = ''] = /^([A-G])([#b]?)(m|7)?$/.exec(name) ?? [];
+    const [, letter = 'G', accidental = '', kind = ''] = /^([A-G])([#b]?)(maj7|m7|m|7)?$/.exec(name) ?? [];
     const root = (LETTERS[letter] + (accidental === '#' ? 1 : accidental === 'b' ? -1 : 0) + 12) % 12;
     const bass = 45 + ((root - 9 + 12) % 12);
     const voice = 64 + ((root - 4 + 12) % 12);
@@ -53,7 +59,7 @@ export const chord = (name = BASE_CHORD) => {
         },
         pad: [
             [bass, 0.28], [bass + 7, 0.4], [bass + 12, 0.34], [bass + 12 + third, 0.26], [bass + 19, 0.18],
-            kind === '7' ? [bass + 22, 0.12] : [bass + 24, 0.08],
+            tones.length === 4 ? [bass + 12 + tones[3], 0.12] : [bass + 24, 0.08],
         ],
         chimes: [...scale, 12].map((step) => hz(voice + step)),
     };
@@ -192,9 +198,9 @@ export const flip = (ctx, out, time, harmony) => {
         return;
     }
     const root = harmony.voice;
-    bell(ctx, out, time + 0.42, hz(root + harmony.intervals[1]), harmony.kind === 'm' ? 3.2 : 2.6, 0.06);
+    bell(ctx, out, time + 0.42, hz(root + harmony.intervals[1]), isMinor(harmony.kind) ? 3.2 : 2.6, 0.06);
     bell(ctx, out, time + 0.46, hz(root - 12), 4, 0.05);
-    if (harmony.kind === '7') bell(ctx, out, time + 0.7, hz(root + 10), 2.6, 0.03);
+    if (hasSeventh(harmony)) bell(ctx, out, time + 0.7, hz(root + harmony.intervals[3]), 2.6, 0.03);
 };
 
 // Stars come in bursts (a scene touched again and again, a sky full of shooting stars), and the same bright run
@@ -228,8 +234,8 @@ export const star = (ctx, out, time, harmony) => {
         swish(ctx, out, time, { from: 7000, to: 9500, duration: 0.7, level: 0.012 * weight, q: 0.6 });
         return;
     }
-    const minor = harmony.kind === 'm';
-    const seventh = harmony.kind === '7';
+    const minor = isMinor(harmony.kind);
+    const seventh = hasSeventh(harmony);
     // Chord notes from the fifth octave up (A5 D6 F#6 for D major), sometimes one more below so the run is
     // not always the same length; mostly falling, now and then rising
     let notes = harmony.tones(harmony.voice + 7, 11);
@@ -288,8 +294,8 @@ export const tap = (ctx, out, time, harmony) => {
     osc.start(time);
     osc.stop(time + 0.25);
 
-    bell(ctx, out, time + 0.06, target, harmony.kind === 'm' ? 1.8 : 1.3, 0.05);
-    if (harmony.kind === '7') bell(ctx, out, time + 0.07, target * 1.004, 1.2, 0.022);
+    bell(ctx, out, time + 0.06, target, isMinor(harmony.kind) ? 1.8 : 1.3, 0.05);
+    if (hasSeventh(harmony)) bell(ctx, out, time + 0.07, target * 1.004, 1.2, 0.022);
 };
 
 /* ---------- Vipassana: a ring through the water, cells letting go and gathering again, one slow breath ---------- */

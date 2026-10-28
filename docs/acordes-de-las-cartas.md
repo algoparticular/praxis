@@ -90,21 +90,21 @@ Una nota con alteración conserva el chakra de su letra. Por eso, en los siete a
 
 #### Séptima dominante (7): mayor con séptima menor
 
-Es una tensión que pide resolverse: transformación en movimiento, empuja hacia lo próximo. **Es la única séptima que usan las cartas.**
+Es una tensión que pide resolverse: transformación en movimiento, empuja hacia lo próximo. Las cartas usan seis acordes de este tipo; también usan la séptima mayor y la menor.
 
 | Acorde | Notas → chakras | Color | Aroma | Uso | Cartas |
 |---|---|---|---|---|---|
 | Do7 (C7) | Do (raíz), Mi (plexo), Sol (garganta), Sib (corona) | rojo, amarillo, azul claro, violeta | bergamota, sándalo | Expansión creativa con estabilidad y confianza. *(chat)* | Creatividad |
-| Re7 (D7) | Re (sacro), Fa# (corazón), La (tercer ojo), Do (raíz) | naranja, verde, índigo, rojo | ylang-ylang, sándalo | *Inferido:* la creatividad y la apertura emocional de Re mayor, con la raíz como séptima que pide bajarlas a tierra. Transformar lo que se siente en un paso concreto. | Desafío, Transformación |
-| Mi7 (E7) | Mi (plexo), Sol# (garganta), Si (corona), Re (sacro) | amarillo, azul claro, violeta, naranja *(inferido)* | limón, jazmín *(inferido)* | Integra la fuerza interior con la expresión espiritual. *(chat)* | — |
-| Fa7 (F7) | Fa (corazón), La (tercer ojo), Do (raíz), Mib (plexo) | verde, índigo, rojo, amarillo | rosa, bergamota | *Inferido:* el amor anclado de Fa mayor, con el plexo como séptima que lo pone en acción. Amor que se vuelve voluntad. | — |
-| Sol7 (G7) | Sol (garganta), Si (corona), Re (sacro), Fa (corazón) | azul claro, violeta, naranja, verde | menta, rosa | *Inferido:* la expresión y la conexión espiritual de Sol mayor, con el corazón como séptima. Hablar y actuar escuchando al corazón; la voz se transforma cuando nace de lo que se siente. | Sila, Sacca, Ciclos, Confianza |
+| Re7 (D7) | Re (sacro), Fa# (corazón), La (tercer ojo), Do (raíz) | naranja, verde, índigo, rojo | ylang-ylang, sándalo | *Inferido:* la creatividad y la apertura emocional de Re mayor, con la raíz como séptima que pide bajarlas a tierra. Transformar lo que se siente en un paso concreto. | Desafío |
+| Mi7 (E7) | Mi (plexo), Sol# (garganta), Si (corona), Re (sacro) | amarillo, azul claro, violeta, naranja *(inferido)* | limón, jazmín *(inferido)* | Integra la fuerza interior con la expresión espiritual. *(chat)* | Coraje |
+| Fa7 (F7) | Fa (corazón), La (tercer ojo), Do (raíz), Mib (plexo) | verde, índigo, rojo, amarillo | rosa, bergamota | *Inferido:* el amor anclado de Fa mayor, con el plexo como séptima que lo pone en acción. Amor que se vuelve voluntad. | Ciclos |
+| Sol7 (G7) | Sol (garganta), Si (corona), Re (sacro), Fa (corazón) | azul claro, violeta, naranja, verde | menta, rosa | *Inferido:* la expresión y la conexión espiritual de Sol mayor, con el corazón como séptima. Hablar y actuar escuchando al corazón; la voz se transforma cuando nace de lo que se siente. | Sila, Sacca |
 | La7 (A7) | La (tercer ojo), Do# (raíz), Mi (plexo), Sol (garganta) | índigo, rojo, amarillo, azul claro | romero, menta | *Inferido:* la intuición con confianza de La mayor, con la garganta como séptima. La visión que busca su voz y se dice. | — |
 | Si7 (B7) | Si (corona), Re# (sacro), Fa# (corazón), La (tercer ojo) | violeta, naranja, verde, índigo | mirra, salvia | *Inferido:* la conexión trascendental de Si mayor, con el tercer ojo como séptima. Evolución espiritual guiada por la intuición. | Evolución Espiritual |
 
 #### Séptima mayor (maj7): mayor con séptima mayor (inferido)
 
-La séptima queda medio tono debajo de la octava. Suena luminosa y contemplativa, con una nostalgia serena: es expansión en calma, como un sueño despierto. La app no la usa.
+La séptima queda medio tono debajo de la octava. Suena luminosa y contemplativa, con una nostalgia serena: es expansión en calma, como un sueño despierto. La usan Khanti (Remaj7), Metta (Famaj7), Armonía (Domaj7), Celebración (Mimaj7), Gratitud (Solmaj7) y Vipassana (Simaj7).
 
 | Acorde | Notas → chakras | Color | Aroma | Uso |
 |---|---|---|---|---|
@@ -118,7 +118,7 @@ La séptima queda medio tono debajo de la octava. Suena luminosa y contemplativa
 
 #### Séptima menor (m7): menor con séptima menor (inferido)
 
-Es la introspección del acorde menor, más tibia y menos melancólica: una reflexión serena que deja una puerta abierta. La app no la usa.
+Es la introspección del acorde menor, más tibia y menos melancólica: una reflexión serena que deja una puerta abierta. La usan Pañña (Lam7), Honestidad (Solm7), Esperanza (Sim7) y Transformación (Rem7).
 
 | Acorde | Notas → chakras | Color | Aroma | Uso |
 |---|---|---|---|---|
@@ -171,7 +171,8 @@ La conversación propone tres progresiones. Hoy la app no las usa, pero son part
 ## Cómo se elige el acorde de una carta
 
 1. **El texto de la carta manda.** La descripción, la afirmación y la invitación dicen qué chakra se trabaja y con qué energía (abrir, mirar hacia adentro, transformar). De ahí sale el acorde.
-2. **Los personajes de la ilustración tienen que estar dentro del acorde.** Que un personaje aparezca en la carta no significa que mande. Solo pide que su nota esté entre las del acorde, cuando el texto lo permite.
+2. **Los personajes de la ilustración no deciden el acorde.** Particular, Sporá, Samas, Kätus, Vulpes, Aura y Huit son expresiones de lo mismo, partículas que evolucionaron en el universo, y Particular es el protagonista de todo el viaje. Que su nota esté o no en el acorde es solo una pista, nunca una condición.
+3. **Las cartas que resuenan pueden compartir acorde.** Es mejor respetar esa afinidad que forzar un acorde distinto para cada una. Hoy 33 cartas usan 27 acordes: se repiten Si menor (Nekkhamma, Aceptación), Sol7 (Sila, Sacca), Si mayor (Dana, Fe), Mi mayor (Viriya, Addhitthana), Sol mayor (carta 10, Belleza) y Re mayor (Paciencia, Sincronicidad).
 
 ## El acorde de base: Sol mayor
 
@@ -179,7 +180,7 @@ Fuera de las cartas, toda la app suena en **Sol mayor**: Sol (garganta, Aura), S
 - **Aura:** su elemento es el **sonido**, y con ella nació la idea de organizar el universo por chakras.
 - **Particular:** es el protagonista y representa la conexión con el Todo (el rulito).
 
-También es la base que mejor se lleva con las cartas. Comparte al menos una nota con el acorde de 32 de las 33, así que entrar a una carta casi nunca se siente como un salto. La excepción es Compromiso (La mayor).
+También es la base que mejor se lleva con las cartas. Comparte al menos una nota con el acorde de 28 de las 33, así que entrar a una carta casi siempre es una entrada suave. Las cinco que no comparten ninguna son Metta (Famaj7), Ciclos (Fa7), Compromiso (La mayor), Confianza (La menor) y Perdón (Fa menor): el texto manda antes que la suavidad de la entrada.
 
 ## La tabla
 
@@ -188,36 +189,36 @@ También es la base que mejor se lleva con las cartas. Comparte al menos una not
 | 0 | Nekkhamma | Si menor | Si, Re, Fa# → corona, sacro, corazón | Renuncia, soltar, "un ser sagrado haciendo una experiencia humana". La corona manda (lo sagrado) y el modo menor mira hacia adentro (soltar). | Particular (tres, deshaciéndose) |
 | 1 | Sila | Sol7 | Sol, Si, Re, Fa → garganta, corona, sacro, corazón | "Encuentro paz al hacer el bien en resonancia con la voz de mi alma". La voz del alma es la garganta, acompañada por la corona. Para hacer el bien hay que escuchar al corazón, así que el Fa del corazón de Sid entra como séptima. | Particular y el corazón de Sid (Fa) |
 | 2 | Dana | Si mayor | Si, Re#, Fa# → corona, sacro, corazón | "Escucho al niño que llevo dentro y soy feliz al dar". El niño interior es el sacro y dar es el corazón. La teoría dice que este acorde facilita la conexión trascendental y la creatividad emocional. | Particular (dos) |
-| 3 | Pañña | Mi menor | Mi, Sol, Si → plexo, garganta, corona | Sabiduría que se escucha en silencio. Para la teoría, este acorde empodera desde la introspección y el equilibrio espiritual. | Sid (Particular), hongos y bosque (Sporá) |
+| 3 | Pañña | Lam7 | La, Do, Mi, Sol → tercer ojo, raíz, plexo, garganta | Sabiduría que se pregunta y se escucha en silencio: "Escucha en silencio", "mi centro calmo". El tercer ojo manda, y el acorde es claridad mental que, desde adentro, encuentra sus respuestas. | Sid (Particular), hongos y bosque (Sporá) |
 | 4 | Viriya | Mi mayor | Mi, Sol#, Si → plexo, garganta, corona | Energía y determinación: "sigo su verdad con determinación". La voluntad es el plexo solar. | Particular (caminante con báculo) |
-| 5 | Khanti | Si mayor | Si, Re#, Fa# → corona, sacro, corazón | "Mi divinidad se expande al ser tolerante". La corona en modo mayor, que se expande. | Varios personajes dentro de los frascos |
+| 5 | Khanti | Remaj7 | Re, Fa#, La, Do# → sacro, corazón, tercer ojo, raíz | Tolerancia y paciencia con el propio proceso: "respeta tus tiempos sin exigencias", soltar culpas, mirar con perspectiva más amplia. El sacro manda (culpa) y la séptima mayor le da calma, sin apuro. | Varios personajes dentro de los frascos |
 | 6 | Sacca | Sol7 | Sol, Si, Re, Fa → garganta, corona, sacro, corazón | Comprometerse con la propia verdad y abrirle la puerta al propósito. La verdad se dice con la garganta y la corona la acompaña; es la verdad que se escucha en el corazón, por eso el corazón de Sid (Fa) entra como séptima. | Particular en la barca y el corazón de Sid (Fa) |
 | 7 | Addhitthana | Mi mayor | Mi, Sol#, Si → plexo, garganta, corona | Determinación para nutrir hábitos. Es la voluntad, el plexo solar en modo mayor. | Particular en el bote, bajo la tormenta |
-| 8 | Metta | Si mayor | Si, Re#, Fa# → corona, sacro, corazón | "Soy Amor infinito, reconozco mi esencia más pura". La esencia es la corona y el amor es el corazón. | Particular y otros, con un zorrito (Vulpes) |
+| 8 | Metta | Famaj7 | Fa, La, Do, Mi → corazón, tercer ojo, raíz, plexo | Amar primero a uno mismo para después dar: "soy Amor infinito". El corazón manda, y el acorde es amor sereno que confía en sí mismo. | Particular y otros, con un zorrito (Vulpes) |
 | 9 | Upekkha | Mi menor | Mi, Sol, Si → plexo, garganta, corona | Ecuanimidad e impermanencia: soltar el exceso de control. Es el equilibrio espiritual desde la introspección. | Particular, hongos (Sporá) |
 | 10 | " ... " | Sol mayor (base) | — | La carta en blanco no tiene texto que elija un acorde, así que se queda en el sonido de base. | — |
 | 11 | Aceptación | Si menor | Si, Re, Fa# → corona, sacro, corazón | "Acepto y honro quién soy", soltar el control. La teoría lo describe como conexión espiritual con raíces emocionales, mirando hacia adentro. | Particular (dos) |
-| 12 | Armonía | Do mayor | Do, Mi, Sol → raíz, plexo, garganta | "Vibro en armonía en mi aquí y ahora". Estar aquí y ahora es la raíz, y el acorde incluye la nota de Aura. | Aura (dos medusas) |
+| 12 | Armonía | Domaj7 | Do, Mi, Sol, Si → raíz, plexo, garganta, corona | "Vibro en armonía en mi aquí y ahora": equilibrio entre sonido y pausa, pausa de silencio interior. La raíz y la garganta se abren con calma, sin tensión. | Aura (dos medusas) |
 | 13 | Belleza | Sol mayor | Sol, Si, Re → garganta, corona, sacro | Reconocer la belleza propia y la de los demás. Expresión y conexión espiritual, con el sacro (lo sensible). | Particular (dos, abrazados), árboles |
-| 14 | Celebración | Mi mayor | Mi, Sol#, Si → plexo, garganta, corona | "Celebro la vida… celebrarTE": vitalidad y poder personal. Incluye a Particular (Si) y a Kätus (Mi). | Particular, gatitos (Kätus), zorritos (Vulpes), fuego |
-| 15 | Ciclos | Sol7 | Sol, Si, Re, Fa → garganta, corona, sacro, corazón | "Agradezco quien fui, honro quien soy y proyecto quien quiero ser": dejar ir y volver a empezar. La séptima transforma. | Particular, paisaje |
+| 14 | Celebración | Mimaj7 | Mi, Sol#, Si, Re# → plexo, garganta, corona, sacro | "Celebro la vida… celebrarTE": placer, disfrute y pequeños rituales. Es el poder personal del plexo, suave, que se disfruta en vez de imponerse. | Particular, gatitos (Kätus), zorritos (Vulpes), fuego |
+| 15 | Ciclos | Fa7 | Fa, La, Do, Mib → corazón, tercer ojo, raíz, plexo | "Agradezco quien fui, honro quien soy y proyecto quien quiero ser": cerrar un ciclo dejando que el corazón guíe. El amor se vuelve voluntad: la séptima empuja hacia el próximo ciclo. | Particular, paisaje |
 | 16 | Compromiso | La mayor | La, Do#, Mi → tercer ojo, raíz, plexo | "Estoy comprometida con mi búsqueda y visión". La visión es el tercer ojo, que manda, y el compromiso se apoya en la raíz y la voluntad. | Paisaje con plantas (Sporá; Do# cuenta como raíz) |
-| 17 | Comunicación | Sol mayor | Sol, Si, Re → garganta, corona, sacro | "Me comunico con claridad y honestidad". Es la garganta, la nota de Aura. | Aura (tres) en el bosque rosa |
-| 18 | Confianza | Sol7 | Sol, Si, Re, Fa → garganta, corona, sacro, corazón | Confiar y dejar que la propia sabiduría guíe los pasos por el laberinto. Es el único acorde que contiene a los tres personajes de la carta. | Particular (Si), Aura (Sol), Vulpes (Fa) |
-| 19 | Coraje | Mi mayor | Mi, Sol#, Si → plexo, garganta, corona | "Mi fuerza interior guía mis pasos". El plexo solar es la nota de Kätus, que se abre paso mediante el fuego para llegar al poder. | Kätus en el borde del acantilado |
+| 17 | Comunicación | Sol menor | Sol, Sib, Re → garganta, corona, sacro | El primer paso para comunicarte es escucharte a vos mismo, en silencio, antes de hablar con claridad y honestidad. Es comunicación introspectiva, la garganta mirando hacia adentro. | Aura (tres) en el bosque rosa |
+| 18 | Confianza | La menor | La, Do, Mi → tercer ojo, raíz, plexo solar | Confiar en la propia intuición y en las señales del cuerpo, dejar que la sabiduría guíe los pasos. Es confianza desde un lugar introspectivo, con el tercer ojo al mando. | Particular (Si), Aura (Sol), Vulpes (Fa) |
+| 19 | Coraje | Mi7 | Mi, Sol#, Si, Re → plexo, garganta, corona, sacro | "Mi fuerza interior guía mis pasos": valentía para seguir el camino del corazón. Es el plexo de Kätus, el fuego que se abre paso, integrado con la expresión y lo espiritual. | Kätus en el borde del acantilado |
 | 20 | Creatividad | Do7 | Do, Mi, Sol, Sib → raíz, plexo, garganta, corona | "Pongo en práctica mi creatividad y creo la vida que sueño". La teoría describe este acorde como expansión creativa con estabilidad y confianza. | Corona de hongos (Sporá) |
 | 21 | Desafío | Re7 | Re, Fa#, La, Do → sacro, corazón, tercer ojo, raíz | Transformar el desafío en una oportunidad para conocerse. Corazón y transformación. | Vulpes frente al laberinto |
 | 22 | Evolución Espiritual | Si7 | Si, Re#, Fa#, La → corona, sacro, corazón, tercer ojo | "Mi alma evoluciona cada día". Es la corona transformándose. | Corona de helechos y hongos (Sporá), ser acurrucado dentro |
 | 23 | Fe | Si mayor | Si, Re#, Fa# → corona, sacro, corazón | "Tengo fe en la fuerza inconmovible de mi alma y el apoyo del universo". La corona en modo mayor. | Particular brillando, hongos gigantes (Sporá) |
-| 24 | Gratitud | Sol mayor | Sol, Si, Re → garganta, corona, sacro | Agradecer quién soy y lo vivido, y agradecerle a un ser querido. Es gratitud que se expresa. | Particular en su isla |
+| 24 | Gratitud | Solmaj7 | Sol, Si, Re, Fa# → garganta, corona, sacro, corazón | Gratitud que se expresa: agradecer quién soy y a un ser querido. Es expresión que nace del corazón agradecido, con calma y apertura. | Particular en su isla |
 | 25 | Hogar | Do mayor | Do, Mi, Sol → raíz, plexo, garganta | "Cada día regreso a mi hogar". El hogar es la raíz. El acorde incluye a Sporá (Do) y a Aura (Sol). | Célula de corales (Sporá) con una medusa (Aura) |
-| 26 | Honestidad | Sol menor | Sol, Sib, Re → garganta, corona, sacro | Escuchar adentro en silencio y dejar que la verdad hable. La teoría lo describe como comunicación introspectiva. | Aura bajo el sol, corales |
+| 26 | Honestidad | Solm7 | Sol, Sib, Re, Fa → garganta, corona, sacro, corazón | "¿Qué siento?": acallar voces externas y escuchar al cuerpo para conocer la verdad. Es comunicación introspectiva que escucha al corazón. | Aura bajo el sol, corales |
 | 27 | Paciencia | Re mayor | Re, Fa#, La → sacro, corazón, tercer ojo | "Descubro milagros a cada instante", aprendiendo de los ciclos de la naturaleza. La teoría habla de creatividad, apertura emocional y visión clara. | Los Samas en su bote |
-| 28 | Perdón | Mi menor | Mi, Sol, Si → plexo, garganta, corona | "Me perdono a mí mismo y a los otros". Perdonar empodera desde la introspección. | Particular en el borde, junto a la luna |
+| 28 | Perdón | Fa menor | Fa, Lab, Do → corazón, tercer ojo, raíz | "Me perdono a mí mismo y a los otros": sanar vínculos y dejar culpas y rencores. El corazón mirando hacia adentro, para liberar heridas emocionales profundas. | Particular en el borde, junto a la luna |
 | 29 | Sincronicidad | Re mayor | Re, Fa#, La → sacro, corazón, tercer ojo | "Estoy en el momento y lugar indicado". Es el fluir: el sacro, con intuición y corazón. | Samas en pareja dentro de burbujas, fuego |
-| 30 | Esperanza | Si menor | Si, Re, Fa# → corona, sacro, corazón | No estás solo: te acompañan guías y ancestros. La teoría lo describe como conexión espiritual con raíces emocionales. Incluye la nota de Vulpes (Fa#). | Vulpes en las dunas, la luna |
-| 31 | Vipassana | Si menor | Si, Re, Fa# → corona, sacro, corazón | "Observo la realidad tal cual es sin apegarme". El demonio de Particular es el apego, y esta carta es soltarlo. | Particular con su rulito, células |
-| 32 | Transformación | Re7 | Re, Fa#, La, Do → sacro, corazón, tercer ojo, raíz | "Mi corazón fluye con alegría en el transcurso del cambio". Es el fluir del sacro con el corazón, y la séptima transforma. | Samas, palmera (Sporá) |
+| 30 | Esperanza | Sim7 | Si, Re, Fa#, La → corona, sacro, corazón, tercer ojo | No estás solo, te acompañan guías y ancestros. La corona y las raíces emocionales (el sacro y el corazón de Vulpes), guiadas por la intuición del tercer ojo. | Vulpes en las dunas, la luna |
+| 31 | Vipassana | Simaj7 | Si, Re#, Fa#, La# → corona, sacro, corazón, tercer ojo | "Observar con el corazón": contemplación de uno mismo, desapego, ver las cosas tal cual son. Es contemplación trascendental, la visión interior; la corona manda. | Particular con su rulito, células |
+| 32 | Transformación | Rem7 | Re, Fa, La, Do → sacro, corazón, tercer ojo, raíz | "Mi corazón fluye con alegría en el transcurso del cambio": encontrar equilibrio en medio del movimiento. Un flujo emocional que se asienta y encuentra suelo. | Samas, palmera (Sporá) |
 
 ## Cómo suena
 
