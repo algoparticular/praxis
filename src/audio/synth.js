@@ -370,6 +370,26 @@ export const unravel = (ctx, out, time, harmony) => {
     swish(ctx, out, time, { from: 5000, to: 900, duration: 1.4, level: 0.007, q: 0.5 });
 };
 
+// The rulito, the reward of every verb: the card's chord one octave up. As in Gurdjieff's law of octaves, a process
+// that is completed starts again on the do above: the chord's notes climb from its root to the root an octave
+// higher, and there the whole chord rings at once, an octave over the one the card has been sounding in, with a bowl
+// on the root it started from underneath so the leap is heard. Minor climbs slower; a seventh shimmers.
+export const rulito = (ctx, out, time, harmony) => {
+    const h = harmony ?? PLAIN;
+    const minor = isMinor(h.kind);
+    const seventh = hasSeventh(h);
+    const climb = h.tones(h.voice, 12);
+    const gap = minor ? 0.13 : 0.1;
+    climb.forEach((midi, i) => bell(ctx, out, time + i * gap, hz(midi), 1.6, 0.018 + 0.006 * (i / climb.length)));
+    const at = time + climb.length * gap;
+    h.tones(h.voice + 12, 11).forEach((midi, i) => {
+        bell(ctx, out, at + i * 0.018, hz(midi), minor ? 4.2 : 3.6, 0.026);
+        if (seventh) bell(ctx, out, at + i * 0.018 + 0.01, hz(midi) * 1.004, 3, 0.012);
+    });
+    bell(ctx, out, at, hz(h.voice - 12), 4.5, 0.03);
+    swish(ctx, out, time, { from: 2500, to: 8000, duration: climb.length * gap + 0.6, level: 0.009, q: 0.6 });
+};
+
 // The third eye opens: a low bowl on the chord's root and fifth, and a high shimmer over them
 export const open = (ctx, out, time, harmony) => {
     const h = harmony ?? PLAIN;

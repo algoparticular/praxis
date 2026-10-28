@@ -102,7 +102,7 @@
     };
     // The charge is full: the rulito flares and throws sparks
     const bloom = () => {
-        play('star');
+        play('rulito');
         play('bloom');
         level = Math.min(3, level + 1);
         sceneMilestone('rulito_completed', { times: level });

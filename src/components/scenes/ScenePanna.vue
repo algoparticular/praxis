@@ -105,13 +105,15 @@
         const S = frame.value.offsetWidth;
         const sn = mushrooms.value.offsetWidth;
         const kn = sn / 2160;
-        const sheetTop = h + 0.04 * sn - sn;
+        // On a tall screen everything but the sun is lifted off the bottom (--lift): measured, not recomputed
+        const sheetTop = mushrooms.value.offsetTop;
+        const sideTop = sheetTop;
         const inset = 0;                                       // the sheets hang from the sides of the screen, on a narrow one too
         return {
-            S, sn, kn, kf: S / 2160, fx0: (w - S) / 2, fy0: h - S, sheetTop,
+            S, sn, kn, kf: S / 2160, fx0: (w - S) / 2, fy0: frame.value.offsetTop, sheetTop,
             // The big square's left half: its right edge stays put while it grows 4% to the left (CSS scale 1.04, origin right)
-            left: (u, v) => [inset + sn - (1 - u / 2160) * sn * 1.04, sheetTop + v * kn],
-            right: (u, v) => [w - inset - sn + (u / 2160) * sn * 1.04, sheetTop + v * kn],
+            left: (u, v) => [inset + sn - (1 - u / 2160) * sn * 1.04, sideTop + v * kn],
+            right: (u, v) => [w - inset - sn + (u / 2160) * sn * 1.04, sideTop + v * kn],
             centred: (u, v) => [(w - sn) / 2 + u * kn, sheetTop + v * kn],
         };
     };
@@ -162,10 +164,28 @@
     let linksFade = 1;         // the threads go out together when the rulito leaves
     let flowBoost = 0;         // 1 while the threads carry their light to the third eye: they flow fast, towards it
     let eyeFlare = 0;          // 1 when the third eye opens
+    let opening = 0;           // 0..1: the threads part around the rulito while it is over Sid's head
+    let hole = null;           // { x, y, r }: the rulito's circle on the threads' canvas, while it is there
     const drawn = [];          // the threads drawn in the last frame, for the glow under them
     const smooth = (a, b, x) => { const u = Math.min(1, Math.max(0, (x - a) / (b - a))); return u * u * (3 - 2 * u); };
     const wrap = (v) => v - Math.floor(v);
     const rgbOf = (hex) => [(hex >> 16 & 255) / 255, (hex >> 8 & 255) / 255, (hex & 255) / 255];
+
+    // Where a thread crosses the rulito, its two strands part, one to each side, and go round it like the outline of an
+    // eye, so the rulito is framed instead of crossed: `parting(f)` is how far (0..1) the thread is open at f, and
+    // `around(f, side)` how far a strand going round on that side (+1 or -1) is pushed off the thread's line there
+    const opener = (x0, y0, dx, dy, length, nx, ny) => {
+        if (!hole || opening < 0.001) return null;
+        const along = ((hole.x - x0) * dx + (hole.y - y0) * dy) / length;
+        const off = (hole.x - x0) * nx + (hole.y - y0) * ny;            // the circle's centre, sideways from the line
+        if (Math.abs(off) > hole.r || along < -hole.r || along > length + hole.r) return null;
+        const span = 1.9 * hole.r;
+        const parting = (f) => {
+            const u = (f * length - along) / span;
+            return Math.abs(u) >= 1 ? 0 : opening * (0.5 + 0.5 * Math.cos(Math.PI * u));
+        };
+        return { parting, around: (f, side) => (off + side * hole.r) * parting(f) };
+    };
 
     // One thread from one point to another (group coordinates), written into its slot of the particle buffers: a double
     // helix of dots flowing from the first point to the second, as wide as it is at the middle (`amp`) and a point at
@@ -175,6 +195,7 @@
         const length = Math.max(1, Math.hypot(dx, dy));
         const nx = dy / length, ny = -dx / length;          // sideways
         const turns = length / TURN;
+        const open = opener(x0, y0, dx, dy, length, nx, ny);
         let i = slot * PER;
         const place = (f, side, size, alpha) => {
             data.positions[i * 3] = x0 + dx * f + nx * side;
@@ -191,7 +212,10 @@
                 const wave = Math.PI * 2 * turns * f + strand * Math.PI - t * 0.4;
                 const near = 0.5 + 0.5 * Math.cos(wave);                  // 1 when the dot passes in front
                 const pulse = Math.max(0, Math.sin(f * 15 - t * 2.1)) ** 3;
-                place(f, Math.sin(wave) * amp * lens, (3.8 + 3 * near + 2.4 * pulse + 2.2 * surge) * unit * (0.4 + 0.6 * lens),
+                // Round the rulito the helix calms into two clean arcs, strand 0 on one side and strand 1 on the other
+                const side = open ? Math.sin(wave) * amp * lens * (1 - 0.8 * open.parting(f)) + open.around(f, strand ? -1 : 1)
+                    : Math.sin(wave) * amp * lens;
+                place(f, side, (3.8 + 3 * near + 2.4 * pulse + 2.2 * surge) * unit * (0.4 + 0.6 * lens),
                     smooth(0, 0.08, f) * smooth(0, 0.08, 1 - f) * strength * (0.7 + 0.3 * near));
             }
         }
@@ -203,7 +227,8 @@
             const f = wrap(r(1) + dir * flowPhase * (1.6 + r(2) * 1.6));
             const lens = Math.sin(Math.PI * f) ** 0.7;
             const wave = Math.PI * 2 * turns * f + r(3) * 6.28;
-            place(f, (r(4) - 0.5) * 2 * amp * 1.5 * lens + Math.sin(wave + t) * 4 * lens, (1.4 + r(5) * 1.5) * unit,
+            const spread = (r(4) - 0.5) * 2 * amp * 1.5 * lens + Math.sin(wave + t) * 4 * lens;
+            place(f, spread + (open ? open.around(f, r(4) < 0.5 ? -1 : 1) : 0), (1.4 + r(5) * 1.5) * unit,
                 smooth(0, 0.08, f) * smooth(0, 0.08, 1 - f) * strength * (0.35 + 0.5 * r(6)) * (0.6 + 0.4 * Math.sin(t * 2 + d)));
         }
     };
@@ -220,6 +245,14 @@
             surge = Math.max(0, surge - dt * 0.35);
             flowPhase += dt * FLOW * (1 + surge * 3 + flowBoost * 5);
             eyeFlare = Math.max(0, eyeFlare - dt * 0.7);
+            // The threads open as the rulito is born and close again as it goes
+            opening += ((win && win.opened && !win.back ? 1 : 0) - opening) * Math.min(1, dt * 2.2);
+            hole = null;
+            if (opening > 0.001 && rulito.value?.$el) {
+                const r = rulito.value.$el.getBoundingClientRect();
+                const c = canvas.getBoundingClientRect();
+                if (r.width) hole = { x: r.left + r.width / 2 - c.left, y: r.top + r.height / 2 - c.top, r: 0.62 * Math.max(r.width, r.height) };
+            }
             linksFade += ((linksOut ? 0 : 1) - linksFade) * Math.min(1, dt * 2);
 
             const L = layout(canvas.clientWidth, canvas.clientHeight);
@@ -240,7 +273,13 @@
                 const grow = smooth(0, 1, smooth(0, 0.9, t - link.born));
                 draw(1 + k, spots[link.a], spots[link.b], [TINTS[link.a], TINTS[link.b]], (inFigure(link) ? 0.95 : 0.4) * linksFade, grow, link.dir);
             });
-            for (let k = links.length; k < MAX_LINKS; k++) hide(1 + k, data);
+            // The threads undone, going back into their light, in the slots left free
+            for (let k = cut.length - 1; k >= 0; k--) if (t - cut[k].at > CUT_LEN) cut.splice(k, 1);
+            cut.slice(0, MAX_LINKS - links.length).forEach((link, k) => {
+                const grow = 1 - smooth(0, CUT_LEN, t - link.at);
+                draw(1 + links.length + k, spots[link.a], spots[link.b], [TINTS[link.a], TINTS[link.b]], (inFigure(link) ? 0.95 : 0.4) * grow, grow, link.dir);
+            });
+            for (let k = links.length + Math.min(cut.length, MAX_LINKS - links.length); k < MAX_LINKS; k++) hide(1 + k, data);
             // The ghost of the figure: its threads that are not joined yet draw themselves one after another, faint, and go
             const ghosts = ghost ? figure.links.filter(([a, b]) => !joined(a, b)) : [];
             ghosts.forEach(([a, b], k) => {
@@ -274,6 +313,8 @@
             if (!frame.value) return;
             const unit = Math.max(1, frame.value.offsetWidth / 765);
             drawn.forEach(({ slot, from, to, colours: [ca, cb], strength, length }) => {
+                const dx = to[0] - from[0], dy = to[1] - from[1], len = Math.max(1, Math.hypot(dx, dy));
+                const open = opener(from[0], from[1], dx, dy, len, dy / len, -dx / len);
                 for (let k = 0; k < GLOW_DOTS; k++) {
                     const f = (k + 0.5) / GLOW_DOTS;
                     const i = slot * GLOW_DOTS + k;
@@ -281,7 +322,8 @@
                     data.positions[i * 3] = from[0] + (to[0] - from[0]) * f;
                     data.positions[i * 3 + 1] = from[1] + (to[1] - from[1]) * f;
                     data.sizes[i] = (24 + 8 * Math.sin(t * 1.3 + k * 0.5 + slot)) * unit * (0.25 + 0.75 * lens);
-                    data.alphas[i] = 0.16 * strength * smooth(0, 0.12, f) * smooth(0, 0.12, 1 - f) * Math.min(1, length / GLOW_DOTS / 10);
+                    data.alphas[i] = 0.16 * strength * smooth(0, 0.12, f) * smooth(0, 0.12, 1 - f) * Math.min(1, length / GLOW_DOTS / 10)
+                        * (open ? 1 - 0.9 * open.parting(f) : 1);
                     for (let c = 0; c < 3; c++) data.tints[i * 3 + c] = ca[c] + (cb[c] - ca[c]) * f;
                 }
             });
@@ -464,6 +506,8 @@
     LIGHTS.forEach((light, i) => { if (light.target) light.target.light = i; });
     const TINTS = LIGHTS.map((light) => rgbOf(light.tint));
     const links = [];                              // { a, b, born }: the threads the person has joined
+    const cut = [];                                // { a, b, at, dir }: threads undone, drawing themselves back into their light
+    const CUT_LEN = 0.9;
     let sunShift = [0, 0];
     let mushShift = [0, 0];
     let parting = false;                           // the threads of a try that was not the pattern are going out
@@ -537,7 +581,9 @@
     const joined = (a, b) => links.some((l) => (l.a === a && l.b === b) || (l.a === b && l.b === a));
 
     const join = (a, b) => {
-        if (win || parting || reducedMotion || a === b || joined(a, b) || links.length >= MAX_LINKS) return;
+        if (win || parting || reducedMotion || a === b) return;
+        if (joined(a, b)) return undo(a, b);
+        if (links.length >= MAX_LINKS) return;
         links.push({ a, b, born: lastT });
         idle = 0;
         surge = Math.max(surge, 0.5);
@@ -548,6 +594,18 @@
             if (figure.links.every(([x, y]) => joined(x, y))) seen();
             else unravel();
         }
+    };
+
+    // Joining two lights that are already joined undoes that thread: it draws itself back into the light it left, with
+    // the two notes going the other way, quietly
+    const undo = (a, b) => {
+        const k = links.findIndex((l) => (l.a === a && l.b === b) || (l.a === b && l.b === a));
+        const [link] = links.splice(k, 1);
+        cut.push({ ...link, at: lastT });
+        idle = 0;
+        warmLight(a, 0.3);
+        warmLight(b, 0.3);
+        play('link', { from: LIGHTS[link.b].pitch, to: LIGHTS[link.a].pitch, level: 0.3 });
     };
 
     // The threads were as many as the figure has but not the figure: after a moment to see it they go out softly and it
@@ -603,7 +661,7 @@
             surge = 1;
             back?.boost(G.aura, 1.6);
             back?.boost(G.sun, 1.2);
-            play('star');
+            play('rulito');
         }
         if (win.full && !win.back && win.age - win.fullAt > LINGER) { win.back = true; linksOut = true; }
         if (win.back) win.tail = Math.min(win.head, win.tail + dt / EAT);
@@ -954,6 +1012,9 @@
         <div class="hit sun" role="button" tabindex="0" :aria-label="$i18n.locale === 'en' ? 'Sun' : 'Sol'"
             @pointerdown.prevent="press(SUN, $event)" @pointerenter="warmSun" @keydown="pressKey(SUN, $event)"></div>
 
+        <!-- The ground in front, on a tall screen: where the scene is lifted it hides the bottom edge of the drawings -->
+        <div class="ground" aria-hidden="true"></div>
+
         <!-- The spiral and the sparks, in front of everything -->
         <canvas class="field" ref="frontCanvas"></canvas>
     </div>
@@ -964,9 +1025,36 @@
         /* The centre's square, and the bigger one of the surroundings */
         --s: min(max(100vw, 62svh), 85svh);
         --sn: min(calc(var(--s) * 1.1), calc(100vw * 1.25));
+        /* On a tall screen (a phone upright) everything but the sun is lifted off the bottom, so Sid sits nearer the middle
+           and the mushrooms are seen whole; below them is the floor. On a wide screen it stays at the bottom */
+        --lift: max(0px, (100svh - var(--s) * 1.2) * 0.5);
         position: absolute;
         inset: 0;
         overflow: hidden;
+    }
+
+    /* A phone upright: Sid is drawn bigger, so the scene fills more of the height */
+    @media (max-aspect-ratio: 3/4) {
+        .scene {
+            --s: min(max(100vw, 70svh), 85svh);
+        }
+    }
+
+    /* The ground in front: as high as the bottom edge of the lifted drawings (plus a fade), in the floor's colour */
+    .ground {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: max(0px, calc(var(--lift) - var(--sn) * 0.04 + 30px));
+        background: linear-gradient(to top, #004f4c, #005653 calc(100% - 30px), rgba(0, 86, 83, 0));
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 1.8s ease-out;
+    }
+
+    .shown .ground {
+        opacity: 1;
     }
 
     .field {
@@ -1071,7 +1159,7 @@
        below the screen, so the pointer and the scroll can lift it without showing a gap at the bottom. ---- */
     .half {
         position: absolute;
-        bottom: calc(var(--sn) * -0.04);
+        bottom: calc(var(--sn) * -0.04 + var(--lift));
         width: min(calc(var(--sn) / 2), 50%);
         height: var(--sn);
         overflow: hidden;
@@ -1102,7 +1190,7 @@
 
     /* The mirror above: sits right on top of the big square and is flipped over, so the seam is the picture's own top edge */
     .half.up {
-        bottom: calc(var(--sn) * 0.96 - 1px);
+        bottom: calc(var(--sn) * 0.96 - 1px + var(--lift));
     }
 
     .up .sheet {
@@ -1115,7 +1203,7 @@
         width: var(--s);
         height: var(--s);
         left: calc(50% - var(--s) / 2);
-        bottom: 0;
+        bottom: var(--lift);
         pointer-events: none;
     }
 
@@ -1128,7 +1216,7 @@
     /* ---- The mushrooms ---- */
     .mushrooms {
         position: absolute;
-        bottom: calc(var(--sn) * -0.04);
+        bottom: calc(var(--sn) * -0.04 + var(--lift));
         width: var(--sn);
         height: var(--sn);
         left: calc(50% - var(--sn) / 2);
@@ -1147,7 +1235,7 @@
     }
 
     @media (prefers-reduced-motion: reduce) {
-        .half, .floor { opacity: 1; transition: none; }
+        .half, .floor, .ground { opacity: 1; transition: none; }
         .sway { animation: none; }
     }
 </style>
