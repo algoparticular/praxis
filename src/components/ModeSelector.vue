@@ -2,11 +2,12 @@
     import { ref } from 'vue';
     import { useRouter } from 'vue-router';
     import { play } from '../composables/useSound.js';
+    import { CHAKRA_WHEEL } from '../data/chakraColors.js';
 
     const router = useRouter();
 
-    //Same palette as the cards in the deck
-    const hoverColors = ['#E49414', '#F55F4B', '#FF7E39', '#FFF04D', '#75D090', '#46DBDD', '#B112B1'];
+    //Same palette as the cards in the deck: the seven chakra colours
+    const hoverColors = CHAKRA_WHEEL;
     const hovered = ref(null);
     const hoverColor = ref('');
 

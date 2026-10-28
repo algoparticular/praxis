@@ -19,14 +19,15 @@ $color-black: #10100F;
 $color-whiteMana: #E9EDD8;
 $color-greyHaze: #363636;
 
-$color-huitPurple: #97ABE7;
-$color-auraBlue: #ACDCDD;
-$color-vulpesGreen: #CBEFD6;
-$color-katusYellow: #F7E4AA;
-$color-samaOrange: #FBB189;
-$color-sporaRed: #F18B7E;
+// The seven chakra colours (src/data/chakraColors.js). The orange is Samas's alone: the brand's accent is the coral
+$color-sporaRed: #FF6F61;
+$color-samaOrange: #F4844C;
+$color-katusYellow: #F2B036;
+$color-vulpesGreen: #62C37A;
+$color-auraBlue: #26C0CF;
+$color-huitPurple: #7DAAFD;
+$color-particularViolet: #C690EC;
 
-$color-lorange: #F4844C;
 $color-sonicSilver: #777777;
 
 $grid-gutter-width: 24px !default;
@@ -604,7 +605,7 @@ button.secondary {
             padding: 4px 5%;
 
             &:hover {
-                border-color: $color-lorange;
+                border-color: $color-primary;
                 -webkit-transition: all 250ms ease-out;
                 -moz-transition: all 250ms ease-out;    
                 -o-transition: all 250ms ease-out;

@@ -2,6 +2,7 @@
     import { ref } from 'vue';
     import { animate } from 'motion';
     import { getCard } from '../data/cards.js';
+    import { CHAKRA_WHEEL } from '../data/chakraColors.js';
 
     const props = defineProps({
         cardId: String,
@@ -12,36 +13,8 @@
 
     const randomColor = ref('rgba(252, 252, 252, 0.42)');
     const randomShadow = ref('drop-shadow(0px 2px 3px rgb(234, 234, 234))');
-    const colorWheel = ref([
-        {
-            color: '#E49414',
-            shadow: 'drop-shadow(0px 2px 3px rgb(228, 148, 20))',
-        },
-        {
-            color: '#F55F4B',
-            shadow: 'drop-shadow(0px 2px 3px rgb(245, 95, 75))',
-        },
-        {
-            color: '#FF7E39',
-            shadow: 'drop-shadow(0px 2px 3px rgb(255, 126, 57))',
-        },
-        {
-            color: '#FFF04D',
-            shadow: 'drop-shadow(0px 2px 3px rgb(255, 240, 77))',
-        },
-        {
-            color: '#75D090',
-            shadow: 'drop-shadow(0px 2px 3px rgb(117, 208, 144))',
-        },
-        {
-            color: '#46DBDD',
-            shadow: 'drop-shadow(0px 2px 3px rgb(70, 219, 221))',
-        },
-        {
-            color: '#B112B1',
-            shadow: 'drop-shadow(0px 2px 3px rgb(177, 18, 177))',
-        },
-    ]);
+    // Each card lights up in one of the seven chakra colours
+    const colorWheel = ref(CHAKRA_WHEEL.map(color => ({ color, shadow: `drop-shadow(0px 2px 3px ${color})` })));
 
     function randomizeColor() {
         const randomIndex = Math.floor(Math.random() * 7); //+ 1
