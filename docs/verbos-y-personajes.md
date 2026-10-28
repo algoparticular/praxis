@@ -57,20 +57,23 @@ Está en el campo `verb` de `src/data/cards.json` y los verbos en `src/data/verb
 | Verbo | Cartas |
 |-------|--------|
 | Arraigar (6) | Addhitthana 7, Compromiso 16, Confianza 18, Fe 23, Hogar 25, Paciencia 27 |
-| Fluir (6) | Khanti 5, Aceptación 11, Belleza 13?, Celebración 14, Esperanza 30?, Transformación 32? |
+| Fluir (4) | Khanti 5, Aceptación 11, Celebración 14, Transformación 32? |
 | Encender (4) | Viriya 4, Coraje 19, Desafío 21, Evolución Espiritual 22 |
 | Dar y recibir (3) | Dana 2, Metta 8, Gratitud 24 |
 | Resonar (7) | Sila 1, Sacca 6, Armonía 12?, Comunicación 17, Creatividad 20, Honestidad 26, Sincronicidad 29 |
-| Ver (2) | Pañña 3, Ciclos 15 |
+| Ver (4) | Pañña 3, Belleza 13, Ciclos 15, Esperanza 30 |
 | Soltar (4) | Nekkhamma 0, Upekkha 9, Perdón 28, Vipassana 31 |
 | Sin verbo (1) | Carta 10 (el silencio) |
 
-Total: 6 + 6 + 4 + 3 + 7 + 2 + 4 + 1 = 33. Belleza podría ir también en Ver.
+Total: 6 + 4 + 4 + 3 + 7 + 4 + 4 + 1 = 33. Ciclos podría ir en Soltar (*"¿Qué es tiempo de dejar ir?"*).
 
 ## Decidido
 - Carta 10 (`" ... "`): es el silencio. No hay nada que leer ni decir, la invitación es sentir el corazón. Su verbo va entre Fa, Sol o La (por decidir); la forma, por definir.
 - Nombre del personaje: **Sid** (Seed, semilla).
 - El bichito con pelos y antenas es un Sama. El ser dentro de la célula de Evolución es Sid.
+- Belleza y Esperanza son **Ver**: *"poder ver lo bello"*; *"hilos invisibles de luz"* bajo un cielo de estrellas.
+- Upekkha se queda en **Soltar** (la impermanencia, soltar el ancla), aunque su invitación diga "fluí".
+- Sila se queda en **Resonar**: es la conducta ética (en el Noble Óctuple Sendero, *sīla* reúne recta palabra, recta acción y recto modo de vida) y la carta la plantea "en resonancia con la voz de tu sabiduría interior".
 - Sincronicidad es **Resonar**, no Ver: estar en armonía y en el momento justo.
 - Aceptación es **Fluir**, no Dar y recibir: su ilustración es un río entre dos seres iguales y su texto pide no luchar contra lo que no se controla.
 - Khanti es **Fluir** (Samas), no Soltar: los corchos que vacían los frascos quedan como la parte de soltar dentro de ese juego.

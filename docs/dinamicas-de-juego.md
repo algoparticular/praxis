@@ -28,7 +28,7 @@ Orden de los verbos: Arraigar (raíz) y Soltar (corona) son los dos polos, la co
 **Dinámica:** seguir y acompañar. Dejarse llevar por una corriente o por una criatura sin cortarla.
 **Punto de partida:** en Khanti las pinceladas lavanda ya siguen el dedo, y las criaturas destellan cuando una pincelada pasa cerca. Los Samas se mueven en pares.
 **Idea:** arrastrar el dedo acompañando un movimiento; cuando se acompasa, la escena "entra en ritmo" y aparece el rulito. Los corchos de Khanti que vacían los frascos quedan como la parte de soltar dentro del mismo juego.
-**Cartas:** Khanti, Belleza, Celebración, Esperanza, Transformación, Aceptación (su ilustración es un río entre dos seres iguales bajo cielos distintos, y su texto pide no luchar contra lo que no se controla).
+**Cartas:** Khanti, Celebración, Transformación, Aceptación (su ilustración es un río entre dos seres iguales bajo cielos distintos, y su texto pide no luchar contra lo que no se controla).
 
 ### 3. Encender (Kätus, demonio: vergüenza)
 **Dinámica:** cargar y soltar. Juntar energía y lanzarla, o encender cosas hasta que todas estén encendidas.
@@ -73,7 +73,7 @@ Orden de los verbos: Arraigar (raíz) y Soltar (corona) son los dos polos, la co
 - *Movimiento reducido.* La escena queda estática y todavía no se puede jugar (como Vipassana): los toques siguen haciendo lo de siempre.
 **Dónde se tocó:** `ScenePanna.vue` (todos los hilos son un solo grupo de partículas, `helix()`; `LIGHTS`, `join()`, `seen()`). No cubre ni agrega ningún dibujo: son solo partículas.
 **Variante posible:** despejar una niebla de partículas para revelar las luces (cubriría el arte de Pañña; encajaría mejor en Honestidad, que tiene burbujas) o primero descubrir y después unir.
-**Cartas:** Pañña (hecha), Ciclos.
+**Cartas:** Pañña (hecha), Ciclos, Belleza, Esperanza. Esperanza es la que mejor toma el motor de Pañña: su texto habla de *"hilos invisibles de luz"* y su ilustración es un cielo lleno de estrellas (unirlas en una constelación). Belleza (*"poder ver lo bello"*) no tiene luces dibujadas: necesita otro gesto, como descubrir lo bello escondido en el bosque.
 
 ### 7. Soltar (Sid, demonio: apego): implementado en Vipassana
 **Dinámica:** dejar ir. Que las cosas se vayan sin agarrarlas, y que vuelvan.
