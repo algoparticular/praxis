@@ -595,6 +595,8 @@
             linksOut = false;
         }
     };
+    let auraGoal = 0;                              // 0..1, how much of the network is joined
+    let aura = 0;                                  // the aura's swelling, easing towards it
     let linksOut = false;                          // the threads fade out while the rulito goes
 
     // The lights that are joined stay lit, so the network is seen growing
@@ -607,6 +609,18 @@
         const level = lit.size / LIGHTS.length;
         back?.boost(G.aura, 0.15 + 1.1 * level);
         awake = Math.max(awake, 0.45 * level);
+        auraGoal = level;
+    };
+
+    // The aura swells outwards from Sid as the network is joined (a little: 14% when it is whole) and goes back as the
+    // threads go out
+    const swellAura = (dt) => {
+        const canvas = backCanvas.value;
+        if (!canvas || !canvas.clientWidth) return;
+        aura += ((win && !win.back ? 1 : auraGoal) - aura) * Math.min(1, dt * 2);
+        auraGoal = 0;
+        const L = layout(canvas.clientWidth, canvas.clientHeight);
+        back?.grow(G.aura, 0.14 * aura, L.fx0 + 1072 * L.kf, L.fy0 + 1123 * L.kf);
     };
 
     // No words: after a while without touching anything a light that is not joined yet glows now and then, first the sun
@@ -738,6 +752,7 @@
             front?.shift(1, threadShift[0], threadShift[1]);        // the threads
             winTick(t, dt);
             keepLit();
+            swellAura(dt);
             hint(dt);
         });
 
