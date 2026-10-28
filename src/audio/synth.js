@@ -368,6 +368,27 @@ export const link = (ctx, out, time, harmony, lights = { from: 0.5, to: 0.5, lev
     swish(ctx, out, time, { from: 2500, to: 5500, duration: 0.5, level: 0.005 * k, q: 0.6 });
 };
 
+// Throwing the little flame (Dana): a breath of air rising and the note of the one who gives, gliding up into it; the
+// one who catches it answers with `link` (the giver's note, then the receiver's). `from` is the giver's height (0..1)
+export const give = (ctx, out, time, harmony, lights = { from: 0.5 }) => {
+    const h = harmony ?? PLAIN;
+    const notes = h.tones(h.voice - 12, 26);
+    const target = hz(notes[Math.round(lights.from * (notes.length - 1))]);
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(target * 0.75, time);
+    osc.frequency.exponentialRampToValueAtTime(target, time + 0.18);
+    gain.gain.setValueAtTime(0.0001, time);
+    gain.gain.exponentialRampToValueAtTime(0.045, time + 0.03);
+    gain.gain.exponentialRampToValueAtTime(0.0001, time + 0.6);
+    osc.connect(gain);
+    gain.connect(out);
+    osc.start(time);
+    osc.stop(time + 0.65);
+    swish(ctx, out, time, { from: 700, to: 3200, duration: 0.7, level: 0.012, q: 0.7 });
+};
+
 // Every light is joined and the threads carry their light to the third eye: the chord's notes climb from the lowest to the
 // highest like a harp that gathers and swells, with a breath of air rising under them
 export const converge = (ctx, out, time, harmony) => {
