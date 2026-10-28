@@ -14,5 +14,6 @@ La documentación sigue las pestañas del artefacto "Anima por dentro" (el mismo
 Otros documentos:
 - `editar-cartas.md`: cómo editar los textos, colores e ilustraciones de una carta.
 - `registro-cartas-vivas.md`: qué hace cada escena al tocarla.
+- `escenas.md`: cómo está construida cada escena inmersiva (detalle técnico).
 - `plan-inmersivo.md`: el plan de las escenas inmersivas.
 - `analitica.md`: eventos, embudos y garantías de privacidad.

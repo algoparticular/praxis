@@ -58,14 +58,15 @@ Se cambia una línea en `src/data/cardChords.js`, por ejemplo `28: 'Em'`. Se esc
 
 ## Las 33 de un vistazo
 
+<!-- tabla:inicio -->
 | # | Carta | Categoría | Verbo | Acorde | En la app |
 |---|---|---|---|---|---|
 | 0 | Nekkhamma | Paramis | Soltar | Si menor | Ilustración plana |
 | 1 | Sila | Paramis | Resonar | Sol7 | Ilustración plana |
-| 2 | Dana | Paramis | Dar y recibir | Si mayor | Escena propia (Dana), sin juego todavía |
-| 3 | Pañña | Paramis | Ver | Lam7 | Escena propia (Pañña), verbo jugable |
+| 2 | Dana | Paramis | Dar y recibir | Si mayor | Escena propia, sin juego todavía |
+| 3 | Pañña | Paramis | Ver | Lam7 | Escena propia, verbo jugable |
 | 4 | Viriya | Paramis | Encender | Mi mayor | Ilustración plana |
-| 5 | Khanti | Paramis | Fluir | Remaj7 | Escena propia (Kshanti), sin juego todavía |
+| 5 | Khanti | Paramis | Fluir | Remaj7 | Escena propia, sin juego todavía |
 | 6 | Sacca | Paramis | Resonar | Sol7 | Ilustración plana |
 | 7 | Addhitthana | Paramis | Arraigar | Mi mayor | Ilustración plana |
 | 8 | Metta | Paramis | Dar y recibir | Famaj7 | Ilustración plana |
@@ -80,21 +81,22 @@ Se cambia una línea en `src/data/cardChords.js`, por ejemplo `28: 'Em'`. Se esc
 | 17 | Comunicación | Regular | Resonar | Sol menor | Ilustración plana |
 | 18 | Confianza | Regular | Arraigar | La menor | Ilustración plana |
 | 19 | Coraje | Regular | Encender | Mi7 | Ilustración plana |
-| 20 | Creatividad | Regular | Resonar | Do7 | Escena propia (Creatividad), sin juego todavía |
+| 20 | Creatividad | Regular | Resonar | Do7 | Escena propia, sin juego todavía |
 | 21 | Desafío | Regular | Encender | Re7 | Ilustración plana |
-| 22 | Evolución Espiritual | Regular | Encender | Si7 | Escena propia (Evolución), sin juego todavía |
+| 22 | Evolución Espiritual | Regular | Encender | Si7 | Escena propia, sin juego todavía |
 | 23 | Fe | Regular | Arraigar | Si mayor | Ilustración plana |
 | 24 | Gratitud | Regular | Dar y recibir | Solmaj7 | Ilustración plana |
-| 25 | Hogar | Regular | Arraigar | Do mayor | Escena propia (Hogar), sin juego todavía |
+| 25 | Hogar | Regular | Arraigar | Do mayor | Escena propia, sin juego todavía |
 | 26 | Honestidad | Regular | Resonar | Solm7 | Ilustración plana |
-| 27 | Paciencia | Regular | Arraigar | Re mayor | Escena propia (Paciencia), verbo jugable |
+| 27 | Paciencia | Regular | Arraigar | Re mayor | Escena propia, verbo jugable |
 | 28 | Perdón | Regular | Soltar | Fa menor | Ilustración plana |
-| 29 | Sincronicidad | Regular | Ver | Re mayor | Escena propia (Sincronicidad), sin juego todavía |
+| 29 | Sincronicidad | Regular | Ver | Re mayor | Escena propia, sin juego todavía |
 | 30 | Esperanza | Regular | Fluir | Sim7 | Ilustración plana |
-| 31 | Vipassana | Special | Soltar | Simaj7 | Escena propia (Vipassana), verbo jugable |
+| 31 | Vipassana | Special | Soltar | Simaj7 | Escena propia, verbo jugable |
 | 32 | Transformación | Regular | Fluir | Rem7 | Ilustración plana |
+<!-- tabla:fin -->
 
-Esta tabla sale de `cards.json` (nombre, categoría, verbo), de `src/data/cardChords.js` (acorde) y de `src/data/cardScenes.js` (escena). Si cambia alguno de los tres, hay que actualizarla. Qué hace cada escena al tocarla: `registro-cartas-vivas.md`.
+Esta tabla se genera sola desde `cards.json` (nombre, categoría, verbo), `src/data/cardChords.js` (acorde) y `src/data/cardScenes.js` (escena). Después de cambiar alguno de los tres, correr `npm run docs`; `npm run check:docs` falla si quedó desactualizada. Qué verbo ya se juega está en `PLAYABLE`, dentro de `scripts/check-docs.mjs`. Qué hace cada escena al tocarla: `registro-cartas-vivas.md`.
 
 ## Reparto de los verbos entre las 33
 Está en el campo `verb` de `src/data/cards.json` y los verbos en `src/data/verbs.js`. Salió del texto de cada carta; se puede corregir editando el JSON. `?` marca las que tenían duda al armarlo.

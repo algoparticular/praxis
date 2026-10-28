@@ -41,13 +41,13 @@ const group = (label, test, { each, total }) => {
     check(`${label}: total (${members.length} files)`, members.reduce((sum, { file }) => sum + sizeKb(file), 0), total);
 };
 group('Pañña layers', (rel) => rel.startsWith('assets/panna/'), { each: 100, total: 600 });
-group('Kshanti layers', (rel) => rel.startsWith('assets/kshanti/'), { each: 400, total: 1300 });
+group('Khanti layers', (rel) => rel.startsWith('assets/khanti/'), { each: 400, total: 1300 });
 group('Creatividad layers', (rel) => rel.startsWith('assets/creatividad/'), { each: 100, total: 400 });
 group('Evolución layers', (rel) => rel.startsWith('assets/evolucion/'), { each: 300, total: 450 });
 group('Deck thumbnails', (rel) => /^cards\/thumb\/\d+\.webp$/.test(rel), { each: 70, total: 650 });
 group('Card illustrations', (rel) => /^cards\/\d+\.webp$/.test(rel), { each: 900, total: 9500 });
 group('Share pictures', (rel) => /^og\/\d+\.jpg$/.test(rel), { each: 200, total: 2300 });
-group('Other pictures', (rel) => /^assets\/(?!panna\/|kshanti\/|creatividad\/|evolucion\/)[\w-]+\/.*\.(webp|jpg|png)$/.test(rel), { each: 900, total: 7300 });
+group('Other pictures', (rel) => /^assets\/(?!panna\/|khanti\/|creatividad\/|evolucion\/)[\w-]+\/.*\.(webp|jpg|png)$/.test(rel), { each: 900, total: 7300 });
 
 const over = rows.filter((row) => row.value > row.limit);
 // Only what is close to its line (or over it) is worth printing; the rest is fine
