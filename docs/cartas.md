@@ -1,6 +1,6 @@
 # Cartas
 
-Tercera pestaña de "Anima por dentro": lo que tenemos hoy de cada una de las 33 cartas, junto. El texto de cada carta (descripción, afirmación e invitación, en español e inglés), sus colores y su ilustración viven en `src/data/cards.json`, que es la fuente de verdad (cómo editarla: `editar-cartas.md`). Acá está el resto: su verbo, su acorde y qué hace en la app.
+Cuarta pestaña de "Anima por dentro": lo que tenemos hoy de cada una de las 33 cartas, junto. El texto de cada carta (descripción, afirmación e invitación, en español e inglés), sus colores y su ilustración viven en `src/data/cards.json`, que es la fuente de verdad (cómo editarla: `editar-cartas.md`). Acá está el resto: su verbo, su acorde y qué hace en la app.
 
 ## Dónde está cada cosa de una carta
 
@@ -14,7 +14,7 @@ Tercera pestaña de "Anima por dentro": lo que tenemos hoy de cada una de las 33
 
 ## El acorde de cada carta
 
-Cada carta suena en su propio acorde, elegido por su texto (las reglas, en `teoria.md`, tercera parte). El código vive en `src/data/cardChords.js` y el sonido en `src/audio/synth.js`.
+Cada carta suena en su propio acorde, elegido por su texto (las reglas, en `musica.md`, segunda parte). El código vive en `src/data/cardChords.js` y el sonido en `src/audio/synth.js`.
 
 | # | Carta | Acorde | Notas → chakras | Por qué este acorde | Personajes en la ilustración |
 |---|---|---|---|---|---|

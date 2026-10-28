@@ -1,6 +1,6 @@
 # Marca
 
-Cuarta pestaña de "Anima por dentro": siete colores del arcoíris que conviven con la marca. Cada chakra tiene su color, y esos siete colores van a aparecer en cartas, juegos y piezas de Algo Particular. Tienen que sentirse de la misma familia que el crema, el coral y el azul-negro, en lugar de un arcoíris genérico pegado encima.
+Quinta pestaña de "Anima por dentro": siete colores del arcoíris que conviven con la marca. Cada chakra tiene su color, y esos siete colores van a aparecer en cartas, juegos y piezas de Algo Particular. Tienen que sentirse de la misma familia que el crema, el coral y el azul-negro, en lugar de un arcoíris genérico pegado encima.
 
 ## Lo que ya es marca
 
