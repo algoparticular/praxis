@@ -47,6 +47,22 @@ Rama: `claude/cool-heisenberg-l4fuyc`. Los pasos 1 a 6 están hechos y la landin
 
 **Por decidir con el autor:** si las posiciones de las 9 cartas tienen un significado propio, y si las cartas empiezan boca abajo, como hoy.
 
+## Ideas para seguir en otra sesión
+Propuestas que salieron al ordenar la documentación. Son hipótesis, no decisiones: ninguna está implementada ni validada con Belén.
+
+**Qué se puede llevar la persona.** Hoy la experiencia termina en la carta. De menor a mayor compromiso:
+1. **La afirmación como imagen.** Una tarjeta para guardar o compartir con la ilustración y la afirmación. Ya hay una imagen social por carta (`dist/og/<id>.jpg`, hecha por `scripts/cardMetaPlugin.js`), así que parte del trabajo existe.
+2. **La carta del día para recordar.** Guardar "mi carta de hoy" solo en el dispositivo (`localStorage`), sin cuenta, para volver a leerla.
+3. **La invitación de la carta.** Llevarse la invitación como recordatorio, o dejar una nota propia.
+4. **El rulito.** Es el premio de cada juego y no sale dos veces igual: guardar el que le salió a cada persona sería algo único suyo.
+
+**Antes de construirlo.** La analítica ya reporta hitos (`pattern_seen`, `all_released`; ver `docs/analitica.md`). Mirar cuánta gente completa un juego y cuánta llega a la lectura ayuda a decidir qué vale la pena. La opción 1 es la más barata y la que menos cambia lo que la app promete.
+
+**Otras.**
+- Probar el verbo del centro, Dar y recibir, que es el único que no se probó en una escena (ver `verbos-y-dinamicas.md`). 24 de las 33 cartas siguen con ilustración plana: conviene llevar un verbo por vez a las cartas de su familia.
+- Accesibilidad de Pañña y Vipassana (movimiento reducido y teclado), anotada en `abierto.md` como "más adelante".
+- Dos presupuestos de tamaño están justos (otras imágenes y ilustraciones de cartas, `scripts/check-budget.mjs`): cada escena nueva con capas WebP los va a pedir.
+
 ## Pendientes
 - Probar el sonido en un iPhone real, con el interruptor de silencio puesto y quitado.
 - Medir batería y fluidez de las escenas de three.js en un teléfono real.
