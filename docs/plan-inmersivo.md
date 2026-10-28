@@ -45,7 +45,5 @@ Rama: `claude/cool-heisenberg-l4fuyc`. Los pasos 1 a 6 están hechos y la landin
 - Elección: las demás se desvanecen, la elegida se une a la cámara, se voltea girando sobre el eje X de la cámara y se entrega al DOM calculando su rectángulo, que es proporcional 1:1.2, con borde de 10/512 del ancho y radio de 0.19 del ancho. Después `setPendingTransition` y `router.push`.
 - Ajustar la distancia de la cámara según la proporción de la pantalla, para móviles verticales. Con movimiento reducido: sin autorrotación ni animación de entrada.
 
-**Por decidir con el autor:** si las posiciones de las 9 cartas tienen un significado propio, y si las cartas empiezan boca abajo, como hoy.
-
 ## Pendientes
 - Medir batería y fluidez de las escenas de three.js en un teléfono real.
