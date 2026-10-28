@@ -25,7 +25,7 @@ Qué dinámica propone cada verbo: `dinamicas-de-juego.md`.
 Las notas siguen la correspondencia tradicional Do–Si; la decisión de música se toma aparte.
 
 ## Dos corrientes: de Arraigar a Soltar
-Lectura de trabajo, a validar con Belén. Sale de *Cuerpo de Oriente, mente de Occidente* (figura 0.4, "Corrientes energéticas", y figura 8.1, "El viaje completo") y de las notas de Belén en Notion. Los "7 movimientos" de esas notas son estos siete verbos.
+Lectura de trabajo, a validar con Belén. Sale del libro *Cuerpo de Oriente, mente de Occidente* (corrientes energéticas y el viaje completo de los chakras) y de las notas de Belén en Notion. Los "7 movimientos" de esas notas son estos siete verbos.
 
 La energía de los chakras corre en dos sentidos:
 - **Corriente de manifestación** (baja): impulso del alma y del cuerpo. Se mueve hacia la forma, la densidad, los límites, la contracción y la individualidad.
@@ -39,7 +39,7 @@ Los siete verbos, uno por chakra, quedan ordenados entre dos polos:
 
 Esto se parece a lo que el rulito premia: en las notas del tercer chakra, "siento las dos corrientes, ascendente de liberación y descendente de manifestación, que se unen en mí para manifestar mi propósito de ser quien soy".
 
-Las palabras del libro para cada chakra, de la figura 8.1:
+Las palabras del libro para cada chakra, subiendo y bajando:
 
 | Verbo | Chakra | Sube | Baja |
 |-------|--------|------|------|
