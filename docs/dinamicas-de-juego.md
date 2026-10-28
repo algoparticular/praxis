@@ -65,7 +65,8 @@ Orden de los verbos: Arraigar (raíz) y Soltar (corona) son los dos polos, la co
 - **Objetivo:** soltar todo lo que hay en la escena (21 células en la demo; 30 eran demasiadas). Cada célula es algo a lo que se aferra; tocarla la suelta: explota en puntos y queda así.
 - **Premio:** cuando no queda nada que agarrar, la espiral de puntos de Sid se va y solo queda la animación del rulito, en el color de la carta (el violeta, `#6B428E`). Después todo lo que se soltó vuelve y el rulito se va, igual que en Arraigar. Es la misma regla de siempre (el premio es el rulito), pero acá llega por vaciar y no por acumular.
 - **Respirar (tocar el agua):** el ritmo de la escena. No hace falta para ganar.
-- **Retener el aire y exhalar:** apoyo y contraste. Retener es aferrarse (el demonio del séptimo chakra es el apego): la espiral se acorta y el campo se cierra sobre lo que Sid tiene cerca, y cuanto más se retiene más células cercanas caen dentro, hasta un alcance máximo para que un solo gesto no alcance. Al exhalar las suelta todas juntas.
+- **Retener el aire y exhalar:** apoyo y contraste. Retener es aferrarse (el demonio del séptimo chakra es el apego): la espiral se acorta y el campo se cierra sobre lo que Sid tiene cerca, y cuanto más se retiene más células caen dentro, las más cercanas primero y hasta 7. Al exhalar las suelta todas juntas. Con tres respiraciones alcanza para soltar las 21.
+- **Pista, sin palabras:** arriba hay una hilera de 21 células chicas que se van apagando a medida que se sueltan, así se ve cuánto falta. Si pasa un rato sin tocar nada (poco al empezar), una célula que queda late con un anillo: esa es la que hay que soltar.
 Está probado en la demo del artefacto "Anima por dentro", no en la escena.
 **Cartas:** Nekkhamma, Upekkha, Perdón, Vipassana (hecha).
 
