@@ -2,7 +2,7 @@
 
 Cada carta tiene un verbo (`verb` en `src/data/cards.json`, lista en `src/data/verbs.js`). El verbo define la **dinámica**: qué hace la persona con la escena. La ilustración, el sonido y el significado los pone cada carta. Los siete verbos son uno por personaje y chakra (ver `verbos-y-personajes.md`).
 
-Cuatro verbos se probaron en una escena: **Arraigar en Paciencia**, **Soltar en Vipassana**, **Ver en Pañña** y **Dar y recibir en Dana** (en prueba). Lo implementado no es fijo: son ideas probadas y pueden cambiar. El resto son propuestas, tomando como punto de partida lo que ya hacen las escenas.
+Cuatro verbos se probaron en una escena: **Arraigar en Paciencia**, **Soltar en Vipassana**, **Ver en Pañña** y **Dar y recibir en Dana** (en prueba: compartir la luz). Lo implementado no es fijo: son ideas probadas y pueden cambiar. El resto son propuestas, tomando como punto de partida lo que ya hacen las escenas.
 
 ## Reglas comunes
 - **Nada se pierde ni se falla.** No hay puntaje, tiempo límite ni "game over". Si el gesto no se completa, la escena sigue viva y se puede intentar de nuevo.
@@ -28,7 +28,7 @@ Orden de los verbos: Arraigar (raíz) y Soltar (corona) son los dos polos, la co
 **Dinámica:** seguir y acompañar. Dejarse llevar por una corriente o por una criatura sin cortarla.
 **Punto de partida:** en Khanti las pinceladas lavanda ya siguen el dedo, y las criaturas destellan cuando una pincelada pasa cerca. Los Samas se mueven en pares.
 **Idea:** arrastrar el dedo acompañando un movimiento; cuando se acompasa, la escena "entra en ritmo" y aparece el rulito. Los corchos de Khanti que vacían los frascos quedan como la parte de soltar dentro del mismo juego.
-**Cartas:** Khanti, Belleza, Celebración, Esperanza, Transformación.
+**Cartas:** Khanti, Belleza, Celebración, Esperanza, Transformación, Aceptación (a confirmar: su ilustración es un río entre dos seres iguales bajo cielos distintos, y su texto pide no luchar contra lo que no se controla).
 
 ### 3. Encender (Kätus, demonio: vergüenza)
 **Dinámica:** cargar y soltar. Juntar energía y lanzarla, o encender cosas hasta que todas estén encendidas.
@@ -37,18 +37,20 @@ Orden de los verbos: Arraigar (raíz) y Soltar (corona) son los dos polos, la co
 **Cartas:** Viriya, Coraje, Desafío, Evolución Espiritual.
 
 ### 4. Dar y recibir (Vulpes, demonio: pena): en prueba en Dana
-**Dinámica:** pasar algo de un lado al otro y que vuelva. Dar, recibir, equilibrar.
-**Por qué lanzar y atrapar:** arrastrar de una luz a otra ya es el gesto de Ver (tender un hilo que queda). Acá lo que va y viene es la llama misma y no queda nada dibujado: dar es lanzarla, recibir es atraparla. Si no convence, la alternativa anotada es una honda tipo Angry Birds (tirar hacia atrás y soltar).
-**Cómo funciona hoy en Dana:** los dos Particulares son dos capas aparte (`public/assets/dana/left.webp` y `right.webp`, cortadas del dibujo de la página Colaborar) y están más separados que en el dibujo, para que la llama tenga lugar para volar. El de la derecha, el que brilla y tiene la mano extendida, tiene la llamita.
-- *Dar.* Se agarra la llama y se la lanza con un gesto rápido hacia el otro: vuela en arco, más alto cuanto más fuerte se la tira, dejando chispas, y suena la nota del que da subiendo (`give`). Soltarla despacio justo al lado del otro también vale: se la pasa de mano. Un lanzamiento que no va hacia el otro sigue un momento por el aire y vuelve flotando a la mano de la que salió: nada se pierde.
-- *Recibir.* La llama llega frente al otro y espera ahí, flotando, hasta que se la atrapa con un toque (también se la puede atrapar en el aire). Si nadie la toma, llama de a ratos con un destello. Al atraparla suena la nota del que da y después la del que recibe (`link`), y la llama crece un poco: vuelve más grande cada vez.
-- *El que recibe se enciende.* El de la izquierda empieza sin brillo, y cada llama que recibe le enciende un poco más un aura de puntos rosados alrededor de su contorno (partículas, `danaAura.json`), como la que tiene dibujada el de la derecha.
-- *Equilibrio.* A la tercera ida y vuelta (`ROUNDS`) los dos brillan igual: la llama se enciende, nace un rulito sobre cada cabeza (en el crema del rulito que estaba dibujado; el de la derecha un instante después), se ilumina el nombre de la carta y suena `rulito`. Después los rulitos se van, la llama vuelve a su tamaño y el de la izquierda se queda con un poco de su brillo. Hito: `gift_balanced` (con `times`).
-- *Pista, sin palabras.* Si pasa un rato sin tocar nada, la llama da un saltito hacia el otro, como si quisiera ir.
-- *Teclado.* Enter en la llama la lanza al otro; Enter mientras vuela o espera la atrapa.
-- *Movimiento reducido.* La escena queda estática y todavía no se puede jugar (como Vipassana y Pañña): tocar la llama la hace saltar, como antes.
-**Dónde se tocó:** `SceneDana.vue` (`HAND`, `OFFER`, `throwTo()`, `receive()`, `balance()`), `give` en `synth.js`. El rulito que estaba dibujado sobre el de la derecha se sacó de su capa: ahora es el premio.
-**Cartas:** Dana (en prueba), Metta, Aceptación, Gratitud.
+**Dinámica:** compartir la luz. Dar sin pensar y sin esperar nada a cambio, y descubrir que dar no vacía: lo dado vuelve multiplicado, sin pedirlo.
+**Por qué así:** la primera prueba (lanzar la llamita al otro y que la devuelva, tres idas y vueltas) era un intercambio, un ping-pong: te doy y me devolvés. Las cuatro cartas del verbo dicen otra cosa: Dana *"soy feliz al dar sin esperar nada a cambio"* y *"bendiciones que vuelven a ti multiplicadas"*, Metta *"no podemos dar lo que no tenemos ni recibir lo que no damos"*, Gratitud *"al dar las gracias tu Espíritu se ilumina"*. Se descartaron también la honda (el mismo intercambio) y Tonglen (recibir la pena del otro acariciándolo): no sirve para las otras cartas y acariciar es consolar, no dar.
+**El motor, común a las cartas del verbo:** hay una fuente de luz y quienes pueden recibirla. El gesto es **un toque**, rápido, como da un chico (no es arrastrar, que es Ver, ni sostener, que es Arraigar). Cada toque hace saltar una chispa de la fuente a ese otro y lo enciende; **la fuente no se achica, crece**. No hay orden. Cuando todos tienen su luz, todos devuelven una a la vez hacia la fuente, sin que se la pidan, y nace el rulito. Cada carta solo dice quién es la fuente y quiénes reciben:
+- Dana: la llamita del de la derecha; el amigo, las piedritas con ojos y los hongos de la isla.
+- Metta: el ser blanco sobre el huevo (*"comenzando por vos mismo"*: el primer toque sería a él); los seis que lo rodean, el zorro y el gatito.
+- Gratitud: Sid sentado en la isla; el sol, la casa, la luz de la palmera, el bote, las nubes (agradecerle a cada cosa).
+**Cómo funciona hoy en Dana:** los dos Particulares son dos capas aparte (`public/assets/dana/left.webp` y `right.webp`, cortadas del dibujo de la página Colaborar) y están más separados que en el dibujo. El de la derecha, el que brilla y tiene la mano extendida, tiene la llamita, que no se mueve de su mano.
+- *Dar.* Se toca a alguien de la isla (`GIFTS`: el amigo, tres grupos de piedritas con ojos, el hongo grande y el hongo chico con su piedrita): sale una chispa de la llama, vuela en arco dejando chispas y suena la nota del que da subiendo (`give`). Al llegar, ese otro se enciende (el amigo con un aura de puntos rosados alrededor de su contorno, `danaAura.json`; los demás con una nube de brasas suaves) y suena la nota del que da y después la del que recibe (`link`); cada uno tiene su nota en el acorde de la carta. La llama crece un poco con cada luz que da. Tocar a uno que ya tiene su luz solo lo hace brillar (`tap`).
+- *Vuelve multiplicado.* Con todos encendidos, todos mandan una luz de vuelta a la llama a la vez (`converge`); la llama se agranda, nace un rulito sobre cada cabeza (en el crema del rulito que estaba dibujado; el de la derecha un instante después), se ilumina el nombre de la carta y suena `rulito`. Después los rulitos se van, las luces se apagan despacio (el amigo se queda con un poco de su brillo) y la llama vuelve a su tamaño: se puede jugar de nuevo. Hito: `light_shared` (con `times`).
+- *Pista, sin palabras.* Si pasa un rato sin tocar nada, uno de los que todavía no tienen luz titila y la llama responde.
+- *Teclado.* Cada uno es un botón: Enter le da su luz. Enter en la llama la hace saltar.
+- *Movimiento reducido.* La escena queda estática y todavía no se puede jugar (como Vipassana y Pañña): los toques hacen saltar la llama, como antes.
+**Dónde se tocó:** `SceneDana.vue` (`GIFTS`, `give()`, `receive()`, `giveBack()`, `balance()`), `give` en `synth.js`. El rulito que estaba dibujado sobre el de la derecha se sacó de su capa: ahora es el premio.
+**Cartas:** Dana (en prueba), Metta, Gratitud. Aceptación está en este verbo en `cards.json`, pero calza mejor en Fluir (por confirmar, ver ahí).
 
 ### 5. Resonar (Aura, demonio: mentiras)
 **Dinámica:** escuchar y responder. Ritmo, eco, secuencia.
