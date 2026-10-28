@@ -124,6 +124,8 @@
 
             //The seed of the quote is the brand mark of the header: same artwork, same size. It turns as it climbs and
             //unwinds to zero exactly when it reaches the header's mark, where the two coincide and a flash goes off.
+            //The quote is centred and the mark sits in the left corner, so on the last stretch the seed curves off
+            //towards it, like a seed carried by the wind.
             const seed = document.querySelector('#uno img');
             const mark = document.querySelector('header #logo img');
             let lastGap = null;
@@ -166,8 +168,14 @@
                 const m = mark.getBoundingClientRect();
                 const s = seed.getBoundingClientRect();
                 const gap = (s.top + s.height / 2) - (m.top + m.height / 2);             //vertical distance between the two centres
-                const sideways = (m.left + m.width / 2) - (s.left + s.width / 2);
-                const close = Math.max(0, 1 - Math.abs(gap) / 240);                       //horizontal correction only fades in near the mark
+                //Measured from the middle of the section, where the seed sits before it moves (its own box already carries the shift)
+                const home = seed.parentElement.getBoundingClientRect();
+                const sideways = (m.left + m.width / 2) - (home.left + home.width / 2);
+                //The sideways flight only starts near the mark; the farther it has to travel (wide screens), the earlier it
+                //starts, so the curve looks the same on a phone and on a desktop
+                const reach = Math.max(240, Math.abs(sideways));
+                const t = Math.max(0, 1 - Math.abs(gap) / reach);
+                const close = t * t * (3 - 2 * t);
                 seed.style.rotate = `${Math.max(-160, Math.min(160, gap * 0.3))}deg`;
                 seed.style.translate = `${sideways * close}px 0`;
                 //The centres crossed: the two are on top of each other
@@ -210,11 +218,11 @@
             const tree = pick('.gfx .oracle.tree');
             [...copy, man, tree].forEach((el) => { el.style.opacity = 0; });
 
-            const reveal = ({ el, y = 24, scale = 1, delay = 0, duration = 900, origin }) => {
+            const reveal = ({ el, y = 24, scale = 1, delay = 0, duration = 900, origin, composite = 'replace' }) => {
                 if (origin) el.style.transformOrigin = origin;
                 const animation = el.animate(
                     { opacity: [0, 1], translate: [`0 ${y}px`, '0 0'], scale: [scale, 1] },
-                    { duration, delay, easing: 'cubic-bezier(0.22, 1, 0.36, 1)', fill: 'backwards' }
+                    { duration, delay, easing: 'cubic-bezier(0.22, 1, 0.36, 1)', fill: 'backwards', composite }
                 );
                 el.style.opacity = '';
                 return animation.finished;
@@ -227,7 +235,8 @@
             const quote = [document.querySelector('#uno img'), ...document.querySelectorAll('#uno h2 .line')];
             quote.forEach((el) => { el.style.opacity = 0; });
             stopReveals.push(inView('#uno h2', () => {
-                quote.forEach((el, i) => reveal({ el, y: 32, delay: i * 450, duration: 1300 }));
+                //Added on top, so the seed can already be curving towards the mark while it is still arriving
+                quote.forEach((el, i) => reveal({ el, y: 32, delay: i * 450, duration: 1300, composite: i === 0 ? 'add' : 'replace' }));
             }, { amount: 0.6 }));
 
             stopReveals.push(inView('#oracle .copy', () => {
