@@ -10,7 +10,7 @@
 - Las fichas de Huit y Sid no tienen texto de historia, solo la tabla.
 
 ## Escenas de juego
-- Que Pañña y Vipassana se puedan jugar con movimiento reducido (hoy las dos escenas quedan estáticas), y Vipassana también con teclado.
+- Más adelante, por accesibilidad: que Pañña y Vipassana se puedan jugar con movimiento reducido (hoy las dos escenas quedan estáticas y no se pueden jugar), y Vipassana también con teclado. El ajuste de movimiento reducido lo activan personas a las que las animaciones les dan mareo o malestar, y el teclado lo usa quien no puede tocar la pantalla. El gesto seguiría funcionando, con menos chispas y menos movimiento.
 - Tiempos de Arraigar (2,6 s dibujándose, 3,4 s yéndose): ajustarlos con un teléfono en la mano.
 - Que las raíces se recuerden entre visitas (hoy se pierden al salir de la carta).
 - El color del rulito de Vipassana: es el rosa de la espiral porque el fondo de la escena ya es el violeta de la carta.
