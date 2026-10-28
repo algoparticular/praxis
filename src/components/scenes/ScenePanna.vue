@@ -1012,6 +1012,9 @@
         <div class="hit sun" role="button" tabindex="0" :aria-label="$i18n.locale === 'en' ? 'Sun' : 'Sol'"
             @pointerdown.prevent="press(SUN, $event)" @pointerenter="warmSun" @keydown="pressKey(SUN, $event)"></div>
 
+        <!-- The ground in front, on a tall screen: where the scene is lifted it hides the bottom edge of the drawings -->
+        <div class="ground" aria-hidden="true"></div>
+
         <!-- The spiral and the sparks, in front of everything -->
         <canvas class="field" ref="frontCanvas"></canvas>
     </div>
@@ -1024,10 +1027,34 @@
         --sn: min(calc(var(--s) * 1.1), calc(100vw * 1.25));
         /* On a tall screen (a phone upright) everything but the sun is lifted off the bottom, so Sid sits nearer the middle
            and the mushrooms are seen whole; below them is the floor. On a wide screen it stays at the bottom */
-        --lift: max(0px, (100svh - var(--s) * 1.42) * 0.7);
+        --lift: max(0px, (100svh - var(--s) * 1.2) * 0.5);
         position: absolute;
         inset: 0;
         overflow: hidden;
+    }
+
+    /* A phone upright: Sid is drawn bigger, so the scene fills more of the height */
+    @media (max-aspect-ratio: 3/4) {
+        .scene {
+            --s: min(max(100vw, 70svh), 85svh);
+        }
+    }
+
+    /* The ground in front: as high as the bottom edge of the lifted drawings (plus a fade), in the floor's colour */
+    .ground {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: max(0px, calc(var(--lift) - var(--sn) * 0.04 + 30px));
+        background: linear-gradient(to top, #004f4c, #005653 calc(100% - 30px), rgba(0, 86, 83, 0));
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 1.8s ease-out;
+    }
+
+    .shown .ground {
+        opacity: 1;
     }
 
     .field {
@@ -1208,7 +1235,7 @@
     }
 
     @media (prefers-reduced-motion: reduce) {
-        .half, .floor { opacity: 1; transition: none; }
+        .half, .floor, .ground { opacity: 1; transition: none; }
         .sway { animation: none; }
     }
 </style>

@@ -27,7 +27,7 @@ Todos llevan `lang` (`es`/`en`) e `installed` (la app corre como PWA instalada).
 | `scene_milestone` | hito de una escena con dinámica | `card_id`, `scene`, `action` (`rulito_completed` con `times`, `cork_popped`, `refill_all`, `all_released` con `times`, `power_breath`, `pattern_seen` con `times` y `figure`, `pattern_reset` con `figure`) |
 | `card_reading_reached` | baja hasta la lectura | `card_id`, `seconds` |
 | `card_left` | una vez por visita: se va de la carta, la oculta (cambia de app o de pestaña) o cierra la página; `seconds` llega hasta ese momento | `card_id`, `scene`, `seconds`, `touches`, `milestones`, `read` |
-| `share_opened` | abre la pantalla de compartir | `card_id` |
+| `share_opened` | abre la pantalla de compartir | `card_id`, `from`: `stage` (el botón sobre la escena) / `reading` (el del final de la lectura) |
 | `share_clicked` | elige un canal | `card_id`, `channel` (`link`, `facebook`, `twitter`, `whatsapp`) |
 | `language_changed` | cambia el idioma | `to` |
 | `sound_toggled` | activa o apaga el sonido | `on` |
