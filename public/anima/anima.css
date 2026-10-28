@@ -2,7 +2,8 @@
   --bg: #F7F8F1;
   --fg: #143246;
   --muted: #5b6e7a;
-  --accent: #F4844C;
+  --accent: #FF6F61;
+  --accent-ink: #BA372E; /* the coral's darker twin (src/data/chakraColors.js), readable as text on the cream */
   --rule: #d9ddd0;
 }
 * { box-sizing: border-box; }
@@ -15,5 +16,5 @@ h2 { font-size: 24px; margin-top: 48px; border-top: 1px solid var(--rule); paddi
 h3 { font-size: 19px; margin-top: 28px; }
 .lead { font-size: 20px; margin-top: 0; }
 .meta { color: var(--muted); }
-a { color: var(--accent); }
+a { color: var(--accent-ink); }
 footer { max-width: 680px; margin: 0 auto; padding: 24px 16px 40px; border-top: 1px solid var(--rule); color: var(--muted); font-size: 14px; }
