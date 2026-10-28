@@ -1,6 +1,6 @@
 // The seven verbs of the cards: the basic dynamic of a card's game. Each one belongs to a character of Algo Particular
 // (and so to a chakra). The card's meaning chooses its verb (`verb` in cards.json); the character drawn on it may differ.
-// See docs/verbos-y-personajes.md.
+// See docs/verbos-y-dinamicas.md.
 export const VERBS = {
     arraigar: { character: 'Sporá', chakra: 1, es: 'Arraigar', en: 'Take root' },
     fluir: { character: 'Samas', chakra: 2, es: 'Fluir', en: 'Flow' },

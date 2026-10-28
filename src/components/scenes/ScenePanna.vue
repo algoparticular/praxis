@@ -10,7 +10,7 @@
     // Its verb is Ver (see): the nine lights of the scene (the sun, Sid's third eye, the big pink mushroom, the four
     // fireflies and the two blue mushrooms) are joined by dragging from one to another with threads of dots. The pattern
     // to see is a star, every light joined to the third eye: then the rulito is born over Sid's head (see
-    // docs/dinamicas-de-juego.md).
+    // docs/verbos-y-dinamicas.md).
     // Two scales give depth: the centre lives in a square frame; the surroundings are a slightly bigger square whose
     // left and right halves are anchored to the sides of the screen, so on a wide screen the forest still hugs the edges.
     import { onBeforeUnmount, onMounted, ref, watch } from 'vue';

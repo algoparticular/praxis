@@ -10,7 +10,7 @@ const lazy = (loader) => defineAsyncComponent({ loader, suspensible: false });
 const scenes = {
     2: lazy(() => import('../components/scenes/SceneDana.vue')),
     3: lazy(() => import('../components/scenes/ScenePanna.vue')),
-    5: lazy(() => import('../components/scenes/SceneKshanti.vue')),
+    5: lazy(() => import('../components/scenes/SceneKhanti.vue')),
     20: lazy(() => import('../components/scenes/SceneCreatividad.vue')),
     22: lazy(() => import('../components/scenes/SceneEvolucion.vue')),
     25: lazy(() => import('../components/scenes/SceneHogar.vue')),
@@ -22,5 +22,5 @@ const scenes = {
 export const sceneFor = (id) => scenes[id] ?? SceneFlat;
 
 // The scene's name for analytics (the components are async and anonymous)
-const names = { 2: 'dana', 3: 'panna', 5: 'kshanti', 20: 'creatividad', 22: 'evolucion', 25: 'hogar', 27: 'paciencia', 29: 'sincronicidad', 31: 'vipassana' };
+const names = { 2: 'dana', 3: 'panna', 5: 'khanti', 20: 'creatividad', 22: 'evolucion', 25: 'hogar', 27: 'paciencia', 29: 'sincronicidad', 31: 'vipassana' };
 export const sceneNameFor = (id) => names[id] ?? 'flat';

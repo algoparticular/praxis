@@ -1,10 +1,66 @@
-# Dinámicas de juego: qué propone cada verbo
+# Verbos y dinámicas
 
-Cada carta tiene un verbo (`verb` en `src/data/cards.json`, lista en `src/data/verbs.js`). El verbo define la **dinámica**: qué hace la persona con la escena. La ilustración, el sonido y el significado los pone cada carta. Los siete verbos son uno por personaje y chakra (ver `verbos-y-personajes.md`).
+Decisión: los juegos de las cartas se organizan en **7 verbos**, uno por personaje / chakra / nota. Cada verbo es la dinámica básica de una familia de juegos; cada carta toma el verbo que le calza por su significado y lo viste con su propia ilustración. Fuente de los personajes: Notion, Algo Particular / BIOs.
 
-Cuatro verbos se probaron en una escena: **Arraigar en Paciencia**, **Soltar en Vipassana**, **Ver en Pañña** y **Dar y recibir en Dana** (en prueba). Lo implementado no es fijo: son ideas probadas y pueden cambiar. El resto son propuestas, tomando como punto de partida lo que ya hacen las escenas.
+Qué dinámica propone cada verbo: más abajo, en "Dinámicas: qué propone cada verbo".
 
-## Reglas comunes
+## Reglas de los verbos
+- **El verbo lo decide el significado de la carta.** El personaje dibujado puede ser otro (la asignación de personajes a cartas a veces es libre). Por eso serían dos campos distintos en `cards.json`: `verb` y `character`. Todavía no se agregaron.
+- **Sin perder, sin puntaje.** El gesto se completa o se vuelve a intentar.
+- **El premio es siempre el rulito** (la espiral de conexión con el Todo, ya presente en la landing, Vipassana y Pañña): al completar el gesto de una carta, aparece o se enciende.
+- **No bloquea la lectura.** La descripción, la afirmación y la invitación están siempre disponibles.
+- Cada verbo trabaja contra el "demonio" de su chakra (ver tabla). Idea a validar con Belén.
+
+## Los 7
+| # | Personaje | Chakra | Nota | Propósito | Demonio | Verbo | Qué hace la persona |
+|---|-----------|--------|------|-----------|---------|-------|---------------------|
+| 1 | Sporá | Raíz, rojo | Do | Asentamiento | Miedo | **Arraigar** | Sostener, plantar, quedarse quieto hasta que algo crece o se enciende |
+| 2 | Samas | Sacro, naranja | Re | Movimiento y conexión | Culpa | **Fluir** | Moverse con otros, dejarse llevar, seguir una corriente |
+| 3 | Kätus | Plexo solar, amarillo | Mi | Transformación | Vergüenza | **Encender** | Cargar y soltar, atravesar el fuego, encender cosas |
+| 4 | Vulpes | Corazón, verde | Fa | Amor, equilibrio | Pena | **Dar y recibir** | Extender y recoger, pasar algo de uno a otro, equilibrar |
+| 5 | Aura | Garganta, celeste | Sol | Comunicación, creatividad | Mentiras | **Resonar** | Escuchar y responder, ritmo, secuencia |
+| 6 | Huit | Tercer ojo, lavanda | La | Reconocer el patrón | Ilusión | **Ver** | Descubrir lo oculto, unir puntos, revelar |
+| 7 | Particular (¿Sid?) | Corona, violeta | Si | Comprensión | Apego | **Soltar** | Dejar pasar, vaciar |
+
+Las notas siguen la correspondencia tradicional Do–Si; la decisión de música se toma aparte.
+
+## Dos corrientes: de Arraigar a Soltar
+Lectura de trabajo, a validar con Belén. Sale del libro *Cuerpo de Oriente, mente de Occidente* (corrientes energéticas y el viaje completo de los chakras) y de las notas de Belén en Notion. Los "7 movimientos" de esas notas son estos siete verbos.
+
+La energía de los chakras corre en dos sentidos:
+- **Corriente de manifestación** (baja): impulso del alma y del cuerpo. Se mueve hacia la forma, la densidad, los límites, la contracción y la individualidad.
+- **Corriente de liberación** (sube): impulso de la mente y el espíritu. Se mueve hacia la libertad, la expansión, la abstracción y la universalidad.
+
+Los siete verbos, uno por chakra, quedan ordenados entre dos polos:
+- **Arraigar** (raíz) es el polo de la manifestación: de la materia a la manifestación. Está probado en Paciencia.
+- **Soltar** (corona) es el polo de la liberación: del entendimiento a la existencia. Está probado en Vipassana.
+- **Dar y recibir** (corazón) es donde las dos corrientes se encuentran. Las notas de Belén lo dicen así: "dos triángulos entrelazados, el movimiento descendente del espíritu en la materia y la liberación ascendente de la materia en el espíritu: equilibrio perfecto en el corazón". Se está probando en Dana: lanzar la llamita y atraparla, tres idas y vueltas (ver más abajo, en "Dinámicas").
+- **Fluir, Encender, Resonar y Ver** serían los pasos entre un polo y el otro.
+
+Esto se parece a lo que el rulito premia: en las notas del tercer chakra, "siento las dos corrientes, ascendente de liberación y descendente de manifestación, que se unen en mí para manifestar mi propósito de ser quien soy".
+
+Las palabras del libro para cada chakra, subiendo y bajando:
+
+| Verbo | Chakra | Sube | Baja |
+|-------|--------|------|------|
+| Arraigar | Raíz | Materia | Manifestación |
+| Fluir | Sacro | Movimiento | Conexión |
+| Encender | Plexo solar | Energía | Transformación |
+| Dar y recibir | Corazón | Amor | Compasión |
+| Resonar | Garganta | Creatividad | Inspiración |
+| Ver | Tercer ojo | Perspicacia | Iluminación |
+| Soltar | Corona | Entendimiento | Existencia |
+
+## Decidido
+- Carta 10 (`" ... "`): es el silencio. No hay nada que leer ni decir, la invitación es sentir el corazón. Su verbo va entre Fa, Sol o La (por decidir); la forma, por definir.
+- Nombre del personaje: **Sid** (Seed, semilla).
+- El bichito con pelos y antenas es un Sama. El ser dentro de la célula de Evolución es Sid.
+- Khanti es **Fluir** (Samas), no Soltar: los corchos que vacían los frascos quedan como la parte de soltar dentro de ese juego.
+- Creatividad y Hogar intercambian la ilustración entera (corona, personaje, imagen de la carta y colores). Creatividad: corales y medusa (Aura). Hogar: hongos y larva (Sama).
+- Vipassana es **Soltar** (el "ver las cosas tal cual son" lleva al desapego).
+- Hogar se queda con la larva (Sama). Sid va dentro de Evolución Espiritual, que es donde mejor calza.
+
+## Reglas comunes de las dinámicas
 - **Nada se pierde ni se falla.** No hay puntaje, tiempo límite ni "game over". Si el gesto no se completa, la escena sigue viva y se puede intentar de nuevo.
 - **El premio es el rulito.** Completar el gesto es "uy, me conecté con el Todo": el rulito aparece, se dibuja o se enciende. Cada conexión es distinta: el rulito nunca sale con la misma forma dos veces. No se ve hasta que se empieza a jugar.
 - **La lectura no se bloquea.** La descripción, la afirmación y la invitación están siempre disponibles. El juego no es una puerta.
@@ -12,9 +68,13 @@ Cuatro verbos se probaron en una escena: **Arraigar en Paciencia**, **Soltar en 
 - **Suena en el acorde de la carta** (`src/data/cardChords.js`): los toques son notas de ese acorde. El cierre del gesto, cuando aparece el rulito, es ese mismo acorde **en la octava siguiente** (`rulito`): sus notas suben de la fundamental a la fundamental de arriba y ahí suena entero. Es la ley de octava de Gurdjieff: un proceso que se completa vuelve a empezar en el do de arriba (ver `acordes-de-las-cartas.md`).
 - **Dura poco.** Un gesto completo se resuelve en pocos segundos y se puede repetir.
 
-## Los siete
+## Dinámicas: qué propone cada verbo
 
-Orden de los verbos: Arraigar (raíz) y Soltar (corona) son los dos polos, la corriente de manifestación y la de liberación, y Dar y recibir (corazón) es donde se encuentran. Los dos polos están probados, y el centro se está probando en Dana. Ver `verbos-y-personajes.md`, sección "Dos corrientes".
+Cada carta tiene un verbo (`verb` en `src/data/cards.json`, lista en `src/data/verbs.js`). El verbo define la **dinámica**: qué hace la persona con la escena. La ilustración, el sonido y el significado los pone cada carta. Los siete verbos son uno por personaje y chakra (ver arriba).
+
+Cuatro verbos se probaron en una escena: **Arraigar en Paciencia**, **Soltar en Vipassana**, **Ver en Pañña** y **Dar y recibir en Dana** (en prueba). Lo implementado no es fijo: son ideas probadas y pueden cambiar. El resto son propuestas, tomando como punto de partida lo que ya hacen las escenas.
+
+Orden de los verbos: Arraigar (raíz) y Soltar (corona) son los dos polos, la corriente de manifestación y la de liberación, y Dar y recibir (corazón) es donde se encuentran. Los dos polos están probados, y el centro se está probando en Dana. Ver arriba, sección "Dos corrientes".
 
 ### 1. Arraigar (Sporá, demonio: miedo) — implementado en Paciencia
 **Dinámica:** sostener. Mantener apretado un punto de la escena hasta que algo crece.
@@ -102,8 +162,3 @@ No hay nada que leer ni decir; la invitación es sentir el corazón. Su verbo va
 3. Al llegar a 1: un solo momento de cierre (rulito completo, chispas, `rulito`: el acorde en la octava siguiente).
 4. Que se pueda repetir, que no se pierda nada y que funcione con teclado.
 5. Probarlo en un teléfono real: lo que un navegador de escritorio no muestra (GPU, dedo, interruptor de silencio) solo se ve ahí.
-
-## Para decidir
-- Que Vipassana se pueda jugar con teclado y con movimiento reducido (hoy la escena queda estática). Y el color del rulito de Vipassana: es el rosa de la espiral porque el fondo de la escena ya es el violeta de la carta.
-- Tiempos de Arraigar (hoy 2,6 s para dibujarse y 3,4 s para irse): ajustarlos con un teléfono en la mano.
-- Si el rulito de la página Collaborate también pasa a dibujarse en código (hoy sigue dibujado en la imagen del bote).
