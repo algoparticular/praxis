@@ -8,7 +8,7 @@ Detalle de cómo está construida cada escena inmersiva. Estaba en `CLAUDE.md` y
 
 ## Dana (2) y Sincronicidad (29)
 
-`SceneDana` (id 2) and `SceneSincronicidad` (29) are built from the layers of the Collaborate page (`public/assets/share`, `cocreate`, `inmind`), placed as fractions of a square frame so they keep the illustration's composition.
+`SceneDana` (id 2) and `SceneSincronicidad` (29) are built from the layers of the Collaborate page (`public/assets/share`, `cocreate`, `inmind`), placed as fractions of a square frame so they keep the illustration's composition. Dana's two friends are separate layers (`public/assets/dana/left.webp`, `right.webp`, cut from the Collaborate picture without the rulito that was drawn over the right one) set further apart than in the drawing. Its verb is Dar y recibir (give and receive), played by throwing and catching: the right one (glowing, hand held out) has the little flame; it is grabbed and thrown (a quick flick) and flies in an arc (`throwTo()`, `give` sound) to wait in front of the other until it is caught with a touch, also in the air (`receive()`, `link` sound); a throw that goes nowhere floats back to the hand it left. Each catch makes the flame bigger, and each one the left friend receives lights more of his glow (dots along his outline, `danaAura.json`). After three goes there and back (`ROUNDS`) the two are balanced (`balance()`): a rulito is born over each head, the card's name lights up and `rulito` sounds (`sceneMilestone('gift_balanced')`). The idea is in docs/dinamicas-de-juego.md.
 
 ## Hogar (25)
 

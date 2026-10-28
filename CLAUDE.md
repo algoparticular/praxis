@@ -46,9 +46,9 @@ These cannot see what a real GPU or a real phone does (flicker, disappearing lay
 - Animations use `vue-kinesis` (parallax effects) and CSS transitions for route changes (fade).
 
 **Card pages (immersive scenes):** `/card/:id` is a full-screen *stage* (`CardTemplate.vue`) with the card's name over it, and the reading (description, affirmation, invitation) below. What fills the stage is a *scene*, chosen per card in `src/data/cardScenes.js` (`sceneFor(id)`):
-- `ScenePaciencia` (id 27) and `SceneVipassana` (id 31) have a game: Arraigar (hold the pine cone, roots grow, a rulito is born) and Soltar (let go of 21 cells, breathe, hold Sid's breath). Built from layers with depth parallax; reduced motion keeps them static. Details: `docs/escenas.md`.
+- `ScenePaciencia` (id 27) and `SceneVipassana` (id 31) have a game (as do Dana and Pañña): Arraigar (hold the pine cone, roots grow, a rulito is born) and Soltar (let go of 21 cells, breathe, hold Sid's breath). Built from layers with depth parallax; reduced motion keeps them static. Details: `docs/escenas.md`.
 - A scene can light the card's name (the `h1` of the stage) by setting `--name-glow` (0..1) on its `.stage` element; Paciencia does it when its rulito is completed.
-- `SceneDana` (id 2) and `SceneSincronicidad` (29) are built from the layers of the Collaborate page (`public/assets/share`, `cocreate`, `inmind`) placed in a square frame. Details: `docs/escenas.md`.
+- `SceneDana` (id 2) has a game: Dar y recibir (throw the little flame to the other friend and catch it, three round trips) and `SceneSincronicidad` (29) is built from the layers of the Collaborate page (`public/assets/share`, `cocreate`, `inmind`) placed in a square frame. Details: `docs/escenas.md`.
 - `SceneHogar` (25): a turning crown of mushrooms with touchable caps over a watery cell (organelles and a larva); layers in `public/assets/hogar`. PNG originals are not kept in the repo; layers are WebP, never ship PNGs. Details: `docs/escenas.md`.
 - `SceneCreatividad` (20): built like Hogar (corals and weeds, a jellyfish); layers in `public/assets/creatividad`. Details: `docs/escenas.md`.
 - `SceneEvolucion` (22): built like Creatividad (fern crown, eight glowing bulbs, four mushrooms, a curled-up being); layers in `public/assets/evolucion`. Details: `docs/escenas.md`.

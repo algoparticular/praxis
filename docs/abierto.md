@@ -5,7 +5,6 @@
 ## Verbos y cartas
 - Arraigar (Paciencia), Ver (Pañña) y Soltar (Vipassana) se probaron en una escena, y los tres pueden cambiar. Fluir, Encender, Dar y recibir y Resonar todavía son solo idea.
 - Verbo de la carta 10: Fa (Dar y recibir), Sol (Resonar) o La (Ver); falta elegirlo y definir su forma de juego.
-- Si Dar y recibir, el punto de encuentro de las dos corrientes, es el próximo verbo a probar en una escena.
 - Validar con Belén la idea de que cada verbo trabaja contra un demonio.
 - Las fichas de Huit y Sid no tienen texto de historia, solo la tabla.
 

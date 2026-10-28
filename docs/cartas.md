@@ -63,7 +63,7 @@ Se cambia una línea en `src/data/cardChords.js`, por ejemplo `28: 'Em'`. Se esc
 |---|---|---|---|---|---|
 | 0 | Nekkhamma | Paramis | Soltar | Si menor | Ilustración plana |
 | 1 | Sila | Paramis | Resonar | Sol7 | Ilustración plana |
-| 2 | Dana | Paramis | Dar y recibir | Si mayor | Escena propia, sin juego todavía |
+| 2 | Dana | Paramis | Dar y recibir | Si mayor | Escena propia, verbo jugable |
 | 3 | Pañña | Paramis | Ver | Lam7 | Escena propia, verbo jugable |
 | 4 | Viriya | Paramis | Encender | Mi mayor | Ilustración plana |
 | 5 | Khanti | Paramis | Fluir | Remaj7 | Escena propia, sin juego todavía |
