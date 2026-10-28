@@ -2,7 +2,7 @@
 
 Cada carta tiene un verbo (`verb` en `src/data/cards.json`, lista en `src/data/verbs.js`). El verbo define la **dinámica**: qué hace la persona con la escena. La ilustración, el sonido y el significado los pone cada carta. Los siete verbos son uno por personaje y chakra (ver `verbos-y-personajes.md`).
 
-Dos verbos se probaron en una escena: **Arraigar en Paciencia** y **Soltar en Vipassana**. Lo implementado no es fijo: son ideas probadas y pueden cambiar. El resto son propuestas, tomando como punto de partida lo que ya hacen las escenas.
+Tres verbos se probaron en una escena: **Arraigar en Paciencia**, **Soltar en Vipassana** y **Ver en Pañña**. Lo implementado no es fijo: son ideas probadas y pueden cambiar. El resto son propuestas, tomando como punto de partida lo que ya hacen las escenas.
 
 ## Reglas comunes
 - **Nada se pierde ni se falla.** No hay puntaje, tiempo límite ni "game over". Si el gesto no se completa, la escena sigue viva y se puede intentar de nuevo.
@@ -48,11 +48,22 @@ Orden de los verbos: Arraigar (raíz) y Soltar (corona) son los dos polos, la co
 **Idea:** la escena toca una frase corta con las notas del acorde de la carta y la persona la responde tocando; si no coincide, la escena la vuelve a tocar con paciencia. En Creatividad no hay respuesta correcta: cada toque agrega una nota y se compone libremente.
 **Cartas:** Sila, Sacca, Armonía, Comunicación, Creatividad, Honestidad.
 
-### 6. Ver (Huit, demonio: ilusión)
-**Dinámica:** descubrir lo oculto. Revelar, unir puntos, reconocer un patrón.
-**Punto de partida:** en Pañña se despierta a las luciérnagas, los hongos, Sid y el sol, y la espiral llega a la frente de Sid (el tercer ojo).
-**Idea:** pasar el puntero para despejar la niebla que cubre algo, o unir puntos hasta que aparece una constelación. En Sincronicidad, reconocer el patrón de las burbujas y tocarlas en el momento justo.
-**Cartas:** Pañña, Ciclos, Sincronicidad.
+### 6. Ver (Huit, demonio: ilusión): implementado en Pañña
+**Dinámica:** descubrir lo oculto, unir puntos, reconocer un patrón.
+**Cómo funciona hoy en Pañña:** las nueve luces de la escena (el sol, el tercer ojo de Sid, el hongo rosado grande del medio, las cuatro luciérnagas y los dos hongos azules) se unen arrastrando de una a otra, y hay una **figura** que ver.
+- *Nada viene unido.* La escena arranca limpia, sin la espiral del sol a la frente.
+- *Unir.* Se apoya el dedo en una luz y se arrastra: un hilo sigue al dedo y, al llegar cerca de otra luz, se engancha a ella. Al soltar, el hilo queda tendido y fluye de la primera luz a la segunda; suena una nota de cada luz en el acorde de la carta (`link`: el sol arriba, los hongos de abajo en lo más grave). No se falla: unir dos luces que ya estaban unidas no hace nada y soltar en el aire deshace el hilo. Un toque corto, sin arrastrar, hace lo de siempre: las luciérnagas y los hongos echan chispas, tocar el sol hace que todo responda y tocar el ojo despierta a Sid.
+- *Cómo es un hilo.* Una doble hélice de puntos que nace como un punto en la luz de la que sale, se ensancha y se cierra en otro punto en la que alcanza (`helix()`), con un resplandor suave por debajo (`glow`). Sus puntos toman los colores de las dos luces que une: oro del sol y las luciérnagas, celeste del ojo y los hongos azules, rosa de los hongos de abajo.
+- *La figura.* Cada intento sortea una de cuatro figuras (`FIGURES`), que la persona no sabe cuál es: la **cruz** (el ojo unido al sol, a los hongos de abajo y a los dos azules: 4 hilos), el **diamante** (sol, hongo azul, hongos de abajo, hongo azul: 4 hilos), el **hexágono** (sol, luciérnagas y hongos de abajo en ronda: 6 hilos) y los **dos triángulos entrelazados** (sol con las dos luciérnagas de abajo, y hongos de abajo con las dos de arriba: 6 hilos), el símbolo de las dos corrientes. No todas las luces están en todas las figuras: las demás son señuelos. Una misma figura se queda hasta que se ve, y entonces sale otra.
+- *Las pistas, sin palabras.* Los hilos que son de la figura quedan firmes y brillantes, y suenan fuerte; los que no, tenues y suaves. Y si pasan unos 9 s sin tocar nada, la figura se dibuja sola, tenue, hilo por hilo, y se va (`ghost`): ver es notar lo que estaba ahí. Se repite cada 13 s si se sigue sin tocar.
+- *La red crece.* Las luces unidas quedan encendidas, y el aura de Sid se ensancha hasta un 14% (`grow()` de `useStardust.js`) y él brilla más a medida que se completan hilos de la figura.
+- *Se juzga al último hilo.* Cuando los hilos son tantos como los de la figura se mira: si son esos, el patrón se ve; si no, los hilos se apagan solos con una caída suave de notas (`unravel`) y se empieza de nuevo con la misma figura. Hitos: `pattern_reset` (con `figure`) y `pattern_seen` (con `figure` y `times`).
+- *El patrón.* Los hilos llevan su luz al tercer ojo (cada uno fluye rápido de su extremo más lejano al más cercano al ojo; las luces responden con chispas y las notas del acorde suben como un arpa, `converge`). A los 1,7 s el ojo se abre: un destello, un anillo de chispas y un cuenco grave (`open`). Entonces el rulito dorado se dibuja sobre la cabeza de Sid (`Rulito.vue`), el nombre de la carta se ilumina y suena un `star`. Después el rulito se va a medida que su cola alcanza a su cabeza, los hilos se apagan con él y sale otra figura.
+- *Teclado.* Enter en una luz la elige y Enter en otra las une; Enter otra vez en la misma la suelta.
+- *Movimiento reducido.* La escena queda estática y todavía no se puede jugar (como Vipassana): los toques siguen haciendo lo de siempre.
+**Dónde se tocó:** `ScenePanna.vue` (todos los hilos son un solo grupo de partículas, `helix()`; `LIGHTS`, `join()`, `seen()`). No cubre ni agrega ningún dibujo: son solo partículas.
+**Variante posible:** despejar una niebla de partículas para revelar las luces (cubriría el arte de Pañña; encajaría mejor en Honestidad, que tiene burbujas) o primero descubrir y después unir.
+**Cartas:** Pañña (hecha), Ciclos, Sincronicidad, Honestidad.
 
 ### 7. Soltar (Sid, demonio: apego): implementado en Vipassana
 **Dinámica:** dejar ir. Que las cosas se vayan sin agarrarlas, y que vuelvan.

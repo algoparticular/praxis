@@ -338,6 +338,47 @@ export const ripple = (ctx, out, time, harmony, level = 1) => {
     bell(ctx, out, time + 0.03, hz(h.voice - 12), 3.6, 0.04 * k);
 };
 
+// Joining two lights (Pañña): the note of each light, one after the other, so a thread is a small interval and a network
+// joined one thread at a time is a melody. `lights` are the heights (0..1, low to high) of the two lights it joins; they pick
+// notes of the card's chord across two octaves, the highest being the sun and the lowest the field of mushrooms
+export const link = (ctx, out, time, harmony, lights = { from: 0.5, to: 0.5, level: 1 }) => {
+    const h = harmony ?? PLAIN;
+    const notes = h.tones(h.voice - 12, 26);
+    const note = (height) => notes[Math.round(height * (notes.length - 1))];
+    const minor = isMinor(h.kind);
+    const k = lights.level ?? 1;          // a thread that is not part of the pattern sounds softer
+    bell(ctx, out, time, hz(note(lights.from)), minor ? 2.2 : 1.7, 0.03 * k);
+    bell(ctx, out, time + 0.13, hz(note(lights.to)), minor ? 3 : 2.4, 0.04 * k);
+    if (hasSeventh(h)) bell(ctx, out, time + 0.14, hz(note(lights.to)) * 1.004, 2, 0.016 * k);
+    swish(ctx, out, time, { from: 2500, to: 5500, duration: 0.5, level: 0.005 * k, q: 0.6 });
+};
+
+// Every light is joined and the threads carry their light to the third eye: the chord's notes climb from the lowest to the
+// highest like a harp that gathers and swells, with a breath of air rising under them
+export const converge = (ctx, out, time, harmony) => {
+    const h = harmony ?? PLAIN;
+    const notes = h.tones(h.voice - 12, 26);
+    notes.forEach((midi, i) => bell(ctx, out, time + i * (1.5 / notes.length), hz(midi), 2.2, 0.012 + 0.022 * (i / notes.length)));
+    swish(ctx, out, time, { from: 800, to: 6000, duration: 1.7, level: 0.01, q: 0.5 });
+};
+
+// The eight threads were not the pattern: the chord's notes fall softly from the highest to the lowest as the threads go out
+export const unravel = (ctx, out, time, harmony) => {
+    const h = harmony ?? PLAIN;
+    const notes = h.tones(h.voice - 12, 26).reverse();
+    notes.forEach((midi, i) => bell(ctx, out, time + i * (1.2 / notes.length), hz(midi), 1.8, 0.02 * (1 - 0.6 * i / notes.length)));
+    swish(ctx, out, time, { from: 5000, to: 900, duration: 1.4, level: 0.007, q: 0.5 });
+};
+
+// The third eye opens: a low bowl on the chord's root and fifth, and a high shimmer over them
+export const open = (ctx, out, time, harmony) => {
+    const h = harmony ?? PLAIN;
+    bell(ctx, out, time, hz(h.voice - 24), 5, 0.06);
+    bell(ctx, out, time + 0.02, hz(h.voice - 17), 4.4, 0.04);
+    bell(ctx, out, time + 0.05, hz(h.voice + 12), 3.2, 0.03);
+    swish(ctx, out, time, { from: 4000, to: 9000, duration: 1.2, level: 0.01, q: 0.6 });
+};
+
 // A cell lets go of its shape: one high, glassy note of the chord (with a detuned twin) and a breath of air going up
 export const release = (ctx, out, time, harmony) => {
     const weight = releaseWeight(time);
