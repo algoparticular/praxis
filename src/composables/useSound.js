@@ -139,7 +139,8 @@ export const toggleSound = () => {
     return enable().then((on) => { if (on) track('sound_toggled', { on: true }); return on; });
 };
 
-// level (0..1) is for the sounds that can be played softer, like a press on the water of Vipassana
+// level (0..1) is for the sounds that can be played softer, like a press on the water of Vipassana; the sound of two
+// lights joined (Pañña) takes instead the heights of the two lights
 export const play = (name, level) => {
     if (!soundOn.value || !ctx || ctx.state !== 'running' || typeof synth[name] !== 'function') return;
     synth[name](ctx, effectsBus, ctx.currentTime + 0.02, cardChord, level);
