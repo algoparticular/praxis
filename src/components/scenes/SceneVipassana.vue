@@ -13,7 +13,8 @@
     // - Holding the character himself is holding his breath in (clinging): his spiral shortens towards his third eye until
     //   it is a point, the cells nearest to him are caught one after the other (a third of them) and, held a moment
     //   longer, they orbit him like electrons round a nucleus. Let go, he breathes out, a big ring runs from him and
-    //   lets go of every cell he had caught, at once.
+    //   lets go of every cell he had caught, at once. An easter egg: held far longer than needed (the mandala whole and a
+    //   little more) every cell that is left joins the orbits and all of them break together, the power breath.
     // - When no cell is left, the dotted spiral goes and the rulito (Rulito.vue, in the pink of the spiral) is drawn over
     //   his head. Then everything that was let go gathers itself again as the rulito's tail catches up with its head.
     import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
@@ -21,6 +22,7 @@
     import { createHeroSpiral } from '../../composables/useHeroSpiral.js';
     import { createCharacterLife } from '../../composables/useCharacterLife.js';
     import { createParallax, enterLayers } from '../../composables/useParallax.js';
+    import { MASK_W, MASK_H, solidAt } from '../../composables/characterMask.js';
     import { play } from '../../composables/useSound.js';
     import { sceneMilestone } from '../../analytics.js';
     import Rulito from '../Rulito.vue';
@@ -66,30 +68,17 @@
         setTimeout(() => life?.start(), reducedMotion ? 0 : 1900);
     };
 
-    // Where the character is solid, from his own picture: the corners of the square are empty and let presses through
-    const MASK_W = 87, MASK_H = 103;
-    let mask = null;
-    const loadMask = () => {
-        const img = new Image();
-        img.onload = () => {
-            const art = document.createElement('canvas');
-            art.width = MASK_W;
-            art.height = MASK_H;
-            const ctx = art.getContext('2d', { willReadFrequently: true });
-            ctx.drawImage(img, 0, 0, MASK_W, MASK_H);
-            mask = ctx.getImageData(0, 0, MASK_W, MASK_H).data;
-        };
-        img.src = '/assets/hero/character.webp';
-    };
+    // Where the character is solid, from his own picture (characterMask.js): the corners of the square are empty and let
+    // presses through
     const onCharacter = (clientX, clientY) => {
-        if (!mask || !character.value) return false;
+        if (!character.value) return false;
         const box = character.value.getBoundingClientRect();
         const cx = Math.floor((clientX - box.left) / box.width * MASK_W);
         const cy = Math.floor((clientY - box.top) / box.height * MASK_H);
         // A pixel either side is forgiven, so a fingertip does not have to hit the thin parts
         for (let y = cy - 1; y <= cy + 1; y++) {
             for (let x = cx - 1; x <= cx + 1; x++) {
-                if (x >= 0 && y >= 0 && x < MASK_W && y < MASK_H && mask[(y * MASK_W + x) * 4 + 3] > 60) return true;
+                if (solidAt(x, y)) return true;
             }
         }
         return false;
@@ -98,6 +87,8 @@
     // The cells that let go and gather again each ring their own note. Every cell let go of shortens the spiral, and the last
     // one gives birth to the rulito
     const onFieldEvent = (type) => {
+        // The easter egg: held this long, everything that is left joins the orbits. He and his spiral flare to tell.
+        if (type === 'power') { life?.flare(); spiral?.flare(); play('star'); return; }
         if (type !== 'dissolve') { play('bloom'); return; }
         play('release');
         if (!cellField) return;
@@ -113,8 +104,11 @@
         if (!heldBreath) return;
         heldBreath = false;
         const box = character.value.getBoundingClientRect();
-        cellField?.ripple(box.left + box.width / 2, box.top + box.height * 0.55, 1, 2.6);
+        // The power breath throws harder, and every cell breaks almost together
+        const power = !!cellField?.powered();
+        cellField?.ripple(box.left + box.width / 2, box.top + box.height * 0.55, 1, power ? 4 : 2.6);
         play('ripple', 1);
+        if (power) { play('star'); sceneMilestone('power_breath'); }
         cellField?.letGoCaught();
     };
 
@@ -259,6 +253,11 @@
 
     // A finger on him must not be taken over by the browser (scroll, the long-press menu): that cancels the press and
     // would read as letting go
+    const preventDefault = (event) => event.preventDefault();
+    // With a mouse, a press on him must not start selecting or dragging anything (it would take the press away from us)
+    const onMouseDown = (event) => {
+        if (entered && !reducedMotion && onCharacter(event.clientX, event.clientY)) event.preventDefault();
+    };
     const onTouchStart = (event) => {
         const touch = event.touches[0];
         if (entered && event.cancelable && touch && onCharacter(touch.clientX, touch.clientY)) event.preventDefault();
@@ -266,7 +265,8 @@
 
     onMounted(() => {
         root.value.addEventListener('touchstart', onTouchStart, { passive: false });
-        loadMask();
+        // Safari on a Mac with a force-sensitive trackpad: a hard press must not open the Look Up of what is under it
+        root.value.addEventListener('webkitmouseforcewillbegin', preventDefault);
         spiral = createHeroSpiral(spiralCanvas.value, { animate: !reducedMotion });
         life = createCharacterLife(character.value, root.value, { spiral, getLift: () => scrollLift, onExhale, getRise: () => cellField?.orbit() ?? 0 });
 
@@ -300,6 +300,7 @@
         cancelAnimationFrame(frame);
         stageEl?.style.removeProperty('--name-glow');
         root.value?.removeEventListener('touchstart', onTouchStart);
+        root.value?.removeEventListener('webkitmouseforcewillbegin', preventDefault);
         window.removeEventListener('pointerup', onUp);
         window.removeEventListener('pointercancel', onUp);
         spiral?.destroy();
@@ -308,7 +309,7 @@
 </script>
 
 <template>
-    <div class="scene" ref="root" @click="onClick" @pointerdown="onDown" @pointermove="onMove" @contextmenu.prevent>
+    <div class="scene" ref="root" @click="onClick" @pointerdown="onDown" @mousedown="onMouseDown" @pointermove="onMove" @contextmenu.prevent @dragstart.prevent @selectstart.prevent>
         <div class="rays" ref="rays"></div>
         <canvas class="cell-field" ref="cellCanvas"></canvas>
         <template v-if="cellsFallback">
@@ -331,6 +332,7 @@
         inset: 0;
         overflow: hidden;
         -webkit-touch-callout: none;
+        -webkit-user-select: none;   /* Safari has no unprefixed user-select */
         user-select: none;
     }
 

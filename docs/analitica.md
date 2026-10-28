@@ -24,7 +24,7 @@ Todos llevan `lang` (`es`/`en`) e `installed` (la app corre como PWA instalada).
 | `card_picked` | saca una carta (oráculo, The Nine, anillo del mazo o `/deck`) | `card_id`, `mode`: `full` / `nine` / `deck` |
 | `card_viewed` | abre la página de una carta | `card_id`, `scene`, `entry`: `picked` (la sacó) / `direct` (enlace compartido) |
 | `scene_interacted` | primer toque a una zona táctil de la escena (arrastrar la página para bajar a la lectura no cuenta) | `card_id`, `scene`, `seconds_to_first` |
-| `scene_milestone` | hito de una escena con dinámica | `card_id`, `scene`, `action` (`rulito_completed` con `times`, `cork_popped`, `refill_all`, `all_released` con `times`) |
+| `scene_milestone` | hito de una escena con dinámica | `card_id`, `scene`, `action` (`rulito_completed` con `times`, `cork_popped`, `refill_all`, `all_released` con `times`, `power_breath`) |
 | `card_reading_reached` | baja hasta la lectura | `card_id`, `seconds` |
 | `card_left` | una vez por visita: se va de la carta, la oculta (cambia de app o de pestaña) o cierra la página; `seconds` llega hasta ese momento | `card_id`, `scene`, `seconds`, `touches`, `milestones`, `read` |
 | `share_opened` | abre la pantalla de compartir | `card_id` |

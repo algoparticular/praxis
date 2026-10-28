@@ -47,6 +47,9 @@ export async function createCellField(canvas, container, { onEvent = null } = {}
     const cellCount = Math.round(21 * (lowPower ? 0.7 : 1));
     const CATCH = Math.ceil(cellCount / 3);          // cells that one held breath catches
     const CATCH_TIME = 2.4;                           // seconds of holding to have caught them all
+    // The easter egg: held far longer than needed, until the mandala is whole and a little more, every cell that is left joins
+    // the orbits and, when the breath goes out, all of them let go together (the power breath)
+    const POWER_AT = 4.2;                             // seconds the breath has been held at the top (the mandala is whole at 3.2)
     const particleCount = Math.round((smallScreen ? 150 : 260) * (lowPower ? 0.6 : 1));
 
     // Throws without WebGL; the caller falls back to the static cells
@@ -439,6 +442,7 @@ export async function createCellField(canvas, container, { onEvent = null } = {}
     let breathHeld = false;
     let breathIsHeld = false;   // this breath was begun with the breath held in (it catches cells; a press on the water does not)
     let heldFor = 0;            // seconds the breath has been held
+    let power = false;          // the power breath has been reached
     let breathE = 0;
     // The mandala is an atom: held in, the breath makes what is left orbit the character, the nucleus, as electrons do:
     // six orbits crossing at him, turned 30 degrees from one another (so the whole has the symmetry of a
@@ -546,11 +550,18 @@ export async function createCellField(canvas, container, { onEvent = null } = {}
         if (breathT >= 0) {
             const next = breathHeld ? Math.min(INHALE, breathT + dt) : breathT + dt;
             breathT = next < BREATH ? next : -1;
-            if (breathT < 0) { breathIsHeld = false; heldFor = 0; }
+            if (breathT < 0) { breathIsHeld = false; heldFor = 0; power = false; }
         }
         breathE = breathEnvelope(breathT);
 
         if (breathHeld && breathT >= INHALE - 0.01) holdT += dt; else holdT = 0;
+        // The power breath: everything that is left is drawn into the orbits (they are given their places again)
+        if (!power && breathHeld && holdT >= POWER_AT) {
+            power = true;
+            cells.forEach((cell) => { if (cell.state === 'whole') cell.caught = true; });
+            ringsAssigned = false;
+            onEvent?.('power');
+        }
         const orbitTarget = holdT > 0.8 ? ease(Math.min(1, (holdT - 0.8) / 2.4)) : 0;
         orbitW += (orbitTarget - orbitW) * Math.min(1, dt * (orbitTarget > orbitW ? 1.5 : 2.5));
         if (orbitW > 0.02 && !ringsAssigned) assignRings();
@@ -966,18 +977,23 @@ export async function createCellField(canvas, container, { onEvent = null } = {}
         releaseBreath() { breathHeld = false; },
         // The breath goes out: every cell it caught lets go, one after the other as the ring from the character reaches
         // it. The number of them.
+        // In the power breath they go three times as fast, so all of them break almost together.
         letGoCaught() {
             let count = 0;
+            const speed = rippleSpeed * (power ? 3 : 1);
             cells.forEach((cell) => {
                 if (!cell.caught) return;
                 cell.caught = false;
                 if (cell.state === 'whole') {
-                    cell.letGoIn = Math.hypot(cell.x, cell.y + viewH * 0.04) / rippleSpeed + 0.05;
+                    cell.letGoIn = Math.hypot(cell.x, cell.y + viewH * 0.04) / speed + 0.05;
                     count++;
                 }
             });
+            power = false;
             return count;
         },
+        // True when the breath that is held has reached the power breath (until it is let go)
+        powered: () => power,
         // Where each cell that is still whole is, in viewport pixels (a test uses it to find them)
         cellPoints() {
             const rect = container.getBoundingClientRect();
