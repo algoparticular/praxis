@@ -24,6 +24,33 @@ Qué dinámica propone cada verbo: `dinamicas-de-juego.md`.
 
 Las notas siguen la correspondencia tradicional Do–Si; la decisión de música se toma aparte.
 
+## Dos corrientes: de Arraigar a Soltar
+Lectura de trabajo, a validar con Belén. Sale del libro *Cuerpo de Oriente, mente de Occidente* (corrientes energéticas y el viaje completo de los chakras) y de las notas de Belén en Notion. Los "7 movimientos" de esas notas son estos siete verbos.
+
+La energía de los chakras corre en dos sentidos:
+- **Corriente de manifestación** (baja): impulso del alma y del cuerpo. Se mueve hacia la forma, la densidad, los límites, la contracción y la individualidad.
+- **Corriente de liberación** (sube): impulso de la mente y el espíritu. Se mueve hacia la libertad, la expansión, la abstracción y la universalidad.
+
+Los siete verbos, uno por chakra, quedan ordenados entre dos polos:
+- **Arraigar** (raíz) es el polo de la manifestación: de la materia a la manifestación. Está probado en Paciencia.
+- **Soltar** (corona) es el polo de la liberación: del entendimiento a la existencia. Está probado en Vipassana.
+- **Dar y recibir** (corazón) es donde las dos corrientes se encuentran. Las notas de Belén lo dicen así: "dos triángulos entrelazados, el movimiento descendente del espíritu en la materia y la liberación ascendente de la materia en el espíritu: equilibrio perfecto en el corazón". Todavía no se probó en ninguna escena.
+- **Fluir, Encender, Resonar y Ver** serían los pasos entre un polo y el otro.
+
+Esto se parece a lo que el rulito premia: en las notas del tercer chakra, "siento las dos corrientes, ascendente de liberación y descendente de manifestación, que se unen en mí para manifestar mi propósito de ser quien soy".
+
+Las palabras del libro para cada chakra, subiendo y bajando:
+
+| Verbo | Chakra | Sube | Baja |
+|-------|--------|------|------|
+| Arraigar | Raíz | Materia | Manifestación |
+| Fluir | Sacro | Movimiento | Conexión |
+| Encender | Plexo solar | Energía | Transformación |
+| Dar y recibir | Corazón | Amor | Compasión |
+| Resonar | Garganta | Creatividad | Inspiración |
+| Ver | Tercer ojo | Perspicacia | Iluminación |
+| Soltar | Corona | Entendimiento | Existencia |
+
 ## Reparto de las 33 (guardado)
 Está en el campo `verb` de `src/data/cards.json` y los verbos en `src/data/verbs.js`. Salió del texto de cada carta; se puede corregir editando el JSON. `?` marca las que tenían duda al armarlo.
 
@@ -51,4 +78,5 @@ Total: 6 + 5 + 4 + 4 + 6 + 3 + 4 + 1 = 33. Belleza podría ir también en Ver.
 
 ## Abierto
 - Fichas de Huit y Sid no tienen texto de historia, solo la tabla.
+- Si Dar y recibir, el punto de encuentro de las dos corrientes, es el próximo verbo a probar en una escena.
 - Carta 10 (el silencio): el verbo va entre Fa (Dar y recibir), Sol (Resonar) o La (Ver); falta elegirlo y definir su forma de juego.

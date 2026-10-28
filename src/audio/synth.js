@@ -370,55 +370,115 @@ export const bloom = (ctx, out, time, harmony) => {
     bell(ctx, out, time + 0.45, target, 2.4, 0.02 * weight);
 };
 
-// One slow breath, the length of breathCurve.js: air that rises as it fills and falls as it goes out, and the chord's
-// root and fifth swelling underneath (an octave above the pad's bass, so a phone's small speaker plays them) to peak
-// with the inhale and fade with the exhale
+/* ---------- Breathing: the air and the chord both follow the scene's own breath curve (breathCurve.js) ---------- */
+
+const smooth = (k) => { const x = Math.max(0, Math.min(1, k)); return x * x * (3 - 2 * x); };
+const sampled = (fn, n = 128) => Float32Array.from({ length: n }, (_, i) => fn(i / (n - 1)));
+
+// The same shape as breathCurve.js: it rises through the whole inhale and falls through the whole exhale
+const breathShape = (t) => {
+    if (t <= 0 || t >= INHALE + EXHALE) return 0;
+    if (t < INHALE) return smooth(t / INHALE);
+    const k = (t - INHALE) / EXHALE;
+    return Math.max(0, 1 - smooth(k) - 0.12 * Math.sin(Math.PI * k));
+};
+
+// The air of a breath: noise that is dark when it is quiet and opens up as it grows, with a hair of natural
+// flutter. `shape` (0..1) is its loudness over the duration, `colour` its centre in Hz; both are sampled curves, so
+// nothing jumps (an exponential ramp from silence is mute for most of its length and then bursts).
+const airBreath = (ctx, out, time, { duration, shape, colour, level }) => {
+    const source = ctx.createBufferSource();
+    const body = ctx.createBiquadFilter();
+    const top = ctx.createBiquadFilter();
+    const gain = ctx.createGain();
+    const flutter = ctx.createGain();
+    const lfo = ctx.createOscillator();
+    const depth = ctx.createGain();
+    source.buffer = whiteBuffer(ctx, 2);
+    source.loop = true;
+    body.type = 'bandpass';
+    body.Q.value = 0.8;
+    body.frequency.setValueCurveAtTime(sampled((k) => colour(k)), time, duration);
+    top.type = 'lowpass';
+    top.frequency.value = 3600;
+    top.Q.value = 0.3;
+    gain.gain.setValueAtTime(0, time);
+    gain.gain.setValueCurveAtTime(sampled((k) => level * shape(k * duration)), time, duration);
+    gain.gain.setValueAtTime(0, time + duration + 0.01);
+    flutter.gain.value = 1;
+    lfo.frequency.value = 0.55;
+    depth.gain.value = 0.07;
+    lfo.connect(depth);
+    depth.connect(flutter.gain);
+    source.connect(body);
+    body.connect(top);
+    top.connect(gain);
+    gain.connect(flutter);
+    flutter.connect(out);
+    source.start(time);
+    lfo.start(time);
+    source.stop(time + duration + 0.05);
+    lfo.stop(time + duration + 0.05);
+};
+
+// The chord underneath: its root, fifth and octave, each a pair of slightly detuned voices, softened, that swell
+// and fade with the same shape as the air (so they never appear all of a sudden)
+const chordBreath = (ctx, out, time, harmony, { duration, shape, level }) => {
+    const h = harmony ?? PLAIN;
+    const soft = ctx.createBiquadFilter();
+    const gain = ctx.createGain();
+    soft.type = 'lowpass';
+    soft.frequency.value = 1100;
+    soft.Q.value = 0.4;
+    gain.gain.setValueAtTime(0, time);
+    gain.gain.setValueCurveAtTime(sampled((k) => level * Math.pow(shape(k * duration), 1.3)), time, duration);
+    gain.gain.setValueAtTime(0, time + duration + 0.01);
+    soft.connect(gain);
+    gain.connect(out);
+    [[h.bass + 12, 1], [h.bass + 19, 0.7], [h.bass + 24, 0.5]].forEach(([midi, share]) => {
+        [-4, 4].forEach((cents) => {
+            const osc = ctx.createOscillator();
+            const voice = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.value = hz(midi);
+            osc.detune.value = cents;
+            voice.gain.value = share * 0.5;
+            osc.connect(voice);
+            voice.connect(soft);
+            osc.start(time);
+            osc.stop(time + duration + 0.05);
+        });
+    });
+};
+
+// the air opens as it fills and closes as it goes out
+const inColour = (k) => 320 * Math.pow(1500 / 320, smooth(k));
+const outColour = (k) => 1500 * Math.pow(340 / 1500, smooth(k));
+
+// One slow breath, the length of breathCurve.js: in and out, joined
 export const breath = (ctx, out, time, harmony) => {
-    const h = harmony ?? PLAIN;
-    swish(ctx, out, time, { from: 350, to: 1500, duration: INHALE, level: 0.16, q: 0.5 });
-    swish(ctx, out, time + INHALE, { from: 1500, to: 350, duration: EXHALE, level: 0.13, q: 0.5 });
-    [h.bass + 24, h.bass + 31].forEach((midi, i) => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'sine';
-        osc.frequency.value = hz(midi);
-        gain.gain.setValueAtTime(0.0001, time);
-        gain.gain.exponentialRampToValueAtTime(0.07 - i * 0.025, time + INHALE);
-        gain.gain.exponentialRampToValueAtTime(0.0001, time + INHALE + EXHALE);
-        osc.connect(gain);
-        gain.connect(out);
-        osc.start(time);
-        osc.stop(time + INHALE + EXHALE + 0.1);
-    });
+    const duration = INHALE + EXHALE;
+    const colour = (k) => { const t = k * duration; return t < INHALE ? inColour(t / INHALE) : outColour((t - INHALE) / EXHALE); };
+    airBreath(ctx, out, time, { duration, shape: breathShape, colour, level: 0.17 });
+    chordBreath(ctx, out, time, harmony, { duration, shape: breathShape, level: 0.016 });
 };
 
-// Holding Sid: the breath goes in (air rising, the chord's root and fifth swelling and then thinning out as it is held)
-// and, when he is let go, comes out (air falling, the same two notes swelling and fading). Together they are `breath`.
-const breathTones = (ctx, out, time, harmony, from, to, rise, fall, level) => {
-    const h = harmony ?? PLAIN;
-    [h.bass + 24, h.bass + 31].forEach((midi, i) => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'sine';
-        osc.frequency.value = hz(midi);
-        gain.gain.setValueAtTime(from, time);
-        gain.gain.exponentialRampToValueAtTime(level - i * 0.025, time + rise);
-        gain.gain.exponentialRampToValueAtTime(to, time + rise + fall);
-        osc.connect(gain);
-        gain.connect(out);
-        osc.start(time);
-        osc.stop(time + rise + fall + 0.1);
-    });
-};
-
+// Holding Sid: the air comes in through the whole inhale and is then held, thinning out slowly
 export const inhale = (ctx, out, time, harmony) => {
-    swish(ctx, out, time, { from: 350, to: 1500, duration: INHALE, level: 0.16, q: 0.5 });
-    breathTones(ctx, out, time, harmony, 0.0001, 0.0001, INHALE, 1.6, 0.07);
+    const HOLD = 1.6;
+    const duration = INHALE + HOLD;
+    const shape = (t) => (t < INHALE ? smooth(t / INHALE) : (0.3 + 0.7 * (1 - smooth((t - INHALE) / 0.35))) * (1 - smooth((t - INHALE) / HOLD)));
+    const colour = (k) => { const t = k * duration; return t < INHALE ? inColour(t / INHALE) : 1500 * Math.pow(0.8, (t - INHALE)); };
+    airBreath(ctx, out, time, { duration, shape, colour, level: 0.17 });
+    chordBreath(ctx, out, time, harmony, { duration, shape, level: 0.015 });
 };
 
+// Letting him go: the air goes out at once and fades through the whole exhale
 export const exhale = (ctx, out, time, harmony) => {
-    swish(ctx, out, time, { from: 1500, to: 350, duration: EXHALE, level: 0.14, q: 0.5 });
-    breathTones(ctx, out, time, harmony, 0.0001, 0.0001, 0.9, EXHALE - 0.9, 0.065);
+    const duration = EXHALE;
+    const shape = (t) => { const k = t / EXHALE; return smooth(k / 0.07) * (1 - smooth(k)); };
+    airBreath(ctx, out, time, { duration, shape, colour: (k) => outColour(k), level: 0.2 });
+    chordBreath(ctx, out, time, harmony, { duration, shape, level: 0.015 });
 };
 
 /* ---------- Ambience ---------- */

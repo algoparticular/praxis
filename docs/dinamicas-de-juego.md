@@ -14,6 +14,8 @@ Dos verbos se probaron en una escena: **Arraigar en Paciencia** y **Soltar en Vi
 
 ## Los siete
 
+Orden de los verbos: Arraigar (raíz) y Soltar (corona) son los dos polos, la corriente de manifestación y la de liberación, y Dar y recibir (corazón) es donde se encuentran. Los dos polos están probados; el centro, no. Ver `verbos-y-personajes.md`, sección "Dos corrientes".
+
 ### 1. Arraigar (Sporá, demonio: miedo) — implementado en Paciencia
 **Dinámica:** sostener. Mantener apretado un punto de la escena hasta que algo crece.
 **Cómo funciona hoy en Paciencia:** al mantener apretada la piña (dedo, clic o tecla) primero crece una red de raíces doradas bajo el campo de hongos, saliendo de la piña (unos 2,4 segundos para extenderse del todo). Cuando las raíces han agarrado (a un tercio), el rulito sobre la cabeza del Sama del centro nace como un punto, se estira en una línea, se dobla en un gancho, cierra el lazo y estira el tallo; tarda unos 2,6 segundos más (nace rápido, el lazo es un trazo veloz y se asienta al llegar). Mientras tanto la piña brilla y su resplandor crece. Al completarse florece con un pequeño "pop" y se ilumina el nombre de la carta (queda encendido mientras el rulito está casi entero y se apaga con él): salen chispas, suena un `star` y las esporas azules se multiplican (una oleada desde los hongos y una nube varias veces más densa por unos segundos, que se va asentando). Si se suelta, la cola del rulito va alcanzando a la cabeza (unos 3,4 segundos para recorrerlo entero), el lazo se abre, queda el tallo, se encoge hasta un punto y desaparece; así ningún intento se desperdicia, y si se vuelve a sostener, la cola retrocede y el rulito sigue creciendo. Cada rulito nace con otra forma. Esa secuencia (nacer como punto, estirarse, hacer el lazo y la cola que alcanza a la cabeza) está tomada de la animación de referencia "Breathe" de Algo Particular, y se dibuja en código (ver `Rulito.vue`).
@@ -59,7 +61,13 @@ Dos verbos se probaron en una escena: **Arraigar en Paciencia** y **Soltar en Vi
 - *Una célula se suelta.* Tocar una célula no hace onda: explota en puntos y queda así (`release`).
 - *Retener el aire.* Mantener apretado a Sid: su espiral se acorta hasta ser un punto en el tercer ojo (3,2 s) y el campo se inclina hacia él. Un rato más y lo que queda de las células y la materia orbita a su alrededor como electrones, en seis órbitas que forman un mandala; Sid sube al centro de las órbitas. Suena `inhale`.
 - *Dejar ir.* Al soltarlo exhala (`exhale`): la espiral vuelve a salir brillante, sale una onda grande desde Sid que golpea todo (`ripple`) y, cuando termina de cruzar, vuelven todas las células (`bloom`). Nada queda perdido.
-**Podría seguir:** que la espiral encendida sea el rulito de la carta, o que soltar varias células seguidas cambie algo en la escena.
+**Propuesta con objetivo:** hoy la escena de Vipassana no tiene un objetivo: es una respiración que se siente, y el premio (la espiral encendida) no depende de nada. Para que como jugador tenga sentido, la propuesta es:
+- **Objetivo:** soltar todo lo que hay en la escena (21 células en la demo; 30 eran demasiadas). Cada célula es algo a lo que se aferra; tocarla la suelta: explota en puntos y queda así.
+- **Premio:** cuando no queda nada que agarrar, la espiral de puntos de Sid se va y solo queda la animación del rulito, en el color de la carta (el violeta, `#6B428E`). Después todo lo que se soltó vuelve y el rulito se va, igual que en Arraigar. Es la misma regla de siempre (el premio es el rulito), pero acá llega por vaciar y no por acumular.
+- **Respirar (tocar el agua):** el ritmo de la escena. No hace falta para ganar.
+- **Retener el aire y exhalar:** apoyo y contraste. Retener es aferrarse (el demonio del séptimo chakra es el apego): la espiral se acorta y el campo se cierra sobre lo que Sid tiene cerca, y cuanto más se retiene más células caen dentro, las más cercanas primero y hasta 7. Al exhalar las suelta todas juntas. Con tres respiraciones alcanza para soltar las 21.
+- **Pista, sin palabras:** arriba hay una hilera de 21 células chicas que se van apagando a medida que se sueltan, así se ve cuánto falta. Si pasa un rato sin tocar nada (poco al empezar), una célula que queda late con un anillo: esa es la que hay que soltar.
+Está probado en la demo del artefacto "Anima por dentro", no en la escena.
 **Cartas:** Nekkhamma, Upekkha, Perdón, Vipassana (hecha).
 
 ### Sin verbo todavía: el silencio (carta 10)
@@ -80,5 +88,6 @@ No hay nada que leer ni decir; la invitación es sentir el corazón. Su verbo va
 5. Probarlo en un teléfono real: lo que un navegador de escritorio no muestra (GPU, dedo, interruptor de silencio) solo se ve ahí.
 
 ## Para decidir
+- Si el objetivo de Soltar (soltar todo, y el rulito violeta al final) se lleva a la escena real de Vipassana, y qué pasa con el mandala de órbitas al retener el aire (en la demo las órbitas solo las hacen las células atrapadas).
 - Tiempos de Arraigar (hoy 2,6 s para dibujarse y 3,4 s para irse): ajustarlos con un teléfono en la mano.
 - Si el rulito de la página Collaborate también pasa a dibujarse en código (hoy sigue dibujado en la imagen del bote).
