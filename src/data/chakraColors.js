@@ -1,9 +1,9 @@
-// The seven chakra colours, one per character of Algo Particular (chakra 1 to 7, as in verbs.js). The root is the
-// brand's coral and the other six share its lightness and saturation, so the seven read as one family on the cream
-// and on the navy. `light` is for fills, illustration and anything on the navy; `ink` is its darker twin for text and
+// The seven chakra colours, one per character of Algo Particular (chakra 1 to 7, as in verbs.js). Six share the
+// lightness and saturation of the brand's coral, so they read as one family on the cream and on the navy; the root is
+// a darker, deeper carmine, close to the coral without being taken for it (or for Samas's orange) beside them. `light` is for fills, illustration and anything on the navy; `ink` is its darker twin for text and
 // thin lines on the cream. The brand's accent is always the coral: the orange belongs to Samas only.
 export const CHAKRA_COLORS = [
-    { chakra: 1, character: 'Sporá', light: '#FF6F61', ink: '#BA372E' },
+    { chakra: 1, character: 'Sporá', light: '#D7314B', ink: '#AF0532' },
     { chakra: 2, character: 'Samas', light: '#F4844C', ink: '#AD4906' },
     { chakra: 3, character: 'Kätus', light: '#F2B036', ink: '#916102' },
     { chakra: 4, character: 'Vulpes', light: '#62C37A', ink: '#1D803F' },
