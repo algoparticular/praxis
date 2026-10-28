@@ -1,47 +1,16 @@
 # Teoría
 
-Primera pestaña de "Anima por dentro" (el artefacto que junta las ideas del proyecto). Es la base de todo lo demás: cada carta tiene un verbo, ese verbo propone qué hace la persona con la escena, y todo suena en el acorde de la carta. Lo que sigue explica de dónde sale cada pieza. Es un sistema simbólico para el arte y el juego, no una tradición antigua (ver "De dónde viene este sistema").
+Primera pestaña de "Anima por dentro" (el artefacto que junta las ideas del proyecto). Tiene tres partes, para no mezclar de dónde sale cada cosa:
 
-> 7 personajes, 7 notas, 7 movimientos, 7 colores. Cada uno por separado nos enseña algo de nosotros y del mundo. Combinados en acordes cuentan una historia. Una con distintos caminos, dependiendo de la secuencia de dichos acordes.
-> (Notas de Notion, 25 de enero de 2025)
+1. **Teoría musical:** lo que vale para cualquier música.
+2. **Los chakras y su tradición:** lo que viene de la tradición y del libro, no lo inventamos.
+3. **Lo que armamos nosotros:** las decisiones de Anima, que pueden cambiar.
 
-Los siete movimientos son los verbos de las cartas: Arraigar, Fluir, Encender, Dar y recibir, Resonar, Ver y Soltar (ver `verbos-y-dinamicas.md`).
+# Primera parte: teoría musical
 
-## A qué aspira Anima
-
-Que quien la usa se haga preguntas como:
-- ¿Cómo soy un mejor ser humano?
-- ¿Cómo obtengo la mejor versión de mí mismo?
-- ¿Cómo me responsabilizo de mis acciones y de mis palabras?
-- ¿Cómo puedo ser respetuoso y armónico con la Pachamama?
-- ¿Cómo puedo hacer del mundo un lugar mejor?
-
-## Las siete notas, los siete chakras y los siete personajes
+## Las notas
 
 Do, Re, Mi, Fa, Sol, La, Si y el Do de la octava siguiente, como un piano. Cada tecla negra tiene dos nombres, Do# o Re♭, y suena igual con los dos: está entre dos chakras, y como sostenido es del de abajo y como bemol, del de arriba.
-
-**Cada nota es un chakra, y cada chakra es un personaje de Algo Particular.** La relación nota-chakra viene de una conversación de teoría musical. La relación chakra-personaje viene de las BIOs del universo (Notion, *Algo Particular / BIOs*).
-
-| Nota | Chakra | Personaje | Lema del personaje |
-|---|---|---|---|
-| Do | 1º raíz | Sporá (plantas, hongos, esporas, corales) | "Recuperar el templo del cuerpo" |
-| Re | 2º sacro | Samas | "Nadar en las aguas de la diferencia" |
-| Mi | 3º plexo solar | Kätus | "Abrirnos paso mediante el fuego para llegar al poder" |
-| Fa | 4º corazón | Vulpes | "Encontrar el equilibrio en el amor" |
-| Sol | 5º garganta | Aura | "Vibrar en la expresión" |
-| La | 6º tercer ojo | Huit | "Visualizarnos interiormente" |
-| Si | 7º corona | Particular | "La apertura del misterio del cielo" |
-
-Una nota con sostenido o bemol conserva el chakra de su nota natural: Fa# sigue siendo corazón y Sib sigue siendo corona.
-
-La BIO de Samas no dice su chakra. Lo tomamos como sacro porque sus temas son los de ese centro: placer, emociones, deseo y movimiento.
-
-**El tipo de acorde da la energía:**
-- **Mayor:** expansiva. Da confianza, claridad y conexión.
-- **Menor:** introspectiva. Sirve para liberar emociones retenidas y sanar.
-- **Séptima:** transformación. Agrega una cuarta nota que desbloquea y mueve.
-
-**La nota de abajo (la fundamental) es el chakra que manda.** Las otras notas lo acompañan. Por ejemplo, en Re menor el sacro (Re) aporta la emoción, el corazón (Fa) la suaviza con compasión y el tercer ojo (La) le da dirección y claridad.
 
 ## Cómo se arma un acorde
 
@@ -61,7 +30,6 @@ Cada acorde tiene la impronta raíz de su nota principal y los matices de sus te
 Siete acordes básicos, 12 si usamos todas las tonalidades cromáticas. 42 acordes en total, 72 con todas las tonalidades. Las cartas usan 27 de los 42.
 
 ## Los 42 acordes
-
 Esta sección resume la conversación de teoría musical de la que sale todo el sistema, con su contenido tal como vino. Cada acorde trae sus notas con sus chakras, los colores de esos chakras, dos aromas y su uso.
 
 ### Acordes mayores
@@ -193,6 +161,8 @@ En un acorde, la fundamental es la base energética. La tercera define su carác
 - **Do, raíz, la quinta.** Ancla el amor y la intuición para que se expresen de manera estable y práctica.
 - **Juntos:** es un acorde para la apertura emocional con claridad mental y estabilidad. Sirve para la compasión hacia uno mismo y hacia otros.
 
+# Segunda parte: los chakras y su tradición
+
 ## Qué es un chakra
 
 Un chakra es un centro de organización que recibe, asimila y expresa energía de la fuerza vital. Los chakras son las ruedas del vehículo que conducen al yo en su búsqueda de evolución, a través del puente del arcoíris, con el fin de recuperar la naturaleza divina.
@@ -214,7 +184,7 @@ Las tres correspondencias, siete notas, siete colores y siete chakras, son una s
 - **Notas y chakras.** En la música india, Sa (el "do") no es una nota fija: es la tónica de cada escala. Asociar las siete notas a los siete chakras en orden aparece en fuentes esotéricas modernas, no en textos clásicos. Que Do sea la raíz es una convención: la tónica como base.
 - **Notas y colores.** Newton eligió siete colores para que coincidieran con las siete notas, y sumó el naranja y el índigo justo donde están los semitonos. Su rueda arrancaba en Re, y él mismo dijo que la correspondencia no era exacta.
 - **Colores y chakras.** El arcoíris aplicado a los chakras es occidental, de los años 1920 a 1970, y lo popularizó Christopher Hills en 1977. En las fuentes indias los chakras tienen colores, pero no forman un arcoíris.
-- **La ley de octava.** Viene de Gurdjieff: una evolución sube de do a do y necesita choques de afuera en mi–fa y si–do. Está en `musica.md`.
+- **La ley de octava.** Viene de Gurdjieff: una evolución sube de do a do y necesita choques de afuera en mi–fa y si–do. Está más abajo, en la tercera parte.
 
 ## Los nadis
 
@@ -225,3 +195,94 @@ Canales psíquico-energéticos: trayectorias de energía, no tubos por donde pas
 - **Pingala.** Conduce la energía vital. Sale del lado derecho del primer chakra y asciende serpenteando. Se asocia al sistema simpático, que prepara al cuerpo para interactuar con el exterior. Se asocia a la fosa nasal derecha y al análisis lógico y matemático.
 
 Las fosas nasales no funcionan a la vez: mientras una domina, la otra descansa. En el cambio fluyen las dos, hay equilibrio entre energía mental y vital, y en ese instante se activa Sushumna: llega gran cantidad de energía al cerebro, un momento de plenitud. Ida y Pingala nacen en el primer chakra, se cruzan en el sexto y se unen en el séptimo.
+
+# Tercera parte: lo que armamos nosotros
+
+## La idea
+
+> 7 personajes, 7 notas, 7 movimientos, 7 colores. Cada uno por separado nos enseña algo de nosotros y del mundo. Combinados en acordes cuentan una historia. Una con distintos caminos, dependiendo de la secuencia de dichos acordes.
+> (Notas de Notion, 25 de enero de 2025)
+
+Los siete movimientos son los verbos de las cartas: Arraigar, Fluir, Encender, Dar y recibir, Resonar, Ver y Soltar (ver `verbos-y-dinamicas.md`).
+
+Los siete movimientos son los verbos de las cartas: Arraigar, Fluir, Encender, Dar y recibir, Resonar, Ver y Soltar (ver `verbos-y-dinamicas.md`).
+
+## A qué aspira Anima
+
+Que quien la usa se haga preguntas como:
+- ¿Cómo soy un mejor ser humano?
+- ¿Cómo obtengo la mejor versión de mí mismo?
+- ¿Cómo me responsabilizo de mis acciones y de mis palabras?
+- ¿Cómo puedo ser respetuoso y armónico con la Pachamama?
+- ¿Cómo puedo hacer del mundo un lugar mejor?
+
+## Notas, chakras y personajes
+
+**Cada nota es un chakra, y cada chakra es un personaje de Algo Particular.** La relación nota-chakra viene de una conversación de teoría musical. La relación chakra-personaje viene de las BIOs del universo (Notion, *Algo Particular / BIOs*).
+
+| Nota | Chakra | Personaje | Lema del personaje |
+|---|---|---|---|
+| Do | 1º raíz | Sporá (plantas, hongos, esporas, corales) | "Recuperar el templo del cuerpo" |
+| Re | 2º sacro | Samas | "Nadar en las aguas de la diferencia" |
+| Mi | 3º plexo solar | Kätus | "Abrirnos paso mediante el fuego para llegar al poder" |
+| Fa | 4º corazón | Vulpes | "Encontrar el equilibrio en el amor" |
+| Sol | 5º garganta | Aura | "Vibrar en la expresión" |
+| La | 6º tercer ojo | Huit | "Visualizarnos interiormente" |
+| Si | 7º corona | Particular | "La apertura del misterio del cielo" |
+
+Una nota con sostenido o bemol conserva el chakra de su nota natural: Fa# sigue siendo corazón y Sib sigue siendo corona.
+
+La BIO de Samas no dice su chakra. Lo tomamos como sacro porque sus temas son los de ese centro: placer, emociones, deseo y movimiento.
+
+**El tipo de acorde da la energía:**
+- **Mayor:** expansiva. Da confianza, claridad y conexión.
+- **Menor:** introspectiva. Sirve para liberar emociones retenidas y sanar.
+- **Séptima:** transformación. Agrega una cuarta nota que desbloquea y mueve.
+
+**La nota de abajo (la fundamental) es el chakra que manda.** Las otras notas lo acompañan. Por ejemplo, en Re menor el sacro (Re) aporta la emoción, el corazón (Fa) la suaviza con compasión y el tercer ojo (La) le da dirección y claridad.
+
+## Cómo se elige el acorde de una carta
+
+1. **El texto de la carta manda.** La descripción, la afirmación y la invitación dicen qué chakra se trabaja y con qué energía (abrir, mirar hacia adentro, transformar). De ahí sale el acorde.
+2. **Los personajes de la ilustración no deciden el acorde.** Particular, Sporá, Samas, Kätus, Vulpes, Aura y Huit son expresiones de lo mismo, partículas que evolucionaron en el universo, y Particular es el protagonista de todo el viaje. Que su nota esté o no en el acorde es solo una pista, nunca una condición.
+3. **Las cartas que resuenan pueden compartir acorde.** Es mejor respetar esa afinidad que forzar un acorde distinto para cada una. Hoy 33 cartas usan 27 acordes: se repiten Si menor (Nekkhamma, Aceptación), Sol7 (Sila, Sacca), Si mayor (Dana, Fe), Mi mayor (Viriya, Addhitthana), Sol mayor (carta 10, Belleza) y Re mayor (Paciencia, Sincronicidad).
+
+El acorde de cada carta, con su razón, está en `cartas.md`.
+
+## El acorde de base: Sol mayor
+
+Fuera de las cartas, toda la app suena en **Sol mayor**: Sol (garganta, Aura), Si (corona, Particular) y Re (sacro, Samas). Según la teoría, ese acorde potencia la expresión, la creatividad y la conexión espiritual. Hay dos razones más:
+- **Aura:** su elemento es el **sonido**, y con ella nació la idea de organizar el universo por chakras.
+- **Particular:** es el protagonista y representa la conexión con el Todo (el rulito).
+
+También es la base que mejor se lleva con las cartas. Comparte al menos una nota con el acorde de 28 de las 33, así que entrar a una carta casi siempre es una entrada suave. Las cinco que no comparten ninguna son Metta (Famaj7), Ciclos (Fa7), Compromiso (La mayor), Confianza (La menor) y Perdón (Fa menor): el texto manda antes que la suavidad de la entrada.
+
+## Cómo suena
+
+- **Fuera de las cartas** suena Sol mayor: un colchón de fondo, campanitas en pentatónica y gotas de agua.
+- **Al tomar una carta en el oráculo**, el fondo empieza a moverse hacia el acorde de esa carta. Las notas de `pick` suben por la fundamental, la quinta y la octava. `flip` cae en la tercera, la nota que define si el acorde es mayor o menor, así la carta "muestra su color" al darse vuelta.
+- **Dentro de la carta**:
+  - El fondo y las campanitas quedan en el acorde de la carta.
+  - Cada toque (`tap`) cae en una nota del acorde, así que tocar varias veces arma una melodía.
+  - Cada estrella (`star`) rasguea el acorde. El mayor brilla, el menor es más lento y suave, y la séptima "late".
+- **Al salir de la carta**, el sonido vuelve a Sol mayor.
+
+## Secuencias para trabajar en uno mismo
+
+De las 42 escenas posibles, intercambiables, algunas cuentan una historia o guían una secuencia de pasos, acciones y reflexiones para liberar una mejor versión. La app todavía no las usa.
+
+La conversación propone tres progresiones, parte de la misma teoría:
+
+1. **Estabilidad y confianza:** Do → Fa → Sol → Do. Establece una base firme, abre el corazón y fomenta la expresión.
+2. **Liberar emociones:** Re menor → La menor → Mi menor → Fa mayor. Invita a fluir con las emociones y a conectar con la intuición.
+3. **Conexión espiritual:** Si menor → Sol mayor → Mi7 → La menor. Promueve introspección, expresión y conexión trascendental.
+
+### La ley de octava
+
+Gurdjieff describe toda evolución como una octava que sube de do a do. Hay dos lugares, mi–fa y si–do, donde el proceso no puede seguir con su propia energía: necesita un choque que venga de afuera, y el de si–do tiene que ser más fuerte. En la escala de Do mayor esos son justo los dos semitonos: en el piano de la pestaña Teoría, los dos lugares donde no hay tecla negra. Lo que sigue es lectura nuestra, no algo que Gurdjieff diga de los chakras.
+
+- **Mi–fa: de Kätus a Vulpes.** Del plexo, la voluntad propia, al corazón. El verbo de Vulpes es Dar y recibir: lo que hace falta para cruzar viene de otro.
+- **Si–do: de Particular a la octava siguiente.** De la corona al do de arriba: la raíz de un nivel nuevo. Es el choque más grande, el que cierra una octava y abre otra.
+- **El rulito suena en la octava siguiente.** Completar un gesto es llegar al do de arriba: cuando aparece el rulito, el acorde de la carta sube hasta su fundamental una octava más alta y ahí suena entero. Ya está en la app.
+
+Para las secuencias (por diseñar): una secuencia que suba por los chakras necesitaría un gesto distinto en los dos pasos sin tecla negra. Mi–fa podría pedir algo de otro, como en Dar y recibir, y si–do, el choque más grande, cerrar la octava.
