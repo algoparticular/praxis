@@ -248,8 +248,11 @@ export async function createStardust(canvas, options = {}) {
         if (reduced) renderer?.render(scene, camera);
     };
     let observer = null;
-    if (stage) stage.onResize(resize);
-    else {
+    if (stage) {
+        stage.onResize(resize);
+        // In the stage's bloom pass, drawn into a smaller target, the points keep the size they have on screen
+        stage.onBloomScale((scale) => { shared.uDpr.value = dpr * scale; });
+    } else {
         observer = new ResizeObserver(() => resize());
         observer.observe(canvas);
         resize();

@@ -3,7 +3,7 @@
 Última pestaña de "Anima por dentro": lo que falta decidir, agrupado por tema.
 
 ## Verbos y cartas
-- Los siete verbos se probaron en una escena: Arraigar (Paciencia), Fluir (Khanti), Encender (Evolución Espiritual), Dar y recibir (Dana), Resonar (Sincronicidad, en su forma "a tiempo", y Creatividad, como composición libre), Ver (Pañña) y Soltar (Vipassana). Todos pueden cambiar.
+- Los siete verbos se probaron en una escena: Arraigar (Paciencia), Fluir (Khanti), Encender (Evolución Espiritual), Dar y recibir (Dana), Resonar (Sincronicidad, en su forma "a tiempo", y Creatividad, como composición libre), Ver (Pañña) y Soltar (Vipassana y Nekkhamma). Todos pueden cambiar.
 - Resonar: validar con Belén sus dos formas (a tiempo para Sincronicidad, Armonía y Sila; eco para Comunicación, Honestidad y Sacca). El eco todavía es solo idea.
 - Resonar en Creatividad (caja de música): cuántas piezas hacen la melodía (`TUNE`, 7), la velocidad de la corona mientras suena (`PLAY_TURN`, una vuelta cada 12 s) y si las piezas encendidas y el peine se distinguen bien: probarlos con un teléfono en la mano.
 - Resonar en Sincronicidad: el pulso (`BEAT`, 1,3 s) y la ventana para acertar (`IN_TIME`, 0,28 s): probarlos con un teléfono en la mano.

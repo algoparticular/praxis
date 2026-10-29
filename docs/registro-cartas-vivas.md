@@ -2,10 +2,11 @@
 
 Estado a 2026-10-29. Verbos: ver `verbos-y-dinamicas.md` (ya guardados en `cards.json`). Fuente de verdad en el código: `src/data/cardScenes.js` (`sceneFor(id)`). Si una carta no está ahí, usa `SceneFlat` (ilustración plana que deriva lento). Cuando una carta pase a viva, se agrega una fila acá en el mismo PR.
 
-**9 de 33 cartas vivas.** 24 siguen con `SceneFlat`.
+**10 de 33 cartas vivas.** 23 siguen con `SceneFlat`.
 
 | id | Carta | Tipo | Escena | Qué hace al tocarla | Sonido hoy | Música | Verbo |
 |----|-------|------|--------|---------------------|------------|--------|---|
+| 0 | Nekkhamma | Pāramī | `SceneNekkhamma` | Soltar: Sid entero en el medio, atado con un hilo de puntos a cada lucecita celeste del piso (respiran y se mecen). Tocar una lucecita (o a él) corta su hilo: estalla en motas y él suelta una parte, se deshace desde los pies con un borde que brilla y de su línea quedan puntos; lo que suelta forma arriba una nube de todos los colores (que antes no está). Los hilos que quedan son el contador y, si nadie toca, uno late. Mantenerlo y soltarlo corta todos. Sin hilos es la nube, que baja y lo devuelve entero con el rulito; después los hilos vuelven a crecer. Solo un rato, le crece un hilo por vez | `release`, `inhale`, `exhale`, `converge`, `bloom`, `rulito` | pendiente | Soltar |
 | 2 | Dana | Pāramī | `SceneDana` | Se toca a alguien de la isla (el amigo, las piedritas con ojos, los hongos) y una chispa de la llamita vuela y lo enciende; la llama crece al dar. Con todos encendidos, la luz vuelve a la llama a la vez y nacen los rulitos | `give`, `link`, `converge`, `rulito` | pendiente | Dar y recibir |
 | 3 | Pañña | Pāramī | `ScenePanna` | Ver: se arrastra de luz en luz (sol, tercer ojo, hongo rosado, luciérnagas, hongos azules) y se tienden hilos de puntos; hay una figura escondida por intento. Si los hilos son la figura, se abre el tercer ojo y nace el rulito; si no, se deshacen. Un toque corto hace chispas | `link`, `converge`, `open`, `unravel`, `rulito`, `star`, `tap` | pendiente | Ver |
 | 5 | Khanti | Pāramī | `SceneKhanti` | Fluir: una corriente de rosa vivo nace en el signo y recorre los tubos a su ritmo; con el dedo encima se la acompaña (brilla y suena). Los frascos tapados son nudos: al destaparlos el rosa viejo se evapora con su criatura y la corriente los llena; con los nueve, rulito sobre el signo. Pincelada lavanda decorativa; criaturas que destellan | `flow`, `release`, `bloom`, `rulito`, `tap`, `star` | pendiente | Fluir |

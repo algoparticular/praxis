@@ -22,6 +22,8 @@
 //   water    0..1  the light of the water ripples across it (caustics)
 //   sheen    0..1  a band of light sweeps across it now and then, as over glass
 //   sink     true  a liquid that can sink: uniforms.uSink.value.y is its level (0 full .. 1 empty), with a soft edge
+//   dissolve 0xRRGGBB  it can come undone from the bottom up: uniforms.uDissolve.value.y is how far (0 whole .. 1 gone),
+//            along a ragged edge (noise) that glows in that colour as it eats in (Nekkhamma's Sid)
 //   bright, saturate, tint + tintAmount  for lighting a layer up (the pine cone held)
 // and layers drawn in code: glow (a soft radial light, CSS radial-gradient stops) and disc (a plain disc of colour,
 // with { water } the light of the water rippling across it).
@@ -91,6 +93,15 @@ const LAYER_FRAGMENT = `
     uniform float uSheen;
     ${CAUSTIC}
     uniform vec2 uSink;            // on (0/1), level (0 full .. 1 empty)
+    uniform vec2 uDissolve;        // on (0/1), how far it has come undone (0 whole .. 1 gone)
+    uniform vec3 uDissolveGlow;
+    uniform vec2 uSize;
+    float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+    float noise(vec2 p) {
+        vec2 i = floor(p), f = fract(p);
+        f = f * f * (3.0 - 2.0 * f);
+        return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x), mix(hash(i + vec2(0.0, 1.0)), hash(i + 1.0), f.x), f.y);
+    }
     uniform vec4 uClip;            // device px: x0, y0, x1, y1 (from the bottom left); x1 < x0 means no clip
     uniform float uVignette;       // 0..0.5: it fades out towards its four edges (a blurred glow must not end in a hard box)
     varying vec2 vUv;
@@ -113,6 +124,17 @@ const LAYER_FRAGMENT = `
             float band = fract(uTime * 0.07) * 2.6 - 0.8;
             float d = (vUv.x + (1.0 - vUv.y) * 0.6) / 1.6 - band;
             c.rgb += vec3(exp(-d * d * 180.0)) * 0.35 * uSheen * c.a;
+        }
+        if (uDissolve.x > 0.0 && uDissolve.y > 0.0) {
+            // Undone from the bottom up along a ragged edge (grains of a few px, whatever its size), which glows
+            vec2 px = vUv * uSize;
+            float n = 0.65 * noise(px / 16.0) + 0.35 * noise(px / 5.0);
+            float h = vUv.y + (n - 0.5) * 0.22;
+            float cut = uDissolve.y * 1.25 - 0.12;
+            float keep = smoothstep(cut, cut + 0.012, h);
+            float edge = 1.0 - smoothstep(cut, cut + 0.07, h);
+            c.rgb = mix(c.rgb, uDissolveGlow * c.a, edge * 0.85);
+            c *= keep;
         }
         if (uSink.x > 0.0) {
             // The liquid sinks: what is above its level fades out over a soft edge
@@ -194,7 +216,9 @@ const ADD_FRAGMENT = `
     varying vec2 vUv;
     void main() {
         vec4 c = texture2D(map, vUv);
-        gl_FragColor = vec4(c.rgb * uAmount * 1.1, min(1.0, c.a * uAmount));
+        // Only light: it adds colour and leaves the canvas's alpha as it was. (It used to add alpha too, and where the
+        // canvas is see-through, over a scene's CSS sky, the glow darkened it instead: a black box round the rulito)
+        gl_FragColor = vec4(c.rgb * uAmount * 1.1 * min(1.0, c.a * uAmount), 0.0);
     }`;
 
 const parseColor = (color) => {
@@ -325,7 +349,7 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
             return node;
         }
 
-        plane(texture, { rect = { left: 0, top: 0, w: 1, h: 1 }, pivot = null, wind = null, shimmer = 0, water = 0, sheen = 0, sink = false, blur = 0, bloom = false,
+        plane(texture, { rect = { left: 0, top: 0, w: 1, h: 1 }, pivot = null, wind = null, shimmer = 0, water = 0, sheen = 0, sink = false, dissolve = null, blur = 0, bloom = false,
             blending = 'normal', segments = null, under = false, vignette = 0 } = {}) {
             const node = new Node(this);
             const segs = segments ?? (wind ? [24, 10] : [1, 1]);
@@ -342,6 +366,8 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
                 uWater: { value: water },
                 uSheen: { value: sheen },
                 uSink: { value: new THREE.Vector2(sink ? 1 : 0, 0) },
+                uDissolve: { value: new THREE.Vector2(dissolve === null ? 0 : 1, 0) },
+                uDissolveGlow: { value: new THREE.Color(...parseColor(dissolve ?? 0xffffff)) },
                 uClip: { value: new THREE.Vector4(1, 0, 0, 0) },
                 uVignette: { value: vignette },
                 uSize: { value: new THREE.Vector2(1, 1) },
@@ -521,7 +547,8 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
         const add = new THREE.ShaderMaterial({
             uniforms: { map: { value: null }, uAmount: { value: 0 } },
             vertexShader: QUAD_VERTEX, fragmentShader: ADD_FRAGMENT, depthTest: false, depthWrite: false,
-            transparent: true, blending: THREE.AdditiveBlending,
+            transparent: true, blending: THREE.CustomBlending,
+            blendSrc: THREE.OneFactor, blendDst: THREE.OneFactor, blendSrcAlpha: THREE.ZeroFactor, blendDstAlpha: THREE.OneFactor,
         });
         const mesh = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), blur);
         mesh.frustumCulled = false;
@@ -529,6 +556,9 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
         quadScene.add(mesh);
         quad = { scene: quadScene, camera: new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1), mesh, blur, add };
     };
+    // Particles size their points in device px of the canvas: drawn into the smaller bloom target they would be four
+    // times too big (on a real GPU, rows of dots melted into a white smear). Who draws points says how to scale them
+    const bloomScalers = [];
     const drawBloom = (amount) => {
         ensureBloom();
         const [a, b] = bloomTargets;
@@ -536,7 +566,9 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
         renderer.setRenderTarget(a);
         renderer.setClearColor(0x000000, 0);
         renderer.clear();
+        bloomScalers.forEach((fn) => fn(a.width / Math.max(1, width * dpr)));
         renderer.render(scene, camera);
+        bloomScalers.forEach((fn) => fn(1));
         camera.layers.set(0);
         quad.mesh.material = quad.blur;
         for (let pass = 0; pass < 2; pass++) {
@@ -584,6 +616,10 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
 
         onResize(fn) { resizers.push(fn); if (width > 1) fn(width, height); },
         onTick(fn) { tickers.push(fn); },
+
+        // fn(scale) is called with the bloom target's size against the canvas (about 1/4) before the bloom pass, and
+        // with 1 after it: for what sizes itself in px of the canvas, as the points of useStardust
+        onBloomScale(fn) { bloomScalers.push(fn); },
 
         // Resolves once every picture has loaded
         ready() { return Promise.all(loads); },

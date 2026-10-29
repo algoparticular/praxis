@@ -33,7 +33,7 @@ La energía de los chakras corre en dos sentidos:
 
 Los siete verbos, uno por chakra, quedan ordenados entre dos polos:
 - **Arraigar** (raíz) es el polo de la manifestación: de la materia a la manifestación. Está probado en Paciencia y en Hogar.
-- **Soltar** (corona) es el polo de la liberación: del entendimiento a la existencia. Está probado en Vipassana.
+- **Soltar** (corona) es el polo de la liberación: del entendimiento a la existencia. Está probado en Vipassana y en Nekkhamma.
 - **Dar y recibir** (corazón) es donde las dos corrientes se encuentran. Las notas de Belén lo dicen así: "dos triángulos entrelazados, el movimiento descendente del espíritu en la materia y la liberación ascendente de la materia en el espíritu: equilibrio perfecto en el corazón". Está implementado en Dana: compartir la luz de la llamita con todos los de la isla, y que vuelva multiplicada (ver más abajo, en "Dinámicas").
 - **Fluir, Encender, Resonar y Ver** serían los pasos entre un polo y el otro. Ver está probado en Pañña, Encender en Evolución Espiritual, Fluir en Khanti y Resonar en Sincronicidad (a tiempo) y en Creatividad (composición libre).
 
@@ -78,7 +78,7 @@ Las palabras del libro para cada chakra, subiendo y bajando:
 
 Cada carta tiene un verbo (`verb` en `src/data/cards.json`, lista en `src/data/verbs.js`). El verbo define la **dinámica**: qué hace la persona con la escena. La ilustración, el sonido y el significado los pone cada carta. Los siete verbos son uno por personaje y chakra (ver arriba).
 
-Los siete verbos se probaron en una escena: **Arraigar en Paciencia** (y, hacia adentro, en **Hogar**), **Fluir en Khanti**, **Encender en Evolución Espiritual** (frotar y lanzar el fuego), **Dar y recibir en Dana** (compartir la luz), **Resonar en Sincronicidad** (y, como composición libre, en **Creatividad**), **Ver en Pañña** y **Soltar en Vipassana**. Lo implementado no es fijo: son ideas probadas y pueden cambiar. Lo que se dice de las otras cartas son propuestas, tomando como punto de partida lo que ya hacen las escenas.
+Los siete verbos se probaron en una escena: **Arraigar en Paciencia** (y, hacia adentro, en **Hogar**), **Fluir en Khanti**, **Encender en Evolución Espiritual** (frotar y lanzar el fuego), **Dar y recibir en Dana** (compartir la luz), **Resonar en Sincronicidad** (y, como composición libre, en **Creatividad**), **Ver en Pañña** y **Soltar en Vipassana** (y en **Nekkhamma**). Lo implementado no es fijo: son ideas probadas y pueden cambiar. Lo que se dice de las otras cartas son propuestas, tomando como punto de partida lo que ya hacen las escenas.
 
 Orden de los verbos: Arraigar (raíz) y Soltar (corona) son los dos polos, la corriente de manifestación y la de liberación, y Dar y recibir (corazón) es donde se encuentran. Los dos polos y el centro están probados: el centro, en Dana. Ver arriba, sección "Dos corrientes".
 
@@ -203,7 +203,17 @@ Con movimiento reducido la escena queda estática y no se juega (como Sincronici
 - *Cuando no queda nada que agarrar.* La espiral de puntos se va y solo queda la animación del rulito sobre la cabeza de Sid, chico y separado de ella, en el rosa de la espiral. Se ilumina el nombre de la carta y suena el acorde en la octava siguiente (`rulito`). Después todo lo que se soltó vuelve (`bloom`) a medida que la cola del rulito alcanza a su cabeza, hasta que se va, y la espiral vuelve. Se puede volver a jugar. Hito de analítica: `all_released`.
 Dónde está Sid se decide con una máscara precalculada (`characterMask.js`, hecha con `scripts/make-character-mask.mjs`), no leyendo píxeles de un canvas en ejecución, que Safari de escritorio puede devolver vacío.
 La escena sigue estática con movimiento reducido, así que todavía no se puede jugar así, y tampoco con teclado.
-**Cartas:** Nekkhamma, Upekkha, Ciclos, Perdón, Vipassana (hecha).
+**Cómo funciona hoy en Nekkhamma:** Sid está entero, en el medio, en una noche quieta, **atado con un hilo de puntos a cada lucecita celeste** del piso (las siete; respiran y se mecen con las plantas). Son sus posesiones: *"más allá de tu nombre, nacionalidad, profesión, religión y posesiones"*. Los puntos de los hilos corren despacio hacia él: él tira de lo que tiene. La ilustración lo dibuja cuatro veces, cada una más deshecho; la escena usa solo el entero y lo deshace ella misma, sin saltos.
+- *Cortar un hilo.* Tocar una lucecita (o a él) corta un hilo: estalla en motas que suben (`release`) y él suelta una parte de sí. Se va deshaciendo desde los pies con un borde irregular que brilla, y de su línea quedan puntos donde estaba, como en el dibujo. Los hilos que quedan son el contador, como la espiral de Vipassana.
+- *La pista, sin palabras.* Si pasan 4 s sin tocar, uno de los hilos late con una onda de luz hacia él (y su lucecita brilla): ese es uno para cortar.
+- *La nube nace de lo que suelta.* Antes de soltar no hay nube. Lo que suelta sube en motas y se junta arriba de él, en una nube de todos los colores que crece hacia los lados; con ella aparece una galaxia espiral de partículas, como la de Dana, que gira despacio.
+- *Soltar todo de una vez.* Mantenerlo apretado es juntar el aire (`inhale`): brilla, le sale una luz de atrás y se le desprenden motas. Soltarlo después de juntarlo entero (unos 2,2 s) corta todos los hilos, uno tras otro (`exhale`), como la respiración power de Vipassana.
+- *Volverse nube.* Sin hilos y sin nada de su cuerpo, al rato (o con otro toque) los puntos de su línea suben también y él es la nube, que se enciende (`converge`). Después la nube baja y lo devuelve entero, desde los pies (`bloom`), con el rulito sobre la cabeza como lo dibuja la carta; se ilumina el nombre y suena `rulito`. Cuando el rulito se va, sus hilos vuelven a crecer despacio: vive entre sus cosas de nuevo, más liviano. Soltar no es perder el cuerpo sino habitarlo liviano: *"abrazar tu materialidad, lo cual no significa identificarte con ella"*. Hito: `renounced` (con `times` y `breath`).
+- *Si nadie lo toca.* Después de 15 s solo le vuelve a crecer un hilo y recupera una parte (la nube se achica), y otro cada 4 s. Entero y sin tocar, de vez en cuando se le desprenden unas motas de los pies.
+Con teclado, Enter o espacio sobre una lucecita corta su hilo; sobre él es un toque y mantenido es juntar el aire. Con movimiento reducido la escena queda quieta y no se juega.
+**Dónde se tocó:** `SceneNekkhamma.vue` (`cut()`, `forward()`, `back()`, `follow()`, `dissolve()`, `press()` y `letGo()`; `ANCHORS`, `threads`, `CLOUD`, `ORDER`, los grupos `threadGroup`, `lineGroup`, `cloudGroup` y `flyers`), el efecto `dissolve` de `useLayerStage.js`, y las capas y los puntos de `scripts/convert-nekkhamma.mjs`.
+
+**Cartas:** Nekkhamma (hecha), Upekkha, Ciclos, Perdón, Vipassana (hecha).
 
 ### Sin verbo todavía: el silencio (carta 10)
 No hay nada que leer ni decir; la invitación es sentir el corazón. Su verbo va entre Fa (Dar y recibir), Sol (Resonar) o La (Ver), por decidir. Si tiene un juego, sería no jugar: la escena responde solo si se deja de tocar.
