@@ -19,6 +19,8 @@
 //   wind     { amp (px), speed, root: 'bottom' | 'top' }  the picture sways, more the farther from its root
 //   shimmer  0..1  the air trembles over it (a sun's heat)
 //   water    0..1  the light of the water ripples across it (caustics)
+//   sheen    0..1  a band of light sweeps across it now and then, as over glass
+//   sink     true  a liquid that can sink: uniforms.uSink.value.y is its level (0 full .. 1 empty), with a soft edge
 //   bright, saturate, tint + tintAmount  for lighting a layer up (the pine cone held)
 // and layers drawn in code: glow (a soft radial light, CSS radial-gradient stops) and disc (a plain disc of colour,
 // with { water } the light of the water rippling across it).
@@ -66,6 +68,8 @@ const LAYER_FRAGMENT = `
     uniform float uTintAmount;
     uniform float uShimmer;
     uniform float uWater;
+    uniform float uSheen;
+    uniform vec2 uSink;            // on (0/1), level (0 full .. 1 empty)
     varying vec2 vUv;
     void main() {
         vec2 uv = vUv;
@@ -84,6 +88,17 @@ const LAYER_FRAGMENT = `
                 p += vec2(sin(p.y + t + float(i) * 1.3), cos(p.x - t * 0.8 + float(i) * 2.1)) * 0.6;
             }
             c.rgb += vec3(pow(0.5 + 0.5 * sin(p.x + p.y), 6.0)) * 0.045 * uWater * c.a;
+        }
+        if (uSheen > 0.0) {
+            // A band of light sweeps slowly across, now and then, as over glass
+            float band = fract(uTime * 0.07) * 2.6 - 0.8;
+            float d = (vUv.x + (1.0 - vUv.y) * 0.6) / 1.6 - band;
+            c.rgb += vec3(exp(-d * d * 180.0)) * 0.35 * uSheen * c.a;
+        }
+        if (uSink.x > 0.0) {
+            // The liquid sinks: what is above its level fades out over a soft edge
+            float g = ((1.0 - vUv.y) + 1.0 - uSink.y) / 2.0;
+            c *= clamp((g - 0.44) / 0.12, 0.0, 1.0);
         }
         gl_FragColor = vec4(c.rgb, c.a) * uOpacity;
     }`;
@@ -278,7 +293,7 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
             return node;
         }
 
-        plane(texture, { rect = { left: 0, top: 0, w: 1, h: 1 }, pivot = null, wind = null, shimmer = 0, water = 0, blur = 0, bloom = false,
+        plane(texture, { rect = { left: 0, top: 0, w: 1, h: 1 }, pivot = null, wind = null, shimmer = 0, water = 0, sheen = 0, sink = false, blur = 0, bloom = false,
             blending = 'normal', segments = null } = {}) {
             const node = new Node(this);
             const segs = segments ?? (wind ? [24, 10] : [1, 1]);
@@ -293,6 +308,8 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
                 uTintAmount: { value: 0 },
                 uShimmer: { value: shimmer },
                 uWater: { value: water },
+                uSheen: { value: sheen },
+                uSink: { value: new THREE.Vector2(sink ? 1 : 0, 0) },
                 uSize: { value: new THREE.Vector2(1, 1) },
                 uWind: { value: new THREE.Vector4(wind?.amp ?? 0, wind?.speed ?? 1, wind?.root === 'top' ? 1 : 0, Math.random() * 6.28) },
             };

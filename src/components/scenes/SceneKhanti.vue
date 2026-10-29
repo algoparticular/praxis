@@ -13,9 +13,14 @@
     //    the flask empties as if it evaporated: the pink level sinks, the creature fades up and vapour rises. Pressing the
     //    central sign fills everything back.
     //  - The blue dots of the sky and the lavender specks are particles; touching a creature makes it flash and throw
-    //    sparks of its colour, from a canvas in front.
+    //    sparks of its colour.
+    // It is drawn in WebGL (useLayerStage): the network is a group of planes at one depth, the camera slides with the
+    // pointer or the tilt; a band of light sweeps over the glass now and then, the pink inside the flasks has the light
+    // of the liquid rippling in it and sinks in the shader. The thread is drawn on two canvases (under and over) shown
+    // as textures. The touch targets are DOM elements in a square kept over the network.
     import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
-    import { createParallax, enterLayers } from '../../composables/useParallax.js';
+    import { createParallax } from '../../composables/useParallax.js';
+    import { createLayerStage } from '../../composables/useLayerStage.js';
     import { startStardust } from '../../composables/useStardust.js';
     import { createSparks } from '../../composables/useSparks.js';
     import { play } from '../../composables/useSound.js';
@@ -30,20 +35,28 @@
     });
 
     const root = ref(null);
-    const skyCanvas = ref(null);
-    const frontCanvas = ref(null);
-    const network = ref(null);
-    const els = {};
-    const setEl = (n) => (el) => { els[n] = el; };
+    const canvas = ref(null);
+    const overlay = ref(null);              // the square of the network, over the stage: the touch targets live in it
+    const catchers = {};                    // the creatures' touch targets, by layer number
+    const setCatcher = (n) => (el) => { catchers[n] = el; };
+    const N_ = {};                          // the layers (stage nodes), by layer number or flask id
+    let stage = null;
+    let net = null;                         // the network's group
     let parallax = null;
     let sky = null;
     let front = null;
     let entered = false;
+    let gone = false;
     let last = null;
     let tick = 0;
+    let F = { x: 0, y: 0, size: 1 };        // the square frame on screen at rest (px)
+
+    // The camera slides SLIDE px at the edge of a swipe; the network moves 14px across and 7 up and down, as before
+    const SLIDE = 50;
+    const SLIDE_Y = 25;
+    const NET_Z = 14 / (SLIDE + 14);
 
     const pct = (v) => `${v}%`;
-    const place = ([left, top, w, h]) => ({ left: pct(left), top: pct(top), width: pct(w), height: pct(h) });
 
     // The big drawings, from back to front, and the creatures and little things between them (the numbers are the
     // artwork's layers: 3 pink bodies, 33 the central sign, 34 glass reflections, 35 outlines, 36-44 the corks)
@@ -51,7 +64,7 @@
     const SIGN = 33;
     const CORKS = [36, 37, 38, 39, 40, 41, 42, 43, 44];
     const things = Object.keys(layers).map(Number).filter((n) => n !== 2 && !Object.values(big).includes(n)).sort((a, b) => a - b)
-        .map((n) => ({ n, style: place(layers[n]), area: layers[n][4], color: layers[n][5] }));
+        .map((n) => ({ n, area: layers[n][4], color: layers[n][5] }));
     const under = things.filter((t) => t.n < big.shine);        // inside the flasks, under the glass
     const over = things.filter((t) => t.n > big.lines);         // on top of the outlines
     const hitBox = (n, min = 5, grow = 1) => {
@@ -62,7 +75,7 @@
 
     // The flasks with a cork: how empty each is (level 0 full .. 1 empty, easing towards the target), how far its cork
     // has popped, and which creature lives in it
-    const FLASKS = flaskData.map((f) => ({ ...f, style: place(f.box), level: 0, target: 0, pop: 0, life: 1, glow: 0, awake: false, shown: -1 }));
+    const FLASKS = flaskData.map((f) => ({ ...f, level: 0, target: 0, pop: 0, life: 1, glow: 0, awake: false }));
     const flaskOfCreature = {};
     const flaskOfCork = {};
     FLASKS.forEach((f) => { f.creatures.forEach((n) => { flaskOfCreature[n] = f; }); flaskOfCork[f.cork] = f; });
@@ -131,6 +144,7 @@
         return `M${left.join('L')}L${cap(last, 1).join('L')}L${right.reverse().join('L')}L${cap(first, -1).reverse().join('L')}Z`;
     };
     const FRONT_D = LINE.front.map(([a, b]) => `M${Array.from({ length: b - a + 1 }, (_, k) => `${X(a + k)} ${Y(a + k)}`).join('L')}`);
+    const FRONT_PATHS = FRONT_D.map((d) => new Path2D(d));
     // The strokes: the route passes behind the pink at certain places (HIDE: the middle of each such stretch). A stroke
     // lives between two neighbouring ones: it comes out of the first (its tail still hidden there) growing along the
     // route, reaches the second and goes into it (its head hidden there), tail following, so it never begins or ends in
@@ -157,7 +171,7 @@
     const pointer = { u: 0, v: 0, at: -99, down: false };
     let nowT = 0;
     const track = (event) => {
-        const box = els.thread?.getBoundingClientRect();
+        const box = overlay.value?.getBoundingClientRect();
         if (!box || !box.width) return;
         pointer.u = (event.clientX - box.left) / box.width * 2160;
         pointer.v = (event.clientY - box.top) / box.height * 2160;
@@ -208,14 +222,55 @@
         return FADES.map(([from, to]) => STROKES.map((k, n) => strokeD(k, from, to, bends[n])).join(''));
     };
 
+    // ---- The thread on two canvases (the square of the artwork): all of it under the pink, and over it only where it
+    // crosses in front. Drawn at the frame's size (the stroke is soft: no need for the screen's full density).
+    const threadUnder = document.createElement('canvas');
+    const threadOver = document.createElement('canvas');
+    const FADE_ALPHA = [0.7, 0.4, 0.4, 0.45, 0.5];
+    const drawThread = () => {
+        const px = Math.max(2, Math.round(F.size * Math.min(window.devicePixelRatio || 1, 1.5)));
+        [threadUnder, threadOver].forEach((c) => { if (c.width !== px) { c.width = px; c.height = px; } });
+        const k = px / 2160;
+        const paths = strokesD().map((d) => (d ? new Path2D(d) : null));
+        [threadUnder, threadOver].forEach((c, which) => {
+            const ctx = c.getContext('2d');
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.clearRect(0, 0, px, px);
+            ctx.setTransform(k, 0, 0, k, 0, 0);
+            ctx.fillStyle = '#aeabd9';
+            paths.forEach((path, i) => { if (path) { ctx.globalAlpha = FADE_ALPHA[i]; ctx.fill(path); } });
+            ctx.globalAlpha = 1;
+            if (which === 1) {
+                // only where the line crosses in front of a tube or a flask
+                ctx.globalCompositeOperation = 'destination-in';
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 80;
+                ctx.lineCap = ctx.lineJoin = 'round';
+                FRONT_PATHS.forEach((path) => ctx.stroke(path));
+                ctx.globalCompositeOperation = 'source-over';
+            }
+        });
+        N_.threadUnder?.refresh();
+        N_.threadOver?.refresh();
+    };
+
+    // A box of the artwork ([left, top, w, h] in %), in px of the screen at rest
+    const inFrame = ([left, top, w, h]) => ({ left: F.x + left / 100 * F.size, top: F.y + top / 100 * F.size, w: w / 100 * F.size, h: h / 100 * F.size });
+    // Where a layer turns and scales about, from a CSS transform-origin ('50% 100%')
+    const originOf = (box, origin) => {
+        const [ox, oy] = origin.split(' ').map((v) => parseFloat(v) / 100);
+        return { x: box.left + ox * box.w, y: box.top + oy * box.h };
+    };
+    const flashes = {};                     // when a creature was touched (it flashes)
+    let signFlash = -9;
+
     const live = (t, ramp) => {
         things.forEach(({ n }) => {
-            const el = els[n];
-            if (!el) return;
-            const [kind = 'bob', origin = '50% 50%', speed = 0.5 + (n % 5) * 0.12, amount = 1] = LIFE[n] ?? [];
+            const node = N_[n];
+            if (!node) return;
+            const [kind = 'bob', , speed = 0.5 + (n % 5) * 0.12, amount = 1] = LIFE[n] ?? [];
             const p = t * speed + n * 1.3;
-            const s = el.style;
-            s.transformOrigin = origin;
             let tx = 0, ty = 0, rot = 0, sx = 1, sy = 1;
             switch (kind) {
                 case 'breathe': sy = 1 + Math.sin(p * 1.6) * 0.012; ty = Math.sin(p * 0.8) * 0.18; break;
@@ -232,58 +287,73 @@
             }
             const k = ramp * amount;
             tx *= k; ty *= k; rot *= k; sx = 1 + (sx - 1) * k; sy = 1 + (sy - 1) * k;
+            let bright = 1, saturate = 1, opacity = 1;
             // A creature whose flask is evaporating fades up and away; a popped cork jumps off its flask
             const home = flaskOfCreature[n];
             if (home) {
-                const gone = 1 - smooth(home.life);
-                ty -= gone * 1.6; sx *= 1 - gone * 0.14; sy *= 1 - gone * 0.14;
-                s.opacity = home.life >= 0.999 ? '1' : (1 - gone).toFixed(3);
+                const goneBy = 1 - smooth(home.life);
+                ty -= goneBy * 1.6; sx *= 1 - goneBy * 0.14; sy *= 1 - goneBy * 0.14;
+                opacity = 1 - goneBy;
                 // lit by a stroke going by
-                if (home.glow > 0.01) { s.filter = `brightness(${(1 + home.glow * 0.2).toFixed(3)}) saturate(${(1 + home.glow * 0.15).toFixed(3)})`; home.lit = true; sx *= 1 + home.glow * 0.03; sy *= 1 + home.glow * 0.03; }
-                else if (home.lit) { s.filter = ''; home.lit = false; }
+                if (home.glow > 0.01) { bright += home.glow * 0.2; saturate += home.glow * 0.15; sx *= 1 + home.glow * 0.03; sy *= 1 + home.glow * 0.03; }
                 // an empty flask's creature is not there to be touched, and must not catch the touch meant for the cork
-                const catcher = els['chit' + n];
+                const catcher = catchers[n];
                 if (catcher) catcher.style.pointerEvents = home.life < 0.6 ? 'none' : '';
             }
             const flask = flaskOfCork[n];
             if (flask) {
                 tx += flask.away.x * flask.pop * 3.4; ty += flask.away.y * flask.pop * 3.4; rot += (flask.away.x >= 0 ? 1 : -1) * flask.pop * 34;
             }
-            s.translate = `${tx.toFixed(3)}cqw ${ty.toFixed(3)}cqw`;
-            s.rotate = `${rot.toFixed(2)}deg`;
-            s.scale = `${sx.toFixed(4)} ${sy.toFixed(4)}`;
+            // Touched: a flash of brightness over 0.7s
+            if (flashes[n] !== undefined) {
+                const f = (t - flashes[n]) / 0.7;
+                if (f >= 1) delete flashes[n];
+                else { const b = Math.sin(Math.PI * Math.min(1, f * 2)) * (f < 0.5 ? 1 : 1 - (f - 0.5) * 2); bright += 0.5 * Math.max(0, b); saturate += 0.3 * Math.max(0, b); }
+            }
+            if (n === SIGN) {
+                const f = (t - signFlash) / 0.9;
+                if (f >= 0 && f < 1) { const b = Math.sin(Math.PI * f); bright += 0.6 * b; sx *= 1 + 0.16 * b; sy *= 1 + 0.16 * b; }
+            }
+            node.x = tx / 100 * F.size;
+            node.y = ty / 100 * F.size;
+            node.rotate = rot;
+            node.sx = sx;
+            node.sy = sy;
+            node.opacity = opacity;
+            node.uniforms.uBright.value = bright;
+            node.uniforms.uSaturate.value = saturate;
         });
     };
 
     // The flasks: each one's pink sinks as it evaporates, and vapour rises from its surface
     const sparks = createSparks(640);
     const stepFlasks = (dt) => {
-        const canvas = frontCanvas.value?.getBoundingClientRect();
         FLASKS.forEach((f) => {
             const rate = f.target > f.level ? dt / 3.4 : dt / 1.6;
             f.level = f.target > f.level ? Math.min(f.target, f.level + rate) : Math.max(f.target, f.level - rate);
             f.pop += ((f.target > 0 ? 1 : 0) - f.pop) * Math.min(1, dt * 7);
             // The creature fades away early while the pink sinks, and comes back as soon as the flask is filled again
             f.life = f.target > 0 ? Math.max(0, f.life - dt / 1.1) : Math.min(1, f.life + dt / 0.9);
-            const el = els[f.id];
-            if (el && Math.abs(f.level - f.shown) > 0.0005) {
-                f.shown = f.level;
-                const pos = `0 ${((1 - f.level) * 100).toFixed(2)}%`;
-                el.style.maskPosition = pos;
-                el.style.webkitMaskPosition = pos;
-                el.style.opacity = f.level >= 0.999 ? '0' : '1';
-            }
+            const node = N_[f.id];
+            if (!node) return;
+            node.uniforms.uSink.value.y = f.level;
+            node.opacity = f.level >= 0.999 ? 0 : 1;
             // Vapour from the surface while it is emptying
-            if (el && canvas && f.target > f.level && f.level < 0.98) {
-                const box = el.getBoundingClientRect();
+            if (f.target > f.level && f.level < 0.98) {
+                const box = node.boxOnScreen(inFrame(f.box));
                 const n = Math.round(dt * 120 * (0.5 + f.level)) + (Math.random() < dt * 120 % 1 ? 1 : 0);
                 for (let i = 0; i < n; i++) {
-                    sparks.burst(box.left + box.width * (0.22 + Math.random() * 0.56) - canvas.left, box.top + box.height * (0.05 + f.level * 0.9) - canvas.top, {
+                    sparks.burst(box.left + box.width * (0.22 + Math.random() * 0.56), box.top + box.height * (0.05 + f.level * 0.9), {
                         n: 1, colors: [0xffffff, 0xffe3e8, 0xfbc4cf], speed: 16, life: 2.6, size: 4.6, spread: 4,
                     });
                 }
             }
         });
+    };
+    const centreOn = (event) => {
+        const box = event.currentTarget.getBoundingClientRect();
+        const area = canvas.value.getBoundingClientRect();
+        return [box.left + box.width / 2 - area.left, box.top + box.height / 2 - area.top];
     };
     // A cork: the first press empties the flask, the next one fills it again
     const empty = (f, event) => {
@@ -294,25 +364,22 @@
         }
         f.target = 1;
         sceneMilestone('cork_popped');
-        const canvas = frontCanvas.value.getBoundingClientRect();
-        const box = event.currentTarget.getBoundingClientRect();
-        sparks.burst(box.left + box.width / 2 - canvas.left, box.top + box.height / 2 - canvas.top, { n: 14, colors: [0xffc470, 0xffe3a8, 0xffffff], speed: 90, size: 4.4, spread: 5 });
+        const [x, y] = centreOn(event);
+        sparks.burst(x, y, { n: 14, colors: [0xffc470, 0xffe3a8, 0xffffff], speed: 90, size: 4.4, spread: 5 });
         play('release');            // the cork pops and the flask evaporates
     };
     // The central sign: everything is filled again
     const refill = (event) => {
         FLASKS.forEach((f) => { f.target = 0; });
         sceneMilestone('refill_all');
-        const canvas = frontCanvas.value.getBoundingClientRect();
-        const box = event.currentTarget.getBoundingClientRect();
-        sparks.burst(box.left + box.width / 2 - canvas.left, box.top + box.height / 2 - canvas.top, { n: 40, colors: [0xffffff, 0xcfeff0, 0xffd1dc], speed: 150, size: 5.2, spread: 10 });
-        els[SIGN]?.animate({ filter: ['brightness(1)', 'brightness(1.6)', 'brightness(1)'], scale: ['1', '1.16', '1'] }, { duration: 900, easing: 'ease-out' });
+        const [x, y] = centreOn(event);
+        sparks.burst(x, y, { n: 40, colors: [0xffffff, 0xcfeff0, 0xffd1dc], speed: 150, size: 5.2, spread: 10 });
+        signFlash = last ?? 0;
         play('breath');
     };
 
     // A stroke passing by a flask lights the creature in it for a moment, with a few lavender sparks as it comes on
     const wakeCreatures = (dt) => {
-        const canvas = frontCanvas.value?.getBoundingClientRect();
         FLASKS.forEach((f) => {
             let near = false;
             if (f.life > 0.9) {
@@ -323,10 +390,13 @@
                     if (dx * dx + dy * dy < reach * reach) { near = true; break; }
                 }
             }
-            if (near && !f.awake && canvas) {
-                const el = els[f.creatures[0]];
-                const box = el?.getBoundingClientRect();
-                if (box) sparks.burst(box.left + box.width / 2 - canvas.left, box.top + box.height / 2 - canvas.top, { n: 8, colors: [0xcfcdf2, 0xb9b6ea, 0xffffff], speed: 55, life: 1.8, size: 4, spread: 12 });
+            if (near && !f.awake) {
+                const n = f.creatures[0];
+                const node = N_[n];
+                if (node) {
+                    const box = node.boxOnScreen(inFrame(layers[n]));
+                    sparks.burst(box.left + box.width / 2, box.top + box.height / 2, { n: 8, colors: [0xcfcdf2, 0xb9b6ea, 0xffffff], speed: 55, life: 1.8, size: 4, spread: 12 });
+                }
             }
             f.awake = near;
             f.glow += ((near ? 1 : 0) - f.glow) * Math.min(1, dt * (near ? 5 : 1.3));
@@ -337,12 +407,11 @@
     const touch = (thing, event) => {
         const home = flaskOfCreature[thing.n];
         if (home && home.level > 0.25) return;
-        const box = event.currentTarget.getBoundingClientRect();
-        const canvas = frontCanvas.value.getBoundingClientRect();
+        const [x, y] = centreOn(event);
         const c = thing.color;
         const own = [c, ((c >> 16 & 255) * 0.5 + 127) << 16 | ((c >> 8 & 255) * 0.5 + 127) << 8 | ((c & 255) * 0.5 + 127), 0xffffff];
-        sparks.burst(box.left + box.width / 2 - canvas.left, box.top + box.height / 2 - canvas.top, { n: 26, colors: own, speed: 120, size: 5, spread: 8 });
-        els[thing.n]?.animate({ filter: ['brightness(1)', 'brightness(1.5) saturate(1.3)', 'brightness(1)'] }, { duration: 700, easing: 'ease-out' });
+        sparks.burst(x, y, { n: 26, colors: own, speed: 120, size: 5, spread: 8 });
+        flashes[thing.n] = last ?? 0;
         play(thing.area > 15000 ? 'star' : 'tap');
     };
     const onKey = (action) => (event) => {
@@ -351,100 +420,136 @@
         action(event);
     };
 
-    const enter = () => {
-        if (entered || !props.active) return;
-        entered = true;
-        enterLayers([{ el: network.value, y: 70, scale: 0.88, duration: 2000 }]);
+    // A square frame, bottom-aligned; on a tall screen lifted towards the middle so the sky is not empty above it
+    const layout = (W, H) => {
+        const size = Math.min(Math.max(W, 0.62 * H), 0.85 * H, 1.15 * W);
+        const bottom = W <= H ? (H - size) * 0.4 : 0;
+        F = { x: W / 2 - size / 2, y: H - size - bottom, size };
     };
 
-    onMounted(() => {
+    const build = (s) => {
+        net = s.depth(NET_Z).group();
+        N_.threadUnder = net.canvas(threadUnder);
+        N_.body = net.image('/assets/khanti/k3.webp', { water: 0.6 });
+        FLASKS.forEach((f) => { N_[f.id] = net.image(`/assets/khanti/${f.id}.webp`, { sink: true, water: 1 }); });
+        under.forEach((t) => { N_[t.n] = net.image(`/assets/khanti/k${t.n}.webp`); });
+        N_.shine = net.image('/assets/khanti/k34.webp', { sheen: 1 });
+        N_.lines = net.image('/assets/khanti/k35.webp');
+        N_.threadOver = net.canvas(threadOver);
+        over.forEach((t) => { N_[t.n] = net.image(`/assets/khanti/k${t.n}.webp`); });
+        net.enter({ y: 70, scale: 0.88, duration: 2000 });
+    };
+
+    const place = (W, H) => {
+        layout(W, H);
+        net.pivot = { x: F.x + F.size / 2, y: F.y + F.size / 2 };
+        const square = { left: F.x, top: F.y, w: F.size, h: F.size };
+        N_.threadUnder.place(square);
+        N_.threadOver.place(square);
+        N_.body.place(inFrame(layers[big.body]));
+        N_.shine.place(inFrame(layers[big.shine]));
+        N_.lines.place(inFrame(layers[big.lines]));
+        FLASKS.forEach((f) => N_[f.id].place(inFrame(f.box)));
+        things.forEach(({ n }) => {
+            const box = inFrame(layers[n]);
+            N_[n].place(box, originOf(box, (LIFE[n] ?? [])[1] ?? '50% 50%'));
+        });
+        drawThread();
+    };
+
+    // The square of touch targets follows the network on screen
+    const placeOverlay = () => {
+        const el = overlay.value;
+        if (!el) return;
+        const c = net.toScreen(F.x + F.size / 2, F.y + F.size / 2);
+        const e = net.toScreen(F.x + F.size, F.y + F.size / 2);
+        const size = 2 * Math.hypot(e.x - c.x, e.y - c.y);
+        el.style.width = el.style.height = `${size.toFixed(1)}px`;
+        el.style.translate = `${(c.x - size / 2).toFixed(1)}px ${(c.y - size / 2).toFixed(1)}px`;
+        el.style.rotate = `${net.rotate.toFixed(3)}deg`;
+    };
+
+    const enter = () => {
+        if (entered || !props.active || !stage) return;
+        entered = true;
+        stage.ready().then(() => { if (!gone) stage.start(); });
+    };
+
+    const frame = ({ x, y, scroll, t, ramp }) => {
+        if (!stage) return;
+        stage.look(x * SLIDE, y * SLIDE_Y);
+        // The network floats, its creatures floating in it, and the thread with it
+        net.y = Math.sin(t * 0.5) * 7 * ramp - scroll * 40;
+        net.rotate = Math.sin(t * 0.27) * 0.35 * ramp;
+        const dt = last === null ? 0 : Math.min(0.1, t - last);
+        last = t;
+        nowT = t;
+        moveStrokes(dt, t);
+        live(t, ramp);
+        stepFlasks(dt);
+        wakeCreatures(dt);
+        // The strokes of the thread, travelling (every other frame is enough)
+        if (tick++ % 2 === 0) drawThread();
+        stage.render(t);
+        placeOverlay();
+    };
+
+    const begin = async () => {
+        let made;
+        try {
+            made = await createLayerStage(canvas.value);
+        } catch (e) {
+            console.warn('The WebGL stage is not available', e);
+            return;
+        }
+        if (gone) { made.destroy(); return; }
+        stage = made;
+        sky = startStardust(null, {
+            stage,
+            groups: [
+                { count: 300, colors: [0x007096, 0x007096, 0x1b86a8, 0x006f96], size: [2, 7], drift: 5, twinkle: 0.3, reach: 130, push: 32, parallax: 12, order: -20 },
+                { count: 26, colors: [0xaaa8d2, 0xb9b7e0], size: [2, 5], drift: 16, twinkle: 0.6, reach: 130, push: 32, parallax: 20, order: -19 },
+            ],
+        });
+        build(stage);
+        stage.onResize((W, H) => place(W, H));
+        front = startStardust(null, { stage, groups: [{ ...sparks.group(), order: 1e6 }] });
         root.value.addEventListener('pointermove', track, { passive: true });
         root.value.addEventListener('pointerdown', track, { passive: true });
         root.value.addEventListener('pointerup', release, { passive: true });
-        parallax = createParallax(root.value, ({ x, y, scroll, t, ramp }) => {
-            // The network floats, its creatures floating in it, and the thread with it
-            network.value.style.translate = `${-x * 14}px ${-y * 7 + Math.sin(t * 0.5) * 7 * ramp - scroll * 40}px`;
-            network.value.style.rotate = `${(Math.sin(t * 0.27) * 0.35 * ramp).toFixed(3)}deg`;
-            const dt = last === null ? 0 : Math.min(0.1, t - last);
-            last = t;
-            nowT = t;
-            moveStrokes(dt, t);
-            live(t, ramp);
-            stepFlasks(dt);
-            wakeCreatures(dt);
-            // The strokes of the thread, travelling (every other frame is enough)
-            if (tick++ % 2 === 0 && els.wb0) {
-                strokesD().forEach((d, k) => {
-                    els['wb' + k].setAttribute('d', d);
-                    els['wf' + k].setAttribute('d', d);
-                });
-            }
-        });
-        sky = startStardust(skyCanvas.value, {
-            groups: [
-                { count: 300, colors: [0x007096, 0x007096, 0x1b86a8, 0x006f96], size: [2, 7], drift: 5, twinkle: 0.3, reach: 130, push: 32, parallax: 12 },
-                { count: 26, colors: [0xaaa8d2, 0xb9b7e0], size: [2, 5], drift: 16, twinkle: 0.6, reach: 130, push: 32, parallax: 20 },
-            ],
-        });
-        front = startStardust(frontCanvas.value, { groups: [sparks.group()] });
+        parallax = createParallax(root.value, frame);
         enter();
-    });
+    };
+
+    onMounted(begin);
     watch(() => props.active, enter);
     onBeforeUnmount(() => {
+        gone = true;
         root.value?.removeEventListener('pointermove', track);
         root.value?.removeEventListener('pointerdown', track);
         root.value?.removeEventListener('pointerup', release);
         parallax?.destroy();
         sky?.destroy();
         front?.destroy();
+        stage?.destroy();
     });
 </script>
 
 <template>
     <div class="scene" ref="root">
-        <canvas class="field" ref="skyCanvas"></canvas>
-
-        <!-- A square frame; every layer is placed as a fraction of it, as in the illustration -->
-        <div class="frame">
-            <div class="network" ref="network">
-                <!-- The lavender thread, under the pink: the whole line, and a bright stretch travelling along it -->
-                <svg class="thread" :ref="setEl('thread')" viewBox="0 0 2160 2160" aria-hidden="true">
-                    <path v-for="k in 5" :key="k" class="worm" :class="`w${k - 1}`" :ref="setEl(`wb${k - 1}`)" />
-                </svg>
-
-                <img class="layer" :style="place(layers[big.body])" src="/assets/khanti/k3.webp" alt="" draggable="false">
-                <img v-for="f in FLASKS" :key="f.id" class="layer flask" :ref="setEl(f.id)" :style="f.style" :src="`/assets/khanti/${f.id}.webp`" alt="" draggable="false">
-                <img v-for="t in under" :key="t.n" class="layer" :ref="setEl(t.n)" :style="t.style" :src="`/assets/khanti/k${t.n}.webp`" alt="" draggable="false">
-                <img class="layer" :style="place(layers[big.shine])" src="/assets/khanti/k34.webp" alt="" draggable="false">
-                <img class="layer" :style="place(layers[big.lines])" src="/assets/khanti/k35.webp" alt="" draggable="false">
-
-                <!-- ...and over it, only where the thread crosses in front of a tube or a flask -->
-                <svg class="thread" viewBox="0 0 2160 2160" aria-hidden="true">
-                    <defs>
-                        <mask id="khanti-front" maskUnits="userSpaceOnUse" x="0" y="0" width="2160" height="2160">
-                            <path v-for="(d, i) in FRONT_D" :key="i" :d="d" fill="none" stroke="#fff" stroke-width="80" stroke-linecap="round" stroke-linejoin="round" />
-                        </mask>
-                    </defs>
-                    <g mask="url(#khanti-front)">
-                        <path v-for="k in 5" :key="k" class="worm" :class="`w${k - 1}`" :ref="setEl(`wf${k - 1}`)" />
-                    </g>
-                </svg>
-
-                <img v-for="t in over" :key="t.n" class="layer" :ref="setEl(t.n)" :style="t.style" :src="`/assets/khanti/k${t.n}.webp`" alt="" draggable="false">
-
-                <!-- What can be touched: the corks, the creatures and the central sign -->
-                <div v-for="t in touchable" :key="'hit' + t.n" :ref="setEl('chit' + t.n)" class="hit" role="button" tabindex="0" :style="t.hit"
-                    :aria-label="$i18n.locale === 'en' ? 'Creature' : 'Criatura'"
-                    @pointerdown.prevent="touch(t, $event)" @keydown="onKey((e) => touch(t, e))($event)"></div>
-                <div v-for="c in corkHits" :key="'cork' + c.flask.id" class="hit" role="button" tabindex="0" :style="c.hit"
-                    :aria-label="$i18n.locale === 'en' ? 'Cork' : 'Tapón'"
-                    @pointerdown.prevent="empty(c.flask, $event)" @keydown="onKey((e) => empty(c.flask, e))($event)"></div>
-                <div class="hit" role="button" tabindex="0" :style="signHit"
-                    :aria-label="$i18n.locale === 'en' ? 'Fill everything again' : 'Volver a llenar todo'"
-                    @pointerdown.prevent="refill" @keydown="onKey(refill)($event)"></div>
-            </div>
+        <canvas class="stageCanvas" ref="canvas"></canvas>
+        <!-- What can be touched, in a square kept over the network: the corks, the creatures and the central sign -->
+        <div class="network" ref="overlay">
+            <div v-for="t in touchable" :key="'hit' + t.n" :ref="setCatcher(t.n)" class="hit" role="button" tabindex="0" :style="t.hit"
+                :aria-label="$i18n.locale === 'en' ? 'Creature' : 'Criatura'"
+                @pointerdown.prevent="touch(t, $event)" @keydown="onKey((e) => touch(t, e))($event)"></div>
+            <div v-for="c in corkHits" :key="'cork' + c.flask.id" class="hit" role="button" tabindex="0" :style="c.hit"
+                :aria-label="$i18n.locale === 'en' ? 'Cork' : 'Tapón'"
+                @pointerdown.prevent="empty(c.flask, $event)" @keydown="onKey((e) => empty(c.flask, e))($event)"></div>
+            <div class="hit" role="button" tabindex="0" :style="signHit"
+                :aria-label="$i18n.locale === 'en' ? 'Fill everything again' : 'Volver a llenar todo'"
+                @pointerdown.prevent="refill" @keydown="onKey(refill)($event)"></div>
         </div>
-        <canvas class="field front" ref="frontCanvas"></canvas>
     </div>
 </template>
 
@@ -455,77 +560,23 @@
         overflow: hidden;
     }
 
-    .field {
+    .stageCanvas {
         position: absolute;
         inset: 0;
         width: 100%;
         height: 100%;
+        display: block;
         pointer-events: none;
-    }
-
-    .front {
-        z-index: 1;
-    }
-
-    .frame {
-        --s: min(max(100vw, 62svh), 85svh, 115vw);
-        position: absolute;
-        width: var(--s);
-        height: var(--s);
-        left: calc(50% - var(--s) / 2);
-        bottom: 0;
-        container-type: size;
-        pointer-events: none;
-    }
-
-    /* On a tall screen the picture would sit at the bottom with the sky empty above it: lift it towards the middle */
-    @media (max-aspect-ratio: 1/1) {
-        .frame { bottom: calc((100svh - var(--s)) * 0.4); }
     }
 
     .network {
         position: absolute;
-        inset: 0;
-    }
-
-    .layer {
-        position: absolute;
-        display: block;
-        max-width: none;
-        user-select: none;
+        left: 0;
+        top: 0;
+        width: 0;
+        height: 0;
         pointer-events: none;
     }
-
-    /* A flask's pink: a soft edge that sinks as the mask slides (see stepFlasks) */
-    .flask {
-        -webkit-mask-image: linear-gradient(to bottom, transparent 44%, #000 56%);
-        mask-image: linear-gradient(to bottom, transparent 44%, #000 56%);
-        -webkit-mask-size: 100% 200%;
-        mask-size: 100% 200%;
-        -webkit-mask-repeat: no-repeat;
-        mask-repeat: no-repeat;
-        -webkit-mask-position: 0 100%;
-        mask-position: 0 100%;
-    }
-
-    .thread {
-        position: absolute;
-        inset: 0;
-        width: 100%;
-        height: 100%;
-        overflow: visible;
-        pointer-events: none;
-    }
-
-    .worm {
-        fill: #aeabd9;
-    }
-
-    .w0 { fill-opacity: 0.7; }
-    .w1 { fill-opacity: 0.4; }
-    .w2 { fill-opacity: 0.4; }
-    .w3 { fill-opacity: 0.45; }
-    .w4 { fill-opacity: 0.5; }
 
     .hit {
         position: absolute;
