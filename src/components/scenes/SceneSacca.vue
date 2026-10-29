@@ -152,7 +152,7 @@
     // ---- The game: the lookout sings a phrase of the four colours; it is repeated by touching them in that order
     const GAP = 0.85;                       // s between the sung notes
     const SLOWER = 1.25, GAP_MAX = 1.5;     // each time it has to be sung again after a mistake
-    const AGAIN = 5;                        // s alone before he sings it again (the hint)
+    const AGAIN = 7;                        // s alone before he sings it again (the hint)
     const FIRST = 3.2;                      // s after the scene starts, the first time he sings
     const shuffled = (last) => {
         let p;
