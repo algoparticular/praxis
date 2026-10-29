@@ -66,7 +66,6 @@
     let heldBreath = false;      // the breath in progress was begun by a finger on him: when it goes out it lets go of what it caught
     let sidBreath = false;       // that breath is being held in by a finger on him
     let lastAct = performance.now();   // when the player last did something, for the hint
-    let acted = false;
     let win = null;              // the rulito: { age, head, tail, full, fullAt, back }, from the last cell let go until it is gone
     let wins = 0;
     let sidReleasedAt = -Infinity;
@@ -179,14 +178,14 @@
         }
     };
 
-    // With no words: while nothing is touched, one of the cells that are left glows now and then (sooner at the start)
+    // With no words: after 7 s with nothing touched, one of the cells that are left glows now and then
     const startHints = () => {
         hintTimer = setInterval(() => {
             if (!cellField || win || sidBreath || reducedMotion) return;
-            if ((performance.now() - lastAct) / 1000 > (acted ? 6 : 3)) cellField.hint();
+            if ((performance.now() - lastAct) / 1000 > 7) cellField.hint();
         }, 1400);
     };
-    const touched = () => { lastAct = performance.now(); acted = true; };
+    const touched = () => { lastAct = performance.now(); };
 
     const breatheIn = (awayX, awayY) => {
         // The ring jostles him as it goes through, away from where it came from

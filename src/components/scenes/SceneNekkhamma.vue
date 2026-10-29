@@ -130,7 +130,7 @@
     const HOLD = 0.45;                  // s pressed before a press becomes a breath
     const BREATH = 1.8;                 // s more to gather it whole
     const IDLE = 15;                    // s alone before he takes back a part (a thread grows back)
-    const HINT = 4;                     // s alone before one of the threads glows: that is one to cut
+    const HINT = 7;                     // s alone before one of the threads glows: that is one to cut
     const BACK = 4;                     // s between one part taken back and the next
     const LINGER = 1.4;                 // s his last dots stay before they rise
     const GIVE = 1.8, RISE = 2.2, KEEP = 2.8, EAT = 3.4;    // the win: given back after, rulito born, kept, gone
