@@ -27,6 +27,7 @@
     import { createParallax } from '../../composables/useParallax.js';
     import { createLayerStage } from '../../composables/useLayerStage.js';
     import { createStardust } from '../../composables/useStardust.js';
+    import { createGalaxy } from '../../composables/useGalaxy.js';
     import { createFlame } from '../../composables/useFlame.js';
     import { createSparks } from '../../composables/useSparks.js';
     import { play } from '../../composables/useSound.js';
@@ -549,66 +550,14 @@
     // Where the pointer has the sky now (-1..1), for the groups that move by themselves
     const sway = { x: 0, y: 0 };
 
-    // A little spiral galaxy in a corner of the sky: a warm core and two arms of stars that turn slowly, the inner ones
-    // faster than the outer ones, tilted as if seen a little from the side. Its stars are flat dots like the card's;
-    // a soft glow (the other group) lies under its core and along its arms
-    const ARM_STARS = 620, ARM_GLOW = 90, TILT = -0.4, FLAT = 0.5;
-    const galaxyStar = (i, glow) => {
-        const a = Math.sin(i * 12.9898 + (glow ? 7 : 0)) * 0.5 + 0.5, b = Math.sin(i * 78.233 + 1) * 0.5 + 0.5;
-        const c = Math.sin(i * 39.425 + 3) * 0.5 + 0.5;
-        // A fifth of the stars are the bulge round the core, a fifth the faint disc between the arms, the rest the arms
-        const core = !glow && i % 5 === 0, disc = !glow && i % 5 === 1;
-        const r = core ? 0.25 * a * a : 0.06 + 0.94 * a ** 0.75;
-        const arm = i % 2 ? Math.PI : 0;
-        const angle = core || disc ? b * Math.PI * 2 : arm + Math.log(r / 0.06 + 1) * 3.1 + (b - 0.5) * (1.5 - 0.8 * r);
-        return { r: r + (c - 0.5) * 0.06, angle, c };
-    };
-    const STARS_OF = Array.from({ length: ARM_STARS }, (_, i) => galaxyStar(i, false));
-    const GLOW_OF = Array.from({ length: ARM_GLOW }, (_, i) => galaxyStar(i, true));
-    const GALAXY = [0xfff3b8, 0xf6e27c, 0xffb454, 0xee6a82, 0xf0605d, 0xfaf3d4, 0xd8f4f2];
-    const galaxyAt = (w, h) => {
-        const wide = w > h;
-        return { x: w * (wide ? 0.8 : 0.26) - sway.x * 6, y: h * (wide ? 0.24 : 0.25) - sway.y * 3, R: Math.min(w * (wide ? 0.12 : 0.22), h * 0.14) };
-    };
-    const orbit = (g, t, w, h) => {
-        const at = galaxyAt(w, h);
-        const angle = g.angle + t * 0.05 / (0.3 + g.r);
-        const x = Math.cos(angle) * g.r, y = Math.sin(angle) * g.r * FLAT;
-        return [at.x + (x * Math.cos(TILT) - y * Math.sin(TILT)) * at.R, at.y + (x * Math.sin(TILT) + y * Math.cos(TILT)) * at.R, at.R];
-    };
-    const galaxy = {
-        count: ARM_STARS,
-        update(t, data) {
-            if (!stage) return;
-            const w = stage.width, h = stage.height;
-            for (let i = 0; i < data.count; i++) {
-                const g = STARS_OF[i];
-                const [x, y] = orbit(g, t, w, h);
-                const near = 1 - Math.min(1, g.r);
-                fill(data, i, x, y, 1 + 2.2 * g.c * (0.5 + near),
-                    (0.35 + 0.65 * near) * (0.7 + 0.3 * Math.sin(t * (1 + g.c * 2) + i)),
-                    g.r < 0.15 ? GALAXY[i % 2] : GALAXY[i % GALAXY.length]);
-            }
+    // A little spiral galaxy in a corner of the sky (useGalaxy): a warm core and two arms of stars that turn slowly
+    const { stars: galaxy, glow: galaxyGlow } = createGalaxy({
+        at: () => {
+            if (!stage) return null;
+            const w = stage.width, h = stage.height, wide = w > h;
+            return { x: w * (wide ? 0.8 : 0.26) - sway.x * 6, y: h * (wide ? 0.24 : 0.25) - sway.y * 3, R: Math.min(w * (wide ? 0.12 : 0.22), h * 0.14) };
         },
-    };
-    const galaxyGlow = {
-        count: ARM_GLOW + 6,
-        update(t, data) {
-            if (!stage) return;
-            const w = stage.width, h = stage.height;
-            for (let i = 0; i < data.count; i++) {
-                if (i >= ARM_GLOW) {
-                    // The core: a few big warm glows on top of each other
-                    const at = galaxyAt(w, h);
-                    fill(data, i, at.x, at.y, at.R * (0.25 + 0.15 * (i - ARM_GLOW)), 0.22, i % 2 ? 0xfff3b8 : 0xffb454);
-                    continue;
-                }
-                const g = GLOW_OF[i];
-                const [x, y, radius] = orbit(g, t, w, h);
-                fill(data, i, x, y, radius * (0.35 + 0.3 * g.c), 0.07 + 0.08 * (1 - Math.min(1, g.r)), i % 3 ? 0xee6a82 : 0xf6e27c);
-            }
-        },
-    };
+    });
 
     // Shooting stars, silent: now and then one crosses the upper sky and is gone, with a tail of dots
     const TAIL = 24, SHOOTERS = 2;

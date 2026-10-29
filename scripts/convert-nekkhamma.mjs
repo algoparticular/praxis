@@ -14,10 +14,11 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const source = path.join(root, 'originales', 'nekkhamma');
 const target = path.join(root, 'public', 'assets', 'nekkhamma');
 
-// 11 (the rulito over Sid's head) is not converted: the scene draws it in code, as every rulito
+// 11 (the rulito over Sid's head) is not converted: the scene draws it in code, as every rulito; nor are 27 and 28,
+// the cloud's two little galaxies: the scene has a galaxy of particles instead (useGalaxy, as Dana's)
 const pictures = {
-    1: 'ground', 2: 'mark', 4: 'buds', 5: 'plants', 7: 'planet', 8: 'ring', 10: 'wind',
-    12: 'sid', 27: 'galaxy-a', 28: 'galaxy-b',
+    1: 'ground', 2: 'mark', 5: 'plants', 7: 'planet', 8: 'ring', 10: 'wind',
+    12: 'sid',
 };
 const dots = {
     3: 'specks', 6: 'stars', 9: 'stars',
@@ -50,6 +51,34 @@ for (const [n, name] of Object.entries(pictures)) {
         .webp({ quality: 90, alphaQuality: 100, effort: 5 })
         .toFile(path.join(target, `${name}.webp`));
     scene.boxes[name] = box;
+}
+
+// The glowing buds (4) each on its own, so each one can breathe and sway: a square round the middle of its light, found
+// near where it is drawn (art px)
+const BUDS = [[106, 1943], [524, 2021], [678, 1911], [778, 1924], [1466, 1935], [1625, 1641], [1715, 2037]];
+const BUD = 92;
+scene.buds = [];
+{
+    const { data, info } = await load(4);
+    for (const [i, [bx, by]] of BUDS.entries()) {
+        let sx = 0, sy = 0, sw = 0;
+        for (let y = by - 80; y < by + 80; y++) {
+            for (let x = bx - 80; x < bx + 80; x++) {
+                const a = data[(y * info.width + x) * 4 + 3];
+                sx += x * a; sy += y * a; sw += a;
+            }
+        }
+        const cx = Math.round(sx / sw), cy = Math.round(sy / sw);
+        const box = [cx - BUD / 2, cy - BUD / 2, BUD, BUD];
+        // Two buds are close together: a soft round mask keeps the light of the other one out
+        const mask = Buffer.from(`<svg width="${BUD}" height="${BUD}"><defs><radialGradient id="m"><stop offset="0.72" stop-color="#fff"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient></defs><circle cx="${BUD / 2}" cy="${BUD / 2}" r="${BUD / 2}" fill="url(#m)"/></svg>`);
+        await sharp(await sharp(path.join(source, 'Nekkhamma-4.png'))
+            .extract({ left: box[0], top: box[1], width: box[2], height: box[3] }).png().toBuffer())
+            .composite([{ input: mask, blend: 'dest-in' }])
+            .webp({ quality: 90, alphaQuality: 100, effort: 5 })
+            .toFile(path.join(target, `bud-${i + 1}.webp`));
+        scene.buds.push(box);
+    }
 }
 
 // Every dot is a blob of solid pixels: its centre, the radius of a disc of the same area and its mean colour (snapped to
