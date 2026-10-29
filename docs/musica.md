@@ -23,7 +23,7 @@ Cada acorde tiene la impronta raíz de su nota principal y los matices de sus te
 - **7 menores:** introspectiva y emocional, para liberar bloqueos.
 - **28 séptimas:** energía compleja y rica, para trabajar más profundo. Solo la dominante es tensión y va hacia otro acorde; la mayor y la menor son estables y resuenan como cualquier otro acorde.
 
-Siete acordes básicos, 12 si usamos todas las tonalidades cromáticas. 42 acordes en total, 72 con todas las tonalidades. Las cartas usan 27 de los 42.
+Siete acordes básicos, 12 si usamos todas las tonalidades cromáticas. 42 acordes en total, 72 con todas las tonalidades. Las cartas usan 28 de los 42.
 
 ## Los 42 acordes
 Esta sección resume la conversación de teoría musical de la que sale todo el sistema, con su contenido tal como vino. Cada acorde trae sus notas con sus chakras, los colores de esos chakras, dos aromas y su uso.
@@ -103,7 +103,7 @@ Es una tensión que pide resolverse: transformación en movimiento, empuja hacia
 
 #### Séptima mayor (maj7): mayor con séptima mayor (inferido)
 
-La séptima queda medio tono debajo de la octava. Suena luminosa y contemplativa, con una nostalgia serena: es expansión en calma, como un sueño despierto. La usan Khanti (Remaj7), Metta (Famaj7), Armonía (Domaj7), Celebración (Mimaj7), Gratitud (Solmaj7) y Vipassana (Simaj7). Es estable: no pide resolver, así que resuena como cualquier otro acorde, con el color de su séptima.
+La séptima queda medio tono debajo de la octava. Suena luminosa y contemplativa, con una nostalgia serena: es expansión en calma, como un sueño despierto. La usan Khanti (Remaj7), Metta (Famaj7), Armonía (Domaj7), Celebración (Mimaj7), Gratitud (Solmaj7), Belleza (Lamaj7) y Vipassana (Simaj7). Es estable: no pide resolver, así que resuena como cualquier otro acorde, con el color de su séptima.
 
 | Acorde | Notas → chakras | Color | Aroma | Uso |
 |---|---|---|---|---|
@@ -165,7 +165,7 @@ En un acorde, la fundamental es la base energética. La tercera define su carác
 
 1. **El texto de la carta manda.** La descripción, la afirmación y la invitación dicen qué chakra se trabaja y con qué energía (abrir, mirar hacia adentro, transformar). De ahí sale el acorde.
 2. **Los personajes de la ilustración no deciden el acorde.** Particular, Sporá, Samas, Kätus, Vulpes, Aura y Huit son expresiones de lo mismo, partículas que evolucionaron en el universo, y Particular es el protagonista de todo el viaje. Que su nota esté o no en el acorde es solo una pista, nunca una condición.
-3. **Las cartas que resuenan pueden compartir acorde.** Es mejor respetar esa afinidad que forzar un acorde distinto para cada una. Hoy 33 cartas usan 27 acordes: se repiten Si menor (Nekkhamma, Aceptación), Sol7 (Sila, Sacca), Si mayor (Dana, Fe), Mi mayor (Viriya, Addhitthana), Sol mayor (carta 10, Belleza) y Re mayor (Paciencia, Sincronicidad).
+3. **Las cartas que resuenan pueden compartir acorde.** Es mejor respetar esa afinidad que forzar un acorde distinto para cada una. Hoy 33 cartas usan 28 acordes: se repiten Si menor (Nekkhamma, Aceptación), Sol7 (Sila, Sacca), Si mayor (Dana, Fe), Mi mayor (Viriya, Addhitthana) y Sol mayor (carta 10, Sincronicidad).
 
 El acorde de cada carta, con su razón, está en `cartas.md`.
 
@@ -175,7 +175,7 @@ Fuera de las cartas, toda la app suena en **Sol mayor**: Sol (garganta, Aura), S
 - **Aura:** su elemento es el **sonido**, y con ella nació la idea de organizar el universo por chakras.
 - **Particular:** es el protagonista y representa la conexión con el Todo (el rulito).
 
-También es la base que mejor se lleva con las cartas. Comparte al menos una nota con el acorde de 28 de las 33, así que entrar a una carta casi siempre es una entrada suave. Las cinco que no comparten ninguna son Metta (Famaj7), Ciclos (Fa7), Compromiso (La mayor), Confianza (La menor) y Perdón (Fa menor): el texto manda antes que la suavidad de la entrada.
+También es la base que mejor se lleva con las cartas. Comparte al menos una nota con el acorde de 27 de las 33, así que entrar a una carta casi siempre es una entrada suave. Las seis que no comparten ninguna son Metta (Famaj7), Belleza (Lamaj7), Ciclos (Fa7), Compromiso (La mayor), Confianza (La menor) y Perdón (Fa menor): el texto manda antes que la suavidad de la entrada.
 
 ## Cómo suena
 
