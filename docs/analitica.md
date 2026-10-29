@@ -40,12 +40,13 @@ Todos llevan `lang` (`es`/`en`) e `installed` (la app corre como PWA instalada).
 - `slow_pct`: % de cuadros lentos (más de 25 ms: a 60 por segundo, se saltó uno).
 - `stutters`: tirones (cuadros de más de 50 ms, los que se notan).
 - `worst_ms`: el cuadro más lento.
+- `locked_30`: el navegador tuvo la página fija a 30 cuadros por segundo (al menos el 90% de los cuadros duró entre 28 y 40 ms). Es lo que hace Safari con el modo de ahorro de batería: la página se mueve pareja, pero cada cuadro dura 33 ms y cuenta como lento, así que con `locked_30` verdadero `slow_pct` sale cerca de 100% y no dice nada de la escena. Si una carta de ilustración plana también sale `locked_30`, es el teléfono y no la escena.
 - `measured_s`: segundos medidos (una pausa de un segundo o más es la página oculta o el teléfono bloqueado, y no cuenta).
 - `cores` y `dpr`: núcleos del procesador y densidad de la pantalla, como pista del equipo (lo mismo que usan las escenas 3D para reconocer uno de poca potencia). No distinguen a nadie. PostHog ya agrega sistema, navegador y tamaño de pantalla.
 
 Sin `VITE_POSTHOG_KEY` (o con Do Not Track) no se mide nada. La batería no se puede medir desde una página web (Safari no lo permite): eso sigue siendo a mano. Para mirar un teléfono en vivo está el contador `?fps` (ver `plan-inmersivo.md`).
 
-Para empezar: `card_left` con promedio de `fps` y de `slow_pct`, desglosado por `scene` (o por `card_id`) y por `$os`; lo mismo con `table_left` por `table`. Una escena con `slow_pct` alto en iOS es la que hay que aliviar primero.
+Para empezar: `card_left` con promedio de `fps` y de `slow_pct`, desglosado por `scene` (o por `card_id`) y por `$os`; lo mismo con `table_left` por `table`. Una escena con `slow_pct` alto en iOS es la que hay que aliviar primero. Siempre con `locked_30` en falso (o separándolo en el desglose): las visitas con el teléfono en ahorro de batería salen a 30 fps y con casi todos los cuadros lentos aunque la escena no pese nada. Las que se registraron antes de esta propiedad no la tienen; ahí la pista es `fps` de 29 a 30 con `slow_pct` por encima de 95.
 
 ## Embudos sugeridos (Product analytics → Funnels, por visita)
 - **Ritual**: `$pageview` (route `/`) → `oracle_mode_chosen` → `card_picked` → `card_viewed` → `card_reading_reached`.
