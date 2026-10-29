@@ -104,10 +104,11 @@
     };
 
     // head, tail: 0..1 along the stroke (the visible part is between them); flare: 0..1, a surge of glow;
-    // t: seconds, for the breathing; fade: 0..1, to let the last dot go
-    const frame = ({ head = 0, tail = 0, flare = 0, t = 0, fade = 1 }) => {
+    // t: seconds, for the breathing; fade: 0..1, to let the last dot go; width: the glyph's width in CSS px, when it
+    // is not laid out on the page (a WebGL scene uses the canvas as a texture)
+    const frame = ({ head = 0, tail = 0, flare = 0, t = 0, fade = 1, width = null }) => {
         const cv = canvas.value;
-        const css = root.value?.offsetWidth;
+        const css = width ?? root.value?.offsetWidth;
         if (!cv || !css) return;
         const unit = css / W * Math.min(window.devicePixelRatio || 1, 3);    // canvas pixels per unit
         const cw = Math.round((W + 2 * PAD) * unit), ch = Math.round((H + 2 * PAD) * unit);
@@ -160,7 +161,7 @@
     };
 
     onMounted(() => frame({}));
-    defineExpose({ frame, reshape, root });
+    defineExpose({ frame, reshape, root, canvas });
 </script>
 
 <template>

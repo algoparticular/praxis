@@ -18,9 +18,9 @@ import { chromium } from 'playwright';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const cards = JSON.parse(readFileSync(path.join(root, 'src', 'data', 'cards.json'), 'utf8'));
-const sceneCards = [...readFileSync(path.join(root, 'src', 'data', 'cardScenes.js'), 'utf8').matchAll(/^\s*(\d+):\s*lazy\(/gm)].map(([, id]) => Number(id));
+const sceneCards = [...readFileSync(path.join(root, 'src', 'data', 'cardScenes.js'), 'utf8').matchAll(/^\s*(\d+):\s*(?:lazy|stage)\(/gm)].map(([, id]) => Number(id));
 // The cards that are tried on a phone-sized screen too: the ones with the most layout in them
-const PHONE_CARDS = [2, 3, 20, 29];
+const PHONE_CARDS = [2, 3, 20, 27, 29];
 
 const PORT = Number(process.env.SMOKE_PORT ?? 4173);
 const ORIGIN = `http://localhost:${PORT}`;

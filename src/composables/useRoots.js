@@ -80,8 +80,9 @@ export function createRoots(canvas) {
 
     // grow: how far the roots have spread (0..1); pulse: where the wave of light is (0..1, or below 0 when there is none);
     // level: 0..3; t: seconds, for the breathing
-    const frame = ({ grow = 0, pulse = -1, level = 0, t = 0 }) => {
-        const width = canvas.clientWidth;
+    // `size`: the canvas's width in CSS px, when it is not laid out on the page (a WebGL scene uses it as a texture)
+    const frame = ({ grow = 0, pulse = -1, level = 0, t = 0, size = null }) => {
+        const width = size ?? canvas.clientWidth;
         if (!width) return;
         const dpr = Math.min(window.devicePixelRatio || 1, 2);
         const cw = Math.round(width * dpr), ch = Math.round(width / ASPECT * dpr);

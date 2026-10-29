@@ -38,24 +38,31 @@ const hasWebGL = () => {
 //   steady     every particle moves with the flow at the same speed, so a pattern keeps its shape
 //   edgeFade   0..0.5 fraction of the height over which particles fade in and out at top and bottom
 //   opacity    overall opacity
+//   order      with a stage: where it is drawn among the layers (the stage's draw order; default: after what exists)
+//   bloom      with a stage: the group also glows when the stage blooms
 // Pass { groups: [...] } for several groups on one canvas, or a group's options directly for one. With { manual: true }
 // the particles stay invisible until reveal() is called, so they can wait for the pictures they belong with.
 // The result has shift(i, x, y): moves group i by (x, y) px, so a group can follow a layer that has parallax, and
 // boost(i, amount): makes group i flare (bigger, brighter, trembling more) and settle back by itself, and
 // grow(i, amount, x, y): swells group i outwards from the point (x, y), by that fraction of every particle's distance to it.
+// turn(i, degrees, x, y): turns group i about the point (x, y) (before its shift), so it can turn with a layer.
+// With { stage } (a createLayerStage) the groups are drawn by the stage, among its layers, on its canvas and with its
+// clock: no renderer or loop of their own (`canvas` is then ignored).
 export async function createStardust(canvas, options = {}) {
-    if (!hasWebGL()) return null;
-    const THREE = await import('three');
+    const stage = options.stage ?? null;
+    if (!stage && !hasWebGL()) return null;
+    const THREE = stage ? stage.THREE : await import('three');
+    if (stage) canvas = stage.canvas;
 
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const phone = window.innerWidth < 600;
 
-    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: false, powerPreference: 'low-power' });
-    renderer.setClearColor(0x000000, 0);
-    const dpr = Math.min(window.devicePixelRatio, 2);
-    renderer.setPixelRatio(dpr);
+    const renderer = stage ? null : new THREE.WebGLRenderer({ canvas, alpha: true, antialias: false, powerPreference: 'low-power' });
+    renderer?.setClearColor(0x000000, 0);
+    const dpr = stage ? stage.dpr : Math.min(window.devicePixelRatio, 2);
+    renderer?.setPixelRatio(dpr);
 
-    const scene = new THREE.Scene();
+    const scene = stage ? stage.scene : new THREE.Scene();
     const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);    // the shader places points itself
 
     const shared = {
@@ -83,6 +90,7 @@ export async function createStardust(canvas, options = {}) {
         uniform float uBoost;
         uniform float uGrow;
         uniform vec2 uGrowAt;
+        uniform vec3 uTurn;             // angle (rad) and the point it turns about (px)
         uniform float uTwinkle;
         uniform float uReach;
         uniform float uPush;
@@ -98,6 +106,11 @@ export async function createStardust(canvas, options = {}) {
             p += vec2(sin(uTime * 0.31 + phase), cos(uTime * 0.23 + phase * 1.7)) * uDrift * (0.4 + aDepth * 0.6);
             p += vec2(sin(uTime * 7.3 + phase * 5.0), cos(uTime * 8.9 + phase * 7.0)) * (uJitter + uBoost * 1.6);
             p = uGrowAt + (p - uGrowAt) * (1.0 + uGrow);
+            if (uTurn.x != 0.0) {
+                vec2 d = p - uTurn.yz;
+                float c = cos(uTurn.x), s = sin(uTurn.x);
+                p = uTurn.yz + vec2(d.x * c - d.y * s, d.x * s + d.y * c);
+            }
             p += uShift * aDepth;
             float edge = uEdge > 0.0 ? smoothstep(0.0, uEdge, p.y / uRes.y) * smoothstep(0.0, uEdge, 1.0 - p.y / uRes.y) : 1.0;
             // The pointer is a gentle gust: whatever is near is shoved away, the closer the harder
@@ -128,7 +141,7 @@ export async function createStardust(canvas, options = {}) {
         const {
             count = 260, colors = [0xffffff], size = [1.5, 4], look = 'hard', spawn = null, points = null, dynamic = null,
             drift = 10, jitter = 0, flow = [0, 0], twinkle = 0.6, reach = 120, push = 38, parallax = 14, opacity = 1,
-            steady = false, edgeFade = 0,
+            steady = false, edgeFade = 0, order = null, bloom = false,
         } = group;
 
         const uniforms = {
@@ -140,6 +153,7 @@ export async function createStardust(canvas, options = {}) {
             uBoost: { value: 0 },
             uGrow: { value: 0 },
             uGrowAt: { value: new THREE.Vector2(0, 0) },
+            uTurn: { value: new THREE.Vector3(0, 0, 0) },
             uTwinkle: { value: twinkle },
             uReach: { value: reach },
             uPush: { value: push },
@@ -152,6 +166,10 @@ export async function createStardust(canvas, options = {}) {
         const geometry = new THREE.BufferGeometry();
         const object = new THREE.Points(geometry, material);
         object.frustumCulled = false;
+        if (stage) {
+            object.renderOrder = order ?? 1e6;
+            if (bloom) object.layers.enable(1);
+        }
         scene.add(object);
 
         let data = null;      // the current buffers
@@ -206,29 +224,35 @@ export async function createStardust(canvas, options = {}) {
 
         return {
             uniforms, populate, frame, parallax, lean: { x: 0, y: 0 }, data: () => data,
-            dispose() { geometry.dispose(); material.dispose(); },
+            dispose() { scene.remove(object); geometry.dispose(); material.dispose(); },
         };
     };
 
     const groups = (options.groups ?? [options]).map(makeGroup);
 
-    const resize = () => {
+    const resize = (w, h) => {
         // The layout size, so a canvas inside something that turns (or is scaled) is still measured as it is drawn
-        const box = canvas.getBoundingClientRect();
-        const w = canvas.clientWidth || box.width;
-        const h = canvas.clientHeight || box.height;
+        if (!stage) {
+            const box = canvas.getBoundingClientRect();
+            w = canvas.clientWidth || box.width;
+            h = canvas.clientHeight || box.height;
+        }
         if (!w || !h) return;
         width = w;
         height = h;
-        renderer.setSize(width, height, false);
+        renderer?.setSize(width, height, false);
         shared.uRes.value.set(width, height);
         groups.forEach((g) => g.populate());
         groups.forEach((g) => g.frame(0));
-        if (reduced) renderer.render(scene, camera);
+        if (reduced) renderer?.render(scene, camera);
     };
-    const observer = new ResizeObserver(resize);
-    observer.observe(canvas);
-    resize();
+    let observer = null;
+    if (stage) stage.onResize(resize);
+    else {
+        observer = new ResizeObserver(() => resize());
+        observer.observe(canvas);
+        resize();
+    }
 
     // Pointer, eased so the gust follows instead of jumping
     const pointer = { x: -9999, y: -9999, tx: -9999, ty: -9999, inside: false };
@@ -250,14 +274,12 @@ export async function createStardust(canvas, options = {}) {
     let last = 0;
     let revealAt = options.manual && !reduced ? null : 0;
     const begin = performance.now();
-    const tick = (now) => {
-        raf = requestAnimationFrame(tick);
-        if (!visible) return;
-        const t = (now - begin) / 1000;
+    const step = (t) => {
         const dt = Math.min(0.1, t - last);
         last = t;
         shared.uTime.value = t;
-        shared.uFade.value = revealAt === null ? 0 : Math.min(1, (t - revealAt) / 2.5);
+        // Still (reduced motion), they are simply there; otherwise they fade in once revealed
+        shared.uFade.value = reduced ? 1 : revealAt === null ? 0 : Math.min(1, (t - revealAt) / 2.5);
         if (pointer.inside) {
             pointer.x += (pointer.tx - pointer.x) * 0.12;
             pointer.y += (pointer.ty - pointer.y) * 0.12;
@@ -276,25 +298,35 @@ export async function createStardust(canvas, options = {}) {
             g.uniforms.uBoost.value *= Math.exp(-dt * 1.7);      // a flare dies away by itself
             g.frame(t);
         });
+    };
+    const tick = (now) => {
+        raf = requestAnimationFrame(tick);
+        if (!visible) return;
+        step((now - begin) / 1000);
         renderer.render(scene, camera);
     };
-    const visibility = new IntersectionObserver(([entry]) => { visible = entry.isIntersecting; });
-    visibility.observe(canvas);
-    if (!reduced) raf = requestAnimationFrame(tick);
+    let visibility = null;
+    if (stage) stage.onTick((t) => step(t));
+    else {
+        visibility = new IntersectionObserver(([entry]) => { visible = entry.isIntersecting; });
+        visibility.observe(canvas);
+        if (!reduced) raf = requestAnimationFrame(tick);
+    }
 
     return {
         shift(index, x, y) { groups[index]?.uniforms.uShift.value.set(x, y); },
         grow(index, amount, x, y) { const g = groups[index]; if (g) { g.uniforms.uGrow.value = amount; g.uniforms.uGrowAt.value.set(x, y); } },
+        turn(index, degrees, x, y) { groups[index]?.uniforms.uTurn.value.set(degrees * Math.PI / 180, x, y); },
         boost(index, amount) { const g = groups[index]; if (g) g.uniforms.uBoost.value = Math.max(g.uniforms.uBoost.value, amount); },
         reveal() { if (revealAt === null) revealAt = shared.uTime.value; },
         destroy() {
             cancelAnimationFrame(raf);
-            observer.disconnect();
-            visibility.disconnect();
+            observer?.disconnect();
+            visibility?.disconnect();
             window.removeEventListener('pointermove', onMove);
             document.removeEventListener('pointerleave', onLeave);
             groups.forEach((g) => g.dispose());
-            renderer.dispose();
+            renderer?.dispose();
         },
     };
 }
@@ -311,6 +343,7 @@ export function startStardust(canvas, options) {
         shift(index, x, y) { field?.shift(index, x, y); },
         boost(index, amount) { field?.boost(index, amount); },
         grow(index, amount, x, y) { field?.grow(index, amount, x, y); },
+        turn(index, degrees, x, y) { field?.turn(index, degrees, x, y); },
         reveal() { revealed = true; field?.reveal(); },
         destroy() { gone = true; field?.destroy(); },
     };
