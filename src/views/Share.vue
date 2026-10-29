@@ -8,13 +8,13 @@
     // The ESM source of the component (shipped in the package): the bundled build carries far more than this page needs
     import ShareNetwork from 'vue-social-sharing/src/share-network.js';
 
-    import { getCard } from '../data/cards.js';
+    import { getCard, pictureUrl } from '../data/cards.js';
     import { track } from '../analytics.js';
 
     const route = useRoute();
     const router = useRouter();
     const card = ref(getCard(route.params.id) ?? {});
-    const cover = ref(card.value.image ? 'url(' + card.value.image[0].url + ')' : '');
+    const cover = ref(card.value.image ? 'url(' + pictureUrl(card.value) + ')' : '');
     const color = ref(card.value.color ?? '');
     const showTooltip = ref(false);
 
