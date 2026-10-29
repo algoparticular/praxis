@@ -34,7 +34,7 @@ La energía de los chakras corre en dos sentidos:
 Los siete verbos, uno por chakra, quedan ordenados entre dos polos:
 - **Arraigar** (raíz) es el polo de la manifestación: de la materia a la manifestación. Está probado en Paciencia.
 - **Soltar** (corona) es el polo de la liberación: del entendimiento a la existencia. Está probado en Vipassana.
-- **Dar y recibir** (corazón) es donde las dos corrientes se encuentran. Las notas de Belén lo dicen así: "dos triángulos entrelazados, el movimiento descendente del espíritu en la materia y la liberación ascendente de la materia en el espíritu: equilibrio perfecto en el corazón". Se está probando en Dana: compartir la luz de la llamita con todos los de la isla, y que vuelva multiplicada (ver más abajo, en "Dinámicas").
+- **Dar y recibir** (corazón) es donde las dos corrientes se encuentran. Las notas de Belén lo dicen así: "dos triángulos entrelazados, el movimiento descendente del espíritu en la materia y la liberación ascendente de la materia en el espíritu: equilibrio perfecto en el corazón". Está implementado en Dana: compartir la luz de la llamita con todos los de la isla, y que vuelva multiplicada (ver más abajo, en "Dinámicas").
 - **Fluir, Encender, Resonar y Ver** serían los pasos entre un polo y el otro.
 
 Esto se parece a lo que el rulito premia: en las notas del tercer chakra, "siento las dos corrientes, ascendente de liberación y descendente de manifestación, que se unen en mí para manifestar mi propósito de ser quien soy".
@@ -78,9 +78,9 @@ Las palabras del libro para cada chakra, subiendo y bajando:
 
 Cada carta tiene un verbo (`verb` en `src/data/cards.json`, lista en `src/data/verbs.js`). El verbo define la **dinámica**: qué hace la persona con la escena. La ilustración, el sonido y el significado los pone cada carta. Los siete verbos son uno por personaje y chakra (ver arriba).
 
-Cuatro verbos se probaron en una escena: **Arraigar en Paciencia**, **Soltar en Vipassana**, **Ver en Pañña** y **Dar y recibir en Dana** (en prueba: compartir la luz). Lo implementado no es fijo: son ideas probadas y pueden cambiar. El resto son propuestas, tomando como punto de partida lo que ya hacen las escenas.
+Cuatro verbos se probaron en una escena: **Arraigar en Paciencia**, **Soltar en Vipassana**, **Ver en Pañña** y **Dar y recibir en Dana** (compartir la luz). Lo implementado no es fijo: son ideas probadas y pueden cambiar. El resto son propuestas, tomando como punto de partida lo que ya hacen las escenas.
 
-Orden de los verbos: Arraigar (raíz) y Soltar (corona) son los dos polos, la corriente de manifestación y la de liberación, y Dar y recibir (corazón) es donde se encuentran. Los dos polos están probados, y el centro se está probando en Dana. Ver arriba, sección "Dos corrientes".
+Orden de los verbos: Arraigar (raíz) y Soltar (corona) son los dos polos, la corriente de manifestación y la de liberación, y Dar y recibir (corazón) es donde se encuentran. Los dos polos y el centro están probados: el centro, en Dana. Ver arriba, sección "Dos corrientes".
 
 ### 1. Arraigar (Sporá, demonio: miedo) — implementado en Paciencia
 **Dinámica:** sostener. Mantener apretado un punto de la escena hasta que algo crece.
@@ -102,7 +102,7 @@ Orden de los verbos: Arraigar (raíz) y Soltar (corona) son los dos polos, la co
 **Idea:** que los bulbos se enciendan en cualquier orden y el rulito aparece cuando están todos encendidos; o mantener para cargar y soltar para lanzar un salto hacia el sol (Kätus salta buscando el sol).
 **Cartas:** Viriya, Coraje, Desafío, Evolución Espiritual.
 
-### 4. Dar y recibir (Vulpes, demonio: pena): en prueba en Dana
+### 4. Dar y recibir (Vulpes, demonio: pena): implementado en Dana
 **Dinámica:** compartir la luz. Dar sin pensar y sin esperar nada a cambio, y descubrir que dar no vacía: lo dado vuelve multiplicado, sin pedirlo.
 **Por qué así:** la primera prueba (lanzar la llamita al otro y que la devuelva, tres idas y vueltas) era un intercambio, un ping-pong: te doy y me devolvés. Las cuatro cartas del verbo dicen otra cosa: Dana *"soy feliz al dar sin esperar nada a cambio"* y *"bendiciones que vuelven a ti multiplicadas"*, Metta *"no podemos dar lo que no tenemos ni recibir lo que no damos"*, Gratitud *"al dar las gracias tu Espíritu se ilumina"*. Se descartaron también la honda (el mismo intercambio) y Tonglen (recibir la pena del otro acariciándolo): no sirve para las otras cartas y acariciar es consolar, no dar.
 **El motor, común a las cartas del verbo:** hay una fuente de luz y quienes pueden recibirla. El gesto es **un toque**, rápido, como da un chico (no es arrastrar, que es Ver, ni sostener, que es Arraigar). Cada toque hace saltar una chispa de la fuente a ese otro y lo enciende; **la fuente no se achica, crece**. No hay orden. Cuando todos tienen su luz, todos devuelven una a la vez hacia la fuente, sin que se la pidan, y nace el rulito. Cada carta solo dice quién es la fuente y quiénes reciben:
@@ -115,8 +115,11 @@ Orden de los verbos: Arraigar (raíz) y Soltar (corona) son los dos polos, la co
 - *Pista, sin palabras.* Si pasa un rato sin tocar nada, uno de los que todavía no tienen luz titila y la llama responde.
 - *Teclado.* Cada uno es un botón: Enter le da su luz. Enter en la llama la hace saltar.
 - *Movimiento reducido.* La escena queda estática y todavía no se puede jugar (como Vipassana y Pañña): los toques hacen saltar la llama, como antes.
-**Dónde se tocó:** `SceneDana.vue` (`GIFTS`, `give()`, `receive()`, `giveBack()`, `balance()`), `give` en `synth.js`. El rulito que estaba dibujado sobre el de la derecha se sacó de su capa: ahora es el premio.
-**Cartas:** Dana (en prueba), Metta, Gratitud.
+- *Lo que se da se ve sobre el dibujo.* Las partículas de dar (el brillo de las piedritas y los hongos, las luces que vuelan y las chispas) van en un lienzo delante de las ilustraciones, no detrás: la luz llega y se ve encima de quien la recibe. El aura del amigo, en cambio, queda detrás de él, como la que está dibujada alrededor del de la derecha.
+- *La isla es más grande que en el dibujo.* Crece desde la línea donde están parados los amigos, hasta 1,22 veces, lo que entre a lo ancho de la pantalla (en un teléfono parado casi no crece). Así las piedritas y los hongos son más grandes y más fáciles de tocar, y los amigos quedan del mismo tamaño y sobre el pasto.
+**Cómo se ve:** al lado de Vipassana y Pañña, Dana se veía plana (un teal liso, estrellas en un solo plano, la isla quieta). Ahora el cielo es de noche y tiene profundidad: se oscurece hacia arriba y abajo llega al color de la carta, que es el de la lectura. Las estrellas están en tres planos que se separan con el puntero: lejanas, tenues y casi quietas; las de la carta; y unas pocas grandes y desenfocadas cerca del ojo. Lo cruza una banda de polvo coral y amarillo, y atrás flotan dos islitas desenfocadas. La isla está viva: del musgo y de las puntas del cristal caen gotas de agua y de luz, el cristal destella y unas luciérnagas dan vueltas alrededor, algunas detrás de los amigos y otras delante. Todo son partículas, ningún dibujo nuevo.
+**Dónde se tocó:** `SceneDana.vue` (`GIFTS`, `give()`, `receive()`, `giveBack()`, `balance()`; `fit()` para la isla grande; `drops`, `glints`, `fireflies` y los grupos del cielo), `give` en `synth.js`. El rulito que estaba dibujado sobre el de la derecha se sacó de su capa: ahora es el premio.
+**Cartas:** Dana (hecha), Metta, Gratitud.
 
 ### 5. Resonar (Aura, demonio: mentiras)
 **Dinámica:** escuchar y responder. Ritmo, eco, secuencia.

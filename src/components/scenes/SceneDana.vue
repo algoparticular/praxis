@@ -1,9 +1,15 @@
 <script setup>
-    // Dana (generosity): two friends standing on a small green island, and a little flame between them, under a sky of
-    // real particles. The friends, the flame and the island are separate layers that move together as one group, so
-    // the friends stay planted on the island. All the particles live on one canvas behind the drawings (useStardust), so
-    // they never cover them: the stars, the little flame's living embers (red and yellow, rising from it and circling
-    // it), the glow of the friend on the left and the glow of the little creatures of the island.
+    // Dana (generosity): two friends standing on a small green island, and a little flame between them, under a deep
+    // night sky of real particles. The friends, the flame and the island are separate layers that move together as one
+    // group, so the friends stay planted on the island. The sky has depth: it darkens towards the top, its stars are in
+    // three planes that shift apart with the pointer (faint far ones, the stars of the card, and a few big out-of-focus
+    // ones close to the eye), and a soft band of coral and yellow dust crosses it. Two islets float far behind, blurred.
+    // The island is alive: water and light drip from its moss and from the tips of its crystal, the crystal glints, and
+    // fireflies wander round it, some behind the friends and some in front.
+    // The particles live on two canvases (useStardust): the one behind the drawings holds the sky, the little flame's
+    // living embers (red and yellow, rising from it and circling it) and the glow of the friend on the left; the one in
+    // front holds what is given, so it is seen over the drawings: the glow of the little creatures of the island, the
+    // lights in the air and the sparks, and the drops, the nearest fireflies and the out-of-focus stars.
     // Its verb is Dar y recibir (give and receive), played by sharing the light: the friend on the right (the one with
     // the glow, holding out his hand) has the flame. A touch on anyone of the island (the other friend, the little stone
     // creatures, the mushrooms: GIFTS) gives him a light of it: a spark flies from the flame to him in an arc and lights
@@ -30,6 +36,8 @@
 
     const root = ref(null);
     const skyCanvas = ref(null);
+    const frontCanvas = ref(null);
+    const far = ref(null);
     const group = ref(null);
     const left = ref(null);
     const right = ref(null);
@@ -39,6 +47,7 @@
     const rulitoR = ref(null);
     let parallax = null;
     let sky = null;
+    let front = null;
     let entered = false;
     let stageEl = null;
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -61,7 +70,58 @@
         { id: 'shore', es: 'Hongo y piedrita', en: 'Mushroom and stone', x: 25.9, y: 73.4, r: 4.2, pitch: 0.2, hit: { x: 25.9, y: 73.3, w: 8, h: 6 } },
         { id: 'pair', es: 'Piedritas', en: 'Little stones', x: 54.7, y: 76.4, r: 4.6, pitch: 0.1, hit: { x: 54.7, y: 76.5, w: 10, h: 6 } },
     ];
-    const DOTS = 70;                               // particles in the glow of each of the little ones
+    const DOTS = 50;                               // particles in the glow of each of the little ones
+
+    // Where the island drips, in % of the frame (measured on island.webp): the tips of its moss, and the three lowest
+    // corners of its crystal
+    const DRIPS = [
+        { x: 46.2, y: 87.4, moss: true }, { x: 40, y: 83.7, moss: true }, { x: 51.7, y: 83.5, moss: true },
+        { x: 75.2, y: 82, moss: true }, { x: 81.7, y: 82.6, moss: true }, { x: 16.9, y: 84.7, moss: true },
+        { x: 27.2, y: 88.9 }, { x: 51.4, y: 91.8 }, { x: 72.8, y: 87 },
+    ];
+    // Spots on the faces of the crystal that glint now and then, in % of the frame
+    const GLINTS = [[58.6, 84.2], [36, 82.7], [64.7, 85.8], [45.9, 88.4], [34.9, 87.8], [50.1, 83.9], [29.9, 85.5],
+        [71.1, 83], [40.8, 84.1], [62.5, 81.6], [54.3, 86.1], [78.1, 78.5], [26.5, 83.4], [61.3, 88.2], [73, 79.2], [21.2, 79.8]];
+    const FIREFLIES = 7;                           // on each canvas: behind the friends and in front of them
+
+    // The island is drawn bigger than in the illustration, so its little ones are bigger and easier to touch. It grows
+    // from the line where the friends stand (PIVOT, % of the frame), so they stay on the grass at their own size, as
+    // much as fits across the screen (up to ISLAND): on a phone upright it can hardly grow. Everything above that is on
+    // the island (the little ones, the drips, the glints) is measured on the illustration and moved with it by fit()
+    const PIVOT = { x: 50, y: 68 };
+    const ISLAND = 1.22;
+    const ISLE = { left: 15.5, top: 58.3, width: 69 };   // where the island is in the illustration, % of the frame
+    const onIsland = (x, y, k) => [PIVOT.x + (x - PIVOT.x) * k, PIVOT.y + (y - PIVOT.y) * k];
+    const BASE = {
+        gifts: GIFTS.map((g) => ({ ...g, hit: { ...g.hit } })),
+        drips: DRIPS.map((d) => ({ ...d })),
+        glints: GLINTS.map((p) => [...p]),
+    };
+    const isle = ref({});
+    const hits = ref(GIFTS.map((g) => g.hit));
+    let grown = 0;
+    const fit = () => {
+        const frameW = group.value?.clientWidth, screenW = root.value?.clientWidth;
+        if (!frameW || !screenW) return;
+        // Its outermost tips (the last 2% each side) may go past the edge of the screen
+        const k = Math.min(ISLAND, Math.max(1, screenW / 2 / (frameW * 0.33)));
+        if (k === grown) return;
+        grown = k;
+        BASE.gifts.forEach((b, i) => {
+            if (b.id === 'friend') return;
+            const g = GIFTS[i];
+            [g.x, g.y] = onIsland(b.x, b.y, k);
+            g.r = b.r * k;
+            const [hx, hy] = onIsland(b.hit.x, b.hit.y, k);
+            g.hit = { x: hx, y: hy, w: b.hit.w * k, h: b.hit.h * k };
+        });
+        BASE.drips.forEach((b, i) => { [DRIPS[i].x, DRIPS[i].y] = onIsland(b.x, b.y, k); });
+        BASE.glints.forEach((b, i) => { GLINTS[i] = onIsland(b[0], b[1], k); });
+        const [left, top] = onIsland(ISLE.left, ISLE.top, k);
+        isle.value = { left: `${left}%`, top: `${top}%`, width: `${ISLE.width * k}%` };
+        hits.value = GIFTS.map((g) => g.hit);
+    };
+    let resize = null;
 
     // Where the little flame is on the canvas now
     const anchor = () => {
@@ -326,13 +386,13 @@
                 const a = Math.sin(i * 12.9898) * 0.5 + 0.5, b = Math.sin(i * 78.233 + 2) * 0.5 + 0.5;
                 const life = (a + t * (0.08 + 0.1 * b)) % 1;
                 const angle = i * 2.399 + t * 0.15;
-                const reach = g.r * u * (0.55 + 0.75 * b) * (1 + boost * 0.3);
+                const reach = g.r * u * (0.7 + 0.9 * b) * (1 + boost * 0.3);
                 const at = toCanvas(g.x, g.y);
                 const level = Math.min(1.2, s.lit + s.flash * 0.7 + boost * s.lit * 0.5);
                 fill(data, i,
                     at.x + Math.cos(angle) * reach, at.y + Math.sin(angle) * reach * 0.65 - life * g.r * u * 1.1,
-                    u * (0.9 + 1.2 * b),
-                    level * Math.sin(life * Math.PI) ** 0.8 * (0.75 + 0.25 * Math.sin(t * 3 + i)),
+                    u * (0.6 + 1 * b),
+                    0.75 * level * Math.sin(life * Math.PI) ** 0.8 * (0.75 + 0.25 * Math.sin(t * 3 + i)),
                     (i % 3 ? GLOWS : EMBERS)[i % 4]);
             }
         },
@@ -356,10 +416,85 @@
         },
     };
 
+    // The island drips: a drop swells at the tip of the moss or the crystal, lets go and falls, fading, into the sky
+    // below, with a short trail (the other two of its three dots). The moss drips water and a little light, the crystal
+    // clear light. They shine more while the lights are back
+    const DROPS = 3;
+    const WATER = [0xdff8ff, 0xbff3ff, 0xffffff], MOSS = [0xc9f7c9, 0xe6fff4, 0xfff3b8];
+    const drops = {
+        count: DRIPS.length * DROPS,
+        update(t, data) {
+            if (!group.value || !skyCanvas.value) return;
+            const u = unit();
+            for (let i = 0; i < data.count; i++) {
+                const k = i % DRIPS.length, d = DRIPS[k], j = Math.floor(i / DRIPS.length);
+                const a = Math.sin(k * 12.9898) * 0.5 + 0.5, period = 3.5 + 4 * (Math.sin(k * 78.233) * 0.5 + 0.5);
+                const life = (t / period + a) % 1;
+                const at = toCanvas(d.x, d.y);
+                const swell = Math.min(1, life / 0.45);
+                const fall = Math.max(0, (life - 0.45) / 0.55 - j * 0.035);
+                const trail = j ? (fall > 0 ? 0.55 / j : 0) : 1;
+                fill(data, i, at.x, at.y + u * (0.5 * swell + 20 * fall * fall),
+                    u * (j ? 0.75 - j * 0.15 : 0.55 + 0.6 * swell) * (1 - 0.35 * fall),
+                    trail * (0.45 + 0.55 * swell) * (1 - fall) ** 1.3 * (1 + boost * 0.6),
+                    (d.moss ? MOSS : WATER)[(k + j) % 3]);
+            }
+        },
+    };
+
+    // Glints on the faces of the crystal: a quick bright twinkle each, at its own pace
+    const glints = {
+        count: GLINTS.length,
+        update(t, data) {
+            if (!group.value || !skyCanvas.value) return;
+            const u = unit();
+            for (let i = 0; i < data.count; i++) {
+                const at = toCanvas(GLINTS[i][0], GLINTS[i][1]);
+                const shine = Math.max(0, Math.sin(t * (0.5 + (i % 5) * 0.13) + i * 2.3)) ** 12;
+                fill(data, i, at.x, at.y, u * (1.4 + 3 * shine), Math.min(1, shine + boost * 0.4), i % 3 ? 0xe6fbff : 0xfff3b8);
+            }
+        },
+    };
+
+    // Fireflies wandering round the island, each with a bright core and a soft halo, lighting and going out slowly.
+    // `side` 0 are behind the friends, 1 in front of them
+    const fireflies = (side) => ({
+        count: FIREFLIES * 2,
+        update(t, data) {
+            if (!group.value || !skyCanvas.value) return;
+            const u = unit();
+            for (let i = 0; i < data.count; i++) {
+                const k = Math.floor(i / 2) + side * FIREFLIES, core = i % 2 === 0;
+                const a = Math.sin(k * 12.9898 + 1) * 0.5 + 0.5, b = Math.sin(k * 78.233 + 3) * 0.5 + 0.5;
+                const x = 22 + 56 * a + Math.sin(t * (0.13 + 0.07 * b) + k * 1.7) * 7 + Math.sin(t * 0.41 + k) * 1.5;
+                const y = 44 + 26 * b + Math.cos(t * (0.11 + 0.06 * a) + k * 2.3) * 6 + Math.sin(t * 0.53 + k * 3) * 1.2;
+                const at = toCanvas(x, y);
+                const pulse = Math.max(0, Math.sin(t * (0.35 + 0.2 * b) + k * 4.1)) ** 2;
+                fill(data, i, at.x, at.y, u * (core ? 1 : 4.5), (0.15 + 0.85 * pulse) * (core ? 1 : 0.45) * (1 + boost * 0.5),
+                    core ? 0xfaffd8 : (k % 2 ? 0xe9ff9e : 0xffe47d));
+            }
+        },
+    });
+
+    // The sky's dust: a soft band of coral and yellow crossing it from the top left down to the right
+    const band = (w, h, spread) => {
+        const along = Math.random();
+        const off = (Math.random() + Math.random() + Math.random() - 1.5) * spread;
+        return [w * (-0.1 + 1.2 * along) + off * 0.35 * h, h * (0.1 + 0.32 * along) + off * h];
+    };
+    // The out-of-focus stars close to the eye stay off the middle, where the friends are
+    const nearSpot = (w, h) => {
+        for (;;) {
+            const x = Math.random() * w, y = Math.random() * h;
+            if (Math.abs(x / w - 0.5) > 0.24 || y / h < 0.22) return [x, y];
+        }
+    };
+
     const enter = () => {
         if (entered || !props.active) return;
         entered = true;
         enterLayers([
+            { el: far.value, y: 60, duration: 2400 },
             { el: island.value, y: 150, duration: 1700 },
             { el: left.value, y: 80, delay: 350, duration: 1900 },
             { el: right.value, y: 80, delay: 420, duration: 1900 },
@@ -369,6 +504,9 @@
 
     onMounted(() => {
         stageEl = root.value.closest('.stage');
+        fit();
+        resize = new ResizeObserver(fit);
+        resize.observe(root.value);
         parallax = createParallax(root.value, ({ x, y, scroll, t, ramp }) => {
             const s = scroll;
             step(t);
@@ -382,15 +520,35 @@
             flame.value.style.translate = `${(-x * 6).toFixed(1)}px ${(Math.sin(t * 1.3) * 4 * ramp - y * 4).toFixed(1)}px`;
             flame.value.style.rotate = `${(Math.sin(t * 1.7) * 3 * ramp - x * 4).toFixed(3)}deg`;
             flame.value.style.scale = size.toFixed(3);
+            // The islets far behind shift less, and float at their own pace
+            far.value.style.translate = `${(-x * 5).toFixed(1)}px ${(-y * 2 - s * 12).toFixed(1)}px`;
+            far.value.style.setProperty('--bob', `${(Math.sin(t * 0.4) * 6 * ramp).toFixed(1)}px`);
         });
         sky = startStardust(skyCanvas.value, {
             groups: [
+                // The far stars: many, tiny and faint, they hardly move with the pointer
+                { count: 520, colors: [0xfaf3d4, 0xd8f4f2, 0xf6e27c], size: [1, 2.6], drift: 2, twinkle: 0.75, reach: 0, parallax: 4, opacity: 0.7 },
+                // The dust of the band, and its own crowd of small stars
+                { count: 220, colors: [0xff7088, 0xff8f7a, 0xffd36b, 0x6fe0dc], size: [50, 150], look: 'soft', spawn: (w, h) => band(w, h, 0.09), drift: 14, twinkle: 0.25, reach: 0, parallax: 8, opacity: 0.13 },
+                { count: 260, colors: [0xfaf3d4, 0xf6e27c, 0xee6a82], size: [1.2, 3.4], spawn: (w, h) => band(w, h, 0.06), drift: 3, twinkle: 0.7, reach: 0, parallax: 8, opacity: 0.85 },
+                // The stars of the card
                 { count: 380, colors: [0xf6e27c, 0xf6e27c, 0xee6a82, 0xfaf3d4], size: [2.2, 6.5], drift: 7, twinkle: 0.55, reach: 130, push: 34, parallax: 14 },
                 { colors: [0xffffff], dynamic: aura, parallax: 0, drift: 0, twinkle: 0, reach: 0, look: 'soft' },
-                { colors: [0xffffff], dynamic: glows, parallax: 0, drift: 0, twinkle: 0, reach: 0, look: 'soft' },
+                { colors: [0xffffff], dynamic: fireflies(0), parallax: 0, drift: 0, twinkle: 0, reach: 0, look: 'soft' },
                 fire.group(),
+            ],
+        });
+        front = startStardust(frontCanvas.value, {
+            groups: [
+                { colors: [0xffffff], dynamic: glints, parallax: 0, drift: 0, twinkle: 0, reach: 0, look: 'soft' },
+                // Flat, crisp drops, like the stars of the card
+                { colors: [0xffffff], dynamic: drops, parallax: 0, drift: 0, twinkle: 0, reach: 0, look: 'hard' },
+                { colors: [0xffffff], dynamic: glows, parallax: 0, drift: 0, twinkle: 0, reach: 0, look: 'soft' },
+                { colors: [0xffffff], dynamic: fireflies(1), parallax: 0, drift: 0, twinkle: 0, reach: 0, look: 'soft' },
                 { colors: [0xffffff], dynamic: motes, parallax: 0, drift: 0, twinkle: 0, reach: 0, look: 'soft' },
                 sparks.group(),
+                // A few big out-of-focus stars, close to the eye: they shift the most
+                { count: 16, colors: [0xfaf3d4, 0xf6e27c, 0xee6a82], size: [26, 70], look: 'soft', spawn: nearSpot, drift: 10, twinkle: 0.3, reach: 0, parallax: 46, opacity: 0.16 },
             ],
         });
         enter();
@@ -399,6 +557,8 @@
     onBeforeUnmount(() => {
         parallax?.destroy();
         sky?.destroy();
+        front?.destroy();
+        resize?.disconnect();
         stageEl?.style.removeProperty('--name-glow');
     });
 </script>
@@ -407,10 +567,16 @@
     <div class="scene" ref="root">
         <canvas class="field" ref="skyCanvas"></canvas>
 
+        <!-- Two islets far behind, out of focus -->
+        <div class="far" ref="far">
+            <img class="islet one" src="/assets/share/island.webp" alt="" draggable="false">
+            <img class="islet two" src="/assets/share/island.webp" alt="" draggable="false">
+        </div>
+
         <!-- A square frame, bottom-aligned; every layer is placed as a fraction of it, as in the illustration -->
         <div class="frame">
             <div class="group" ref="group">
-                <img class="layer island" ref="island" src="/assets/share/island.webp" alt="" draggable="false">
+                <img class="layer island" ref="island" :style="isle" src="/assets/share/island.webp" alt="" draggable="false">
                 <img class="layer friend left" ref="left" src="/assets/dana/left.webp" alt="" draggable="false">
                 <img class="layer friend right" ref="right" src="/assets/dana/right.webp" alt="" draggable="false">
                 <!-- A rulito over each head, in the cream of the one that was drawn -->
@@ -420,20 +586,64 @@
                 <!-- Everyone who can be given a light, and the flame itself -->
                 <div v-for="(g, i) in GIFTS" :key="g.id" class="hit gift" role="button" tabindex="0"
                     :aria-label="$i18n.locale === 'en' ? g.en : g.es"
-                    :style="{ left: `${g.hit.x}%`, top: `${g.hit.y}%`, width: `max(${g.hit.w}%, 44px)`, height: `max(${g.hit.h}%, 44px)` }"
+                    :style="{ left: `${hits[i].x}%`, top: `${hits[i].y}%`, width: `max(${hits[i].w}%, 44px)`, height: `max(${hits[i].h}%, 44px)` }"
                     @pointerdown="give(i)" @keydown="onKey($event, i)"></div>
                 <div class="hit flame-hit" role="button" tabindex="0" :aria-label="$i18n.locale === 'en' ? 'Little flame' : 'Llamita'"
                     @pointerdown="touch" @keydown="onKey($event)"></div>
             </div>
         </div>
+
+        <canvas class="field" ref="frontCanvas"></canvas>
     </div>
 </template>
 
 <style scoped>
+    /* The night deepens towards the top; at the bottom it is the card's colour, so it meets the reading below */
     .scene {
         position: absolute;
         inset: 0;
         overflow: hidden;
+        background:
+            radial-gradient(ellipse 70% 45% at 50% 72%, rgba(80, 214, 210, 0.28), transparent 70%),
+            linear-gradient(to bottom, #0b3d52 0%, #0a5f73 38%, #0089a0 72%, v-bind('card.color || "#0099A6"') 100%);
+    }
+
+    .far {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+    }
+
+    .islet {
+        position: absolute;
+        height: auto;
+        max-width: none;
+        translate: 0 var(--bob, 0px);
+        filter: blur(2.5px) saturate(0.6) brightness(0.8);
+        opacity: 0.5;
+        user-select: none;
+    }
+
+    .islet.one {
+        width: min(17vw, 24svh);
+        left: 6%;
+        top: 24%;
+    }
+
+    .islet.two {
+        width: min(11vw, 15svh);
+        right: 9%;
+        top: 15%;
+        scale: -1 1;
+        translate: 0 calc(var(--bob, 0px) * -0.7);
+        filter: blur(3.5px) saturate(0.5) brightness(0.75);
+        opacity: 0.4;
+    }
+
+    /* On a phone upright the islets sit beside the title, smaller */
+    @media (max-aspect-ratio: 1/1) {
+        .islet.one { width: 26vw; left: 3%; top: 19%; }
+        .islet.two { width: 17vw; right: 4%; top: 27%; }
     }
 
     .field {
@@ -452,6 +662,11 @@
         left: calc(50% - var(--s) / 2);
         bottom: 0;
         pointer-events: none;
+    }
+
+    /* On a wide screen the island, drawn bigger, would touch the bottom: a little room for its drops to fall */
+    @media (min-aspect-ratio: 1/1) {
+        .frame { bottom: min(6svh, calc(100svh - var(--s) - 70px)); }
     }
 
     /* On a tall screen the picture would sit at the bottom with the sky empty above it: lift it towards the middle */
@@ -519,7 +734,7 @@
         transform-origin: 50% 75%;
     }
 
-    /* A small floating island, whole */
+    /* A small floating island, whole; fit() draws it bigger from where the friends stand */
     .island {
         left: 15.5%;
         top: 58.3%;
