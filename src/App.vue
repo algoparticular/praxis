@@ -36,20 +36,11 @@
 			localStorage.setItem("lang", 'es');			
 		}
 
-		//Progressive Web App
-		let registration = null;
-
-		if ("serviceWorker" in navigator) {
-			window.addEventListener("load", function() {
-				navigator.serviceWorker
-				.register("/serviceWorker.js")
-				.then(function(reg) {
-					registration = reg;
-					console.log("Service Worker registered");
-				})
-				.catch(err => console.log("Service Worker not registered", err))
-			});
-		}		
+		// Progressive Web App: the service worker is built by vite-plugin-pwa (vite.config.js). Registered at once:
+		// waiting for the page's load event here could miss it, since it has usually fired before the app is mounted.
+		if ('serviceWorker' in navigator && import.meta.env.PROD) {
+			navigator.serviceWorker.register('/serviceWorker.js').catch(() => { /* the app works without it */ });
+		}
 	});
 	
 </script>

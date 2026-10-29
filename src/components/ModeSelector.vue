@@ -81,7 +81,7 @@
         border-radius: 0;
         background: transparent;
         color: #F7F8F1;
-        font-family: 'Inter', helvetica, sans-serif;
+        font-family: 'Nunito', helvetica, sans-serif;
         transition: transform 250ms ease-out;
     }
 
@@ -135,7 +135,7 @@
     }
 
     .mode .name {
-        font-family: 'Caveat', 'Inter', helvetica, sans-serif;
+        font-family: 'Caveat', 'Nunito', helvetica, sans-serif;
         font-size: 24px;
         line-height: 1.1;
         white-space: nowrap;

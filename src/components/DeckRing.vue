@@ -106,7 +106,7 @@
         bottom: 15vh;
         margin: 0;
         text-align: center;
-        font-family: 'Caveat', 'Inter', helvetica, sans-serif;
+        font-family: 'Caveat', 'Nunito', helvetica, sans-serif;
         font-size: 28px;
         line-height: 1.2;
         letter-spacing: 0.02em;

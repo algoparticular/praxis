@@ -29,8 +29,6 @@ for (const { file, rel } of scripts) {
     // Only the parts of three.js listed in src/three.js
     if (/^three-/.test(name)) check(`JS ${name} (three.js)`, gzipKb(file), 150);
     else if (/^index-/.test(name)) check(`JS ${name} (the app)`, gzipKb(file), 165);
-    // Firebase: only the sign-in and register pages load it (src/firebase.js)
-    else if (/^firebase-/.test(name)) check(`JS ${name} (Firebase)`, gzipKb(file), 40);
     // PostHog's SDK: fetched after the app is idle, and only when a key is configured (src/analytics.js)
     else if (/^module-/.test(name)) check(`JS ${name} (PostHog)`, gzipKb(file), 115);
     else check(`JS ${name}`, gzipKb(file), 40);
@@ -50,7 +48,7 @@ group('Evolución layers', (rel) => rel.startsWith('assets/evolucion/'), { each:
 group('Deck thumbnails', (rel) => /^cards\/thumb\/\d+\.webp$/.test(rel), { each: 70, total: 650 });
 group('Card illustrations', (rel) => /^cards\/\d+\.webp$/.test(rel), { each: 900, total: 9500 });
 group('Share pictures', (rel) => /^og\/\d+\.jpg$/.test(rel), { each: 200, total: 2300 });
-group('Other pictures', (rel) => /^assets\/(?!panna\/|khanti\/|creatividad\/|evolucion\/)[\w-]+\/.*\.(webp|jpg|png)$/.test(rel), { each: 900, total: 7300 });
+group('Other pictures', (rel) => /^assets\/(?!panna\/|khanti\/|creatividad\/|evolucion\/)[\w-]+\/.*\.(webp|jpg|png)$/.test(rel), { each: 900, total: 4600 });
 
 const over = rows.filter((row) => row.value > row.limit);
 // Only what is close to its line (or over it) is worth printing; the rest is fine

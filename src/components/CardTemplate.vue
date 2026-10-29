@@ -264,7 +264,7 @@
         border-radius: 999px;
         background: v-bind(colorAlt);
         color: v-bind(color);
-        font-family: 'Inter', helvetica, sans-serif;
+        font-family: 'Nunito', helvetica, sans-serif;
         font-size: 16px;
         font-weight: 600;
         cursor: pointer;
@@ -360,7 +360,7 @@
     }
 
     .quote h5 {
-        font-family: 'Inter', helvetica, sans-serif;
+        font-family: 'Nunito', helvetica, sans-serif;
         font-size: 12px;
         font-weight: 600;
         letter-spacing: 0.22em;
@@ -369,7 +369,7 @@
     }
 
     .quote p {
-        font-family: 'Caveat', 'Inter', helvetica, sans-serif;
+        font-family: 'Caveat', 'Nunito', helvetica, sans-serif;
         font-size: 27px;
         line-height: 1.3;
         letter-spacing: 0.02em;
@@ -377,7 +377,7 @@
     }
 
     .quote.invitation p {
-        font-family: 'Inter', helvetica, sans-serif;
+        font-family: 'Nunito', helvetica, sans-serif;
         font-size: 18px;
         line-height: 1.6;
         letter-spacing: 0;

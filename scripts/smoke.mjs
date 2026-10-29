@@ -35,7 +35,6 @@ const pages = [
     { path: '/collaborate', name: 'collaborate', expect: 'main, .content' },
     { path: '/oracle', name: 'oracle', expect: '.content' },
     { path: '/oracleTheNine', name: 'oracle the nine', expect: '.content' },
-    { path: '/intro', name: 'intro', expect: '.content' },
     { path: '/share/3', name: 'share', expect: '#share' },
     { path: '/there-is-no-such-page', name: 'not found', expect: '.content' },
 ];

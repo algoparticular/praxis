@@ -24,7 +24,6 @@
                 @navigate="handleNavigate"
                 @langChanged="handleLangChanged"
                 :hasHome="true"
-                :hasIntro="false"
                 :hasFullDeck="true"
                 />
         </div>
@@ -135,7 +134,7 @@
     nav.inFooter #languageSelect label,
     nav.inFooter #languageSelect span {
         color: #143246;
-        font-family: 'Inter', Helvetica, sans-serif;
+        font-family: 'Nunito', helvetica, sans-serif;
         font-size: 16px;
         line-height: 100%;
     }
