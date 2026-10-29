@@ -278,7 +278,8 @@ export async function createStardust(canvas, options = {}) {
         const dt = Math.min(0.1, t - last);
         last = t;
         shared.uTime.value = t;
-        shared.uFade.value = revealAt === null ? 0 : Math.min(1, (t - revealAt) / 2.5);
+        // Still (reduced motion), they are simply there; otherwise they fade in once revealed
+        shared.uFade.value = reduced ? 1 : revealAt === null ? 0 : Math.min(1, (t - revealAt) / 2.5);
         if (pointer.inside) {
             pointer.x += (pointer.tx - pointer.x) * 0.12;
             pointer.y += (pointer.ty - pointer.y) * 0.12;

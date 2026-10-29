@@ -286,6 +286,8 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
                     texture.needsUpdate = true;
                     node.mesh.visible = true;
                     dirty = true;
+                    // A still scene (reduced motion) has no loop: it draws itself again when a picture arrives
+                    if (reduced) requestAnimationFrame(() => stage.renderIfNeeded());
                     resolve();
                 };
                 img.onerror = () => resolve();
@@ -617,8 +619,6 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
         },
     };
 
-    // A still scene draws itself again whenever a picture arrives
-    if (reduced) loads.forEach((load) => load.then(() => requestAnimationFrame(() => stage.renderIfNeeded())));
 
     return stage;
 }
