@@ -19,7 +19,8 @@
 //   wind     { amp (px), speed, root: 'bottom' | 'top' }  the picture sways, more the farther from its root
 //   shimmer  0..1  the air trembles over it (a sun's heat)
 //   bright, saturate, tint + tintAmount  for lighting a layer up (the pine cone held)
-// and glow layers: a soft radial light (CSS radial-gradient stops) drawn in code.
+// and layers drawn in code: glow (a soft radial light, CSS radial-gradient stops) and disc (a plain disc of colour,
+// with { water } the light of the water rippling across it).
 //
 // Bloom. Layers and particle groups marked { bloom: true } are drawn a second time, small and blurred, and added on top
 // with stage.bloom (0..1). At 0 none of that runs, so it costs only while a scene asks for it (the rulito moments).
@@ -98,6 +99,30 @@ const GLOW_FRAGMENT = `
         a = mix(a, uAlpha.z, smoothstep(uAt.y, uAt.z, d));
         a = mix(a, uAlpha.w, smoothstep(uAt.z, uAt.w, d));
         gl_FragColor = vec4(uColor, a * uOpacity);
+    }`;
+
+// A plain disc of colour with a soft edge, and, with uWater, light that ripples across it as under water (caustics)
+const DISC_FRAGMENT = `
+    uniform vec3 uColor;
+    uniform float uOpacity;
+    uniform float uTime;
+    uniform float uWater;
+    uniform float uEdge;
+    varying vec2 vUv;
+    void main() {
+        float d = length(vUv - 0.5) * 2.0;
+        float a = 1.0 - smoothstep(1.0 - uEdge, 1.0, d);
+        vec3 col = uColor;
+        if (uWater > 0.0) {
+            vec2 p = vUv * 13.0;
+            float t = uTime * 0.35;
+            for (int i = 0; i < 3; i++) {
+                p += vec2(sin(p.y + t + float(i) * 1.3), cos(p.x - t * 0.8 + float(i) * 2.1)) * 0.6;
+            }
+            float c = pow(0.5 + 0.5 * sin(p.x + p.y), 6.0);
+            col += vec3(c) * 0.06 * uWater;
+        }
+        gl_FragColor = vec4(col * a, a) * uOpacity;
     }`;
 
 const QUAD_VERTEX = `
@@ -287,6 +312,25 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
             return node;
         }
 
+        // A disc of plain colour (the inside of a cell), with { water } light rippling across it
+        disc({ rect, pivot = null, color = 0xffffff, water = 0, bloom = false } = {}) {
+            const node = new Node(this);
+            const uniforms = {
+                uColor: { value: new THREE.Color(...parseColor(color)) },
+                uOpacity: { value: 1 },
+                uTime: { value: 0 },
+                uWater: { value: water },
+                uEdge: { value: 0.01 },
+                uSize: { value: new THREE.Vector2(1, 1) },
+            };
+            const material = new THREE.ShaderMaterial({
+                uniforms, vertexShader: GLOW_VERTEX, fragmentShader: DISC_FRAGMENT,
+                transparent: true, depthTest: false, depthWrite: false, premultipliedAlpha: true,
+            });
+            node.attach(new THREE.Mesh(new THREE.PlaneGeometry(1, 1), material), rect, pivot, bloom);
+            return node;
+        }
+
         attach(mesh, rect, pivot, bloom) {
             this.mesh = mesh;
             mesh.renderOrder = ++order;
@@ -338,13 +382,14 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
                 u.uOpacity.value = opacity;
                 if (u.uTime) u.uTime.value = time;
                 if (u.uSize) u.uSize.value.set(r.w, r.h);
+                if (u.uEdge) u.uEdge.value = Math.min(0.5, 3 / Math.max(r.w, 1));
             }
             this.children.forEach((child) => child.update(opacity));
         }
 
         // Where a point (px of the screen at rest) carried by this node is on screen now, in px of the canvas
         toScreen(px, py) {
-            scene.updateMatrixWorld();
+            this.inner.updateWorldMatrix(true, false);
             vec.set(px, -py, 0);
             this.inner.localToWorld(vec);
             vec.project(camera);
