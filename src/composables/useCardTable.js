@@ -4,7 +4,7 @@
 // flips and is handed over to the DOM (rect, border and radius) so the card page can animate it in place.
 // three is imported on demand so it does not weigh on the first load.
 
-import { getCard } from '../data/cards.js';
+import { getCard, pictureUrl } from '../data/cards.js';
 import { CHAKRA_WHEEL } from '../data/chakraColors.js';
 import { CARD_BACK_ICON as ICON } from '../data/cardBack.js';
 
@@ -426,7 +426,7 @@ export async function createCardTable(canvas, { cardsDrawn, layout = 'grid', onP
 
         const data = getCard(card.id);
         // Start loading the illustration right away; it is ready long before the flip
-        const imagePromise = data?.image ? loadImage(data.image[0].url) : Promise.resolve(null);
+        const imagePromise = data?.image ? loadImage(pictureUrl(data)) : Promise.resolve(null);
 
         // The rest fade out
         const others = cards.filter((c) => c !== card);

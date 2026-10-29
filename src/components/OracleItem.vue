@@ -1,7 +1,7 @@
 <script setup>
     import { ref } from 'vue';
     import { animate } from 'motion';
-    import { getCard } from '../data/cards.js';
+    import { getCard, pictureUrl } from '../data/cards.js';
     import { CHAKRA_WHEEL } from '../data/chakraColors.js';
 
     const props = defineProps({
@@ -37,12 +37,12 @@
     const flipper = ref(null);
     const showFront = ref(false);
     const card = getCard(props.cardId);
-    const frontImage = card?.image ? 'url(' + card.image[0].url + ')' : '';
+    const frontImage = card?.image ? 'url(' + pictureUrl(card) + ')' : '';
 
     const flip = async () => {
         if (frontImage) {
             const img = new Image();
-            img.src = card.image[0].url;
+            img.src = pictureUrl(card);
             await img.decode().catch(() => {});
         }
         showFront.value = true;

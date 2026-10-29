@@ -2,6 +2,7 @@
     // The default stage: the card's illustration, feathered into the card color, drifting slowly and with a hint of depth
     import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
     import { createParallax } from '../../composables/useParallax.js';
+    import { pictureUrl } from '../../data/cards.js';
 
     const props = defineProps({
         card: { type: Object, default: () => ({}) },
@@ -13,7 +14,7 @@
     let parallax = null;
 
     const picture = computed(() => {
-        const full = props.card.image ? `url(${props.card.image[0].url})` : '';
+        const full = props.card.image ? `url(${pictureUrl(props.card)})` : '';
         const thumb = props.card.image ? `url(/cards/thumb/${props.card.id}.webp)` : '';
         return [full, thumb].filter(Boolean).join(',');
     });

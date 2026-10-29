@@ -47,6 +47,8 @@ group('Creatividad layers', (rel) => rel.startsWith('assets/creatividad/'), { ea
 group('Evolución layers', (rel) => rel.startsWith('assets/evolucion/'), { each: 300, total: 450 });
 group('Deck thumbnails', (rel) => /^cards\/thumb\/\d+\.webp$/.test(rel), { each: 70, total: 650 });
 group('Card illustrations', (rel) => /^cards\/\d+\.webp$/.test(rel), { each: 900, total: 9500 });
+// What phones and most screens load (pictureUrl in src/data/cards.js; npm run thumbs makes them)
+group('Card illustrations 1440', (rel) => /^cards\/1440\/\d+\.webp$/.test(rel), { each: 450, total: 4600 });
 group('Share pictures', (rel) => /^og\/\d+\.jpg$/.test(rel), { each: 200, total: 2300 });
 group('Other pictures', (rel) => /^assets\/(?!panna\/|khanti\/|creatividad\/|evolucion\/)[\w-]+\/.*\.(webp|jpg|png)$/.test(rel), { each: 900, total: 4600 });
 
