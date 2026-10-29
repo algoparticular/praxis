@@ -406,6 +406,49 @@ export const unravel = (ctx, out, time, harmony) => {
     swish(ctx, out, time, { from: 5000, to: 900, duration: 1.4, level: 0.007, q: 0.5 });
 };
 
+// Charging the fire (Encender): one more note of the card's chord each time the charge is enough for one more light, climbing
+// with it, and a small crackle. `step` is how far it has climbed (0..1): the notes go up two octaves of the chord
+export const kindle = (ctx, out, time, harmony, { step = 0 } = {}) => {
+    const h = harmony ?? PLAIN;
+    const notes = h.tones(h.voice - 12, 26);
+    const midi = notes[Math.round(Math.min(1, Math.max(0, step)) * (notes.length - 1))];
+    bell(ctx, out, time, hz(midi), 1.6, 0.03);
+    if (hasSeventh(h)) bell(ctx, out, time + 0.01, hz(midi) * 1.005, 1.2, 0.012);
+    swish(ctx, out, time, { from: 2200, to: 4200, duration: 0.25, level: 0.006, q: 2 });
+};
+
+// The fire is let go (Encender): a rush of air rising from low, like a flame catching, over a low bowl on the root.
+// `level` (0..1) is how charged it was
+export const ignite = (ctx, out, time, harmony, level = 1) => {
+    const h = harmony ?? PLAIN;
+    const k = 0.4 + 0.6 * Math.min(1, Math.max(0, level));
+    swish(ctx, out, time, { from: 300, to: 2600, duration: 0.9, level: 0.03 * k, q: 0.7 });
+    bell(ctx, out, time + 0.02, hz(h.voice - 12), 2.6, 0.04 * k);
+};
+
+// A seventh that resolves (Encender, when every light is lit): the card's chord rings once more as the tension it is,
+// and then moves to the chord a fifth below, which a dominant seventh asks for (B7 goes to E major: the corona comes down
+// to the plexus, Kätus's own note). Each voice moves to the nearest note of the new chord; the new root sounds below.
+export const resolve = (ctx, out, time, harmony) => {
+    const h = harmony ?? PLAIN;
+    const from = h.tones(h.voice, 11);
+    from.forEach((midi, i) => bell(ctx, out, time + i * 0.03, hz(midi), 1.5, 0.022));
+    const home = h.voice - 7;                       // the root a fifth below (B4 to E4)
+    const major = [0, 4, 7].map((s) => (home + s) % 12);
+    const near = (midi) => {
+        for (let d = 0; d <= 6; d++) {
+            if (major.includes((midi - d + 120) % 12)) return midi - d;
+            if (major.includes((midi + d) % 12)) return midi + d;
+        }
+        return midi;
+    };
+    const at = time + 0.75;
+    [...new Set(from.map(near))].forEach((midi, i) => bell(ctx, out, at + i * 0.025, hz(midi), 4, 0.03));
+    bell(ctx, out, at, hz(home - 12), 5, 0.045);
+    bell(ctx, out, at + 0.04, hz(home + 12), 3.4, 0.016);
+    swish(ctx, out, time + 0.5, { from: 1500, to: 5000, duration: 1.4, level: 0.008, q: 0.6 });
+};
+
 // The rulito, the reward of every verb: the card's chord one octave up. As in Gurdjieff's law of octaves, a process
 // that is completed starts again on the do above: the chord's notes climb from its root to the root an octave
 // higher, and there the whole chord rings at once, an octave over the one the card has been sounding in, with a bowl

@@ -46,6 +46,7 @@ const hasWebGL = () => {
 // boost(i, amount): makes group i flare (bigger, brighter, trembling more) and settle back by itself, and
 // grow(i, amount, x, y): swells group i outwards from the point (x, y), by that fraction of every particle's distance to it.
 // turn(i, degrees, x, y): turns group i about the point (x, y) (before its shift), so it can turn with a layer.
+// fade(i, amount): group i at that fraction (0..1) of its opacity, to light a group up or put it out.
 // With { stage } (a createLayerStage) the groups are drawn by the stage, among its layers, on its canvas and with its
 // clock: no renderer or loop of their own (`canvas` is then ignored).
 export async function createStardust(canvas, options = {}) {
@@ -223,7 +224,7 @@ export async function createStardust(canvas, options = {}) {
         };
 
         return {
-            uniforms, populate, frame, parallax, lean: { x: 0, y: 0 }, data: () => data,
+            uniforms, populate, frame, parallax, lean: { x: 0, y: 0 }, data: () => data, opacity,
             dispose() { scene.remove(object); geometry.dispose(); material.dispose(); },
         };
     };
@@ -318,6 +319,7 @@ export async function createStardust(canvas, options = {}) {
         grow(index, amount, x, y) { const g = groups[index]; if (g) { g.uniforms.uGrow.value = amount; g.uniforms.uGrowAt.value.set(x, y); } },
         turn(index, degrees, x, y) { groups[index]?.uniforms.uTurn.value.set(degrees * Math.PI / 180, x, y); },
         boost(index, amount) { const g = groups[index]; if (g) g.uniforms.uBoost.value = Math.max(g.uniforms.uBoost.value, amount); },
+        fade(index, amount) { const g = groups[index]; if (g) g.uniforms.uOpacity.value = g.opacity * amount; },
         reveal() { if (revealAt === null) revealAt = shared.uTime.value; },
         destroy() {
             cancelAnimationFrame(raf);
@@ -344,6 +346,7 @@ export function startStardust(canvas, options) {
         boost(index, amount) { field?.boost(index, amount); },
         grow(index, amount, x, y) { field?.grow(index, amount, x, y); },
         turn(index, degrees, x, y) { field?.turn(index, degrees, x, y); },
+        fade(index, amount) { field?.fade(index, amount); },
         reveal() { revealed = true; field?.reveal(); },
         destroy() { gone = true; field?.destroy(); },
     };

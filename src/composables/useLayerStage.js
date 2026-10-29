@@ -61,6 +61,22 @@ const LAYER_VERTEX = `
         gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
     }`;
 
+// The light of the water: a net of thin bright lines that slowly drifts, as on the bottom of a pool. Thin, so it never
+// reads as one more shape among the organelles (broad soft bands did, and blurred them)
+const CAUSTIC = `
+    float caustic(vec2 uv, float time) {
+        vec2 p = mod(uv * 6.2832 * 1.6, 6.2832) - 250.0;
+        vec2 i = p;
+        float c = 1.0;
+        for (int n = 0; n < 4; n++) {
+            float t = time * 0.12 * (1.0 - 3.5 / float(n + 1));
+            i = p + vec2(cos(t - i.x) + sin(t + i.y), sin(t - i.y) + cos(t + i.x));
+            c += 1.0 / length(vec2(p.x / (sin(i.x + t) / 0.005), p.y / (cos(i.y + t) / 0.005)));
+        }
+        c = 1.17 - pow(c / 4.0, 1.4);
+        return clamp(pow(abs(c), 14.0), 0.0, 1.0);
+    }`;
+
 const LAYER_FRAGMENT = `
     uniform sampler2D map;
     uniform float uTime;
@@ -73,6 +89,7 @@ const LAYER_FRAGMENT = `
     uniform float uShimmer;
     uniform float uWater;
     uniform float uSheen;
+    ${CAUSTIC}
     uniform vec2 uSink;            // on (0/1), level (0 full .. 1 empty)
     uniform vec4 uClip;            // device px: x0, y0, x1, y1 (from the bottom left); x1 < x0 means no clip
     uniform float uVignette;       // 0..0.5: it fades out towards its four edges (a blurred glow must not end in a hard box)
@@ -89,12 +106,7 @@ const LAYER_FRAGMENT = `
         c.rgb = mix(vec3(grey), c.rgb, uSaturate);
         c.rgb = mix(c.rgb, uTint * c.a, uTintAmount);
         if (uWater > 0.0) {
-            vec2 p = vUv * 13.0;
-            float t = uTime * 0.35;
-            for (int i = 0; i < 3; i++) {
-                p += vec2(sin(p.y + t + float(i) * 1.3), cos(p.x - t * 0.8 + float(i) * 2.1)) * 0.6;
-            }
-            c.rgb += vec3(pow(0.5 + 0.5 * sin(p.x + p.y), 6.0)) * 0.045 * uWater * c.a;
+            c.rgb += vec3(caustic(vUv, uTime)) * 0.1 * uWater * c.a;
         }
         if (uSheen > 0.0) {
             // A band of light sweeps slowly across, now and then, as over glass
@@ -144,19 +156,14 @@ const DISC_FRAGMENT = `
     uniform float uTime;
     uniform float uWater;
     uniform float uEdge;
+    ${CAUSTIC}
     varying vec2 vUv;
     void main() {
         float d = length(vUv - 0.5) * 2.0;
         float a = 1.0 - smoothstep(1.0 - uEdge, 1.0, d);
         vec3 col = uColor;
         if (uWater > 0.0) {
-            vec2 p = vUv * 13.0;
-            float t = uTime * 0.35;
-            for (int i = 0; i < 3; i++) {
-                p += vec2(sin(p.y + t + float(i) * 1.3), cos(p.x - t * 0.8 + float(i) * 2.1)) * 0.6;
-            }
-            float c = pow(0.5 + 0.5 * sin(p.x + p.y), 6.0);
-            col += vec3(c) * 0.045 * uWater;
+            col += vec3(caustic(vUv, uTime)) * 0.1 * uWater;
         }
         gl_FragColor = vec4(col * a, a) * uOpacity;
     }`;
@@ -305,7 +312,16 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
             texture.minFilter = THREE.LinearFilter;
             textures.push(texture);
             const node = this.plane(texture, options);
-            node.refresh = () => { texture.needsUpdate = true; };
+            // A texture keeps the size it was first uploaded with: when the canvas is resized (the screen turned, the
+            // window changed) it has to be made again, or the new drawing is cut and shifted on the old one
+            let size = [source.width, source.height];
+            node.refresh = () => {
+                if (source.width !== size[0] || source.height !== size[1]) {
+                    size = [source.width, source.height];
+                    texture.dispose();
+                }
+                texture.needsUpdate = true;
+            };
             return node;
         }
 

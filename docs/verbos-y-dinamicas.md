@@ -35,7 +35,7 @@ Los siete verbos, uno por chakra, quedan ordenados entre dos polos:
 - **Arraigar** (raíz) es el polo de la manifestación: de la materia a la manifestación. Está probado en Paciencia.
 - **Soltar** (corona) es el polo de la liberación: del entendimiento a la existencia. Está probado en Vipassana.
 - **Dar y recibir** (corazón) es donde las dos corrientes se encuentran. Las notas de Belén lo dicen así: "dos triángulos entrelazados, el movimiento descendente del espíritu en la materia y la liberación ascendente de la materia en el espíritu: equilibrio perfecto en el corazón". Está implementado en Dana: compartir la luz de la llamita con todos los de la isla, y que vuelva multiplicada (ver más abajo, en "Dinámicas").
-- **Fluir, Encender, Resonar y Ver** serían los pasos entre un polo y el otro.
+- **Fluir, Encender, Resonar y Ver** serían los pasos entre un polo y el otro. Ver está probado en Pañña y Encender en Evolución Espiritual.
 
 Esto se parece a lo que el rulito premia: en las notas del tercer chakra, "siento las dos corrientes, ascendente de liberación y descendente de manifestación, que se unen en mí para manifestar mi propósito de ser quien soy".
 
@@ -71,14 +71,14 @@ Las palabras del libro para cada chakra, subiendo y bajando:
 - **El premio es el rulito.** Completar el gesto es "uy, me conecté con el Todo": el rulito aparece, se dibuja o se enciende. Cada conexión es distinta: el rulito nunca sale con la misma forma dos veces. No se ve hasta que se empieza a jugar.
 - **La lectura no se bloquea.** La descripción, la afirmación y la invitación están siempre disponibles. El juego no es una puerta.
 - **Se puede jugar sin tocar la pantalla:** con teclado (Enter o espacio) y con `prefers-reduced-motion` (sin chispas ni animaciones largas, pero el gesto funciona).
-- **Suena en el acorde de la carta** (`src/data/cardChords.js`): los toques son notas de ese acorde. El cierre del gesto, cuando aparece el rulito, es ese mismo acorde **en la octava siguiente** (`rulito`): sus notas suben de la fundamental a la fundamental de arriba y ahí suena entero. Es la ley de octava de Gurdjieff: un proceso que se completa vuelve a empezar en el do de arriba (ver `musica.md`).
+- **Suena en el acorde de la carta** (`src/data/cardChords.js`): los toques son notas de ese acorde. El cierre del gesto, cuando aparece el rulito, es ese mismo acorde **en la octava siguiente** (`rulito`): sus notas suben de la fundamental a la fundamental de arriba y ahí suena entero. Es la ley de octava de Gurdjieff: un proceso que se completa vuelve a empezar en el do de arriba (ver `musica.md`). En Encender, antes del rulito, el acorde de la carta (Si7) se resuelve en Mi mayor, la nota de Kätus (`resolve`).
 - **Dura poco.** Un gesto completo se resuelve en pocos segundos y se puede repetir.
 
 ## Dinámicas: qué propone cada verbo
 
 Cada carta tiene un verbo (`verb` en `src/data/cards.json`, lista en `src/data/verbs.js`). El verbo define la **dinámica**: qué hace la persona con la escena. La ilustración, el sonido y el significado los pone cada carta. Los siete verbos son uno por personaje y chakra (ver arriba).
 
-Cuatro verbos se probaron en una escena: **Arraigar en Paciencia**, **Soltar en Vipassana**, **Ver en Pañña** y **Dar y recibir en Dana** (compartir la luz). Lo implementado no es fijo: son ideas probadas y pueden cambiar. El resto son propuestas, tomando como punto de partida lo que ya hacen las escenas.
+Cinco verbos se probaron en una escena: **Arraigar en Paciencia**, **Soltar en Vipassana**, **Ver en Pañña**, **Dar y recibir en Dana** (compartir la luz) y **Encender en Evolución Espiritual** (frotar y lanzar el fuego). Lo implementado no es fijo: son ideas probadas y pueden cambiar. El resto son propuestas, tomando como punto de partida lo que ya hacen las escenas.
 
 Orden de los verbos: Arraigar (raíz) y Soltar (corona) son los dos polos, la corriente de manifestación y la de liberación, y Dar y recibir (corazón) es donde se encuentran. Los dos polos y el centro están probados: el centro, en Dana. Ver arriba, sección "Dos corrientes".
 
@@ -96,11 +96,27 @@ Orden de los verbos: Arraigar (raíz) y Soltar (corona) son los dos polos, la co
 **Idea:** arrastrar el dedo acompañando un movimiento; cuando se acompasa, la escena "entra en ritmo" y aparece el rulito. Los corchos de Khanti que vacían los frascos quedan como la parte de soltar dentro del mismo juego.
 **Cartas:** Khanti, Celebración, Transformación, Aceptación (su ilustración es un río entre dos seres iguales bajo cielos distintos, y su texto pide no luchar contra lo que no se controla).
 
-### 3. Encender (Kätus, demonio: vergüenza)
-**Dinámica:** cargar y soltar. Juntar energía y lanzarla, o encender cosas hasta que todas estén encendidas.
-**Punto de partida:** en Evolución Espiritual los ocho bulbos y los cuatro hongos ya se encienden al tocarlos.
-**Idea:** que los bulbos se enciendan en cualquier orden y el rulito aparece cuando están todos encendidos; o mantener para cargar y soltar para lanzar un salto hacia el sol (Kätus salta buscando el sol).
-**Cartas:** Viriya, Coraje, Desafío, Evolución Espiritual.
+### 3. Encender (Kätus, demonio: vergüenza): implementado en Evolución Espiritual
+**Dinámica:** frotar y lanzar. Primero se enciende el fuego con esfuerzo (frotar, como con dos palitos) y después se lo lanza con dirección (una honda): lo que toca se enciende.
+**Por qué así:** se probaron dos ideas antes. Tocar los bulbos en cualquier orden era el mismo gesto que Dana (un toque a cada uno). Mantener apretado para cargar y soltar se parecía demasiado a Arraigar (Paciencia) y a retener el aire en Vipassana. Frotar y tirar de una honda no los usa ningún otro verbo. Y la carta lo pide de adentro hacia afuera: *"una alma iluminada es capaz de transformar cada atmósfera que habita, siendo faro para otros"*. El demonio de Kätus es la vergüenza, esconder la propia luz; Sid está acurrucado y es él el que se enciende y sale disparado.
+**El motor, común a las cartas del verbo:** frotar una fuente hasta que prende, apuntar, lanzarla, y lo que toca se enciende y queda encendido; hay que encender todo. Sirve para las otras tres:
+- Desafío: el fuego que rebota por las paredes del laberinto hasta la luz del centro (la que mejor calza con los rebotes).
+- Coraje: Kätus en el borde del acantilado frota para juntar coraje y se lanza hacia la luna.
+- Viriya: frotar es la diligencia ("sin prisa pero sin pausa"); el lanzamiento enciende las flores del camino.
+Las tres son hoy ilustraciones planas: cada una necesitaría su escena.
+**Cómo funciona hoy en Evolución Espiritual:**
+- *Al principio todo está apagado.* Los ocho bulbos, los cuatro hongos y sus bolitas azules están grises y sin brillo.
+- *Frotar.* Se frota con el dedo dentro de la célula, de un lado a otro: saltan chispas donde pasa el dedo, Sid se va calentando (brilla y le suben brasas) y suena una nota más del acorde de la carta con cada sexto del calor (`kindle`). Si se deja de frotar, se enfría despacio. Con unos 11 radios de la célula frotados, prende: un estallido de chispas (`ignite` y `star`).
+- *Apuntar y lanzar.* Con Sid encendido, se apoya el dedo y se tira hacia atrás, como una honda: una banda de puntos va de Sid al dedo y otra línea de puntos muestra hacia dónde va a salir; Sid se corre un poco con el tirón. Al soltar sale disparado en llamas (`ignite`, más fuerte cuanto más se tiró), dejando una estela de brasas. Un tirón muy corto no lanza nada.
+- *Rebotar y encender.* Mientras vuela pasa por delante de los orgánulos y solo rebota en la membrana. Cada golpe en la membrana enciende hasta dos bulbos u hongos todavía apagados de ese lado (a menos de unos 29°): toman su color, una luz detrás, sus puntos y sus bolitas azules (`link`). Después de tres golpes, o si se frena, su fuego se apaga con un poco de humo y hay que volver a frotar. Lo encendido queda encendido.
+- *El faro.* Con los doce encendidos, la corona entera brilla hacia afuera y Sid se estira un poco: deja de esconderse. Suena `resolve`: Si7 se resuelve en Mi mayor, la nota de Kätus (ver `musica.md`). Después nace el rulito dorado sobre la cabeza de Sid, se ilumina el nombre de la carta y suena `rulito`. Al rato el rulito se va, todo vuelve a apagarse despacio y se puede volver a jugar. Hito: `crown_lit` (con `times`).
+- *Sid nunca cruza la membrana.* El agua lo mantiene a 0,075 del cuadro de la pared (su dibujo es más alto que el círculo con el que choca con los orgánulos), y a 0,14 mientras tiene el rulito sobre la cabeza.
+- *Pista, sin palabras.* Si pasan 7 s sin tocar nada, saltan unas chispas de Sid.
+- *Teclado.* Enter frota (cada vez lo calienta un quinto) y, encendido, lo lanza hacia lo apagado más cercano.
+- *Tocar un bulbo o un hongo* hace lo de siempre: echa chispas.
+- *Movimiento reducido.* La escena queda estática y todavía no se puede jugar (como Pañña, Vipassana y Dana).
+**Dónde se tocó:** `SceneEvolucion.vue` (`press()`, `move()`, `letGo()`, `ignite()`, `launch()`, `hitWall()`, `catchFire()`, `crown()`, `aimGroup`, `play_()`), `kindle`, `ignite` y `resolve` en `synth.js`, `wall` y `ghost` en `useCellWater.js` y `fade()` en `useStardust.js`.
+**Cartas:** Evolución Espiritual (hecha), Viriya, Coraje, Desafío.
 
 ### 4. Dar y recibir (Vulpes, demonio: pena): implementado en Dana
 **Dinámica:** compartir la luz. Dar sin pensar y sin esperar nada a cambio, y descubrir que dar no vacía: lo dado vuelve multiplicado, sin pedirlo.

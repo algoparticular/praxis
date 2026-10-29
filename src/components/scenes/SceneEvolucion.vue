@@ -11,6 +11,14 @@
     // It is drawn in WebGL (useLayerStage), like Hogar: the planet is a group of planes at one depth and the camera
     // slides with the pointer or the tilt; the fern fronds sway a little in the water. The touch targets are DOM
     // elements kept over the bulbs and mushrooms as the crown turns.
+    // Its verb is Encender (ignite). The bulbs and the mushrooms start grey. Rubbing inside the cell (the finger going
+    // back and forth) warms the being: sparks fly from the finger, it glows, a note of the chord climbs with each sixth of
+    // the heat, and it cools slowly if nobody rubs. Hot enough, it catches fire. Then it is a sling: press, pull it back
+    // (a band to the finger, and dots for where it will go) and let go: it shoots off on fire and bounces about the water,
+    // and every knock on the wall lights the bulb or mushroom on that side (its colour, a light behind it, its dots). After
+    // FUEL knocks, or slowed down, its fire goes out and it has to be rubbed again. With all twelve lit the crown is a
+    // beacon: the chord (B7) resolves to the one a fifth below (E, Kätus's note), the being stands a little and the rulito
+    // is born over its head. Then everything fades back to grey and it can be played again.
     import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
     import { createParallax } from '../../composables/useParallax.js';
     import { createLayerStage } from '../../composables/useLayerStage.js';
@@ -18,6 +26,8 @@
     import { createCellWater } from '../../composables/useCellWater.js';
     import { createSparks } from '../../composables/useSparks.js';
     import { play } from '../../composables/useSound.js';
+    import { sceneMilestone } from '../../analytics.js';
+    import Rulito from '../Rulito.vue';
     import halos from '../../composables/evolucionHalo.json';
     import scene from '../../composables/evolucionScene.json';
 
@@ -29,6 +39,9 @@
     const root = ref(null);
     const canvas = ref(null);
     const hits = ref([]);
+    const cellHit = ref(null);
+    const rulito = ref(null);
+    let stageEl = null;                     // the card's stage, where the name is lit from (--name-glow)
     let stage = null;
     let parallax = null;
     let sky = null;
@@ -151,16 +164,351 @@
         return [1, 1];
     };
 
+    /* ---------- Encender: rub the being until it catches fire, then sling it against the wall to light the crown ---------- */
+
+    const RUB = 11;                         // px of rubbing, in radii of the cell, for the being to catch fire
+    const COOL = 0.22;                      // heat lost per second while nobody rubs (until it has caught)
+    const WALL = 0.075;                     // how far the being's centre keeps from the wall: its head never goes through it
+    const WALL_CROWNED = 0.14;              // and while the rulito is over its head, so that stays inside too
+    const FUEL = 3;                         // hits on the wall a launched fire lasts
+    const AIM_MIN = 0.12;                   // a pull shorter than this (of the full pull) launches nothing
+    const REACH = 0.5;                      // radians either side of a hit on the wall where a bulb or a mushroom catches
+    const DELAY = 1.1, GROW = 2.2, LINGER = 2.4, EAT = 3.4;     // the rulito: after the chord resolves, born, kept, gone
+    const FIRE = [0xffb069, 0xff9a5c, 0xffd29a, 0xfff3d6, 0xf2b036];
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const on = SWAYING.map(() => false);    // lit, until the crown is done
+    const lit = SWAYING.map(() => 0);       // the colour and light of each one, eased
+    let glyph = null;
+    let mode = 'cold';                      // cold: rub it; lit: it is on fire, sling it; flying: it is bouncing about
+    let heat = 0;                           // 0..1, how close the being is to catching fire
+    let rubbing = false;
+    let aiming = false;
+    let fuel = 0;
+    let lastHit = 0;
+    let turnNow = 0;                        // how far the crown has turned (degrees)
+    let charge = 0;                         // the being's fire, eased
+    let win = null;                         // the crown is lit: { age, head, tail, full, fullAt, back, pop }
+    let wins = 0;
+    let beacon = 0;
+    let stand = 0;                          // the being uncurls a little while the crown is lit
+    let idle = 0;
+    let hint = 0;
+    let embers = 0;
+    let finger = null;                      // the pointer on the canvas while it is down
+    let prevFinger = null;
+    let kindled = 0;                        // the last sixth of the heat a note sounded for
+    let anchor = null;                      // where the being was when the sling was taken: on the canvas and in the water
+    const geo = { cx: 0, cy: 0, R: 1, sx: 0, sy: 0 };   // on the canvas: the cell's centre and radius, the being
+
+    // Where each bulb and mushroom stands round the cell now (the crown turns), as an angle from its centre
+    const REST = SWAYING.map((p) => Math.atan2(p.glow.y - CELL.y, p.glow.x - CELL.x));
+    // Each little blue bud belongs to the bulb nearest to it, and gets its colour with it
+    const BUD_OF = scene.blue.map(([bx, by]) => [bx / 100, by / 100]).map(([x, y]) => STALKS.reduce((best, p, i) => (Math.hypot(p.glow.x - x, p.glow.y - y) < Math.hypot(STALKS[best].glow.x - x, STALKS[best].glow.y - y) ? i : best), 0));
+    const BLUE_RGB = [(BLUE >> 16 & 255) / 255, (BLUE >> 8 & 255) / 255, (BLUE & 255) / 255];
+    const BLUE_GREY = 0.299 * BLUE_RGB[0] + 0.587 * BLUE_RGB[1] + 0.114 * BLUE_RGB[2];
+    const angleOf = (i) => REST[i] + turnNow * Math.PI / 180;
+    const apart = (a, b) => Math.abs(Math.atan2(Math.sin(a - b), Math.cos(a - b)));
+    const centreOf = (p) => L.crown.toScreen(F.x + p.glow.x * F.size, F.y + p.glow.y * F.size);
+    const measure = () => {
+        const c = L.planet.toScreen(F.x + CELL.x * F.size, F.y + CELL.y * F.size);
+        const e = L.planet.toScreen(F.x + (CELL.x + CELL.r) * F.size, F.y + CELL.y * F.size);
+        const b = at(BEING.x, BEING.y);
+        const me = L.being.toScreen(b.x, b.y);
+        Object.assign(geo, { cx: c.x, cy: c.y, R: Math.hypot(e.x - c.x, e.y - c.y), sx: me.x, sy: me.y });
+    };
+    const onCanvas = (event) => {
+        const area = canvas.value.getBoundingClientRect();
+        return { x: event.clientX - area.left, y: event.clientY - area.top };
+    };
+    // How far it is pulled back, as a vector from the being to the finger and its strength (0..1)
+    const pull = () => {
+        if (!finger || !anchor) return { x: 0, y: 0, k: 0 };
+        let x = finger.x - anchor.x, y = finger.y - anchor.y;
+        const d = Math.hypot(x, y), max = geo.R * 0.9;
+        if (d > max) { x *= max / d; y *= max / d; }
+        return { x, y, k: Math.min(1, d / max) };
+    };
+
+    // Pressing inside the cell: cold, it starts to rub; on fire, it takes the being to sling it
+    const press = (event) => {
+        idle = 0;
+        finger = prevFinger = onCanvas(event);
+        window.addEventListener('pointermove', move);
+        window.addEventListener('pointerup', letGo);
+        window.addEventListener('pointercancel', letGo);
+        if (win) { glow?.boost(0, 0.6); return; }
+        if (mode === 'cold') rubbing = true;
+        else if (mode === 'lit') {
+            aiming = true;
+            anchor = { x: geo.sx, y: geo.sy, mx: water.swimmer.x, my: water.swimmer.y };
+            play('tap');
+        }
+    };
+    const move = (event) => {
+        finger = onCanvas(event);
+        if (rubbing && prevFinger) {
+            const d = Math.hypot(finger.x - prevFinger.x, finger.y - prevFinger.y);
+            heat = Math.min(1, heat + d / (geo.R * RUB));
+            // The friction throws sparks where the finger goes, more the hotter it is
+            if (!reduced && d > 3 && Math.random() < 0.25 + heat) {
+                sparks.burst(finger.x, finger.y, { n: 1 + Math.round(heat * 2), colors: FIRE, speed: 30 + 60 * heat, life: 0.8, size: 2.5 + 2 * heat, spread: 4 });
+            }
+            idle = 0;
+        }
+        prevFinger = finger;
+    };
+    const letGo = () => {
+        window.removeEventListener('pointermove', move);
+        window.removeEventListener('pointerup', letGo);
+        window.removeEventListener('pointercancel', letGo);
+        rubbing = false;
+        if (aiming) {
+            aiming = false;
+            const p = pull();
+            if (p.k >= AIM_MIN) launch(-p.x / Math.hypot(p.x, p.y), -p.y / Math.hypot(p.x, p.y), p.k);
+            anchor = null;
+        }
+        finger = prevFinger = null;
+    };
+    // With the keyboard: Enter rubs (each press warms it) and, once it is on fire, throws it at the nearest unlit one
+    const onCellKey = (event) => {
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+        event.preventDefault();
+        idle = 0;
+        if (win) return;
+        if (mode === 'cold') { heat = Math.min(1, heat + 0.2); sparks.burst(geo.sx, geo.sy, { n: 6, colors: FIRE, speed: 60, life: 0.8, size: 3.5, spread: 6 }); }
+        else if (mode === 'lit') {
+            const me = water.swimmer;
+            const todo = SWAYING.map((p, i) => i).filter((i) => !on[i]);
+            const i = todo.reduce((best, j) => (apart(angleOf(j), Math.atan2(me.y - CELL.y, me.x - CELL.x)) < apart(angleOf(best), Math.atan2(me.y - CELL.y, me.x - CELL.x)) ? j : best), todo[0]);
+            const tx = CELL.x + Math.cos(angleOf(i)) * CELL.r - me.x, ty = CELL.y + Math.sin(angleOf(i)) * CELL.r - me.y;
+            launch(tx / Math.hypot(tx, ty), ty / Math.hypot(tx, ty), 0.8);
+        }
+    };
+
+    // The being has caught fire
+    const ignite = () => {
+        mode = 'lit';
+        heat = 1;
+        sparks.burst(geo.sx, geo.sy, { n: 40, colors: FIRE, speed: 140, life: 1.8, size: 5, spread: 8 });
+        play('ignite', 1);
+        play('star');
+    };
+    // Let go of the sling: the being shoots off, on fire, and bounces about the cell
+    const launch = (dx, dy, k) => {
+        const me = water.swimmer;
+        const speed = 0.3 + 0.6 * k;          // frame fractions per second
+        me.vx = dx * speed;
+        me.vy = dy * speed;
+        me.heading = Math.atan2(dy, dx);
+        mode = 'flying';
+        fuel = FUEL;
+        lastHit = me.hit;
+        play('ignite', k);
+        if (!reduced) sparks.burst(geo.sx, geo.sy, { n: Math.round(14 + 20 * k), colors: FIRE, speed: 120, life: 1.4, size: 4.5, spread: 6 });
+    };
+    // Its fire is spent: it goes out and has to be rubbed again
+    const goOut = () => {
+        mode = 'cold';
+        heat = 0;
+        kindled = 0;
+        if (!reduced) sparks.burst(geo.sx, geo.sy, { n: 12, colors: [0xcfc4d6, 0xe8e0ea, 0xffd29a], speed: 40, life: 1.6, size: 3.5, spread: 8 });
+    };
+    // It hits the wall of the cell: the bulb or mushroom on that side, if it is still unlit, catches
+    const hitWall = (x, y) => {
+        const a = Math.atan2(y - CELL.y, x - CELL.x);
+        const wall = L.planet.toScreen(F.x + (CELL.x + Math.cos(a) * CELL.r) * F.size, F.y + (CELL.y + Math.sin(a) * CELL.r) * F.size);
+        sparks.burst(wall.x, wall.y, { n: 16, colors: FIRE, speed: 90, life: 1.2, size: 4, spread: 4 });
+        const near = SWAYING.map((p, i) => i).filter((i) => !on[i] && apart(angleOf(i), a) < REACH)
+            .sort((i, j) => apart(angleOf(i), a) - apart(angleOf(j), a));
+        near.slice(0, 2).forEach((i, k) => setTimeout(() => catchFire(i), 120 + k * 140));
+        if (!near.length) play('tap');
+        fuel -= 1;
+        if (fuel <= 0) setTimeout(() => { if (mode === 'flying') goOut(); }, 250);
+    };
+
+    // A bulb or a mushroom catches the fire: it gets its colour and its light
+    const catchFire = (i) => {
+        if (on[i] || !L.crown) return;
+        on[i] = true;
+        const p = SWAYING[i];
+        const n = on.filter(Boolean).length;
+        const c = centreOf(p);
+        sparks.burst(c.x, c.y, { n: 26, colors: p.kind === 'bulb' ? FIRE : [0xe94b7d, 0xff7aa5, 0xffb3cb, 0xffffff], speed: 110, life: 2.2, size: 4.8, spread: 6 });
+        glow?.boost(p.group, 1.4);
+        squashes[p.id] = last ?? 0;
+        play('link', { from: (n - 1) / SWAYING.length, to: n / SWAYING.length, level: 0.9 });
+        if (n === SWAYING.length) setTimeout(crown, 500);
+    };
+
+    // Everything is lit: the crown is a beacon, the chord resolves, and the rulito is born over the being's head
+    const crown = () => {
+        if (win) return;
+        wins += 1;
+        win = { age: 0, head: 0, tail: 0, full: false, fullAt: 0, back: false, pop: 0 };
+        mode = 'cold';
+        heat = 0;
+        rulito.value?.reshape();
+        glow?.boost(0, 1.6);
+        glow?.boost(1, 1.6);
+        sparks.burst(geo.sx, geo.sy, { n: 50, colors: FIRE, speed: 160, life: 2.4, size: 5, spread: 8 });
+        play('resolve');
+        sceneMilestone('crown_lit', { times: wins });
+    };
+
+    // The sling, as particles: a band from the being to the finger and, the other way, where it will go
+    const AIM_N = 44;
+    const aimGroup = {
+        colors: [0xffffff], parallax: 0, drift: 0, twinkle: 0, reach: 0, look: 'hard',
+        dynamic: {
+            count: AIM_N,
+            update(t, data) {
+                data.alphas.fill(0);
+                if (!aiming) return;
+                const p = pull();
+                if (!finger) return;
+                for (let i = 0; i < 14; i++) {
+                    const u = i / 13;
+                    data.positions[i * 3] = geo.sx + (finger.x - geo.sx) * u;
+                    data.positions[i * 3 + 1] = geo.sy + (finger.y - geo.sy) * u;
+                    data.sizes[i] = 3 + 2 * p.k;
+                    data.alphas[i] = 0.5 + 0.4 * p.k;
+                    data.tints.set([1, 0.75 + 0.2 * u, 0.45 + 0.3 * u], i * 3);
+                }
+                if (p.k < AIM_MIN) return;
+                const d = Math.hypot(p.x, p.y) || 1;
+                for (let i = 14; i < AIM_N; i++) {
+                    const u = (i - 13) / (AIM_N - 14);
+                    const go = u * geo.R * (0.5 + 1.2 * p.k) + ((t * 60) % 8);
+                    data.positions[i * 3] = geo.sx - p.x / d * go;
+                    data.positions[i * 3 + 1] = geo.sy - p.y / d * go;
+                    data.sizes[i] = 3.2 * (1 - u * 0.6);
+                    data.alphas[i] = (1 - u) * 0.8;
+                    data.tints.set([1, 0.82, 0.55], i * 3);
+                }
+            },
+        },
+    };
+
+    // Every frame: the heat, the sling, the flight, the lights, the beacon and the rulito
+    const play_ = (t, dt) => {
+        measure();
+        idle += dt;
+        const me = water.swimmer;
+        if (mode === 'cold') {
+            if (!rubbing) heat = Math.max(0, heat - dt * COOL);
+            // A note of the chord climbs with each sixth of the heat
+            const sixth = Math.floor(heat * 6);
+            if (sixth > kindled) { kindled = sixth; play('kindle', { step: heat }); }
+            if (sixth < kindled - 1) kindled = sixth;
+            if (heat >= 1) ignite();
+        }
+        // Pulled back, the being follows the finger a little and waits still in the water
+        if (aiming && anchor) {
+            const p = pull();
+            const k = CELL.r / geo.R * 0.25;
+            me.vx = me.vy = 0;
+            let x = anchor.mx + p.x * k - CELL.x, y = anchor.my + p.y * k - CELL.y;
+            const d = Math.hypot(x, y), room = CELL.r - 0.004 - water.wall;
+            if (d > room) { x *= room / d; y *= room / d; }
+            me.x = CELL.x + x;
+            me.y = CELL.y + y;
+        }
+        // Flying (on fire, it goes past the organelles): every new knock on the wall lights what is on that side; slowed
+        // down, its fire goes out
+        water.ghost = mode === 'flying';
+        if (mode === 'flying') {
+            if (me.hit > lastHit + 0.01) hitWall(me.x, me.y);
+            if (Math.hypot(me.vx, me.vy) < 0.05) goOut();
+        }
+        lastHit = me.hit;
+        // Its fire: a glow behind it, embers rising from it (a trail while it flies)
+        const want = mode === 'cold' ? heat * 0.6 : 1;
+        charge += (want - charge) * Math.min(1, dt * (want > charge ? 6 : 3));
+        embers += dt;
+        if (!reduced && charge > 0.15 && embers > (mode === 'flying' ? 0.025 : 0.14 - 0.08 * charge)) {
+            embers = 0;
+            sparks.burst(geo.sx, geo.sy, { n: mode === 'flying' ? 3 : 2, colors: FIRE, speed: 20 + 40 * charge, life: mode === 'flying' ? 0.7 : 1.1, size: 2.5 + 2.5 * charge, spread: 10 });
+        }
+        // The hint, without words: still for a while, a spark crackles on the being (rub it), or on fire it beats (sling it)
+        if (!rubbing && !aiming && !win && mode !== 'flying' && idle > 7) {
+            idle = 0;
+            hint = 1;
+            if (!reduced) sparks.burst(geo.sx, geo.sy, { n: 8, colors: FIRE, speed: 50, life: 0.9, size: 3.5, spread: 8 });
+        }
+        hint = Math.max(0, hint - dt * 1.4);
+        // The rulito: born after the chord has resolved, kept a while, then its tail catches its head and everything fades
+        let named = 0;
+        if (win && rulito.value) {
+            win.age += dt;
+            win.pop = Math.max(0, win.pop - dt * 2.2);
+            win.head = 1 - (1 - Math.min(1, Math.max(0, (win.age - DELAY) / GROW))) ** 1.6;
+            if (win.head >= 1 && !win.full) { win.full = true; win.fullAt = win.age; win.pop = 1; play('rulito'); }
+            if (win.full && !win.back && win.age - win.fullAt > LINGER) { win.back = true; on.fill(false); }
+            if (win.back) win.tail = Math.min(1, win.tail + dt / EAT);
+            const whole = Math.min(1, Math.max(0, (win.head - win.tail - 0.6) / 0.4));
+            named = Math.max(win.pop, 0.8 * whole * whole * (3 - 2 * whole));
+            const flare = win.full && win.head - win.tail > 0.9 ? Math.max(win.pop, Math.sin(t * 4) * 0.5 + 0.5) : 0;
+            rulito.value.frame({ head: win.head, tail: win.tail, flare, t, fade: Math.min(1, (win.head - win.tail) * 14), width: glyph.w });
+            L.rulito.refresh();
+            L.rulito.scale = 1 + 0.2 * win.pop * win.pop;
+            if (win.back && win.tail >= 1) {
+                win = null;
+                rulito.value.frame({ width: glyph.w });
+                L.rulito.refresh();
+            }
+        }
+        water.wall += ((win ? WALL_CROWNED : WALL) - water.wall) * Math.min(1, dt * 1.5);
+        beacon += ((win && !win.back ? 1 : 0) - beacon) * Math.min(1, dt * (win && !win.back ? 2 : 0.8));
+        stand += ((win && !win.back ? 1 : 0) - stand) * Math.min(1, dt * 1.5);
+        stageEl?.style.setProperty('--name-glow', named.toFixed(3));
+        stage.bloom = Math.max(named, 0.4 * charge, 0.5 * beacon);
+        // The bulbs and the mushrooms: grey until they catch, then their colour, a warm light and their dots
+        SWAYING.forEach((p, i) => {
+            lit[i] += ((on[i] ? 1 : 0) - lit[i]) * Math.min(1, dt * (on[i] ? 5 : 0.6 + i * 0.06));
+            const breath = 0.8 + 0.2 * Math.sin(t * 2.2 + p.phase);
+            L['lit-' + p.id].opacity = Math.min(1, lit[i] * breath * (0.8 + 0.3 * beacon));
+            const u = els[p.id].uniforms;
+            u.uSaturate.value = 0.12 + 0.88 * lit[i];
+            u.uBright.value = 0.82 + 0.18 * lit[i] + 0.25 * lit[i] * beacon;
+            glow?.fade(p.group, lit[i]);
+        });
+        L.buds.forEach((bud, j) => {
+            const k = 0.12 + 0.88 * lit[BUD_OF[j]];
+            bud.uniforms.uColor.value.setRGB(...BLUE_RGB.map((c) => (BLUE_GREY + (c - BLUE_GREY) * k) * (0.82 + 0.18 * k)));
+        });
+        // The being's fire and the warmth of the water
+        L.fire.opacity = Math.min(1, 1.2 * charge * (0.85 + 0.15 * Math.sin(t * 7)) + hint * 0.4 + beacon * 0.55);
+        L.fire.scale = 0.7 + 0.6 * charge + 0.3 * hint + 0.25 * beacon;
+        L.being.uniforms.uBright.value = 1 + 0.4 * charge + 0.15 * beacon;
+        L.interior.uniforms.uTintAmount.value = 0.1 * charge + 0.12 * beacon;
+        L.beacon.opacity = beacon * (0.75 + 0.25 * Math.sin(t * 1.6));
+        L.beacon.scale = 0.92 + 0.08 * beacon + 0.03 * Math.sin(t * 1.6);
+        if (beacon > 0.05) { glow?.boost(0, 0.7 * beacon); glow?.boost(1, 0.7 * beacon); }
+    };
+
     const build = (s) => {
         const planetDepth = s.depth(PLANET_Z);
         L.planet = planetDepth.group();
+        // Behind the cell: the beacon, the light of the whole crown when every bulb is lit
+        L.beacon = L.planet.glow({ rect: { left: 0, top: 0, w: 1, h: 1 }, color: [1, 0.78, 0.42], stops: [[0, 0.7], [0.3, 0.45], [0.66, 0]], bloom: true });
+        L.beacon.opacity = 0;
         L.interior = L.planet.canvas(interiorCanvas, { water: 1 });
         L.nucleus = L.planet.disc({ rect: { left: 0, top: 0, w: 1, h: 1 }, color: hex(NUC.color) });
         FLOAT.forEach((p) => { els[p.id] = L.planet.image(`/assets/evolucion/${p.file}.webp`, { shimmer: 0.6 }); });
-        L.being = L.planet.image('/assets/evolucion/bebe.webp');
+        // The being's fire, behind it, and the rulito over its head
+        L.fire = L.planet.glow({ rect: { left: 0, top: 0, w: 1, h: 1 }, color: [1, 0.74, 0.35], stops: [[0, 0.75], [0.3, 0.32], [0.62, 0]], bloom: true });
+        L.fire.opacity = 0;
+        L.being = L.planet.image('/assets/evolucion/bebe.webp', { bloom: true });
+        L.rulito = L.planet.canvas(rulito.value.canvas, { bloom: true });
         L.crown = L.planet.group();
         L.buds = scene.blue.map(() => L.crown.disc({ rect: { left: 0, top: 0, w: 1, h: 1 }, color: BLUE }));
-        SWAYING.forEach((p) => { els[p.id] = L.crown.image(`/assets/evolucion/${p.file}.webp`); });
+        // A light behind each bulb and mushroom, seen when it is lit (it turns with the crown)
+        SWAYING.forEach((p) => {
+            L['lit-' + p.id] = L.crown.glow({ rect: { left: 0, top: 0, w: 1, h: 1 }, color: p.kind === 'bulb' ? [1, 0.72, 0.38] : [1, 0.42, 0.62], stops: [[0, 0.8], [0.3, 0.35], [0.62, 0]], bloom: true });
+            L['lit-' + p.id].opacity = 0;
+        });
+        SWAYING.forEach((p) => { els[p.id] = L.crown.image(`/assets/evolucion/${p.file}.webp`, { bloom: p.kind === 'bulb' }); });
         L.fern = L.crown.image('/assets/evolucion/fronda.webp', { wind: { amp: 3, speed: 0.7, root: 'top' }, segments: [20, 20] });
         L.planet.enter({ y: 60, scale: 0.7, duration: 2200 });
         L.being.enter({ y: 0, scale: 0.4, delay: 1200, duration: 1600 });
@@ -175,6 +523,20 @@
         L.nucleus.place({ left: F.x + (NUC.x - NUC.r) * F.size, top: F.y + (NUC.y - NUC.r) * F.size, w: 2 * NUC.r * F.size, h: 2 * NUC.r * F.size });
         FLOAT.forEach((p) => els[p.id].place(inFrame(p.box)));
         L.being.place(inFrame(BEING.box));
+        const beacon = 2 * CELL.r * 3;
+        L.beacon.place(inFrame([(CELL.x - beacon / 2) * 100, (CELL.y - beacon / 2) * 100, beacon * 100, beacon * 100]));
+        const fire = BEING.r * 9;
+        L.fire.place(inFrame([(BEING.x - fire / 2) * 100, (BEING.y - fire / 2) * 100, fire * 100, fire * 100]));
+        // The rulito over the being's head (its canvas is bigger than the glyph, for the glow, as in Paciencia)
+        const [bx, by, bw] = BEING.box;
+        const rw = bw * 0.5, rh = rw * 86 / 32;
+        glyph = inFrame([bx + bw * 0.5 - rw / 2, by - 1.6 - rh, rw, rh]);
+        L.rulito.place({ left: glyph.left - 0.4375 * glyph.w, top: glyph.top - 0.1628 * glyph.h, w: glyph.w * 1.875, h: glyph.h * 1.3256 },
+            { x: glyph.left + glyph.w / 2, y: glyph.top + glyph.h });
+        SWAYING.forEach((p) => {
+            const d = p.glow.sigma * (p.kind === 'bulb' ? 11 : 8);
+            L['lit-' + p.id].place(inFrame([(p.glow.x - d / 2) * 100, (p.glow.y - d / 2) * 100, d * 100, d * 100]));
+        });
         L.crown.pivot = at(CELL.x, CELL.y);
         scene.blue.forEach(([x, y, r], i) => L.buds[i].place(inFrame([x - r, y - r, 2 * r, 2 * r])));
         SWAYING.forEach((p) => {
@@ -185,6 +547,11 @@
     };
 
     const placeHits = () => {
+        if (cellHit.value) {
+            const d = 2 * geo.R * 0.9;
+            cellHit.value.style.translate = `${(geo.cx - d / 2).toFixed(1)}px ${(geo.cy - d / 2).toFixed(1)}px`;
+            cellHit.value.style.width = cellHit.value.style.height = `${d.toFixed(1)}px`;
+        }
         hits.value.forEach((el, i) => {
             if (!el) return;
             const p = SWAYING[i];
@@ -211,6 +578,7 @@
         L.planet.y = py;
         L.planet.scale = 1 + Math.sin(t * 0.7) * 0.012 * ramp;
         const turn = t * 1.4 * ramp;
+        turnNow = turn;
         L.crown.rotate = turn;
         // Each stalk sways from where it hangs, the mushrooms less; a touched one squashes
         SWAYING.forEach((p) => {
@@ -249,8 +617,14 @@
         L.being.y = ((me.y - BEING.y) + Math.sin(t * 0.9) * 0.0025) * F.size;
         L.being.rotate = tilt + Math.sin(t * 0.6) * 3 * ramp;
         const squash = 1 + Math.min(me.hit, 0.3) * 0.12;
-        L.being.sx = (1 + Math.sin(t * 1.3) * 0.012 * ramp) * squash;
-        L.being.sy = (1 - Math.sin(t * 1.3) * 0.015 * ramp) / squash;
+        L.being.sx = (1 + Math.sin(t * 1.3) * 0.012 * ramp) * squash * (1 - 0.03 * stand);
+        L.being.sy = (1 - Math.sin(t * 1.3) * 0.015 * ramp) / squash * (1 + 0.09 * stand);
+        L.being.rotate *= 1 - 0.7 * stand;
+        // Its fire and its rulito go with it
+        L.fire.x = L.rulito.x = L.being.x;
+        L.fire.y = L.rulito.y = L.being.y;
+        L.rulito.rotate = L.being.rotate * 0.5 + Math.sin(t * 1.8) * 3 * ramp;
+        play_(t, Math.min(dt, 0.1));
         stage.render(t);
         if (frames++ % 2 === 0) placeHits();
     };
@@ -265,14 +639,19 @@
         }
         if (gone) { made.destroy(); return; }
         stage = made;
+        stageEl = root.value.closest('.stage');
         water = createCellWater({
             bounds: { x: CELL.x, y: CELL.y, r: CELL.r - 0.004 },
-            swimmer: { x: BEING.x, y: BEING.y, r: BEING.r },
+            swimmer: { x: BEING.x, y: BEING.y, r: BEING.r, wall: WALL },
             bodies: [
                 { id: 'nucleus', circles: [[NUC.x, NUC.y, NUC.r]], mass: 12, sway: 0.004 },
                 ...FLOAT.map(({ id, circles = [], mass, sway }) => ({ id, circles, mass, sway })),
             ],
         });
+        // The layers and their layout first, so the particles measured on them are made again after them on a resize
+        build(stage);
+        L.interior.uniforms.uTint.value.setRGB(0.96, 0.6, 0.32);
+        stage.onResize((W, H) => place(W, H));
         sky = startStardust(null, {
             stage,
             groups: [{
@@ -290,12 +669,11 @@
                 ...SWAYING.map((p, i) => ({ ...still, points: glowPoints(p.glow), colors: [hex(p.glow.color)], drift: 3, jitter: 1.1, twinkle: 0.3, order: -8 + i * 0.01 })),
             ],
         });
-        build(stage);
-        stage.onResize((W, H) => place(W, H));
         front = startStardust(null, {
             stage,
             groups: [
                 { points: rimPoints, look: 'hard', drift: 2, jitter: 0.5, twinkle: 0.1, reach: 0, parallax: 0, order: L.nucleus.mesh.renderOrder + 0.5 },
+                { ...aimGroup, order: 1e6 - 1 },
                 { ...sparks.group(), order: 1e6 },
             ],
         });
@@ -312,12 +690,21 @@
         glow?.destroy();
         front?.destroy();
         stage?.destroy();
+        stageEl?.style.removeProperty('--name-glow');
+        window.removeEventListener('pointermove', move);
+        window.removeEventListener('pointerup', letGo);
+        window.removeEventListener('pointercancel', letGo);
     });
 </script>
 
 <template>
     <div class="scene" ref="root">
         <canvas class="stageCanvas" ref="canvas"></canvas>
+        <!-- The rulito is drawn on its own canvas, which the stage shows as a texture over the being's head -->
+        <Rulito ref="rulito" class="offstage" color="#f2b036" />
+        <div ref="cellHit" class="hit cell" role="button" tabindex="0"
+            :aria-label="$i18n.locale === 'en' ? 'Rub to light the being, then pull it back and let go to light the crown' : 'Frotá para encender al ser, después tirá de él y soltá para encender la corona'"
+            @pointerdown.prevent="press" @keydown="onCellKey"></div>
         <div v-for="(p, i) in SWAYING" :key="'hit' + p.id" :ref="(el) => { hits[i] = el; }" class="hit" role="button" tabindex="-1"
             :aria-label="p.kind === 'bulb' ? ($i18n.locale === 'en' ? 'Glowing bulb' : 'Bulbo luminoso') : ($i18n.locale === 'en' ? 'Mushroom' : 'Hongo')"
             @pointerdown.prevent="touch(p)($event)" @pointerenter="warm(p)()" @keydown="onKey(p)($event)"></div>
@@ -352,6 +739,20 @@
         touch-action: manipulation;
         -webkit-tap-highlight-color: transparent;
         outline: none;
+    }
+
+    .hit.cell {
+        -webkit-touch-callout: none;
+        user-select: none;
+        -webkit-user-select: none;
+    }
+
+    .offstage {
+        position: absolute;
+        left: -9999px;
+        top: 0;
+        width: 40px;
+        visibility: hidden;
     }
 
     .hit:focus-visible {

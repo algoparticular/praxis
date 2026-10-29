@@ -280,6 +280,9 @@
                 ...FLOAT.map(({ id, circles = [], mass, sway }) => ({ id, circles, mass, sway })),
             ],
         });
+        // The layers and their layout first, so the particles measured on them are made again after them on a resize
+        build(stage);
+        stage.onResize((W, H) => place(W, H));
         sky = startStardust(null, {
             stage,
             groups: [{
@@ -298,8 +301,6 @@
                 },
             ],
         });
-        build(stage);
-        stage.onResize((W, H) => place(W, H));
         // In front, only the nucleus's fuzzy rim (group 0, which follows the planet by hand) and the spores: no dust ever covers a drawing
         front = startStardust(null, {
             stage,
