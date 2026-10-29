@@ -54,13 +54,16 @@
     const sy = (y) => F.y + y * k();
     const rectOf = ([left, top, w, h]) => ({ left: sx(left), top: sy(top), w: w * k(), h: h * k() });
     const SPAN = 1700, FOCUS = 1290;        // art px across that must be seen on a phone, and their middle
+    const DROP = 0.1;                       // how much of the frame goes under the bottom of a wide screen
     const layout = (w, h) => {
         W = w; H = h;
         const phone = w < h;
         const size = phone ? Math.min(0.72 * h, w * SIZE / SPAN) : Math.min(Math.max(0.62 * w, 0.55 * h), 0.9 * h);
         let x = w / 2 - size / 2;
         if (phone && size > w) x = Math.min(0, Math.max(w - size, w / 2 - FOCUS * size / SIZE));
-        F = { x, y: h - size, size };
+        // On a wide screen the scene sits a little lower (the foot of the cliff and of the path go under the edge), for
+        // more sky over the walker
+        F = { x, y: h - size + (phone ? 0 : DROP * size), size };
     };
 
     const SLIDE = 50;
@@ -80,7 +83,7 @@
     const [AW, AH] = art.atlas;
     const winds = art.winds.map(([x, y, w, h, ax, ay], i) => ({
         i, art: { x: x + w / 2, y: y + h / 2, w, h }, crop: [ax / AW, ay / AH, w / AW, h / AH],
-        rest: { left: 0, top: 0, w: 1, h: 1 }, x0: 0, phase: Math.random() * 6.28, speed: 6 + (i % 3) * 3, depth: i % 3,
+        rest: { left: 0, top: 0, w: 1, h: 1 }, x0: 0, phase: Math.random() * 6.28, speed: 14 + (i % 3) * 6, depth: i % 3,
     }));
     let span = { left: 0, width: 1 };
 
@@ -527,13 +530,17 @@
         L.dusk.opacity = 0.25 + 0.55 * sunUp;
         L.sunNode.y = scroll * 10 - 30 * k() * 4 * ease(sunUp);
 
-        // ---- The wind's strokes drift and wrap round
+        // ---- The wind's strokes are blown along: they drift and wrap round, rise and fall, lean and stretch as they go
         winds.forEach((wd) => {
             const node = L.winds[wd.i];
             const moved = wd.x0 - wd.speed * t;
             const wrapped = span.left + ((((moved - span.left) % span.width) + span.width) % span.width);
             node.x = wrapped - wd.x0;
-            node.y = Math.sin(t * 0.4 + wd.phase) * 5 * ramp;
+            const gust = Math.sin(t * 1.3 + wd.phase);
+            node.y = Math.sin(t * 0.5 + wd.phase) * 9 * ramp;
+            node.rotate = Math.sin(t * 0.7 + wd.phase * 2) * 4 * ramp;
+            node.sx = 1 + 0.1 * gust * ramp;
+            node.sy = 1 - 0.06 * gust * ramp;
         });
 
         // ---- The cacti and flowers: grey until they catch, then their colour and a light
