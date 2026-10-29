@@ -18,6 +18,7 @@
 // Shader effects per layer:
 //   wind     { amp (px), speed, root: 'bottom' | 'top' }  the picture sways, more the farther from its root
 //   shimmer  0..1  the air trembles over it (a sun's heat)
+//   water    0..1  the light of the water ripples across it (caustics)
 //   bright, saturate, tint + tintAmount  for lighting a layer up (the pine cone held)
 // and layers drawn in code: glow (a soft radial light, CSS radial-gradient stops) and disc (a plain disc of colour,
 // with { water } the light of the water rippling across it).
@@ -64,6 +65,7 @@ const LAYER_FRAGMENT = `
     uniform vec3 uTint;
     uniform float uTintAmount;
     uniform float uShimmer;
+    uniform float uWater;
     varying vec2 vUv;
     void main() {
         vec2 uv = vUv;
@@ -75,6 +77,14 @@ const LAYER_FRAGMENT = `
         float grey = dot(c.rgb, vec3(0.299, 0.587, 0.114));
         c.rgb = mix(vec3(grey), c.rgb, uSaturate);
         c.rgb = mix(c.rgb, uTint * c.a, uTintAmount);
+        if (uWater > 0.0) {
+            vec2 p = vUv * 13.0;
+            float t = uTime * 0.35;
+            for (int i = 0; i < 3; i++) {
+                p += vec2(sin(p.y + t + float(i) * 1.3), cos(p.x - t * 0.8 + float(i) * 2.1)) * 0.6;
+            }
+            c.rgb += vec3(pow(0.5 + 0.5 * sin(p.x + p.y), 6.0)) * 0.06 * uWater * c.a;
+        }
         gl_FragColor = vec4(c.rgb, c.a) * uOpacity;
     }`;
 
@@ -205,6 +215,8 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
             this.y = 0;
             this.rotate = 0;
             this.scale = 1;
+            this.sx = 1;                                 // a squash: x and y scale on top of scale
+            this.sy = 1;
             this.opacity = 1;
             this.entrance = null;
             this.mesh = null;
@@ -266,7 +278,7 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
             return node;
         }
 
-        plane(texture, { rect = { left: 0, top: 0, w: 1, h: 1 }, pivot = null, wind = null, shimmer = 0, blur = 0, bloom = false,
+        plane(texture, { rect = { left: 0, top: 0, w: 1, h: 1 }, pivot = null, wind = null, shimmer = 0, water = 0, blur = 0, bloom = false,
             blending = 'normal', segments = null } = {}) {
             const node = new Node(this);
             const segs = segments ?? (wind ? [24, 10] : [1, 1]);
@@ -280,6 +292,7 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
                 uTint: { value: new THREE.Color(1, 1, 1) },
                 uTintAmount: { value: 0 },
                 uShimmer: { value: shimmer },
+                uWater: { value: water },
                 uSize: { value: new THREE.Vector2(1, 1) },
                 uWind: { value: new THREE.Vector4(wind?.amp ?? 0, wind?.speed ?? 1, wind?.root === 'top' ? 1 : 0, Math.random() * 6.28) },
             };
@@ -365,12 +378,12 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
             const o = this.object;
             if (this.parent) {
                 o.position.set(this.pivot.x + x, -(this.pivot.y + y), 0);
-                o.scale.setScalar(scale);
+                o.scale.set(scale * this.sx, scale * this.sy, 1);
             } else {
                 // A root: screen px at rest, scaled for its depth so it is seen as laid out
                 const k = 1 - this.z;
                 o.position.set((this.pivot.x + x - width / 2) * k, (height / 2 - this.pivot.y - y) * k, this.z * distance);
-                o.scale.setScalar(scale * k);
+                o.scale.set(scale * this.sx * k, scale * this.sy * k, 1);
             }
             o.rotation.z = -this.rotate * Math.PI / 180;
             this.inner.position.set(-this.pivot.x, this.pivot.y, 0);
