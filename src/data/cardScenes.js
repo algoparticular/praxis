@@ -13,14 +13,14 @@ const stage = (loader) => (webgl ? lazy(loader) : SceneFlat);
 
 const scenes = {
     2: stage(() => import('../components/scenes/SceneDana.vue')),
-    3: lazy(() => import('../components/scenes/ScenePanna.vue')),
-    5: lazy(() => import('../components/scenes/SceneKhanti.vue')),
-    20: lazy(() => import('../components/scenes/SceneCreatividad.vue')),
-    22: lazy(() => import('../components/scenes/SceneEvolucion.vue')),
+    3: stage(() => import('../components/scenes/ScenePanna.vue')),
+    5: stage(() => import('../components/scenes/SceneKhanti.vue')),
+    20: stage(() => import('../components/scenes/SceneCreatividad.vue')),
+    22: stage(() => import('../components/scenes/SceneEvolucion.vue')),
     25: stage(() => import('../components/scenes/SceneHogar.vue')),
     27: stage(() => import('../components/scenes/ScenePaciencia.vue')),
-    29: lazy(() => import('../components/scenes/SceneSincronicidad.vue')),
-    31: lazy(() => import('../components/scenes/SceneVipassana.vue')),
+    29: stage(() => import('../components/scenes/SceneSincronicidad.vue')),
+    31: stage(() => import('../components/scenes/SceneVipassana.vue')),
 };
 
 export const sceneFor = (id) => scenes[id] ?? SceneFlat;

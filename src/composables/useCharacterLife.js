@@ -6,7 +6,9 @@
 
 import { breathEnvelope, BREATH, INHALE, RISE, SIDE } from './breathCurve.js';
 
-export function createCharacterLife(particle, hero, { spiral = null, getLift = () => 0, glow = '255, 150, 130', onExhale = null, getRise = () => 0 } = {}) {
+// With onFrame(state) the scene is also handed each frame's { x, y (px), rotate (deg), scale, glow: { blur (px), alpha } }:
+// Vipassana draws him in WebGL from it, and keeps the element (hidden) only to know where he is to be touched.
+export function createCharacterLife(particle, hero, { spiral = null, getLift = () => 0, glow = '255, 150, 130', onExhale = null, getRise = () => 0, onFrame = null } = {}) {
     // The pointer, relative to the character: lean is -1..1 across his width, near is 1 right on him and 0 far away
     const pointer = { x: 0, y: 0, near: 0, tx: 0, ty: 0, tnear: 0 };
 
@@ -75,10 +77,17 @@ export function createCharacterLife(particle, hero, { spiral = null, getLift = (
             const excite = pointer.near;
             const deep = breath * (1 + 0.8 * excite);
             // getRise is 0..1: how far he has gone up to be in the middle of the orbits (the mandala of a held breath)
-            particle.style.translate = `${floatX + pointer.x * 14 + shove.x - getRise() * SIDE * particle.offsetWidth}px ${floatY + getLift() + pointer.y * 8 + shove.y - getRise() * RISE * particle.offsetHeight}px`;
-            particle.style.rotate = `${(pointer.x * 4 + Math.sin(t * 0.45) * ramp).toFixed(3)}deg`;
-            particle.style.scale = 1 + (0.022 * deep + 0.03 * excite + 0.05 * pulse + 0.07 * deepBreath) * ramp;
-            particle.style.filter = `drop-shadow(0 0 ${(6 + 16 * deep * ramp + 14 * excite + 34 * pulse + 26 * deepBreath).toFixed(1)}px rgba(${glow}, ${Math.min(0.95, 0.12 + 0.38 * deep * ramp + 0.3 * excite + 0.45 * pulse + 0.3 * deepBreath).toFixed(3)}))`;
+            const x = floatX + pointer.x * 14 + shove.x - getRise() * SIDE * particle.offsetWidth;
+            const y = floatY + getLift() + pointer.y * 8 + shove.y - getRise() * RISE * particle.offsetHeight;
+            const rotate = pointer.x * 4 + Math.sin(t * 0.45) * ramp;
+            const scale = 1 + (0.022 * deep + 0.03 * excite + 0.05 * pulse + 0.07 * deepBreath) * ramp;
+            const blur = 6 + 16 * deep * ramp + 14 * excite + 34 * pulse + 26 * deepBreath;
+            const alpha = Math.min(0.95, 0.12 + 0.38 * deep * ramp + 0.3 * excite + 0.45 * pulse + 0.3 * deepBreath);
+            particle.style.translate = `${x}px ${y}px`;
+            particle.style.rotate = `${rotate.toFixed(3)}deg`;
+            particle.style.scale = scale;
+            if (onFrame) onFrame({ x, y, rotate, scale, glow: { blur, alpha } });
+            else particle.style.filter = `drop-shadow(0 0 ${blur.toFixed(1)}px rgba(${glow}, ${alpha.toFixed(3)}))`;
         };
         frame = requestAnimationFrame(tick);
     };

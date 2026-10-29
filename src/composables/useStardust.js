@@ -45,6 +45,7 @@ const hasWebGL = () => {
 // The result has shift(i, x, y): moves group i by (x, y) px, so a group can follow a layer that has parallax, and
 // boost(i, amount): makes group i flare (bigger, brighter, trembling more) and settle back by itself, and
 // grow(i, amount, x, y): swells group i outwards from the point (x, y), by that fraction of every particle's distance to it.
+// turn(i, degrees, x, y): turns group i about the point (x, y) (before its shift), so it can turn with a layer.
 // With { stage } (a createLayerStage) the groups are drawn by the stage, among its layers, on its canvas and with its
 // clock: no renderer or loop of their own (`canvas` is then ignored).
 export async function createStardust(canvas, options = {}) {
@@ -89,6 +90,7 @@ export async function createStardust(canvas, options = {}) {
         uniform float uBoost;
         uniform float uGrow;
         uniform vec2 uGrowAt;
+        uniform vec3 uTurn;             // angle (rad) and the point it turns about (px)
         uniform float uTwinkle;
         uniform float uReach;
         uniform float uPush;
@@ -104,6 +106,11 @@ export async function createStardust(canvas, options = {}) {
             p += vec2(sin(uTime * 0.31 + phase), cos(uTime * 0.23 + phase * 1.7)) * uDrift * (0.4 + aDepth * 0.6);
             p += vec2(sin(uTime * 7.3 + phase * 5.0), cos(uTime * 8.9 + phase * 7.0)) * (uJitter + uBoost * 1.6);
             p = uGrowAt + (p - uGrowAt) * (1.0 + uGrow);
+            if (uTurn.x != 0.0) {
+                vec2 d = p - uTurn.yz;
+                float c = cos(uTurn.x), s = sin(uTurn.x);
+                p = uTurn.yz + vec2(d.x * c - d.y * s, d.x * s + d.y * c);
+            }
             p += uShift * aDepth;
             float edge = uEdge > 0.0 ? smoothstep(0.0, uEdge, p.y / uRes.y) * smoothstep(0.0, uEdge, 1.0 - p.y / uRes.y) : 1.0;
             // The pointer is a gentle gust: whatever is near is shoved away, the closer the harder
@@ -146,6 +153,7 @@ export async function createStardust(canvas, options = {}) {
             uBoost: { value: 0 },
             uGrow: { value: 0 },
             uGrowAt: { value: new THREE.Vector2(0, 0) },
+            uTurn: { value: new THREE.Vector3(0, 0, 0) },
             uTwinkle: { value: twinkle },
             uReach: { value: reach },
             uPush: { value: push },
@@ -307,6 +315,7 @@ export async function createStardust(canvas, options = {}) {
     return {
         shift(index, x, y) { groups[index]?.uniforms.uShift.value.set(x, y); },
         grow(index, amount, x, y) { const g = groups[index]; if (g) { g.uniforms.uGrow.value = amount; g.uniforms.uGrowAt.value.set(x, y); } },
+        turn(index, degrees, x, y) { groups[index]?.uniforms.uTurn.value.set(degrees * Math.PI / 180, x, y); },
         boost(index, amount) { const g = groups[index]; if (g) g.uniforms.uBoost.value = Math.max(g.uniforms.uBoost.value, amount); },
         reveal() { if (revealAt === null) revealAt = shared.uTime.value; },
         destroy() {
@@ -333,6 +342,7 @@ export function startStardust(canvas, options) {
         shift(index, x, y) { field?.shift(index, x, y); },
         boost(index, amount) { field?.boost(index, amount); },
         grow(index, amount, x, y) { field?.grow(index, amount, x, y); },
+        turn(index, degrees, x, y) { field?.turn(index, degrees, x, y); },
         reveal() { revealed = true; field?.reveal(); },
         destroy() { gone = true; field?.destroy(); },
     };

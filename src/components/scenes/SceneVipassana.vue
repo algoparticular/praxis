@@ -16,12 +16,20 @@
     //   lets go of every cell he had caught, at once. An easter egg: held far longer than needed (the mandala whole and a
     //   little more) every cell that is left joins the orbits and all of them break together, the power breath.
     // - When no cell is left, the dotted spiral goes and the rulito (Rulito.vue, in the pink of the spiral) is drawn over
-    //   his head. Then everything that was let go gathers itself again as the rulito's tail catches up with its head.
+    //   his head, and the scene blooms (the rulito and his glow); then everything that was let go gathers itself again as
+    //   the rulito's tail catches up with its head.
+    // It is drawn in WebGL (useLayerStage): the rays are a plane far behind, the field of cells is its own three.js scene
+    // drawn in the stage's renderer (useVipassanaField, a copy of the landing's, which stays as it is), and he is drawn
+    // on the focal plane, so his element on the page (hidden, moved by useCharacterLife as on the landing) is exactly where
+    // he is seen and still says where he can be touched. His glow is his own picture, blurred and tinted in the shader
+    // (a CSS drop-shadow before); his spiral and the rulito are their 2D canvases shown as textures.
     import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
-    import { createCellField } from '../../composables/useCellField.js';
+    import { createLayerStage } from '../../composables/useLayerStage.js';
+    import { createVipassanaField } from '../../composables/useVipassanaField.js';
     import { createHeroSpiral } from '../../composables/useHeroSpiral.js';
     import { createCharacterLife } from '../../composables/useCharacterLife.js';
-    import { createParallax, enterLayers } from '../../composables/useParallax.js';
+    import { createParallax } from '../../composables/useParallax.js';
+    import raysUrl from '../../assets/hero/background.webp';
     import { MASK_W, MASK_H, solidAt } from '../../composables/characterMask.js';
     import { play } from '../../composables/useSound.js';
     import { sceneMilestone } from '../../analytics.js';
@@ -35,12 +43,18 @@
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     const root = ref(null);
-    const rays = ref(null);
-    const cellCanvas = ref(null);
+    const canvas = ref(null);
     const character = ref(null);
     const spiralCanvas = ref(null);
     const rulito = ref(null);
-    const cellsFallback = ref(false);
+    let stage = null;
+    const N_ = {};                          // the layers (stage nodes)
+    let box = null;                         // where he is at rest, from his element
+    const RAYS = { w: 2268, h: 1134 };
+    const SLIDE = 50;
+    const SLIDE_Y = 40;
+    const RAYS_Z = 10 / (SLIDE + 10);       // the rays drift 10px with the pointer, as before
+    const GLOW = [1, 150 / 255, 130 / 255];
 
     let cellField = null;
     let spiral = null;
@@ -48,7 +62,6 @@
     let parallax = null;
     let breathTimer = 0;
     let hintTimer = 0;
-    let frame = 0;
     let stageEl = null;
     let heldBreath = false;      // the breath in progress was begun by a finger on him: when it goes out it lets go of what it caught
     let sidBreath = false;       // that breath is being held in by a finger on him
@@ -62,9 +75,9 @@
     let entered = false;
 
     const enter = () => {
-        if (entered || !props.active) return;
+        if (entered || !props.active || !stage) return;
         entered = true;
-        enterLayers([{ el: character.value, y: 60, scale: 0.88, delay: 250, duration: 1700 }]);
+        stage.ready().then(() => { if (!unmounted) stage.start(); });
         setTimeout(() => life?.start(), reducedMotion ? 0 : 1900);
     };
 
@@ -125,10 +138,9 @@
     };
     let lastT = null;
     const tick = (now) => {
-        frame = requestAnimationFrame(tick);
         const dt = lastT === null ? 0 : Math.min((now - lastT) / 1000, 0.1);
         lastT = now;
-        if (!win || !rulito.value) return;
+        if (!win || !rulito.value) { if (stage) stage.bloom = 0; return; }
         const t = now / 1000;
         win.age += dt;
         win.pop = Math.max(0, win.pop - dt * 2.2);
@@ -145,14 +157,22 @@
             if (win.tail > 0.7) spiral?.fade(true);
         }
         const whole = Math.min(1, Math.max(0, (win.head - win.tail - 0.6) / 0.4));
-        stageEl?.style.setProperty('--name-glow', Math.max(win.pop, 0.8 * whole * whole * (3 - 2 * whole)).toFixed(3));
+        const named = Math.max(win.pop, 0.8 * whole * whole * (3 - 2 * whole));
+        stageEl?.style.setProperty('--name-glow', named.toFixed(3));
+        // The scene blooms with it: the rulito and his glow (the only moment the stage blooms)
+        if (stage) stage.bloom = named;
         const flare = win.full && win.head - win.tail > 0.9 ? Math.max(win.pop, Math.sin(t * 4) * 0.5 + 0.5) : 0;
         rulito.value.frame({ head: win.head, tail: win.tail, flare, t, fade: Math.min(1, (win.head - win.tail) * 14) });
-        rulito.value.$el.style.rotate = `${(Math.sin(t * 1.8) * 3).toFixed(2)}deg`;
-        rulito.value.$el.style.scale = (1 + 0.2 * win.pop * win.pop).toFixed(3);
+        N_.rulito?.refresh();
+        if (N_.rulito) {
+            N_.rulito.rotate = Math.sin(t * 1.8) * 3;
+            N_.rulito.scale = 1 + 0.2 * win.pop * win.pop;
+        }
         if (win.back && win.tail >= win.head) {
             win = null;
             rulito.value.frame({});
+            N_.rulito?.refresh();
+            if (stage) stage.bloom = 0;
             stageEl?.style.setProperty('--name-glow', '0');
             // If every cell was let go of again while the rulito was going, there is a new one to be born
             if (cellField && cellField.remaining() === 0) startWin();
@@ -263,31 +283,86 @@
         if (entered && event.cancelable && touch && onCharacter(touch.clientX, touch.clientY)) event.preventDefault();
     };
 
+    // Where he is at rest (his element's box, without its transform) and the layers that draw him
+    const measure = () => {
+        const el = character.value;
+        box = { left: el.offsetLeft, top: el.offsetTop, w: el.offsetWidth, h: el.offsetHeight };
+    };
+    const place = (W, H) => {
+        measure();
+        // The rays cover the screen with 24px to spare on every side, so they can drift
+        const k = Math.max((W + 48) / RAYS.w, (H + 48) / RAYS.h);
+        N_.rays.place({ left: W / 2 - RAYS.w * k / 2, top: H / 2 - RAYS.h * k / 2, w: RAYS.w * k, h: RAYS.h * k });
+        N_.char.pivot = { x: box.left + box.w / 2, y: box.top + box.h / 2 };
+        N_.halo.place(box);
+        N_.body.place(box);
+        N_.spiral.place(box);
+        // The rulito floats clear of his head: its glyph at 53% across and 23.5% down his picture, 8.2% of his width
+        const gw = 0.082 * box.w, gh = gw * 86 / 32;
+        const glyph = { left: box.left + 0.53 * box.w - gw / 2, top: box.top + 0.235 * box.h, w: gw, h: gh };
+        N_.rulito.place({ left: glyph.left - 0.4375 * gw, top: glyph.top - 0.1628 * gh, w: gw * 1.875, h: gh * 1.3256 }, { x: glyph.left + gw / 2, y: glyph.top + gh });
+    };
+    const build = (st) => {
+        N_.rays = st.depth(RAYS_Z).image(raysUrl, { under: true, shimmer: 0.3 });
+        N_.char = st.depth(0).group();
+        // His glow: his own picture, much blurred and tinted, a little bigger, behind him
+        N_.halo = N_.char.image('/assets/hero/character.webp', { blur: 5, vignette: 0.18, bloom: true });
+        N_.halo.uniforms.uTint.value.setRGB(...GLOW);
+        N_.halo.uniforms.uTintAmount.value = 1;
+        N_.body = N_.char.image('/assets/hero/character.webp');
+        N_.spiral = N_.char.canvas(spiralCanvas.value);
+        N_.rulito = N_.char.canvas(rulito.value.canvas, { bloom: true });
+        N_.char.enter({ y: 60, scale: 0.88, delay: 250, duration: 1700 });
+    };
+    // Each frame of his life: where he is, how he leans and swells, and how much he glows
+    const onLife = ({ x, y, rotate, scale, glow }) => {
+        if (!N_.char) return;
+        N_.char.x = x;
+        N_.char.y = y;
+        N_.char.rotate = rotate;
+        N_.char.scale = scale;
+        N_.halo.opacity = glow.alpha;
+        N_.halo.scale = 1 + glow.blur / Math.max(box?.w ?? 300, 1) * 1.6;
+    };
+
+    const begin = async () => {
+        let made;
+        try {
+            made = await createLayerStage(canvas.value);
+        } catch (e) {
+            console.warn('The WebGL stage is not available', e);
+            return;
+        }
+        if (unmounted) { made.destroy(); return; }
+        stage = made;
+        build(stage);
+        stage.onResize((W, H) => place(W, H));
+        createVipassanaField(stage, root.value, { onEvent: onFieldEvent })
+            .then((field) => { unmounted ? field.destroy() : (cellField = field); })
+            .catch((error) => console.warn('Cell field unavailable', error));
+
+        // The rays drift a hair with depth; the character also rises a little as the page scrolls
+        parallax = createParallax(root.value, ({ x, y, scroll, t }) => {
+            stage.look(x * SLIDE, y * SLIDE_Y);
+            scrollLift = -scroll * 70;
+            tick(performance.now());
+            N_.spiral.refresh();
+            stage.render(t);
+        });
+        enter();
+    };
+
     onMounted(() => {
         root.value.addEventListener('touchstart', onTouchStart, { passive: false });
         // Safari on a Mac with a force-sensitive trackpad: a hard press must not open the Look Up of what is under it
         root.value.addEventListener('webkitmouseforcewillbegin', preventDefault);
         spiral = createHeroSpiral(spiralCanvas.value, { animate: !reducedMotion });
-        life = createCharacterLife(character.value, root.value, { spiral, getLift: () => scrollLift, onExhale, getRise: () => cellField?.orbit() ?? 0 });
-
-        createCellField(cellCanvas.value, root.value, { onEvent: onFieldEvent })
-            .then((field) => { unmounted ? field.destroy() : (cellField = field); })
-            .catch((error) => {
-                console.warn('Cell field unavailable, using static cells', error);
-                cellsFallback.value = true;
-            });
-
-        // The rays drift a hair with depth; the character also rises a little as the page scrolls
-        parallax = createParallax(root.value, ({ x, y, scroll }) => {
-            rays.value.style.translate = `${-x * 10}px ${-y * 8}px`;
-            scrollLift = -scroll * 70;
-        });
+        life = createCharacterLife(character.value, root.value, { spiral, getLift: () => scrollLift, onExhale, getRise: () => cellField?.orbit() ?? 0, onFrame: onLife });
         stageEl = root.value.closest('.stage');
         startHints();
-        frame = requestAnimationFrame(tick);
         // Only in development: lets a test look at the game
         if (import.meta.env.DEV) root.value.__game = { get field() { return cellField; }, get win() { return win; }, get spiral() { return spiral; }, get holding() { return sidBreath; } };
-        enter();
+        begin();
     });
     watch(() => props.active, enter);
 
@@ -297,7 +372,6 @@
         life?.destroy();
         clearTimeout(breathTimer);
         clearInterval(hintTimer);
-        cancelAnimationFrame(frame);
         stageEl?.style.removeProperty('--name-glow');
         root.value?.removeEventListener('touchstart', onTouchStart);
         root.value?.removeEventListener('webkitmouseforcewillbegin', preventDefault);
@@ -305,18 +379,14 @@
         window.removeEventListener('pointercancel', onUp);
         spiral?.destroy();
         cellField?.destroy();
+        stage?.destroy();
     });
 </script>
 
 <template>
     <div class="scene" ref="root" @click="onClick" @pointerdown="onDown" @mousedown="onMouseDown" @pointermove="onMove" @contextmenu.prevent @dragstart.prevent @selectstart.prevent>
-        <div class="rays" ref="rays"></div>
-        <canvas class="cell-field" ref="cellCanvas"></canvas>
-        <template v-if="cellsFallback">
-            <img class="cell one" src="/assets/hero/cell-one.webp" alt="" draggable="false">
-            <img class="cell two" src="/assets/hero/cell-two.webp" alt="" draggable="false">
-            <img class="cell three" src="/assets/hero/cell-three.webp" alt="" draggable="false">
-        </template>
+        <canvas class="stageCanvas" ref="canvas"></canvas>
+        <!-- He is drawn by the stage; his element stays, hidden, to be moved by his life and to say where he is touched -->
         <div class="character" ref="character">
             <img class="body" src="/assets/hero/character.webp" alt="" draggable="false">
             <canvas class="spiral" ref="spiralCanvas"></canvas>
@@ -336,34 +406,14 @@
         user-select: none;
     }
 
-    /* The light rays of the hero, a little larger than the screen so they can drift */
-    .rays {
-        position: absolute;
-        inset: -24px;
-        background-image: url('../../assets/hero/background.webp');
-        background-size: cover;
-        background-position: center;
-    }
-
-    .cell-field {
+    .stageCanvas {
         position: absolute;
         inset: 0;
         width: 100%;
         height: 100%;
-        pointer-events: none;
-        opacity: 0;
-        transition: opacity 1.4s ease-out;
-    }
-
-    .cell {
-        position: absolute;
-        height: auto;
+        display: block;
         pointer-events: none;
     }
-
-    .cell.one { width: 27vw; max-width: 220px; top: 62%; right: 9%; }
-    .cell.two { width: 23vw; max-width: 190px; top: 12%; right: 18%; }
-    .cell.three { width: 27vw; max-width: 220px; top: 80%; left: 9%; }
 
     .character {
         --w: min(80vw, 56svh * 0.845, 520px);
@@ -373,6 +423,11 @@
         left: calc(50% - var(--w) / 2);
         top: calc(54% - var(--w) * 1027 / 868 / 2);
         pointer-events: none;
+    }
+
+    /* Hidden: the stage draws him (his spiral and the rulito are drawn on their canvases, which still draw when hidden) */
+    .character > * {
+        visibility: hidden;
     }
 
     .character .body {
