@@ -30,9 +30,6 @@
             "praxis": "The Oracle",
             "deck": "The cards",
             "collaborate": "Want to help?",
-            "signIn": "Sign in",
-            "register": "Create an account",
-            "logout": "Leave",
             "back": "Back",
             "sound": "Sound",
             "soundOn": "Sound on",
@@ -40,18 +37,6 @@
             "audio": "Audio",
             "music": "Music",
             "effects": "Effects"
-        },
-        "auth": {
-            "registerTitle": "Create an account",
-            "registerDescrip": "You can collect and work on every card that comes your way.",
-            "registerSubmit": "I want to dive",
-            "registerGoogle": "I will use my Gmail account",
-            "signinTitle": "Sign in",
-            "signinDescrip": "Log in with you email and password",
-            "signinSubmit": "I want to dive",
-            "signinGoogle": "I will use my Gmail account",
-            "formEmail": "Email",
-            "formPassword": "Password"
         },
         "about": {
             "oracleAuthor": "Belén Brito",

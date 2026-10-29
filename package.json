@@ -17,7 +17,6 @@
     "check": "npm run lint && npm run build && npm run check:cards && npm run check:docs && npm run check:budget && npm run check:smoke"
   },
   "dependencies": {
-    "firebase": "^10.7.2",
     "motion": "^10.17.0",
     "posthog-js": "^1.438.23",
     "three": "^0.186.1",

@@ -60,15 +60,6 @@
             <label for="lang-en" :class="{active: $i18n.locale == 'en'}">English</label>
         </div>
 
-        <!-- Accounts, off for now. To bring them back: isLoggedIn from onAuthStateChanged and handleSignOut with signOut,
-             both with the auth of src/firebase.js, imported on demand so Firebase stays out of every visit.
-        <div v-if="isLoggedIn">
-            <a class="logout" @click="handleSignOut" v-if="isLoggedIn">{{ $t("nav.logout") }}</a>
-        </div>
-        <div v-else>
-            <a @click="navigate('/register')">{{ $t("nav.register") }}</a>
-            <a @click="navigate('/sign-in')">{{ $t("nav.signin") }}</a>
-        </div> -->
     </nav>
 </template>
 

@@ -1,5 +1,4 @@
 import { createRouter, createWebHistory, START_LOCATION } from "vue-router";
-// import { getAuth, onAuthStateChanged } from 'firebase/auth';
 
 import Landing from '../views/Landing.vue';
 import { oracleTop } from '../composables/oracleScroll.js';
@@ -33,13 +32,13 @@ const router = createRouter({
       redirect: { path: "/", hash: "#oraculo" },
     },
     {
+      // There are no accounts (the Firebase sign-in was never finished and is gone)
       path: "/register",
-      // Loaded on demand, with Firebase (src/firebase.js)
-      component: () => import('../views/Register.vue'),
+      redirect: "/",
     },
     {
       path: "/sign-in",
-      component: () => import('../views/SignIn.vue'),
+      redirect: "/",
     },
     {
       // "¿Qué es esto?" is gone: what it said about the cards now lives on the deck page
@@ -76,9 +75,6 @@ const router = createRouter({
     {
       path: "/deck",
       component: Deck,
-      // meta: {
-      //   requiresAuth: true
-      // }
     },
     {
       path: "/:pathMatch(.*)",
@@ -87,32 +83,8 @@ const router = createRouter({
   ],
 });
 
-// Persist the logged in user among pages
-// const getCurrentUser = () => {
-//     return new Promise ((resolve, reject) => {
-//         const removeListener = onAuthStateChanged(
-//             getAuth(),
-//             (user) => {
-//                 removeListener();
-//                 resolve(user);
-//             },
-//             reject
-//         );
-//     });
-// };
-
-// // Check user permission to see a page
-router.beforeEach(() => {    
-    // if(to.matched.some((record) => record.meta.requiresAuth)) {
-    //     if (await getCurrentUser()) {
-    //         next();
-    //     } else {
-    //         //alert('you dont have acces!');
-    //         next('/');
-    //     }
-    // } else {
-    //     next();
-    // }
+// Every page starts at the top
+router.beforeEach(() => {
     window.scrollTo(0, 0);
 });
 

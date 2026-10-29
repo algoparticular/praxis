@@ -30,9 +30,6 @@
             "praxis": "El Oráculo",
             "deck": "Las cartas",
             "collaborate": "¿Quieres ayudar?",
-            "signIn": "Ingresar",
-            "register": "Crear una cuenta",
-            "logout": "Salir",
             "back": "Volver",
             "sound": "Sonido",
             "soundOn": "Con sonido",
@@ -40,18 +37,6 @@
             "audio": "Audio",
             "music": "Música",
             "effects": "Efectos"
-        },
-        "auth": {
-            "registerTitle": "Crea una cuenta",
-            "registerDescrip": "Puedes coleccionar y trabajar sobre cada carta que vaya apareciendo en tu camino.",
-            "registerSubmit": "Quiero sumergirme",
-            "registerGoogle": "Voy a ingresar usando mi Gmail",
-            "signinTitle": "Ingresa a tu cuenta",
-            "signinDescrip": "Inicia con tu email y contraseña.",
-            "signinSubmit": "Quiero sumergirme",
-            "signinGoogle": "Voy a ingresar usando mi Gmail",
-            "formEmail": "Email",
-            "formPassword": "Contraseña"
         },
         "about": {
             "oracleAuthor": "Belén Brito",
