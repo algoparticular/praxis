@@ -1,7 +1,7 @@
 <script setup>
     // Nekkhamma: renunciation, "a sacred being making a human experience". Sid stands on the ground of a quiet night,
-    // tied by threads of dots to his things on the ground (stones, mushrooms, the cairn, glowing buds): his possessions.
-    // Its verb is Soltar (let go): a touch on one of them (or on him) cuts its thread, which rises as motes, and he lets
+    // tied by a thread of dots to each of the glowing buds on the ground: his possessions.
+    // Its verb is Soltar (let go): a touch on a bud (or on him) cuts its thread, which rises as motes, and he lets
     // go of a part of himself. He comes undone from the feet up along a ragged edge that glows (a shader on his picture),
     // the dots of his line stay a while where he was (as the illustration draws him undone) and what he lets go of
     // rises from that edge as motes, which gather over him into a cloud of the colours of everything (there is no cloud
@@ -61,6 +61,7 @@
     const SLIDE = 50;
     const SLIDE_Y = 30;
     const zFor = (amp) => amp / (SLIDE + amp);
+    const PLANET = -760;            // the planet moved to the left, out of the way of the cloud's galaxy (art px)
     const DEPTH = { wind: 5, planet: 9, cloud: 15, ground: 26, sid: 26 };
     const WIND = { amp: 4, speed: 0.9 };            // the plants sway (in the shader); the buds on them sway along
 
@@ -78,18 +79,9 @@
     const CYAN = 0x10c0d0;
     const GLOW = 0x9fe8f0;
 
-    // What ties him: threads of dots from him to what he holds on to on the ground (his possessions, as the card says:
+    // What ties him: a thread of dots from him to each glowing bud on the ground (his possessions, as the card says:
     // "beyond your name, nationality, profession, religion and possessions"). Each one cut lets go of a part of him
-    const budAt = (i) => ({ x: art.buds[i][0] + art.buds[i][2] / 2, y: art.buds[i][1] + art.buds[i][3] / 2, bud: i });
-    const ANCHORS = [
-        { x: 556, y: 1858 },        // a mushroom
-        budAt(3),                   // a glowing bud (the stone beside it is too close to be touched apart on a phone)
-        { x: 907, y: 2024 },        // a stone
-        { x: 1129, y: 2012 },       // two mushrooms
-        { x: 1300, y: 1826 },       // the cairn
-        budAt(4),
-        budAt(5),
-    ];
+    const ANCHORS = art.buds.map(([x, y, w, h], i) => ({ x: x + w / 2, y: y + h / 2, bud: i }));
     // Where each thread holds him (height 0 feet .. 1 head, and the side it leaves from); it climbs as he comes undone
     const threads = ANCHORS.map((a, i) => ({
         a, i, on: true, grow: 0, cutAt: -9, pulse: 0,
@@ -336,9 +328,9 @@
         layout(w, h);
         const B = art.boxes;
         L.wind.place(rectOf(B.wind));
-        L.planetBody.place(rectOf(B.planet));
-        L.ring.place(rectOf(B.ring));
-        const planet = rectOf(B.planet);
+        L.planetBody.place(rectOf(B.planet, PLANET));
+        L.ring.place(rectOf(B.ring, PLANET));
+        const planet = rectOf(B.planet, PLANET);
         L.planet.pivot = { x: planet.left + planet.w / 2, y: planet.top + planet.h / 2 };
         L.cloudGlow.place(rectOf([1080 - HALF * 1.4, 0, HALF * 2.8, 1700], 0, CLOUD.dy));
         // The ground reaches both sides of the screen and below the frame (it moves with the pointer)
@@ -570,7 +562,9 @@
         // The cloud flares while he is it
         const cosmic = win && !win.given ? Math.sin(Math.PI * Math.min(1, win.age / GIVE)) : 0;
         stageEl?.style.setProperty('--name-glow', named.toFixed(3));
-        stage.bloom = Math.max(named, 0.5 * cosmic, 0.3 * charge);
+        // (not while the breath gathers: the light behind him is enough. No particle group is in the bloom: its pass
+        // draws points four times too big, and on a real GPU the threads melted into a white smear)
+        stage.bloom = Math.max(named, 0.5 * cosmic);
         if (cosmic > 0) dust?.boost(2, cosmic * 0.6);
 
         // Sid breathes a little and shines while the breath gathers, when he lets go and when he comes back
@@ -646,18 +640,18 @@
                 // 1: the stars of the card
                 { colors: [0x202030], parallax: 0, drift: 1.5, twinkle: 0.3, reach: 0, order: -19, points: () => fromArt(art.dots.stars) },
                 // 2: the cloud of the colours of everything, as he lets go; a finger stirs it
-                { dynamic: cloudGroup, parallax: 0, drift: 3.5, jitter: 0.25, twinkle: 0.3, reach: 90, push: 22, bloom: true, order: after(L.cloudGlow) + 0.2 },
+                { dynamic: cloudGroup, parallax: 0, drift: 3.5, jitter: 0.25, twinkle: 0.3, reach: 90, push: 22, order: after(L.cloudGlow) + 0.2 },
                 // 3: the pink specks over the mushrooms
                 { parallax: 0, drift: 2, twinkle: 0.85, reach: 0, order: after(L.mark), points: () => fromArt(art.dots.specks, 1.4) },
                 // 4: the dots of his line, where he was
-                { dynamic: lineGroup, parallax: 0, drift: 2, jitter: 0.3, twinkle: 0.15, reach: 0, bloom: true, order: after(L.sid) },
+                { dynamic: lineGroup, parallax: 0, drift: 2, jitter: 0.3, twinkle: 0.15, reach: 0, order: after(L.sid) },
                 // 5: what rises from him to the cloud
-                { dynamic: flyers, look: 'soft', parallax: 0, drift: 2, twinkle: 0.2, reach: 0, bloom: true, order: after(L.rulito) },
+                { dynamic: flyers, look: 'soft', parallax: 0, drift: 2, twinkle: 0.2, reach: 0, order: after(L.rulito) },
                 // 6: the threads that tie him to his things, in front of the ground and behind him
-                { dynamic: threadGroup, parallax: 0, drift: 1, twinkle: 0.15, reach: 0, bloom: true, order: after(L.mark) },
+                { dynamic: threadGroup, parallax: 0, drift: 1, twinkle: 0.15, reach: 0, order: after(L.mark) },
                 // 7, 8: a little spiral galaxy in the cloud (as Dana's), its glow and its stars
-                { colors: [0xffffff], dynamic: galaxy.glow, parallax: 0, drift: 0, twinkle: 0, reach: 0, look: 'soft', bloom: true, order: after(L.cloudGlow) },
-                { colors: [0xffffff], dynamic: galaxy.stars, parallax: 0, drift: 0, twinkle: 0, reach: 0, bloom: true, order: after(L.cloudGlow) + 0.1 },
+                { colors: [0xffffff], dynamic: galaxy.glow, parallax: 0, drift: 0, twinkle: 0, reach: 0, look: 'soft', order: after(L.cloudGlow) },
+                { colors: [0xffffff], dynamic: galaxy.stars, parallax: 0, drift: 0, twinkle: 0, reach: 0, order: after(L.cloudGlow) + 0.1 },
             ],
         });
         if (reduced) dust.reveal();
@@ -688,9 +682,9 @@
             :aria-label="$i18n.locale === 'en' ? 'Sid: touch him to let go, hold him to let go of everything' : 'Sid: tocalo para soltar, mantenelo para soltarlo todo'"
             @pointerdown.prevent="press" @keydown="onKeyDown" @keyup="onKeyUp" @blur="letGo"
             @contextmenu.prevent @dragstart.prevent @selectstart.prevent></div>
-        <!-- What he is tied to: a touch cuts its thread -->
+        <!-- The buds he is tied to: a touch cuts its thread -->
         <div v-for="(a, i) in ANCHORS" :key="i" :ref="(el) => { ties[i] = el; }" class="tie" role="button" tabindex="0"
-            :aria-label="$i18n.locale === 'en' ? 'A thread that ties him: touch to cut it' : 'Un hilo que lo ata: tocalo para cortarlo'"
+            :aria-label="$i18n.locale === 'en' ? 'A glowing bud that ties him: touch it to cut its thread' : 'Una lucecita que lo ata: tocala para cortar su hilo'"
             @pointerdown.prevent="cutAt(i)" @keydown="onTieKey($event, i)"></div>
     </div>
 </template>
