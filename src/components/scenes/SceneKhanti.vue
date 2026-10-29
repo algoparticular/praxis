@@ -8,10 +8,21 @@
     //    thickness the brush had at each point) that winds between the pink tubes without crossing a bubble, going over
     //    one tube and under the next: it is drawn twice, once under the pink and once over it, and the copy over it only
     //    shows where the line crosses in front (a mask). Nothing of it stays still: several short strokes, each tapering
-    //    at both ends, travel along the route at their own pace, one after another.
-    //  - Nine flasks have a cork (khantiFlasks.json: each flask's pink is its own picture). Pressing a cork pops it and
-    //    the flask empties as if it evaporated: the pink level sinks, the creature fades up and vapour rises. Pressing the
-    //    central sign fills everything back.
+    //    at both ends, travel along the route at their own pace, one after another. It is only decoration.
+    //  - Its verb is Fluir (accompany the current): the pink of the network starts still, as if stagnant (paler, with
+    //    hardly any light of the water in it). A current of live pink is born in the central sign and goes along one
+    //    route through the tubes (khantiFlow.json: x, y and half the width of the tube every few px, traced from the
+    //    artwork, and where it enters and leaves each flask) passing through the nine flasks, at its own pace, which is
+    //    never even (it slows down and goes on). A finger kept on its head (or the mouse near it, or Enter held on it)
+    //    goes with it: it widens, shines, runs at its full pace and sounds (`flow`). Alone, or with the finger ahead of
+    //    it, it does not go faster: it thins and crawls. Nothing is lost: it never goes back.
+    //  - Each of the nine flasks has a cork (khantiFlasks.json: each flask's pink is its own picture) and is a knot: the
+    //    current stops at a corked flask and waits. Pressing the cork pops it: the old pink evaporates (the level sinks,
+    //    the creature goes up and away with the vapour) and the tubes around it empty a stretch. Once it is empty the
+    //    current comes in and fills it with live pink (empty of drawing, full of pink), and goes on. A flask uncorked
+    //    before the current gets there is waiting empty, and the current goes through without stopping.
+    //  - When the current has gone through the nine, the whole network is live, the rulito is born over the central
+    //    sign and the card's name lights up; then everything goes still and corked again, and the creatures come back.
     //  - The blue dots of the sky and the lavender specks are particles; touching a creature makes it flash and throw
     //    sparks of its colour.
     // It is drawn in WebGL (useLayerStage): the network is a group of planes at one depth, the camera slides with the
@@ -25,9 +36,11 @@
     import { createSparks } from '../../composables/useSparks.js';
     import { play } from '../../composables/useSound.js';
     import { sceneMilestone } from '../../analytics.js';
+    import Rulito from '../Rulito.vue';
     import layers from '../../composables/khantiLayers.json';
     import flaskData from '../../composables/khantiFlasks.json';
     import LINE from '../../composables/khantiLine.json';
+    import FLOW from '../../composables/khantiFlow.json';
 
     const props = defineProps({
         card: { type: Object, default: () => ({}) },
@@ -37,6 +50,9 @@
     const root = ref(null);
     const canvas = ref(null);
     const overlay = ref(null);              // the square of the network, over the stage: the touch targets live in it
+    const headHit = ref(null);              // where the current's head is: a finger put there goes with it
+    const rulito = ref(null);
+    let stageEl = null;                     // the card's stage, where the name is lit from (--name-glow)
     const catchers = {};                    // the creatures' touch targets, by layer number
     const setCatcher = (n) => (el) => { catchers[n] = el; };
     const N_ = {};                          // the layers (stage nodes), by layer number or flask id
@@ -73,9 +89,10 @@
         return { left: pct((left + w / 2 - size / 2).toFixed(3)), top: pct((top + h / 2 - size / 2).toFixed(3)), width: pct(size.toFixed(3)), height: pct(size.toFixed(3)) };
     };
 
-    // The flasks with a cork: how empty each is (level 0 full .. 1 empty, easing towards the target), how far its cork
-    // has popped, and which creature lives in it
-    const FLASKS = flaskData.map((f) => ({ ...f, level: 0, target: 0, pop: 0, life: 1, glow: 0, awake: false }));
+    // The flasks with a cork: how empty each is (level 0 full .. 1 empty), how far its cork
+    // has popped, and which creature lives in it. corked: a knot that stops the current; live: the current has filled it
+    // (fresh: how live it looks, 0..1); drain: how far the tubes round an uncorked flask have emptied
+    const FLASKS = flaskData.map((f) => ({ ...f, level: 0, pop: 0, life: 1, glow: 0, awake: false, corked: true, live: false, fresh: 0, drain: 0 }));
     const flaskOfCreature = {};
     const flaskOfCork = {};
     FLASKS.forEach((f) => { f.creatures.forEach((n) => { flaskOfCreature[n] = f; }); flaskOfCork[f.cork] = f; });
@@ -117,12 +134,11 @@
     const X = (i) => LINE.pts[3 * i];
     const Y = (i) => LINE.pts[3 * i + 1];
     const W = (i) => LINE.pts[3 * i + 2];
-    // A ribbon along samples a..b: the line pushed out by its thickness (times widthAt) on both sides
-    // `bend(i)` may pull a sample off the route: [dx, dy]. Both ends are rounded off with a half circle, so a stroke
-    // never ends in a flat cut
-    const ribbon = (a, b, widthAt, bend) => {
+    // A ribbon along samples a..b: the line pushed out by its thickness (times widthAt) on both sides. Both ends are
+    // rounded off with a half circle, so a stroke never ends in a flat cut
+    const ribbon = (a, b, widthAt) => {
         const left = [], right = [];
-        const at = bend ? (i) => { const d = bend(i); return [X(i) + d[0], Y(i) + d[1]]; } : (i) => [X(i), Y(i)];
+        const at = (i) => [X(i), Y(i)];
         const f = (v) => v.toFixed(1);
         let first = null, last = null;
         for (let i = a; i <= b; i++) {
@@ -155,7 +171,7 @@
         const hops = i % 3 === 0 ? 2 : 1;
         return {
             hops, at: Math.floor(i * (HIDE.length - 2) / 14), p: (i * 0.37) % 1.2, dur: (4.4 + (i % 4) * 1.1) * (hops === 2 ? 1.5 : 1), rest: 0.03 + (i % 3) * 0.05,
-            tail: 0, head: 0, grab: 0,
+            tail: 0, head: 0,
         };
     });
     const ease = (v) => v * v * (3 - 2 * v);
@@ -167,7 +183,8 @@
     };
     STROKES.forEach(placeStroke);
 
-    // The finger (or the mouse): where it is on the thread's square, when it last moved, and whether it is pressing
+    // The finger (or the mouse): where it is on the network's square (in the 2160 units), when it last moved, and
+    // whether it is pressing
     const pointer = { u: 0, v: 0, at: -99, down: false };
     let nowT = 0;
     const track = (event) => {
@@ -179,48 +196,24 @@
         pointer.at = nowT;
     };
     const release = (event) => { track(event); pointer.down = false; };
-    const GRAB = 300;                      // how near (in the 2160 units) a stroke has to be for the finger to reach it
-    const REACH = 240;                     // how far round the finger the stroke is pulled
-    // The strokes answer the finger. A mouse passing over only makes the two nearest strokes lean a little towards it;
-    // pressing (or a finger dragging) pulls the nearest one right up to it, stretching it. They keep travelling, and
-    // let go when the finger stops.
-    const moveStrokes = (dt, t) => {
-        const active = t - pointer.at < 1.1;
-        const found = [];
+    // The strokes of the thread travel along the route at their own pace (they are decoration: the finger is for the current)
+    const moveStrokes = (dt) => {
         STROKES.forEach((k) => {
             k.p += dt / k.dur;
             if (k.p >= 1 + k.rest) { k.p = 0; k.at += k.hops; if (k.at + k.hops > HIDE.length - 1) k.at = 0; }
             placeStroke(k);
-            if (!active || k.head - k.tail < 3) return;
-            let bestD = Infinity;
-            for (let i = Math.floor(k.tail); i <= k.head; i += 4) bestD = Math.min(bestD, (X(i) - pointer.u) ** 2 + (Y(i) - pointer.v) ** 2);
-            if (bestD < GRAB * GRAB) found.push({ k, bestD });
         });
-        found.sort((a, b) => a.bestD - b.bestD);
-        const taken = new Set(found.slice(0, pointer.down ? 1 : 2).map((f) => f.k));
-        STROKES.forEach((k) => {
-            const want = taken.has(k) ? (pointer.down ? 1 : 0.4) : 0;
-            k.grab += (want - k.grab) * Math.min(1, dt * (want ? 4 : 2.2));
-        });
-    };
-    const bendOf = (k) => k.grab < 0.02 ? null : (i) => {
-        const dx = pointer.u - X(i), dy = pointer.v - Y(i);
-        const f = k.grab * 0.55 * Math.exp(-(dx * dx + dy * dy) / (REACH * REACH));
-        return [dx * f, dy * f];
     };
     // The stretch [from, to] (fractions of the stroke) of a stroke, narrowest at its two ends
-    const strokeD = (k, from, to, bend) => {
+    const strokeD = (k, from, to) => {
         const tail = Math.floor(k.tail), len = k.head - k.tail;
         if (len < 3) return '';
         const taper = (i) => 0.3 + 0.34 * Math.pow(Math.sin(Math.PI * clamp01((i - tail) / len)), 0.7);
-        return ribbon(tail + Math.floor(from * len), tail + Math.floor(to * len), taper, bend);
+        return ribbon(tail + Math.floor(from * len), tail + Math.floor(to * len), taper);
     };
     // Nested ribbons, so each stroke fades in and out along its length instead of ending abruptly
     const FADES = [[0, 1], [0.12, 0.88], [0.24, 0.76], [0.36, 0.64], [0.48, 0.52]];
-    const strokesD = () => {
-        const bends = STROKES.map(bendOf);
-        return FADES.map(([from, to]) => STROKES.map((k, n) => strokeD(k, from, to, bends[n])).join(''));
-    };
+    const strokesD = () => FADES.map(([from, to]) => STROKES.map((k) => strokeD(k, from, to)).join(''));
 
     // ---- The thread on two canvases (the square of the artwork): all of it under the pink, and over it only where it
     // crosses in front. Drawn at the frame's size (the stroke is soft: no need for the screen's full density).
@@ -303,6 +296,8 @@
             const flask = flaskOfCork[n];
             if (flask) {
                 tx += flask.away.x * flask.pop * 3.4; ty += flask.away.y * flask.pop * 3.4; rot += (flask.away.x >= 0 ? 1 : -1) * flask.pop * 34;
+                // the cork of the flask the current is waiting at calls softly
+                if (flow.waiting === flask) { const b = 0.5 + 0.5 * Math.sin(t * 4); bright += 0.35 * b; sx *= 1 + 0.08 * b; sy *= 1 + 0.08 * b; }
             }
             // Touched: a flash of brightness over 0.7s
             if (flashes[n] !== undefined) {
@@ -325,21 +320,28 @@
         });
     };
 
-    // The flasks: each one's pink sinks as it evaporates, and vapour rises from its surface
+    // The flasks: a corked one is full of still pink; uncorked, its pink evaporates (vapour rises from its surface) and
+    // its creature goes up and away; filled by the current, it is full of live pink and empty of drawing
     const sparks = createSparks(640);
+    const EMPTY_S = 2.4, FILL_S = 1.6;      // how long a flask takes to empty and to fill
     const stepFlasks = (dt) => {
         FLASKS.forEach((f) => {
-            const rate = f.target > f.level ? dt / 3.4 : dt / 1.6;
-            f.level = f.target > f.level ? Math.min(f.target, f.level + rate) : Math.max(f.target, f.level - rate);
-            f.pop += ((f.target > 0 ? 1 : 0) - f.pop) * Math.min(1, dt * 7);
-            // The creature fades away early while the pink sinks, and comes back as soon as the flask is filled again
-            f.life = f.target > 0 ? Math.max(0, f.life - dt / 1.1) : Math.min(1, f.life + dt / 0.9);
+            const target = f.corked || f.live ? 0 : 1;
+            f.level = target > f.level ? Math.min(target, f.level + dt / EMPTY_S) : Math.max(target, f.level - dt / FILL_S);
+            f.pop += ((f.corked ? 0 : 1) - f.pop) * Math.min(1, dt * 7);
+            // The creature fades away early while the pink sinks, and only comes back when everything is corked again
+            f.life = f.corked ? Math.min(1, f.life + dt / 1.4) : Math.max(0, f.life - dt / 1.1);
+            f.fresh += ((f.live || win ? 1 : 0) - f.fresh) * Math.min(1, dt * (f.live ? 1.6 : 0.8));
+            f.drain += ((f.corked ? 0 : 1) - f.drain) * Math.min(1, dt * 0.9);
             const node = N_[f.id];
             if (!node) return;
             node.uniforms.uSink.value.y = f.level;
             node.opacity = f.level >= 0.999 ? 0 : 1;
+            node.uniforms.uSaturate.value = STILL.saturate + (1 - STILL.saturate) * f.fresh;
+            node.uniforms.uBright.value = STILL.bright + (1 - STILL.bright) * f.fresh;
+            node.uniforms.uWater.value = STILL.water + (1 - STILL.water) * f.fresh;
             // Vapour from the surface while it is emptying
-            if (f.target > f.level && f.level < 0.98) {
+            if (target > f.level && f.level < 0.98) {
                 const box = node.boxOnScreen(inFrame(f.box));
                 const n = Math.round(dt * 120 * (0.5 + f.level)) + (Math.random() < dt * 120 % 1 ? 1 : 0);
                 for (let i = 0; i < n; i++) {
@@ -355,28 +357,215 @@
         const area = canvas.value.getBoundingClientRect();
         return [box.left + box.width / 2 - area.left, box.top + box.height / 2 - area.top];
     };
-    // A cork: the first press empties the flask, the next one fills it again
-    const empty = (f, event) => {
-        if (f.target > 0) {
-            f.target = 0;
-            play('bloom');          // the flask fills again
-            return;
-        }
-        f.target = 1;
+    // A cork: it pops and the flask lets its old pink go. Once popped it stays so until everything is corked again
+    const uncork = (f, event) => {
+        if (!f.corked || win) return;
+        f.corked = false;
         sceneMilestone('cork_popped');
         const [x, y] = centreOn(event);
         sparks.burst(x, y, { n: 14, colors: [0xffc470, 0xffe3a8, 0xffffff], speed: 90, size: 4.4, spread: 5 });
         play('release');            // the cork pops and the flask evaporates
     };
-    // The central sign: everything is filled again
-    const refill = (event) => {
-        FLASKS.forEach((f) => { f.target = 0; });
-        sceneMilestone('refill_all');
+    // The central sign, where the current is born: it flashes
+    const touchSign = (event) => {
         const [x, y] = centreOn(event);
-        sparks.burst(x, y, { n: 40, colors: [0xffffff, 0xcfeff0, 0xffd1dc], speed: 150, size: 5.2, spread: 10 });
+        sparks.burst(x, y, { n: 30, colors: [0xffffff, 0xcfeff0, 0xffd1dc], speed: 130, size: 5, spread: 10 });
         signFlash = last ?? 0;
         play('breath');
     };
+
+    // ---- The current (Fluir). The route: x, y and half the tube's width every FLOW.step px of the 2160 square; the
+    // stops are the central sign and the nine flasks in the order it goes through them (enter..exit: inside the flask)
+    const FN = FLOW.pts.length / 3;
+    const FX = (i) => FLOW.pts[3 * i];
+    const FY = (i) => FLOW.pts[3 * i + 1];
+    const FW = (i) => FLOW.pts[3 * i + 2];
+    const STOPS = FLOW.stops.map((s) => ({ ...s, flask: FLASKS.find((f) => f.id === s.id) ?? null }));
+    const inside = new Uint8Array(FN);      // samples inside a flask or the sign, where the current is not drawn
+    STOPS.forEach((s) => { for (let i = s.enter; i <= s.exit; i++) inside[i] = 1; });
+    const START = STOPS[0].exit;            // the current comes out of the central sign here
+    const PACE = 26;                        // samples a second at its fastest, when it is accompanied
+    const ALONE = 0.22;                     // how fast it goes alone (or pushed), of its pace then
+    const REACH = 190;                      // how near its head (2160 units) the finger has to be to go with it
+    const DRAIN = 16;                       // samples of tube that empty on each side of an uncorked flask
+    const STILL = { saturate: 0.62, bright: 0.97, water: 0.25 };      // how the still pink looks
+    const flow = { head: START, alpha: 1, acc: 0, light: 0, waiting: null, noteAt: 0, touched: false };
+    let keyHold = false;                    // Enter or space held on the current's head
+    // Its pace is never even: two slow waves, from a crawl to its full pace (0.3..1)
+    const paceAt = (t) => 0.3 + 0.7 * (0.5 + 0.5 * (0.6 * Math.sin(t * 0.83) + 0.4 * Math.sin(t * 2.1 + 1.3)));
+    const nextStop = () => STOPS.find((s) => s.flask && s.exit > flow.head);
+    const stepFlow = (dt, t) => {
+        if (win) return;
+        // Accompanied: a finger (or the mouse, moving) near its head, or the key held on it
+        const recent = pointer.down || t - pointer.at < 0.6;
+        const i = Math.min(FN - 1, Math.floor(flow.head));
+        const near = keyHold || (recent && (pointer.u - FX(i)) ** 2 + (pointer.v - FY(i)) ** 2 < REACH * REACH);
+        flow.acc += ((near ? 1 : 0) - flow.acc) * Math.min(1, dt * (near ? 4 : 1.5));
+        if (near && !flow.touched) { flow.touched = true; sceneMilestone('current_accompanied'); }
+        const stop = nextStop();
+        if (!stop) { finish(); return; }
+        const f = stop.flask;
+        flow.waiting = null;
+        const pace = paceAt(t);
+        if (flow.head < stop.enter) {
+            flow.head = Math.min(stop.enter, flow.head + PACE * pace * (ALONE + (1 - ALONE) * flow.acc) * dt);
+            // its notes, while it is accompanied, rising and falling with its pace
+            if (flow.acc > 0.6 && t - flow.noteAt > 0.5 - 0.15 * pace) { flow.noteAt = t; play('flow', { step: pace, level: flow.acc }); }
+        } else if (!f.live) {
+            // A knot: it waits for the cork, and then for the old pink to be gone
+            if (f.corked) flow.waiting = f;
+            else if (f.level > 0.97) { f.live = true; play('bloom'); }
+        } else {
+            // Filling the flask, whatever the finger does
+            flow.head = Math.min(stop.exit, flow.head + (stop.exit - stop.enter) / FILL_S * dt);
+        }
+    };
+
+    // Everything is live: the rulito is born over the central sign; then the current fades, and everything is corked again
+    let win = null;
+    let wins = 0;
+    const DELAY = 0.6, GROW = 2.2, LINGER = 3, EAT = 3.4;
+    let glyph = { left: 0, top: 0, w: 1, h: 1 };
+    let netFresh = 0;                       // how live the pink of the whole network looks
+    const finish = () => {
+        if (win) return;
+        wins += 1;
+        win = { age: 0, head: 0, tail: 0, full: false, fullAt: 0, back: false, pop: 0 };
+        flow.waiting = null;
+        rulito.value?.reshape();
+        signFlash = last ?? 0;
+        play('converge');
+        sceneMilestone('current_flowed', { times: wins });
+    };
+    const corkAll = () => {
+        FLASKS.forEach((f) => { f.corked = true; f.live = false; });
+    };
+    const stepWin = (dt, t) => {
+        let named = 0;
+        if (win && rulito.value) {
+            win.age += dt;
+            win.pop = Math.max(0, win.pop - dt * 2.2);
+            win.head = 1 - (1 - Math.min(1, Math.max(0, (win.age - DELAY) / GROW))) ** 1.6;
+            if (win.head >= 1 && !win.full) { win.full = true; win.fullAt = win.age; win.pop = 1; play('rulito'); }
+            if (win.full && !win.back && win.age - win.fullAt > LINGER) { win.back = true; corkAll(); }
+            if (win.back) win.tail = Math.min(1, win.tail + dt / EAT);
+            const whole = Math.min(1, Math.max(0, (win.head - win.tail - 0.6) / 0.4));
+            named = Math.max(win.pop, 0.8 * whole * whole * (3 - 2 * whole));
+            const flare = win.full && win.head - win.tail > 0.9 ? Math.max(win.pop, Math.sin(t * 4) * 0.5 + 0.5) : 0;
+            rulito.value.frame({ head: win.head, tail: win.tail, flare, t, fade: Math.min(1, (win.head - win.tail) * 14), width: glyph.w });
+            N_.rulito.refresh();
+            N_.rulito.scale = 1 + 0.2 * win.pop * win.pop;
+            // the current fades as the rulito goes, and is born again in the sign
+            if (win.back) flow.alpha = Math.max(0, 1 - win.tail * 1.4);
+            if (win.back && win.tail >= 1) {
+                win = null;
+                flow.head = START;
+                flow.acc = 0;
+                rulito.value.frame({ width: glyph.w });
+                N_.rulito.refresh();
+            }
+        }
+        if (!win) flow.alpha = Math.min(1, flow.alpha + dt / 1.5);
+        netFresh += ((win && !win.back ? 1 : 0) - netFresh) * Math.min(1, dt * (win && !win.back ? 1.2 : 0.6));
+        flow.light += ((win && !win.back ? 1 : 0) - flow.light) * Math.min(1, dt * 1.5);
+        N_.body.uniforms.uSaturate.value = STILL.saturate + (1 - STILL.saturate) * netFresh;
+        N_.body.uniforms.uBright.value = STILL.bright + (1 - STILL.bright) * netFresh;
+        N_.body.uniforms.uWater.value = 0.6 * (STILL.water + (1 - STILL.water) * netFresh);
+        stageEl?.style.setProperty('--name-glow', named.toFixed(3));
+        stage.bloom = named;
+    };
+
+    // The current on a canvas (the square of the artwork), between the still pink and the flasks: the tubes emptied
+    // round the uncorked flasks it has not reached yet, the live pink from the sign to its head, lights travelling
+    // along it and a glow on its head
+    const flowCanvas = document.createElement('canvas');
+    const LIVE = '#ff94aa';
+    let lightPhase = 0;
+    // Strokes along samples a..b, broken where the route is inside a flask, each piece as wide as the tube there (times k)
+    const along = (ctx, a, b, k) => {
+        a = Math.max(0, Math.floor(a));
+        b = Math.min(FN - 1, Math.floor(b));
+        for (let i = a; i < b; i += 6) {
+            const j = Math.min(b, i + 7);
+            if (inside[i] && inside[j]) continue;
+            ctx.beginPath();
+            let open = false;
+            for (let n = i; n <= j; n++) {
+                if (inside[n]) { open = false; continue; }
+                if (open) ctx.lineTo(FX(n), FY(n)); else { ctx.moveTo(FX(n), FY(n)); open = true; }
+            }
+            ctx.lineWidth = 2 * FW(Math.floor((i + j) / 2)) * k;
+            ctx.stroke();
+        }
+    };
+    const drawFlow = () => {
+        const px = Math.max(2, Math.round(F.size * Math.min(window.devicePixelRatio || 1, 1.5)));
+        if (flowCanvas.width !== px) { flowCanvas.width = px; flowCanvas.height = px; }
+        const ctx = flowCanvas.getContext('2d');
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.clearRect(0, 0, px, px);
+        ctx.setTransform(px / 2160, 0, 0, px / 2160, 0, 0);
+        ctx.lineCap = ctx.lineJoin = 'round';
+        // Empty glass by the uncorked flasks, where the current has not come yet
+        ctx.strokeStyle = '#cdeae6';
+        STOPS.forEach((s) => {
+            const f = s.flask;
+            if (!f || f.drain < 0.01) return;
+            const reach = DRAIN * f.drain;
+            ctx.globalAlpha = Math.min(1, f.drain * 1.5);
+            if (flow.head < s.enter) along(ctx, Math.max(flow.head, s.enter - reach), s.enter, 1.18);
+            along(ctx, Math.max(flow.head, s.exit), s.exit + reach, 1.18);
+        });
+        const head = flow.head;
+        if (flow.alpha > 0.01 && head > START + 0.5) {
+            const k = 0.78 + 0.27 * Math.max(flow.acc, flow.light);
+            ctx.globalAlpha = flow.alpha * (0.72 + 0.28 * Math.max(flow.acc, flow.light));
+            ctx.strokeStyle = LIVE;
+            along(ctx, START, head, k);
+            // Lights travelling from the sign to the head, faster than it
+            ctx.strokeStyle = '#ffe1e7';
+            ctx.globalAlpha = flow.alpha * (0.4 + 0.35 * Math.max(flow.acc, flow.light));
+            const GAP = 34;
+            for (let p = START + (lightPhase % GAP); p < head; p += GAP) along(ctx, Math.max(START, p - 9), Math.min(head, p), k * 0.42);
+            // Its head: a soft light, more when it is accompanied
+            const i = Math.min(FN - 1, Math.floor(head));
+            if (!win) {
+                const r = 46 + 50 * flow.acc;
+                const g = ctx.createRadialGradient(FX(i), FY(i), 0, FX(i), FY(i), r);
+                g.addColorStop(0, 'rgba(255,240,244,0.9)');
+                g.addColorStop(0.4, 'rgba(255,170,190,0.45)');
+                g.addColorStop(1, 'rgba(255,170,190,0)');
+                ctx.globalAlpha = flow.alpha * (0.55 + 0.45 * flow.acc);
+                ctx.fillStyle = g;
+                ctx.beginPath();
+                ctx.arc(FX(i), FY(i), r, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+        ctx.globalAlpha = 1;
+        N_.flow?.refresh();
+    };
+    // Where its head is, as a touch target in the square of the network (in %)
+    const placeHead = () => {
+        const el = headHit.value;
+        if (!el) return;
+        const i = Math.min(FN - 1, Math.floor(flow.head));
+        const size = REACH * 2 / 21.6;
+        el.style.left = pct((FX(i) / 21.6 - size / 2).toFixed(2));
+        el.style.top = pct((FY(i) / 21.6 - size / 2).toFixed(2));
+        el.style.width = el.style.height = pct(size.toFixed(2));
+        el.style.display = win ? 'none' : '';
+    };
+    const holdHead = (event) => {
+        event.currentTarget.setPointerCapture?.(event.pointerId);
+        track(event);
+    };
+    const onHeadKey = (down) => (event) => {
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+        event.preventDefault();
+        keyHold = down;
+    };
+    const letGo = () => { keyHold = false; };
 
     // A stroke passing by a flask lights the creature in it for a moment, with a few lavender sparks as it comes on
     const wakeCreatures = (dt) => {
@@ -406,7 +595,7 @@
     // Touching a creature: it flashes and throws sparks of its own colour (nothing happens if its flask is empty)
     const touch = (thing, event) => {
         const home = flaskOfCreature[thing.n];
-        if (home && home.level > 0.25) return;
+        if (home && home.life < 0.5) return;
         const [x, y] = centreOn(event);
         const c = thing.color;
         const own = [c, ((c >> 16 & 255) * 0.5 + 127) << 16 | ((c >> 8 & 255) * 0.5 + 127) << 8 | ((c & 255) * 0.5 + 127), 0xffffff];
@@ -431,12 +620,14 @@
         net = s.depth(NET_Z).group();
         N_.threadUnder = net.canvas(threadUnder);
         N_.body = net.image('/assets/khanti/k3.webp', { water: 0.6 });
+        N_.flow = net.canvas(flowCanvas, { water: 0.5, bloom: true });
         FLASKS.forEach((f) => { N_[f.id] = net.image(`/assets/khanti/${f.id}.webp`, { sink: true, water: 1 }); });
         under.forEach((t) => { N_[t.n] = net.image(`/assets/khanti/k${t.n}.webp`); });
         N_.shine = net.image('/assets/khanti/k34.webp', { sheen: 1 });
         N_.lines = net.image('/assets/khanti/k35.webp');
         N_.threadOver = net.canvas(threadOver);
         over.forEach((t) => { N_[t.n] = net.image(`/assets/khanti/k${t.n}.webp`); });
+        N_.rulito = net.canvas(rulito.value.canvas, { bloom: true });
         net.enter({ y: 70, scale: 0.88, duration: 2000 });
     };
 
@@ -446,6 +637,13 @@
         const square = { left: F.x, top: F.y, w: F.size, h: F.size };
         N_.threadUnder.place(square);
         N_.threadOver.place(square);
+        N_.flow.place(square);
+        // The rulito over the central sign, at the top of its bubble (its canvas is bigger than the glyph, for the glow)
+        glyph = inFrame([48.3, 28.6, 3.4, 9.14]);
+        N_.rulito.place({ left: glyph.left - 0.4375 * glyph.w, top: glyph.top - 0.1628 * glyph.h, w: glyph.w * 1.875, h: glyph.h * 1.3256 },
+            { x: glyph.left + glyph.w / 2, y: glyph.top + glyph.h });
+        rulito.value?.frame({ width: glyph.w });
+        N_.rulito.refresh();
         N_.body.place(inFrame(layers[big.body]));
         N_.shine.place(inFrame(layers[big.shine]));
         N_.lines.place(inFrame(layers[big.lines]));
@@ -455,6 +653,7 @@
             N_[n].place(box, originOf(box, (LIFE[n] ?? [])[1] ?? '50% 50%'));
         });
         drawThread();
+        drawFlow();
     };
 
     // The square of touch targets follows the network on screen
@@ -484,14 +683,19 @@
         const dt = last === null ? 0 : Math.min(0.1, t - last);
         last = t;
         nowT = t;
-        moveStrokes(dt, t);
+        moveStrokes(dt);
+        stepFlow(dt, t);
         live(t, ramp);
         stepFlasks(dt);
         wakeCreatures(dt);
-        // The strokes of the thread, travelling (every other frame is enough)
-        if (tick++ % 2 === 0) drawThread();
+        stepWin(dt, t);
+        // The current's lights run faster than it, and faster when it is accompanied
+        lightPhase += dt * PACE * (1.6 + 1.4 * Math.max(flow.acc, flow.light));
+        // The strokes of the thread and the current (every other frame is enough)
+        if (tick++ % 2 === 0) { drawThread(); drawFlow(); }
         stage.render(t);
         placeOverlay();
+        placeHead();
     };
 
     const begin = async () => {
@@ -504,6 +708,7 @@
         }
         if (gone) { made.destroy(); return; }
         stage = made;
+        stageEl = root.value.closest('.stage');
         sky = startStardust(null, {
             stage,
             groups: [
@@ -517,6 +722,7 @@
         root.value.addEventListener('pointermove', track, { passive: true });
         root.value.addEventListener('pointerdown', track, { passive: true });
         root.value.addEventListener('pointerup', release, { passive: true });
+        root.value.addEventListener('pointercancel', release, { passive: true });
         parallax = createParallax(root.value, frame);
         enter();
     };
@@ -528,6 +734,8 @@
         root.value?.removeEventListener('pointermove', track);
         root.value?.removeEventListener('pointerdown', track);
         root.value?.removeEventListener('pointerup', release);
+        root.value?.removeEventListener('pointercancel', release);
+        stageEl?.style.removeProperty('--name-glow');
         parallax?.destroy();
         sky?.destroy();
         front?.destroy();
@@ -538,17 +746,23 @@
 <template>
     <div class="scene" ref="root">
         <canvas class="stageCanvas" ref="canvas"></canvas>
-        <!-- What can be touched, in a square kept over the network: the corks, the creatures and the central sign -->
+        <!-- The rulito is drawn on its own canvas, which the stage shows as a texture over the central sign -->
+        <Rulito ref="rulito" class="offstage" color="#f37b85" />
+        <!-- What can be touched, in a square kept over the network: the current's head, the creatures, the corks and the
+             central sign (the corks and the creatures over the head, so they can still be pressed while it goes by) -->
         <div class="network" ref="overlay">
+            <div ref="headHit" class="hit head" role="button" tabindex="0"
+                :aria-label="$i18n.locale === 'en' ? 'The current: keep your finger on it to go with it (or hold Enter)' : 'La corriente: dejá el dedo sobre ella para acompañarla (o mantené Enter)'"
+                @pointerdown.prevent="holdHead" @keydown="onHeadKey(true)($event)" @keyup="onHeadKey(false)($event)" @blur="letGo"></div>
             <div v-for="t in touchable" :key="'hit' + t.n" :ref="setCatcher(t.n)" class="hit" role="button" tabindex="0" :style="t.hit"
                 :aria-label="$i18n.locale === 'en' ? 'Creature' : 'Criatura'"
                 @pointerdown.prevent="touch(t, $event)" @keydown="onKey((e) => touch(t, e))($event)"></div>
             <div v-for="c in corkHits" :key="'cork' + c.flask.id" class="hit" role="button" tabindex="0" :style="c.hit"
                 :aria-label="$i18n.locale === 'en' ? 'Cork' : 'Tapón'"
-                @pointerdown.prevent="empty(c.flask, $event)" @keydown="onKey((e) => empty(c.flask, e))($event)"></div>
+                @pointerdown.prevent="uncork(c.flask, $event)" @keydown="onKey((e) => uncork(c.flask, e))($event)"></div>
             <div class="hit" role="button" tabindex="0" :style="signHit"
-                :aria-label="$i18n.locale === 'en' ? 'Fill everything again' : 'Volver a llenar todo'"
-                @pointerdown.prevent="refill" @keydown="onKey(refill)($event)"></div>
+                :aria-label="$i18n.locale === 'en' ? 'Central sign' : 'Signo central'"
+                @pointerdown.prevent="touchSign" @keydown="onKey(touchSign)($event)"></div>
         </div>
     </div>
 </template>
@@ -586,6 +800,20 @@
         touch-action: manipulation;
         -webkit-tap-highlight-color: transparent;
         outline: none;
+    }
+
+    /* The current's head: the finger stays on it and goes with it, so the page must not scroll from here */
+    .hit.head {
+        touch-action: none;
+        cursor: grab;
+    }
+
+    .offstage {
+        position: absolute;
+        left: -9999px;
+        top: 0;
+        width: 40px;
+        visibility: hidden;
     }
 
     .hit:focus-visible {

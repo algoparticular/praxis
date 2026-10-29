@@ -35,7 +35,7 @@ Los siete verbos, uno por chakra, quedan ordenados entre dos polos:
 - **Arraigar** (raíz) es el polo de la manifestación: de la materia a la manifestación. Está probado en Paciencia.
 - **Soltar** (corona) es el polo de la liberación: del entendimiento a la existencia. Está probado en Vipassana.
 - **Dar y recibir** (corazón) es donde las dos corrientes se encuentran. Las notas de Belén lo dicen así: "dos triángulos entrelazados, el movimiento descendente del espíritu en la materia y la liberación ascendente de la materia en el espíritu: equilibrio perfecto en el corazón". Está implementado en Dana: compartir la luz de la llamita con todos los de la isla, y que vuelva multiplicada (ver más abajo, en "Dinámicas").
-- **Fluir, Encender, Resonar y Ver** serían los pasos entre un polo y el otro. Ver está probado en Pañña y Encender en Evolución Espiritual.
+- **Fluir, Encender, Resonar y Ver** serían los pasos entre un polo y el otro. Ver está probado en Pañña, Encender en Evolución Espiritual y Fluir en Khanti.
 
 Esto se parece a lo que el rulito premia: en las notas del tercer chakra, "siento las dos corrientes, ascendente de liberación y descendente de manifestación, que se unen en mí para manifestar mi propósito de ser quien soy".
 
@@ -90,11 +90,24 @@ Orden de los verbos: Arraigar (raíz) y Soltar (corona) son los dos polos, la co
 **Variantes posibles:** sostener dos puntos a la vez, o quedarse quieto sin mover el dedo (más exigente); una semilla (Sid) que crece mientras se sostiene.
 **Cartas:** Paciencia (hecha), Hogar, Compromiso, Confianza, Fe, Addhitthana.
 
-### 2. Fluir (Samas, demonio: culpa)
-**Dinámica:** seguir y acompañar. Dejarse llevar por una corriente o por una criatura sin cortarla.
-**Punto de partida:** en Khanti las pinceladas lavanda ya siguen el dedo, y las criaturas destellan cuando una pincelada pasa cerca. Los Samas se mueven en pares.
-**Idea:** arrastrar el dedo acompañando un movimiento; cuando se acompasa, la escena "entra en ritmo" y aparece el rulito. Los corchos de Khanti que vacían los frascos quedan como la parte de soltar dentro del mismo juego.
-**Cartas:** Khanti, Celebración, Transformación, Aceptación (su ilustración es un río entre dos seres iguales bajo cielos distintos, y su texto pide no luchar contra lo que no se controla).
+### 2. Fluir (Samas, demonio: culpa): implementado en Khanti
+**Dinámica:** acompañar la corriente sin apurarla. Algo corre solo por un camino; la persona no lo crea ni lo empuja: lo acompaña.
+**Por qué así:** las cuatro cartas de Fluir tienen algo que corre solo (el río de Aceptación, la savia que sube por la palmera de Transformación, las chispas del fuego de Celebración, el rosa por los tubos de Khanti). Seguir algo que se mueve a otro ritmo no lo usa ningún otro verbo (Ver también arrastra, pero de un punto quieto a otro). Y el demonio de Samas es la culpa: exigirse, querer controlar.
+**El motor, común a las cartas del verbo:** una ruta, un ritmo propio y paradas en el camino.
+- *Su ritmo no es parejo.* Se demora, casi se para y sigue (dos ondas lentas: de un tercio de su paso al paso entero).
+- *Acompañar.* Con el dedo sobre su cabeza (el mouse cerca, o Enter mantenido sobre ella), la corriente se ensancha, brilla, va a su paso y suena en el acorde de la carta (`flow`: una nota redonda que se desliza a su lugar, más aguda cuando va más rápido).
+- *No se puede apurar.* Sola, o con el dedo adelantado, no va más rápido: se afina y avanza muy despacio (un quinto). Nada se pierde: nunca retrocede.
+- *Las paradas* son nudos que hay que soltar para que pase; al final, el rulito.
+Cómo lo vestiría cada carta: Aceptación, una luz que baja por el río entre los dos seres hasta las piedras apiladas; Transformación, la savia que sube del pozo por la palmera hasta la semilla, que se abre; Celebración, una chispa del fuego que pasa por cada uno de los de alrededor y la llama crece.
+**Cómo funciona hoy en Khanti:**
+- *Todo empieza quieto.* El rosa de la red y de los frascos está estancado: más pálido, casi sin la luz del agua. Los nueve frascos están tapados, con su criatura adentro.
+- *La corriente.* Nace en el signo central y recorre un único camino por los tubos que pasa por los nueve frascos (fuego, zorrito, agua, zorro, helecho, medusa, larva, meditador, hongos; `khantiFlow.json`, trazado del dibujo). Es rosa vivo, con luces que corren por ella más rápido que su cabeza.
+- *Los corchos son nudos.* La corriente llega a un frasco tapado y espera; el corcho llama suavemente. Al destaparlo, el rosa viejo se evapora (baja el nivel, sube el vapor, la criatura se va con él) y los tubos de alrededor se vacían un tramo. Cuando el frasco quedó vacío, la corriente entra y lo llena de rosa vivo: queda **vacío de dibujo, lleno de rosa**. Un frasco destapado antes de que llegue la corriente la espera vacío, y ella pasa sin detenerse. Lo viejo se suelta para que entre lo nuevo: es la parte de soltar dentro de Fluir.
+- *El final.* Con los nueve llenos de corriente, todo el rosa de la red se aviva, nace el rulito sobre el signo central, se ilumina el nombre y suena `rulito`. Después la corriente se apaga, los corchos vuelven, las criaturas vuelven y todo queda quieto otra vez, para jugarlo de nuevo.
+- El hilo lavanda sigue, pero es decoración: ya no responde al dedo. El signo central solo destella (ya no rellena todo).
+**Dónde se tocó:** `SceneKhanti.vue` (`stepFlow()`, `drawFlow()`, `along()`, `uncork()`, `stepFlasks()`, `finish()`, `stepWin()`, `headHit`), `khantiFlow.json` (la ruta: x, y y medio ancho del tubo cada 8 px del cuadrado de 2160, y dónde entra y sale de cada frasco), `flow` en `synth.js`.
+**Por probar en un teléfono:** el paso (`PACE`, hoy unos 50 s acompañándola de punta a punta con los frascos) y cuán pálido se ve el rosa quieto (`STILL`).
+**Cartas:** Khanti (hecha), Celebración, Transformación, Aceptación (su ilustración es un río entre dos seres iguales bajo cielos distintos, y su texto pide no luchar contra lo que no se controla).
 
 ### 3. Encender (Kätus, demonio: vergüenza): implementado en Evolución Espiritual
 **Dinámica:** frotar y lanzar. Primero se enciende el fuego con esfuerzo (frotar, como con dos palitos) y después se lo lanza con dirección (una honda): lo que toca se enciende.
