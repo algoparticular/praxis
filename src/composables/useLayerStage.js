@@ -73,8 +73,8 @@ const LAYER_FRAGMENT = `
         c.rgb *= uBright;
         float grey = dot(c.rgb, vec3(0.299, 0.587, 0.114));
         c.rgb = mix(vec3(grey), c.rgb, uSaturate);
-        c.rgb = mix(c.rgb, uTint, uTintAmount);
-        gl_FragColor = vec4(c.rgb, c.a * uOpacity);
+        c.rgb = mix(c.rgb, uTint * c.a, uTintAmount);
+        gl_FragColor = vec4(c.rgb, c.a) * uOpacity;
     }`;
 
 const GLOW_VERTEX = `
@@ -203,6 +203,9 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
         image(src, options = {}) {
             const texture = new THREE.Texture();
             texture.colorSpace = THREE.NoColorSpace;
+            // Premultiplied: the smaller mipmaps and the soft edges would otherwise mix in the black of the transparent
+            // pixels and draw a dark fringe round every picture (it showed as a grey halo round the sun)
+            texture.premultiplyAlpha = true;
             texture.minFilter = THREE.LinearMipmapLinearFilter;
             texture.generateMipmaps = true;
             texture.anisotropy = 4;
@@ -229,6 +232,7 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
         canvas(source, options = {}) {
             const texture = new THREE.CanvasTexture(source);
             texture.colorSpace = THREE.NoColorSpace;
+            texture.premultiplyAlpha = true;
             texture.generateMipmaps = false;
             texture.minFilter = THREE.LinearFilter;
             textures.push(texture);
@@ -258,6 +262,7 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
                 uniforms, vertexShader: LAYER_VERTEX, fragmentShader: LAYER_FRAGMENT,
                 transparent: true, depthTest: false, depthWrite: false,
                 blending: blending === 'add' ? THREE.AdditiveBlending : THREE.NormalBlending,
+                premultipliedAlpha: true,
             });
             node.attach(new THREE.Mesh(new THREE.PlaneGeometry(1, 1, segs[0], segs[1]), material), rect, pivot, bloom);
             return node;
