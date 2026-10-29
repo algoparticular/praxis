@@ -11,7 +11,8 @@ export default defineConfig({
     // The service worker (dist/serviceWorker.js, registered in App.vue): the app opens at once from the second visit
     // and works without internet. The app itself, the fonts and the deck's thumbnails are saved on the first visit; the
     // pictures (illustrations, the layers of the scenes) as they are seen, shown from the phone and refreshed in the
-    // background. A new deploy takes over on the next visit (main.js reloads if an old page asks for a file that is gone).
+    // background. A new deploy takes over on the next visit, or when an app left open comes back to the front
+    // (src/pwa.js); main.js reloads if an old page asks for a file that is gone.
     VitePWA({
       filename: 'serviceWorker.js',
       injectRegister: false,
