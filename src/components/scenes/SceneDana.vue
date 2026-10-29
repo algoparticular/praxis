@@ -3,7 +3,7 @@
     // night sky of real particles. The friends, the flame and the island are separate layers that move together as one
     // group, so the friends stay planted on the island. The sky has depth: it darkens towards the top, its stars are in
     // three planes that shift apart with the pointer (faint far ones, the stars of the card, and a few big out-of-focus
-    // ones close to the eye), and a soft band of coral and yellow dust crosses it. Two islets float far behind, blurred.
+    // ones close to the eye).
     // The island is alive: water and light drip from its moss and from the tips of its crystal, the crystal glints, and
     // fireflies wander round it, some behind the friends and some in front.
     // The particles live on two canvases (useStardust): the one behind the drawings holds the sky, the little flame's
@@ -28,6 +28,7 @@
     import { sceneMilestone } from '../../analytics.js';
     import Rulito from '../Rulito.vue';
     import AURA from '../../composables/danaAura.json';
+    import GIVER_AURA from '../../composables/danaGiverAura.json';
 
     const props = defineProps({
         card: { type: Object, default: () => ({}) },
@@ -37,7 +38,6 @@
     const root = ref(null);
     const skyCanvas = ref(null);
     const frontCanvas = ref(null);
-    const far = ref(null);
     const group = ref(null);
     const left = ref(null);
     const right = ref(null);
@@ -129,6 +129,9 @@
     let size = 1;                                  // the flame grows with every light it gives (size eases to sizeGoal)
     let sizeGoal = 1;
     let boost = 0;                                 // a flare of every glow when the lights come back
+    let shine = 0;                                 // the giver's own aura: it shines more with every light he gives
+    let shineGoal = 0;
+    let shineFlash = 0;
     let returning = false;                         // everyone has his light and it is on its way back
     let idle = 0;
     let trail = 0;
@@ -178,6 +181,7 @@
         }
         s.coming = true;
         fire.flare(0.7);
+        shineFlash = 0.6;
         play('give', { from: GIVER });
         send(HOME, { x: g.x, y: g.y }, { T: 0.55 + Math.hypot(g.x - HOME.x, g.y - HOME.y) * 0.012, arrive: () => receive(i) });
     };
@@ -191,6 +195,7 @@
         s.flash = 1;
         const count = state.filter((o) => o.given).length;
         sizeGoal = 1 + 0.09 * count;
+        shineGoal = count / GIFTS.length;
         fire.flare(0.5);
         burstAt(g.x, g.y, 26, GLOWS, 110);
         play('link', { from: GIVER, to: g.pitch, level: 1 });
@@ -219,6 +224,7 @@
         rulitoR.value?.reshape();
         boost = 1;
         sizeGoal = 1.75;
+        shineGoal = 1.3;
         fire.flare(1);
         burstAt(HOME.x, HOME.y, 60, [...EMBERS, ...GLOWS], 190);
         play('star');
@@ -244,6 +250,7 @@
             // The lights fade slowly (the friend keeps a little of his) and the flame goes back to its size
             state.forEach((s, i) => { s.given = false; s.goal = GIFTS[i].id === 'friend' ? 0.35 : 0; });
             sizeGoal = 1;
+            shineGoal = 0;
         }
         if (win.back) win.tail = Math.min(1, win.tail + dt / EAT);
         const whole = Math.min(1, Math.max(0, (win.head - win.tail - 0.6) / 0.4));
@@ -309,6 +316,8 @@
             s.lit += (s.goal - s.lit) * Math.min(1, dt * (s.goal < s.lit ? 0.35 : 2.2));
             s.flash = Math.max(0, s.flash - dt * 1.4);
         });
+        shine += (shineGoal - shine) * Math.min(1, dt * (shineGoal < shine ? 0.35 : 1.6));
+        shineFlash = Math.max(0, shineFlash - dt * 1.2);
         size += (sizeGoal - size) * Math.min(1, dt * (sizeGoal < size ? 0.8 : 4));
         boost = Math.max(0, boost - dt * 0.5);
         winTick(t, dt);
@@ -347,6 +356,32 @@
                     w * (0.05 + 0.06 * r) * (1 + boost * 0.4),
                     Math.min(1, level * 1.3) * Math.sin(life * Math.PI) ** 0.7 * (0.7 + 0.3 * Math.sin(t * 3 + i * 2.1)),
                     GLOWS[i % GLOWS.length]);
+            }
+        },
+    };
+
+    // The aura of the one on the right, who gives: his drawn glow is always there, and over it a glow of dots along its
+    // edge (danaGiverAura.json, the outline of his picture) that is faint at first and shines more and reaches further
+    // with every light he gives, and most when they all come back
+    const giverAura = {
+        count: GIVER_AURA.length * 3,
+        update(t, data) {
+            const el = right.value, canvas = skyCanvas.value;
+            if (!el || !canvas) return;
+            const box = el.getBoundingClientRect(), page = canvas.getBoundingClientRect();
+            const w = box.width, h = box.height, x0 = box.left - page.left, y0 = box.top - page.top;
+            const level = Math.min(1.6, 0.12 + shine * 1.15 + shineFlash * 0.4 + boost * 0.5);
+            const reach = w * 0.08 * (0.35 + 0.65 * Math.min(1.3, level));
+            for (let i = 0; i < data.count; i++) {
+                const [px, py, nx, ny] = GIVER_AURA[Math.floor(i / 3)];
+                const a = Math.sin(i * 53.1) * 0.5 + 0.5, r = Math.sin(i * 17.9 + 2) * 0.5 + 0.5;
+                const life = (a + t * (0.06 + 0.1 * r)) % 1;
+                const off = reach * (0.1 + 0.9 * life);
+                fill(data, i,
+                    x0 + px * w + nx * off + Math.sin(t * 1.1 + i) * w * 0.004, y0 + py * h + ny * off,
+                    w * (0.035 + 0.05 * r) * (1 + 0.4 * Math.min(1, level)),
+                    Math.min(1, level) * Math.sin(life * Math.PI) ** 0.7 * (0.7 + 0.3 * Math.sin(t * 2.6 + i * 1.7)),
+                    (i % 3 ? GLOWS : EMBERS)[i % 4]);
             }
         },
     };
@@ -454,13 +489,107 @@
         },
     });
 
-    // The sky's dust: a soft band of coral and yellow crossing it from the top left down to the right
-    const band = (w, h, spread) => {
-        const along = Math.random();
-        const off = (Math.random() + Math.random() + Math.random() - 1.5) * spread;
-        return [w * (-0.1 + 1.2 * along) + off * 0.35 * h, h * (0.1 + 0.32 * along) + off * h];
-    };
     // The out-of-focus stars close to the eye stay off the middle, where the friends are
+    // Where the pointer has the sky now (-1..1), for the groups that move by themselves
+    const sway = { x: 0, y: 0 };
+
+    // A little spiral galaxy in a corner of the sky: a warm core and two arms of stars that turn slowly, the inner ones
+    // faster than the outer ones, tilted as if seen a little from the side. Its stars are flat dots like the card's;
+    // a soft glow (the other group) lies under its core and along its arms
+    const ARM_STARS = 620, ARM_GLOW = 90, TILT = -0.4, FLAT = 0.5;
+    const galaxyStar = (i, glow) => {
+        const a = Math.sin(i * 12.9898 + (glow ? 7 : 0)) * 0.5 + 0.5, b = Math.sin(i * 78.233 + 1) * 0.5 + 0.5;
+        const c = Math.sin(i * 39.425 + 3) * 0.5 + 0.5;
+        // A fifth of the stars are the bulge round the core, a fifth the faint disc between the arms, the rest the arms
+        const core = !glow && i % 5 === 0, disc = !glow && i % 5 === 1;
+        const r = core ? 0.25 * a * a : 0.06 + 0.94 * a ** 0.75;
+        const arm = i % 2 ? Math.PI : 0;
+        const angle = core || disc ? b * Math.PI * 2 : arm + Math.log(r / 0.06 + 1) * 3.1 + (b - 0.5) * (1.5 - 0.8 * r);
+        return { r: r + (c - 0.5) * 0.06, angle, c };
+    };
+    const STARS_OF = Array.from({ length: ARM_STARS }, (_, i) => galaxyStar(i, false));
+    const GLOW_OF = Array.from({ length: ARM_GLOW }, (_, i) => galaxyStar(i, true));
+    const GALAXY = [0xfff3b8, 0xf6e27c, 0xffb454, 0xee6a82, 0xf0605d, 0xfaf3d4, 0xd8f4f2];
+    const galaxyAt = (w, h) => {
+        const wide = w > h;
+        return { x: w * (wide ? 0.8 : 0.26) - sway.x * 6, y: h * (wide ? 0.24 : 0.25) - sway.y * 3, R: Math.min(w * (wide ? 0.12 : 0.22), h * 0.14) };
+    };
+    const place = (g, t, w, h) => {
+        const at = galaxyAt(w, h);
+        const angle = g.angle + t * 0.05 / (0.3 + g.r);
+        const x = Math.cos(angle) * g.r, y = Math.sin(angle) * g.r * FLAT;
+        return [at.x + (x * Math.cos(TILT) - y * Math.sin(TILT)) * at.R, at.y + (x * Math.sin(TILT) + y * Math.cos(TILT)) * at.R, at.R];
+    };
+    const galaxy = {
+        count: ARM_STARS,
+        update(t, data) {
+            const canvas = skyCanvas.value;
+            if (!canvas) return;
+            const w = canvas.clientWidth, h = canvas.clientHeight;
+            for (let i = 0; i < data.count; i++) {
+                const g = STARS_OF[i];
+                const [x, y] = place(g, t, w, h);
+                const near = 1 - Math.min(1, g.r);
+                fill(data, i, x, y, 1 + 2.2 * g.c * (0.5 + near),
+                    (0.35 + 0.65 * near) * (0.7 + 0.3 * Math.sin(t * (1 + g.c * 2) + i)),
+                    g.r < 0.15 ? GALAXY[i % 2] : GALAXY[i % GALAXY.length]);
+            }
+        },
+    };
+    const galaxyGlow = {
+        count: ARM_GLOW + 6,
+        update(t, data) {
+            const canvas = skyCanvas.value;
+            if (!canvas) return;
+            const w = canvas.clientWidth, h = canvas.clientHeight;
+            for (let i = 0; i < data.count; i++) {
+                if (i >= ARM_GLOW) {
+                    // The core: a few big warm glows on top of each other
+                    const at = galaxyAt(w, h);
+                    fill(data, i, at.x, at.y, at.R * (0.25 + 0.15 * (i - ARM_GLOW)), 0.22, i % 2 ? 0xfff3b8 : 0xffb454);
+                    continue;
+                }
+                const g = GLOW_OF[i];
+                const [x, y, R] = place(g, t, w, h);
+                fill(data, i, x, y, R * (0.35 + 0.3 * g.c), 0.07 + 0.08 * (1 - Math.min(1, g.r)), i % 3 ? 0xee6a82 : 0xf6e27c);
+            }
+        },
+    };
+
+    // Shooting stars, silent: now and then one crosses the upper sky and is gone, with a tail of dots
+    const TAIL = 24, SHOOTERS = 2;
+    const shooters = Array.from({ length: SHOOTERS }, (_, k) => ({ at: -1 - k * 4, x: 0, y: 0, dx: 0, dy: 0, T: 1 }));
+    const shooting = {
+        count: SHOOTERS * TAIL,
+        update(t, data) {
+            const canvas = skyCanvas.value;
+            if (!canvas) return;
+            const w = canvas.clientWidth, h = canvas.clientHeight;
+            for (let k = 0; k < SHOOTERS; k++) {
+                const f = shooters[k];
+                if (t > f.at + f.T) {
+                    // The next one: somewhere else, some seconds from now, falling left or right
+                    const side = Math.random() < 0.5 ? -1 : 1, speed = (0.35 + Math.random() * 0.3) * Math.max(w, h);
+                    f.at = t + 2 + Math.random() * 7;
+                    f.T = 0.7 + Math.random() * 0.5;
+                    f.x = w * (0.15 + Math.random() * 0.7);
+                    f.y = h * (0.04 + Math.random() * 0.3);
+                    f.dx = side * speed;
+                    f.dy = speed * (0.35 + Math.random() * 0.3);
+                }
+                const u = (t - f.at) / f.T;
+                for (let j = 0; j < TAIL; j++) {
+                    const i = k * TAIL + j;
+                    if (u < 0 || u > 1) { data.alphas[i] = 0; continue; }
+                    const back = j * 0.006;
+                    const life = Math.max(0, u - back);
+                    fill(data, i, f.x + f.dx * life * f.T, f.y + f.dy * life * f.T, (j ? Math.max(2, 7 - j * 0.22) : 11),
+                        Math.min(1, Math.sin(u * Math.PI) * 1.4) * (1 - j / TAIL) ** 0.7, j < 3 ? 0xfffbe6 : (j % 2 ? 0xf6e27c : 0xee6a82));
+                }
+            }
+        },
+    };
+
     const nearSpot = (w, h) => {
         for (;;) {
             const x = Math.random() * w, y = Math.random() * h;
@@ -472,7 +601,6 @@
         if (entered || !props.active) return;
         entered = true;
         enterLayers([
-            { el: far.value, y: 60, duration: 2400 },
             { el: island.value, y: 150, duration: 1700 },
             { el: left.value, y: 80, delay: 350, duration: 1900 },
             { el: right.value, y: 80, delay: 420, duration: 1900 },
@@ -485,6 +613,8 @@
         parallax = createParallax(root.value, ({ x, y, scroll, t, ramp }) => {
             const s = scroll;
             step(t);
+            sway.x = x;
+            sway.y = y;
             // The island floats, and everything standing on it floats with it: one group, so the friends never lift off it
             const bob = Math.sin(t * 0.55) * 9 * ramp;
             group.value.style.translate = `${-x * 14}px ${-y * 6 + bob - s * 30}px`;
@@ -495,20 +625,19 @@
             flame.value.style.translate = `${(-x * 6).toFixed(1)}px ${(Math.sin(t * 1.3) * 4 * ramp - y * 4).toFixed(1)}px`;
             flame.value.style.rotate = `${(Math.sin(t * 1.7) * 3 * ramp - x * 4).toFixed(3)}deg`;
             flame.value.style.scale = size.toFixed(3);
-            // The islets far behind shift less, and float at their own pace
-            far.value.style.translate = `${(-x * 5).toFixed(1)}px ${(-y * 2 - s * 12).toFixed(1)}px`;
-            far.value.style.setProperty('--bob', `${(Math.sin(t * 0.4) * 6 * ramp).toFixed(1)}px`);
         });
         sky = startStardust(skyCanvas.value, {
             groups: [
                 // The far stars: many, tiny and faint, they hardly move with the pointer
                 { count: 520, colors: [0xfaf3d4, 0xd8f4f2, 0xf6e27c], size: [1, 2.6], drift: 2, twinkle: 0.75, reach: 0, parallax: 4, opacity: 0.7 },
-                // The dust of the band, and its own crowd of small stars
-                { count: 220, colors: [0xff7088, 0xff8f7a, 0xffd36b, 0x6fe0dc], size: [50, 150], look: 'soft', spawn: (w, h) => band(w, h, 0.09), drift: 14, twinkle: 0.25, reach: 0, parallax: 8, opacity: 0.13 },
-                { count: 260, colors: [0xfaf3d4, 0xf6e27c, 0xee6a82], size: [1.2, 3.4], spawn: (w, h) => band(w, h, 0.06), drift: 3, twinkle: 0.7, reach: 0, parallax: 8, opacity: 0.85 },
                 // The stars of the card
-                { count: 380, colors: [0xf6e27c, 0xf6e27c, 0xee6a82, 0xfaf3d4], size: [2.2, 6.5], drift: 7, twinkle: 0.55, reach: 130, push: 34, parallax: 14 },
+                { colors: [0xffffff], dynamic: galaxyGlow, parallax: 0, drift: 0, twinkle: 0, reach: 0, look: 'soft' },
+                { colors: [0xffffff], dynamic: galaxy, parallax: 0, drift: 0, twinkle: 0, reach: 0 },
+                { colors: [0xffffff], dynamic: shooting, parallax: 0, drift: 0, twinkle: 0, reach: 0, look: 'soft' },
+                // The stars of the card, yellow and red the most
+                { count: 640, colors: [0xf6e27c, 0xf6e27c, 0xffd36b, 0xee6a82, 0xf0605d, 0xf0605d, 0xfaf3d4], size: [2.2, 6.5], drift: 7, twinkle: 0.55, reach: 130, push: 34, parallax: 14 },
                 { colors: [0xffffff], dynamic: aura, parallax: 0, drift: 0, twinkle: 0, reach: 0, look: 'soft' },
+                { colors: [0xffffff], dynamic: giverAura, parallax: 0, drift: 0, twinkle: 0, reach: 0, look: 'soft' },
                 { colors: [0xffffff], dynamic: fireflies(0), parallax: 0, drift: 0, twinkle: 0, reach: 0, look: 'soft' },
                 fire.group(),
             ],
@@ -540,12 +669,6 @@
 <template>
     <div class="scene" ref="root">
         <canvas class="field" ref="skyCanvas"></canvas>
-
-        <!-- Two islets far behind, out of focus -->
-        <div class="far" ref="far">
-            <img class="islet one" src="/assets/share/island.webp" alt="" draggable="false">
-            <img class="islet two" src="/assets/share/island.webp" alt="" draggable="false">
-        </div>
 
         <!-- A square frame, bottom-aligned; every layer is placed as a fraction of it, as in the illustration -->
         <div class="frame">
@@ -580,44 +703,6 @@
         background:
             radial-gradient(ellipse 70% 45% at 50% 72%, rgba(80, 214, 210, 0.28), transparent 70%),
             linear-gradient(to bottom, #0b3d52 0%, #0a5f73 38%, #0089a0 72%, v-bind('card.color || "#0099A6"') 100%);
-    }
-
-    .far {
-        position: absolute;
-        inset: 0;
-        pointer-events: none;
-    }
-
-    .islet {
-        position: absolute;
-        height: auto;
-        max-width: none;
-        translate: 0 var(--bob, 0px);
-        filter: blur(2.5px) saturate(0.6) brightness(0.8);
-        opacity: 0.5;
-        user-select: none;
-    }
-
-    .islet.one {
-        width: min(17vw, 24svh);
-        left: 6%;
-        top: 24%;
-    }
-
-    .islet.two {
-        width: min(11vw, 15svh);
-        right: 9%;
-        top: 15%;
-        scale: -1 1;
-        translate: 0 calc(var(--bob, 0px) * -0.7);
-        filter: blur(3.5px) saturate(0.5) brightness(0.75);
-        opacity: 0.4;
-    }
-
-    /* On a phone upright the islets sit beside the title, smaller */
-    @media (max-aspect-ratio: 1/1) {
-        .islet.one { width: 26vw; left: 3%; top: 19%; }
-        .islet.two { width: 17vw; right: 4%; top: 27%; }
     }
 
     .field {
