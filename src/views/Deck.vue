@@ -216,7 +216,7 @@
         box-shadow: none;
         color: #F7F8F1;
         opacity: 0.7;
-        font-family: 'Caveat', 'Inter', helvetica, sans-serif;
+        font-family: 'Caveat', 'Nunito', helvetica, sans-serif;
         font-size: 21px;
         transition: opacity 200ms ease-out;
     }

@@ -1,5 +1,11 @@
 /* FONT IMPORT */
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap");
+@font-face {
+  font-family: Nunito;
+  src: url(../assets/Nunito-Variable.woff2) format('woff2');
+  font-style: normal;
+  font-weight: 200 1000;
+  font-display: swap;
+}
 @font-face {
   font-family: Caveat;
   src: url(../assets/Caveat-Medium.woff2) format('woff2');
@@ -47,7 +53,7 @@ body {
   -webkit-box-pack: center;
       -ms-flex-pack: center;
           justify-content: center;
-  font-family: 'Inter', helvetica, sans-serif;
+  font-family: 'Nunito', helvetica, sans-serif;
   letter-spacing: -0.01em;
   font-size: 1em;
   line-height: 1.4375em;
@@ -126,7 +132,7 @@ h1 {
 }
 
 h2 {
-  font-family: 'Caveat', 'Inter', helvetica, sans-serif;
+  font-family: 'Caveat', 'Nunito', helvetica, sans-serif;
   font-weight: 600;
   font-size: 48px;
   line-height: 1.1em;
@@ -135,7 +141,7 @@ h2 {
 }
 
 h3 {
-  font-family: 'Caveat', 'Inter', helvetica, sans-serif;
+  font-family: 'Caveat', 'Nunito', helvetica, sans-serif;
   font-weight: 400;
   font-size: 40px;
   line-height: 1.2em;
@@ -144,7 +150,7 @@ h3 {
 }
 
 h4 {
-  font-family: 'Caveat', 'Inter', helvetica, sans-serif;
+  font-family: 'Caveat', 'Nunito', helvetica, sans-serif;
   font-weight: 400;
   font-size: 32px;
   line-height: 1.5em;
@@ -153,7 +159,7 @@ h4 {
 }
 
 h5 {
-  font-family: 'Inter', helvetica, sans-serif;
+  font-family: 'Nunito', helvetica, sans-serif;
   font-weight: 700;
   font-size: 1em;
   line-height: 1.4em;
@@ -162,7 +168,7 @@ h5 {
 }
 
 p {
-  font-family: 'Inter', helvetica, sans-serif;
+  font-family: 'Nunito', helvetica, sans-serif;
   line-height: 150%;
   font-size: 18px;
   margin: 0 0 24px 0;
@@ -236,7 +242,7 @@ a .underline {
 
 button,
 .button {
-  font-family: 'Inter', helvetica, sans-serif;
+  font-family: 'Nunito', helvetica, sans-serif;
   font-weight: 400;
   font-size: 18px;
   border: none;

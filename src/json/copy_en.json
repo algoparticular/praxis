@@ -29,37 +29,14 @@
             "home": "Home",
             "praxis": "The Oracle",
             "deck": "The cards",
-            "intro": "Intro",
             "collaborate": "Want to help?",
-            "signIn": "Sign in",
-            "register": "Create an account",
-            "logout": "Leave",
             "back": "Back",
             "sound": "Sound",
             "soundOn": "Sound on",
             "soundOff": "Sound off",
             "audio": "Audio",
             "music": "Music",
-            "effects": "Effects",
-            "skip": "to the Oracle"
-        },
-        "auth": {
-            "registerTitle": "Create an account",
-            "registerDescrip": "You can collect and work on every card that comes your way.",
-            "registerSubmit": "I want to dive",
-            "registerGoogle": "I will use my Gmail account",
-            "signinTitle": "Sign in",
-            "signinDescrip": "Log in with you email and password",
-            "signinSubmit": "I want to dive",
-            "signinGoogle": "I will use my Gmail account",
-            "formEmail": "Email",
-            "formPassword": "Password"
-        },
-        "onboarding": {
-            "0": "Cada uno de nuestros átomos, y los de todo lo que existe, vienen navegando el Universo desde el principio de los tiempos.\n\nEsas partículas cargan con cientos de miles de historias, de reflexiones y aprendizajes.",
-            "1": "Desconéctate por un momento y conoce el mensaje que estas partículas tienen para tí.\n\nCierra tus ojos y pon intención verdadera en  eso que vibra en tu interior.",
-            "2": "Cuando estés listx, presiona el símbolo para tomar tu carta.",
-            "3": ""
+            "effects": "Effects"
         },
         "about": {
             "oracleAuthor": "Belén Brito",

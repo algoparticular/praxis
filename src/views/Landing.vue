@@ -412,7 +412,7 @@
     h1 span {
         display: inline-block;
         margin-top: 8px;
-        font-family: 'Inter', helvetica, sans-serif;
+        font-family: 'Nunito', helvetica, sans-serif;
         text-transform: uppercase;
         font-size: 12px;
         color: #F7F8F1;        
@@ -648,8 +648,7 @@
     }
 
     .copy p {
-        /* Rounded like the titles' lettering, easier to read than Inter next to it */
-        font-family: 'Nunito', 'Inter', helvetica, sans-serif;
+        font-family: 'Nunito', helvetica, sans-serif;
         color: #F7F8F1;
         font-size: 19px;
         line-height: 150%;
