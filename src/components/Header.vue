@@ -102,7 +102,8 @@
                     @navigate="handleNavigate"
                     @langChanged="handleLangChanged"
                     :hasHome="true"
-                    :hasFullDeck="true"/>
+                    :hasFullDeck="true"
+                    :hasAudio="true"/>
             </div>
         </Transition>
         <div class="navContainer right">

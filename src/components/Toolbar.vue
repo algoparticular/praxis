@@ -98,6 +98,7 @@
                   @navigate="handleNavigate"
                   @langChanged="handleLangChanged"
                   :hasHome="true"
+                  :hasAudio="true"
                   />  
         </transition>
 	</div>
