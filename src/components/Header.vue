@@ -155,6 +155,12 @@
         display: flex;
         align-items: center;
         justify-content: flex-start;
+        /* Each side on its own GPU layer: in the app installed on iOS the header flickered and vanished while the landing
+           scrolled into the oracle block, over its big animated star canvas. Not on the header itself: a transform there
+           would trap the full-screen #menuOverlay inside the header's strip. */
+        transform: translateZ(0);
+        -webkit-backface-visibility: hidden;
+        backface-visibility: hidden;
     }
 
     .navContainer.right {
