@@ -84,44 +84,22 @@
         [71.1, 83], [40.8, 84.1], [62.5, 81.6], [54.3, 86.1], [78.1, 78.5], [26.5, 83.4], [61.3, 88.2], [73, 79.2], [21.2, 79.8]];
     const FIREFLIES = 7;                           // on each canvas: behind the friends and in front of them
 
-    // The island is drawn bigger than in the illustration, so its little ones are bigger and easier to touch. It grows
-    // from the line where the friends stand (PIVOT, % of the frame), so they stay on the grass at their own size, as
-    // much as fits across the screen (up to ISLAND): on a phone upright it can hardly grow. Everything above that is on
-    // the island (the little ones, the drips, the glints) is measured on the illustration and moved with it by fit()
+    // The island is drawn bigger than in the illustration (ISLAND times), so the scene is fuller and its little ones are
+    // bigger and easier to touch. It grows from the line where the friends stand (PIVOT, % of the frame), so they stay
+    // on the grass at their own size. Everything above that is on the island (the little ones but the friend, their
+    // touch boxes, the drips, the glints) is measured on the illustration and moved here with it
     const PIVOT = { x: 50, y: 68 };
     const ISLAND = 1.22;
-    const ISLE = { left: 15.5, top: 58.3, width: 69 };   // where the island is in the illustration, % of the frame
-    const onIsland = (x, y, k) => [PIVOT.x + (x - PIVOT.x) * k, PIVOT.y + (y - PIVOT.y) * k];
-    const BASE = {
-        gifts: GIFTS.map((g) => ({ ...g, hit: { ...g.hit } })),
-        drips: DRIPS.map((d) => ({ ...d })),
-        glints: GLINTS.map((p) => [...p]),
-    };
-    const isle = ref({});
-    const hits = ref(GIFTS.map((g) => g.hit));
-    let grown = 0;
-    const fit = () => {
-        const frameW = group.value?.clientWidth, screenW = root.value?.clientWidth;
-        if (!frameW || !screenW) return;
-        // Its outermost tips (the last 2% each side) may go past the edge of the screen
-        const k = Math.min(ISLAND, Math.max(1, screenW / 2 / (frameW * 0.33)));
-        if (k === grown) return;
-        grown = k;
-        BASE.gifts.forEach((b, i) => {
-            if (b.id === 'friend') return;
-            const g = GIFTS[i];
-            [g.x, g.y] = onIsland(b.x, b.y, k);
-            g.r = b.r * k;
-            const [hx, hy] = onIsland(b.hit.x, b.hit.y, k);
-            g.hit = { x: hx, y: hy, w: b.hit.w * k, h: b.hit.h * k };
-        });
-        BASE.drips.forEach((b, i) => { [DRIPS[i].x, DRIPS[i].y] = onIsland(b.x, b.y, k); });
-        BASE.glints.forEach((b, i) => { GLINTS[i] = onIsland(b[0], b[1], k); });
-        const [left, top] = onIsland(ISLE.left, ISLE.top, k);
-        isle.value = { left: `${left}%`, top: `${top}%`, width: `${ISLE.width * k}%` };
-        hits.value = GIFTS.map((g) => g.hit);
-    };
-    let resize = null;
+    const onIsland = (x, y) => [PIVOT.x + (x - PIVOT.x) * ISLAND, PIVOT.y + (y - PIVOT.y) * ISLAND];
+    GIFTS.forEach((g) => {
+        if (g.id === 'friend') return;
+        [g.x, g.y] = onIsland(g.x, g.y);
+        g.r *= ISLAND;
+        const [x, y] = onIsland(g.hit.x, g.hit.y);
+        g.hit = { x, y, w: g.hit.w * ISLAND, h: g.hit.h * ISLAND };
+    });
+    DRIPS.forEach((d) => { [d.x, d.y] = onIsland(d.x, d.y); });
+    GLINTS.forEach((p, i) => { GLINTS[i] = onIsland(p[0], p[1]); });
 
     // Where the little flame is on the canvas now
     const anchor = () => {
@@ -504,9 +482,6 @@
 
     onMounted(() => {
         stageEl = root.value.closest('.stage');
-        fit();
-        resize = new ResizeObserver(fit);
-        resize.observe(root.value);
         parallax = createParallax(root.value, ({ x, y, scroll, t, ramp }) => {
             const s = scroll;
             step(t);
@@ -558,7 +533,6 @@
         parallax?.destroy();
         sky?.destroy();
         front?.destroy();
-        resize?.disconnect();
         stageEl?.style.removeProperty('--name-glow');
     });
 </script>
@@ -576,7 +550,7 @@
         <!-- A square frame, bottom-aligned; every layer is placed as a fraction of it, as in the illustration -->
         <div class="frame">
             <div class="group" ref="group">
-                <img class="layer island" ref="island" :style="isle" src="/assets/share/island.webp" alt="" draggable="false">
+                <img class="layer island" ref="island" src="/assets/share/island.webp" alt="" draggable="false">
                 <img class="layer friend left" ref="left" src="/assets/dana/left.webp" alt="" draggable="false">
                 <img class="layer friend right" ref="right" src="/assets/dana/right.webp" alt="" draggable="false">
                 <!-- A rulito over each head, in the cream of the one that was drawn -->
@@ -586,7 +560,7 @@
                 <!-- Everyone who can be given a light, and the flame itself -->
                 <div v-for="(g, i) in GIFTS" :key="g.id" class="hit gift" role="button" tabindex="0"
                     :aria-label="$i18n.locale === 'en' ? g.en : g.es"
-                    :style="{ left: `${hits[i].x}%`, top: `${hits[i].y}%`, width: `max(${hits[i].w}%, 44px)`, height: `max(${hits[i].h}%, 44px)` }"
+                    :style="{ left: `${g.hit.x}%`, top: `${g.hit.y}%`, width: `max(${g.hit.w}%, 44px)`, height: `max(${g.hit.h}%, 44px)` }"
                     @pointerdown="give(i)" @keydown="onKey($event, i)"></div>
                 <div class="hit flame-hit" role="button" tabindex="0" :aria-label="$i18n.locale === 'en' ? 'Little flame' : 'Llamita'"
                     @pointerdown="touch" @keydown="onKey($event)"></div>
@@ -734,11 +708,12 @@
         transform-origin: 50% 75%;
     }
 
-    /* A small floating island, whole; fit() draws it bigger from where the friends stand */
+    /* A small floating island, whole: in the illustration it is 69% wide at 15.5%, 58.3%; here it is drawn 1.22 times
+       bigger (ISLAND) from where the friends stand (PIVOT: 50%, 68%) */
     .island {
-        left: 15.5%;
-        top: 58.3%;
-        width: 69%;
+        left: 7.91%;
+        top: 56.17%;
+        width: 84.18%;
     }
 
     /* Everyone who can be given a light: a box round him (left and top are its centre), big enough for a finger. Taps
