@@ -14,6 +14,8 @@ Primera pestaña de "Anima por dentro" (el artefacto que junta las ideas del pro
 
 Los siete movimientos son los verbos de las cartas: Arraigar, Fluir, Encender, Dar y recibir, Resonar, Ver y Soltar (ver `verbos-y-dinamicas.md`).
 
+Los siete movimientos son los verbos de las cartas: Arraigar, Fluir, Encender, Dar y recibir, Resonar, Ver y Soltar (ver `verbos-y-dinamicas.md`).
+
 ## A qué aspira Anima
 
 Que quien la usa se haga preguntas como:
