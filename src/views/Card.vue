@@ -26,13 +26,14 @@
 
     /* The header floats over the whole top of the stage: it lets the pointer through, except on its own buttons and menu,
        so whatever is under it (the sun of a scene) can be touched */
-    .content.cardPage header {
+    /* (The header lives in <body>, outside the page, so it is reached through the page it belongs to) */
+    body:has(.content.cardPage) > header {
         pointer-events: none;
     }
 
-    .content.cardPage header button,
-    .content.cardPage header a,
-    .content.cardPage header #menuOverlay {
+    body:has(.content.cardPage) > header button,
+    body:has(.content.cardPage) > header a,
+    body:has(.content.cardPage) > header #menuOverlay {
         pointer-events: auto;
     }
 

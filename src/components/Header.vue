@@ -83,6 +83,9 @@
 </script>
 
 <template>
+    <!-- Straight into <body>: inside #app, whose overflow-x is hidden, Safari on iOS drew this fixed header in the wrong
+         place or not at all while the page scrolled (WebKit clips and misplaces fixed elements under an overflow ancestor) -->
+    <Teleport to="body">
     <header :class="{ tucked }">
         <div class="navContainer">
             <button v-if="props.hasBack" class="back" :aria-label="$t('nav.back')" @click="handleBack()"></button>
@@ -113,6 +116,7 @@
 		    <button v-if="props.hasMenu" id="menuButton" class="secondary menu" :class="{active: showMenu}" @click="toggleMenu()"></button>	                         
         </div>
     </header>
+    </Teleport>
 </template>
 
 <style>    
@@ -155,12 +159,6 @@
         display: flex;
         align-items: center;
         justify-content: flex-start;
-        /* Each side on its own GPU layer: in the app installed on iOS the header flickered and vanished while the landing
-           scrolled into the oracle block, over its big animated star canvas. Not on the header itself: a transform there
-           would trap the full-screen #menuOverlay inside the header's strip. */
-        transform: translateZ(0);
-        -webkit-backface-visibility: hidden;
-        backface-visibility: hidden;
     }
 
     .navContainer.right {
