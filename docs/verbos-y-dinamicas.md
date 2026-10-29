@@ -35,7 +35,7 @@ Los siete verbos, uno por chakra, quedan ordenados entre dos polos:
 - **Arraigar** (raíz) es el polo de la manifestación: de la materia a la manifestación. Está probado en Paciencia y en Hogar.
 - **Soltar** (corona) es el polo de la liberación: del entendimiento a la existencia. Está probado en Vipassana.
 - **Dar y recibir** (corazón) es donde las dos corrientes se encuentran. Las notas de Belén lo dicen así: "dos triángulos entrelazados, el movimiento descendente del espíritu en la materia y la liberación ascendente de la materia en el espíritu: equilibrio perfecto en el corazón". Está implementado en Dana: compartir la luz de la llamita con todos los de la isla, y que vuelva multiplicada (ver más abajo, en "Dinámicas").
-- **Fluir, Encender, Resonar y Ver** serían los pasos entre un polo y el otro. Ver está probado en Pañña, Encender en Evolución Espiritual, Fluir en Khanti y Resonar en Sincronicidad.
+- **Fluir, Encender, Resonar y Ver** serían los pasos entre un polo y el otro. Ver está probado en Pañña, Encender en Evolución Espiritual, Fluir en Khanti y Resonar en Sincronicidad (a tiempo) y en Creatividad (composición libre).
 
 Esto se parece a lo que el rulito premia: en las notas del tercer chakra, "siento las dos corrientes, ascendente de liberación y descendente de manifestación, que se unen en mí para manifestar mi propósito de ser quien soy".
 
@@ -78,7 +78,7 @@ Las palabras del libro para cada chakra, subiendo y bajando:
 
 Cada carta tiene un verbo (`verb` en `src/data/cards.json`, lista en `src/data/verbs.js`). El verbo define la **dinámica**: qué hace la persona con la escena. La ilustración, el sonido y el significado los pone cada carta. Los siete verbos son uno por personaje y chakra (ver arriba).
 
-Los siete verbos se probaron en una escena: **Arraigar en Paciencia** (y, hacia adentro, en **Hogar**), **Fluir en Khanti**, **Encender en Evolución Espiritual** (frotar y lanzar el fuego), **Dar y recibir en Dana** (compartir la luz), **Resonar en Sincronicidad**, **Ver en Pañña** y **Soltar en Vipassana**. Lo implementado no es fijo: son ideas probadas y pueden cambiar. Lo que se dice de las otras cartas son propuestas, tomando como punto de partida lo que ya hacen las escenas.
+Los siete verbos se probaron en una escena: **Arraigar en Paciencia** (y, hacia adentro, en **Hogar**), **Fluir en Khanti**, **Encender en Evolución Espiritual** (frotar y lanzar el fuego), **Dar y recibir en Dana** (compartir la luz), **Resonar en Sincronicidad** (y, como composición libre, en **Creatividad**), **Ver en Pañña** y **Soltar en Vipassana**. Lo implementado no es fijo: son ideas probadas y pueden cambiar. Lo que se dice de las otras cartas son propuestas, tomando como punto de partida lo que ya hacen las escenas.
 
 Orden de los verbos: Arraigar (raíz) y Soltar (corona) son los dos polos, la corriente de manifestación y la de liberación, y Dar y recibir (corazón) es donde se encuentran. Los dos polos y el centro están probados: el centro, en Dana. Ver arriba, sección "Dos corrientes".
 
@@ -155,7 +155,7 @@ Las tres son hoy ilustraciones planas: cada una necesitaría su escena.
 **Dinámica:** escuchar primero y responder en sintonía. Ritmo, eco, secuencia. Tiene dos formas, según lo que pida cada carta:
 - **A tiempo** (responder *cuándo*): la escena lleva un pulso y la persona toca cada cosa cuando el pulso llega a ella. Para las cartas que hablan de armonía, de ritmo y de estar en el momento justo: Sincronicidad (hecha), Armonía ("variedad y proporción de sonidos y pausas") y Sila ("en resonancia con la voz de tu sabiduría interior").
 - **Eco** (responder *qué*): la escena canta una frase corta con notas del acorde de la carta y la persona la repite tocando (como el Simón dice); si no coincide, la escena la vuelve a cantar, más lenta. Para las cartas que piden escuchar primero: Comunicación ("el primer paso es escucharte"), Honestidad ("escucha tu verdad acallando voces") y Sacca. Todavía es idea: estas tres son ilustración plana y el eco se arma cuando tengan escena.
-- Creatividad no tiene respuesta correcta: cada toque agrega una nota y se compone libremente (idea).
+- **Composición libre** (Creatividad, hecha): no hay respuesta correcta. La corona es una caja de música: cada toque agrega (o saca) una nota y lo compuesto queda sonando en vuelta. Ver más abajo.
 
 Las dos formas son a validar con Belén.
 
@@ -166,7 +166,14 @@ Las dos formas son a validar con Belén.
 - *Las cuatro.* Con las cuatro encendidas el fuego crece, salen chispas y suenan las notas del acorde subiendo (`converge`). De la burbuja de la pareja abrazada (la más grande) sale el rulito dorado, se ilumina el nombre de la carta y suena `rulito`. Al rato las burbujas se apagan, la cola del rulito alcanza a su cabeza y se puede volver a jugar. Hito: `in_time` (con `times`). Si se tiene ritmo, sale en la primera vuelta; si no, en dos o tres.
 Con movimiento reducido la escena queda estática y no se puede jugar (como Pañña). Con teclado sí: Enter o espacio sobre una burbuja es un toque.
 **Dónde se tocó:** `SceneSincronicidad.vue` (`touch()`, `synchronised()`, `STEPS`, `offBeat()`; `L.halos` y `L.rulito`), `pulse`, `resonate` y `miss` en `synth.js`.
-**Cartas:** Sincronicidad (hecha), Armonía, Sila (a tiempo); Comunicación, Honestidad, Sacca (eco); Creatividad (composición libre).
+**Cómo funciona hoy en Creatividad (composición libre, caja de música):** la corona de corales y algas es una caja de música y arriba de todo, sobre la corona, hay un peine (una luz suave que no gira).
+- *Componer.* Tocar un coral o un alga lo enciende (brilla, con una luz detrás) y suena su nota del acorde de la carta, Do7, como la lengüeta de una caja de música (`tine`): cuanto más arriba cuelga el coral en el dibujo, más aguda; las algas son los graves. Tocar uno encendido lo apaga. No hay notas equivocadas.
+- *Que vuelva.* Con algo encendido la corona gira más rápido (una vuelta cada 12 s) y cada pieza encendida vuelve a sonar cuando pasa por el peine, con chispas: el lugar de cada pieza en la corona es su tiempo en la melodía. La medusa (Aura) sube a escuchar bajo el peine y late con cada nota.
+- *La melodía.* Con siete piezas encendidas la melodía está completa: suenan las notas del acorde subiendo (`converge`) y nace el rulito dorado sobre la medusa, se ilumina el nombre y suena `rulito`. La caja toca una vuelta más, algo más rápido, y en la siguiente cada pieza se apaga después de sonar por última vez; la corona vuelve a girar despacio y se puede componer otra. Hito: `tune_composed` (con `times`). Una melodía a medias que se deja sola tres vueltas se apaga igual.
+Con movimiento reducido la escena queda estática y no se juega (como Sincronicidad). Con teclado, Enter o espacio sobre un coral o un alga lo enciende o lo apaga.
+**Dónde se tocó:** `SceneCreatividad.vue` (`compose()`, `complete()`, `sound()`, `music()`, `COMB`, `TUNE`; `L.lights`, `L.comb`, `L.listen` y `L.rulito`), `tine` en `synth.js`.
+
+**Cartas:** Sincronicidad (hecha), Armonía, Sila (a tiempo); Comunicación, Honestidad, Sacca (eco); Creatividad (hecha, composición libre).
 
 ### 6. Ver (Huit, demonio: ilusión): implementado en Pañña
 **Dinámica:** descubrir lo oculto, unir puntos, reconocer un patrón.

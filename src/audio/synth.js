@@ -390,6 +390,33 @@ export const resonate = (ctx, out, time, harmony, { step = 0 } = {}) => {
 // Out of time: only a small muted drop, nothing in the chord
 export const miss = (ctx, out, time) => drop(ctx, out, time, 0.03);
 
+// Creatividad (Resonar, a music box): a lit coral or weed passing the comb plays its note like the tine of a music box,
+// a bright pluck with a tick of metal that dies fast and a sine that rings on. `step` (0..1) is how high the piece hangs
+// on the crown (it picks a note of the card's chord across two octaves); a weed (`low`) plays an octave and a half lower,
+// rounder and longer, the bass of the tune. `level` is how loud (a touch sounds a little louder than a pass)
+export const tine = (ctx, out, time, harmony, { step = 0.5, low = false, level = 1 } = {}) => {
+    const h = harmony ?? PLAIN;
+    const notes = low ? h.tones(h.voice - 24, 14) : h.tones(h.voice - 8, 22);
+    const f = hz(notes[Math.round(Math.min(1, Math.max(0, step)) * (notes.length - 1))]);
+    const k = Math.min(1, Math.max(0, level));
+    bell(ctx, out, time, f, low ? 2.8 : 1.9, (low ? 0.05 : 0.036) * k);
+    if (!low) {
+        // The metal: a high, inharmonic partial that is gone in a moment
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = f * 5.43;
+        gain.gain.setValueAtTime(0.0001, time);
+        gain.gain.exponentialRampToValueAtTime(0.006 * k, time + 0.004);
+        gain.gain.exponentialRampToValueAtTime(0.0001, time + 0.12);
+        osc.connect(gain);
+        gain.connect(out);
+        osc.start(time);
+        osc.stop(time + 0.15);
+    }
+    if (hasSeventh(h)) bell(ctx, out, time + 0.01, f * 1.004, low ? 2 : 1.3, (low ? 0.016 : 0.012) * k);
+};
+
 // Giving a light of the little flame (Dana): a breath of air rising and the note of the one who gives, gliding up into it;
 // when it gets there `link` answers (the giver's note, then the receiver's). `from` is the giver's height (0..1)
 export const give = (ctx, out, time, harmony, lights = { from: 0.5 }) => {
