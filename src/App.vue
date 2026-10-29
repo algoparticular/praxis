@@ -4,6 +4,7 @@
 	import CustomCursor from './components/CustomCursor.vue';
 	import FpsMeter from './components/FpsMeter.vue';
 	import { initSound, play, setCardChord } from './composables/useSound.js';
+	import { askTiltOnce } from './composables/useTilt.js';
 	import { chordFor } from './data/cardChords.js';
 
 	const router = useRouter();	
@@ -25,6 +26,7 @@
 	onMounted (() => {
 		// sound: remembers the choice and wakes the audio up on the first touch
 		initSound();
+		askTiltOnce();
 		window.addEventListener('click', (event) => {
 			if (event.target.closest?.('button, a')) play('tap');
 		});

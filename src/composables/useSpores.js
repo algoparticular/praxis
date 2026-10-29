@@ -47,11 +47,14 @@ const makeGlow = (rgb = '20, 100, 118', core = 0.55) => {
     return sprite;
 };
 
-export function createSpores(canvas, { source, animate = true, front = null } = {}) {
-    const ctx = canvas.getContext('2d');
-    const ctxFront = front?.getContext('2d') ?? null;    // optional second canvas, in front of the mushrooms, for the pine cone's sparks
-    const glow = makeGlow();
-    const goldGlow = makeGlow('255, 226, 110', 0.8);    // for the sparks of the pine cone
+// With { points: true } nothing is drawn on `canvas` (it may be a WebGL stage's): the cloud is handed over as particle
+// groups for useStardust (`groups.back`, `groups.front`, dynamic, in CSS px of the canvas) and is moved by their updates;
+// `locate()` then says where the mushrooms picture is, relative to the canvas, as there is no DOM picture to measure.
+export function createSpores(canvas, { source, animate = true, front = null, points = false, locate = null } = {}) {
+    const ctx = points ? null : canvas.getContext('2d');
+    const ctxFront = points ? null : front?.getContext('2d') ?? null;    // optional second canvas, in front of the mushrooms, for the pine cone's sparks
+    const glow = points ? null : makeGlow();
+    const goldGlow = points ? null : makeGlow('255, 226, 110', 0.8);    // for the sparks of the pine cone
     const small = window.innerWidth < 600;
     const TARGET = small ? 220 : 340;     // spores leaving the caps (many are hidden among the coral)
     const MOTES = small ? 340 : 620;      // dust in the clear air: this is what makes the cloud     // the cloud never thins out below this: it is part of the composition
@@ -70,11 +73,13 @@ export function createSpores(canvas, { source, animate = true, front = null } = 
     const emitters = caps.map(() => ({ x: 0, y: 0, w: 0 }));
     let emittersAt = -1;
     const locateEmitters = () => {
-        const box = source.getBoundingClientRect();
         const origin = canvas.getBoundingClientRect();
+        const box = locate ? locate() : source.getBoundingClientRect();
+        const left = locate ? box.left : box.left - origin.left;
+        const top = locate ? box.top : box.top - origin.top;
         caps.forEach(([cx, cy, cw], i) => {
-            emitters[i].x = box.left - origin.left + cx * box.width;
-            emitters[i].y = box.top - origin.top + cy * box.height;
+            emitters[i].x = left + cx * box.width;
+            emitters[i].y = top + cy * box.height;
             emitters[i].w = cw * box.width;
         });
         emittersAt = clock;
@@ -112,6 +117,11 @@ export function createSpores(canvas, { source, animate = true, front = null } = 
         width = canvas.clientWidth;
         height = canvas.clientHeight;
         if (!width) return;
+        if (points) {
+            locateEmitters();
+            seedMotes();
+            return;
+        }
         canvas.width = Math.round(width * dpr);
         canvas.height = Math.round(height * dpr);
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -384,6 +394,94 @@ export function createSpores(canvas, { source, animate = true, front = null } = 
         if (ctxFront) ctxFront.globalAlpha = 1;
     };
 
+    // ---- As particles (points: true) ----
+    // Every spore is a solid core and, when it is big enough to show one, a soft halo of the same colour (as faint as
+    // the halo sprite of the canvas version): two groups behind the mushrooms (the halos first) and two in front for
+    // the pine cone's gold sparks.
+    let still = null;
+    const rgbOf = {};
+    const rgb = (tint) => (rgbOf[tint] ??= tint.split(',').map((c) => Number(c) / 255));
+    const put = (data, i, x, y, size, alpha, tint) => {
+        data.positions[i * 3] = x;
+        data.positions[i * 3 + 1] = y;
+        data.sizes[i] = size;
+        data.alphas[i] = alpha;
+        const c = rgb(tint);
+        data.tints[i * 3] = c[0];
+        data.tints[i * 3 + 1] = c[1];
+        data.tints[i * 3 + 2] = c[2];
+    };
+    const clear = (data, from) => { for (let i = from; i < data.count; i++) data.alphas[i] = 0; };
+    const CORE = 2.6;               // a point's diameter per radius: its edge is softened, so a little over 2 looks the same
+    const BACK = MOTES + Math.ceil(MAX * 3.2) + 8;
+    const FRONT = 160;
+    const out = { haloBack: null, coreBack: null, haloFront: null, coreFront: null };
+    let stepAt = -1;
+    let state = null;
+    const fill = (t) => {
+        const { haloBack, coreBack, haloFront, coreFront } = out;
+        if (!haloBack || !coreBack || !haloFront || !coreFront) return;
+        const { ceiling, vanish, bold = 0 } = state;
+        let hb = 0, cb = 0, hf = 0, cf = 0;
+        const bandTop = height * 0.36;
+        for (const m of motes) {
+            const sparkle = animate ? 0.5 + 0.5 * Math.sin(t * m.twinkle + m.phase * 3) : 0.6;
+            const alpha = m.a * (0.25 + 0.75 * sparkle ** 1.4) * smooth(bandTop, bandTop + height * 0.18, m.y);
+            if (alpha < 0.02 || cb >= coreBack.count) continue;
+            if (m.r > 1.15 && hb < haloBack.count) put(haloBack, hb++, m.x, m.y, m.r * 6.4, alpha * 0.4 * 0.55, m.tint);
+            put(coreBack, cb++, m.x, m.y, m.r * CORE, alpha, m.tint);
+        }
+        for (const sp of spores) {
+            const born = smooth(0, 0.7, sp.age);
+            const dying = 1 - smooth(sp.life * 0.65, sp.life, sp.age);
+            const altitude = smooth(vanish, ceiling, sp.y);
+            const alpha = Math.min(1, born * dying * altitude * (0.8 + 0.2 * Math.sin(t * sp.twinkle + sp.phase)) * (1 + 0.5 * bold));
+            if (alpha < 0.02) continue;
+            const r = sp.gold ? sp.r : sp.r * (1 + 0.9 * bold);
+            if (sp.gold) {
+                if (cf >= coreFront.count) continue;
+                if (hf < haloFront.count) put(haloFront, hf++, sp.x, sp.y, r * 6.8, alpha * 0.55 * 0.8, '255, 226, 110');
+                put(coreFront, cf++, sp.x, sp.y, r * CORE, alpha, sp.tint);
+            } else {
+                if (cb >= coreBack.count) continue;
+                if (r > 1.1 && hb < haloBack.count) put(haloBack, hb++, sp.x, sp.y, r * 6.8, alpha * 0.55 * 0.55, sp.tint);
+                put(coreBack, cb++, sp.x, sp.y, r * CORE, alpha, sp.tint);
+            }
+        }
+        clear(haloBack, hb);
+        clear(coreBack, cb);
+        clear(haloFront, hf);
+        clear(coreFront, cf);
+    };
+    // The first group's update moves the cloud (once per frame), every group's fills its own buffers
+    const advance = (t) => {
+        if (t === stepAt) return;
+        const dt = stepAt < 0 ? 0.016 : Math.min(0.05, Math.max(0, t - stepAt));
+        stepAt = t;
+        if (!width) return;
+        clock += dt;
+        if (clock - emittersAt > 0.25) locateEmitters();
+        state = animate ? step(dt, clock) : still;
+        fill(clock);
+    };
+    const dynamicGroup = (key, count) => ({
+        count,
+        update(t, data) {
+            out[key] = data;
+            advance(t);
+        },
+    });
+    const groups = points ? {
+        back: [
+            { dynamic: dynamicGroup('haloBack', BACK), look: 'soft', drift: 0, twinkle: 0, reach: 0, parallax: 0 },
+            { dynamic: dynamicGroup('coreBack', BACK), look: 'hard', drift: 0, twinkle: 0, reach: 0, parallax: 0 },
+        ],
+        front: [
+            { dynamic: dynamicGroup('haloFront', FRONT), look: 'soft', drift: 0, twinkle: 0, reach: 0, parallax: 0, bloom: true },
+            { dynamic: dynamicGroup('coreFront', FRONT), look: 'hard', drift: 0, twinkle: 0, reach: 0, parallax: 0, bloom: true },
+        ],
+    } : null;
+
     const tick = (now) => {
         frame = requestAnimationFrame(tick);
         const dt = Math.min(0.05, (now - last) / 1000 || 0.016);
@@ -413,7 +511,7 @@ export function createSpores(canvas, { source, animate = true, front = null } = 
         window.addEventListener('pointerup', onRelease, { passive: true });
         document.addEventListener('pointerleave', onLeave);
         window.addEventListener('pointercancel', onLeave);
-        frame = requestAnimationFrame(tick);
+        if (!points) frame = requestAnimationFrame(tick);
     } else {
         // Reduced motion: a still handful of spores, no movement
         for (let n = 0; n < 36; n++) {
@@ -422,10 +520,12 @@ export function createSpores(canvas, { source, animate = true, front = null } = 
             s.age = s.life * 0.3;
             s.y -= rand(0, height * 0.1);
         }
-        draw(0, { ceiling: height * 0.62, vanish: height * 0.44 });
+        still = { ceiling: height * 0.62, vanish: height * 0.44 };
+        if (!points) draw(0, still);
     }
 
     return {
+        groups,
         // Sparks of light thrown out of a point (viewport coordinates): the pine cone shining
         burst(clientX, clientY, count = 26) {
             const box = canvas.getBoundingClientRect();
