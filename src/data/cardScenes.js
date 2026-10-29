@@ -12,7 +12,7 @@ const webgl = hasWebGL();
 const stage = (loader) => (webgl ? lazy(loader) : SceneFlat);
 
 const scenes = {
-    2: lazy(() => import('../components/scenes/SceneDana.vue')),
+    2: stage(() => import('../components/scenes/SceneDana.vue')),
     3: lazy(() => import('../components/scenes/ScenePanna.vue')),
     5: lazy(() => import('../components/scenes/SceneKhanti.vue')),
     20: lazy(() => import('../components/scenes/SceneCreatividad.vue')),
