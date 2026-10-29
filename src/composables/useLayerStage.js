@@ -83,7 +83,7 @@ const LAYER_FRAGMENT = `
             for (int i = 0; i < 3; i++) {
                 p += vec2(sin(p.y + t + float(i) * 1.3), cos(p.x - t * 0.8 + float(i) * 2.1)) * 0.6;
             }
-            c.rgb += vec3(pow(0.5 + 0.5 * sin(p.x + p.y), 6.0)) * 0.06 * uWater * c.a;
+            c.rgb += vec3(pow(0.5 + 0.5 * sin(p.x + p.y), 6.0)) * 0.045 * uWater * c.a;
         }
         gl_FragColor = vec4(c.rgb, c.a) * uOpacity;
     }`;
@@ -130,7 +130,7 @@ const DISC_FRAGMENT = `
                 p += vec2(sin(p.y + t + float(i) * 1.3), cos(p.x - t * 0.8 + float(i) * 2.1)) * 0.6;
             }
             float c = pow(0.5 + 0.5 * sin(p.x + p.y), 6.0);
-            col += vec3(c) * 0.06 * uWater;
+            col += vec3(c) * 0.045 * uWater;
         }
         gl_FragColor = vec4(col * a, a) * uOpacity;
     }`;
