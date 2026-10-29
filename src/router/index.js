@@ -19,8 +19,10 @@ const router = createRouter({
   history: createWebHistory(),
   // /#oraculo lands on the oracle block of the landing, gliding there unless the page is just opening.
   // (Not #oracle: the browser would jump to the element with that id by itself and fight this.)
-  scrollBehavior(to, from) {
+  // It waits for the fonts: with the fallback one the title takes two lines and the block would end up out of place.
+  async scrollBehavior(to, from) {
     if (to.hash === '#oraculo') {
+      await document.fonts?.ready;
       return { top: oracleTop(), behavior: from === START_LOCATION ? 'auto' : 'smooth' };
     }
   },

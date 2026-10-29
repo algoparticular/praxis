@@ -637,7 +637,9 @@
 
     .copy .heading h3 {
         color: #F7F8F1;
-        font-size: 32px;
+        /* One line on phones too (it left "guíe" alone on a second line under 390px); if it still wraps, evenly */
+        font-size: min(32px, 8vw);
+        text-wrap: balance;
         text-align: center;
     }
 

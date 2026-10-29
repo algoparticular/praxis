@@ -6,6 +6,7 @@
     import { play, setCardChord, vibrate } from '../composables/useSound.js';
     import { chordFor } from '../data/cardChords.js';
     import { startTableVisit } from '../analytics.js';
+    import DeckRingSkeleton from './DeckRingSkeleton.vue';
 
     const props = defineProps({
         cards: Array,
@@ -19,6 +20,7 @@
     const canvas = ref(null);
     const focus = ref(null);
     const label = ref(null);
+    const ready = ref(false);           // the skeleton stays until the ring is drawn
     let ring = null;
     let destroyed = false;
 
@@ -51,6 +53,7 @@
             if (destroyed) ring.destroy();
             else {
                 if (props.ids) ring.setFilter(props.ids);
+                ready.value = true;
                 finishVisit = startTableVisit('deck');
             }
         } catch (e) {
@@ -71,6 +74,9 @@
 <template>
     <main id="deckRing">
         <canvas ref="canvas"></canvas>
+        <Transition name="skeleton">
+            <DeckRingSkeleton v-if="!ready"/>
+        </Transition>
         <Transition name="name" mode="out-in">
             <p class="cardName" ref="label" :key="focus?.id" v-if="focus">{{ focus['name_' + $i18n.locale] }}</p>
         </Transition>
@@ -108,6 +114,14 @@
         filter: drop-shadow(0px 2px 3px rgba(234, 234, 234, 0.6));
         pointer-events: none;
         transition: opacity 0.4s ease-out;
+    }
+
+    #deckRing .skeleton-leave-active {
+        transition: opacity 0.5s ease-out;
+    }
+
+    #deckRing .skeleton-leave-to {
+        opacity: 0;
     }
 
     #deckRing .name-enter-active,

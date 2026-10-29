@@ -2,15 +2,22 @@
     import Header from '../components/Header.vue';
     import DeckTemplate from '../components/DeckTemplate.vue';
 
-    import { computed, defineAsyncComponent, onBeforeUnmount, onMounted, ref } from 'vue';
+    import DeckRingSkeleton from '../components/DeckRingSkeleton.vue';
+
+    import { computed, defineAsyncComponent, h, onBeforeUnmount, onMounted, ref } from 'vue';
     import { createStarField } from '../composables/useStarField.js';
     import { canUse3D } from '../composables/webgl.js';
     import { play } from '../composables/useSound.js';
     import { preloadThumbs } from '../composables/useDeckRing.js';
     import { deck } from '../data/cards.js';
 
-    // three.js only loads when the deck is opened (see DeckRing)
-    const DeckRing = defineAsyncComponent(() => import('../components/DeckRing.vue'));
+    // three.js only loads when the deck is opened (see DeckRing). Meanwhile the skeleton holds the ring's place,
+    // so the text below it does not come up into the first screen.
+    const DeckRing = defineAsyncComponent({
+        loader: () => import('../components/DeckRing.vue'),
+        loadingComponent: { render: () => h('main', { id: 'deckRing' }, h(DeckRingSkeleton)) },
+        delay: 0,
+    });
 
     const cards = [...deck].sort((a, b) => a.id - b.id);
     const use3D = ref(canUse3D());
