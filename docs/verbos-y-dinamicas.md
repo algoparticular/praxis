@@ -78,7 +78,7 @@ Las palabras del libro para cada chakra, subiendo y bajando:
 
 Cada carta tiene un verbo (`verb` en `src/data/cards.json`, lista en `src/data/verbs.js`). El verbo define la **dinámica**: qué hace la persona con la escena. La ilustración, el sonido y el significado los pone cada carta. Los siete verbos son uno por personaje y chakra (ver arriba).
 
-Cinco verbos se probaron en una escena: **Arraigar en Paciencia**, **Soltar en Vipassana**, **Ver en Pañña**, **Dar y recibir en Dana** (compartir la luz) y **Encender en Evolución Espiritual** (cargar y soltar el fuego). Lo implementado no es fijo: son ideas probadas y pueden cambiar. El resto son propuestas, tomando como punto de partida lo que ya hacen las escenas.
+Cinco verbos se probaron en una escena: **Arraigar en Paciencia**, **Soltar en Vipassana**, **Ver en Pañña**, **Dar y recibir en Dana** (compartir la luz) y **Encender en Evolución Espiritual** (frotar y lanzar el fuego). Lo implementado no es fijo: son ideas probadas y pueden cambiar. El resto son propuestas, tomando como punto de partida lo que ya hacen las escenas.
 
 Orden de los verbos: Arraigar (raíz) y Soltar (corona) son los dos polos, la corriente de manifestación y la de liberación, y Dar y recibir (corazón) es donde se encuentran. Los dos polos y el centro están probados: el centro, en Dana. Ver arriba, sección "Dos corrientes".
 
@@ -97,18 +97,25 @@ Orden de los verbos: Arraigar (raíz) y Soltar (corona) son los dos polos, la co
 **Cartas:** Khanti, Celebración, Transformación, Aceptación (su ilustración es un río entre dos seres iguales bajo cielos distintos, y su texto pide no luchar contra lo que no se controla).
 
 ### 3. Encender (Kätus, demonio: vergüenza): implementado en Evolución Espiritual
-**Dinámica:** cargar y soltar. Juntar fuego adentro y largarlo hacia afuera, hasta encender lo que rodea.
-**Por qué así:** la primera idea era tocar los bulbos en cualquier orden hasta que estuvieran todos encendidos, pero eso es el mismo gesto que Dana (un toque a cada uno hasta que todos tienen su luz). Encender usa la otra mitad del verbo, cargar y soltar, que no se parece a ningún otro: en Arraigar soltar deshace, en Encender **soltar es el acto**. Y la carta lo pide de adentro hacia afuera: *"una alma iluminada es capaz de transformar cada atmósfera que habita, siendo faro para otros"*. El demonio de Kätus es la vergüenza, esconder la propia luz; Sid está acurrucado.
-**El motor, común a las cartas del verbo:** una fuente que se carga mientras se mantiene apretado y receptores que se encienden cuando se suelta. Lo encendido queda encendido, así que las cargas cortas se van sumando ("un día a la vez", Viriya) y una carga completa enciende todo de una vez. Coraje podría ser Kätus en el borde del acantilado cargando el salto hacia el sol.
+**Dinámica:** frotar y lanzar. Primero se enciende el fuego con esfuerzo (frotar, como con dos palitos) y después se lo lanza con dirección (una honda): lo que toca se enciende.
+**Por qué así:** se probaron dos ideas antes. Tocar los bulbos en cualquier orden era el mismo gesto que Dana (un toque a cada uno). Mantener apretado para cargar y soltar se parecía demasiado a Arraigar (Paciencia) y a retener el aire en Vipassana. Frotar y tirar de una honda no los usa ningún otro verbo. Y la carta lo pide de adentro hacia afuera: *"una alma iluminada es capaz de transformar cada atmósfera que habita, siendo faro para otros"*. El demonio de Kätus es la vergüenza, esconder la propia luz; Sid está acurrucado y es él el que se enciende y sale disparado.
+**El motor, común a las cartas del verbo:** frotar una fuente hasta que prende, apuntar, lanzarla, y lo que toca se enciende y queda encendido; hay que encender todo. Sirve para las otras tres:
+- Desafío: el fuego que rebota por las paredes del laberinto hasta la luz del centro (la que mejor calza con los rebotes).
+- Coraje: Kätus en el borde del acantilado frota para juntar coraje y se lanza hacia la luna.
+- Viriya: frotar es la diligencia ("sin prisa pero sin pausa"); el lanzamiento enciende las flores del camino.
+Las tres son hoy ilustraciones planas: cada una necesitaría su escena.
 **Cómo funciona hoy en Evolución Espiritual:**
-- *Cargar.* Se mantiene apretado dentro de la célula (dedo, clic o Enter): Sid se enciende, de él suben brasas cada vez más grandes y el agua de la célula se entibia hacia el dorado de Kätus. Cada 0,33 s (2,6 s / 8) uno más de los bulbos apagados queda listo, empezando por los más cercanos a Sid: titila, y suena una nota más del acorde de la carta, subiendo (`kindle`).
-- *Soltar.* Al levantar el dedo sale de Sid un anillo de fuego (`ignite`) que se ensancha hasta la pared de la célula y se queda sobre ella; ahí prenden, uno tras otro, los bulbos que estaban listos (chispas y `link`). Una carga muy corta no alcanza para ninguno: el anillo sale chico y nada se enciende, y así se aprende que hay que cargar.
-- *Se suman.* Los bulbos encendidos quedan encendidos y respiran con una luz tibia; la próxima carga sigue con los que faltan.
-- *El faro.* Con los ocho encendidos, la corona entera brilla hacia afuera, los anillos de puntos se avivan y Sid se estira un poco: deja de esconderse. Suena `resolve`: Si7 se resuelve en Mi mayor, la nota de Kätus (ver `musica.md`). Después nace el rulito dorado sobre la cabeza de Sid, se ilumina el nombre de la carta y suena `rulito`. Al rato el rulito se va, los bulbos se apagan despacio y se puede volver a jugar. Hito: `crown_lit` (con `times`).
-- *Pista, sin palabras.* Si pasan 8 s sin tocar nada, el fuego de Sid late una vez.
-- *Tocar un bulbo o un hongo* hace lo de siempre: brilla y echa chispas.
+- *Al principio todo está apagado.* Los ocho bulbos, los cuatro hongos y sus bolitas azules están grises y sin brillo.
+- *Frotar.* Se frota con el dedo dentro de la célula, de un lado a otro: saltan chispas donde pasa el dedo, Sid se va calentando (brilla y le suben brasas) y suena una nota más del acorde de la carta con cada sexto del calor (`kindle`). Si se deja de frotar, se enfría despacio. Con unos 11 radios de la célula frotados, prende: un estallido de chispas (`ignite` y `star`).
+- *Apuntar y lanzar.* Con Sid encendido, se apoya el dedo y se tira hacia atrás, como una honda: una banda de puntos va de Sid al dedo y otra línea de puntos muestra hacia dónde va a salir; Sid se corre un poco con el tirón. Al soltar sale disparado en llamas (`ignite`, más fuerte cuanto más se tiró), dejando una estela de brasas. Un tirón muy corto no lanza nada.
+- *Rebotar y encender.* Mientras vuela pasa por delante de los orgánulos y solo rebota en la membrana. Cada golpe en la membrana enciende hasta dos bulbos u hongos todavía apagados de ese lado (a menos de unos 29°): toman su color, una luz detrás, sus puntos y sus bolitas azules (`link`). Después de tres golpes, o si se frena, su fuego se apaga con un poco de humo y hay que volver a frotar. Lo encendido queda encendido.
+- *El faro.* Con los doce encendidos, la corona entera brilla hacia afuera y Sid se estira un poco: deja de esconderse. Suena `resolve`: Si7 se resuelve en Mi mayor, la nota de Kätus (ver `musica.md`). Después nace el rulito dorado sobre la cabeza de Sid, se ilumina el nombre de la carta y suena `rulito`. Al rato el rulito se va, todo vuelve a apagarse despacio y se puede volver a jugar. Hito: `crown_lit` (con `times`).
+- *Sid nunca cruza la membrana.* El agua lo mantiene a 0,075 del cuadro de la pared (su dibujo es más alto que el círculo con el que choca con los orgánulos), y a 0,14 mientras tiene el rulito sobre la cabeza.
+- *Pista, sin palabras.* Si pasan 7 s sin tocar nada, saltan unas chispas de Sid.
+- *Teclado.* Enter frota (cada vez lo calienta un quinto) y, encendido, lo lanza hacia lo apagado más cercano.
+- *Tocar un bulbo o un hongo* hace lo de siempre: echa chispas.
 - *Movimiento reducido.* La escena queda estática y todavía no se puede jugar (como Pañña, Vipassana y Dana).
-**Dónde se tocó:** `SceneEvolucion.vue` (`press()`, `letGo()`, `catchFire()`, `crown()`, `ringGroup`, `play_()`), y `kindle`, `ignite` y `resolve` en `synth.js`.
+**Dónde se tocó:** `SceneEvolucion.vue` (`press()`, `move()`, `letGo()`, `ignite()`, `launch()`, `hitWall()`, `catchFire()`, `crown()`, `aimGroup`, `play_()`), `kindle`, `ignite` y `resolve` en `synth.js`, `wall` y `ghost` en `useCellWater.js` y `fade()` en `useStardust.js`.
 **Cartas:** Evolución Espiritual (hecha), Viriya, Coraje, Desafío.
 
 ### 4. Dar y recibir (Vulpes, demonio: pena): implementado en Dana

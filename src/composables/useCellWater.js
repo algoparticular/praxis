@@ -4,9 +4,12 @@
 // The swimmer (the larva) drifts slowly along a heading that changes by itself, bounces off every body and off the wall
 // of the cell, and the bodies it hits give a little with the blow.
 //   bounds   { x, y, r }       the cell's inside
-//   swimmer  { x, y, r }       where it starts and how big its body is
+//   swimmer  { x, y, r, wall } where it starts, how big its body is, and how far its centre keeps from the wall (default r:
+//                              a tall being needs more, or its head goes through the wall)
 //   bodies   [{ id, circles: [[x, y, r], ...], mass, sway }]   sway: how far it wanders (frame fractions)
 // step(dt, t) moves everything on; read swimmer.x/y (absolute) and offset(id) = { x, y } from where the body was drawn.
+// `wall` on the result can be changed on the way (more room, for something drawn over the swimmer's head), and with
+// `ghost` set the swimmer goes past the bodies instead of bumping into them (it only bounces off the wall).
 
 const TAU = Math.PI * 2;
 
@@ -20,6 +23,7 @@ export function createCellWater({ bounds, swimmer, bodies, speed = 0.011, restit
         x: 0, y: 0, vx: 0, vy: 0, phase: i * 1.7 + Math.random() * 6, rate: 0.17 + (i % 5) * 0.045,
     }));
     const byId = Object.fromEntries(list.map((b) => [b.id, b]));
+    const api = { swimmer: me, wall: swimmer.wall ?? swimmer.r, ghost: false };
 
     const step = (dt, t) => {
         dt = Math.min(dt, 0.05);
@@ -47,7 +51,7 @@ export function createCellWater({ bounds, swimmer, bodies, speed = 0.011, restit
         me.hit = Math.max(0, me.hit - dt);
 
         // Bumping into bodies: push out of them, bounce, and hand them part of the blow
-        list.forEach((b) => {
+        if (!api.ghost) list.forEach((b) => {
             b.circles.forEach(([cx, cy, cr]) => {
                 const dx = me.x - (cx + b.x);
                 const dy = me.y - (cy + b.y);
@@ -79,7 +83,7 @@ export function createCellWater({ bounds, swimmer, bodies, speed = 0.011, restit
         const wx = me.x - bounds.x;
         const wy = me.y - bounds.y;
         const wd = Math.hypot(wx, wy);
-        const reach = bounds.r - me.r;
+        const reach = bounds.r - api.wall;
         if (wd > reach) {
             const nx = wx / wd;
             const ny = wy / wd;
@@ -95,5 +99,5 @@ export function createCellWater({ bounds, swimmer, bodies, speed = 0.011, restit
         }
     };
 
-    return { swimmer: me, offset: (id) => byId[id] ?? { x: 0, y: 0 }, step };
+    return Object.assign(api, { offset: (id) => byId[id] ?? { x: 0, y: 0 }, step });
 }

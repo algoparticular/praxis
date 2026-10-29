@@ -4,7 +4,7 @@
 
 ## Verbos y cartas
 - Arraigar (Paciencia), Ver (Pañña), Soltar (Vipassana), Dar y recibir (Dana) y Encender (Evolución Espiritual) se probaron en una escena. Todos pueden cambiar. Fluir y Resonar todavía son solo idea.
-- Tiempos de Encender (2,6 s para cargar la corona entera, 0,6 s el anillo hasta la pared): ajustarlos con un teléfono en la mano.
+- Encender: cuánto hay que frotar (`RUB`), cuántos golpes dura el fuego (`FUEL`) y cuánto abarca cada golpe (`REACH`): ajustarlos con un teléfono en la mano. Hoy se encienden los doce en unos cinco a siete lanzamientos.
 - Verbo de la carta 10: Fa (Dar y recibir), Sol (Resonar) o La (Ver); falta elegirlo y definir su forma de juego.
 - Las fichas de Huit y Sid no tienen texto de historia, solo la tabla.
 
