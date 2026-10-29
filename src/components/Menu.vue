@@ -7,6 +7,8 @@
         hasHome: Boolean,
         hasFullDeck: Boolean,
         hasCollaborate: Boolean,
+        // the volume sliders belong to the navigation menu only: the footer shows this same menu without them
+        hasAudio: Boolean,
     });
 
     const emit = defineEmits(['navigate','langChanged']); 
@@ -37,7 +39,7 @@
         
         <a v-if="props.hasCollaborate" @click="navigate('/collaborate')">{{ $t("nav.collaborate") }}</a>
 
-        <div id="audioMixer">
+        <div v-if="props.hasAudio" id="audioMixer">
             <label>
                 <span>{{ $t("nav.music") }}</span>
                 <input type="range" min="0" max="100" step="5" :value="Math.round(musicVolume * 100)"
