@@ -70,7 +70,8 @@
     const DX = 1080 - 354;                          // from where his head is drawn to the middle (art px)
     const CLOUD = { dx: 1080 - 1797, dy: -200, spread: 2.5 };     // and spread out sideways
     const widen = (x) => 1080 + (x + CLOUD.dx - 1080) * CLOUD.spread;
-    const [, SID_TOP, , SID_H] = art.boxes.sid;
+    const DY = 45;                                  // and a little down, so his feet stand in the ground, not over it
+    const SID_TOP = art.boxes.sid[1] + DY, SID_H = art.boxes.sid[3];
     const FEET = SID_TOP + SID_H;
     const RULITO = [294, 843, 77, 198];             // where the card draws the rulito, over the whole Sid (art px)
     const color = (i) => art.colors[i];
@@ -95,9 +96,9 @@
     // under the cut. The jitter stands in for the shader's noise
     const cutOf = (l) => l * 1.25 - 0.12;
     const heightOf = (y) => (FEET - y) / SID_H;
-    const body = art.body.map(([x, y, c]) => ({ x: x + DX, y, c: color(c), h: heightOf(y) + (Math.random() - 0.5) * 0.22 }));
+    const body = art.body.map(([x, y, c]) => ({ x: x + DX, y: y + DY, c: color(c), h: heightOf(y) + (Math.random() - 0.5) * 0.22 }));
     // The dots of his line stay a while where he was, then rise into the cloud
-    const line = art.outline.map(([x, y]) => ({ x: x + DX, y, h: heightOf(y) + (Math.random() - 0.5) * 0.16, size: 7 + Math.random() * 5, at: 0, off: false }));
+    const line = art.outline.map(([x, y]) => ({ x: x + DX, y: y + DY, h: heightOf(y) + (Math.random() - 0.5) * 0.16, size: 7 + Math.random() * 5, at: 0, off: false }));
 
     // The cloud: the illustration's dots, over him and much wider, each with two twins on his other side (one as far,
     // one nearer the middle, both a little displaced) so it keeps its density, thinning out towards its sides and its
@@ -345,9 +346,9 @@
             halo.place({ left: b.left + b.w / 2 - d / 2, top: b.top + b.h / 2 - d / 2, w: d, h: d });
         });
         L.mark.place(rectOf(B.mark));
-        L.sid.place(rectOf(B.sid, DX), { x: sx(1080), y: sy(FEET) });
+        L.sid.place(rectOf(B.sid, DX, DY), { x: sx(1080), y: sy(FEET) });
         // The rulito over him, where the card draws it (its canvas is bigger than the glyph, for the glow)
-        const r = rectOf(RULITO, DX);
+        const r = rectOf(RULITO, DX, DY);
         const rw = r.w, rh = rw * 86 / 32;
         glyph = { left: r.left + r.w / 2 - rw / 2, top: r.top + r.h - rh, w: rw, h: rh };
         L.rulito.place({ left: glyph.left - 0.4375 * glyph.w, top: glyph.top - 0.1628 * glyph.h, w: glyph.w * 1.875, h: glyph.h * 1.3256 },
@@ -358,7 +359,7 @@
     const placeHit = () => {
         const el = hit.value;
         if (!el || !L.sidNode) return;
-        const b = L.sidNode.boxOnScreen(rectOf(art.boxes.sid, DX));
+        const b = L.sidNode.boxOnScreen(rectOf(art.boxes.sid, DX, DY));
         el.style.translate = `${b.left.toFixed(1)}px ${b.top.toFixed(1)}px`;
         el.style.width = `${Math.max(44, b.width).toFixed(1)}px`;
         el.style.height = `${b.height.toFixed(1)}px`;
@@ -443,8 +444,8 @@
                     const wave = th.pulse * (0.5 + 0.5 * Math.sin(u * 14 - t * 7));
                     data.positions[at * 3] = sx(x);
                     data.positions[at * 3 + 1] = sy(y);
-                    data.sizes[at] = Math.max(2.4, (8 + 7 * wave) * k() * 2);
-                    data.alphas[at] = Math.min(1, (th.grow - u) * 8) * (0.7 + 0.3 * wave) * Math.min(1, u * 10);
+                    data.sizes[at] = Math.max(3.2, (11 + 7 * wave) * k() * 2);
+                    data.alphas[at] = Math.min(1, (th.grow - u) * 8) * (0.85 + 0.15 * wave) * Math.min(1, u * 6);
                     data.tints.set(THREAD, at * 3);
                 }
             });
@@ -562,8 +563,7 @@
         // The cloud flares while he is it
         const cosmic = win && !win.given ? Math.sin(Math.PI * Math.min(1, win.age / GIVE)) : 0;
         stageEl?.style.setProperty('--name-glow', named.toFixed(3));
-        // (not while the breath gathers: the light behind him is enough. No particle group is in the bloom: its pass
-        // draws points four times too big, and on a real GPU the threads melted into a white smear)
+        // (not while the breath gathers: the light behind him is enough)
         stage.bloom = Math.max(named, 0.5 * cosmic);
         if (cosmic > 0) dust?.boost(2, cosmic * 0.6);
 
@@ -640,18 +640,18 @@
                 // 1: the stars of the card
                 { colors: [0x202030], parallax: 0, drift: 1.5, twinkle: 0.3, reach: 0, order: -19, points: () => fromArt(art.dots.stars) },
                 // 2: the cloud of the colours of everything, as he lets go; a finger stirs it
-                { dynamic: cloudGroup, parallax: 0, drift: 3.5, jitter: 0.25, twinkle: 0.3, reach: 90, push: 22, order: after(L.cloudGlow) + 0.2 },
+                { dynamic: cloudGroup, parallax: 0, drift: 3.5, jitter: 0.25, twinkle: 0.3, reach: 90, push: 22, bloom: true, order: after(L.cloudGlow) + 0.2 },
                 // 3: the pink specks over the mushrooms
                 { parallax: 0, drift: 2, twinkle: 0.85, reach: 0, order: after(L.mark), points: () => fromArt(art.dots.specks, 1.4) },
                 // 4: the dots of his line, where he was
-                { dynamic: lineGroup, parallax: 0, drift: 2, jitter: 0.3, twinkle: 0.15, reach: 0, order: after(L.sid) },
+                { dynamic: lineGroup, parallax: 0, drift: 2, jitter: 0.3, twinkle: 0.15, reach: 0, bloom: true, order: after(L.sid) },
                 // 5: what rises from him to the cloud
-                { dynamic: flyers, look: 'soft', parallax: 0, drift: 2, twinkle: 0.2, reach: 0, order: after(L.rulito) },
+                { dynamic: flyers, look: 'soft', parallax: 0, drift: 2, twinkle: 0.2, reach: 0, bloom: true, order: after(L.rulito) },
                 // 6: the threads that tie him to his things, in front of the ground and behind him
                 { dynamic: threadGroup, parallax: 0, drift: 1, twinkle: 0.15, reach: 0, order: after(L.mark) },
                 // 7, 8: a little spiral galaxy in the cloud (as Dana's), its glow and its stars
-                { colors: [0xffffff], dynamic: galaxy.glow, parallax: 0, drift: 0, twinkle: 0, reach: 0, look: 'soft', order: after(L.cloudGlow) },
-                { colors: [0xffffff], dynamic: galaxy.stars, parallax: 0, drift: 0, twinkle: 0, reach: 0, order: after(L.cloudGlow) + 0.1 },
+                { colors: [0xffffff], dynamic: galaxy.glow, parallax: 0, drift: 0, twinkle: 0, reach: 0, look: 'soft', bloom: true, order: after(L.cloudGlow) },
+                { colors: [0xffffff], dynamic: galaxy.stars, parallax: 0, drift: 0, twinkle: 0, reach: 0, bloom: true, order: after(L.cloudGlow) + 0.1 },
             ],
         });
         if (reduced) dust.reveal();

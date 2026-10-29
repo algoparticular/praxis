@@ -7,6 +7,7 @@ export {
     CanvasTexture,
     CircleGeometry,
     Color,
+    CustomBlending,
     DoubleSide,
     FrontSide,
     Group,
@@ -18,6 +19,7 @@ export {
     MeshBasicMaterial,
     NoColorSpace,
     NormalBlending,
+    OneFactor,
     OrthographicCamera,
     PerspectiveCamera,
     PlaneGeometry,
@@ -36,4 +38,5 @@ export {
     Vector4,
     WebGLRenderTarget,
     WebGLRenderer,
+    ZeroFactor,
 } from 'three';

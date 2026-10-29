@@ -216,7 +216,9 @@ const ADD_FRAGMENT = `
     varying vec2 vUv;
     void main() {
         vec4 c = texture2D(map, vUv);
-        gl_FragColor = vec4(c.rgb * uAmount * 1.1, min(1.0, c.a * uAmount));
+        // Only light: it adds colour and leaves the canvas's alpha as it was. (It used to add alpha too, and where the
+        // canvas is see-through, over a scene's CSS sky, the glow darkened it instead: a black box round the rulito)
+        gl_FragColor = vec4(c.rgb * uAmount * 1.1 * min(1.0, c.a * uAmount), 0.0);
     }`;
 
 const parseColor = (color) => {
@@ -545,7 +547,8 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
         const add = new THREE.ShaderMaterial({
             uniforms: { map: { value: null }, uAmount: { value: 0 } },
             vertexShader: QUAD_VERTEX, fragmentShader: ADD_FRAGMENT, depthTest: false, depthWrite: false,
-            transparent: true, blending: THREE.AdditiveBlending,
+            transparent: true, blending: THREE.CustomBlending,
+            blendSrc: THREE.OneFactor, blendDst: THREE.OneFactor, blendSrcAlpha: THREE.ZeroFactor, blendDstAlpha: THREE.OneFactor,
         });
         const mesh = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), blur);
         mesh.frustumCulled = false;
@@ -553,6 +556,9 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
         quadScene.add(mesh);
         quad = { scene: quadScene, camera: new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1), mesh, blur, add };
     };
+    // Particles size their points in device px of the canvas: drawn into the smaller bloom target they would be four
+    // times too big (on a real GPU, rows of dots melted into a white smear). Who draws points says how to scale them
+    const bloomScalers = [];
     const drawBloom = (amount) => {
         ensureBloom();
         const [a, b] = bloomTargets;
@@ -560,7 +566,9 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
         renderer.setRenderTarget(a);
         renderer.setClearColor(0x000000, 0);
         renderer.clear();
+        bloomScalers.forEach((fn) => fn(a.width / Math.max(1, width * dpr)));
         renderer.render(scene, camera);
+        bloomScalers.forEach((fn) => fn(1));
         camera.layers.set(0);
         quad.mesh.material = quad.blur;
         for (let pass = 0; pass < 2; pass++) {
@@ -608,6 +616,10 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
 
         onResize(fn) { resizers.push(fn); if (width > 1) fn(width, height); },
         onTick(fn) { tickers.push(fn); },
+
+        // fn(scale) is called with the bloom target's size against the canvas (about 1/4) before the bloom pass, and
+        // with 1 after it: for what sizes itself in px of the canvas, as the points of useStardust
+        onBloomScale(fn) { bloomScalers.push(fn); },
 
         // Resolves once every picture has loaded
         ready() { return Promise.all(loads); },
