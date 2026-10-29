@@ -51,6 +51,7 @@ for (const card of cards) {
     if (image.url !== `/cards/${card.id}.webp`) fail(card, `its image is "${image.url}", expected /cards/${card.id}.webp`);
     if (!existsSync(at('public', 'cards', `${card.id}.webp`))) fail(card, `public/cards/${card.id}.webp is missing`);
     if (!existsSync(at('public', 'cards', 'thumb', `${card.id}.webp`))) fail(card, `public/cards/thumb/${card.id}.webp is missing (npm run thumbs)`);
+    if (!existsSync(at('public', 'cards', '1440', `${card.id}.webp`))) fail(card, `public/cards/1440/${card.id}.webp is missing (npm run thumbs)`);
 }
 
 // The scenes: every id listed in cardScenes.js must be a card

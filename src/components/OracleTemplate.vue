@@ -3,7 +3,7 @@
     import { useRouter } from 'vue-router';
     import { animate, stagger } from 'motion';
     import OracleItem from "./OracleItem.vue";
-    import { getCard } from '../data/cards.js';
+    import { getCard, pictureUrl } from '../data/cards.js';
     import { setPendingTransition } from '../cardTransition.js';
     import { play, setCardChord, vibrate } from '../composables/useSound.js';
     import { chordFor } from '../data/cardChords.js';
@@ -133,7 +133,7 @@
         clone.style.cssText = `position:fixed;z-index:100;pointer-events:none;box-sizing:border-box;`
             + `left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;height:${rect.height}px;`
             + `border:${2 * scale}px solid ${card?.color ?? '#143246'};border-radius:${18 * scale}px;`
-            + `background:${card?.color ?? '#143246'} ${card?.image ? `url(${card.image[0].url})` : ''} center/cover no-repeat`;
+            + `background:${card?.color ?? '#143246'} ${card?.image ? `url(${pictureUrl(card)})` : ''} center/cover no-repeat`;
         document.body.appendChild(clone);
         el.style.visibility = 'hidden';
 

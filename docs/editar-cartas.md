@@ -8,6 +8,7 @@ Las cartas viven en el proyecto. Airtable ya no se usa: no hay token, sincroniza
 | Textos, colores, categoría, imagen | `src/data/cards.json` (una entrada por carta, ordenadas por `id`) |
 | Ilustración de la carta | `public/cards/<id>.webp` (cuadrada, 2160 × 2160) |
 | Miniatura del mazo | `public/cards/thumb/<id>.webp` (se genera sola) |
+| Ilustración para teléfonos | `public/cards/1440/<id>.webp` (1440 px, se genera sola: es la que cargan los teléfonos y la mayoría de las pantallas; la de 2160 queda para pantallas grandes de alta densidad) |
 | Escena de la carta (si la tiene) | `src/data/cardScenes.js` y `src/components/scenes/` |
 
 ## Campos de cada carta
@@ -17,7 +18,7 @@ Las cartas `Special` solo llevan descripción: no necesitan afirmación ni invit
 
 ## Tareas comunes
 - **Cambiar un texto:** editá el campo en `cards.json`. Los saltos de línea van como `\n`.
-- **Cambiar una ilustración:** reemplazá `public/cards/<id>.webp` (cuadrada, 2160 px) y corré `npm run thumbs` para regenerar las miniaturas. Si cambia el fondo, ajustá `color` y `colorAlt`.
+- **Cambiar una ilustración:** reemplazá `public/cards/<id>.webp` (cuadrada, 2160 px) y corré `npm run thumbs` para regenerar las miniaturas y la versión de 1440 px. Si cambia el fondo, ajustá `color` y `colorAlt`.
 - **Agregar una carta:** agregá su entrada con un `id` nuevo, su imagen en `public/cards/` y corré `npm run thumbs`.
 
 ## Verificar
