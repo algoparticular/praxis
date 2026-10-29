@@ -1,15 +1,15 @@
 <script setup>
     // Khanti (patience): a network of glass flasks joined by pink tubes, a little creature living in each one, over a field
-    // of blue dots. The layers come from the artwork (public/assets/kshanti, each cropped to its box: kshantiLayers.json
+    // of blue dots. The layers come from the artwork (public/assets/khanti, each cropped to its box: khantiLayers.json
     // gives left, top, width, height in % of the 2160px square, the area and the main colour of each). The network, the
     // creatures in the flasks, the glass over them and the line of lavender thread float as one group, and each creature
     // has its own small life (breathing, floating, wiggling...).
-    //  - The lavender thread is a single long brush stroke (kshantiLine.json: a line traced from the artwork, with the
+    //  - The lavender thread is a single long brush stroke (khantiLine.json: a line traced from the artwork, with the
     //    thickness the brush had at each point) that winds between the pink tubes without crossing a bubble, going over
     //    one tube and under the next: it is drawn twice, once under the pink and once over it, and the copy over it only
     //    shows where the line crosses in front (a mask). Nothing of it stays still: several short strokes, each tapering
     //    at both ends, travel along the route at their own pace, one after another.
-    //  - Nine flasks have a cork (kshantiFlasks.json: each flask's pink is its own picture). Pressing a cork pops it and
+    //  - Nine flasks have a cork (khantiFlasks.json: each flask's pink is its own picture). Pressing a cork pops it and
     //    the flask empties as if it evaporated: the pink level sinks, the creature fades up and vapour rises. Pressing the
     //    central sign fills everything back.
     //  - The blue dots of the sky and the lavender specks are particles; touching a creature makes it flash and throw
@@ -20,9 +20,9 @@
     import { createSparks } from '../../composables/useSparks.js';
     import { play } from '../../composables/useSound.js';
     import { sceneMilestone } from '../../analytics.js';
-    import layers from '../../composables/kshantiLayers.json';
-    import flaskData from '../../composables/kshantiFlasks.json';
-    import LINE from '../../composables/kshantiLine.json';
+    import layers from '../../composables/khantiLayers.json';
+    import flaskData from '../../composables/khantiFlasks.json';
+    import LINE from '../../composables/khantiLine.json';
 
     const props = defineProps({
         card: { type: Object, default: () => ({}) },
@@ -412,25 +412,25 @@
                     <path v-for="k in 5" :key="k" class="worm" :class="`w${k - 1}`" :ref="setEl(`wb${k - 1}`)" />
                 </svg>
 
-                <img class="layer" :style="place(layers[big.body])" src="/assets/kshanti/k3.webp" alt="" draggable="false">
-                <img v-for="f in FLASKS" :key="f.id" class="layer flask" :ref="setEl(f.id)" :style="f.style" :src="`/assets/kshanti/${f.id}.webp`" alt="" draggable="false">
-                <img v-for="t in under" :key="t.n" class="layer" :ref="setEl(t.n)" :style="t.style" :src="`/assets/kshanti/k${t.n}.webp`" alt="" draggable="false">
-                <img class="layer" :style="place(layers[big.shine])" src="/assets/kshanti/k34.webp" alt="" draggable="false">
-                <img class="layer" :style="place(layers[big.lines])" src="/assets/kshanti/k35.webp" alt="" draggable="false">
+                <img class="layer" :style="place(layers[big.body])" src="/assets/khanti/k3.webp" alt="" draggable="false">
+                <img v-for="f in FLASKS" :key="f.id" class="layer flask" :ref="setEl(f.id)" :style="f.style" :src="`/assets/khanti/${f.id}.webp`" alt="" draggable="false">
+                <img v-for="t in under" :key="t.n" class="layer" :ref="setEl(t.n)" :style="t.style" :src="`/assets/khanti/k${t.n}.webp`" alt="" draggable="false">
+                <img class="layer" :style="place(layers[big.shine])" src="/assets/khanti/k34.webp" alt="" draggable="false">
+                <img class="layer" :style="place(layers[big.lines])" src="/assets/khanti/k35.webp" alt="" draggable="false">
 
                 <!-- ...and over it, only where the thread crosses in front of a tube or a flask -->
                 <svg class="thread" viewBox="0 0 2160 2160" aria-hidden="true">
                     <defs>
-                        <mask id="kshanti-front" maskUnits="userSpaceOnUse" x="0" y="0" width="2160" height="2160">
+                        <mask id="khanti-front" maskUnits="userSpaceOnUse" x="0" y="0" width="2160" height="2160">
                             <path v-for="(d, i) in FRONT_D" :key="i" :d="d" fill="none" stroke="#fff" stroke-width="80" stroke-linecap="round" stroke-linejoin="round" />
                         </mask>
                     </defs>
-                    <g mask="url(#kshanti-front)">
+                    <g mask="url(#khanti-front)">
                         <path v-for="k in 5" :key="k" class="worm" :class="`w${k - 1}`" :ref="setEl(`wf${k - 1}`)" />
                     </g>
                 </svg>
 
-                <img v-for="t in over" :key="t.n" class="layer" :ref="setEl(t.n)" :style="t.style" :src="`/assets/kshanti/k${t.n}.webp`" alt="" draggable="false">
+                <img v-for="t in over" :key="t.n" class="layer" :ref="setEl(t.n)" :style="t.style" :src="`/assets/khanti/k${t.n}.webp`" alt="" draggable="false">
 
                 <!-- What can be touched: the corks, the creatures and the central sign -->
                 <div v-for="t in touchable" :key="'hit' + t.n" :ref="setEl('chit' + t.n)" class="hit" role="button" tabindex="0" :style="t.hit"

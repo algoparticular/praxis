@@ -10,9 +10,11 @@
     "thumbs": "node scripts/make-thumbs.mjs",
     "lint": "eslint .",
     "check:cards": "node scripts/check-cards.mjs",
+    "check:docs": "node scripts/check-docs.mjs",
+    "docs": "node scripts/check-docs.mjs --write",
     "check:budget": "node scripts/check-budget.mjs",
     "check:smoke": "node scripts/smoke.mjs",
-    "check": "npm run lint && npm run build && npm run check:cards && npm run check:budget && npm run check:smoke"
+    "check": "npm run lint && npm run build && npm run check:cards && npm run check:docs && npm run check:budget && npm run check:smoke"
   },
   "dependencies": {
     "firebase": "^10.7.2",
