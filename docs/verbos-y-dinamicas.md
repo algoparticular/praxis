@@ -35,7 +35,7 @@ Los siete verbos, uno por chakra, quedan ordenados entre dos polos:
 - **Arraigar** (raíz) es el polo de la manifestación: de la materia a la manifestación. Está probado en Paciencia.
 - **Soltar** (corona) es el polo de la liberación: del entendimiento a la existencia. Está probado en Vipassana.
 - **Dar y recibir** (corazón) es donde las dos corrientes se encuentran. Las notas de Belén lo dicen así: "dos triángulos entrelazados, el movimiento descendente del espíritu en la materia y la liberación ascendente de la materia en el espíritu: equilibrio perfecto en el corazón". Está implementado en Dana: compartir la luz de la llamita con todos los de la isla, y que vuelva multiplicada (ver más abajo, en "Dinámicas").
-- **Fluir, Encender, Resonar y Ver** serían los pasos entre un polo y el otro. Ver está probado en Pañña, Encender en Evolución Espiritual y Fluir en Khanti.
+- **Fluir, Encender, Resonar y Ver** serían los pasos entre un polo y el otro. Ver está probado en Pañña, Encender en Evolución Espiritual, Fluir en Khanti y Resonar en Sincronicidad.
 
 Esto se parece a lo que el rulito premia: en las notas del tercer chakra, "siento las dos corrientes, ascendente de liberación y descendente de manifestación, que se unen en mí para manifestar mi propósito de ser quien soy".
 
@@ -150,11 +150,22 @@ Las tres son hoy ilustraciones planas: cada una necesitaría su escena.
 **Dónde se tocó:** `SceneDana.vue`, dibujada en WebGL con el escenario común (`useLayerStage.js`, como Paciencia; ver `docs/escenas.md`) (`GIFTS`, `give()`, `receive()`, `giveBack()`, `balance()`; `ISLAND` y `onIsland()` para la isla grande; `drops`, `glints`, `fireflies`, `giverAura`, `galaxy`, `shooting` y los grupos del cielo), `give` en `synth.js`. El rulito que estaba dibujado sobre el de la derecha se sacó de su capa: ahora es el premio.
 **Cartas:** Dana (hecha), Metta, Gratitud.
 
-### 5. Resonar (Aura, demonio: mentiras)
-**Dinámica:** escuchar y responder. Ritmo, eco, secuencia.
-**Punto de partida:** Sincronicidad ya tiene una secuencia de cuatro burbujas que se iluminan en orden; y cada carta tiene su acorde.
-**Idea:** la escena toca una frase corta con las notas del acorde de la carta y la persona la responde tocando; si no coincide, la escena la vuelve a tocar con paciencia. En Creatividad no hay respuesta correcta: cada toque agrega una nota y se compone libremente.
-**Cartas:** Sila, Sacca, Armonía, Comunicación, Creatividad, Honestidad, Sincronicidad (estar en el momento justo: tocar cada burbuja cuando el brillo llega a ella).
+### 5. Resonar (Aura, demonio: mentiras): implementado en Sincronicidad
+**Dinámica:** escuchar primero y responder en sintonía. Ritmo, eco, secuencia. Tiene dos formas, según lo que pida cada carta:
+- **A tiempo** (responder *cuándo*): la escena lleva un pulso y la persona toca cada cosa cuando el pulso llega a ella. Para las cartas que hablan de armonía, de ritmo y de estar en el momento justo: Sincronicidad (hecha), Armonía ("variedad y proporción de sonidos y pausas") y Sila ("en resonancia con la voz de tu sabiduría interior").
+- **Eco** (responder *qué*): la escena canta una frase corta con notas del acorde de la carta y la persona la repite tocando (como el Simón dice); si no coincide, la escena la vuelve a cantar, más lenta. Para las cartas que piden escuchar primero: Comunicación ("el primer paso es escucharte"), Honestidad ("escucha tu verdad acallando voces") y Sacca. Todavía es idea: estas tres son ilustración plana y el eco se arma cuando tengan escena.
+- Creatividad no tiene respuesta correcta: cada toque agrega una nota y se compone libremente (idea).
+
+Las dos formas son a validar con Belén.
+
+**Cómo funciona hoy en Sincronicidad (a tiempo):** las cuatro burbujas (el huevito, la larva, el encuentro y la pareja abrazada) se iluminan en orden con un pulso fijo, una cada 1,3 s; en el quinto tiempo salen chispas del fuego y el sexto es un silencio (`BEAT`, `PERIOD`). Cada burbuja brilla más justo en su tiempo y en ese instante echa chispas.
+- *Tocar a tiempo.* Un toque a menos de 0,28 s del tiempo de una burbuja (`IN_TIME`) la hace resonar: suena su nota del acorde de la carta (del huevito a la pareja suben Sol, Si, Re y el Sol de arriba; `resonate`), echa más chispas y queda encendida, con un halo detrás que respira con el pulso.
+- *Fuera de tiempo.* Suena apagado (`miss`) y salen unas pocas chispas. No se pierde nada de lo encendido. Esa burbuja espera a su próximo brillo: tocarla una y otra vez no sirve para atraparla, hay que escuchar el pulso (`missed`).
+- *Escuchar.* Mientras alguien juega (hasta dos vueltas después del último toque), el brillo suena muy suave en cada burbuja (`pulse`), así el pulso se oye además de verse. Antes del primer toque la escena está en silencio, como siempre.
+- *Las cuatro.* Con las cuatro encendidas el fuego crece, salen chispas y suenan las notas del acorde subiendo (`converge`). De la burbuja de la pareja abrazada (la más grande) sale el rulito dorado, se ilumina el nombre de la carta y suena `rulito`. Al rato las burbujas se apagan, la cola del rulito alcanza a su cabeza y se puede volver a jugar. Hito: `in_time` (con `times`). Si se tiene ritmo, sale en la primera vuelta; si no, en dos o tres.
+Con movimiento reducido la escena queda estática y no se puede jugar (como Pañña). Con teclado sí: Enter o espacio sobre una burbuja es un toque.
+**Dónde se tocó:** `SceneSincronicidad.vue` (`touch()`, `synchronised()`, `STEPS`, `offBeat()`; `L.halos` y `L.rulito`), `pulse`, `resonate` y `miss` en `synth.js`.
+**Cartas:** Sincronicidad (hecha), Armonía, Sila (a tiempo); Comunicación, Honestidad, Sacca (eco); Creatividad (composición libre).
 
 ### 6. Ver (Huit, demonio: ilusión): implementado en Pañña
 **Dinámica:** descubrir lo oculto, unir puntos, reconocer un patrón.

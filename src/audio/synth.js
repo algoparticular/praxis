@@ -368,6 +368,28 @@ export const link = (ctx, out, time, harmony, lights = { from: 0.5, to: 0.5, lev
     swish(ctx, out, time, { from: 2500, to: 5500, duration: 0.5, level: 0.005 * k, q: 0.6 });
 };
 
+// Sincronicidad (Resonar). The beat to follow, while someone is playing: the glow reaching a bubble sounds its note very
+// softly. `step` is the bubble's place in the sequence (0..1, the smallest egg to the pair): its note climbs the chord
+export const pulse = (ctx, out, time, harmony, { step = 0 } = {}) => {
+    const h = harmony ?? PLAIN;
+    const notes = h.tones(h.voice, 12);
+    bell(ctx, out, time, hz(notes[Math.round(step * (notes.length - 1))]), 0.9, 0.012);
+};
+
+// A bubble touched on its beat resonates: its note, clear, with the octave below answering and a breath of air
+export const resonate = (ctx, out, time, harmony, { step = 0 } = {}) => {
+    const h = harmony ?? PLAIN;
+    const notes = h.tones(h.voice, 12);
+    const note = hz(notes[Math.round(step * (notes.length - 1))]);
+    bell(ctx, out, time, note, isMinor(h.kind) ? 2.6 : 2.2, 0.045);
+    bell(ctx, out, time + 0.04, note / 2, 2.6, 0.022);
+    if (hasSeventh(h)) bell(ctx, out, time + 0.05, note * 1.004, 1.6, 0.014);
+    swish(ctx, out, time, { from: 1800, to: 4200, duration: 0.6, level: 0.006, q: 0.6 });
+};
+
+// Out of time: only a small muted drop, nothing in the chord
+export const miss = (ctx, out, time) => drop(ctx, out, time, 0.03);
+
 // Giving a light of the little flame (Dana): a breath of air rising and the note of the one who gives, gliding up into it;
 // when it gets there `link` answers (the giver's note, then the receiver's). `from` is the giver's height (0..1)
 export const give = (ctx, out, time, harmony, lights = { from: 0.5 }) => {

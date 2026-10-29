@@ -3,13 +3,15 @@
 Última pestaña de "Anima por dentro": lo que falta decidir, agrupado por tema.
 
 ## Verbos y cartas
-- Arraigar (Paciencia), Ver (Pañña), Soltar (Vipassana), Dar y recibir (Dana) y Encender (Evolución Espiritual) se probaron en una escena. Todos pueden cambiar. Fluir y Resonar todavía son solo idea.
+- Los siete verbos se probaron en una escena: Arraigar (Paciencia), Fluir (Khanti), Encender (Evolución Espiritual), Dar y recibir (Dana), Resonar (Sincronicidad, en su forma "a tiempo"), Ver (Pañña) y Soltar (Vipassana). Todos pueden cambiar.
+- Resonar: validar con Belén sus dos formas (a tiempo para Sincronicidad, Armonía y Sila; eco para Comunicación, Honestidad y Sacca). El eco todavía es solo idea.
+- Resonar en Sincronicidad: el pulso (`BEAT`, 1,3 s) y la ventana para acertar (`IN_TIME`, 0,28 s): probarlos con un teléfono en la mano.
 - Encender: cuánto hay que frotar (`RUB`), cuántos golpes dura el fuego (`FUEL`) y cuánto abarca cada golpe (`REACH`): ajustarlos con un teléfono en la mano. Hoy se encienden los doce en unos cinco a siete lanzamientos.
 - Verbo de la carta 10: Fa (Dar y recibir), Sol (Resonar) o La (Ver); falta elegirlo y definir su forma de juego.
 - Las fichas de Huit y Sid no tienen texto de historia, solo la tabla.
 
 ## Escenas de juego
-- Más adelante, por accesibilidad: que Pañña, Vipassana, Dana y Evolución se puedan jugar con movimiento reducido (hoy quedan estáticas y no se pueden jugar), y Vipassana también con teclado. El ajuste de movimiento reducido lo activan personas a las que las animaciones les dan mareo o malestar, y el teclado lo usa quien no puede tocar la pantalla. El gesto seguiría funcionando, con menos chispas y menos movimiento.
+- Más adelante, por accesibilidad: que Pañña, Vipassana, Dana, Evolución y Sincronicidad se puedan jugar con movimiento reducido (hoy quedan estáticas y no se pueden jugar), y Vipassana también con teclado. El ajuste de movimiento reducido lo activan personas a las que las animaciones les dan mareo o malestar, y el teclado lo usa quien no puede tocar la pantalla. El gesto seguiría funcionando, con menos chispas y menos movimiento.
 - Tiempos de Arraigar (2,6 s dibujándose, 3,4 s yéndose): ajustarlos con un teléfono en la mano.
 - Que las raíces se recuerden entre visitas (hoy se pierden al salir de la carta).
 - El color del rulito de Vipassana: es el rosa de la espiral porque el fondo de la escena ya es el violeta de la carta.
