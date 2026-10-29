@@ -10,6 +10,8 @@
 // step(dt, t) moves everything on; read swimmer.x/y (absolute) and offset(id) = { x, y } from where the body was drawn.
 // `wall` on the result can be changed on the way (more room, for something drawn over the swimmer's head), and with
 // `ghost` set the swimmer goes past the bodies instead of bumping into them (it only bounces off the wall).
+// `calm` (0..1) stills the water: at 1 the bodies stop where they are. With `home` set ({ x, y }) the swimmer leaves its
+// course and swims there, slowing as it arrives, past the bodies; cleared, it takes up a course again from where it is.
 
 const TAU = Math.PI * 2;
 
@@ -23,35 +25,48 @@ export function createCellWater({ bounds, swimmer, bodies, speed = 0.011, restit
         x: 0, y: 0, vx: 0, vy: 0, phase: i * 1.7 + Math.random() * 6, rate: 0.17 + (i % 5) * 0.045,
     }));
     const byId = Object.fromEntries(list.map((b) => [b.id, b]));
-    const api = { swimmer: me, wall: swimmer.wall ?? swimmer.r, ghost: false };
+    const api = { swimmer: me, wall: swimmer.wall ?? swimmer.r, ghost: false, calm: 0, home: null };
 
     const step = (dt, t) => {
         dt = Math.min(dt, 0.05);
         if (dt <= 0) return;
 
         // The bodies: a spring back to where they were drawn, a slow current pushing them about, and some water drag
-        list.forEach((b) => {
+        const still = dt * (1 - api.calm);
+        if (still > 0) list.forEach((b) => {
             const fx = Math.sin(t * b.rate + b.phase) + 0.5 * Math.sin(t * b.rate * 2.3 + b.phase * 1.3);
             const fy = Math.cos(t * b.rate * 0.9 + b.phase * 0.7) + 0.5 * Math.cos(t * b.rate * 2.1 + b.phase);
             const k = 2.4;
-            b.vx += (-k * b.x + k * b.sway * fx * 0.9 - 2.2 * b.vx) * dt;
-            b.vy += (-k * b.y + k * b.sway * fy * 0.9 - 2.2 * b.vy) * dt;
-            b.x += b.vx * dt;
-            b.y += b.vy * dt;
+            b.vx += (-k * b.x + k * b.sway * fx * 0.9 - 2.2 * b.vx) * still;
+            b.vy += (-k * b.y + k * b.sway * fy * 0.9 - 2.2 * b.vy) * still;
+            b.x += b.vx * still;
+            b.y += b.vy * still;
         });
 
         // The swimmer: its heading drifts, and its velocity eases towards it so a bounce settles into a new course
-        me.heading += (Math.sin(t * 0.23) * 0.5 + Math.sin(t * 0.61 + 1) * 0.3) * dt;
-        const want = speed * (0.85 + 0.3 * Math.sin(t * 0.17));
-        const ease = Math.min(1, 0.7 * dt);
-        me.vx += (Math.cos(me.heading) * want - me.vx) * ease;
-        me.vy += (Math.sin(me.heading) * want - me.vy) * ease;
+        if (api.home) {
+            // Going home: straight there, quick while far and slowing to a stop as it arrives
+            const hx = api.home.x - me.x;
+            const hy = api.home.y - me.y;
+            const hd = Math.hypot(hx, hy) || 1e-6;
+            const want = Math.min(0.16, hd * 3);
+            const ease = Math.min(1, 2.5 * dt);
+            me.vx += (hx / hd * want - me.vx) * ease;
+            me.vy += (hy / hd * want - me.vy) * ease;
+            if (hd > 0.004) me.heading = Math.atan2(me.vy, me.vx);
+        } else {
+            me.heading += (Math.sin(t * 0.23) * 0.5 + Math.sin(t * 0.61 + 1) * 0.3) * dt;
+            const want = speed * (0.85 + 0.3 * Math.sin(t * 0.17));
+            const ease = Math.min(1, 0.7 * dt);
+            me.vx += (Math.cos(me.heading) * want - me.vx) * ease;
+            me.vy += (Math.sin(me.heading) * want - me.vy) * ease;
+        }
         me.x += me.vx * dt;
         me.y += me.vy * dt;
         me.hit = Math.max(0, me.hit - dt);
 
         // Bumping into bodies: push out of them, bounce, and hand them part of the blow
-        if (!api.ghost) list.forEach((b) => {
+        if (!api.ghost && !api.home) list.forEach((b) => {
             b.circles.forEach(([cx, cy, cr]) => {
                 const dx = me.x - (cx + b.x);
                 const dy = me.y - (cy + b.y);
