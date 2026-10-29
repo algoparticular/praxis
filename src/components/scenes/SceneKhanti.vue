@@ -185,14 +185,15 @@
 
     // The finger (or the mouse): where it is on the network's square (in the 2160 units), when it last moved, and
     // whether it is pressing
-    const pointer = { u: 0, v: 0, at: -99, down: false };
+    const pointer = { u: 0, v: 0, at: -99, down: false, touch: false };
     let nowT = 0;
     const track = (event) => {
         const box = overlay.value?.getBoundingClientRect();
         if (!box || !box.width) return;
         pointer.u = (event.clientX - box.left) / box.width * 2160;
         pointer.v = (event.clientY - box.top) / box.height * 2160;
-        pointer.down = event.pointerType === 'touch' || event.buttons > 0;
+        pointer.touch = event.pointerType === 'touch';
+        pointer.down = pointer.touch || event.buttons > 0;
         pointer.at = nowT;
     };
     const release = (event) => { track(event); pointer.down = false; };
@@ -386,7 +387,8 @@
     const START = STOPS[0].exit;            // the current comes out of the central sign here
     const PACE = 26;                        // samples a second at its fastest, when it is accompanied
     const ALONE = 0.22;                     // how fast it goes alone (or pushed), of its pace then
-    const REACH = 190;                      // how near its head (2160 units) the finger has to be to go with it
+    const REACH = 190;                      // how near its head (2160 units) the mouse has to be to go with it
+    const TOUCH_REACH = 300;                // and a finger, which covers what it follows and cannot be as exact
     const DRAIN = 16;                       // samples of tube that empty on each side of an uncorked flask
     const STILL = { saturate: 0.62, bright: 0.97, water: 0.25 };      // how the still pink looks
     const flow = { head: START, alpha: 1, acc: 0, light: 0, waiting: null, noteAt: 0, touched: false };
@@ -399,7 +401,8 @@
         // Accompanied: a finger (or the mouse, moving) near its head, or the key held on it
         const recent = pointer.down || t - pointer.at < 0.6;
         const i = Math.min(FN - 1, Math.floor(flow.head));
-        const near = keyHold || (recent && (pointer.u - FX(i)) ** 2 + (pointer.v - FY(i)) ** 2 < REACH * REACH);
+        const reach = pointer.touch ? TOUCH_REACH : REACH;
+        const near = keyHold || (recent && (pointer.u - FX(i)) ** 2 + (pointer.v - FY(i)) ** 2 < reach * reach);
         flow.acc += ((near ? 1 : 0) - flow.acc) * Math.min(1, dt * (near ? 4 : 1.5));
         if (near && !flow.touched) { flow.touched = true; sceneMilestone('current_accompanied'); }
         const stop = nextStop();
@@ -550,11 +553,23 @@
         const el = headHit.value;
         if (!el) return;
         const i = Math.min(FN - 1, Math.floor(flow.head));
-        const size = REACH * 2 / 21.6;
+        const size = TOUCH_REACH * 2 / 21.6;
         el.style.left = pct((FX(i) / 21.6 - size / 2).toFixed(2));
         el.style.top = pct((FY(i) / 21.6 - size / 2).toFixed(2));
         el.style.width = el.style.height = pct(size.toFixed(2));
         el.style.display = win ? 'none' : '';
+    };
+    // On a phone, a finger put down near the current's head must not move the page, whatever it lands on (the head, or
+    // a creature or a cork beside it, which let the page scroll): otherwise the browser takes the drag for a scroll and
+    // cancels it. Anywhere else the page scrolls as usual
+    const onTouchStart = (event) => {
+        const touch = event.touches[0];
+        const box = overlay.value?.getBoundingClientRect();
+        if (!touch || !event.cancelable || win || !box?.width) return;
+        const i = Math.min(FN - 1, Math.floor(flow.head));
+        const u = (touch.clientX - box.left) / box.width * 2160 - FX(i);
+        const v = (touch.clientY - box.top) / box.height * 2160 - FY(i);
+        if (u * u + v * v < TOUCH_REACH * TOUCH_REACH) event.preventDefault();
     };
     const holdHead = (event) => {
         event.currentTarget.setPointerCapture?.(event.pointerId);
@@ -723,6 +738,7 @@
         root.value.addEventListener('pointerdown', track, { passive: true });
         root.value.addEventListener('pointerup', release, { passive: true });
         root.value.addEventListener('pointercancel', release, { passive: true });
+        root.value.addEventListener('touchstart', onTouchStart, { passive: false });
         parallax = createParallax(root.value, frame);
         enter();
     };
@@ -735,6 +751,7 @@
         root.value?.removeEventListener('pointerdown', track);
         root.value?.removeEventListener('pointerup', release);
         root.value?.removeEventListener('pointercancel', release);
+        root.value?.removeEventListener('touchstart', onTouchStart);
         stageEl?.style.removeProperty('--name-glow');
         parallax?.destroy();
         sky?.destroy();
