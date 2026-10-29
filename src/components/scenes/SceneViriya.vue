@@ -452,12 +452,14 @@
         L.dusk.place({ left: sx(SUN.x) - dg / 2, top: sy(SUN.y) - dg * 0.45, w: dg, h: dg * 0.9 });
 
         const wide = Math.max(w, F.size);
+        const below = titleBottom(h) + 16;
         let widest = 0;
         winds.forEach((wd) => {
             const ww = wd.art.w * k(), wh = wd.art.h * k();
             const x = w / 2 + (wd.art.x - 1080) / SIZE * wide;
-            // Spread over the whole sky above the land, however tall it is
-            const y = 0.14 * h + (wd.art.y - 160) / 820 * Math.max(0, sy(980) - 0.14 * h);
+            // Spread over the sky between the card's name and the land, however tall it is: never over the name
+            const top = below + wh / 2 + 12, bottom = Math.max(top, sy(980));
+            const y = top + (wd.art.y - 160) / 820 * (bottom - top);
             wd.x0 = x;
             wd.rest = { left: x - ww / 2, top: y - wh / 2, w: ww, h: wh };
             widest = Math.max(widest, ww);
@@ -496,6 +498,13 @@
         const fd = Math.max(46, 150 * k());
         L.flame.place({ left: -fd / 2, top: -fd / 2, w: fd, h: fd });
         L.flameCore.place({ left: -fd / 5, top: -fd / 5, w: fd / 2.5, h: fd / 2.5 });
+    };
+
+    // Where the card's name ends (the stage's h1, over the scene), so the wind's strokes keep under it
+    const titleBottom = (h) => {
+        const title = stageEl?.querySelector('h1');
+        if (!title || !root.value) return 0.16 * h;
+        return title.getBoundingClientRect().bottom - root.value.getBoundingClientRect().top;
     };
 
     // The touch target: the walker and his staff
