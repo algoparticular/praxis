@@ -55,6 +55,7 @@ These cannot see what a real GPU or a real phone does (flicker, disappearing lay
 - `SceneEvolucion` (22): built like Creatividad (fern crown, eight glowing bulbs, four mushrooms, a curled-up being); layers in `public/assets/evolucion`. Its verb is Encender: everything on the crown starts grey; rub inside the cell until the being catches fire, then pull it back like a sling and let go: it bounces off the membrane and every knock lights what is on that side; with all twelve lit the chord resolves (`resolve`, B7 to E) and the rulito is born. Details: `docs/escenas.md`.
 - `SceneKhanti` (5): flasks with creatures, a lavender brush-stroke thread that weaves over and under them, nine corks that empty the flasks; layers in `public/assets/khanti`. Details: `docs/escenas.md`.
 - `ScenePanna` (id 3): line-work layers in `public/assets/panna` with all the colour as particles; its verb is Ver (nine lights joined by threads of dots to reveal a hidden figure). Details: `docs/escenas.md`.
+- **three.js** is always imported on demand from `src/three.js`, which re-exports only the classes the app uses (so the build does not carry the whole library); using another class means adding it there.
 - **Particles and stars are never pictures:** wherever an asset is a field of dots, stars or dust, the scene draws it as real particles instead, with `useStardust.js` (three.js `Points`, one canvas can hold several groups, each one draw call, with `shift(i, x, y)` to follow a layer's parallax and `dynamic` groups that move every frame; `look: 'hard'` for the flat dots of the night skies, `'soft'` for glowing dust or embers; `startStardust` is the safe way to start one from a component).
 - Every other card uses `SceneFlat` (its square illustration, feathered into the card colour, drifting slowly).
 - To give another card its own scene: add a component in `src/components/scenes/` (props `card`, `active`; start entrances when `active` turns true) and list its id in `cardScenes.js`. Layers live in `public/assets/`.
@@ -70,7 +71,7 @@ These cannot see what a real GPU or a real phone does (flicker, disappearing lay
 
 **Analytics:** anonymous usage analytics with PostHog, cookie-less and in memory (`src/analytics.js`, off unless `VITE_POSTHOG_KEY` is set; events, funnels and privacy guarantees in `docs/analitica.md`). Card pages tell one story per visit (`startCardVisit`: time, touches on the scene, whether the reading was reached) and scenes with a game report milestones with `sceneMilestone`. `card_left` and `table_left` (the 3D tables of `/oracle`, `/oracleTheNine` and `/deck`, from `startTableVisit` in `CardTable.vue` and `DeckRing.vue`) also carry how smoothly the page was drawn (`useFramePace.js`: average fps, % of slow frames, stutters, worst frame, plus cores and pixel ratio as a hint of the device); nothing is measured when nothing would be sent.
 
-**Firebase** is initialized in `main.js` but auth guards on routes are currently commented out. Firebase is set up for future user account features but not enforced.
+**Firebase** (`src/firebase.js`) is only imported by the sign-in and register pages, which the router loads on demand, so it is not part of every visit; auth guards on routes are commented out and the menu shows no account links. Set up for future user account features but not enforced.
 
 **PWA:** Service worker is registered in `App.vue`. `public/manifest.webmanifest` configures standalone install behavior.
 
@@ -78,7 +79,7 @@ These cannot see what a real GPU or a real phone does (flicker, disappearing lay
 
 | File | Purpose |
 |------|---------|
-| `src/main.js` | App entry point — initializes Vue, i18n, Firebase, router |
+| `src/main.js` | App entry point — initializes Vue, i18n, router, analytics |
 | `src/router/index.js` | All route definitions |
 | `src/components/CardTemplate.vue` | Displays an individual card (data from `src/data/cards.js`) |
 | `src/data/cards.json` | The 33 cards: the source of truth, edited by hand (`docs/editar-cartas.md`) |

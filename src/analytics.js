@@ -104,6 +104,8 @@ const framesReport = (meter) => {
         stutters: f.stutters,
         worst_ms: f.worst,
         measured_s: f.seconds,
+        // held at 30 by the browser (Low Power Mode): then slow_pct says nothing about the page (useFramePace.js)
+        locked_30: f.locked30,
         cores: navigator.hardwareConcurrency,
         dpr: Math.round(window.devicePixelRatio * 100) / 100,
     };

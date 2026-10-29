@@ -5,6 +5,9 @@
     import { ref } from 'vue';
     import { useRoute, useRouter } from 'vue-router';
 
+    // The ESM source of the component (shipped in the package): the bundled build carries far more than this page needs
+    import ShareNetwork from 'vue-social-sharing/src/share-network.js';
+
     import { getCard } from '../data/cards.js';
     import { track } from '../analytics.js';
 

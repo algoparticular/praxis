@@ -52,7 +52,7 @@ const hasWebGL = () => {
 export async function createStardust(canvas, options = {}) {
     const stage = options.stage ?? null;
     if (!stage && !hasWebGL()) return null;
-    const THREE = stage ? stage.THREE : await import('three');
+    const THREE = stage ? stage.THREE : await import('../three.js');
     if (stage) canvas = stage.canvas;
 
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;

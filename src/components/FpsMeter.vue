@@ -1,14 +1,14 @@
 <script setup>
     // A frame counter for trying the app on a real phone: frames per second over the last second, how many frames were
     // slow (over 25 ms, a frame skipped at 60 fps) or a stutter (over 50 ms), the slowest one and how long it has been
-    // measuring (useFramePace.js). Hidden unless the address has ?fps (see App.vue); it starts again on every page and
+    // measuring (useFramePace.js), and "tope 30" when the browser is holding the page at 30 (Low Power Mode). Hidden unless the address has ?fps (see App.vue); it starts again on every page and
     // when touched.
     import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
     import { useRoute } from 'vue-router';
     import { measureFrames } from '../composables/useFramePace.js';
 
     const route = useRoute();
-    const shown = ref({ fps: 0, slow: 0, stutters: 0, worst: 0, seconds: 0 });
+    const shown = ref({ fps: 0, slow: 0, stutters: 0, worst: 0, seconds: 0, locked30: false });
     let meter = null;
     let timer = 0;
 
@@ -29,7 +29,7 @@
 <template>
     <div class="fps" :class="{ ok: shown.fps >= 55, meh: shown.fps < 55 && shown.fps >= 40, bad: shown.fps < 40 }" @click="reset"
         title="Toca para empezar de nuevo">
-        <b>{{ shown.fps }} fps</b>
+        <b>{{ shown.fps }} fps<template v-if="shown.locked30"> · tope 30</template></b>
         <span>{{ shown.slow }} lentos · {{ shown.stutters }} tirones</span>
         <span>peor {{ shown.worst }} ms · {{ clock(shown.seconds) }}</span>
     </div>

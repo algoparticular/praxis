@@ -38,7 +38,7 @@ const sampleCurrent = (x, y, t) => {
 };
 
 export async function createCellField(canvas, container, { onEvent = null } = {}) {
-    const THREE = await import('three');
+    const THREE = await import('../three.js');
 
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const smallScreen = window.innerWidth < 600;

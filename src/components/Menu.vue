@@ -1,13 +1,7 @@
 <script setup>
-    import { onMounted, onUpdated, ref } from 'vue';
-    import { useRouter } from 'vue-router';
+    import { onMounted } from 'vue';
     import { track } from '../analytics.js';
     import { musicVolume, effectsVolume, setMusicVolume, setEffectsVolume, play } from '../composables/useSound.js';
-    import { getAuth, onAuthStateChanged, signOut } from 'firebase/auth';
-
-    const isLoggedIn = ref(false);
-    const router = useRouter();
-    let auth;
 
     const props = defineProps({
         hasIntro: Boolean,
@@ -21,13 +15,6 @@
     // The audio sliders: one for the music, one for the effects. Letting go of the effects one plays a sample.
     const effectsHeard = () => play('tap');
 
-    //handle sign out
-    const handleSignOut = () => {
-        signOut(auth).then (() => {
-            router.push('/');
-        });
-    }; 
-
     const navigate = (path) => {
         emit('navigate', path);
     }
@@ -40,18 +27,6 @@
     //ON MOUNTED
 	onMounted (() => {
         
-    });
-
-    onUpdated (() => {
-        //check user logged in or not
-        auth = getAuth();
-        onAuthStateChanged (auth, (user) => {
-            if (user) {
-                isLoggedIn.value = true;
-            } else {
-                isLoggedIn.value = false;
-            }
-        });
     });
 </script>
 
@@ -87,7 +62,9 @@
             <label for="lang-en" :class="{active: $i18n.locale == 'en'}">English</label>
         </div>
 
-        <!-- <div v-if="isLoggedIn">
+        <!-- Accounts, off for now. To bring them back: isLoggedIn from onAuthStateChanged and handleSignOut with signOut,
+             both with the auth of src/firebase.js, imported on demand so Firebase stays out of every visit.
+        <div v-if="isLoggedIn">
             <a class="logout" @click="handleSignOut" v-if="isLoggedIn">{{ $t("nav.logout") }}</a>
         </div>
         <div v-else>
