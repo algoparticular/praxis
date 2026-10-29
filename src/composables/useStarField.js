@@ -1,6 +1,9 @@
 // Living night sky for the oracle block: stars that twinkle and, every now and then, a shooting star.
-// Drawn flat, like the illustration it replaces: one lemon yellow, solid shapes, no glows or gradients.
+// The stars are drawn flat, like the illustration they replace: one lemon yellow, solid shapes, no glows or gradients.
 // The twinkle moves in steps, frame by frame like hand-made animation, instead of fading smoothly.
+// The shooting stars are particles, as in Dana's sky: a tail of soft dots (cream at the head, then yellow and coral) that
+// falls on a diagonal and fades. Most are far (small, quick, silent); now and then one passes near (bigger, brighter,
+// a longer tail) and only that one sounds (`onShoot`).
 // Plain 2D canvas; it pauses when the block is off screen and stays still with prefers-reduced-motion.
 
 const YELLOW = '#E6E973';  // the yellow of the original stars
@@ -10,6 +13,35 @@ const CREAM = '#F7F8F1';
 const STEPS = [1, 1, 0.7, 0.4, 0.7, 1, 1.25];
 
 const rand = (min, max) => min + Math.random() * (max - min);
+
+// The shooting stars' dots: a soft round mote of each colour, drawn once and stamped (the falloff of useStardust's 'soft')
+const DOT_COLORS = ['#fffbe6', '#f6e27c', '#ee6a82'];
+const DOT = 32;
+let dots = null;
+const dotSprites = () => {
+    if (dots) return dots;
+    dots = DOT_COLORS.map((color) => {
+        const c = document.createElement('canvas');
+        c.width = c.height = DOT;
+        const g = c.getContext('2d');
+        const grad = g.createRadialGradient(DOT / 2, DOT / 2, 0, DOT / 2, DOT / 2, DOT / 2);
+        for (let k = 0; k <= 8; k++) {
+            const a = Math.pow(1 - k / 8, 2);
+            grad.addColorStop(k / 8, `rgba(${parseInt(color.slice(1, 3), 16)},${parseInt(color.slice(3, 5), 16)},${parseInt(color.slice(5, 7), 16)},${a.toFixed(3)})`);
+        }
+        g.fillStyle = grad;
+        g.fillRect(0, 0, DOT, DOT);
+        return c;
+    });
+    return dots;
+};
+// A far one and a near one: dots in the tail, size of the head and of the tail's first dot (px), how fast
+// (of the sky's larger side, per second) and how long it lasts (s)
+const KINDS = {
+    far: { tail: 24, head: 11, body: 7, speed: [0.35, 0.65], duration: [0.7, 1.2] },
+    near: { tail: 40, head: 28, body: 15, speed: [0.55, 0.85], duration: [1, 1.4] },
+};
+const NEAR_ODDS = 0.2;      // about one in five passes near
 
 // A flat four-point star, a little wobbly so it looks drawn by hand
 const sparklePath = (ctx, x, y, radius, rotation, wobble) => {
@@ -26,7 +58,7 @@ const sparklePath = (ctx, x, y, radius, rotation, wobble) => {
     ctx.closePath();
 };
 
-export function createStarField(canvas, container, { shootingEvery = [4, 9], shooting: withShooting = true, onShoot } = {}) {
+export function createStarField(canvas, container, { shootingEvery = [3, 7], shooting: withShooting = true, onShoot } = {}) {
     const ctx = canvas.getContext('2d');
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -72,21 +104,20 @@ export function createStarField(canvas, container, { shootingEvery = [4, 9], sho
         if (!raf) draw(0);
     };
 
-    // A shooting star crosses the upper part of the sky on a slight downward diagonal
-    const shoot = () => {
-        onShoot?.();
-        const goingRight = Math.random() < 0.5;
-        const angle = rand(0.35, 0.6) * (goingRight ? 1 : -1) + (goingRight ? 0 : Math.PI);
-        const speed = rand(650, 950);
+    // A shooting star crosses the upper part of the sky on a downward diagonal; only a near one sounds
+    const shoot = (near = Math.random() < NEAR_ODDS) => {
+        if (near) onShoot?.();
+        const kind = KINDS[near ? 'near' : 'far'];
+        const side = Math.random() < 0.5 ? -1 : 1;
+        const speed = rand(...kind.speed) * Math.max(width, height);
         shooting.push({
-            x: rand(width * 0.1, width * 0.9),
-            y: rand(height * 0.04, height * 0.45),
-            vx: Math.cos(angle) * speed,
-            vy: Math.sin(angle) * speed,
-            tail: rand(110, 180),
+            kind,
+            x0: width * rand(0.15, 0.85),
+            y0: height * rand(0.04, near ? 0.3 : 0.4),
+            vx: side * speed,
+            vy: speed * rand(0.35, 0.65),
             life: 0,
-            duration: rand(0.8, 1.2),
-            wobble: Array.from({ length: 8 }, () => rand(-1, 1)),
+            duration: rand(...kind.duration),
         });
     };
 
@@ -108,45 +139,20 @@ export function createStarField(canvas, container, { shootingEvery = [4, 9], sho
             ctx.fill();
         }
 
+        // Each dot of the tail is where the head was a moment before, smaller and fainter the further back
+        const sprites = shooting.length ? dotSprites() : null;
         for (const meteor of shooting) {
-            const progress = meteor.life / meteor.duration;
-            // It grows in and shrinks out instead of fading
-            const size = Math.min(1, progress * 6, (1 - progress) * 6);
-            if (size <= 0) continue;
-
-            const speed = Math.hypot(meteor.vx, meteor.vy);
-            const ux = meteor.vx / speed, uy = meteor.vy / speed;
-            const tx = meteor.x - ux * meteor.tail * size;
-            const ty = meteor.y - uy * meteor.tail * size;
-            const half = 3 * size;
-
-            // Tail: a flat sliver that narrows to a point
-            ctx.fillStyle = YELLOW;
-            ctx.beginPath();
-            ctx.moveTo(meteor.x - uy * half, meteor.y + ux * half);
-            ctx.lineTo(tx, ty);
-            ctx.lineTo(meteor.x + uy * half, meteor.y - ux * half);
-            ctx.closePath();
-            ctx.fill();
-
-            // A few dashes of dust left along the way
-            for (let i = 1; i <= 3; i++) {
-                const along = meteor.tail * size * (0.35 + i * 0.22);
-                ctx.beginPath();
-                ctx.arc(
-                    meteor.x - ux * along - uy * (i % 2 ? 7 : -7) * size,
-                    meteor.y - uy * along + ux * (i % 2 ? 7 : -7) * size,
-                    1.6 * size * (1 - i * 0.2), 0, Math.PI * 2
-                );
-                ctx.fill();
+            const { kind } = meteor;
+            const u = meteor.life / meteor.duration;
+            const shine = Math.min(1, Math.sin(u * Math.PI) * 1.4);
+            for (let j = kind.tail - 1; j >= 0; j--) {
+                const back = Math.max(0, u - j * 0.006 * 24 / kind.tail) * meteor.duration;
+                const size = j ? Math.max(2, kind.body - j * kind.body / kind.tail * 0.75) : kind.head;
+                ctx.globalAlpha = shine * (1 - j / kind.tail) ** 0.7;
+                ctx.drawImage(sprites[j < 3 ? 0 : j % 2 ? 1 : 2], meteor.x0 + meteor.vx * back - size / 2, meteor.y0 + meteor.vy * back - size / 2, size, size);
             }
-
-            // Head: a drawn four-point star that turns in steps
-            const turn = Math.floor(meteor.life * 8) * 0.35;
-            sparklePath(ctx, meteor.x, meteor.y, 9 * size, turn, meteor.wobble);
-            ctx.fillStyle = CREAM;
-            ctx.fill();
         }
+        ctx.globalAlpha = 1;
     };
 
     const frame = (now) => {
@@ -158,8 +164,6 @@ export function createStarField(canvas, container, { shootingEvery = [4, 9], sho
         for (let i = shooting.length - 1; i >= 0; i--) {
             const meteor = shooting[i];
             meteor.life += dt;
-            meteor.x += meteor.vx * dt;
-            meteor.y += meteor.vy * dt;
             if (meteor.life >= meteor.duration) shooting.splice(i, 1);
         }
         if (withShooting && time >= nextShot) {

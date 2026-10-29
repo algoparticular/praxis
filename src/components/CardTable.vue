@@ -42,7 +42,7 @@
     let finishVisit = null;            // how smoothly the table was drawn, told when it is left (analytics.js)
 
     onMounted(async () => {
-        starField = createStarField(starCanvas.value, root.value, { shooting: false });
+        starField = createStarField(starCanvas.value, root.value, { onShoot: () => play('star') });
         try {
             const { createCardTable } = await import('../composables/useCardTable.js');
             if (destroyed) return;
