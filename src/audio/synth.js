@@ -539,8 +539,8 @@ export const ignite = (ctx, out, time, harmony, level = 1) => {
     bell(ctx, out, time + 0.02, hz(h.voice - 12), 2.6, 0.04 * k);
 };
 
-// A seventh that resolves (when a card with a dominant seventh completes its game: Encender in Evolución, the tune of
-// Creatividad): the card's chord rings once more as the tension it is, and then moves to the chord a fifth below, which a
+// A seventh that resolves (when Evolución or Creatividad, both dominant sevenths, complete their game: Encender, and
+// Creatividad's tune): the card's chord rings once more as the tension it is, and then moves to the chord a fifth below, which a
 // dominant seventh asks for (B7 goes to E major: the corona comes down to the plexus, Kätus's own note; C7 goes to F major,
 // the heart). Each voice moves to the nearest note of the new chord; the new root sounds below.
 export const resolve = (ctx, out, time, harmony) => {
