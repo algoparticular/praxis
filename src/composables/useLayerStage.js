@@ -9,7 +9,8 @@
 // A layer far from the focus can be slightly out of focus (`blur`, sampled from the texture's smaller mipmaps).
 //
 // Nodes. depth(z) gives a root node; node.image(), node.canvas(), node.glow() and node.group() hang children from it.
-// Every node has a pivot (the point it turns and scales about), an offset (x, y), rotate (deg), scale and opacity; a
+// Every node has a pivot (the point it turns and scales about), an offset (x, y), rotate (deg), scale (and sx, sy, a
+// squash or a mirror with -1), opacity and an optional clip (a rect of the screen it is cut to); a
 // group carries its children along. All rects and pivots, at every level, are given as px of the screen at rest (where
 // they are seen with nothing moved), so a scene lays everything out in one space; set them again from its layout when
 // the screen changes size. node.toScreen(x, y) says where a point given that way is on screen now, which is how the
@@ -70,8 +71,10 @@ const LAYER_FRAGMENT = `
     uniform float uWater;
     uniform float uSheen;
     uniform vec2 uSink;            // on (0/1), level (0 full .. 1 empty)
+    uniform vec4 uClip;            // device px: x0, y0, x1, y1 (from the bottom left); x1 < x0 means no clip
     varying vec2 vUv;
     void main() {
+        if (uClip.z >= uClip.x && (gl_FragCoord.x < uClip.x || gl_FragCoord.x > uClip.z || gl_FragCoord.y < uClip.y || gl_FragCoord.y > uClip.w)) discard;
         vec2 uv = vUv;
         if (uShimmer > 0.0) {
             uv += vec2(sin(uv.y * 38.0 + uTime * 2.1), cos(uv.x * 31.0 + uTime * 1.7)) * 0.004 * uShimmer;
@@ -234,6 +237,7 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
             this.sy = 1;
             this.opacity = 1;
             this.entrance = null;
+            this.clip = null;                            // { left, top, w, h } on screen (px): it and what hangs from it are cut there
             this.mesh = null;
             this.rect = null;
             (parent ? parent.inner : scene).add(this.object);
@@ -310,12 +314,13 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
                 uWater: { value: water },
                 uSheen: { value: sheen },
                 uSink: { value: new THREE.Vector2(sink ? 1 : 0, 0) },
+                uClip: { value: new THREE.Vector4(1, 0, 0, 0) },
                 uSize: { value: new THREE.Vector2(1, 1) },
                 uWind: { value: new THREE.Vector4(wind?.amp ?? 0, wind?.speed ?? 1, wind?.root === 'top' ? 1 : 0, Math.random() * 6.28) },
             };
             const material = new THREE.ShaderMaterial({
                 uniforms, vertexShader: LAYER_VERTEX, fragmentShader: LAYER_FRAGMENT,
-                transparent: true, depthTest: false, depthWrite: false,
+                transparent: true, depthTest: false, depthWrite: false, side: THREE.DoubleSide,
                 blending: blending === 'add' ? THREE.AdditiveBlending : THREE.NormalBlending,
                 premultipliedAlpha: true,
             });
@@ -379,7 +384,8 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
         // The uniforms of its material (bright, saturate...), to light it
         get uniforms() { return this.mesh?.material.uniforms; }
 
-        update(alpha) {
+        update(alpha, clip = null) {
+            clip = this.clip ?? clip;
             let { x, y, scale } = this;
             let opacity = this.opacity * alpha;
             if (this.entrance && started !== null) {
@@ -413,8 +419,12 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
                 if (u.uTime) u.uTime.value = time;
                 if (u.uSize) u.uSize.value.set(r.w, r.h);
                 if (u.uEdge) u.uEdge.value = Math.min(0.5, 3 / Math.max(r.w, 1));
+                if (u.uClip) {
+                    if (clip) u.uClip.value.set(clip.left * dpr, (height - clip.top - clip.h) * dpr, (clip.left + clip.w) * dpr, (height - clip.top) * dpr);
+                    else u.uClip.value.set(1, 0, 0, 0);
+                }
             }
-            this.children.forEach((child) => child.update(opacity));
+            this.children.forEach((child) => child.update(opacity, clip));
         }
 
         // Where a point (px of the screen at rest) carried by this node is on screen now, in px of the canvas

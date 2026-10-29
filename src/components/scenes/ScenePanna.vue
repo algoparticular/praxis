@@ -2,19 +2,24 @@
     // Pañña (wisdom): Sid meditating under a stippled sun, in a forest of dark branches, with fireflies and
     // glowing mushrooms. The line work (character, branches, leaves, mushroom outlines, the walls of the forest) comes
     // from the artwork in public/assets/panna, each layer cropped to its own box (pannaLayers.json).
-    // Everything else is alive and drawn by code (three.js, useStardust), behind the line work: the sun, the cyan
-    // aura, the fireflies' halos, the blue mushrooms, the pink glow and the stippled edge of the floor are particles
-    // whose shapes come from density maps of the original stipple (pannaClouds.json); the floor itself is a drawn
-    // silhouette. The spiral from the sun to Sid's forehead is a moving group of particles, and a last group throws
-    // sparks when the fireflies, the blue mushrooms or Sid are touched.
+    // Everything else is alive and drawn by code (useStardust), behind the line work: the sun, the cyan aura, the
+    // fireflies' halos, the blue mushrooms, the pink glow and the stippled edge of the floor are particles whose shapes
+    // come from density maps of the original stipple (pannaClouds.json); the floor itself is a drawn silhouette. The
+    // spiral from the sun to Sid's forehead is a moving group of particles, and a last group throws sparks when the
+    // fireflies, the blue mushrooms or Sid are touched.
     // Its verb is Ver (see): the nine lights of the scene (the sun, Sid's third eye, the big pink mushroom, the four
     // fireflies and the two blue mushrooms) are joined by dragging from one to another with threads of dots. The pattern
     // to see is a star, every light joined to the third eye: then the rulito is born over Sid's head (see
-    // docs/verbos-y-dinamicas.md).
+    // docs/verbos-y-dinamicas.md), and the scene blooms (the rulito, the third eye and the threads glow).
     // Two scales give depth: the centre lives in a square frame; the surroundings are a slightly bigger square whose
-    // left and right halves are anchored to the sides of the screen, so on a wide screen the forest still hugs the edges.
+    // left and right halves are anchored to the sides of the screen (each half cut to its side), so on a wide screen the
+    // forest still hugs the edges; above them the same halves, mirrored, carry the forest up.
+    // It is drawn in WebGL (useLayerStage): each part is a group of planes at its own depth (the walls far, Sid in the
+    // middle, the leaves and branches near) and the camera slides with the pointer or the tilt; the leaves bend a little
+    // in the wind as they sway. The touch targets are DOM elements kept over what they belong to.
     import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
-    import { createParallax, enterLayers } from '../../composables/useParallax.js';
+    import { createParallax } from '../../composables/useParallax.js';
+    import { createLayerStage } from '../../composables/useLayerStage.js';
     import { startStardust } from '../../composables/useStardust.js';
     import { play } from '../../composables/useSound.js';
     import { sceneMilestone } from '../../analytics.js';
@@ -28,41 +33,34 @@
     });
 
     const root = ref(null);
-    const backCanvas = ref(null);
-    const frontCanvas = ref(null);
-    const frame = ref(null);
-    const backSheets = ref([]);
-    const frontSheets = ref([]);
-    const being = ref(null);
-    const body = ref(null);
-    const mushrooms = ref(null);
+    const canvas = ref(null);
     const rulito = ref(null);
-    const floorPath = ref('');
-    const shown = ref(false);
+    const hitSid = ref(null);
+    const hitEye = ref(null);
+    const hitField = ref(null);
+    const hitSun = ref(null);
+    const hitTargets = {};                  // the fireflies' and blue mushrooms' touch targets, by key
+    const setTarget = (key) => (el) => { hitTargets[key] = el; };
+    let stage = null;
     let parallax = null;
     let back = null;
     let front = null;
-    let resizeWatch = null;
     let entered = false;
-    let drawingsReady = false;
+    let gone = false;
     let stageEl = null;
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const N_ = {};                          // the layers and groups (stage nodes)
 
-    // The groups of the particle canvas behind the line work, in drawing order
+    // The camera slides SLIDE px at the edge of a swipe; each part moves as far as it did (its px), and half that up and down
+    const SLIDE = 50;
+    const SLIDE_Y = 25;
+    const zFor = (amp) => amp / (SLIDE + amp);
+    const Z = { walls: zFor(6), sun: zFor(5), mush: zFor(10), sid: zFor(12), threads: zFor(9), near: zFor(16) };
+
+    // The groups of the particles behind the line work, in drawing order
     const G = { floor: 0, sky: 1, sun: 2, aura: 3, pink: 4, fly: { tl: 5, tr: 6, bl: 7, br: 8 }, blue: { l: 9, r: 10 } };
 
-    // ---- The layers: where each cropped picture sits in its 2160px square, as percentages of it
     const IMG = (name) => `/assets/panna/${name}.webp`;
-    const pct = (n) => `${(n * 100).toFixed(3)}%`;
-    const place = (name) => {
-        const b = boxes[name];
-        return { left: pct(b.x), top: pct(b.y), width: pct(b.w), height: pct(b.h) };
-    };
-    // The point of a layer (a fraction of the 2160 square) as a transform origin inside the layer's own box
-    const originOf = (name, fx, fy) => {
-        const b = boxes[name];
-        return `${(((fx - b.x) / b.w) * 100).toFixed(1)}% ${(((fy - b.y) / b.h) * 100).toFixed(1)}%`;
-    };
 
     // ---- The clouds: density maps of the original's stipple, turned back into particles at whatever size we draw them
     const grids = Object.fromEntries(Object.entries(clouds).map(([name, cloud]) => [name, { ...cloud, bytes: Uint8Array.from(atob(cloud.data), (c) => c.charCodeAt(0)) }]));
@@ -100,29 +98,43 @@
         return out;
     };
 
-    // Where things are on the stage right now, in canvas pixels
-    const layout = (w, h) => {
-        const S = frame.value.offsetWidth;
-        const sn = mushrooms.value.offsetWidth;
+    // ---- Where everything is at rest, in px of the screen (the CSS of the DOM version, computed). The centre's square
+    // (s) and the bigger one of the surroundings (sn); on a tall screen everything but the sun is lifted off the bottom,
+    // so Sid sits nearer the middle and the mushrooms are seen whole; below them is the floor
+    let geo = null;
+    const measure = (W, H) => {
+        const tall = W / H <= 3 / 4;
+        const s = Math.min(Math.max(W, (tall ? 0.7 : 0.62) * H), 0.85 * H);
+        const sn = Math.min(s * 1.1, W * 1.25);
+        const lift = Math.max(0, (H - s * 1.2) * 0.5);
+        const sheetTop = H - (sn * -0.04 + lift) - sn;
+        const half = Math.min(sn / 2, W / 2);
+        const upTop = H - (sn * 0.96 - 1 + lift) - sn;
+        const frame = { left: (W - s) / 2, top: H - lift - s, w: s, h: s };
+        const gw = 0.065 * s, gh = gw * 86 / 32;
+        const glyph = { left: frame.left + 0.5 * s - gw / 2, top: frame.top + 0.08 * s, w: gw, h: gh };
+        geo = { W, H, s, sn, lift, sheetTop, upTop, half, frame, glyph };
+    };
+
+    // The same as the DOM version measured: canvas px of the 2160 squares
+    const layout = () => {
+        const { W, s, sn, sheetTop, frame } = geo;
         const kn = sn / 2160;
-        // On a tall screen everything but the sun is lifted off the bottom (--lift): measured, not recomputed
-        const sheetTop = mushrooms.value.offsetTop;
-        const sideTop = sheetTop;
-        const inset = 0;                                       // the sheets hang from the sides of the screen, on a narrow one too
         return {
-            S, sn, kn, kf: S / 2160, fx0: (w - S) / 2, fy0: frame.value.offsetTop, sheetTop,
-            // The big square's left half: its right edge stays put while it grows 4% to the left (CSS scale 1.04, origin right)
-            left: (u, v) => [inset + sn - (1 - u / 2160) * sn * 1.04, sideTop + v * kn],
-            right: (u, v) => [w - inset - sn + (u / 2160) * sn * 1.04, sideTop + v * kn],
-            centred: (u, v) => [(w - sn) / 2 + u * kn, sheetTop + v * kn],
+            S: s, sn, kn, kf: s / 2160, fx0: frame.left, fy0: frame.top, sheetTop,
+            // The big square's left half: its right edge stays put while it grows 4% to the left (scale 1.04, origin right)
+            left: (u, v) => [sn - (1 - u / 2160) * sn * 1.04, sheetTop + v * kn],
+            right: (u, v) => [W - sn + (u / 2160) * sn * 1.04, sheetTop + v * kn],
+            centred: (u, v) => [(W - sn) / 2 + u * kn, sheetTop + v * kn],
         };
     };
 
     // The sun sits at the very top, above the card's name, and the top edge cuts it
-    const sunSpot = (w, h) => {
-        const L = layout(w, h);
-        return { k: (L.S * 0.95) / 2160, x: w / 2, y: h * 0.012 };
-    };
+    const sunSpot = () => ({ k: (geo.s * 0.95) / 2160, x: geo.W / 2, y: geo.H * 0.012 });
+
+    // Where a point at rest is on screen now: carried by Sid, by the mushrooms, by a side of the forest
+    const sidAt = (x, y) => { const p = N_.sid.toScreen(x, y); return [p.x, p.y]; };
+    const mushAt = (x, y) => { const p = N_.mush.toScreen(x, y); return [p.x, p.y]; };
 
     // ---- The floor: a drawn silhouette, with a stippled edge of particles that tremble
     // Height of the hill's top edge across the big square (x and y as fractions of it), as in the illustration
@@ -136,14 +148,44 @@
         const f = f0 + (f1 - f0) * (0.5 - 0.5 * Math.cos(Math.PI * m));
         return L.sheetTop + (f + Math.sin(x / 61) * 0.0022 + Math.sin(x / 23 + 1) * 0.0011) * L.sn;
     };
-    const buildFloor = () => {
-        if (!root.value || !frame.value || !mushrooms.value) return;
-        const w = root.value.clientWidth, h = root.value.clientHeight;
-        if (!w) return;
-        const L = layout(w, h);
-        let d = `M -10 ${h + 40}`;
-        for (let x = -10; x <= w + 10; x += 8) d += ` L ${x} ${floorTop(x, L, w).toFixed(1)}`;
-        floorPath.value = `${d} L ${w + 10} ${h + 40} Z`;
+    // The floor's silhouette, drawn on a canvas the size of the screen (a flat fill: no need for the screen's density)
+    const floorCanvas = document.createElement('canvas');
+    const drawFloor = () => {
+        const { W, H } = geo;
+        floorCanvas.width = Math.ceil(W);
+        floorCanvas.height = Math.ceil(H);
+        const ctx = floorCanvas.getContext('2d');
+        const L = layout();
+        const path = new Path2D();
+        path.moveTo(-10, H + 40);
+        for (let x = -10; x <= W + 10; x += 8) path.lineTo(x, floorTop(x, L, W));
+        path.lineTo(W + 10, H + 40);
+        path.closePath();
+        const gradient = ctx.createLinearGradient(0, Math.min(...[0.2, 0.5, 0.8].map((f) => floorTop(f * W, L, W))), 0, H);
+        gradient.addColorStop(0, '#00625e');
+        gradient.addColorStop(1, '#004f4c');
+        ctx.clearRect(0, 0, floorCanvas.width, floorCanvas.height);
+        ctx.fillStyle = gradient;
+        ctx.fill(path);
+        N_.floor?.refresh();
+    };
+    // The ground in front, on a tall screen: as high as the bottom edge of the lifted drawings (plus a fade), in the
+    // floor's colour, so the bottom edge of the drawings never shows
+    const groundCanvas = document.createElement('canvas');
+    const drawGround = () => {
+        const height = Math.max(0, geo.lift - geo.sn * 0.04 + 30);
+        groundCanvas.width = 2;
+        groundCanvas.height = Math.max(2, Math.ceil(height));
+        const ctx = groundCanvas.getContext('2d');
+        const gradient = ctx.createLinearGradient(0, groundCanvas.height, 0, 0);
+        gradient.addColorStop(0, '#004f4c');
+        gradient.addColorStop(Math.max(0, 1 - 30 / groundCanvas.height), '#005653');
+        gradient.addColorStop(1, 'rgba(0, 86, 83, 0)');
+        ctx.clearRect(0, 0, 2, groundCanvas.height);
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, 2, groundCanvas.height);
+        N_.ground?.refresh();
+        return height;
     };
 
     // ---- The threads: spirals of dots that join one light to another. A thread starts as a point at the light it leaves,
@@ -234,12 +276,11 @@
     };
     const hide = (slot, data) => { data.alphas.fill(0, slot * PER, (slot + 1) * PER); };
 
-    let threadShift = [0, 0];  // how far the threads' canvas is shifted by the pointer (the lights are not)
+    let threadShift = [0, 0];  // how far the threads are moved by the camera (the lights are not)
     const thread = {
         count: SLOTS * PER + 1,
         update(t, data) {
-            const canvas = frontCanvas.value;
-            if (!canvas || !canvas.clientWidth || !frame.value) return;
+            if (!geo) return;
             const dt = Math.min(0.1, Math.max(0, t - lastT));
             lastT = t;
             surge = Math.max(0, surge - dt * 0.35);
@@ -248,14 +289,13 @@
             // The threads open as the rulito is born and close again as it goes
             opening += ((win && win.opened && !win.back ? 1 : 0) - opening) * Math.min(1, dt * 2.2);
             hole = null;
-            if (opening > 0.001 && rulito.value?.$el) {
-                const r = rulito.value.$el.getBoundingClientRect();
-                const c = canvas.getBoundingClientRect();
-                if (r.width) hole = { x: r.left + r.width / 2 - c.left, y: r.top + r.height / 2 - c.top, r: 0.62 * Math.max(r.width, r.height) };
+            if (opening > 0.001 && N_.rulito) {
+                const r = N_.rulito.boxOnScreen(geo.glyph);
+                if (r.width) hole = { x: r.left + r.width / 2 - threadShift[0], y: r.top + r.height / 2 - threadShift[1], r: 0.62 * Math.max(r.width, r.height) };
             }
             linksFade += ((linksOut ? 0 : 1) - linksFade) * Math.min(1, dt * 2);
 
-            const L = layout(canvas.clientWidth, canvas.clientHeight);
+            const L = layout();
             const unit = Math.max(1, L.S / 765);
             const spots = lightSpots().map(([x, y]) => [x - threadShift[0], y - threadShift[1]]);
             drawn.length = 0;
@@ -310,8 +350,8 @@
         count: SLOTS * GLOW_DOTS,
         update(t, data) {
             data.alphas.fill(0);
-            if (!frame.value) return;
-            const unit = Math.max(1, frame.value.offsetWidth / 765);
+            if (!geo) return;
+            const unit = Math.max(1, geo.s / 765);
             drawn.forEach(({ slot, from, to, colours: [ca, cb], strength, length }) => {
                 const dx = to[0] - from[0], dy = to[1] - from[1], len = Math.max(1, Math.hypot(dx, dy));
                 const open = opener(from[0], from[1], dx, dy, len, dy / len, -dx / len);
@@ -382,24 +422,21 @@
     const sides = ['left', 'right'].map((side) => {
         const letter = side === 'left' ? 'l' : 'r';
         const edge = side === 'left' ? 0 : 1;
-        const leaf = (i) => {
-            const name = `leaf-${letter}${i + 1}`;
-            return { name, style: { ...place(name), '--origin': originOf(name, edge, LEAF_Y[i]), '--amp': `${3 + i * 0.8}deg`, '--dur': `${5.2 + i * 0.9}s`, '--delay': `${-i * 1.7}s` } };
-        };
+        // Each leaf sways from where it hangs on the edge of the picture
+        const leaf = (i) => ({ name: `leaf-${letter}${i + 1}`, origin: [edge, LEAF_Y[i]], amp: 3 + i * 0.8, dur: 5.2 + i * 0.9, delay: -i * 1.7 });
         // Each corner: a branch and the stem of a firefly hanging from it, swaying together from the corner
         const corner = (row, delay) => {
             const q = (row === 'top' ? 't' : 'b') + letter;
-            return { row, key: 'fly-' + q, branch: 'corner-' + q, stem: 'stem-' + q, style: { '--origin': `${edge * 100}% ${row === 'top' ? 0 : 100}%`, '--amp': '1.3deg', '--dur': '6.5s', '--delay': `${delay}s` } };
+            return { row, key: 'fly-' + q, branch: 'corner-' + q, stem: 'stem-' + q, origin: [edge, row === 'top' ? 0 : 1], amp: 1.3, dur: 6.5, delay };
         };
-        // A target over a cloud: its place in the side's square, as percentages
+        // A target over a cloud: its centre and radius in the 2160 units of the side's square
         const target = (key, kind, group, scale = 1) => {
             const c = centreOf(key);
-            const r = Math.max(150, c.half * scale + 30);
-            return { key, kind, group, style: { left: pct((c.u - r) / 2160), top: pct((c.v - r) / 2160), width: pct(2 * r / 2160), height: pct(2 * r / 2160) } };
+            return { key, kind, group, u: c.u, v: c.v, r: Math.max(150, c.half * scale + 30) };
         };
         const corners = [corner('top', side === 'left' ? 0 : -2.3), corner('bottom', side === 'left' ? -1.4 : -3.6)];
         return {
-            side, letter,
+            side, letter, edge,
             leaves: [0, 1, 2, 3].map(leaf),
             upLeaves: [0, 1].map(leaf),
             corners,
@@ -407,20 +444,20 @@
                 ...corners.map((c) => target(c.key, 'fly', G.fly[c.key.slice(4)])),
                 target('blue-' + letter, 'blue', G.blue[letter], 0.9),
             ],
-            sideStyle: { '--origin': `${edge * 100}% 50%`, '--amp': '0.7deg', '--dur': '9s', '--delay': side === 'left' ? '0s' : '-4s' },
+            sway: { origin: [edge, 0.5], amp: 0.7, dur: 9, delay: side === 'left' ? 0 : -4 },
         };
     });
     const label = (kind, locale) => LABELS[kind][locale === 'en' ? 1 : 0];
+    const allTargets = sides.flatMap((s) => s.targets.map((target) => ({ target, side: s.side })));
 
-    // Where a target is on the canvas now, wherever its side has been shifted by the pointer
-    let frontShift = [0, 0];
-    let sidShift = [0, 0];
+    // A point of a side's square (2160 units) at rest on screen, before its 4% stretch (the node stretches it)
+    const sheetLeft = (side) => (side === 'left' ? 0 : geo.W - geo.sn);
+    const onSheet = (side, u, v, top = geo.sheetTop) => [sheetLeft(side) + u / 2160 * geo.sn, top + v / 2160 * geo.sn];
+    // Where a target is on the canvas now, wherever its side has been moved by the camera
     const spotOf = (key, side) => {
-        const canvas = frontCanvas.value;
-        const L = layout(canvas.clientWidth, canvas.clientHeight);
         const c = centreOf(key);
-        const [x, y] = L[side](c.u, c.v);
-        return [x + frontShift[0], y + frontShift[1]];
+        const p = N_.sides[side].toScreen(...onSheet(side, c.u, c.v));
+        return [p.x, p.y];
     };
 
     const touch = (target, side, quiet = false) => {
@@ -449,13 +486,11 @@
         surge = 1;
         back?.boost(G.aura, 1.6);
         back?.boost(G.sun, 1);
-        const canvas = frontCanvas.value;
-        const w = canvas.clientWidth, h = canvas.clientHeight;
-        const L = layout(w, h);
-        const sun = sunSpot(w, h);
-        const cx = L.fx0 + 0.5 * L.S + sidShift[0];
-        burst(cx, L.fy0 + 0.436 * L.S + bob + sidShift[1], { n: 50, colors: [0xffe47d, 0xfff3b8, 0xffffff], speed: 160, size: 5.6, spread: 4 });
-        burst(cx, L.fy0 + 0.52 * L.S + bob + sidShift[1], { n: 40, colors: [0x00a9bc, 0x7be3f5], speed: 190, size: 5.4, spread: 40 });
+        const L = layout();
+        const sun = sunSpot();
+        const cx = L.fx0 + 0.5 * L.S;
+        burst(...sidAt(cx, L.fy0 + 0.436 * L.S), { n: 50, colors: [0xffe47d, 0xfff3b8, 0xffffff], speed: 160, size: 5.6, spread: 4 });
+        burst(...sidAt(cx, L.fy0 + 0.52 * L.S), { n: 40, colors: [0x00a9bc, 0x7be3f5], speed: 190, size: 5.4, spread: 40 });
         burst(sun.x, sun.y + 60 * sun.k, { n: 18, colors: [0xffe47d], speed: 70, size: 5.6 });
         if (!quiet) play('star');
     };
@@ -465,10 +500,9 @@
     // blue mushrooms, Sid and the field of mushrooms answer with their own sparks
     const timers = [];
     const shine = () => {
-        const canvas = frontCanvas.value;
-        const w = canvas.clientWidth, h = canvas.clientHeight;
-        const L = layout(w, h);
-        const sun = sunSpot(w, h);
+        const { H } = geo;
+        const L = layout();
+        const sun = sunSpot();
         back?.boost(G.sun, 1.5);
         burst(sun.x, sun.y + 40 * sun.k, { n: 36, colors: [0xffe47d, 0xfff3b8, 0xffffff], speed: 150, size: 5.6, spread: 40 });
         play('star');
@@ -480,7 +514,7 @@
         }));
         answers.push({ distance: Math.hypot(L.fx0 + L.S * 0.5 - sun.x, L.fy0 + L.S * 0.52 - sun.y), act: () => wake(true) });
         // The field of mushrooms: pink sparks along it
-        answers.push({ distance: Math.hypot(0, h - sun.y), act: fieldSparks });
+        answers.push({ distance: Math.hypot(0, H - sun.y), act: fieldSparks });
         const farthest = Math.max(...answers.map((a) => a.distance));
         answers.forEach(({ distance, act }) => timers.push(setTimeout(act, 150 + (distance / farthest) * 1100)));
     };
@@ -509,7 +543,6 @@
     const cut = [];                                // { a, b, at, dir }: threads undone, drawing themselves back into their light
     const CUT_LEN = 0.9;
     let sunShift = [0, 0];
-    let mushShift = [0, 0];
     let parting = false;                           // the threads of a try that was not the pattern are going out
     let win = null;                                // the rulito: { age, head, tail, full, fullAt, back, pop }, until it is gone
     let wins = 0;
@@ -521,27 +554,24 @@
 
     // Where each light is on the canvas now
     const lightSpots = () => {
-        const canvas = frontCanvas.value;
-        const w = canvas.clientWidth, h = canvas.clientHeight;
-        const L = layout(w, h);
-        const sun = sunSpot(w, h);
+        const L = layout();
+        const sun = sunSpot();
         const field = L.centred(1080, 1900);                  // the top of the big mushroom in the middle
         return [
             [sun.x + sunShift[0], sun.y + 150 * sun.k + sunShift[1]],
-            [L.fx0 + 0.5 * L.S + sidShift[0], L.fy0 + 0.436 * L.S + sidShift[1]],
-            [field[0] + mushShift[0], field[1] + mushShift[1]],
+            sidAt(L.fx0 + 0.5 * L.S, L.fy0 + 0.436 * L.S),
+            mushAt(field[0], field[1]),
             ...LIGHTS.slice(3).map((light) => spotOf(light.target.key, light.side)),
         ];
     };
 
     // The pink sparks along the field of mushrooms, when it is touched or answers the sun
     const fieldSparks = () => {
-        const canvas = frontCanvas.value;
-        const L = layout(canvas.clientWidth, canvas.clientHeight);
+        const L = layout();
         back?.boost(G.pink, 1.3);
         [450, 800, 1080, 1360, 1700].forEach((u) => {
-            const [x, y] = L.centred(u, 1930);
-            burst(x + mushShift[0], y + 10 + mushShift[1], { n: 12, colors: [0xcb5e95, 0xff9fcb, 0xffd1e6], speed: 100, size: 5, spread: 14 });
+            const [x, y] = mushAt(...L.centred(u, 1930));
+            burst(x, y + 10, { n: 12, colors: [0xcb5e95, 0xff9fcb, 0xffd1e6], speed: 100, size: 5, spread: 14 });
         });
     };
     const touchField = () => { fieldSparks(); play('tap'); };
@@ -648,7 +678,7 @@
     };
     const winTick = (t, dt) => {
         flowBoost += ((win && !win.opened ? 1 : 0) - flowBoost) * Math.min(1, dt * 3);
-        if (!win || !rulito.value) return;
+        if (!win || !rulito.value) { if (stage) stage.bloom = 0; return; }
         win.age += dt;
         if (!win.opened && win.age > CONVERGE) openEye();
         win.pop = Math.max(0, win.pop - dt * 2.2);
@@ -666,14 +696,22 @@
         if (win.full && !win.back && win.age - win.fullAt > LINGER) { win.back = true; linksOut = true; }
         if (win.back) win.tail = Math.min(win.head, win.tail + dt / EAT);
         const whole = Math.min(1, Math.max(0, (win.head - win.tail - 0.6) / 0.4));
-        stageEl?.style.setProperty('--name-glow', Math.max(win.pop, 0.8 * whole * whole * (3 - 2 * whole)).toFixed(3));
+        const named = Math.max(win.pop, 0.8 * whole * whole * (3 - 2 * whole));
+        stageEl?.style.setProperty('--name-glow', named.toFixed(3));
+        // The scene blooms with it: the rulito, the third eye and the threads glow (the only moment the stage blooms)
+        if (stage) stage.bloom = named;
         const glow = win.full && win.head - win.tail > 0.9 ? Math.max(win.pop, Math.sin(t * 4) * 0.5 + 0.5) : 0;
-        rulito.value.frame({ head: win.head, tail: win.tail, flare: glow, t, fade: Math.min(1, (win.head - win.tail) * 14) });
-        rulito.value.$el.style.rotate = `${(Math.sin(t * 1.8) * 3).toFixed(2)}deg`;
-        rulito.value.$el.style.scale = (1 + 0.2 * win.pop * win.pop).toFixed(3);
+        rulito.value.frame({ head: win.head, tail: win.tail, flare: glow, t, fade: Math.min(1, (win.head - win.tail) * 14), width: geo.glyph.w });
+        N_.rulito?.refresh();
+        if (N_.rulito) {
+            N_.rulito.rotate = Math.sin(t * 1.8) * 3;
+            N_.rulito.scale = 1 + 0.2 * win.pop * win.pop;
+        }
         if (win.back && win.tail >= win.head) {
             win = null;
-            rulito.value.frame({});
+            rulito.value.frame({ width: geo.glyph.w });
+            N_.rulito?.refresh();
+            if (stage) stage.bloom = 0;
             stageEl?.style.setProperty('--name-glow', '0');
             links.length = 0;
             linksOut = false;
@@ -704,11 +742,10 @@
     // The aura swells outwards from Sid as the network is joined (a little: 14% when it is whole) and goes back as the
     // threads go out
     const swellAura = (dt) => {
-        const canvas = backCanvas.value;
-        if (!canvas || !canvas.clientWidth) return;
+        if (!geo) return;
         aura += ((win && !win.back ? 1 : auraGoal) - aura) * Math.min(1, dt * 2);
         auraGoal = 0;
-        const L = layout(canvas.clientWidth, canvas.clientHeight);
+        const L = layout();
         back?.grow(G.aura, 0.14 * aura, L.fx0 + 1072 * L.kf, L.fy0 + 1123 * L.kf);
     };
 
@@ -731,12 +768,12 @@
 
     // Dragging: the light is grabbed where the finger goes down, and the thread follows until it is let go
     const toCanvas = (event) => {
-        const box = frontCanvas.value.getBoundingClientRect();
+        const box = canvas.value.getBoundingClientRect();
         return [event.clientX - box.left, event.clientY - box.top];
     };
     const lightNear = (x, y, skip) => {
         let best = -1;
-        let bestDistance = Math.max(50, 0.1 * frame.value.offsetWidth);     // near enough to join
+        let bestDistance = Math.max(50, 0.1 * geo.s);                        // near enough to join
         lightSpots().forEach(([sx, sy], i) => {
             const distance = Math.hypot(sx - x, sy - y);
             if (i !== skip && distance < bestDistance) { best = i; bestDistance = distance; }
@@ -793,121 +830,260 @@
         else taps[i]();
     };
 
-    // The line work is decoded before anything is shown, so the particles never arrive on their own
-    const waitForDrawings = () => Promise.race([
-        Promise.all([...root.value.querySelectorAll('img')].map((img) => img.decode().catch(() => {}))),
-        new Promise((resolve) => setTimeout(resolve, 8000)),
-    ]);
-
-    const enter = () => {
-        if (entered || !props.active || !drawingsReady) return;
-        entered = true;
-        back?.reveal();
-        front?.reveal();
-        requestAnimationFrame(() => requestAnimationFrame(() => { shown.value = true; }));
-        enterLayers([
-            { el: being.value, y: 70, delay: 500, duration: 2000 },
-            { el: mushrooms.value, y: 150, delay: 200, duration: 1800 },
-        ]);
+    // ---- The layers
+    // A part that sways: a group turning about a point of a side's square, back and forth (CSS alternate ease-in-out)
+    const swayers = [];
+    const swayer = (parent, side, top, { origin, amp, dur, delay }) => {
+        const node = parent.group();
+        swayers.push({ node, side, top, origin, amp, dur, delay });
+        return node;
+    };
+    const piece = (parent, name, options) => {
+        const node = parent.image(IMG(name), options);
+        node.box = name;
+        return node;
     };
 
-    onMounted(() => {
-        stageEl = root.value.closest('.stage');
-        let lastFrame = 0;
-        parallax = createParallax(root.value, ({ x, y, scroll, t, ramp }) => {
-            const s = scroll;
-            const dt = Math.min(0.1, Math.max(0, t - lastFrame));
-            lastFrame = t;
-            // The forest at the sides: the nearer, the more it moves against the pointer
-            backSheets.value.forEach((el) => { el.style.translate = `${-x * 6}px ${-y * 3 - s * 14}px`; });
-            frontShift = [-x * 16, -y * 8 - s * 40];
-            frontSheets.value.forEach((el) => { el.style.translate = `${frontShift[0]}px ${frontShift[1]}px`; });
-            mushShift = [-x * 10, -y * 3 - s * 10];
-            mushrooms.value.style.translate = `${mushShift[0]}px ${mushShift[1]}px`;
-            // Sid, with his aura; when woken he glows a little, swells and settles
-            awake = Math.max(0, awake - dt * 0.4);
-            bob = Math.sin(t * 0.75) * 0.009 * frame.value.offsetWidth * ramp;
-            sidShift = [-x * 12, -y * 6 + bob - s * 30];
-            being.value.style.translate = `${sidShift[0]}px ${sidShift[1]}px`;
-            being.value.style.scale = (1 + 0.035 * awake * awake + Math.sin(t * 0.9) * 0.004 * ramp).toFixed(4);
-            body.value.style.filter = awake > 0.01 ? `brightness(${(1 + 0.3 * awake).toFixed(3)}) saturate(${(1 + 0.4 * awake).toFixed(3)})` : '';
-            // The coloured particles follow the layers they belong to
-            sunShift = [-x * 5, -y * 3 - s * 10];
-            back?.shift(G.sun, sunShift[0], sunShift[1]);
-            back?.shift(G.aura, sidShift[0], sidShift[1]);
-            back?.shift(G.pink, -x * 10, -y * 3 - s * 10);
-            [...Object.values(G.fly), ...Object.values(G.blue)].forEach((g) => back?.shift(g, frontShift[0], frontShift[1]));
-            threadShift = [-x * 9, -y * 5 - s * 22];
-            front?.shift(0, threadShift[0], threadShift[1]);        // the glow under the threads
-            front?.shift(1, threadShift[0], threadShift[1]);        // the threads
-            winTick(t, dt);
-            keepLit();
-            swellAura(dt);
-            hint(dt);
-        });
+    // One side of the forest: the wall behind, or the leaves, branches and fireflies' stems in front; `up` is its
+    // mirror above the big square
+    const sideParts = [];
+    const buildSide = (s, depthNode, front, up) => {
+        const group = depthNode.group();
+        const part = { group, side: s.side, up, pieces: [] };
+        sideParts.push(part);
+        const top = () => (up ? geo.upTop : geo.sheetTop);
+        const add = (parent, name, options) => { const node = piece(parent, name, options); part.pieces.push(node); return node; };
+        if (!front) add(group, 'wall-' + s.letter);
+        else {
+            (up ? s.upLeaves : s.leaves).forEach((leaf) => add(swayer(group, s.side, top, leaf), leaf.name, { wind: { amp: 2, speed: 0.8, root: 'top' } }));
+            const branch = swayer(group, s.side, top, s.sway);
+            add(branch, 'branch-' + s.letter);
+            if (!up) add(branch, 'hooks-' + s.letter);
+            (up ? [s.corners[0]] : s.corners).forEach((c) => {
+                const corner = swayer(group, s.side, top, c);
+                add(corner, c.branch);
+                if (!up) add(corner, c.stem);
+            });
+            if (s.side === 'right' && !up) add(group, 'mark');
+        }
+        return part;
+    };
 
+    const build = (st) => {
+        N_.floor = st.depth(0).canvas(floorCanvas);
+        // (the particles behind the line work are drawn here, order 1.5..)
+        const walls = st.depth(Z.walls);
+        sides.forEach((s) => { buildSide(s, walls, false, false); buildSide(s, walls, false, true); });
+        N_.sid = st.depth(Z.sid).group();
+        N_.body = piece(N_.sid, 'character');
+        N_.rulito = N_.sid.canvas(rulito.value.canvas, { bloom: true });
+        N_.mush = st.depth(Z.mush).group();
+        ['mush-stems', 'mush-caps', 'mush-shade', 'mush-outline'].forEach((name) => piece(N_.mush, name));
+        const near = st.depth(Z.near);
+        N_.sides = {};
+        sides.forEach((s) => { N_.sides[s.side] = buildSide(s, near, true, false).group; buildSide(s, near, true, true); });
+        N_.ground = st.depth(0).canvas(groundCanvas);
+        // Everything at the sides and the floor fades in; Sid and the mushrooms rise into place
+        sideParts.forEach((p) => p.group.enter({ y: 0, duration: 1800 }));
+        N_.floor.enter({ y: 0, duration: 1800 });
+        N_.ground.enter({ y: 0, duration: 1800 });
+        N_.sid.enter({ y: 70, delay: 500, duration: 2000 });
+        N_.mush.enter({ y: 150, delay: 200, duration: 1800 });
+    };
+
+    // A box of a 2160 square (pannaLayers.json) at rest on screen
+    const boxOn = (name, left, top, size) => {
+        const b = boxes[name];
+        return { left: left + b.x * size, top: top + b.y * size, w: b.w * size, h: b.h * size };
+    };
+
+    const place = (W, H) => {
+        measure(W, H);
+        const { s, sn, frame, sheetTop, half } = geo;
+        drawFloor();
+        N_.floor.place({ left: 0, top: 0, w: Math.ceil(W), h: Math.ceil(H) });
+        const groundH = drawGround();
+        N_.ground.place({ left: 0, top: H - groundH, w: W, h: groundH });
+        // Each side: its pieces on its square, stretched 4% from its inner edge, cut to its half of the screen; the
+        // mirror above flipped over about its own middle
+        sideParts.forEach(({ group, side, up, pieces }) => {
+            const top = up ? geo.upTop : sheetTop;
+            const left = sheetLeft(side);
+            group.pivot = { x: side === 'left' ? left + sn : left, y: top + sn / 2 };
+            group.sx = 1.04;
+            group.sy = up ? -1 : 1;
+            group.clip = { left: side === 'left' ? 0 : W - half, top, w: half, h: sn };
+            pieces.forEach((node) => node.place(boxOn(node.box, left, top, sn)));
+        });
+        swayers.forEach((w) => {
+            const left = sheetLeft(w.side);
+            w.node.pivot = { x: left + w.origin[0] * sn, y: w.top() + w.origin[1] * sn };
+        });
+        // Sid in his frame, turning and swelling about a point 62% down it
+        N_.sid.pivot = { x: frame.left + s / 2, y: frame.top + 0.62 * s };
+        N_.body.place(boxOn('character', frame.left, frame.top, s));
+        const g = geo.glyph;
+        N_.rulito.place({ left: g.left - 0.4375 * g.w, top: g.top - 0.1628 * g.h, w: g.w * 1.875, h: g.h * 1.3256 }, { x: g.left + g.w / 2, y: g.top + g.h });
+        ['mush-stems', 'mush-caps', 'mush-shade', 'mush-outline'].forEach((name, i) => N_.mush.children[i].place(boxOn(name, (W - sn) / 2, sheetTop, sn)));
+        rulito.value.frame({ width: g.w });
+        N_.rulito.refresh();
+    };
+
+    // The touch targets follow what they belong to
+    const putHit = (el, box) => {
+        if (!el) return;
+        el.style.translate = `${box.left.toFixed(1)}px ${box.top.toFixed(1)}px`;
+        el.style.width = `${box.width.toFixed(1)}px`;
+        el.style.height = `${box.height.toFixed(1)}px`;
+    };
+    const square = (x, y, size) => ({ left: x - size / 2, top: y - size / 2, width: size, height: size });
+    const placeHits = () => {
+        const { s, sn, frame, sheetTop, W } = geo;
+        putHit(hitSid.value, N_.body.boxOnScreen(boxOn('character', frame.left, frame.top, s)));
+        const eye = sidAt(frame.left + 0.5 * s, frame.top + 0.436 * s);
+        putHit(hitEye.value, square(eye[0], eye[1], 0.13 * s));
+        const field = mushAt((W - sn) / 2 + 0.5 * sn, sheetTop + 0.88 * sn);
+        putHit(hitField.value, square(field[0], field[1], 0.185 * sn));
+        const sun = sunSpot();
+        putHit(hitSun.value, square(W / 2, geo.H * 0.012, 560 * sun.k));
+        allTargets.forEach(({ target, side }) => {
+            const [x, y] = spotOf(target.key, side);
+            const size = 2 * target.r / 2160 * sn * 1.04;
+            putHit(hitTargets[target.key], square(x, y, size));
+        });
+    };
+
+    const enter = () => {
+        if (entered || !props.active || !stage) return;
+        entered = true;
+        // The line work is decoded before anything is shown, so the particles never arrive on their own
+        stage.ready().then(() => {
+            if (gone) return;
+            stage.start();
+            back?.reveal();
+            front?.reveal();
+        });
+    };
+
+    let lastFrame = 0;
+    let frames = 0;
+    const frame = ({ x, y, scroll, t, ramp }) => {
+        if (!stage || !geo) return;
+        const s = scroll;
+        const dt = Math.min(0.1, Math.max(0, t - lastFrame));
+        lastFrame = t;
+        stage.look(x * SLIDE, y * SLIDE_Y);
+        // The forest at the sides sways; the scroll lifts each part as before
+        swayers.forEach((w) => { w.node.rotate = -w.amp * Math.cos(Math.PI * (t - w.delay) / w.dur) * ramp; });
+        sideParts.forEach((p) => { p.group.y = p.group.z === Z.walls ? -s * 14 : -s * 40; });
+        N_.mush.y = -s * 10;
+        // Sid, with his aura; when woken he glows a little, swells and settles
+        awake = Math.max(0, awake - dt * 0.4);
+        bob = Math.sin(t * 0.75) * 0.009 * geo.s * ramp;
+        N_.sid.y = bob - s * 30;
+        N_.sid.scale = 1 + 0.035 * awake * awake + Math.sin(t * 0.9) * 0.004 * ramp;
+        N_.body.uniforms.uBright.value = 1 + 0.3 * awake;
+        N_.body.uniforms.uSaturate.value = 1 + 0.4 * awake;
+        // The coloured particles follow the parts they belong to
+        const d = (z) => stage.drift(z);
+        const ds = d(Z.sun);
+        sunShift = [ds.x, ds.y - s * 10];
+        back?.shift(G.sun, sunShift[0], sunShift[1]);
+        const dsid = d(Z.sid);
+        back?.shift(G.aura, dsid.x, dsid.y + bob - s * 30);
+        const dm = d(Z.mush);
+        back?.shift(G.pink, dm.x, dm.y - s * 10);
+        const dn = d(Z.near);
+        [...Object.values(G.fly), ...Object.values(G.blue)].forEach((g) => back?.shift(g, dn.x, dn.y - s * 40));
+        const dt9 = d(Z.threads);
+        threadShift = [dt9.x, dt9.y - s * 22];
+        front?.shift(0, threadShift[0], threadShift[1]);        // the glow under the threads
+        front?.shift(1, threadShift[0], threadShift[1]);        // the threads
+        winTick(t, dt);
+        keepLit();
+        swellAura(dt);
+        hint(dt);
+        stage.render(t);
+        if (frames++ % 2 === 0) placeHits();
+    };
+
+    const begin = async () => {
+        let made;
+        try {
+            made = await createLayerStage(canvas.value);
+        } catch (e) {
+            console.warn('The WebGL stage is not available', e);
+            return;
+        }
+        if (gone) { made.destroy(); return; }
+        stage = made;
+        stageEl = root.value.closest('.stage');
+        build(stage);
+        stage.onResize((W, H) => place(W, H));
         const tone = (name) => [hexOf(clouds[name].color)];
-        back = startStardust(backCanvas.value, {
+        back = startStardust(null, {
+            stage,
             manual: true,
             groups: [
                 // 0: the stippled edge of the floor, trembling
-                { colors: [0x00625e, 0x00625e, 0x00524f, 0x0a7a72], size: [2, 4.6], parallax: 0, drift: 2.2, jitter: 0.5, twinkle: 0.25, reach: 80, push: 9, points: (w, h) => {
-                    const L = layout(w, h);
+                { colors: [0x00625e, 0x00625e, 0x00524f, 0x0a7a72], size: [2, 4.6], parallax: 0, drift: 2.2, jitter: 0.5, twinkle: 0.25, reach: 80, push: 9, order: 1.5, points: (w) => {
+                    const L = layout();
                     return Array.from({ length: Math.round(w * 2.4) }, () => {
                         const x = Math.random() * w;
                         return [x, floorTop(x, L, w) - (-Math.log(Math.random() + 0.001)) * 0.011 * L.sn + 0.002 * L.sn, (2 + Math.random() * 2.6) * Math.max(1, L.S / 765)];
                     });
                 } },
                 // 1: the faint dots of the sky
-                { count: 200, colors: [0x007a70, 0x00706a, 0x006b66], size: [2.5, 7], drift: 6, twinkle: 0.3, reach: 100, push: 24, parallax: 8, opacity: 0.9,
+                { count: 200, colors: [0x007a70, 0x00706a, 0x006b66], size: [2.5, 7], drift: 6, twinkle: 0.3, reach: 100, push: 24, parallax: 8, opacity: 0.9, order: 1.51,
                     spawn: (w, h) => [w * (0.1 + Math.random() * 0.8), h * Math.random() * 0.74] },
                 // 2: the sun
-                { colors: tone('sun'), parallax: 0, drift: 2.2, jitter: 0.9, twinkle: 0.12, reach: 0, points: (w, h) => {
-                    const s = sunSpot(w, h);
+                { colors: tone('sun'), parallax: 0, drift: 2.2, jitter: 0.9, twinkle: 0.12, reach: 0, order: 1.52, points: () => {
+                    const s = sunSpot();
                     return sample('sun', (u, v) => [s.x + (u - 1075) * s.k, s.y + (v - 425) * s.k], s.k, 1.6);
                 } },
                 // 3: the cyan aura around Sid
-                { colors: tone('aura'), parallax: 0, drift: 3.4, jitter: 1.1, twinkle: 0.3, reach: 0, points: (w, h) => {
-                    const L = layout(w, h);
+                { colors: tone('aura'), parallax: 0, drift: 3.4, jitter: 1.1, twinkle: 0.3, reach: 0, order: 1.53, points: () => {
+                    const L = layout();
                     return sample('aura', (u, v) => [L.fx0 + u * L.kf, L.fy0 + v * L.kf], L.kf, 1.2);
                 } },
                 // 4: the pink glow of the mushrooms
-                { colors: tone('pink'), parallax: 0, drift: 2.6, jitter: 1, twinkle: 0.22, reach: 90, push: 12, points: (w, h) => {
-                    const L = layout(w, h);
+                { colors: tone('pink'), parallax: 0, drift: 2.6, jitter: 1, twinkle: 0.22, reach: 90, push: 12, order: 1.54, points: () => {
+                    const L = layout();
                     return sample('pink', L.centred, L.kn);
                 } },
                 // 5-8: the fireflies' halos, one group each so each can flare on its own
-                ...['tl', 'tr', 'bl', 'br'].map((q) => ({ colors: tone('fly-' + q), parallax: 0, drift: 2.6, jitter: 1.2, twinkle: 0.3, reach: 0, points: (w, h) => {
-                    const L = layout(w, h);
+                ...['tl', 'tr', 'bl', 'br'].map((q, i) => ({ colors: tone('fly-' + q), parallax: 0, drift: 2.6, jitter: 1.2, twinkle: 0.3, reach: 0, order: 1.55 + i * 0.001, points: () => {
+                    const L = layout();
                     return sample('fly-' + q, q.endsWith('l') ? L.left : L.right, L.kn * 1.04);
                 } })),
                 // 9-10: the blue mushrooms
-                ...['l', 'r'].map((q) => ({ colors: tone('blue-' + q), parallax: 0, drift: 2.2, jitter: 1, twinkle: 0.24, reach: 0, points: (w, h) => {
-                    const L = layout(w, h);
+                ...['l', 'r'].map((q, i) => ({ colors: tone('blue-' + q), parallax: 0, drift: 2.2, jitter: 1, twinkle: 0.24, reach: 0, order: 1.56 + i * 0.001, points: () => {
+                    const L = layout();
                     return sample('blue-' + q, q === 'l' ? L.left : L.right, L.kn * 1.04);
                 } })),
             ],
         });
-        front = startStardust(frontCanvas.value, {
+        front = startStardust(null, {
+            stage,
             manual: true,
             groups: [
-                { colors: [0xffe47d], dynamic: glow, parallax: 0, drift: 0, twinkle: 0, reach: 0, look: 'soft' },
-                { colors: [0xffe47d, 0xffe47d, 0xfff3b8], dynamic: thread, parallax: 0, drift: 0, twinkle: 0, reach: 140, push: 26, look: 'hard' },
-                { colors: [0xffffff], dynamic: sparkGroup, parallax: 0, drift: 0, twinkle: 0, reach: 0, look: 'hard' },
+                { colors: [0xffe47d], dynamic: glow, parallax: 0, drift: 0, twinkle: 0, reach: 0, look: 'soft', order: 1e6, bloom: true },
+                { colors: [0xffe47d, 0xffe47d, 0xfff3b8], dynamic: thread, parallax: 0, drift: 0, twinkle: 0, reach: 140, push: 26, look: 'hard', order: 1e6 + 1, bloom: true },
+                { colors: [0xffffff], dynamic: sparkGroup, parallax: 0, drift: 0, twinkle: 0, reach: 0, look: 'hard', order: 1e6 + 2 },
             ],
         });
+        parallax = createParallax(root.value, frame);
+        enter();
+    };
 
-        buildFloor();
-        resizeWatch = new ResizeObserver(buildFloor);
-        resizeWatch.observe(root.value);
-        waitForDrawings().then(() => { drawingsReady = true; enter(); });
-    });
+    onMounted(begin);
     watch(() => props.active, enter);
     onBeforeUnmount(() => {
+        gone = true;
         parallax?.destroy();
         back?.destroy();
         front?.destroy();
-        resizeWatch?.disconnect();
+        stage?.destroy();
         timers.forEach(clearTimeout);
         stopDrag();
         stageEl?.style.removeProperty('--name-glow');
@@ -915,189 +1091,61 @@
 </script>
 
 <template>
-    <div class="scene" ref="root" :class="{ shown }">
-        <!-- The floor: a drawn silhouette (its stippled edge is particles) -->
-        <svg class="floor" aria-hidden="true">
-            <defs>
-                <linearGradient id="pannaFloor" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0" stop-color="#00625e"/>
-                    <stop offset="1" stop-color="#004f4c"/>
-                </linearGradient>
-            </defs>
-            <path :d="floorPath" fill="url(#pannaFloor)"/>
-        </svg>
+    <div class="scene" ref="root">
+        <canvas class="stageCanvas" ref="canvas"></canvas>
+        <!-- The rulito is drawn on its own canvas, which the stage shows over Sid's head, in the gold of the thread -->
+        <Rulito ref="rulito" class="offstage" color="#ffe47d" />
 
-        <!-- Everything coloured, as particles: above the floor, behind all the line work -->
-        <canvas class="field" ref="backCanvas"></canvas>
-
-        <!-- Behind: the dark walls of the forest, one on each side of the screen, and their mirror above -->
-        <template v-for="s in sides" :key="'back' + s.side">
-            <div class="half back" :class="s.side">
-                <div class="sheet" ref="backSheets">
-                    <img class="piece" :src="IMG('wall-' + s.letter)" :style="place('wall-' + s.letter)" alt="" draggable="false">
-                </div>
-            </div>
-            <div class="half back up" :class="s.side">
-                <div class="sheet" ref="backSheets">
-                    <img class="piece" :src="IMG('wall-' + s.letter)" :style="place('wall-' + s.letter)" alt="" draggable="false">
-                </div>
-            </div>
-        </template>
-
-        <!-- Sid, in a square frame at the bottom of the screen -->
-        <div class="frame" ref="frame">
-            <div class="depth" ref="being">
-                <img class="piece" ref="body" :src="IMG('character')" :style="place('character')" alt="" draggable="false">
-                <div class="hit sid" role="button" tabindex="0" :style="place('character')" aria-label="Sid"
-                    @pointerdown.prevent="wake" @pointerenter="warmSid" @keydown="onKey($event, wake)"></div>
-                <!-- His third eye, the end of the spiral: one of the lights to join -->
-                <div class="hit eye" role="button" tabindex="0" :aria-label="$i18n.locale === 'en' ? 'Third eye' : 'Tercer ojo'"
-                    @pointerdown.prevent="press(EYE, $event)" @pointerenter="warmSid" @keydown="pressKey(EYE, $event)"></div>
-                <!-- The rulito over his head, in the gold of the thread -->
-                <Rulito ref="rulito" class="rulito" color="#ffe47d" />
-            </div>
-        </div>
-
-        <!-- The mushrooms, stacked in the order of the illustration (the pink glow is particles, behind) -->
-        <div class="mushrooms" ref="mushrooms">
-            <img class="piece" :src="IMG('mush-stems')" :style="place('mush-stems')" alt="" draggable="false">
-            <img class="piece" :src="IMG('mush-caps')" :style="place('mush-caps')" alt="" draggable="false">
-            <img class="piece" :src="IMG('mush-shade')" :style="place('mush-shade')" alt="" draggable="false">
-            <img class="piece" :src="IMG('mush-outline')" :style="place('mush-outline')" alt="" draggable="false">
-            <!-- The big mushroom in the middle: one more light to join -->
-            <div class="hit field" role="button" tabindex="0" :aria-label="$i18n.locale === 'en' ? 'Pink mushrooms' : 'Hongos rosados'"
-                @pointerdown.prevent="press(FIELD, $event)" @pointerenter="warmLight(FIELD)" @keydown="pressKey(FIELD, $event)"></div>
-        </div>
-
-        <!-- In front: leaves, branches and the fireflies' stems, anchored to the sides -->
-        <template v-for="s in sides" :key="'front' + s.side">
-            <div class="half front" :class="s.side">
-                <div class="sheet" ref="frontSheets">
-                    <img v-for="leaf in s.leaves" :key="leaf.name" class="piece sway" :src="IMG(leaf.name)" :style="leaf.style" alt="" draggable="false">
-
-                    <div class="layer sway" :style="s.sideStyle">
-                        <img class="piece" :src="IMG('branch-' + s.letter)" :style="place('branch-' + s.letter)" alt="" draggable="false">
-                        <img class="piece" :src="IMG('hooks-' + s.letter)" :style="place('hooks-' + s.letter)" alt="" draggable="false">
-                    </div>
-
-                    <div v-for="c in s.corners" :key="c.row" class="layer sway" :style="c.style">
-                        <img class="piece" :src="IMG(c.branch)" :style="place(c.branch)" alt="" draggable="false">
-                        <img class="piece" :src="IMG(c.stem)" :style="place(c.stem)" alt="" draggable="false">
-                    </div>
-
-                    <img v-if="s.side === 'right'" class="piece" :src="IMG('mark')" :style="place('mark')" alt="" draggable="false">
-
-                    <!-- What can be touched: the fireflies and the blue mushrooms -->
-                    <div v-for="target in s.targets" :key="target.key" class="hit" role="button" tabindex="0" :style="target.style"
-                        :aria-label="label(target.kind, $i18n.locale)"
-                        @pointerdown.prevent="press(target.light, $event)" @pointerenter="warm(target)" @keydown="pressKey(target.light, $event)"></div>
-                </div>
-            </div>
-
-            <!-- Above the big square the forest goes on: the same picture, flipped, so the branches meet at the seam -->
-            <div class="half front up" :class="s.side">
-                <div class="sheet" ref="frontSheets">
-                    <img v-for="leaf in s.upLeaves" :key="leaf.name" class="piece sway" :src="IMG(leaf.name)" :style="leaf.style" alt="" draggable="false">
-                    <div class="layer sway" :style="s.sideStyle">
-                        <img class="piece" :src="IMG('branch-' + s.letter)" :style="place('branch-' + s.letter)" alt="" draggable="false">
-                    </div>
-                    <div class="layer sway" :style="s.corners[0].style">
-                        <img class="piece" :src="IMG(s.corners[0].branch)" :style="place(s.corners[0].branch)" alt="" draggable="false">
-                    </div>
-                </div>
-            </div>
-        </template>
-
+        <!-- What can be touched, kept over what it belongs to -->
+        <div class="hit sid" ref="hitSid" role="button" tabindex="0" aria-label="Sid"
+            @pointerdown.prevent="wake" @pointerenter="warmSid" @keydown="onKey($event, wake)"></div>
+        <!-- His third eye, the end of the spiral: one of the lights to join -->
+        <div class="hit" ref="hitEye" role="button" tabindex="0" :aria-label="$i18n.locale === 'en' ? 'Third eye' : 'Tercer ojo'"
+            @pointerdown.prevent="press(EYE, $event)" @pointerenter="warmSid" @keydown="pressKey(EYE, $event)"></div>
+        <!-- The big mushroom in the middle: one more light to join -->
+        <div class="hit" ref="hitField" role="button" tabindex="0" :aria-label="$i18n.locale === 'en' ? 'Pink mushrooms' : 'Hongos rosados'"
+            @pointerdown.prevent="press(FIELD, $event)" @pointerenter="warmLight(FIELD)" @keydown="pressKey(FIELD, $event)"></div>
+        <!-- The fireflies and the blue mushrooms -->
+        <div v-for="{ target } in allTargets" :key="target.key" :ref="setTarget(target.key)" class="hit" role="button" tabindex="0"
+            :aria-label="label(target.kind, $i18n.locale)"
+            @pointerdown.prevent="press(target.light, $event)" @pointerenter="warm(target)" @keydown="pressKey(target.light, $event)"></div>
         <!-- The sun: touch it and everything alive answers -->
-        <div class="hit sun" role="button" tabindex="0" :aria-label="$i18n.locale === 'en' ? 'Sun' : 'Sol'"
+        <div class="hit" ref="hitSun" role="button" tabindex="0" :aria-label="$i18n.locale === 'en' ? 'Sun' : 'Sol'"
             @pointerdown.prevent="press(SUN, $event)" @pointerenter="warmSun" @keydown="pressKey(SUN, $event)"></div>
-
-        <!-- The ground in front, on a tall screen: where the scene is lifted it hides the bottom edge of the drawings -->
-        <div class="ground" aria-hidden="true"></div>
-
-        <!-- The spiral and the sparks, in front of everything -->
-        <canvas class="field" ref="frontCanvas"></canvas>
     </div>
 </template>
 
 <style scoped>
     .scene {
-        /* The centre's square, and the bigger one of the surroundings */
-        --s: min(max(100vw, 62svh), 85svh);
-        --sn: min(calc(var(--s) * 1.1), calc(100vw * 1.25));
-        /* On a tall screen (a phone upright) everything but the sun is lifted off the bottom, so Sid sits nearer the middle
-           and the mushrooms are seen whole; below them is the floor. On a wide screen it stays at the bottom */
-        --lift: max(0px, (100svh - var(--s) * 1.2) * 0.5);
         position: absolute;
         inset: 0;
         overflow: hidden;
     }
 
-    /* A phone upright: Sid is drawn bigger, so the scene fills more of the height */
-    @media (max-aspect-ratio: 3/4) {
-        .scene {
-            --s: min(max(100vw, 70svh), 85svh);
-        }
-    }
-
-    /* The ground in front: as high as the bottom edge of the lifted drawings (plus a fade), in the floor's colour */
-    .ground {
-        position: absolute;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        height: max(0px, calc(var(--lift) - var(--sn) * 0.04 + 30px));
-        background: linear-gradient(to top, #004f4c, #005653 calc(100% - 30px), rgba(0, 86, 83, 0));
-        pointer-events: none;
-        opacity: 0;
-        transition: opacity 1.8s ease-out;
-    }
-
-    .shown .ground {
-        opacity: 1;
-    }
-
-    .field {
+    .stageCanvas {
         position: absolute;
         inset: 0;
         width: 100%;
         height: 100%;
-        pointer-events: none;
-    }
-
-    .floor {
-        position: absolute;
-        inset: 0;
-        width: 100%;
-        height: 100%;
-        opacity: 0;
-        transition: opacity 1.8s ease-out;
-        pointer-events: none;
-    }
-
-    .shown .floor {
-        opacity: 1;
-    }
-
-    /* A whole 2160px square (no pixels of its own) holding cropped pictures */
-    .layer {
-        position: absolute;
-        inset: 0;
-        pointer-events: none;
-    }
-
-    /* A cropped picture, placed by its inline percentages */
-    .piece {
-        position: absolute;
         display: block;
-        max-width: none;
-        user-select: none;
         pointer-events: none;
+    }
+
+    .offstage {
+        position: absolute;
+        left: -9999px;
+        top: 0;
+        width: 40px;
+        visibility: hidden;
     }
 
     /* Something to touch: invisible, over the thing itself */
     .hit {
         position: absolute;
+        left: 0;
+        top: 0;
+        width: 0;
+        height: 0;
         border-radius: 50%;
         cursor: pointer;
         pointer-events: auto;
@@ -1114,128 +1162,5 @@
     .hit.sid {
         border-radius: 46% 46% 40% 40%;
         touch-action: manipulation;
-    }
-
-    /* Over the dot on his forehead (43.6% of the frame), where the spiral ends */
-    .hit.eye {
-        left: 50%;
-        top: 43.6%;
-        width: 13%;
-        height: 13%;
-        translate: -50% -50%;
-    }
-
-    /* Over the top of the big pink mushroom: 88% down the square of the mushrooms, in the middle */
-    .hit.field {
-        left: 50%;
-        top: 88%;
-        width: 18.5%;
-        height: 18.5%;
-        translate: -50% -50%;
-    }
-
-    /* The rulito floats clear of his head (the top of it is at 29% of the frame) */
-    .depth .rulito {
-        position: absolute;
-        left: 50%;
-        top: 8%;
-        width: 6.5%;
-        translate: -50% 0;
-        transform-origin: 50% 100%;
-        pointer-events: none;
-    }
-
-    /* Over the sun: 1.2% from the top, as big as its stipple (about 300 of the 2160px units each way) */
-    .hit.sun {
-        --u: calc(var(--s) * 0.95 / 2160);
-        left: 50%;
-        top: 1.2%;
-        width: calc(var(--u) * 560);
-        height: calc(var(--u) * 560);
-        translate: -50% -50%;
-    }
-
-    /* ---- The sides: each half shows half of the big square, from the edge of the screen inwards. It hangs a little
-       below the screen, so the pointer and the scroll can lift it without showing a gap at the bottom. ---- */
-    .half {
-        position: absolute;
-        bottom: calc(var(--sn) * -0.04 + var(--lift));
-        width: min(calc(var(--sn) / 2), 50%);
-        height: var(--sn);
-        overflow: hidden;
-        opacity: 0;
-        transition: opacity 1.8s ease-out;
-        pointer-events: none;
-    }
-
-    .shown .half {
-        opacity: 1;
-    }
-
-    .half.left { left: 0; }
-    .half.right { right: 0; }
-
-    /* A little wider than the screen, so the pointer can shift it sideways without a gap at the edge. Its outer edge
-       always sits on the edge of the screen, so on a narrow one the branches and leaves are not cropped away. */
-    .sheet {
-        position: absolute;
-        bottom: 0;
-        width: var(--sn);
-        height: var(--sn);
-        scale: 1.04 1;
-    }
-
-    .left .sheet { left: 0; transform-origin: 100% 50%; }
-    .right .sheet { right: 0; transform-origin: 0% 50%; }
-
-    /* The mirror above: sits right on top of the big square and is flipped over, so the seam is the picture's own top edge */
-    .half.up {
-        bottom: calc(var(--sn) * 0.96 - 1px + var(--lift));
-    }
-
-    .up .sheet {
-        scale: 1.04 -1;
-    }
-
-    /* ---- The centre ---- */
-    .frame {
-        position: absolute;
-        width: var(--s);
-        height: var(--s);
-        left: calc(50% - var(--s) / 2);
-        bottom: var(--lift);
-        pointer-events: none;
-    }
-
-    .depth {
-        position: absolute;
-        inset: 0;
-        transform-origin: 50% 62%;
-    }
-
-    /* ---- The mushrooms ---- */
-    .mushrooms {
-        position: absolute;
-        bottom: calc(var(--sn) * -0.04 + var(--lift));
-        width: var(--sn);
-        height: var(--sn);
-        left: calc(50% - var(--sn) / 2);
-        pointer-events: none;
-    }
-
-    /* ---- Idle motion: foliage sways from where it hangs ---- */
-    .sway {
-        transform-origin: var(--origin, 50% 50%);
-        animation: sway var(--dur, 7s) ease-in-out var(--delay, 0s) infinite alternate;
-    }
-
-    @keyframes sway {
-        from { rotate: calc(var(--amp, 1deg) * -1); }
-        to { rotate: var(--amp, 1deg); }
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-        .half, .floor, .ground { opacity: 1; transition: none; }
-        .sway { animation: none; }
     }
 </style>
