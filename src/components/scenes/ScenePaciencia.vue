@@ -388,7 +388,7 @@
         cursor: pointer;
         pointer-events: auto;
         -webkit-tap-highlight-color: transparent;
-        touch-action: manipulation;
+        touch-action: none;                    /* a finger holding it drifts a little: with manipulation the phone takes that for a scroll and lets go of the hold */
         outline: none;
     }
 
