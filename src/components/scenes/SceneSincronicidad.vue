@@ -167,6 +167,8 @@
         ignite(60, 190);
         ring[PAIR] = 1;
         spark(PAIR, 3);
+        // The fire is heard as it leaps (a rush of air rising over a low bowl), with the chord gathering over it
+        play('ignite', 1);
         play('converge');
         sceneMilestone('in_time', { times: wins });
     };

@@ -341,12 +341,14 @@
         return best ?? clouds.find((cl) => cl.c === c);
     };
 
-    // Repeated whole: the colours become one, their light gathers over the lookout and the rulito is born there
+    // Repeated whole: the colours become one, their light gathers over the lookout and the rulito is born there. The card's
+    // G7 resolves to C major as the light gathers (a dominant seventh asks for the chord a fifth below: the root, Sporá; the
+    // truth that is followed takes root), and then the rulito climbs in G7 an octave up
     const complete = () => {
         wins += 1;
         win = { age: 0, head: 0, tail: 0, full: false, fullAt: 0, back: false, pop: 0 };
         rulito.value?.reshape();
-        play('converge');
+        play('resolve');
         sceneMilestone('echo_sung', { times: wins, tries: sung });
         const to = rulitoAt();
         clouds.forEach((cl) => {
