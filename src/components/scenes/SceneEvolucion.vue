@@ -528,6 +528,10 @@
                 ...FLOAT.map(({ id, circles = [], mass, sway }) => ({ id, circles, mass, sway })),
             ],
         });
+        // The layers and their layout first, so the particles measured on them are made again after them on a resize
+        build(stage);
+        L.interior.uniforms.uTint.value.setRGB(0.96, 0.6, 0.32);
+        stage.onResize((W, H) => place(W, H));
         sky = startStardust(null, {
             stage,
             groups: [{
@@ -545,9 +549,6 @@
                 ...SWAYING.map((p, i) => ({ ...still, points: glowPoints(p.glow), colors: [hex(p.glow.color)], drift: 3, jitter: 1.1, twinkle: 0.3, order: -8 + i * 0.01 })),
             ],
         });
-        build(stage);
-        L.interior.uniforms.uTint.value.setRGB(0.96, 0.6, 0.32);
-        stage.onResize((W, H) => place(W, H));
         front = startStardust(null, {
             stage,
             groups: [

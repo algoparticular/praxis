@@ -257,6 +257,9 @@
                 ...PIECES.map(({ id, circles = [], mass, sway }) => ({ id, circles, mass, sway })),
             ],
         });
+        // The layers and their layout first, so the particles measured on them are made again after them on a resize
+        build(stage);
+        stage.onResize((W, H) => place(W, H));
         // The sky's faint dots, far behind
         sky = startStardust(null, {
             stage,
@@ -277,8 +280,6 @@
                 },
             ],
         });
-        build(stage);
-        stage.onResize((W, H) => place(W, H));
         // In front: a few motes drifting across, and the nucleus's stipple (group 1, which follows the planet by hand)
         front = startStardust(null, {
             stage,

@@ -312,7 +312,16 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
             texture.minFilter = THREE.LinearFilter;
             textures.push(texture);
             const node = this.plane(texture, options);
-            node.refresh = () => { texture.needsUpdate = true; };
+            // A texture keeps the size it was first uploaded with: when the canvas is resized (the screen turned, the
+            // window changed) it has to be made again, or the new drawing is cut and shifted on the old one
+            let size = [source.width, source.height];
+            node.refresh = () => {
+                if (source.width !== size[0] || source.height !== size[1]) {
+                    size = [source.width, source.height];
+                    texture.dispose();
+                }
+                texture.needsUpdate = true;
+            };
             return node;
         }
 
