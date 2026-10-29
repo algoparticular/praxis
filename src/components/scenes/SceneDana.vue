@@ -786,9 +786,6 @@
         particles = { back, front };
         if (gone) { back?.destroy(); front?.destroy(); return; }
         parallax = createParallax(root.value, onFrame);
-        // A still scene (reduced motion) is drawn once more when its pictures have arrived, at a moment when the
-        // particles have already faded in (they fade in over their first 2.5 s)
-        if (stage.reduced) stage.ready().then(() => { if (!gone) requestAnimationFrame(() => stage.render(3)); });
         enter();
     };
 
