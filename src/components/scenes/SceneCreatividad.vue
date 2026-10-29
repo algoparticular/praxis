@@ -10,6 +10,12 @@
     // crown, like the dots of the sky (useStardust).
     // It is drawn in WebGL (useLayerStage), like Hogar: the planet is a group of planes at one depth and the camera
     // slides with the pointer or the tilt. The touch targets of the corals and weeds are DOM elements kept over them.
+    // Its verb is Resonar, as free composition: the crown is a music box. Touching a coral or a weed lights it and plays
+    // its note of the card's chord (the higher it hangs, the higher the note; the weeds are the bass); the crown turns
+    // faster and every lit piece plays again each time it passes the comb at the top, where the jellyfish swims up to
+    // listen, so what was composed keeps sounding as a tune. Touching a lit one puts it out. With seven lit the tune is
+    // complete: the rulito is born over the jellyfish's head, the name lights up and the stage blooms; after one more
+    // turn each piece goes out as it passes the comb for the last time and the crown slows down again.
     import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
     import { createParallax } from '../../composables/useParallax.js';
     import { createLayerStage } from '../../composables/useLayerStage.js';
@@ -17,6 +23,8 @@
     import { createCellWater } from '../../composables/useCellWater.js';
     import { createSparks } from '../../composables/useSparks.js';
     import { play } from '../../composables/useSound.js';
+    import { sceneMilestone } from '../../analytics.js';
+    import Rulito from '../Rulito.vue';
     import dustCloud from '../../composables/creatividadDust.json';
     import scene from '../../composables/creatividadScene.json';
 
@@ -28,6 +36,8 @@
     const root = ref(null);
     const canvas = ref(null);
     const hits = ref([]);                   // the touch targets of the crown's pieces
+    const rulito = ref(null);
+    let stageEl = null;                     // the card's stage, where the name is lit from (--name-glow)
     let stage = null;
     let parallax = null;
     let sky = null;
@@ -51,9 +61,13 @@
     const { cell: CELL, nucleus: NUC, jelly: JELLY, interior, outline, specks } = scene;
 
     // The crown: weeds behind, then the dashes of the cell's edge, then the corals; each hangs from the point of it
-    // nearest the cell, and sways about it
+    // nearest the cell, and sways about it. `angle` is where it sits round the cell (deg, 0 to the right, clockwise) and
+    // `height` how high it hangs at rest (0 at the bottom, 1 at the top): its note
     const CROWN = [...scene.pieces.filter((p) => p.kind === 'algae'), ...scene.pieces.filter((p) => p.kind === 'coral')]
-        .map((p, i) => ({ ...p, phase: i * 1.9, hitR: Math.max(p.r, 1.8) }));
+        .map((p, i) => {
+            const angle = Math.atan2(p.cy / 100 - CELL.y, p.cx / 100 - CELL.x) * 180 / Math.PI;
+            return { ...p, phase: i * 1.9, hitR: Math.max(p.r, 1.8), angle, height: (1 - Math.sin(angle * Math.PI / 180)) / 2 };
+        });
     const WEEDS = CROWN.filter((p) => p.kind === 'algae');
     const CORALS = CROWN.filter((p) => p.kind === 'coral');
 
@@ -125,7 +139,8 @@
         ctx.fill(new Path2D(interior.path));
     };
 
-    // Touching a coral or a weed: it squashes, spores fly out of it and the dust around the planet flares
+    // Touching a coral or a weed: it squashes, spores fly out of it and the dust around the planet flares; and it is
+    // lit into the music box, or put out if it was (while the rulito lives the tune is kept as it is)
     const sparks = createSparks(480);
     const spores = (piece) => (event) => {
         const box = event.currentTarget.getBoundingClientRect();
@@ -137,7 +152,7 @@
         squashes[piece.id] = last ?? 0;
         dust?.boost(0, 1.4);
         dust?.boost(1, 1);
-        play('tap');
+        compose(CROWN.indexOf(piece));
     };
     const warm = () => dust?.boost(0, 0.4);
     const onKey = (piece) => (event) => {
@@ -159,17 +174,155 @@
         return [1, 1];
     };
 
+    /* ---------- Resonar: the crown is a music box ---------- */
+
+    const IDLE_TURN = 1.4;                  // deg/s the crown turns by itself
+    const PLAY_TURN = 30;                   // and while a tune is in it: one turn in 12 s
+    const COMB = -90;                       // where the pieces play: the top of the crown (deg, clockwise from the right)
+    const TUNE = 7;                         // lit pieces that make a whole tune
+    const IDLE_TURNS = 3;                   // turns with no touch after which an unfinished tune goes out
+    const DELAY = 0.4, GROW = 2.4, EAT = 3.4;   // the rulito: after the seventh is lit, born, whole; then gone
+    const HOME = { x: CELL.x - 0.01, y: 0.415 };   // where the jellyfish listens, under the comb
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const LIGHT = { coral: 0xffc08a, algae: 0xc9f0b0 };
+
+    const on = CROWN.map(() => false);      // lit into the tune
+    const lit = CROWN.map(() => 0);         // how lit each one looks (eases towards `on`)
+    const ring = CROWN.map(() => 0);        // a flash each time it plays, that settles
+    const final = CROWN.map(() => false);   // goes out after it plays once more (the tune is ending)
+    let turn = 0;                           // how far the crown has turned (deg)
+    let speed = IDLE_TURN;
+    let touchedAt = -Infinity;              // the crown's turn at the last touch: an unfinished tune left alone ends
+    let listen = 0;                         // the jellyfish's pulse with each note
+    let comb = 0;                           // the comb's flash with each note
+    let wins = 0;
+    let win = null;                         // the rulito, while it lives
+    let glyph = { left: 0, top: 0, w: 1, h: 1 };
+    const count = () => on.filter(Boolean).length;
+
+    const playNote = (i, level) => play('tine', { step: CROWN[i].height, low: CROWN[i].kind === 'algae', level });
+    const combAt = () => L.planet.toScreen(F.x + (CELL.x + Math.cos(COMB * Math.PI / 180) * 0.213) * F.size, F.y + (CELL.y + Math.sin(COMB * Math.PI / 180) * 0.213) * F.size);
+
+    const compose = (i) => {
+        if (i < 0) return;
+        touchedAt = turn;
+        if (win) { play('tap'); return; }
+        if (on[i]) {
+            on[i] = false;
+            final[i] = false;
+            play('miss');
+            return;
+        }
+        on[i] = true;
+        final.fill(false);
+        ring[i] = 1;
+        playNote(i, 1);
+        if (count() >= TUNE) complete();
+    };
+
+    // The tune is whole: the rulito is born over the jellyfish's head and every lit piece flashes once
+    const complete = () => {
+        if (win || gone) return;
+        wins += 1;
+        win = { age: 0, head: 0, tail: 0, full: false, pop: 0, ending: false, endAt: turn + 360 };
+        rulito.value?.reshape();
+        on.forEach((v, i) => { if (v) ring[i] = 1; });
+        play('converge');
+        sceneMilestone('tune_composed', { times: wins });
+    };
+
+    // A lit piece reaches the comb: it plays its note, flashes, the comb throws sparks and the jellyfish pulses
+    const sound = (i) => {
+        ring[i] = 1;
+        comb = 1;
+        listen = 1;
+        playNote(i, 0.75);
+        if (!reduced && stage) {
+            const c = combAt();
+            sparks.burst(c.x, c.y, { n: 10, colors: [LIGHT[CROWN[i].kind], 0xffd29a, 0xffffff], speed: 70, life: 1.4, size: 3.8, spread: 6 });
+        }
+        if (final[i]) { final[i] = false; on[i] = false; }
+    };
+
+    // Every frame: the crown turns (faster with a tune in it); each lit piece that crosses the comb plays
+    const music = (dt, t, ramp) => {
+        const n = count();
+        const want = (n ? PLAY_TURN * (win ? 1.25 : 1) : IDLE_TURN) * ramp;
+        speed += (want - speed) * Math.min(1, dt * 0.9);
+        const before = turn;
+        turn += speed * dt;
+        CROWN.forEach((p, i) => {
+            if (!on[i]) return;
+            // How far past the comb it is, 0..360: a crossing is that going round
+            const a = ((p.angle + before - COMB) % 360 + 360) % 360;
+            const b = ((p.angle + turn - COMB) % 360 + 360) % 360;
+            if (b < a) sound(i);
+        });
+        // An unfinished tune left alone for a few turns, or the turn after the rulito, ends: each piece goes out as
+        // it passes the comb for the last time
+        const ending = win ? !win.ending && turn > win.endAt : n && turn - touchedAt > IDLE_TURNS * 360 && !final.some(Boolean);
+        if (ending) {
+            if (win) win.ending = true;
+            on.forEach((v, i) => { final[i] = v; });
+        }
+        listen = Math.max(0, listen - dt * 2.5);
+        comb = Math.max(0, comb - dt * 2.2);
+        CROWN.forEach((p, i) => {
+            lit[i] += ((on[i] ? 1 : 0) - lit[i]) * Math.min(1, dt * (on[i] ? 6 : 1.2));
+            ring[i] = Math.max(0, ring[i] - dt * 2.4);
+        });
+        // The jellyfish swims up under the comb to listen while there is a tune
+        water.home = n || win ? HOME : null;
+
+        // The rulito: born after the tune is whole, kept while it plays, and its tail catches its head once it has ended
+        let named = 0;
+        if (win && rulito.value) {
+            win.age += dt;
+            win.pop = Math.max(0, win.pop - dt * 2.2);
+            win.head = 1 - (1 - Math.min(1, Math.max(0, (win.age - DELAY) / GROW))) ** 1.6;
+            if (win.head >= 1 && !win.full) { win.full = true; win.pop = 1; play('rulito'); }
+            if (win.ending && !count()) win.tail = Math.min(1, win.tail + dt / EAT);
+            const whole = Math.min(1, Math.max(0, (win.head - win.tail - 0.6) / 0.4));
+            named = Math.max(win.pop, 0.8 * whole * whole * (3 - 2 * whole));
+            const flare = win.full && win.head - win.tail > 0.9 ? Math.max(win.pop, comb) : 0;
+            rulito.value.frame({ head: win.head, tail: win.tail, flare, t, fade: Math.min(1, (win.head - win.tail) * 14), width: glyph.w });
+            L.rulito.refresh();
+            L.rulito.scale = 1 + 0.2 * win.pop * win.pop;
+            if (win.ending && win.tail >= 1) {
+                win = null;
+                rulito.value.frame({ width: glyph.w });
+                L.rulito.refresh();
+            }
+        }
+        stageEl?.style.setProperty('--name-glow', named.toFixed(3));
+        const filled = count() / TUNE;
+        stage.bloom = Math.max(named, win ? 0.45 : 0, 0.2 * filled * filled);
+    };
+
     const build = (s) => {
         const planetDepth = s.depth(PLANET_Z);
         L.planet = planetDepth.group();
         L.interior = L.planet.canvas(interiorCanvas, { water: 1 });
         L.nucleus = L.planet.disc({ rect: { left: 0, top: 0, w: 1, h: 1 }, color: parseInt(NUC.color, 16) });
         FLOAT.forEach((p) => { els[p.id] = L.planet.image(`/assets/creatividad/${p.file}.webp`, { shimmer: 0.6 }); });
+        // The jellyfish's light while it listens, behind it
+        L.listen = L.planet.glow({ rect: { left: 0, top: 0, w: 1, h: 1 }, color: 0xffd29a, stops: [[0, 0.5], [0.3, 0.22], [0.62, 0]] });
+        L.listen.opacity = 0;
         L.jelly = L.planet.image('/assets/creatividad/medusa.webp');
+        L.rulito = L.planet.canvas(rulito.value.canvas, { bloom: true });
         L.crown = L.planet.group();
+        // A light behind every piece, seen while it is lit into the tune (it turns with the crown)
+        L.lights = CROWN.map((p) => {
+            const node = L.crown.glow({ rect: { left: 0, top: 0, w: 1, h: 1 }, color: LIGHT[p.kind], stops: [[0, 0.7], [0.32, 0.3], [0.64, 0]], bloom: true });
+            node.opacity = 0;
+            return node;
+        });
         WEEDS.forEach((p) => { els[p.id] = L.crown.image(`/assets/creatividad/${p.id}.webp`); });
         L.outline = L.crown.image(`/assets/creatividad/${outline.file}.webp`);
         CORALS.forEach((p) => { els[p.id] = L.crown.image(`/assets/creatividad/${p.id}.webp`); });
+        // The comb: where the pieces play, at the top, over the crown (it does not turn)
+        L.comb = L.planet.glow({ rect: { left: 0, top: 0, w: 1, h: 1 }, color: 0xffe2b8, stops: [[0, 0.75], [0.25, 0.3], [0.6, 0]], bloom: true });
+        L.comb.opacity = 0;
         L.planet.enter({ y: 60, scale: 0.7, duration: 2200 });
         L.jelly.enter({ y: 0, scale: 0.4, delay: 1200, duration: 1600 });
     };
@@ -183,6 +336,15 @@
         L.nucleus.place({ left: F.x + (NUC.x - NUC.r) * F.size, top: F.y + (NUC.y - NUC.r) * F.size, w: 2 * NUC.r * F.size, h: 2 * NUC.r * F.size });
         FLOAT.forEach((p) => els[p.id].place(inFrame(p.box)));
         L.jelly.place(inFrame(JELLY.box));
+        const square = (cx, cy, d) => ({ left: F.x + (cx - d / 2) * F.size, top: F.y + (cy - d / 2) * F.size, w: d * F.size, h: d * F.size });
+        L.listen.place(square(JELLY.x, JELLY.y, 0.13));
+        // The rulito over the jellyfish's bell (its canvas is bigger than the glyph, for the glow, as in Paciencia)
+        const rh = 0.05, rw = rh * 32 / 86;
+        glyph = inFrame([(JELLY.box[0] / 100 + 0.33 * JELLY.box[2] / 100 - rw / 2) * 100, (JELLY.box[1] / 100 - 0.004 - rh) * 100, rw * 100, rh * 100]);
+        L.rulito.place({ left: glyph.left - 0.4375 * glyph.w, top: glyph.top - 0.1628 * glyph.h, w: glyph.w * 1.875, h: glyph.h * 1.3256 },
+            { x: glyph.left + glyph.w / 2, y: glyph.top + glyph.h });
+        const top = { x: CELL.x + Math.cos(COMB * Math.PI / 180) * 0.213, y: CELL.y + Math.sin(COMB * Math.PI / 180) * 0.213 };
+        L.comb.place(square(top.x, top.y, 0.1));
         // The crown turns about the middle of the interior; each piece sways about the point it hangs from
         L.crown.pivot = at(CELL.x, CELL.y);
         CROWN.forEach((p) => {
@@ -190,6 +352,7 @@
             els[p.id].place(box, { x: box.left + p.origin[0] / 100 * box.w, y: box.top + p.origin[1] / 100 * box.h });
         });
         L.outline.place(inFrame(outline.box));
+        CROWN.forEach((p, i) => L.lights[i].place(square(p.cx / 100, p.cy / 100, Math.max(p.r * 3.2, 5) / 100)));
     };
 
     // The touch targets follow their pieces as the crown turns
@@ -219,20 +382,30 @@
         const py = Math.sin(t * 0.5) * 6 * ramp - s * 50;
         L.planet.y = py;
         L.planet.scale = 1 + Math.sin(t * 0.7) * 0.012 * ramp;
-        L.crown.rotate = t * 1.4 * ramp;
-        // Each coral sways a little from where it hangs, the weeds more, and faster; a touched one squashes
-        WEEDS.forEach((p) => { els[p.id].rotate = Math.sin(t * 1.1 + p.phase) * 6 * ramp; });
-        CORALS.forEach((p) => { els[p.id].rotate = Math.sin(t * 0.55 + p.phase) * 2.2 * ramp; });
-        CROWN.forEach((p) => {
-            if (squashes[p.id] === undefined) return;
-            const [sx, sy] = squashAt((t - squashes[p.id]) / 0.7);
-            els[p.id].sx = sx;
-            els[p.id].sy = sy;
-            if (t - squashes[p.id] > 0.7) delete squashes[p.id];
-        });
         // The water: everything inside floats, and the jellyfish bumps into it
         const dt = last === null ? 0 : t - last;
         last = t;
+        music(Math.min(dt, 0.1), t, ramp);
+        L.crown.rotate = turn;
+        // Each coral sways a little from where it hangs, the weeds more, and faster; a touched one squashes; a lit one
+        // shines, with its light behind it, and flashes as it plays
+        WEEDS.forEach((p) => { els[p.id].rotate = Math.sin(t * 1.1 + p.phase) * 6 * ramp; });
+        CORALS.forEach((p) => { els[p.id].rotate = Math.sin(t * 0.55 + p.phase) * 2.2 * ramp; });
+        CROWN.forEach((p, i) => {
+            const node = els[p.id];
+            node.scale = 1 + 0.08 * ring[i] * ring[i];
+            node.uniforms.uBright.value = 1 + 0.3 * lit[i] + 0.35 * ring[i];
+            node.uniforms.uSaturate.value = 1 + 0.25 * lit[i];
+            L.lights[i].opacity = Math.min(1, 0.9 * lit[i] + 0.5 * ring[i]);
+            if (squashes[p.id] === undefined) return;
+            const [sx, sy] = squashAt((t - squashes[p.id]) / 0.7);
+            node.sx = sx;
+            node.sy = sy;
+            if (t - squashes[p.id] > 0.7) delete squashes[p.id];
+        });
+        const playing = Math.min(1, speed / PLAY_TURN);
+        L.comb.opacity = Math.min(1, 0.45 * playing + 0.6 * comb);
+        L.comb.scale = 1 + 0.3 * comb;
         water.step(dt * ramp, t);
         FLOAT.forEach((p) => {
             const o = water.offset(p.id);
@@ -256,8 +429,15 @@
         L.jelly.y = ((me.y - JELLY.y) - pulse * 0.001) * F.size;
         L.jelly.rotate = tilt + Math.sin(t * 0.6) * 3 * ramp;
         const squash = 1 + Math.min(me.hit, 0.3) * 0.12;
-        L.jelly.sx = (1 - pulse * 0.025 * ramp) * squash;
-        L.jelly.sy = (1 + pulse * 0.045 * ramp) / squash;
+        L.jelly.sx = (1 - pulse * 0.025 * ramp - 0.06 * listen) * squash;
+        L.jelly.sy = (1 + pulse * 0.045 * ramp + 0.08 * listen) / squash;
+        L.listen.x = L.jelly.x;
+        L.listen.y = L.jelly.y;
+        L.listen.opacity = Math.min(1, 0.35 * playing + 0.6 * listen);
+        // The rulito goes with it
+        L.rulito.x = L.jelly.x;
+        L.rulito.y = L.jelly.y;
+        L.rulito.rotate = Math.sin(t * 1.6) * 3 * ramp;
         stage.render(t);
         if (frames++ % 2 === 0) placeHits();
     };
@@ -272,6 +452,7 @@
         }
         if (gone) { made.destroy(); return; }
         stage = made;
+        stageEl = root.value.closest('.stage');
         water = createCellWater({
             bounds: { x: CELL.x, y: CELL.y, r: CELL.r - 0.004 },
             swimmer: { x: JELLY.x, y: JELLY.y, r: JELLY.r },
@@ -322,14 +503,18 @@
         dust?.destroy();
         front?.destroy();
         stage?.destroy();
+        stageEl?.style.removeProperty('--name-glow');
     });
 </script>
 
 <template>
     <div class="scene" ref="root">
         <canvas class="stageCanvas" ref="canvas"></canvas>
-        <div v-for="(p, i) in CROWN" :key="'hit' + p.id" :ref="(el) => { hits[i] = el; }" class="hit" role="button" tabindex="-1"
-            :aria-label="p.kind === 'coral' ? ($i18n.locale === 'en' ? 'Coral' : 'Coral') : ($i18n.locale === 'en' ? 'Sea grass' : 'Alga')"
+        <!-- The rulito is drawn on its own canvas, which the stage shows as a texture over the jellyfish's bell -->
+        <Rulito ref="rulito" class="offstage" color="#f2b036" />
+        <!-- The music box: each coral or weed lit plays its note every time it passes the top -->
+        <div v-for="(p, i) in CROWN" :key="'hit' + p.id" :ref="(el) => { hits[i] = el; }" class="hit" role="button" tabindex="0"
+            :aria-label="p.kind === 'coral' ? ($i18n.locale === 'en' ? 'Coral: a note of the tune' : 'Coral: una nota de la melodía') : ($i18n.locale === 'en' ? 'Sea grass: a low note of the tune' : 'Alga: una nota grave de la melodía')"
             @pointerdown.prevent="spores(p)($event)" @pointerenter="warm" @keydown="onKey(p)($event)"></div>
     </div>
 </template>
@@ -363,6 +548,14 @@
         touch-action: manipulation;
         -webkit-tap-highlight-color: transparent;
         outline: none;
+    }
+
+    .offstage {
+        position: absolute;
+        left: -9999px;
+        top: 0;
+        width: 40px;
+        visibility: hidden;
     }
 
     .hit:focus-visible {
