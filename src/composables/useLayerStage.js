@@ -199,7 +199,7 @@ const parseColor = (color) => {
 const easeOut = (p) => 1 - (1 - p) ** 4;
 
 export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
-    const THREE = await import('three');
+    const THREE = await import('../three.js');
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     // Throws without WebGL; the scenes are only used where it exists (cardScenes.js)

@@ -26,8 +26,11 @@ const check = (label, value, limit) => rows.push({ label, value, limit });
 const scripts = files.filter(({ rel }) => rel.endsWith('.js'));
 for (const { file, rel } of scripts) {
     const name = path.basename(rel);
-    if (/^three\.module/.test(name)) check(`JS ${name} (three.js)`, gzipKb(file), 215);
-    else if (/^index-/.test(name)) check(`JS ${name} (the app)`, gzipKb(file), 205);
+    // Only the parts of three.js listed in src/three.js
+    if (/^three-/.test(name)) check(`JS ${name} (three.js)`, gzipKb(file), 150);
+    else if (/^index-/.test(name)) check(`JS ${name} (the app)`, gzipKb(file), 165);
+    // Firebase: only the sign-in and register pages load it (src/firebase.js)
+    else if (/^firebase-/.test(name)) check(`JS ${name} (Firebase)`, gzipKb(file), 40);
     // PostHog's SDK: fetched after the app is idle, and only when a key is configured (src/analytics.js)
     else if (/^module-/.test(name)) check(`JS ${name} (PostHog)`, gzipKb(file), 115);
     else check(`JS ${name}`, gzipKb(file), 40);

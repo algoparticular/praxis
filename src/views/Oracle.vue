@@ -8,7 +8,6 @@
 
     // three.js only loads when the deck is opened (see CardTable)
     const CardTable = defineAsyncComponent(() => import('../components/CardTable.vue'));
-    // import { isMobile } from 'mobile-device-detect';
 
     //***************************
     //***************************
