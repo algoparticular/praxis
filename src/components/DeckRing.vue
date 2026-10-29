@@ -5,6 +5,7 @@
     import { handOffCard } from '../cardTransition.js';
     import { play, setCardChord, vibrate } from '../composables/useSound.js';
     import { chordFor } from '../data/cardChords.js';
+    import { startTableVisit } from '../analytics.js';
 
     const props = defineProps({
         cards: Array,
@@ -35,6 +36,8 @@
         handOffCard({ router, card: getCard(cardId), rect, frameColor: '#F7F8F1', hideCard });
     };
 
+    let finishVisit = null;            // how smoothly the ring was drawn, told when it is left (analytics.js)
+
     onMounted(async () => {
         try {
             const { createDeckRing } = await import('../composables/useDeckRing.js');
@@ -46,7 +49,10 @@
                 onSound: handleSound,
             });
             if (destroyed) ring.destroy();
-            else if (props.ids) ring.setFilter(props.ids);
+            else {
+                if (props.ids) ring.setFilter(props.ids);
+                finishVisit = startTableVisit('deck');
+            }
         } catch (e) {
             console.warn('The 3D deck is not available', e);
             emit('unsupported');
@@ -57,6 +63,7 @@
 
     onBeforeUnmount(() => {
         destroyed = true;
+        finishVisit?.();
         ring?.destroy();
     });
 </script>

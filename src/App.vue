@@ -2,6 +2,7 @@
 	import { onMounted, ref, watch } from 'vue';  	
 	import { useRoute, useRouter } from 'vue-router';
 	import CustomCursor from './components/CustomCursor.vue';
+	import FpsMeter from './components/FpsMeter.vue';
 	import { initSound, play, setCardChord } from './composables/useSound.js';
 	import { chordFor } from './data/cardChords.js';
 
@@ -10,6 +11,15 @@
 
 	// Each card sounds in its own chord; everywhere else the app keeps its base one
 	watch(() => route.name === 'card' ? chordFor(route.params.id) : null, setCardChord, { immediate: true });
+
+	// The frame counter, for trying the app on a phone: ?fps turns it on (it stays on while the tab is open), ?fps=0 off
+	const readFps = () => { try { return sessionStorage.getItem('fps') === '1'; } catch { return false; } };
+	const showFps = ref(readFps());
+	watch(() => route.query.fps, (value) => {
+		if (value === undefined) return;
+		showFps.value = value !== '0';
+		try { sessionStorage.setItem('fps', showFps.value ? '1' : '0'); } catch { /* storage can be blocked */ }
+	}, { immediate: true });
 
 	//ON MOUNTED
 	onMounted (() => {
@@ -49,6 +59,7 @@
 		</transition>
 	</router-view>	
 	<CustomCursor />
+	<FpsMeter v-if="showFps" />
 </template>
 
 <style scoped>

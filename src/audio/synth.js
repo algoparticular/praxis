@@ -368,8 +368,8 @@ export const link = (ctx, out, time, harmony, lights = { from: 0.5, to: 0.5, lev
     swish(ctx, out, time, { from: 2500, to: 5500, duration: 0.5, level: 0.005 * k, q: 0.6 });
 };
 
-// Throwing the little flame (Dana): a breath of air rising and the note of the one who gives, gliding up into it; the
-// one who catches it answers with `link` (the giver's note, then the receiver's). `from` is the giver's height (0..1)
+// Giving a light of the little flame (Dana): a breath of air rising and the note of the one who gives, gliding up into it;
+// when it gets there `link` answers (the giver's note, then the receiver's). `from` is the giver's height (0..1)
 export const give = (ctx, out, time, harmony, lights = { from: 0.5 }) => {
     const h = harmony ?? PLAIN;
     const notes = h.tones(h.voice - 12, 26);

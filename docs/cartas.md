@@ -31,10 +31,10 @@ Cada carta suena en su propio acorde, elegido por su texto (las reglas, en `musi
 | 10 | " ... " | Sol mayor (base) | — | La carta en blanco no tiene texto que elija un acorde, así que se queda en el sonido de base. | — |
 | 11 | Aceptación | Si menor | Si, Re, Fa# → corona, sacro, corazón | "Acepto y honro quién soy", soltar el control. La teoría lo describe como conexión espiritual con raíces emocionales, mirando hacia adentro. | Particular (dos) |
 | 12 | Armonía | Domaj7 | Do, Mi, Sol, Si → raíz, plexo, garganta, corona | "Vibro en armonía en mi aquí y ahora": equilibrio entre sonido y pausa, pausa de silencio interior. La raíz y la garganta se abren con calma, sin tensión. | Aura (dos medusas) |
-| 13 | Belleza | Sol mayor | Sol, Si, Re → garganta, corona, sacro | Reconocer la belleza propia y la de los demás. Expresión y conexión espiritual, con el sacro (lo sensible). | Particular (dos, abrazados), árboles |
+| 13 | Belleza | Lamaj7 | La, Do#, Mi, Sol# → tercer ojo, raíz, plexo, garganta | "Poder ver lo bello aún en la apariencia más desafiante", "reconozco mi belleza". Manda el tercer ojo (ver), el plexo es reconocerse a uno mismo y la séptima, la garganta, irradia lo bello hacia afuera; la séptima mayor lo hace con calma, "como la brisa suave". | Particular (dos, abrazados), árboles |
 | 14 | Celebración | Mimaj7 | Mi, Sol#, Si, Re# → plexo, garganta, corona, sacro | "Celebro la vida… celebrarTE": placer, disfrute y pequeños rituales. Es el poder personal del plexo, suave, que se disfruta en vez de imponerse. | Particular, gatitos (Kätus), zorritos (Vulpes), fuego |
 | 15 | Ciclos | Fa7 | Fa, La, Do, Mib → corazón, tercer ojo, raíz, plexo | "Agradezco quien fui, honro quien soy y proyecto quien quiero ser": cerrar un ciclo dejando que el corazón guíe. El amor se vuelve voluntad: la séptima empuja hacia el próximo ciclo. | Particular, paisaje |
-| 16 | Compromiso | La mayor | La, Do#, Mi → tercer ojo, raíz, plexo | "Estoy comprometida con mi búsqueda y visión". La visión es el tercer ojo, que manda, y el compromiso se apoya en la raíz y la voluntad. | Paisaje con plantas (Sporá; Do# cuenta como raíz) |
+| 16 | Compromiso | La mayor | La, Do#, Mi → tercer ojo, raíz, plexo | "Estoy comprometida con mi búsqueda y visión". La visión es el tercer ojo, que manda, y el compromiso se apoya en la raíz y la voluntad. | Un hongo gigante (Sporá; Do# cuenta como raíz) y, en el cielo, dos Samas en su bote |
 | 17 | Comunicación | Sol menor | Sol, Sib, Re → garganta, corona, sacro | El primer paso para comunicarte es escucharte a vos mismo, en silencio, antes de hablar con claridad y honestidad. Es comunicación introspectiva, la garganta mirando hacia adentro. | Aura (tres) en el bosque rosa |
 | 18 | Confianza | La menor | La, Do, Mi → tercer ojo, raíz, plexo solar | Confiar en la propia intuición y en las señales del cuerpo, dejar que la sabiduría guíe los pasos. Es confianza desde un lugar introspectivo, con el tercer ojo al mando. | Particular (Si), Aura (Sol), Vulpes (Fa) |
 | 19 | Coraje | Mi7 | Mi, Sol#, Si, Re → plexo, garganta, corona, sacro | "Mi fuerza interior guía mis pasos": valentía para seguir el camino del corazón. Es el plexo de Kätus, el fuego que se abre paso, integrado con la expresión y lo espiritual. | Kätus en el borde del acantilado |
@@ -46,8 +46,8 @@ Cada carta suena en su propio acorde, elegido por su texto (las reglas, en `musi
 | 25 | Hogar | Do mayor | Do, Mi, Sol → raíz, plexo, garganta | "Cada día regreso a mi hogar". El hogar es la raíz. El acorde incluye a Sporá (Do) y a Aura (Sol). | Célula de corales (Sporá) con una medusa (Aura) |
 | 26 | Honestidad | Solm7 | Sol, Sib, Re, Fa → garganta, corona, sacro, corazón | "¿Qué siento?": acallar voces externas y escuchar al cuerpo para conocer la verdad. Es comunicación introspectiva que escucha al corazón. | Aura bajo el sol, corales |
 | 27 | Paciencia | Re mayor | Re, Fa#, La → sacro, corazón, tercer ojo | "Descubro milagros a cada instante", aprendiendo de los ciclos de la naturaleza. La teoría habla de creatividad, apertura emocional y visión clara. | Los Samas en su bote |
-| 28 | Perdón | Fa menor | Fa, Lab, Do → corazón, tercer ojo, raíz | "Me perdono a mí mismo y a los otros": sanar vínculos y dejar culpas y rencores. El corazón mirando hacia adentro, para liberar heridas emocionales profundas. | Particular en el borde, junto a la luna |
-| 29 | Sincronicidad | Re mayor | Re, Fa#, La → sacro, corazón, tercer ojo | "Estoy en el momento y lugar indicado". Es el fluir: el sacro, con intuición y corazón. | Samas en pareja dentro de burbujas, fuego |
+| 28 | Perdón | Fa menor | Fa, Lab, Do → corazón, tercer ojo, raíz | "Me perdono a mí mismo y a los otros": sanar vínculos y dejar culpas y rencores. El corazón mirando hacia adentro, para liberar heridas emocionales profundas. | Particular y un gatito en una hoja, un planeta con anillo, un Sama que sube en globo llevando a otro |
+| 29 | Sincronicidad | Sol mayor (base) | Sol, Si, Re → garganta, corona, sacro | "Las sincronicidades suceden cuando somos capaces de estar en armonía con todo lo que nos rodea". Suena en el mismo acorde que toda la app: al entrar no cambia nada, está en armonía con lo que la rodea. Tiene la garganta (Resonar) y el Re de los Samas del dibujo. | Samas en pareja dentro de burbujas, fuego |
 | 30 | Esperanza | Sim7 | Si, Re, Fa#, La → corona, sacro, corazón, tercer ojo | No estás solo, te acompañan guías y ancestros. La corona y las raíces emocionales (el sacro y el corazón de Vulpes), guiadas por la intuición del tercer ojo. | Vulpes en las dunas, la luna |
 | 31 | Vipassana | Simaj7 | Si, Re#, Fa#, La# → corona, sacro, corazón, tercer ojo | "Observar con el corazón": contemplación de uno mismo, desapego, ver las cosas tal cual son. Es contemplación trascendental, la visión interior; la corona manda. | Particular con su rulito, células |
 | 32 | Transformación | Rem7 | Re, Fa, La, Do → sacro, corazón, tercer ojo, raíz | "Mi corazón fluye con alegría en el transcurso del cambio": encontrar equilibrio en medio del movimiento. Un flujo emocional que se asienta y encuentra suelo. | Samas, palmera (Sporá) |
@@ -72,11 +72,11 @@ Se cambia una línea en `src/data/cardChords.js`, por ejemplo `28: 'Em'`. Se esc
 | 8 | Metta | Paramis | Dar y recibir | Famaj7 | Ilustración plana |
 | 9 | Upekkha | Paramis | Soltar | Mi menor | Ilustración plana |
 | 10 | " ... " | Special | por decidir | Sol mayor | Ilustración plana |
-| 11 | Aceptación | Regular | Dar y recibir | Si menor | Ilustración plana |
+| 11 | Aceptación | Regular | Fluir | Si menor | Ilustración plana |
 | 12 | Armonía | Regular | Resonar | Domaj7 | Ilustración plana |
-| 13 | Belleza | Regular | Fluir | Sol mayor | Ilustración plana |
+| 13 | Belleza | Regular | Ver | Lamaj7 | Ilustración plana |
 | 14 | Celebración | Regular | Fluir | Mimaj7 | Ilustración plana |
-| 15 | Ciclos | Regular | Ver | Fa7 | Ilustración plana |
+| 15 | Ciclos | Regular | Soltar | Fa7 | Ilustración plana |
 | 16 | Compromiso | Regular | Arraigar | La mayor | Ilustración plana |
 | 17 | Comunicación | Regular | Resonar | Sol menor | Ilustración plana |
 | 18 | Confianza | Regular | Arraigar | La menor | Ilustración plana |
@@ -90,8 +90,8 @@ Se cambia una línea en `src/data/cardChords.js`, por ejemplo `28: 'Em'`. Se esc
 | 26 | Honestidad | Regular | Resonar | Solm7 | Ilustración plana |
 | 27 | Paciencia | Regular | Arraigar | Re mayor | Escena propia, verbo jugable |
 | 28 | Perdón | Regular | Soltar | Fa menor | Ilustración plana |
-| 29 | Sincronicidad | Regular | Ver | Re mayor | Escena propia, sin juego todavía |
-| 30 | Esperanza | Regular | Fluir | Sim7 | Ilustración plana |
+| 29 | Sincronicidad | Regular | Resonar | Sol mayor | Escena propia, sin juego todavía |
+| 30 | Esperanza | Regular | Ver | Sim7 | Ilustración plana |
 | 31 | Vipassana | Special | Soltar | Simaj7 | Escena propia, verbo jugable |
 | 32 | Transformación | Regular | Fluir | Rem7 | Ilustración plana |
 <!-- tabla:fin -->
@@ -99,17 +99,17 @@ Se cambia una línea en `src/data/cardChords.js`, por ejemplo `28: 'Em'`. Se esc
 Esta tabla se genera sola desde `cards.json` (nombre, categoría, verbo), `src/data/cardChords.js` (acorde) y `src/data/cardScenes.js` (escena). Después de cambiar alguno de los tres, correr `npm run docs`; `npm run check:docs` falla si quedó desactualizada. Qué verbo ya se juega está en `PLAYABLE`, dentro de `scripts/check-docs.mjs`. Qué hace cada escena al tocarla: `registro-cartas-vivas.md`.
 
 ## Reparto de los verbos entre las 33
-Está en el campo `verb` de `src/data/cards.json` y los verbos en `src/data/verbs.js`. Salió del texto de cada carta; se puede corregir editando el JSON. `?` marca las que tenían duda al armarlo.
+Está en el campo `verb` de `src/data/cards.json` y los verbos en `src/data/verbs.js`. Salió del texto de cada carta; se puede corregir editando el JSON. Las dudas del primer reparto ya se revisaron (ver "Decidido" en `verbos-y-dinamicas.md`).
 
 | Verbo | Cartas |
 |-------|--------|
 | Arraigar (6) | Addhitthana 7, Compromiso 16, Confianza 18, Fe 23, Hogar 25, Paciencia 27 |
-| Fluir (5) | Khanti 5, Belleza 13?, Celebración 14, Esperanza 30?, Transformación 32? |
+| Fluir (4) | Khanti 5, Aceptación 11, Celebración 14, Transformación 32 |
 | Encender (4) | Viriya 4, Coraje 19, Desafío 21, Evolución Espiritual 22 |
-| Dar y recibir (4) | Dana 2, Metta 8, Aceptación 11, Gratitud 24 |
-| Resonar (6) | Sila 1, Sacca 6, Armonía 12?, Comunicación 17, Creatividad 20, Honestidad 26 |
-| Ver (3) | Pañña 3, Ciclos 15, Sincronicidad 29 |
-| Soltar (4) | Nekkhamma 0, Upekkha 9, Perdón 28, Vipassana 31 |
+| Dar y recibir (3) | Dana 2, Metta 8, Gratitud 24 |
+| Resonar (7) | Sila 1, Sacca 6, Armonía 12, Comunicación 17, Creatividad 20, Honestidad 26, Sincronicidad 29 |
+| Ver (3) | Pañña 3, Belleza 13, Esperanza 30 |
+| Soltar (5) | Nekkhamma 0, Upekkha 9, Ciclos 15, Perdón 28, Vipassana 31 |
 | Sin verbo (1) | Carta 10 (el silencio) |
 
-Total: 6 + 5 + 4 + 4 + 6 + 3 + 4 + 1 = 33. Belleza podría ir también en Ver.
+Total: 6 + 4 + 4 + 3 + 7 + 3 + 5 + 1 = 33.

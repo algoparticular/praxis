@@ -5,7 +5,6 @@
 ## Verbos y cartas
 - Arraigar (Paciencia), Ver (Pañña) y Soltar (Vipassana) se probaron en una escena, y Dar y recibir se está probando en Dana. Todos pueden cambiar. Fluir, Encender y Resonar todavía son solo idea.
 - Verbo de la carta 10: Fa (Dar y recibir), Sol (Resonar) o La (Ver); falta elegirlo y definir su forma de juego.
-- Validar con Belén la idea de que cada verbo trabaja contra un demonio.
 - Las fichas de Huit y Sid no tienen texto de historia, solo la tabla.
 
 ## Escenas de juego
@@ -18,13 +17,8 @@
 ## Del plan inmersivo
 Lo que queda de `plan-inmersivo.md`. Los pasos 1 a 6 y The Nine en 3D ya están hechos; esto es lo que se anotó como pendiente o como primera versión.
 - Pulir el estilo visual del ritual de sacar carta en `/oracle` y `/oracleTheNine`: el barajado, la elección y el volteo son una primera versión.
-- Medir batería y fluidez en un teléfono real de la mesa 3D (`/oracle` y `/oracleTheNine`) y de las escenas con three.js.
-- Probar el sonido en un iPhone real, con el interruptor de silencio puesto y quitado. El resto de las pruebas en teléfonos ya se viene haciendo.
-- About y Collaborate terminan en un bloque naranja que corta en seco contra el footer crema. Solo se suavizó la landing.
-- Leer las subpáginas del Notion de Algo Particular (Anima, El Oráculo de las Partículas, Game Design Document) para ajustar el tono visual. No estaban accesibles cuando se escribió el plan.
-- The Nine: decidir con el autor si las posiciones de las 9 cartas tienen un significado propio, y si las cartas empiezan boca abajo, como hoy.
-- Landing: ajustes de gusto. Quedó cerrada, salvo eso.
-- Limpiar el plan: la sección "Para retomar: The Nine en 3D" quedó vieja, porque esa mesa ya está implementada (`CardTable.vue`).
+- Medir batería y fluidez en un teléfono real de la mesa 3D (`/oracle` y `/oracleTheNine`) y de las escenas con three.js. Con `?fps` en la dirección (por ejemplo `/card/31?fps`) aparece un contador abajo a la izquierda: cuadros por segundo, cuadros lentos, tirones, el peor cuadro y el tiempo que lleva midiendo. Tocarlo lo reinicia y `?fps=0` lo apaga. Los teléfonos de quienes usan la app mandan lo mismo a PostHog al dejar una carta o una mesa (`card_left`, `table_left`; ver `analitica.md`).
+- Medir la batería a mano, porque una página web no puede leerla: con el brillo fijo y el teléfono sin cargar, dejar 15 minutos una escena con three.js tocándola de vez en cuando, y 15 minutos una carta de ilustración plana; anotar el % al empezar y al terminar y si el teléfono se calentó. La diferencia es lo que cuesta la escena. Repetir con las mesas de `/oracle` y `/oracleTheNine`. Con el iPhone conectado a la Mac, Safari > Desarrollo > (el iPhone) > la página, pestaña Timelines, muestra además el uso del procesador y una estimación del gasto de batería.
 
 ## Ideas para seguir
 Hipótesis, no decisiones: ninguna está implementada ni validada con Belén. Están en `plan-inmersivo.md`.
@@ -36,5 +30,3 @@ Hipótesis, no decisiones: ninguna está implementada ni validada con Belén. Es
 ## Música y secuencias
 - Cómo se juegan los choques de mi–fa y si–do en una secuencia que suba por los chakras.
 - Qué secuencias de acordes se usan en el juego. Los siete acordes disminuidos y otros nueve quedan sin carta; podrían servir para esas secuencias o para momentos del juego.
-- Escuchar en un teléfono real las 15 cartas con acorde nuevo. Cinco de ellas (Metta, Ciclos, Compromiso, Confianza y Perdón) no comparten ninguna nota con el sonido base en Sol mayor, así que la entrada a esas cartas es un salto más grande.
-- Huit (tercer ojo, La) no aparece en ninguna ilustración actual. El autor va a cambiarlo.
