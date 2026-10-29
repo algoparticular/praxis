@@ -1,7 +1,9 @@
 // originales/nekkhamma/Nekkhamma-N.png (the layers as exported, 2160px) -> public/assets/nekkhamma/*.webp, each cropped to
-// its own box, and src/composables/nekkhammaScene.json: the box of every picture and, for the layers that are
-// fields of dots (the stars, the dots of Sid dissolving, the cosmic cloud), every dot as [x, y, radius, colour], so the
-// scene draws them as real particles. All in px of the 2160 square. The originals are not kept in the repo once
+// its own box, and src/composables/nekkhammaScene.json: the box of every picture; for the layers that are fields of dots
+// (the stars, the pink specks, the cosmic cloud) every dot as [x, y, radius, colour], so the scene draws them as real
+// particles; and points of the whole Sid (`body`: [x, y, colour] every few px inside him; `outline`: points along his
+// line), which become the particles he lets go of as he dissolves. All in px of the 2160 square. The illustration's
+// other three Sids (13 to 22: each more undone, as dots) are not used: the scene undoes the whole one itself. The originals are not kept in the repo once
 // converted (they stay in its git history). Usage: node scripts/convert-nekkhamma.mjs
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
@@ -15,11 +17,10 @@ const target = path.join(root, 'public', 'assets', 'nekkhamma');
 // 11 (the rulito over Sid's head) is not converted: the scene draws it in code, as every rulito
 const pictures = {
     1: 'ground', 2: 'mark', 4: 'buds', 5: 'plants', 7: 'planet', 8: 'ring', 10: 'wind',
-    12: 'sid1', 13: 'sid2-fill', 14: 'sid2-line', 16: 'sid2-arm', 17: 'sid3-fill', 18: 'sid3-line', 20: 'sid3-arm',
-    22: 'sid4-eyes', 27: 'galaxy-a', 28: 'galaxy-b',
+    12: 'sid', 27: 'galaxy-a', 28: 'galaxy-b',
 };
 const dots = {
-    3: 'specks', 6: 'stars', 9: 'stars', 15: 'sid2-dots', 19: 'sid3-dots', 21: 'sid4-dots',
+    3: 'specks', 6: 'stars', 9: 'stars',
     23: 'cloud', 24: 'cloud', 25: 'cloud', 26: 'cloud',
 };
 const PAD = 4;
@@ -87,5 +88,31 @@ for (const [n, name] of Object.entries(dots)) {
     }
 }
 
+// Sid: a point every BODY px where he is solid (with its colour), and points along his dark line at least LINE px apart
+const BODY = 11, LINE = 24;
+{
+    const { data, info } = await load(12);
+    const W = info.width;
+    const at = (x, y) => (y * W + x) * 4;
+    scene.body = [];
+    scene.outline = [];
+    const [bx, by, bw, bh] = scene.boxes.sid;
+    for (let y = by; y < by + bh; y += BODY) {
+        for (let x = bx + ((y / BODY) % 2) * BODY / 2; x < bx + bw; x += BODY) {
+            const i = at(Math.round(x), y);
+            if (data[i + 3] < 200) continue;
+            scene.body.push([Math.round(x), y, colorIndex(data[i], data[i + 1], data[i + 2])]);
+        }
+    }
+    for (let y = by; y < by + bh; y += 3) {
+        for (let x = bx; x < bx + bw; x += 3) {
+            const i = at(x, y);
+            if (data[i + 3] < 200 || data[i] + data[i + 1] + data[i + 2] > 240) continue;
+            if (scene.outline.some(([ox, oy]) => (ox - x) ** 2 + (oy - y) ** 2 < LINE * LINE)) continue;
+            scene.outline.push([x, y]);
+        }
+    }
+}
+
 await writeFile(path.join(root, 'src', 'composables', 'nekkhammaScene.json'), JSON.stringify(scene));
-console.log(Object.keys(pictures).length, 'pictures;', Object.entries(scene.dots).map(([k, v]) => `${k} ${v.length}`).join(', '), ';', scene.colors.length, 'colours');
+console.log(Object.keys(pictures).length, 'pictures;', Object.entries(scene.dots).map(([k, v]) => `${k} ${v.length}`).join(', '), '; body', scene.body.length, 'outline', scene.outline.length, ';', scene.colors.length, 'colours');
