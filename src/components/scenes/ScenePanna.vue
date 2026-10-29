@@ -760,9 +760,10 @@
         if (win || parting || drag || reducedMotion || !entered) return;
         idle += dt;
         ghostIn -= dt;
-        if (!ghost && idle > 9 && ghostIn <= 0) {
+        // After 7 s alone, and again 7 s after it has gone
+        if (!ghost && idle > 7 && ghostIn <= 0) {
             ghost = { age: 0 };
-            ghostIn = 13;
+            ghostIn = GHOST_LEN + 7;
         }
     };
 

@@ -360,9 +360,9 @@
                 l.arrive?.();
             }
         }
-        // Left alone a while, one who has no light yet glimmers now and then, and the flame answers
+        // Left alone 7 s, one who has no light yet glimmers, and the flame answers; again every 7 s
         if (!win && !returning && idle > 7) {
-            idle = 3;
+            idle = 0;
             const waiting = state.map((s, i) => (s.given || s.coming ? -1 : i)).filter((i) => i >= 0);
             if (waiting.length) {
                 const i = waiting[Math.floor(Math.random() * waiting.length)];
