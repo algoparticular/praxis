@@ -55,7 +55,7 @@ for (const card of cards) {
 
 // The scenes: every id listed in cardScenes.js must be a card
 const scenes = readFileSync(at('src', 'data', 'cardScenes.js'), 'utf8');
-for (const [, id] of scenes.matchAll(/^\s*(\d+):\s*lazy\(/gm)) {
+for (const [, id] of scenes.matchAll(/^\s*(\d+):\s*(?:lazy|stage)\(/gm)) {
     if (!seen.has(Number(id))) errors.push(`src/data/cardScenes.js lists a scene for card ${id}, which does not exist`);
 }
 

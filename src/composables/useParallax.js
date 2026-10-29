@@ -1,6 +1,6 @@
 // A per-frame loop for the immersive card scenes. It hands each frame:
 //   x, y     where the pointer is, -1..1 across the window, eased so layers glide instead of snapping
-//            (on phones it follows the tilt of the device where that works without asking)
+//            (on phones it follows the tilt of the device, where it is allowed: useTilt.js)
 //   scroll   0..1 while the stage scrolls out of view
 //   t, ramp  seconds since the loop began, and a 0..1 factor that eases motion in over two seconds
 // It pauses while the scene is off screen and, with reduced motion, draws a single still frame.
@@ -33,10 +33,9 @@ export function createParallax(root, onFrame) {
 
     window.addEventListener('pointermove', onPointer, { passive: true });
     document.addEventListener('pointerleave', onLeave);
-    // Android and desktop browsers deliver tilt freely; iOS needs a permission prompt, which we do not trigger
-    if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission !== 'function') {
-        window.addEventListener('deviceorientation', onTilt, { passive: true });
-    }
+    // Android and desktop browsers deliver tilt freely; iOS only once it was allowed (asked once, useTilt.js): until
+    // then no events come and the pointer leads
+    if (typeof DeviceOrientationEvent !== 'undefined') window.addEventListener('deviceorientation', onTilt, { passive: true });
     const visibility = new IntersectionObserver(([entry]) => { visible = entry.isIntersecting; });
     visibility.observe(root);
 

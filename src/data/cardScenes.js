@@ -3,9 +3,13 @@
 // To give a card its own scene: make a component in components/scenes and list it here by card id.
 import { defineAsyncComponent } from 'vue';
 import SceneFlat from '../components/scenes/SceneFlat.vue';
+import { hasWebGL } from '../composables/useLayerStage.js';
 
 // Not suspensible: the page does not wait for a scene (and three.js) to load; the scene fades in when it arrives
 const lazy = (loader) => defineAsyncComponent({ loader, suspensible: false });
+// A scene drawn whole in WebGL (useLayerStage): without WebGL the card keeps its flat illustration
+const webgl = hasWebGL();
+const stage = (loader) => (webgl ? lazy(loader) : SceneFlat);
 
 const scenes = {
     2: lazy(() => import('../components/scenes/SceneDana.vue')),
@@ -14,7 +18,7 @@ const scenes = {
     20: lazy(() => import('../components/scenes/SceneCreatividad.vue')),
     22: lazy(() => import('../components/scenes/SceneEvolucion.vue')),
     25: lazy(() => import('../components/scenes/SceneHogar.vue')),
-    27: lazy(() => import('../components/scenes/ScenePaciencia.vue')),
+    27: stage(() => import('../components/scenes/ScenePaciencia.vue')),
     29: lazy(() => import('../components/scenes/SceneSincronicidad.vue')),
     31: lazy(() => import('../components/scenes/SceneVipassana.vue')),
 };
