@@ -2,10 +2,11 @@
 
 Estado a 2026-10-29. Verbos: ver `verbos-y-dinamicas.md` (ya guardados en `cards.json`). Fuente de verdad en el código: `src/data/cardScenes.js` (`sceneFor(id)`). Si una carta no está ahí, usa `SceneFlat` (ilustración plana que deriva lento). Cuando una carta pase a viva, se agrega una fila acá en el mismo PR.
 
-**9 de 33 cartas vivas.** 24 siguen con `SceneFlat`.
+**10 de 33 cartas vivas.** 23 siguen con `SceneFlat`.
 
 | id | Carta | Tipo | Escena | Qué hace al tocarla | Sonido hoy | Música | Verbo |
 |----|-------|------|--------|---------------------|------------|--------|---|
+| 0 | Nekkhamma | Pāramī | `SceneNekkhamma` | Soltar: un solo Sid camina hacia la nube cósmica y pasa por los cuatro estados del dibujo. Tocarlo suelta un estado (lo que era vuela en puntos a la nube y camina más liviano); mantenerlo junta el aire y al soltarlo se deshace de una vez. Con el último se vuelve nube, y la nube lo devuelve entero donde empezó, con el rulito sobre la cabeza. Solo un rato, recupera un estado por vez | `release`, `inhale`, `exhale`, `converge`, `bloom`, `rulito` | pendiente | Soltar |
 | 2 | Dana | Pāramī | `SceneDana` | Se toca a alguien de la isla (el amigo, las piedritas con ojos, los hongos) y una chispa de la llamita vuela y lo enciende; la llama crece al dar. Con todos encendidos, la luz vuelve a la llama a la vez y nacen los rulitos | `give`, `link`, `converge`, `rulito` | pendiente | Dar y recibir |
 | 3 | Pañña | Pāramī | `ScenePanna` | Se tocan luciérnagas, hongos azules, Sid y el sol (el sol hace que todo responda); espiral del sol a la frente de Sid | `star`, `tap` | pendiente | Ver |
 | 5 | Khanti | Pāramī | `SceneKhanti` | Fluir: una corriente de rosa vivo nace en el signo y recorre los tubos a su ritmo; con el dedo encima se la acompaña (brilla y suena). Los frascos tapados son nudos: al destaparlos el rosa viejo se evapora con su criatura y la corriente los llena; con los nueve, rulito sobre el signo. Pincelada lavanda decorativa; criaturas que destellan | `flow`, `release`, `bloom`, `rulito`, `tap`, `star` | pendiente | Fluir |

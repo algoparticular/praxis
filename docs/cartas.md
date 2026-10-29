@@ -61,7 +61,7 @@ Se cambia una línea en `src/data/cardChords.js`, por ejemplo `28: 'Em'`. Se esc
 <!-- tabla:inicio -->
 | # | Carta | Categoría | Verbo | Acorde | En la app |
 |---|---|---|---|---|---|
-| 0 | Nekkhamma | Paramis | Soltar | Si menor | Ilustración plana |
+| 0 | Nekkhamma | Paramis | Soltar | Si menor | Escena propia, verbo jugable |
 | 1 | Sila | Paramis | Resonar | Sol7 | Ilustración plana |
 | 2 | Dana | Paramis | Dar y recibir | Si mayor | Escena propia, verbo jugable |
 | 3 | Pañña | Paramis | Ver | Lam7 | Escena propia, verbo jugable |

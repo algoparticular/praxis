@@ -33,7 +33,7 @@ La energía de los chakras corre en dos sentidos:
 
 Los siete verbos, uno por chakra, quedan ordenados entre dos polos:
 - **Arraigar** (raíz) es el polo de la manifestación: de la materia a la manifestación. Está probado en Paciencia y en Hogar.
-- **Soltar** (corona) es el polo de la liberación: del entendimiento a la existencia. Está probado en Vipassana.
+- **Soltar** (corona) es el polo de la liberación: del entendimiento a la existencia. Está probado en Vipassana y en Nekkhamma.
 - **Dar y recibir** (corazón) es donde las dos corrientes se encuentran. Las notas de Belén lo dicen así: "dos triángulos entrelazados, el movimiento descendente del espíritu en la materia y la liberación ascendente de la materia en el espíritu: equilibrio perfecto en el corazón". Está implementado en Dana: compartir la luz de la llamita con todos los de la isla, y que vuelva multiplicada (ver más abajo, en "Dinámicas").
 - **Fluir, Encender, Resonar y Ver** serían los pasos entre un polo y el otro. Ver está probado en Pañña, Encender en Evolución Espiritual, Fluir en Khanti y Resonar en Sincronicidad (a tiempo) y en Creatividad (composición libre).
 
@@ -78,7 +78,7 @@ Las palabras del libro para cada chakra, subiendo y bajando:
 
 Cada carta tiene un verbo (`verb` en `src/data/cards.json`, lista en `src/data/verbs.js`). El verbo define la **dinámica**: qué hace la persona con la escena. La ilustración, el sonido y el significado los pone cada carta. Los siete verbos son uno por personaje y chakra (ver arriba).
 
-Los siete verbos se probaron en una escena: **Arraigar en Paciencia** (y, hacia adentro, en **Hogar**), **Fluir en Khanti**, **Encender en Evolución Espiritual** (frotar y lanzar el fuego), **Dar y recibir en Dana** (compartir la luz), **Resonar en Sincronicidad** (y, como composición libre, en **Creatividad**), **Ver en Pañña** y **Soltar en Vipassana**. Lo implementado no es fijo: son ideas probadas y pueden cambiar. Lo que se dice de las otras cartas son propuestas, tomando como punto de partida lo que ya hacen las escenas.
+Los siete verbos se probaron en una escena: **Arraigar en Paciencia** (y, hacia adentro, en **Hogar**), **Fluir en Khanti**, **Encender en Evolución Espiritual** (frotar y lanzar el fuego), **Dar y recibir en Dana** (compartir la luz), **Resonar en Sincronicidad** (y, como composición libre, en **Creatividad**), **Ver en Pañña** y **Soltar en Vipassana** (y en **Nekkhamma**). Lo implementado no es fijo: son ideas probadas y pueden cambiar. Lo que se dice de las otras cartas son propuestas, tomando como punto de partida lo que ya hacen las escenas.
 
 Orden de los verbos: Arraigar (raíz) y Soltar (corona) son los dos polos, la corriente de manifestación y la de liberación, y Dar y recibir (corazón) es donde se encuentran. Los dos polos y el centro están probados: el centro, en Dana. Ver arriba, sección "Dos corrientes".
 
@@ -203,7 +203,15 @@ Con movimiento reducido la escena queda estática y no se juega (como Sincronici
 - *Cuando no queda nada que agarrar.* La espiral de puntos se va y solo queda la animación del rulito sobre la cabeza de Sid, chico y separado de ella, en el rosa de la espiral. Se ilumina el nombre de la carta y suena el acorde en la octava siguiente (`rulito`). Después todo lo que se soltó vuelve (`bloom`) a medida que la cola del rulito alcanza a su cabeza, hasta que se va, y la espiral vuelve. Se puede volver a jugar. Hito de analítica: `all_released`.
 Dónde está Sid se decide con una máscara precalculada (`characterMask.js`, hecha con `scripts/make-character-mask.mjs`), no leyendo píxeles de un canvas en ejecución, que Safari de escritorio puede devolver vacío.
 La escena sigue estática con movimiento reducido, así que todavía no se puede jugar así, y tampoco con teclado.
-**Cartas:** Nekkhamma, Upekkha, Ciclos, Perdón, Vipassana (hecha).
+**Cómo funciona hoy en Nekkhamma:** la ilustración dibuja cuatro Sids, cada uno más deshecho que el anterior (entero, sin piernas, solo la cabeza, todo puntos) caminando hacia una nube de puntos de todos los colores. En la escena son **uno solo**, que pasa por esos cuatro estados a medida que suelta.
+- *Soltar un estado.* Tocar a Sid le hace soltar lo que es: eso vuela en puntos hasta la nube (toman los colores de la nube en el camino) y él camina, más liviano, hasta donde está el estado siguiente en el dibujo (`release`).
+- *Soltar todo de una vez.* Mantenerlo apretado es juntar el aire (`inhale`): brilla, le sale una luz de atrás y se le desprenden motas. Soltarlo después de juntarlo entero (unos 2,2 s) lo deshace de una vez, estado tras estado (`exhale`), como la respiración power de Vipassana.
+- *Volverse nube.* Con el último estado (todo puntos) se suelta entero: todos sus puntos vuelan a la nube, que se enciende y gira (`converge`). Después la nube lo devuelve entero donde empezó (`bloom`), con el rulito sobre la cabeza, como lo dibuja la carta; se ilumina el nombre y suena `rulito`. Soltar no es perder el cuerpo sino habitarlo liviano: *"abrazar tu materialidad, lo cual no significa identificarte con ella"*. Hito: `renounced` (con `times` y `breath`).
+- *Si nadie lo toca.* Después de 8 s solo recupera un estado (la nube le devuelve lo que soltó y vuelve un paso atrás), y otro cada 4 s, hasta estar entero. Entero y sin tocar, de vez en cuando se le desprenden unas motas de los pies: la pista, sin palabras.
+En un teléfono vertical la escena se ve más grande y la vista acompaña a Sid al caminar (y a la nube cuando él es la nube). Con teclado, Enter o espacio es un toque y mantenido es juntar el aire. Con movimiento reducido la escena queda quieta y no se juega.
+**Dónde se tocó:** `SceneNekkhamma.vue` (`forward()`, `back()`, `dissolve()`, `giveBack()`, `press()` y `letGo()`; `STATES`, `X`, los grupos de partículas `body` y `flyers`), las capas y los puntos de `scripts/convert-nekkhamma.mjs`.
+
+**Cartas:** Nekkhamma (hecha), Upekkha, Ciclos, Perdón, Vipassana (hecha).
 
 ### Sin verbo todavía: el silencio (carta 10)
 No hay nada que leer ni decir; la invitación es sentir el corazón. Su verbo va entre Fa (Dar y recibir), Sol (Resonar) o La (Ver), por decidir. Si tiene un juego, sería no jugar: la escena responde solo si se deja de tocar.
