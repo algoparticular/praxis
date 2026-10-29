@@ -742,6 +742,7 @@
     }
 
     .hit.cell {
+        touch-action: none;                    /* rubbing and pulling drag the finger: with manipulation the phone takes it for a scroll and cancels it; the crown and below still let the page scroll */
         -webkit-touch-callout: none;
         user-select: none;
         -webkit-user-select: none;
