@@ -51,7 +51,7 @@ export const preloadThumbs = (ids, concurrency = 6) => {
 };
 
 export async function createDeckRing(canvas, { cards, onFocus, onPick, onSound }) {
-    const THREE = await import('three');
+    const THREE = await import('../three.js');
 
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const lowPower = (navigator.hardwareConcurrency ?? 8) <= 4;

@@ -64,7 +64,7 @@ const layoutCard = (layout, i, count) => {
 };
 
 export async function createCardTable(canvas, { cardsDrawn, layout = 'grid', onPick, onSound }) {
-    const THREE = await import('three');
+    const THREE = await import('../three.js');
 
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const lowPower = (navigator.hardwareConcurrency ?? 8) <= 4;

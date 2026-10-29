@@ -3,8 +3,6 @@ import { createRouter, createWebHistory, START_LOCATION } from "vue-router";
 
 import Landing from '../views/Landing.vue';
 import { oracleTop } from '../composables/oracleScroll.js';
-import Register from '../views/Register.vue';
-import SignIn from '../views/SignIn.vue';
 import Oracle from '../views/Oracle.vue';
 import OracleTheNine from '../views/OracleTheNine.vue';
 import Card from '../views/Card.vue';
@@ -12,7 +10,6 @@ import Deck from '../views/Deck.vue';
 import PageNotFound from '../views/PageNotFound.vue';
 import Collaborate from '../views/Collaborate.vue';
 import Onboarding from '../views/Onboarding.vue';
-import Share from '../views/Share.vue';
 
 // Navigation object
 const router = createRouter({
@@ -38,11 +35,12 @@ const router = createRouter({
     },
     {
       path: "/register",
-      component: Register,
+      // Loaded on demand, with Firebase (src/firebase.js)
+      component: () => import('../views/Register.vue'),
     },
     {
       path: "/sign-in",
-      component: SignIn,
+      component: () => import('../views/SignIn.vue'),
     },
     {
       // "¿Qué es esto?" is gone: what it said about the cards now lives on the deck page
@@ -73,7 +71,7 @@ const router = createRouter({
     {
       name: "share",
       path: "/share/:id",
-      component: Share,
+      component: () => import('../views/Share.vue'),
     },
     {
       path: "/deck",

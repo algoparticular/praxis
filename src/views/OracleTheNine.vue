@@ -8,7 +8,6 @@
 
     // three.js only loads when The Nine is opened (see CardTable)
     const CardTable = defineAsyncComponent(() => import('../components/CardTable.vue'));
-    // import { isMobile } from 'mobile-device-detect';
 
     //Harcoded amount of cards.. help me :P
     //cartas hechas hasta el momento. 

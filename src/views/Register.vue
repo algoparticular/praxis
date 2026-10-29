@@ -1,16 +1,15 @@
 <script setup>
     import { ref } from 'vue';
     import { useRouter } from 'vue-router';
-    import { getAuth, 
-             createUserWithEmailAndPassword,
+    import { createUserWithEmailAndPassword,
              GoogleAuthProvider,
              signInWithPopup
            } from 'firebase/auth';
+    import { auth } from '../firebase.js';
 
     const email = ref('');
     const password = ref('');
     const router = useRouter();
-    const auth = getAuth();
     const errorMessage = ref('');
 
     const register = () => {
@@ -31,7 +30,7 @@
     const signInWithGoogle = () => {        
         const provider = new GoogleAuthProvider();
 
-        signInWithPopup(getAuth, provider)
+        signInWithPopup(auth, provider)
             .then((result) => {
                 console.log(result.user);
                 router.push('/collection');
