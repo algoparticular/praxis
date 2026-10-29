@@ -3,8 +3,9 @@
 Última pestaña de "Anima por dentro": lo que falta decidir, agrupado por tema.
 
 ## Verbos y cartas
-- Los siete verbos se probaron en una escena: Arraigar (Paciencia), Fluir (Khanti), Encender (Evolución Espiritual), Dar y recibir (Dana), Resonar (Sincronicidad, en su forma "a tiempo", y Creatividad, como composición libre), Ver (Pañña) y Soltar (Vipassana y Nekkhamma). Todos pueden cambiar.
-- Resonar: validar con Belén sus dos formas (a tiempo para Sincronicidad, Armonía y Sila; eco para Comunicación, Honestidad y Sacca). El eco todavía es solo idea.
+- Los siete verbos se probaron en una escena: Arraigar (Paciencia), Fluir (Khanti), Encender (Evolución Espiritual), Dar y recibir (Dana), Resonar (Sincronicidad, en su forma "a tiempo"; Creatividad, como composición libre, y Sacca, como eco), Ver (Pañña) y Soltar (Vipassana y Nekkhamma). Todos pueden cambiar.
+- Resonar: validar con Belén sus dos formas (a tiempo para Sincronicidad, Armonía y Sila; eco para Comunicación, Honestidad y Sacca). El eco está probado en Sacca.
+- Resonar en Sacca (eco): qué nota lleva cada color de nube (hoy, por el chakra de su color: celeste Sol, salmón Re, verde azulado Fa; el rosa pálido, que no tiene chakra de su color, Si, la corona, por ser el más claro), el largo de la frase (cuatro notas, cada color una vez), el pulso al cantarla (`GAP`, 0,85 s, y más lento tras un error) y si en un teléfono las nubes chicas se tocan bien: probarlos con un teléfono en la mano.
 - Resonar en Creatividad (caja de música): cuántas piezas hacen la melodía (`TUNE`, 7), la velocidad de la corona mientras suena (`PLAY_TURN`, una vuelta cada 12 s) y si las piezas encendidas y el peine se distinguen bien: probarlos con un teléfono en la mano.
 - Resonar en Sincronicidad: el pulso (`BEAT`, 1,3 s) y la ventana para acertar (`IN_TIME`, 0,28 s): probarlos con un teléfono en la mano.
 - Encender: cuánto hay que frotar (`RUB`), cuántos golpes dura el fuego (`FUEL`) y cuánto abarca cada golpe (`REACH`): ajustarlos con un teléfono en la mano. Hoy se encienden los doce en unos cinco a siete lanzamientos.
@@ -28,7 +29,7 @@ Lo que queda de `plan-inmersivo.md`. Los pasos 1 a 6 y The Nine en 3D ya están 
 Hipótesis, no decisiones: ninguna está implementada ni validada con Belén. Están en `plan-inmersivo.md`.
 - Qué se puede llevar la persona. De menor a mayor compromiso: la afirmación como imagen para guardar o compartir (ya hay una imagen social por carta), la carta del día guardada en el dispositivo, la invitación como recordatorio o nota propia, y el rulito que le salió a cada persona.
 - Antes de construirlo, mirar en la analítica cuánta gente completa un juego y cuánta llega a la lectura (`pattern_seen`, `all_released`).
-- 24 de las 33 cartas siguen con ilustración plana: llevar un verbo por vez a las cartas de su familia.
+- 22 de las 33 cartas siguen con ilustración plana: llevar un verbo por vez a las cartas de su familia.
 - Dos presupuestos de tamaño están justos (otras imágenes y ilustraciones de cartas): cada escena nueva con capas WebP los va a pedir.
 
 ## Música y secuencias

@@ -9,6 +9,8 @@
 // A layer far from the focus can be slightly out of focus (`blur`, sampled from the texture's smaller mipmaps).
 //
 // Nodes. depth(z) gives a root node; node.image(), node.canvas(), node.glow() and node.group() hang children from it.
+// Pictures with the same src share one texture, and image(src, { crop }) shows only a part of it, so many small pieces
+// can come from one atlas (Sacca's clouds).
 // Every node has a pivot (the point it turns and scales about), an offset (x, y), rotate (deg), scale (and sx, sy, a
 // squash or a mirror with -1), opacity and an optional clip (a rect of the screen it is cut to); a
 // group carries its children along. All rects and pivots, at every level, are given as px of the screen at rest (where
@@ -96,6 +98,7 @@ const LAYER_FRAGMENT = `
     uniform vec2 uDissolve;        // on (0/1), how far it has come undone (0 whole .. 1 gone)
     uniform vec3 uDissolveGlow;
     uniform vec2 uSize;
+    uniform vec4 uCrop;            // the part of the texture shown: u, v of its corner and its size (0, 0, 1, 1: all of it)
     float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
     float noise(vec2 p) {
         vec2 i = floor(p), f = fract(p);
@@ -111,7 +114,7 @@ const LAYER_FRAGMENT = `
         if (uShimmer > 0.0) {
             uv += vec2(sin(uv.y * 38.0 + uTime * 2.1), cos(uv.x * 31.0 + uTime * 1.7)) * 0.004 * uShimmer;
         }
-        vec4 c = texture2D(map, uv, uBias);
+        vec4 c = texture2D(map, uCrop.xy + uv * uCrop.zw, uBias);
         c.rgb *= uBright;
         float grey = dot(c.rgb, vec3(0.299, 0.587, 0.114));
         c.rgb = mix(vec3(grey), c.rgb, uSaturate);
@@ -249,6 +252,7 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
     let width = 1, height = 1, distance = 1;
     const look = { x: 0, y: 0 };                 // the camera's slide, px at the focal plane
     const textures = [];
+    const pictures = new Map();                  // src -> { texture, loaded, nodes }: one texture per file
     const loads = [];
     const nodes = [];                            // the roots, updated every frame
     const resizers = [];
@@ -298,32 +302,40 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
         }
 
         image(src, options = {}) {
-            const texture = new THREE.Texture();
-            texture.colorSpace = THREE.NoColorSpace;
-            // Premultiplied: the smaller mipmaps and the soft edges would otherwise mix in the black of the transparent
-            // pixels and draw a dark fringe round every picture (it showed as a grey halo round the sun)
-            texture.premultiplyAlpha = true;
-            texture.minFilter = THREE.LinearMipmapLinearFilter;
-            texture.generateMipmaps = true;
-            texture.anisotropy = 4;
-            textures.push(texture);
-            const node = this.plane(texture, options);
-            node.mesh.visible = false;
-            loads.push(new Promise((resolve) => {
-                const img = new Image();
-                img.decoding = 'async';
-                img.onload = () => {
-                    texture.image = img;
-                    texture.needsUpdate = true;
-                    node.mesh.visible = true;
-                    dirty = true;
-                    // A still scene (reduced motion) has no loop: it draws itself again when a picture arrives
-                    if (reduced) requestAnimationFrame(() => stage.renderIfNeeded());
-                    resolve();
-                };
-                img.onerror = () => resolve();
-                img.src = src;
-            }));
+            let picture = pictures.get(src);
+            if (!picture) {
+                const texture = new THREE.Texture();
+                texture.colorSpace = THREE.NoColorSpace;
+                // Premultiplied: the smaller mipmaps and the soft edges would otherwise mix in the black of the transparent
+                // pixels and draw a dark fringe round every picture (it showed as a grey halo round the sun)
+                texture.premultiplyAlpha = true;
+                texture.minFilter = THREE.LinearMipmapLinearFilter;
+                texture.generateMipmaps = true;
+                texture.anisotropy = 4;
+                textures.push(texture);
+                picture = { texture, loaded: false, nodes: [] };
+                pictures.set(src, picture);
+                const loaded = picture;
+                loads.push(new Promise((resolve) => {
+                    const img = new Image();
+                    img.decoding = 'async';
+                    img.onload = () => {
+                        texture.image = img;
+                        texture.needsUpdate = true;
+                        loaded.loaded = true;
+                        loaded.nodes.forEach((each) => { each.mesh.visible = true; });
+                        dirty = true;
+                        // A still scene (reduced motion) has no loop: it draws itself again when a picture arrives
+                        if (reduced) requestAnimationFrame(() => stage.renderIfNeeded());
+                        resolve();
+                    };
+                    img.onerror = () => resolve();
+                    img.src = src;
+                }));
+            }
+            const node = this.plane(picture.texture, options);
+            node.mesh.visible = picture.loaded;
+            picture.nodes.push(node);
             return node;
         }
 
@@ -349,7 +361,8 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
             return node;
         }
 
-        plane(texture, { rect = { left: 0, top: 0, w: 1, h: 1 }, pivot = null, wind = null, shimmer = 0, water = 0, sheen = 0, sink = false, dissolve = null, blur = 0, bloom = false,
+        // crop: [left, top, width, height] of the part of the texture shown, as fractions of it (from its top left)
+        plane(texture, { rect = { left: 0, top: 0, w: 1, h: 1 }, pivot = null, crop = null, wind = null, shimmer = 0, water = 0, sheen = 0, sink = false, dissolve = null, blur = 0, bloom = false,
             blending = 'normal', segments = null, under = false, vignette = 0 } = {}) {
             const node = new Node(this);
             const segs = segments ?? (wind ? [24, 10] : [1, 1]);
@@ -371,6 +384,8 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
                 uClip: { value: new THREE.Vector4(1, 0, 0, 0) },
                 uVignette: { value: vignette },
                 uSize: { value: new THREE.Vector2(1, 1) },
+                // (the texture's v runs from its bottom up)
+                uCrop: { value: crop ? new THREE.Vector4(crop[0], 1 - crop[1] - crop[3], crop[2], crop[3]) : new THREE.Vector4(0, 0, 1, 1) },
                 uWind: { value: new THREE.Vector4(wind?.amp ?? 0, wind?.speed ?? 1, wind?.root === 'top' ? 1 : 0, Math.random() * 6.28) },
             };
             const material = new THREE.ShaderMaterial({

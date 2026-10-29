@@ -390,6 +390,47 @@ export const resonate = (ctx, out, time, harmony, { step = 0 } = {}) => {
 // Out of time: only a small muted drop, nothing in the chord
 export const miss = (ctx, out, time) => drop(ctx, out, time, 0.03);
 
+// Sacca (Resonar, an echo): the lookout sings a phrase for the person to repeat. Each note is sung, not struck: a soft
+// voice that swells, with a slow vibrato and a breath of air, on the same notes as `resonate` (`step` 0..1 across the
+// chord), so the answer sounds like what was heard. `length` is how long it is held (s): slower when sung again
+export const sing = (ctx, out, time, harmony, { step = 0, length = 0.6 } = {}) => {
+    const h = harmony ?? PLAIN;
+    const notes = h.tones(h.voice, 12);
+    const f = hz(notes[Math.round(Math.min(1, Math.max(0, step)) * (notes.length - 1))]);
+    const end = time + length + 0.5;
+    const gain = ctx.createGain();
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.value = f * 4;
+    gain.gain.setValueAtTime(0.0001, time);
+    gain.gain.exponentialRampToValueAtTime(0.05, time + 0.09);
+    gain.gain.setTargetAtTime(0.035, time + 0.12, length * 0.5);
+    gain.gain.setTargetAtTime(0.0001, time + length, 0.12);
+    filter.connect(gain);
+    gain.connect(out);
+    const vibrato = ctx.createOscillator();
+    const depth = ctx.createGain();
+    vibrato.frequency.value = 5.2;
+    depth.gain.setValueAtTime(0, time);
+    depth.gain.linearRampToValueAtTime(f * 0.006, time + length * 0.6);
+    vibrato.connect(depth);
+    [['sine', 1, 1], ['triangle', 1.002, 0.35]].forEach(([type, ratio, share]) => {
+        const osc = ctx.createOscillator();
+        const level = ctx.createGain();
+        osc.type = type;
+        osc.frequency.value = f * ratio;
+        depth.connect(osc.frequency);
+        level.gain.value = share;
+        osc.connect(level);
+        level.connect(filter);
+        osc.start(time);
+        osc.stop(end);
+    });
+    vibrato.start(time);
+    vibrato.stop(end);
+    swish(ctx, out, time, { from: 1400, to: 2600, duration: length * 0.8 + 0.2, level: 0.004, q: 0.7 });
+};
+
 // Creatividad (Resonar, a music box): a lit coral or weed passing the comb plays its note like the tine of a music box,
 // a bright pluck with a tick of metal that dies fast and a sine that rings on. `step` (0..1) is how high the piece hangs
 // on the crown (it picks a note of the card's chord across two octaves); a weed (`low`) plays an octave and a half lower,

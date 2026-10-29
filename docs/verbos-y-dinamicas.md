@@ -35,7 +35,7 @@ Los siete verbos, uno por chakra, quedan ordenados entre dos polos:
 - **Arraigar** (raíz) es el polo de la manifestación: de la materia a la manifestación. Está probado en Paciencia y en Hogar.
 - **Soltar** (corona) es el polo de la liberación: del entendimiento a la existencia. Está probado en Vipassana y en Nekkhamma.
 - **Dar y recibir** (corazón) es donde las dos corrientes se encuentran. Las notas de Belén lo dicen así: "dos triángulos entrelazados, el movimiento descendente del espíritu en la materia y la liberación ascendente de la materia en el espíritu: equilibrio perfecto en el corazón". Está implementado en Dana: compartir la luz de la llamita con todos los de la isla, y que vuelva multiplicada (ver más abajo, en "Dinámicas").
-- **Fluir, Encender, Resonar y Ver** serían los pasos entre un polo y el otro. Ver está probado en Pañña, Encender en Evolución Espiritual, Fluir en Khanti y Resonar en Sincronicidad (a tiempo) y en Creatividad (composición libre).
+- **Fluir, Encender, Resonar y Ver** serían los pasos entre un polo y el otro. Ver está probado en Pañña, Encender en Evolución Espiritual, Fluir en Khanti y Resonar en Sincronicidad (a tiempo), en Creatividad (composición libre) y en Sacca (eco).
 
 Esto se parece a lo que el rulito premia: en las notas del tercer chakra, "siento las dos corrientes, ascendente de liberación y descendente de manifestación, que se unen en mí para manifestar mi propósito de ser quien soy".
 
@@ -78,7 +78,7 @@ Las palabras del libro para cada chakra, subiendo y bajando:
 
 Cada carta tiene un verbo (`verb` en `src/data/cards.json`, lista en `src/data/verbs.js`). El verbo define la **dinámica**: qué hace la persona con la escena. La ilustración, el sonido y el significado los pone cada carta. Los siete verbos son uno por personaje y chakra (ver arriba).
 
-Los siete verbos se probaron en una escena: **Arraigar en Paciencia** (y, hacia adentro, en **Hogar**), **Fluir en Khanti**, **Encender en Evolución Espiritual** (frotar y lanzar el fuego), **Dar y recibir en Dana** (compartir la luz), **Resonar en Sincronicidad** (y, como composición libre, en **Creatividad**), **Ver en Pañña** y **Soltar en Vipassana** (y en **Nekkhamma**). Lo implementado no es fijo: son ideas probadas y pueden cambiar. Lo que se dice de las otras cartas son propuestas, tomando como punto de partida lo que ya hacen las escenas.
+Los siete verbos se probaron en una escena: **Arraigar en Paciencia** (y, hacia adentro, en **Hogar**), **Fluir en Khanti**, **Encender en Evolución Espiritual** (frotar y lanzar el fuego), **Dar y recibir en Dana** (compartir la luz), **Resonar en Sincronicidad** (y, como composición libre, en **Creatividad**, y como eco, en **Sacca**), **Ver en Pañña** y **Soltar en Vipassana** (y en **Nekkhamma**). Lo implementado no es fijo: son ideas probadas y pueden cambiar. Lo que se dice de las otras cartas son propuestas, tomando como punto de partida lo que ya hacen las escenas.
 
 Orden de los verbos: Arraigar (raíz) y Soltar (corona) son los dos polos, la corriente de manifestación y la de liberación, y Dar y recibir (corazón) es donde se encuentran. Los dos polos y el centro están probados: el centro, en Dana. Ver arriba, sección "Dos corrientes".
 
@@ -154,7 +154,7 @@ Las tres son hoy ilustraciones planas: cada una necesitaría su escena.
 ### 5. Resonar (Aura, demonio: mentiras): implementado en Sincronicidad
 **Dinámica:** escuchar primero y responder en sintonía. Ritmo, eco, secuencia. Tiene dos formas, según lo que pida cada carta:
 - **A tiempo** (responder *cuándo*): la escena lleva un pulso y la persona toca cada cosa cuando el pulso llega a ella. Para las cartas que hablan de armonía, de ritmo y de estar en el momento justo: Sincronicidad (hecha), Armonía ("variedad y proporción de sonidos y pausas") y Sila ("en resonancia con la voz de tu sabiduría interior").
-- **Eco** (responder *qué*): la escena canta una frase corta con notas del acorde de la carta y la persona la repite tocando (como el Simón dice); si no coincide, la escena la vuelve a cantar, más lenta. Para las cartas que piden escuchar primero: Comunicación ("el primer paso es escucharte"), Honestidad ("escucha tu verdad acallando voces") y Sacca. Todavía es idea: estas tres son ilustración plana y el eco se arma cuando tengan escena.
+- **Eco** (responder *qué*): la escena canta una frase corta con notas del acorde de la carta y la persona la repite tocando (como el Simón dice); si no coincide, la escena la vuelve a cantar, más lenta. Para las cartas que piden escuchar primero: Comunicación ("el primer paso es escucharte"), Honestidad ("escucha tu verdad acallando voces") y Sacca. Probado en Sacca (ver más abajo); Comunicación y Honestidad siguen con ilustración plana.
 - **Composición libre** (Creatividad, hecha): no hay respuesta correcta. La corona es una caja de música: cada toque agrega (o saca) una nota y lo compuesto queda sonando en vuelta. Ver más abajo.
 
 Las dos formas son a validar con Belén.
@@ -173,7 +173,16 @@ Con movimiento reducido la escena queda estática y no se puede jugar (como Pañ
 Con movimiento reducido la escena queda estática y no se juega (como Sincronicidad). Con teclado, Enter o espacio sobre un coral o un alga lo enciende o lo apaga.
 **Dónde se tocó:** `SceneCreatividad.vue` (`compose()`, `complete()`, `sound()`, `music()`, `COMB`, `TUNE`; `L.lights`, `L.comb`, `L.listen` y `L.rulito`), `tine` en `synth.js`.
 
-**Cartas:** Sincronicidad (hecha), Armonía, Sila (a tiempo); Comunicación, Honestidad, Sacca (eco); Creatividad (hecha, composición libre).
+**Cómo funciona hoy en Sacca (eco):** una barca navega un cielo de atardecer frente a una luna grande, sobre las dunas. Sid descansa en la barca, brillando, y el vigía mira desde la cofa en lo alto del mástil. Las nubes son de cuatro colores y el acorde de la carta, Sol7, tiene cuatro notas: cada color es la nota de su chakra. Las celestes son Sol (la garganta), las salmón Re (el sacro) y las verde azulado Fa (el corazón, el de Sid, que es la séptima del acorde: él brilla con esa nota). Las rosa pálido, las más claras, son Si (la corona); ese color no es el de ningún chakra y se eligió por ser el más claro.
+- *Escuchar.* El vigía canta una frase de cuatro notas, cada color una vez y en un orden que cambia en cada frase (`sing`: una voz suave con vibrato, en las mismas alturas que `resonate`). Con cada nota se encienden todas las nubes de su color (brillan, se hinchan, suben un poco y tienen una luz detrás), el vigía se estira en su cofa con una luz de ese color y suben unas notas al aire. La primera vez canta a los 3 s. Antes del primer toque canta solo con luces, en silencio, como en todas las escenas.
+- *Responder.* Se tocan nubes de esos colores en el mismo orden; cualquier nube del color sirve. Cada acierto suena (`resonate`), echa chispas, su color queda encendido y su luz vuela al vigía. Un color equivocado suena apagado (`miss`): se apagan los colores encendidos y el vigía vuelve a cantar la frase, cada vez más lenta (`GAP` 0,85 s, ×1,25 por error, hasta 1,5 s).
+- *Pista, sin palabras.* Si pasan 10 s sin tocar nada, el vigía vuelve a cantarla. Tocar al vigía la hace cantar de nuevo cuando uno quiera.
+- *La verdad es una sola.* Con la frase repetida entera, todas las nubes se vuelven del crema de la luna, la luna brilla, de cada nube vuela su luz al vigía y suena `converge`. Nace el rulito sobre el vigía, donde lo dibuja la carta, en su color durazno. Se ilumina el nombre y suena `rulito`. Después el rulito se va, las nubes recuperan sus colores y el vigía canta otra frase. Hito: `echo_sung` (con `times` y `tries`).
+- *Teclado.* Hay un botón por color (sobre la nube más grande de ese color a la vista), uno para el vigía y uno para Sid; Enter o espacio es un toque.
+- *Movimiento reducido.* La escena queda estática y no se juega (como Sincronicidad).
+**Dónde se tocó:** `SceneSacca.vue` (`COLOURS`, `phrase`, `singNow()`, `singNote()`, `touchCloud()`, `pick()`, `complete()`), `sing` en `synth.js`.
+
+**Cartas:** Sincronicidad (hecha), Armonía, Sila (a tiempo); Comunicación, Honestidad, Sacca (hecha) (eco); Creatividad (hecha, composición libre).
 
 ### 6. Ver (Huit, demonio: ilusión): implementado en Pañña
 **Dinámica:** descubrir lo oculto, unir puntos, reconocer un patrón.
