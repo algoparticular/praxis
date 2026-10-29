@@ -5,8 +5,8 @@
     // The crown turns slowly; the stalks and the mushrooms sway from where they hang. The glows are particles that turn
     // with the crown, behind everything: the stippled purple and pink rings of the original (density maps in
     // evolucionHalo.json) and a cloud of dots around each bulb and each mushroom, which flares when it is touched. The
-    // colour is code: the interior is the drawn silhouette of the original disc (no light of the water rippling across
-    // it, nor shimmer on the organelles: they blurred the parts of the cell), the nucleus a disc with a fuzzy particle rim, the little blue buds plain discs. Inside, the watery
+    // colour is code: the interior is the drawn silhouette of the original disc (with the light of the water rippling
+    // across it), the nucleus a disc with a fuzzy particle rim, the little blue buds plain discs. Inside, the watery
     // system (useCellWater): the organelles bob about and the being floats, bumping into them and into the wall of the cell.
     // It is drawn in WebGL (useLayerStage), like Hogar: the planet is a group of planes at one depth and the camera
     // slides with the pointer or the tilt; the fern fronds sway a little in the water. The touch targets are DOM
@@ -154,9 +154,9 @@
     const build = (s) => {
         const planetDepth = s.depth(PLANET_Z);
         L.planet = planetDepth.group();
-        L.interior = L.planet.canvas(interiorCanvas);
+        L.interior = L.planet.canvas(interiorCanvas, { water: 1 });
         L.nucleus = L.planet.disc({ rect: { left: 0, top: 0, w: 1, h: 1 }, color: hex(NUC.color) });
-        FLOAT.forEach((p) => { els[p.id] = L.planet.image(`/assets/evolucion/${p.file}.webp`); });
+        FLOAT.forEach((p) => { els[p.id] = L.planet.image(`/assets/evolucion/${p.file}.webp`, { shimmer: 0.6 }); });
         L.being = L.planet.image('/assets/evolucion/bebe.webp');
         L.crown = L.planet.group();
         L.buds = scene.blue.map(() => L.crown.disc({ rect: { left: 0, top: 0, w: 1, h: 1 }, color: BLUE }));
