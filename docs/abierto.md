@@ -3,8 +3,9 @@
 Última pestaña de "Anima por dentro": lo que falta decidir, agrupado por tema.
 
 ## Verbos y cartas
-- Los siete verbos se probaron en una escena: Arraigar (Paciencia), Fluir (Khanti), Encender (Evolución Espiritual), Dar y recibir (Dana), Resonar (Sincronicidad, en su forma "a tiempo"; Creatividad, como composición libre, y Sacca, como eco), Ver (Pañña) y Soltar (Vipassana y Nekkhamma). Todos pueden cambiar.
-- Resonar: validar con Belén sus dos formas (a tiempo para Sincronicidad, Armonía y Sila; eco para Comunicación, Honestidad y Sacca). El eco está probado en Sacca.
+- Los siete verbos se probaron en una escena: Arraigar (Paciencia), Fluir (Khanti), Encender (Evolución Espiritual), Dar y recibir (Dana), Resonar (Sincronicidad y Sila, en su forma "a tiempo"; Creatividad, como composición libre, y Sacca, como eco), Ver (Pañña) y Soltar (Vipassana y Nekkhamma). Todos pueden cambiar.
+- Resonar: validar con Belén sus dos formas (a tiempo para Sincronicidad, Armonía y Sila; eco para Comunicación, Honestidad y Sacca). El eco está probado en Sacca y el latido en Sila.
+- Resonar en Sila (a tiempo, con el latido): el pulso del corazón (`BEAT`, 1,15 s), cuánto margen tiene un toque a tiempo (`IN_TIME`, 0,24 s), cuántos hongos hacen falta (los seis de la carta), si los destellos del cielo distraen lo justo y si el brillo encendido de los hongos se distingue del tenue: probarlos con un teléfono en la mano.
 - Resonar en Sacca (eco): qué nota lleva cada color de nube (hoy, por el chakra de su color: celeste Sol, salmón Re, verde azulado Fa; el rosa pálido, que no tiene chakra de su color, Si, la corona, por ser el más claro), el largo de la frase (cuatro notas, cada color una vez), el pulso al cantarla (`GAP`, 0,85 s, y más lento tras un error) y si en un teléfono las nubes chicas se tocan bien: probarlos con un teléfono en la mano.
 - Resonar en Creatividad (caja de música): cuántas piezas hacen la melodía (`TUNE`, 7), la velocidad de la corona mientras suena (`PLAY_TURN`, una vuelta cada 12 s) y si las piezas encendidas y el peine se distinguen bien: probarlos con un teléfono en la mano.
 - Resonar en Sincronicidad: el pulso (`BEAT`, 1,3 s) y la ventana para acertar (`IN_TIME`, 0,28 s): probarlos con un teléfono en la mano.

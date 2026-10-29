@@ -153,7 +153,7 @@ Las tres son hoy ilustraciones planas: cada una necesitaría su escena.
 
 ### 5. Resonar (Aura, demonio: mentiras): implementado en Sincronicidad
 **Dinámica:** escuchar primero y responder en sintonía. Ritmo, eco, secuencia. Tiene dos formas, según lo que pida cada carta:
-- **A tiempo** (responder *cuándo*): la escena lleva un pulso y la persona toca cada cosa cuando el pulso llega a ella. Para las cartas que hablan de armonía, de ritmo y de estar en el momento justo: Sincronicidad (hecha), Armonía ("variedad y proporción de sonidos y pausas") y Sila ("en resonancia con la voz de tu sabiduría interior").
+- **A tiempo** (responder *cuándo*): la escena lleva un pulso y la persona toca cada cosa cuando el pulso llega a ella. Para las cartas que hablan de armonía, de ritmo y de estar en el momento justo: Sincronicidad (hecha), Armonía ("variedad y proporción de sonidos y pausas") y Sila (hecha: "en resonancia con la voz de tu sabiduría interior"; el pulso es el latido del corazón de Sid).
 - **Eco** (responder *qué*): la escena canta una frase corta con notas del acorde de la carta y la persona la repite tocando (como el Simón dice); si no coincide, la escena la vuelve a cantar, más lenta. Para las cartas que piden escuchar primero: Comunicación ("el primer paso es escucharte"), Honestidad ("escucha tu verdad acallando voces") y Sacca. Probado en Sacca (ver más abajo); Comunicación y Honestidad siguen con ilustración plana.
 - **Composición libre** (Creatividad, hecha): no hay respuesta correcta. La corona es una caja de música: cada toque agrega (o saca) una nota y lo compuesto queda sonando en vuelta. Ver más abajo.
 
@@ -182,7 +182,18 @@ Con movimiento reducido la escena queda estática y no se juega (como Sincronici
 - *Movimiento reducido.* La escena queda estática y no se juega (como Sincronicidad).
 **Dónde se tocó:** `SceneSacca.vue` (`COLOURS`, `phrase`, `singNow()`, `singNote()`, `touchCloud()`, `pick()`, `complete()`), `sing` en `synth.js`.
 
-**Cartas:** Sincronicidad (hecha), Armonía, Sila (a tiempo); Comunicación, Honestidad, Sacca (hecha) (eco); Creatividad (hecha, composición libre).
+**Cómo funciona hoy en Sila (a tiempo, con el latido):** bajo una luna grande, Particular está parado sobre una caja frente a un atril rosa, a punto de hablar; Sid está sentado a su lado, escuchando, y en el pasto brillan seis grupos de hongos. La carta dice que "la voz del corazón es la guía frente a las distracciones que se presentan ante nuestros sentidos y el parloteo de la mente", y su invitación es "en secreto, busca hacer una acción beneficiosa para otros".
+- *El pulso es un corazón.* El corazón de Sid late parejo y tranquilo (una vez cada 1,15 s, `BEAT`): una luz verde (el chakra del corazón) en su panza late con un golpe y un eco (lub, dub). Mientras alguien juega (hasta 9 s después del último toque) también se oye: dos golpes graves y suaves en Fa, la séptima de Sol7 y el corazón (`heartbeat`). Antes del primer toque late solo con luz, en silencio, como en todas las escenas. Tocar a Sid hace que se oiga.
+- *Las distracciones.* En el cielo titilan destellos sueltos, nunca en el latido, y a veces la estrellita del pasto gira y brilla: el parloteo de la mente. Son solo para mirar; no cuentan.
+- *Hablar a tiempo.* Tocar a Particular (o su atril) a menos de 0,24 s de un latido (`IN_TIME`) lo hace hablar: se estira desde la caja con una luz rosa detrás y suena una nota de Sol7 (`resonate`; suben Sol, Si, Re, Fa y vuelven a empezar). Del atril sale una lucecita que va baja y tenue por el pasto, en secreto, hasta un hongo lejos de él que todavía no brilla, y al llegar el hongo se enciende entero. Fuera de tiempo suena apagado (`miss`) y no se pierde nada, pero ese latido ya se gastó: tocar y tocar no sirve, hay que escuchar.
+- *El brillo de los hongos está vivo.* Cada mota naranja es una partícula (como en Nekkhamma): las mueve un viento que cruza el pasto en ráfagas, más a las de afuera, y un dedo las revuelve. Antes de encenderse, cada hongo brilla tenue.
+- *Pista, sin palabras.* Si pasan 7 s sin tocar nada, durante tres latidos el corazón de Sid le manda su latido al atril (una luz que vuela de él a Particular) y el atril brilla justo en el latido.
+- *Los seis.* Con los seis hongos encendidos, el acorde de la carta, Sol7, se resuelve en Do mayor (`resolve`, como en Sacca: el bien que se hace echa raíz). La luz de cada hongo vuela hasta Particular y nace el rulito sobre él, donde lo dibuja la carta, en su rosa. Se ilumina el nombre y suena `rulito`. Después el rulito se va, los hongos vuelven a brillar tenues y se puede jugar de nuevo. Hito: `in_time` (con `times`), como Sincronicidad.
+- *Teclado.* Un botón para Particular y uno para Sid; Enter o espacio es un toque.
+- *Movimiento reducido.* La escena queda estática, con los hongos encendidos, y no se juega.
+**Dónde se tocó:** `SceneSila.vue` (`BEAT`, `IN_TIME`, `touchSpeaker()`, `arrive()`, `complete()`, `glowGroup`, `glint()`), `heartbeat` en `synth.js`.
+
+**Cartas:** Sincronicidad (hecha), Armonía, Sila (hecha) (a tiempo); Comunicación, Honestidad, Sacca (hecha) (eco); Creatividad (hecha, composición libre).
 
 ### 6. Ver (Huit, demonio: ilusión): implementado en Pañña
 **Dinámica:** descubrir lo oculto, unir puntos, reconocer un patrón.
