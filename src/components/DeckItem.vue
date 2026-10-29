@@ -80,7 +80,7 @@
     }
 
     .name {
-        font-family: 'Caveat', 'Inter', helvetica, sans-serif;
+        font-family: 'Caveat', 'Nunito', helvetica, sans-serif;
         font-size: 20px;
         line-height: 150%;
         letter-spacing: 0.02em;

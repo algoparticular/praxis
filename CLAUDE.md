@@ -73,7 +73,9 @@ These cannot see what a real GPU or a real phone does (flicker, disappearing lay
 
 **Firebase** (`src/firebase.js`) is only imported by the sign-in and register pages, which the router loads on demand, so it is not part of every visit; auth guards on routes are commented out and the menu shows no account links. Set up for future user account features but not enforced.
 
-**PWA:** Service worker is registered in `App.vue`. `public/manifest.webmanifest` configures standalone install behavior.
+**PWA:** the service worker is built by `vite-plugin-pwa` (Workbox, configured in `vite.config.js`) as `dist/serviceWorker.js` and registered in `App.vue`. The app, the fonts and the deck's thumbnails are saved on the first visit; pictures (illustrations, scene layers) as they are seen, served from the phone and refreshed in the background. So the app opens at once from the second visit and works offline with what was seen. A deploy takes over on the next visit; `main.js` reloads once if an old page asks for a chunk that is gone (`vite:preloadError`). `public/manifest.webmanifest` configures standalone install behavior.
+
+**Fonts:** Nunito (text) and Caveat (titles, handwriting), both served from `src/assets` (no Google Fonts or other font hosts). `<html lang>` follows the chosen language (`main.js`).
 
 ## Key Files
 
@@ -85,4 +87,4 @@ These cannot see what a real GPU or a real phone does (flicker, disappearing lay
 | `src/data/cards.json` | The 33 cards: the source of truth, edited by hand (`docs/editar-cartas.md`) |
 | `src/json/es.json` / `en.json` | All UI string translations |
 | `netlify.toml` | Build config and SPA redirect rule |
-| `public/serviceWorker.js` | Minimal PWA service worker |
+| `vite.config.js` | Vite plugins: Vue, the share pages (`cardMetaPlugin.js`) and the service worker (`vite-plugin-pwa`) |

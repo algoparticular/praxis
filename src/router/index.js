@@ -9,7 +9,6 @@ import Card from '../views/Card.vue';
 import Deck from '../views/Deck.vue';
 import PageNotFound from '../views/PageNotFound.vue';
 import Collaborate from '../views/Collaborate.vue';
-import Onboarding from '../views/Onboarding.vue';
 
 // Navigation object
 const router = createRouter({
@@ -52,8 +51,9 @@ const router = createRouter({
       component: Collaborate,
     },
     {
+      // The intro slides are gone: the landing tells what the oracle is
       path: "/intro",
-      component: Onboarding,
+      redirect: "/",
     },
     {
       path: "/oracle",

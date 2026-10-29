@@ -4,7 +4,6 @@
     import { musicVolume, effectsVolume, setMusicVolume, setEffectsVolume, play } from '../composables/useSound.js';
 
     const props = defineProps({
-        hasIntro: Boolean,
         hasHome: Boolean,
         hasFullDeck: Boolean,
         hasCollaborate: Boolean,
@@ -35,7 +34,6 @@
     <nav id="menu">
         <a v-if="props.hasHome" @click="navigate('/')">{{ $t("nav.home") }}</a>
         <a v-if="props.hasFullDeck" @click="navigate('/deck')">{{ $t("nav.deck") }}</a>
-        <a v-if="props.hasIntro" @click="navigate('/intro')">{{ $t("nav.intro") }}</a>
         
         <a v-if="props.hasCollaborate" @click="navigate('/collaborate')">{{ $t("nav.collaborate") }}</a>
 
@@ -90,7 +88,7 @@
     nav a,
     #languageSelect label {
         font-size: 21px;
-        font-family: 'Caveat', 'Inter', helvetica, sans-serif;
+        font-family: 'Caveat', 'Nunito', helvetica, sans-serif;
         font-weight: 400;
         cursor: pointer;
     }
@@ -111,7 +109,7 @@
         flex-direction: column;
         align-items: center;
         gap: 10px;
-        font-family: 'Caveat', 'Inter', helvetica, sans-serif;
+        font-family: 'Caveat', 'Nunito', helvetica, sans-serif;
         font-size: 21px;
         font-weight: 400;
         color: #F7F8F1;
@@ -207,7 +205,7 @@
 
     #languageSelect span {
         font-size: 24px;
-        font-family: 'Caveat', 'Inter', helvetica, sans-serif;
+        font-family: 'Caveat', 'Nunito', helvetica, sans-serif;
         font-weight: 400;
         color: #F7F8F1;
 
