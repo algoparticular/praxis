@@ -6,6 +6,7 @@
 	import { initSound, play, setCardChord } from './composables/useSound.js';
 	import { askTiltOnce } from './composables/useTilt.js';
 	import { chordFor } from './data/cardChords.js';
+	import { registerServiceWorker } from './pwa.js';
 
 	const router = useRouter();	
 	const route = useRoute();
@@ -38,9 +39,8 @@
 
 		// Progressive Web App: the service worker is built by vite-plugin-pwa (vite.config.js). Registered at once:
 		// waiting for the page's load event here could miss it, since it has usually fired before the app is mounted.
-		if ('serviceWorker' in navigator && import.meta.env.PROD) {
-			navigator.serviceWorker.register('/serviceWorker.js').catch(() => { /* the app works without it */ });
-		}
+		// It also looks for a new deploy whenever the app comes back to the front (src/pwa.js).
+		registerServiceWorker();
 	});
 	
 </script>
