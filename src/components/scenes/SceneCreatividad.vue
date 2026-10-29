@@ -14,7 +14,7 @@
     // its note of the card's chord (the higher it hangs, the higher the note; the weeds are the bass); the crown turns
     // faster and every lit piece plays again each time it passes the comb at the top, where the jellyfish swims up to
     // listen, so what was composed keeps sounding as a tune. Touching a lit one puts it out. With seven lit the tune is
-    // complete: the rulito is born over the jellyfish's head, the name lights up and the stage blooms; after one more
+    // complete: the chord resolves (C7 to F), the rulito is born over the jellyfish's head, the name lights up and the stage blooms; after one more
     // turn each piece goes out as it passes the comb for the last time and the crown slows down again.
     import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
     import { createParallax } from '../../composables/useParallax.js';
@@ -181,7 +181,7 @@
     const COMB = -90;                       // where the pieces play: the top of the crown (deg, clockwise from the right)
     const TUNE = 7;                         // lit pieces that make a whole tune
     const IDLE_TURNS = 3;                   // turns with no touch after which an unfinished tune goes out
-    const DELAY = 0.4, GROW = 2.4, EAT = 3.4;   // the rulito: after the seventh is lit, born, whole; then gone
+    const DELAY = 1.1, GROW = 2.4, EAT = 3.4;   // the rulito: after the chord has resolved, born, whole; then gone
     const HOME = { x: CELL.x - 0.01, y: 0.415 };   // where the jellyfish listens, under the comb
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const LIGHT = { coral: 0xffc08a, algae: 0xc9f0b0 };
@@ -220,14 +220,16 @@
         if (count() >= TUNE) complete();
     };
 
-    // The tune is whole: the rulito is born over the jellyfish's head and every lit piece flashes once
+    // The tune is whole: every lit piece flashes once, the card's C7 resolves to F major (a dominant seventh asks for the
+    // chord a fifth below: the heart, Vulpes's note; creativity "is not a solitary movement") and then the rulito is born
+    // over the jellyfish's head
     const complete = () => {
         if (win || gone) return;
         wins += 1;
         win = { age: 0, head: 0, tail: 0, full: false, pop: 0, ending: false, endAt: turn + 360 };
         rulito.value?.reshape();
         on.forEach((v, i) => { if (v) ring[i] = 1; });
-        play('converge');
+        play('resolve');
         sceneMilestone('tune_composed', { times: wins });
     };
 
