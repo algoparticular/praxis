@@ -6,11 +6,13 @@
 //  - nothing happens at all without VITE_POSTHOG_KEY (dev, CI and the smoke test never call out);
 //  - the SDK is fetched after the app is up, so it never delays a first paint. Events that happen meanwhile wait.
 import { START_LOCATION } from 'vue-router';
+import { measureFrames } from './composables/useFramePace.js';
 
 const KEY = import.meta.env.VITE_POSTHOG_KEY;
 const HOST = import.meta.env.VITE_POSTHOG_HOST || 'https://us.i.posthog.com';
 
 const optedOut = () => navigator.doNotTrack === '1' || window.doNotTrack === '1' || navigator.globalPrivacyControl === true;
+const tracking = () => !!KEY && !optedOut();
 
 let client = null;
 let getLang = () => undefined;
@@ -38,7 +40,7 @@ const standalone = () => window.matchMedia('(display-mode: standalone)').matches
 
 // Every event knows the language and whether the app runs installed; a call can add its own properties
 export const track = (event, props = {}) => {
-    if (!KEY || optedOut()) return;
+    if (!tracking()) return;
     const payload = { lang: getLang(), installed: standalone(), ...props };
     if (client) client.capture(event, payload);
     else if (waiting.length < MAX_WAITING) waiting.push([event, payload]);
@@ -88,6 +90,25 @@ export const initAnalytics = ({ router, i18n }) => {
     else setTimeout(load, 1500);
 };
 
+// How smoothly a page was drawn while it was open (useFramePace.js), with two hints about the device: its cores and
+// the density of its screen (what the 3D scenes use to tell a low-power device). Nothing here tells a person apart.
+// Left out when less than two seconds were measured, and nothing is measured when nothing would be sent.
+const framesReport = (meter) => {
+    if (!meter) return {};
+    const f = meter.stats();
+    meter.stop();
+    if (f.seconds < 2) return {};
+    return {
+        fps: f.average,
+        slow_pct: Math.round(f.slow / f.frames * 1000) / 10,
+        stutters: f.stutters,
+        worst_ms: f.worst,
+        measured_s: f.seconds,
+        cores: navigator.hardwareConcurrency,
+        dpr: Math.round(window.devicePixelRatio * 100) / 100,
+    };
+};
+
 // What a person does on one card page, gathered into a single story that is told when they leave:
 // how long they stayed, whether they touched the scene (and how often), whether they read on.
 export const startCardVisit = (cardId, { scene, entry }) => {
@@ -97,6 +118,7 @@ export const startCardVisit = (cardId, { scene, entry }) => {
     let reachedReading = false;
     let milestones = 0;
     let finished = false;
+    const meter = tracking() ? measureFrames() : null;
 
     track('card_viewed', { card_id: cardId, scene, entry });
 
@@ -127,6 +149,7 @@ export const startCardVisit = (cardId, { scene, entry }) => {
                 touches,
                 milestones,
                 read: reachedReading,
+                ...framesReport(meter),
             });
         },
     };
@@ -137,3 +160,22 @@ export const startCardVisit = (cardId, { scene, entry }) => {
 let currentVisit = null;
 export const setCurrentVisit = (visit) => { currentVisit = visit; };
 export const sceneMilestone = (action, extra) => currentVisit?.milestone(action, extra);
+
+// A 3D table (the oracle's, The Nine's or the deck's ring) tells how smoothly it was drawn when it is left, the page is
+// hidden or closed: `table` is full, nine or deck. Returns the function that finishes it (only once)
+export const startTableVisit = (table) => {
+    if (!tracking()) return () => {};
+    const meter = measureFrames();
+    let finished = false;
+    const finish = () => {
+        if (finished) return;
+        finished = true;
+        window.removeEventListener('pagehide', finish);
+        document.removeEventListener('visibilitychange', onHidden);
+        track('table_left', { table, ...framesReport(meter) });
+    };
+    const onHidden = () => { if (document.visibilityState === 'hidden') finish(); };
+    window.addEventListener('pagehide', finish);
+    document.addEventListener('visibilitychange', onHidden);
+    return finish;
+};

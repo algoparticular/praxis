@@ -26,12 +26,26 @@ Todos llevan `lang` (`es`/`en`) e `installed` (la app corre como PWA instalada).
 | `scene_interacted` | primer toque a una zona táctil de la escena (arrastrar la página para bajar a la lectura no cuenta) | `card_id`, `scene`, `seconds_to_first` |
 | `scene_milestone` | hito de una escena con dinámica | `card_id`, `scene`, `action` (`rulito_completed` con `times`, `cork_popped`, `refill_all`, `all_released` con `times`, `power_breath`, `pattern_seen` con `times` y `figure`, `pattern_reset` con `figure`, `light_shared` con `times`) |
 | `card_reading_reached` | baja hasta la lectura | `card_id`, `seconds` |
-| `card_left` | una vez por visita: se va de la carta, la oculta (cambia de app o de pestaña) o cierra la página; `seconds` llega hasta ese momento | `card_id`, `scene`, `seconds`, `touches`, `milestones`, `read` |
+| `card_left` | una vez por visita: se va de la carta, la oculta (cambia de app o de pestaña) o cierra la página; `seconds` llega hasta ese momento | `card_id`, `scene`, `seconds`, `touches`, `milestones`, `read`, y la fluidez (abajo) |
+| `table_left` | deja una mesa 3D (sale, la oculta o cierra la página), solo si la mesa 3D llegó a mostrarse | `table`: `full` (`/oracle`) / `nine` (`/oracleTheNine`) / `deck` (el anillo de `/deck`), y la fluidez (abajo) |
 | `share_opened` | abre la pantalla de compartir | `card_id`, `from`: `stage` (el botón sobre la escena) / `reading` (el del final de la lectura) |
 | `share_clicked` | elige un canal | `card_id`, `channel` (`link`, `facebook`, `twitter`, `whatsapp`) |
 | `language_changed` | cambia el idioma | `to` |
 | `sound_toggled` | activa o apaga el sonido | `on` |
 | `pwa_installed` | instala la app | |
+
+## Fluidez
+`card_left` y `table_left` llevan cómo se dibujó la página mientras estuvo abierta (`src/composables/useFramePace.js`, cada cuadro que pinta el navegador), si se midieron al menos 2 segundos:
+- `fps`: cuadros por segundo promedio.
+- `slow_pct`: % de cuadros lentos (más de 25 ms: a 60 por segundo, se saltó uno).
+- `stutters`: tirones (cuadros de más de 50 ms, los que se notan).
+- `worst_ms`: el cuadro más lento.
+- `measured_s`: segundos medidos (una pausa de un segundo o más es la página oculta o el teléfono bloqueado, y no cuenta).
+- `cores` y `dpr`: núcleos del procesador y densidad de la pantalla, como pista del equipo (lo mismo que usan las escenas 3D para reconocer uno de poca potencia). No distinguen a nadie. PostHog ya agrega sistema, navegador y tamaño de pantalla.
+
+Sin `VITE_POSTHOG_KEY` (o con Do Not Track) no se mide nada. La batería no se puede medir desde una página web (Safari no lo permite): eso sigue siendo a mano. Para mirar un teléfono en vivo está el contador `?fps` (ver `plan-inmersivo.md`).
+
+Para empezar: `card_left` con promedio de `fps` y de `slow_pct`, desglosado por `scene` (o por `card_id`) y por `$os`; lo mismo con `table_left` por `table`. Una escena con `slow_pct` alto en iOS es la que hay que aliviar primero.
 
 ## Embudos sugeridos (Product analytics → Funnels, por visita)
 - **Ritual**: `$pageview` (route `/`) → `oracle_mode_chosen` → `card_picked` → `card_viewed` → `card_reading_reached`.

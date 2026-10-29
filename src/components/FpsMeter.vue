@@ -1,62 +1,37 @@
 <script setup>
     // A frame counter for trying the app on a real phone: frames per second over the last second, how many frames were
     // slow (over 25 ms, a frame skipped at 60 fps) or a stutter (over 50 ms), the slowest one and how long it has been
-    // measuring. Hidden unless the address has ?fps (see App.vue); it starts again on every page and when touched.
+    // measuring (useFramePace.js). Hidden unless the address has ?fps (see App.vue); it starts again on every page and
+    // when touched.
     import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
     import { useRoute } from 'vue-router';
+    import { measureFrames } from '../composables/useFramePace.js';
 
     const route = useRoute();
-    const fps = ref(0);
-    const slow = ref(0);
-    const stutters = ref(0);
-    const worst = ref(0);
-    const elapsed = ref(0);
-
-    let raf = 0;
-    let last = 0;
-    let start = 0;
-    let stamps = [];
-
-    const reset = () => {
-        slow.value = 0;
-        stutters.value = 0;
-        worst.value = 0;
-        start = performance.now();
-        stamps = [];
-    };
-
-    const frame = (now) => {
-        raf = requestAnimationFrame(frame);
-        const dt = last ? now - last : 0;
-        last = now;
-        // A gap of a second or more is the page hidden or the phone locked, not a slow frame
-        if (dt > 0 && dt < 1000) {
-            if (dt > 25) slow.value += 1;
-            if (dt > 50) stutters.value += 1;
-            worst.value = Math.max(worst.value, Math.round(dt));
-        }
-        stamps.push(now);
-        while (stamps.length && stamps[0] < now - 1000) stamps.shift();
-        fps.value = stamps.length;
-        elapsed.value = Math.floor((now - start) / 1000);
-    };
+    const shown = ref({ fps: 0, slow: 0, stutters: 0, worst: 0, seconds: 0 });
+    let meter = null;
+    let timer = 0;
 
     const clock = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+    const reset = () => meter?.reset();
 
     watch(() => route.fullPath, reset);
     onMounted(() => {
-        reset();
-        raf = requestAnimationFrame(frame);
+        meter = measureFrames();
+        timer = setInterval(() => { shown.value = meter.stats(); }, 250);
     });
-    onBeforeUnmount(() => cancelAnimationFrame(raf));
+    onBeforeUnmount(() => {
+        clearInterval(timer);
+        meter?.stop();
+    });
 </script>
 
 <template>
-    <div class="fps" :class="{ ok: fps >= 55, meh: fps < 55 && fps >= 40, bad: fps < 40 }" @click="reset"
+    <div class="fps" :class="{ ok: shown.fps >= 55, meh: shown.fps < 55 && shown.fps >= 40, bad: shown.fps < 40 }" @click="reset"
         title="Toca para empezar de nuevo">
-        <b>{{ fps }} fps</b>
-        <span>{{ slow }} lentos · {{ stutters }} tirones</span>
-        <span>peor {{ worst }} ms · {{ clock(elapsed) }}</span>
+        <b>{{ shown.fps }} fps</b>
+        <span>{{ shown.slow }} lentos · {{ shown.stutters }} tirones</span>
+        <span>peor {{ shown.worst }} ms · {{ clock(shown.seconds) }}</span>
     </div>
 </template>
 

@@ -6,6 +6,7 @@
     import { createStarField } from '../composables/useStarField.js';
     import { play, setCardChord, vibrate } from '../composables/useSound.js';
     import { chordFor } from '../data/cardChords.js';
+    import { startTableVisit } from '../analytics.js';
 
     const props = defineProps({
         cardsDrawn: Array,
@@ -38,6 +39,8 @@
         handOffCard({ router, card: getCard(cardId), rect, hideCard });
     };
 
+    let finishVisit = null;            // how smoothly the table was drawn, told when it is left (analytics.js)
+
     onMounted(async () => {
         starField = createStarField(starCanvas.value, root.value, { shooting: false });
         try {
@@ -53,6 +56,7 @@
                 onSound: handleSound,
             });
             if (destroyed) table.destroy();
+            else finishVisit = startTableVisit(props.layout === 'spiral' ? 'full' : 'nine');
         } catch (e) {
             console.warn('3D table is not available', e);
             emit('unsupported');
@@ -61,6 +65,7 @@
 
     onBeforeUnmount(() => {
         destroyed = true;
+        finishVisit?.();
         table?.destroy();
         starField?.destroy();
     });
