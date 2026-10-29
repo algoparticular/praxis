@@ -19,7 +19,7 @@ const scenes = {
     22: stage(() => import('../components/scenes/SceneEvolucion.vue')),
     25: stage(() => import('../components/scenes/SceneHogar.vue')),
     27: stage(() => import('../components/scenes/ScenePaciencia.vue')),
-    29: lazy(() => import('../components/scenes/SceneSincronicidad.vue')),
+    29: stage(() => import('../components/scenes/SceneSincronicidad.vue')),
     31: lazy(() => import('../components/scenes/SceneVipassana.vue')),
 };
 
