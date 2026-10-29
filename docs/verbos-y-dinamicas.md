@@ -110,14 +110,14 @@ Cómo lo vestiría cada carta: Aceptación, una luz que baja por el río entre l
 **Por probar en un teléfono:** el paso (`PACE`, hoy unos 50 s acompañándola de punta a punta con los frascos) y cuán pálido se ve el rosa quieto (`STILL`).
 **Cartas:** Khanti (hecha), Celebración, Transformación, Aceptación (su ilustración es un río entre dos seres iguales bajo cielos distintos, y su texto pide no luchar contra lo que no se controla).
 
-### 3. Encender (Kätus, demonio: vergüenza): implementado en Evolución Espiritual
+### 3. Encender (Kätus, demonio: vergüenza): implementado en Evolución Espiritual y Viriya
 **Dinámica:** frotar y lanzar. Primero se enciende el fuego con esfuerzo (frotar, como con dos palitos) y después se lo lanza con dirección (una honda): lo que toca se enciende.
 **Por qué así:** se probaron dos ideas antes. Tocar los bulbos en cualquier orden era el mismo gesto que Dana (un toque a cada uno). Mantener apretado para cargar y soltar se parecía demasiado a Arraigar (Paciencia) y a retener el aire en Vipassana. Frotar y tirar de una honda no los usa ningún otro verbo. Y la carta lo pide de adentro hacia afuera: *"una alma iluminada es capaz de transformar cada atmósfera que habita, siendo faro para otros"*. El demonio de Kätus es la vergüenza, esconder la propia luz; Sid está acurrucado y es él el que se enciende y sale disparado.
 **El motor, común a las cartas del verbo:** frotar una fuente hasta que prende, apuntar, lanzarla, y lo que toca se enciende y queda encendido; hay que encender todo. Sirve para las otras tres:
 - Desafío: el fuego que rebota por las paredes del laberinto hasta la luz del centro (la que mejor calza con los rebotes).
 - Coraje: Kätus en el borde del acantilado frota para juntar coraje y se lanza hacia la luna.
 - Viriya: frotar es la diligencia ("sin prisa pero sin pausa"); el lanzamiento enciende las flores del camino.
-Las tres son hoy ilustraciones planas: cada una necesitaría su escena.
+Viriya ya tiene su escena (ver más abajo); Desafío y Coraje siguen con ilustración plana.
 **Cómo funciona hoy en Evolución Espiritual:**
 - *Al principio todo está apagado.* Los ocho bulbos, los cuatro hongos y sus bolitas azules están grises y sin brillo.
 - *Frotar.* Se frota con el dedo dentro de la célula, de un lado a otro: saltan chispas donde pasa el dedo, Sid se va calentando (brilla y le suben brasas) y suena una nota más del acorde de la carta con cada sexto del calor (`kindle`). Si se deja de frotar, se enfría despacio. Con unos 11 radios de la célula frotados, prende: un estallido de chispas (`ignite` y `star`). Dentro de la célula el dedo no mueve la página (`touch-action: none`): antes el teléfono tomaba el frotar o el tirón por un scroll y los cortaba; para bajar a la lectura se arrastra desde la corona o desde abajo.
@@ -130,7 +130,18 @@ Las tres son hoy ilustraciones planas: cada una necesitaría su escena.
 - *Tocar un bulbo o un hongo* hace lo de siempre: echa chispas.
 - *Movimiento reducido.* La escena queda estática y todavía no se puede jugar (como Pañña, Vipassana y Dana).
 **Dónde se tocó:** `SceneEvolucion.vue` (`press()`, `move()`, `letGo()`, `ignite()`, `launch()`, `hitWall()`, `catchFire()`, `crown()`, `aimGroup`, `play_()`), `kindle`, `ignite` y `resolve` en `synth.js`, `wall` y `ghost` en `useCellWater.js` y `fade()` en `useStardust.js`.
-**Cartas:** Evolución Espiritual (hecha), Viriya, Coraje, Desafío.
+**Cómo funciona hoy en Viriya:** al atardecer, Particular está parado al borde de un acantilado, con su mochila y un báculo con una espiral en la punta, mirando un camino que baja serpenteando entre los cerros hacia el sol.
+- *Al principio está apagado.* Los tres cactus y las tres flores amarillas del valle están grises.
+- *Frotar es la diligencia.* Se frota sobre Particular y su báculo, de un lado a otro: saltan chispas, su aura de puntos se calienta y suena una nota del acorde (Mi mayor) con cada sexto del calor (`kindle`). Frotar más rápido no cuenta más (`STEADY`) y si se para se enfría (`COOL`): *"sin prisa pero sin pausa"*. Con algo más de un ancho y medio de la escena frotado (`RUB`), la espiral prende como una antorcha (`ignite`).
+- *La honda.* Con la espiral encendida se apoya el dedo y se tira hacia atrás: una banda de puntos va de la espiral al dedo y otra muestra hacia dónde va a salir. Al soltar sale una llama que cae un poco, se frena un poco y rebota en los bordes de la pantalla dejando brasas. Todo cactus o flor por el que pasa cerca se enciende: toma su color y una luz detrás (`link`). Después de cuatro rebotes, o si se frena, se apaga y hay que volver a frotar. Lo encendido queda encendido.
+- *El sol.* Con los seis encendidos, el sol sube y brilla entero, el cielo se entibia alrededor y suena el fuego con el acorde subiendo (`ignite`, `converge`: Mi mayor no tiene séptima que resolver). Nace el rulito celeste sobre Particular, donde lo dibuja la carta; se ilumina el nombre y suena `rulito`. Al rato el rulito se va, todo vuelve al gris y se puede volver a jugar. Hito: `path_lit` (con `times`).
+- *Pista, sin palabras.* Si pasan 7 s sin tocar nada, saltan chispas de la espiral (o, encendida, late).
+- *Teclado.* Enter frota (cada vez un quinto) y, encendida, tira la llama hacia lo apagado más cercano (la llama lo busca sola).
+- *Movimiento reducido.* La escena queda estática, con todo encendido, y no se juega.
+- *El cielo y el sol no son imágenes.* El cielo es un degradé dibujado en código desde los colores de la carta (el azul y el atardecer), y el sol es un disco en código con su borde punteado hecho de partículas que viven.
+**Dónde se tocó:** `SceneViriya.vue` (`press()`, `move()`, `letGo()`, `ignite()`, `launch()`, `catchFire()`, `dawn()`, `game()`, `aimGroup`, `RUB`, `STEADY`).
+
+**Cartas:** Evolución Espiritual (hecha), Viriya (hecha), Coraje, Desafío.
 
 ### 4. Dar y recibir (Vulpes, demonio: pena): implementado en Dana
 **Dinámica:** compartir la luz. Dar sin pensar y sin esperar nada a cambio, y descubrir que dar no vacía: lo dado vuelve multiplicado, sin pedirlo.
