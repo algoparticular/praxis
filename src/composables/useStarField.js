@@ -1,8 +1,8 @@
 // Living night sky for the oracle block: stars that twinkle and, every now and then, a shooting star.
 // The stars are drawn flat, like the illustration they replace: one lemon yellow, solid shapes, no glows or gradients.
 // The twinkle moves in steps, frame by frame like hand-made animation, instead of fading smoothly.
-// The shooting stars are particles, as in Dana's sky: a tail of soft dots (cream at the head, then yellow and coral) that
-// falls on a diagonal and fades. Most are far (small, quick, silent); now and then one passes near (bigger, brighter,
+// The shooting stars are like Dana's: a soft cream head and a tail in the stars' yellow, one stroke that narrows and fades,
+// falling on a diagonal. Most are far (small, quick, silent); now and then one passes near (bigger, brighter,
 // a longer tail) and only that one sounds (`onShoot`).
 // Plain 2D canvas; it pauses when the block is off screen and stays still with prefers-reduced-motion.
 
@@ -14,8 +14,8 @@ const STEPS = [1, 1, 0.7, 0.4, 0.7, 1, 1.25];
 
 const rand = (min, max) => min + Math.random() * (max - min);
 
-// The shooting stars' dots: a soft round mote of each colour, drawn once and stamped (the falloff of useStardust's 'soft')
-const DOT_COLORS = ['#fffbe6', '#f6e27c', '#ee6a82'];
+// The shooting stars' head: a soft round mote, drawn once and stamped (the falloff of useStardust's 'soft')
+const DOT_COLORS = [CREAM];               // the head, in the cream of the stars of this sky
 const DOT = 32;
 let dots = null;
 const dotSprites = () => {
@@ -35,11 +35,11 @@ const dotSprites = () => {
     });
     return dots;
 };
-// A far one and a near one: dots in the tail, size of the head and of the tail's first dot (px), how fast
+// A far one and a near one: how long the tail is (of its life), size of the head and width of the tail (px), how fast
 // (of the sky's larger side, per second) and how long it lasts (s)
 const KINDS = {
-    far: { tail: 24, head: 11, body: 7, speed: [0.35, 0.65], duration: [0.7, 1.2] },
-    near: { tail: 40, head: 28, body: 15, speed: [0.55, 0.85], duration: [1, 1.4] },
+    far: { lag: 0.15, head: 11, body: 7, speed: [0.35, 0.65], duration: [0.7, 1.2] },
+    near: { lag: 0.18, head: 28, body: 15, speed: [0.55, 0.85], duration: [1, 1.4] },
 };
 const NEAR_ODDS = 0.2;      // about one in five passes near
 
@@ -139,18 +139,37 @@ export function createStarField(canvas, container, { shootingEvery = [3, 7], sho
             ctx.fill();
         }
 
-        // Each dot of the tail is where the head was a moment before, smaller and fainter the further back
-        const sprites = shooting.length ? dotSprites() : null;
+        // The tail is one stroke from the head back to where it was a moment before, narrowing to a point and fading,
+        // with a soft glow (a blurred shadow). The head is a soft cream mote
+        const [headDot] = shooting.length ? dotSprites() : [];
         for (const meteor of shooting) {
             const { kind } = meteor;
             const u = meteor.life / meteor.duration;
             const shine = Math.min(1, Math.sin(u * Math.PI) * 1.4);
-            for (let j = kind.tail - 1; j >= 0; j--) {
-                const back = Math.max(0, u - j * 0.006 * 24 / kind.tail) * meteor.duration;
-                const size = j ? Math.max(2, kind.body - j * kind.body / kind.tail * 0.75) : kind.head;
-                ctx.globalAlpha = shine * (1 - j / kind.tail) ** 0.7;
-                ctx.drawImage(sprites[j < 3 ? 0 : j % 2 ? 1 : 2], meteor.x0 + meteor.vx * back - size / 2, meteor.y0 + meteor.vy * back - size / 2, size, size);
+            const hx = meteor.x0 + meteor.vx * meteor.life, hy = meteor.y0 + meteor.vy * meteor.life;
+            const back = Math.max(0, u - kind.lag) * meteor.duration;
+            const tx = meteor.x0 + meteor.vx * back, ty = meteor.y0 + meteor.vy * back;
+            const len = Math.hypot(hx - tx, hy - ty);
+            if (len > 1) {
+                const nx = -(hy - ty) / len, ny = (hx - tx) / len;
+                const fade = ctx.createLinearGradient(hx, hy, tx, ty);
+                fade.addColorStop(0, YELLOW);
+                fade.addColorStop(1, 'rgba(230,233,115,0)');
+                ctx.fillStyle = fade;
+                const half = kind.body * 0.36;
+                ctx.globalAlpha = shine;
+                ctx.shadowColor = YELLOW;
+                ctx.shadowBlur = kind.body * 1.4;
+                ctx.beginPath();
+                ctx.moveTo(hx + nx * half, hy + ny * half);
+                ctx.lineTo(tx, ty);
+                ctx.lineTo(hx - nx * half, hy - ny * half);
+                ctx.closePath();
+                ctx.fill();
+                ctx.shadowBlur = 0;
             }
+            ctx.globalAlpha = shine;
+            ctx.drawImage(headDot, hx - kind.head / 2, hy - kind.head / 2, kind.head, kind.head);
         }
         ctx.globalAlpha = 1;
     };
