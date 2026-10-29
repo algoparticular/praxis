@@ -376,6 +376,29 @@ export const pulse = (ctx, out, time, harmony, { step = 0 } = {}) => {
     bell(ctx, out, time, hz(notes[Math.round(step * (notes.length - 1))]), 0.9, 0.012);
 };
 
+// Sila (Resonar, on time). Sid's heart, the beat to follow: two soft low thumps, lub and dub, on the chord's seventh (Fa in
+// Sila's G7: the heart) two octaves under the pad; on a chord without a seventh, on its root. Felt more than heard
+export const heartbeat = (ctx, out, time, harmony, level = 1) => {
+    const h = harmony ?? PLAIN;
+    const f = hz(h.bass + (hasSeventh(h) ? h.intervals[3] : 0) - 24);
+    [[0, 1], [0.19, 0.6]].forEach(([at, share]) => {
+        const start = time + at;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(f * 1.7, start);
+        osc.frequency.exponentialRampToValueAtTime(f, start + 0.07);
+        gain.gain.setValueAtTime(0.0001, start);
+        gain.gain.exponentialRampToValueAtTime(0.11 * share * level, start + 0.012);
+        gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.32);
+        osc.connect(gain);
+        gain.connect(out);
+        osc.start(start);
+        osc.stop(start + 0.36);
+    });
+    bell(ctx, out, time + 0.01, f * 2, 0.5, 0.008 * level);
+};
+
 // A bubble touched on its beat resonates: its note, clear, with the octave below answering and a breath of air
 export const resonate = (ctx, out, time, harmony, { step = 0 } = {}) => {
     const h = harmony ?? PLAIN;

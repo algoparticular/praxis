@@ -276,7 +276,12 @@
         event.preventDefault();
         idle = 0;
         if (win) return;
-        if (mode === 'cold') { heat = Math.min(1, heat + 0.2); sparks.burst(geo.sx, geo.sy, { n: 6, colors: FIRE, speed: 60, life: 0.8, size: 3.5, spread: 6 }); }
+        if (mode === 'cold') {
+            heat = Math.min(1, heat + 0.2);
+            sparks.burst(geo.sx, geo.sy, { n: 6, colors: FIRE, speed: 60, life: 0.8, size: 3.5, spread: 6 });
+            // Lit here: the loop cools it a little every frame before it checks, so a full heat never reaches it
+            if (heat > 0.99) ignite();
+        }
         else if (mode === 'lit') {
             const me = water.swimmer;
             const todo = SWAYING.map((p, i) => i).filter((i) => !on[i]);

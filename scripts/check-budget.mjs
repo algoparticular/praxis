@@ -45,12 +45,14 @@ group('Pañña layers', (rel) => rel.startsWith('assets/panna/'), { each: 100, t
 group('Khanti layers', (rel) => rel.startsWith('assets/khanti/'), { each: 400, total: 1300 });
 group('Creatividad layers', (rel) => rel.startsWith('assets/creatividad/'), { each: 100, total: 400 });
 group('Evolución layers', (rel) => rel.startsWith('assets/evolucion/'), { each: 300, total: 450 });
+group('Sila layers', (rel) => rel.startsWith('assets/sila/'), { each: 160, total: 450 });
+group('Viriya layers', (rel) => rel.startsWith('assets/viriya/'), { each: 160, total: 450 });
 group('Deck thumbnails', (rel) => /^cards\/thumb\/\d+\.webp$/.test(rel), { each: 70, total: 650 });
 group('Card illustrations', (rel) => /^cards\/\d+\.webp$/.test(rel), { each: 900, total: 9500 });
 // What phones and most screens load (pictureUrl in src/data/cards.js; npm run thumbs makes them)
 group('Card illustrations 1440', (rel) => /^cards\/1440\/\d+\.webp$/.test(rel), { each: 450, total: 4600 });
 group('Share pictures', (rel) => /^og\/\d+\.jpg$/.test(rel), { each: 200, total: 2300 });
-group('Other pictures', (rel) => /^assets\/(?!panna\/|khanti\/|creatividad\/|evolucion\/)[\w-]+\/.*\.(webp|jpg|png)$/.test(rel), { each: 900, total: 4600 });
+group('Other pictures', (rel) => /^assets\/(?!panna\/|khanti\/|creatividad\/|evolucion\/|sila\/|viriya\/)[\w-]+\/.*\.(webp|jpg|png)$/.test(rel), { each: 900, total: 4600 });
 
 const over = rows.filter((row) => row.value > row.limit);
 // Only what is close to its line (or over it) is worth printing; the rest is fine
