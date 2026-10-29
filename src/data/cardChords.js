@@ -8,8 +8,8 @@
 // Inside a card its chord sets the pitch of the touch sounds and the ambience moves to it, so nothing clashes.
 
 // G major: Sol (throat, Aura, whose element is sound), Si (crown, Particular) and Re (sacral, Samas): expression,
-// creativity and spiritual connection. It shares a note with the chord of 28 of the 33 cards, so the step into a
-// card is mostly soft (the five that share none: Metta, Ciclos, Compromiso, Confianza and Perdón).
+// creativity and spiritual connection. It shares a note with the chord of 27 of the 33 cards, so the step into a
+// card is mostly soft (the six that share none: Metta, Belleza, Ciclos, Compromiso, Confianza and Perdón).
 // Why each card has its chord: docs/cartas.md
 export const BASE_CHORD = 'G';
 
@@ -27,7 +27,7 @@ const CHORDS = {
     10: BASE_CHORD, // " ... ": the blank card keeps the base sound
     11: 'Bm', // Aceptación
     12: 'Cmaj7', // Armonía: balance between sound and pause, security and expression opening calmly
-    13: 'G', // Belleza
+    13: 'Amaj7', // Belleza: seeing beauty (third eye) and recognising one's own (plexus), radiating it calmly (the throat as its seventh)
     14: 'Emaj7', // Celebración: personal power that is enjoyed, not imposed
     15: 'F7', // Ciclos: closing a cycle with the heart as guide, the seventh pushes on to the next
     16: 'A', // Compromiso: vision (third eye), root and plexus
@@ -43,7 +43,7 @@ const CHORDS = {
     26: 'Gm7', // Honestidad: "what do I feel?", introspective communication that listens to the heart
     27: 'D', // Paciencia: the Samas (Re)
     28: 'Fm', // Perdón: healing deep emotional wounds (heart, inwards)
-    29: 'D', // Sincronicidad: the Samas in pairs
+    29: BASE_CHORD, // Sincronicidad: in harmony with everything around, it sounds in the app's own chord (throat, with the Samas' Re)
     30: 'Bm7', // Esperanza: ancestors and guides, emotional roots guided by intuition
     31: 'Bmaj7', // Vipassana: contemplation, observing with the heart (crown and third eye)
     32: 'Dm7', // Transformación: a flow that settles and finds ground in the middle of change
