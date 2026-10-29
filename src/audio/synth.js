@@ -489,7 +489,7 @@ export const flow = (ctx, out, time, harmony, { step = 0.5, level = 1 } = {}) =>
     swish(ctx, out, time, { from: 600, to: 1300, duration: 0.7, level: 0.004 * level, q: 0.9 });
 };
 
-// The fire is let go (Encender): a rush of air rising from low, like a flame catching, over a low bowl on the root.
+// The fire is let go (Encender), or leaps (Sincronicidad, with the four bubbles lit): a rush of air rising from low, like a flame catching, over a low bowl on the root.
 // `level` (0..1) is how charged it was
 export const ignite = (ctx, out, time, harmony, level = 1) => {
     const h = harmony ?? PLAIN;
@@ -498,9 +498,10 @@ export const ignite = (ctx, out, time, harmony, level = 1) => {
     bell(ctx, out, time + 0.02, hz(h.voice - 12), 2.6, 0.04 * k);
 };
 
-// A seventh that resolves (Encender, when every light is lit): the card's chord rings once more as the tension it is,
-// and then moves to the chord a fifth below, which a dominant seventh asks for (B7 goes to E major: the corona comes down
-// to the plexus, Kätus's own note). Each voice moves to the nearest note of the new chord; the new root sounds below.
+// A seventh that resolves (when a card with a dominant seventh completes its game: Encender in Evolución, the tune of
+// Creatividad): the card's chord rings once more as the tension it is, and then moves to the chord a fifth below, which a
+// dominant seventh asks for (B7 goes to E major: the corona comes down to the plexus, Kätus's own note; C7 goes to F major,
+// the heart). Each voice moves to the nearest note of the new chord; the new root sounds below.
 export const resolve = (ctx, out, time, harmony) => {
     const h = harmony ?? PLAIN;
     const from = h.tones(h.voice, 11);
