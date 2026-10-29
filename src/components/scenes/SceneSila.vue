@@ -81,7 +81,7 @@
         c, i, art: { x: x + w / 2, y: y + h / 2, w, h }, crop: [ax / AW, ay / AH, w / AW, h / AH],
         rest: { left: 0, top: 0, w: 1, h: 1 }, x0: 0, phase: Math.random() * 6.28,
     }));
-    const CLOUD_SPEED = [4, 2.6];
+    const CLOUD_SPEED = [8, 5.5];
     let span = { left: 0, width: 1 };
 
     // ---- The mushrooms: where each glows (art px) and how far; every mote of their glow belongs to one
@@ -344,14 +344,15 @@
         const at = (y) => `${Math.max(0, Math.min(100, sy(y) / h * 100)).toFixed(1)}%`;
         root.value.style.background = `linear-gradient(to bottom, #6597b6 0%, #72a3c0 ${at(200)}, #77a7c3 ${at(1100)}, #82afc8 ${at(1740)}, #82afc8 100%)`;
 
-        // The clouds where the card draws them, spread a little over a wide sky; they drift and wrap round
+        // The clouds where the card draws them, spread a little over a wide sky and never over the card's name; they
+        // drift and wrap round
         const scale = k() * (phone ? 1.15 : 1);
         const wide = Math.max(w, F.size);
         let widest = 0;
         clouds.forEach((cl) => {
             const cw = cl.art.w * scale, ch = cl.art.h * scale;
             const x = w / 2 + (cl.art.x - 1080) / SIZE * wide;
-            const y = Math.max(0.05 * h + ch / 2, sy(cl.art.y));
+            const y = Math.max(titleBottom(h) + 16 + ch / 2, sy(cl.art.y));
             cl.x0 = x;
             cl.rest = { left: x - cw / 2, top: y - ch / 2, w: cw, h: ch };
             widest = Math.max(widest, cw);
@@ -396,6 +397,13 @@
         glyph = { left: r.left + r.w / 2 - rw / 2, top: r.top, w: rw, h: rh };
         L.rulito.place({ left: glyph.left - 0.4375 * glyph.w, top: glyph.top - 0.1628 * glyph.h, w: glyph.w * 1.875, h: glyph.h * 1.3256 },
             { x: glyph.left + glyph.w / 2, y: glyph.top + glyph.h });
+    };
+
+    // Where the card's name ends (the stage's h1, over the scene), so the clouds keep under it
+    const titleBottom = (h) => {
+        const title = stageEl?.querySelector('h1');
+        if (!title || !root.value) return 0.05 * h;
+        return title.getBoundingClientRect().bottom - root.value.getBoundingClientRect().top;
     };
 
     // The touch targets: Particular with his lectern, and Sid
@@ -509,13 +517,17 @@
             g.mesh.visible = g.opacity > 0.01;
         });
 
-        // ---- The clouds drift; the moon breathes
+        // ---- The clouds drift, rise and fall and billow as they go; the moon breathes
         clouds.forEach((cl) => {
             const node = L.clouds[cl.i];
             const moved = cl.x0 - CLOUD_SPEED[cl.c] * t;
             const wrapped = span.left + ((((moved - span.left) % span.width) + span.width) % span.width);
             node.x = wrapped - cl.x0;
-            node.y = Math.sin(t * 0.3 + cl.phase) * 4 * ramp;
+            const billow = Math.sin(t * 0.8 + cl.phase);
+            node.y = Math.sin(t * 0.35 + cl.phase) * 7 * ramp;
+            node.rotate = Math.sin(t * 0.25 + cl.phase * 2) * 1.5 * ramp;
+            node.sx = 1 + 0.05 * billow * ramp;
+            node.sy = 1 - 0.035 * billow * ramp;
         });
         L.moonGlow.opacity = 0.45 + 0.08 * Math.sin(t * 0.5) + 0.2 * named;
         L.moonNode.y = Math.sin(t * 0.2) * 3 * ramp + scroll * 12;
