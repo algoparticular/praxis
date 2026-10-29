@@ -417,6 +417,29 @@ export const kindle = (ctx, out, time, harmony, { step = 0 } = {}) => {
     swish(ctx, out, time, { from: 2200, to: 4200, duration: 0.25, level: 0.006, q: 2 });
 };
 
+// Going with the current (Fluir): a soft round note of the card's chord that slides into place like water, a little
+// moving water under it. Played again and again while the current is accompanied; `step` (0..1) is how high on the
+// chord it lands (it rises and falls with the current's pace) and `level` how loud
+export const flow = (ctx, out, time, harmony, { step = 0.5, level = 1 } = {}) => {
+    const h = harmony ?? PLAIN;
+    const notes = h.tones(h.voice - 12, 26);
+    const target = hz(notes[Math.round(Math.min(1, Math.max(0, step)) * (notes.length - 1))]);
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(target * 0.94, time);
+    osc.frequency.exponentialRampToValueAtTime(target, time + 0.16);
+    gain.gain.setValueAtTime(0.0001, time);
+    gain.gain.exponentialRampToValueAtTime(0.03 * level, time + 0.07);
+    gain.gain.exponentialRampToValueAtTime(0.0001, time + 0.9);
+    osc.connect(gain);
+    gain.connect(out);
+    osc.start(time);
+    osc.stop(time + 1);
+    bell(ctx, out, time + 0.05, target, isMinor(h.kind) ? 1.8 : 1.4, 0.014 * level);
+    swish(ctx, out, time, { from: 600, to: 1300, duration: 0.7, level: 0.004 * level, q: 0.9 });
+};
+
 // The fire is let go (Encender): a rush of air rising from low, like a flame catching, over a low bowl on the root.
 // `level` (0..1) is how charged it was
 export const ignite = (ctx, out, time, harmony, level = 1) => {
