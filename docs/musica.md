@@ -186,6 +186,7 @@ También es la base que mejor se lleva con las cartas. Comparte al menos una not
   - Cada toque (`tap`) cae en una nota del acorde, así que tocar varias veces arma una melodía.
   - Cada estrella (`star`) rasguea el acorde. El mayor brilla, el menor es más lento y suave, y la séptima "late".
   - Cuando aparece el rulito de un juego suena `rulito`: el acorde sube de la fundamental a la fundamental de arriba y ahí suena entero, una octava sobre el de la carta (la ley de octava).
+  - En Encender (Evolución Espiritual), antes del rulito suena `resolve`: el acorde de la carta, Si7, suena una vez como la tensión que es y se resuelve en Mi mayor, el acorde una quinta abajo, que es lo que pide una séptima de dominante. Mi es la nota de Kätus, el dueño del verbo: la carga de fuego se libera en el plexo. Después el rulito vuelve a subir en Si7, una octava arriba: lo que se completa empieza de nuevo.
 - **Al salir de la carta**, el sonido vuelve a Sol mayor.
 
 ## Secuencias para trabajar en uno mismo

@@ -35,7 +35,7 @@ Los siete verbos, uno por chakra, quedan ordenados entre dos polos:
 - **Arraigar** (raíz) es el polo de la manifestación: de la materia a la manifestación. Está probado en Paciencia.
 - **Soltar** (corona) es el polo de la liberación: del entendimiento a la existencia. Está probado en Vipassana.
 - **Dar y recibir** (corazón) es donde las dos corrientes se encuentran. Las notas de Belén lo dicen así: "dos triángulos entrelazados, el movimiento descendente del espíritu en la materia y la liberación ascendente de la materia en el espíritu: equilibrio perfecto en el corazón". Está implementado en Dana: compartir la luz de la llamita con todos los de la isla, y que vuelva multiplicada (ver más abajo, en "Dinámicas").
-- **Fluir, Encender, Resonar y Ver** serían los pasos entre un polo y el otro.
+- **Fluir, Encender, Resonar y Ver** serían los pasos entre un polo y el otro. Ver está probado en Pañña y Encender en Evolución Espiritual.
 
 Esto se parece a lo que el rulito premia: en las notas del tercer chakra, "siento las dos corrientes, ascendente de liberación y descendente de manifestación, que se unen en mí para manifestar mi propósito de ser quien soy".
 
@@ -71,14 +71,14 @@ Las palabras del libro para cada chakra, subiendo y bajando:
 - **El premio es el rulito.** Completar el gesto es "uy, me conecté con el Todo": el rulito aparece, se dibuja o se enciende. Cada conexión es distinta: el rulito nunca sale con la misma forma dos veces. No se ve hasta que se empieza a jugar.
 - **La lectura no se bloquea.** La descripción, la afirmación y la invitación están siempre disponibles. El juego no es una puerta.
 - **Se puede jugar sin tocar la pantalla:** con teclado (Enter o espacio) y con `prefers-reduced-motion` (sin chispas ni animaciones largas, pero el gesto funciona).
-- **Suena en el acorde de la carta** (`src/data/cardChords.js`): los toques son notas de ese acorde. El cierre del gesto, cuando aparece el rulito, es ese mismo acorde **en la octava siguiente** (`rulito`): sus notas suben de la fundamental a la fundamental de arriba y ahí suena entero. Es la ley de octava de Gurdjieff: un proceso que se completa vuelve a empezar en el do de arriba (ver `musica.md`).
+- **Suena en el acorde de la carta** (`src/data/cardChords.js`): los toques son notas de ese acorde. El cierre del gesto, cuando aparece el rulito, es ese mismo acorde **en la octava siguiente** (`rulito`): sus notas suben de la fundamental a la fundamental de arriba y ahí suena entero. Es la ley de octava de Gurdjieff: un proceso que se completa vuelve a empezar en el do de arriba (ver `musica.md`). En Encender, antes del rulito, el acorde de la carta (Si7) se resuelve en Mi mayor, la nota de Kätus (`resolve`).
 - **Dura poco.** Un gesto completo se resuelve en pocos segundos y se puede repetir.
 
 ## Dinámicas: qué propone cada verbo
 
 Cada carta tiene un verbo (`verb` en `src/data/cards.json`, lista en `src/data/verbs.js`). El verbo define la **dinámica**: qué hace la persona con la escena. La ilustración, el sonido y el significado los pone cada carta. Los siete verbos son uno por personaje y chakra (ver arriba).
 
-Cuatro verbos se probaron en una escena: **Arraigar en Paciencia**, **Soltar en Vipassana**, **Ver en Pañña** y **Dar y recibir en Dana** (compartir la luz). Lo implementado no es fijo: son ideas probadas y pueden cambiar. El resto son propuestas, tomando como punto de partida lo que ya hacen las escenas.
+Cinco verbos se probaron en una escena: **Arraigar en Paciencia**, **Soltar en Vipassana**, **Ver en Pañña**, **Dar y recibir en Dana** (compartir la luz) y **Encender en Evolución Espiritual** (cargar y soltar el fuego). Lo implementado no es fijo: son ideas probadas y pueden cambiar. El resto son propuestas, tomando como punto de partida lo que ya hacen las escenas.
 
 Orden de los verbos: Arraigar (raíz) y Soltar (corona) son los dos polos, la corriente de manifestación y la de liberación, y Dar y recibir (corazón) es donde se encuentran. Los dos polos y el centro están probados: el centro, en Dana. Ver arriba, sección "Dos corrientes".
 
@@ -96,11 +96,20 @@ Orden de los verbos: Arraigar (raíz) y Soltar (corona) son los dos polos, la co
 **Idea:** arrastrar el dedo acompañando un movimiento; cuando se acompasa, la escena "entra en ritmo" y aparece el rulito. Los corchos de Khanti que vacían los frascos quedan como la parte de soltar dentro del mismo juego.
 **Cartas:** Khanti, Celebración, Transformación, Aceptación (su ilustración es un río entre dos seres iguales bajo cielos distintos, y su texto pide no luchar contra lo que no se controla).
 
-### 3. Encender (Kätus, demonio: vergüenza)
-**Dinámica:** cargar y soltar. Juntar energía y lanzarla, o encender cosas hasta que todas estén encendidas.
-**Punto de partida:** en Evolución Espiritual los ocho bulbos y los cuatro hongos ya se encienden al tocarlos.
-**Idea:** que los bulbos se enciendan en cualquier orden y el rulito aparece cuando están todos encendidos; o mantener para cargar y soltar para lanzar un salto hacia el sol (Kätus salta buscando el sol).
-**Cartas:** Viriya, Coraje, Desafío, Evolución Espiritual.
+### 3. Encender (Kätus, demonio: vergüenza): implementado en Evolución Espiritual
+**Dinámica:** cargar y soltar. Juntar fuego adentro y largarlo hacia afuera, hasta encender lo que rodea.
+**Por qué así:** la primera idea era tocar los bulbos en cualquier orden hasta que estuvieran todos encendidos, pero eso es el mismo gesto que Dana (un toque a cada uno hasta que todos tienen su luz). Encender usa la otra mitad del verbo, cargar y soltar, que no se parece a ningún otro: en Arraigar soltar deshace, en Encender **soltar es el acto**. Y la carta lo pide de adentro hacia afuera: *"una alma iluminada es capaz de transformar cada atmósfera que habita, siendo faro para otros"*. El demonio de Kätus es la vergüenza, esconder la propia luz; Sid está acurrucado.
+**El motor, común a las cartas del verbo:** una fuente que se carga mientras se mantiene apretado y receptores que se encienden cuando se suelta. Lo encendido queda encendido, así que las cargas cortas se van sumando ("un día a la vez", Viriya) y una carga completa enciende todo de una vez. Coraje podría ser Kätus en el borde del acantilado cargando el salto hacia el sol.
+**Cómo funciona hoy en Evolución Espiritual:**
+- *Cargar.* Se mantiene apretado dentro de la célula (dedo, clic o Enter): Sid se enciende, de él suben brasas cada vez más grandes y el agua de la célula se entibia hacia el dorado de Kätus. Cada 0,33 s (2,6 s / 8) uno más de los bulbos apagados queda listo, empezando por los más cercanos a Sid: titila, y suena una nota más del acorde de la carta, subiendo (`kindle`).
+- *Soltar.* Al levantar el dedo sale de Sid un anillo de fuego (`ignite`) que se ensancha hasta la pared de la célula y se queda sobre ella; ahí prenden, uno tras otro, los bulbos que estaban listos (chispas y `link`). Una carga muy corta no alcanza para ninguno: el anillo sale chico y nada se enciende, y así se aprende que hay que cargar.
+- *Se suman.* Los bulbos encendidos quedan encendidos y respiran con una luz tibia; la próxima carga sigue con los que faltan.
+- *El faro.* Con los ocho encendidos, la corona entera brilla hacia afuera, los anillos de puntos se avivan y Sid se estira un poco: deja de esconderse. Suena `resolve`: Si7 se resuelve en Mi mayor, la nota de Kätus (ver `musica.md`). Después nace el rulito dorado sobre la cabeza de Sid, se ilumina el nombre de la carta y suena `rulito`. Al rato el rulito se va, los bulbos se apagan despacio y se puede volver a jugar. Hito: `crown_lit` (con `times`).
+- *Pista, sin palabras.* Si pasan 8 s sin tocar nada, el fuego de Sid late una vez.
+- *Tocar un bulbo o un hongo* hace lo de siempre: brilla y echa chispas.
+- *Movimiento reducido.* La escena queda estática y todavía no se puede jugar (como Pañña, Vipassana y Dana).
+**Dónde se tocó:** `SceneEvolucion.vue` (`press()`, `letGo()`, `catchFire()`, `crown()`, `ringGroup`, `play_()`), y `kindle`, `ignite` y `resolve` en `synth.js`.
+**Cartas:** Evolución Espiritual (hecha), Viriya, Coraje, Desafío.
 
 ### 4. Dar y recibir (Vulpes, demonio: pena): implementado en Dana
 **Dinámica:** compartir la luz. Dar sin pensar y sin esperar nada a cambio, y descubrir que dar no vacía: lo dado vuelve multiplicado, sin pedirlo.
