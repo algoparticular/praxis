@@ -26,6 +26,9 @@
 // and layers drawn in code: glow (a soft radial light, CSS radial-gradient stops) and disc (a plain disc of colour,
 // with { water } the light of the water rippling across it).
 //
+// Underlay. A scene that draws something with its own three.js scene and camera (Vipassana's field of cells) hands it
+// to underlay(fn): it is drawn inside every render, over the layers marked { under: true } and under all the others.
+//
 // Bloom. Layers and particle groups marked { bloom: true } are drawn a second time, small and blurred, and added on top
 // with stage.bloom (0..1). At 0 none of that runs, so it costs only while a scene asks for it (the rulito moments).
 //
@@ -72,6 +75,7 @@ const LAYER_FRAGMENT = `
     uniform float uSheen;
     uniform vec2 uSink;            // on (0/1), level (0 full .. 1 empty)
     uniform vec4 uClip;            // device px: x0, y0, x1, y1 (from the bottom left); x1 < x0 means no clip
+    uniform float uVignette;       // 0..0.5: it fades out towards its four edges (a blurred glow must not end in a hard box)
     varying vec2 vUv;
     void main() {
         if (uClip.z >= uClip.x && (gl_FragCoord.x < uClip.x || gl_FragCoord.x > uClip.z || gl_FragCoord.y < uClip.y || gl_FragCoord.y > uClip.w)) discard;
@@ -102,6 +106,10 @@ const LAYER_FRAGMENT = `
             // The liquid sinks: what is above its level fades out over a soft edge
             float g = ((1.0 - vUv.y) + 1.0 - uSink.y) / 2.0;
             c *= clamp((g - 0.44) / 0.12, 0.0, 1.0);
+        }
+        if (uVignette > 0.0) {
+            vec2 e = min(vUv, 1.0 - vUv);
+            c *= smoothstep(0.0, uVignette, e.x) * smoothstep(0.0, uVignette, e.y);
         }
         gl_FragColor = vec4(c.rgb, c.a) * uOpacity;
     }`;
@@ -204,6 +212,8 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(fov, 1, 1, 1e6);
     const BLOOM_LAYER = 1;
+    const UNDER_LAYER = 2;
+    const underlays = [];
 
     let width = 1, height = 1, distance = 1;
     const look = { x: 0, y: 0 };                 // the camera's slide, px at the focal plane
@@ -298,7 +308,7 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
         }
 
         plane(texture, { rect = { left: 0, top: 0, w: 1, h: 1 }, pivot = null, wind = null, shimmer = 0, water = 0, sheen = 0, sink = false, blur = 0, bloom = false,
-            blending = 'normal', segments = null } = {}) {
+            blending = 'normal', segments = null, under = false, vignette = 0 } = {}) {
             const node = new Node(this);
             const segs = segments ?? (wind ? [24, 10] : [1, 1]);
             const uniforms = {
@@ -315,6 +325,7 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
                 uSheen: { value: sheen },
                 uSink: { value: new THREE.Vector2(sink ? 1 : 0, 0) },
                 uClip: { value: new THREE.Vector4(1, 0, 0, 0) },
+                uVignette: { value: vignette },
                 uSize: { value: new THREE.Vector2(1, 1) },
                 uWind: { value: new THREE.Vector4(wind?.amp ?? 0, wind?.speed ?? 1, wind?.root === 'top' ? 1 : 0, Math.random() * 6.28) },
             };
@@ -325,6 +336,8 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
                 premultipliedAlpha: true,
             });
             node.attach(new THREE.Mesh(new THREE.PlaneGeometry(1, 1, segs[0], segs[1]), material), rect, pivot, bloom);
+            // Under: drawn first, beneath what a scene draws itself in the stage's renderer (underlay())
+            if (under) node.mesh.layers.set(UNDER_LAYER);
             return node;
         }
 
@@ -567,10 +580,25 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
             tickers.forEach((fn) => fn(t, dt));
             nodes.forEach((node) => node.update(1));
             renderer.setRenderTarget(null);
-            renderer.render(scene, camera);
+            if (underlays.length) {
+                // The layers marked under, then what the scene draws itself (its own scene and camera), then the rest
+                renderer.autoClear = false;
+                renderer.setClearColor(0x000000, 0);
+                renderer.clear();
+                camera.layers.set(UNDER_LAYER);
+                renderer.render(scene, camera);
+                underlays.forEach((fn) => fn(t, dt));
+                camera.layers.set(0);
+                renderer.render(scene, camera);
+                renderer.autoClear = true;
+            } else renderer.render(scene, camera);
             if (stage.bloom > 0.01) drawBloom(Math.min(1, stage.bloom));
             dirty = false;
         },
+
+        // Something a scene draws itself with the stage's renderer (another scene, its own camera), after the layers
+        // marked { under: true } and before all the others: fn(t, dt) is called inside every render
+        underlay(fn) { underlays.push(fn); },
 
         // For still scenes (reduced motion): draws again once something has changed (a picture arrived)
         renderIfNeeded() { if (dirty) stage.render(time); },

@@ -20,7 +20,7 @@ const scenes = {
     25: stage(() => import('../components/scenes/SceneHogar.vue')),
     27: stage(() => import('../components/scenes/ScenePaciencia.vue')),
     29: stage(() => import('../components/scenes/SceneSincronicidad.vue')),
-    31: lazy(() => import('../components/scenes/SceneVipassana.vue')),
+    31: stage(() => import('../components/scenes/SceneVipassana.vue')),
 };
 
 export const sceneFor = (id) => scenes[id] ?? SceneFlat;
