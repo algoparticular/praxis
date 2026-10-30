@@ -1,7 +1,7 @@
-// The layers of Paciencia as exported (3240px PNGs; they are in the git history: the boat in
-// originales/paciencia/Paciencia-N.png from commit 53d2632, the ground in originales/paciencia/paciencia-piso from
-// commit 8008718) -> public/assets/paciencia/boat.webp, an atlas of every piece of the boat and its crew,
-// cone.webp (the pine cone, layers 1 and 2 of the boat), plants.webp and mushrooms.webp (the strip of the ground: its
+// The layers of Paciencia as exported (3240px PNGs; they are in the git history from commit c59acb9: the boat in
+// originales/paciencia/Paciencia-N.png, the ground in originales/paciencia/paciencia-piso)
+// -> public/assets/paciencia/boat.webp, an atlas of every piece of the boat and its crew,
+// cone.webp (the pine cone, layers 1 and 2 of the boat), grass.webp and mushrooms.webp (the strip of the ground: its
 // grass, and the coral with its mushrooms), and src/composables/pacienciaScene.json: where every piece of the boat
 // sits (px of the 3240 square) and where it is in the atlas, so the scene can move each little being on its own; and,
 // in fractions of the strip, where the caps of its mushrooms and the little balls of its coral are (they lean and
