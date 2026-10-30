@@ -27,8 +27,9 @@
 //   dissolve 0xRRGGBB  it can come undone from the bottom up: uniforms.uDissolve.value.y is how far (0 whole .. 1 gone),
 //            along a ragged edge (noise) that glows in that colour as it eats in (Nekkhamma's Sid)
 //   bright, saturate, tint + tintAmount  for lighting a layer up (the pine cone held)
-// and layers drawn in code: glow (a soft radial light, CSS radial-gradient stops) and disc (a plain disc of colour,
-// with { water } the light of the water rippling across it).
+// and layers drawn in code: glow (a soft radial light, CSS radial-gradient stops), disc (a plain disc of colour,
+// with { water } the light of the water rippling across it) and field (two colours that meet and never mix, as water
+// and oil: Upekkha's two halves).
 //
 // Underlay. A scene that draws something with its own three.js scene and camera (Vipassana's field of cells) hands it
 // to underlay(fn): it is drawn inside every render, over the layers marked { under: true } and under all the others.
@@ -191,6 +192,57 @@ const DISC_FRAGMENT = `
             col += vec3(caustic(vUv, uTime)) * 0.1 * uWater;
         }
         gl_FragColor = vec4(col * a, a) * uOpacity;
+    }`;
+
+// Two colours that meet and never mix, as water and oil. The map's red says which one is where (0 the first, 1 the
+// second, softened round the edge, so its middle is the edge) and its green, with uShaped, where it is drawn at all.
+// A slow noise, warped by another, moves the edge: within the soft band it bulges, pinches off drops and takes them
+// back; uDrops (x, y, radius px, +1 a drop of the second colour, -1 of the first) are drops placed by the scene, which
+// merge with their own colour when they touch it. Each side is a little lighter right at the edge, with a thin bright
+// line where they meet (surface tension)
+const FIELD_FRAGMENT = `
+    uniform sampler2D map;
+    uniform vec3 uA;
+    uniform vec3 uB;
+    uniform float uOpacity;
+    uniform float uTime;
+    uniform float uWobble;
+    uniform float uFlow;
+    uniform float uShaped;
+    uniform vec4 uRect;            // where the plane is, px: left, top, width, height
+    uniform vec4 uDrops[8];
+    varying vec2 vUv;
+    float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+    float noise(vec2 p) {
+        vec2 i = floor(p), f = fract(p);
+        f = f * f * (3.0 - 2.0 * f);
+        return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x), mix(hash(i + vec2(0.0, 1.0)), hash(i + 1.0), f.x), f.y);
+    }
+    float fbm(vec2 p) { return 0.6 * noise(p) + 0.3 * noise(p * 2.1 + 5.3) + 0.1 * noise(p * 4.3 + 1.7); }
+    void main() {
+        vec4 c = texture2D(map, vUv);
+        vec2 px = uRect.xy + vec2(vUv.x, 1.0 - vUv.y) * uRect.zw;
+        float t = uTime * uFlow;
+        vec2 q = px / 160.0;
+        vec2 warp = vec2(fbm(q + vec2(t * 0.035, 0.0)), fbm(q + vec2(4.1, -t * 0.03))) - 0.5;
+        float f = c.r + (fbm(px / 75.0 + warp * 1.6 + vec2(0.0, t * 0.02)) - 0.5) * 0.6 * uWobble;
+        for (int i = 0; i < 8; i++) {
+            vec4 d = uDrops[i];
+            if (d.z <= 0.0) continue;
+            vec2 e = (px - d.xy) / d.z;
+            f += d.w * 0.5 * exp(1.0 - dot(e, e));
+        }
+        float w = max(fwidth(f), 0.0001);
+        vec3 col = mix(uA, uB, smoothstep(0.5 - w, 0.5 + w, f));
+        float near = abs(f - 0.5);
+        col = mix(col, vec3(1.0), (1.0 - smoothstep(0.0, 0.1, near)) * 0.06);
+        col = mix(col, vec3(1.0), (1.0 - smoothstep(w * 0.8, w * 2.6, near)) * 0.2);
+        float a = 1.0;
+        if (uShaped > 0.0) {
+            float ws = max(fwidth(c.g), 0.0001);
+            a = smoothstep(0.5 - ws, 0.5 + ws, c.g);
+        }
+        gl_FragColor = vec4(col, 1.0) * a * uOpacity;
     }`;
 
 const QUAD_VERTEX = `
@@ -438,6 +490,45 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
             return node;
         }
 
+        // Two colours that meet and never mix (FIELD_FRAGMENT): source is a canvas drawn by the scene (red: which
+        // colour, softened round the edge; green, with shaped, where it is drawn). node.drops is its list of up to
+        // eight drops, [x, y, radius, ±1] each, read every frame; call node.refresh() after drawing on the canvas
+        field({ rect, source, colors = [0x000000, 0xffffff], shaped = false, flow = 1 } = {}) {
+            const node = new Node(this);
+            const texture = new THREE.CanvasTexture(source);
+            texture.colorSpace = THREE.NoColorSpace;
+            texture.generateMipmaps = false;
+            texture.minFilter = THREE.LinearFilter;
+            textures.push(texture);
+            const uniforms = {
+                map: { value: texture },
+                uA: { value: new THREE.Color(...parseColor(colors[0])) },
+                uB: { value: new THREE.Color(...parseColor(colors[1])) },
+                uOpacity: { value: 1 },
+                uTime: { value: 0 },
+                uWobble: { value: 1 },
+                uFlow: { value: flow },
+                uShaped: { value: shaped ? 1 : 0 },
+                uRect: { value: new THREE.Vector4(0, 0, 1, 1) },
+                uDrops: { value: Array.from({ length: 8 }, () => new THREE.Vector4(0, 0, 0, 0)) },
+            };
+            const material = new THREE.ShaderMaterial({
+                uniforms, vertexShader: GLOW_VERTEX, fragmentShader: FIELD_FRAGMENT,
+                transparent: true, depthTest: false, depthWrite: false, premultipliedAlpha: true,
+            });
+            node.attach(new THREE.Mesh(new THREE.PlaneGeometry(1, 1), material), rect ?? { left: 0, top: 0, w: 1, h: 1 }, null, false);
+            node.drops = [];
+            let size = [source.width, source.height];
+            node.refresh = () => {
+                if (source.width !== size[0] || source.height !== size[1]) {
+                    size = [source.width, source.height];
+                    texture.dispose();
+                }
+                texture.needsUpdate = true;
+            };
+            return node;
+        }
+
         attach(mesh, rect, pivot, bloom) {
             this.mesh = mesh;
             mesh.renderOrder = ++order;
@@ -490,6 +581,8 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
                 u.uOpacity.value = opacity;
                 if (u.uTime) u.uTime.value = time;
                 if (u.uSize) u.uSize.value.set(r.w, r.h);
+                if (u.uRect) u.uRect.value.set(r.left, r.top, r.w, r.h);
+                if (u.uDrops) u.uDrops.value.forEach((v, i) => { const d = this.drops[i]; v.set(d?.[0] ?? 0, d?.[1] ?? 0, d?.[2] ?? 0, d?.[3] ?? 0); });
                 if (u.uEdge) u.uEdge.value = Math.min(0.5, 3 / Math.max(r.w, 1));
                 if (u.uClip) {
                     if (clip) u.uClip.value.set(clip.left * dpr, (height - clip.top - clip.h) * dpr, (clip.left + clip.w) * dpr, (height - clip.top) * dpr);
