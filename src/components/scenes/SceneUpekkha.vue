@@ -583,13 +583,29 @@
         const land = s.depth(zFor(DEPTH.land));
         L.landNode = land;
         L.ground = land.field({ source: groundField, colors: [R.past.color, R.ground.color], shaped: true, flow: 0.7 });
-        L.water = [-1, 0, 1].map((side) => ({ side, node: land.image('/assets/upekkha/water.webp', { water: 0.7 }) }));
-        L.fern = [-1, 0, 1].map((side) => ({ side, node: land.image('/assets/upekkha/fern.webp', { wind: { amp: 5, speed: 0.7, root: 'bottom' } }) }));
-        L.land = [-1, 0, 1].map((side) => ({ side, node: land.image('/assets/upekkha/land.webp') }));
-        L.flowers = art.flowers.map(() => {
-            const g = land.glow({ rect: { left: 0, top: 0, w: 1, h: 1 }, color: 0xfff0a0, stops: [[0, 0.55], [0.3, 0.22], [0.65, 0]], bloom: true });
-            return g;
+        // In the order the card draws them, each in the frame and in its mirrored copies: the pond (its water rippling
+        // with light, its outline, the white of its shine drifting and trembling), the little yellow plants (each on its
+        // own, swaying from its foot), the fern, the land, the crystals (a light sweeps across them now and then) and
+        // the rocks and line work over them
+        const trio = (name, opts) => [-1, 0, 1].map((side) => ({ side, name, node: land.image(`/assets/upekkha/${name}.webp`, opts) }));
+        L.water = trio('water', { water: 1.3 });
+        L.pond = trio('pond');
+        L.shine = trio('shine', { shimmer: 0.8 });
+        L.plants = art.plants.map((box) => {
+            const [x, y, w, h] = box, P = B.plants;
+            const crop = [(x - P[0]) / P[2], (y - P[1]) / P[3], w / P[2], h / P[3]];
+            // The taller, the more it sways
+            return { box, copies: trio('plants', { crop, wind: { amp: Math.min(9, 2 + h / 60), speed: 0.8 + Math.random() * 0.5, root: 'bottom' } }) };
         });
+        L.fern = trio('fern', { wind: { amp: 5, speed: 0.7, root: 'bottom' } });
+        L.land = trio('land');
+        L.crystals = trio('crystals', { sheen: 0.9 });
+        L.rocks = trio('rocks');
+        const light = (color, strength) => land.glow({ rect: { left: 0, top: 0, w: 1, h: 1 }, color, stops: [[0, strength], [0.3, strength * 0.4], [0.65, 0]], bloom: true });
+        L.flowers = art.flowers.map(() => light(0xfff0a0, 0.6));
+        L.sprouts = art.sprouts.map(() => light(0xfff0a0, 0.5));
+        // A crystal glints now and then: a quick light, as a facet catches the sun
+        L.glints = art.crystals.map(() => ({ node: light(0xf4fbff, 0.9), at: 2 + Math.random() * 8 }));
         land.enter({ y: 40, delay: 100, duration: 1700 });
 
         const sid = s.depth(zFor(DEPTH.sid));
@@ -633,16 +649,18 @@
         area = paintRegions(w, h);
         [L.sky, L.ground].forEach((field) => { field.place(area); field.refresh(); field.uniforms.uScale.value = k(); });
         L.doodles.place(rectOf(B.doodles));
-        const water = rectOf(B.water), land = rectOf(B.land);
         // The mirrored copies: about the frame's left edge, and about its right one
         const mirror = (r, side) => (side < 0 ? { ...r, left: 2 * sx(0) - r.left - r.w } : side > 0 ? { ...r, left: 2 * sx(SIZE) - r.left - r.w } : r);
-        L.water.forEach(({ side, node }) => { node.place(mirror(water, side)); node.sx = side ? -1 : 1; });
-        L.land.forEach(({ side, node }) => { node.place(mirror(land, side)); node.sx = side ? -1 : 1; });
-        L.fern.forEach(({ side, node }) => { node.place(mirror(rectOf(B.fern), side)); node.sx = side ? -1 : 1; });
-        art.flowers.forEach(([x, y, r], i) => {
-            const d = Math.max(40, r * 6 * k());
-            L.flowers[i].place({ left: sx(x) - d / 2, top: sy(y) - d / 2, w: d, h: d });
-        });
+        const lay = (copies, rect) => copies.forEach(({ side, node }) => { node.place(mirror(rect, side)); node.sx = side ? -1 : 1; });
+        [L.water, L.pond, L.shine, L.fern, L.land, L.crystals, L.rocks].forEach((copies) => lay(copies, rectOf(B[copies[0].name])));
+        L.plants.forEach(({ box, copies }) => lay(copies, rectOf(box)));
+        const at = (node, [x, y, r], times, least) => {
+            const d = Math.max(least, r * times * k());
+            node.place({ left: sx(x) - d / 2, top: sy(y) - d / 2, w: d, h: d });
+        };
+        art.flowers.forEach((f, i) => at(L.flowers[i], f, 6, 40));
+        art.sprouts.forEach((f, i) => at(L.sprouts[i], f, 6, 26));
+        art.crystals.forEach((f, i) => at(L.glints[i].node, f, 3.4, 30));
 
         L.body.place(rectOf(B.sid));
         L.sid.pivot = { x: sx(BASE[0]), y: sy(BASE[1]) };
@@ -697,10 +715,23 @@
         L.skyNode.y = scroll * 8;
         L.landNode.y = scroll * 18;
 
-        // ---- The little flowers glow
+        // ---- The little flowers and the sprouts glow, each breathing at its own pace, and the crystals glint
         art.flowers.forEach((_, i) => {
-            const g = L.flowers[i];
-            g.opacity = 0.55 + 0.2 * Math.sin(t * 1.4 + i * 1.7) * ramp + 0.25 * named;
+            L.flowers[i].opacity = 0.55 + 0.35 * Math.sin(t * (0.9 + 0.13 * i) + i * 1.7) * ramp + 0.25 * named;
+        });
+        art.sprouts.forEach((_, i) => {
+            L.sprouts[i].opacity = 0.45 + 0.4 * Math.sin(t * (1.1 + 0.17 * i) + i * 2.3) * ramp + 0.25 * named;
+        });
+        L.glints.forEach((g) => {
+            if (!reduced && t > g.at + 1.2) g.at = t + 3 + Math.random() * 9;
+            const p = (t - g.at) / 1.2;
+            g.node.opacity = p > 0 && p < 1 ? Math.sin(Math.PI * p) ** 3 : 0;
+            g.node.scale = 0.7 + 0.5 * Math.max(0, Math.min(1, p));
+        });
+        // ---- The pond's shine drifts on the water
+        L.shine.forEach(({ node, side }) => {
+            node.x = Math.sin(t * 0.35) * 0.006 * F.size * ramp * (side ? -1 : 1);
+            node.y = Math.sin(t * 0.5 + 1) * 0.002 * F.size * ramp;
         });
 
         // ---- Sid: he breathes, leans to where he is pulled, and his aura grows calmer and brighter

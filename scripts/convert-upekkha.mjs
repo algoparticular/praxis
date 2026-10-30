@@ -11,6 +11,9 @@
 //   aura       the stipple round Sid (33, 34), as dots [x, y, radius]
 //   glow       the yellow stipple round the mushrooms (19), as dots
 //   flowers    the yellow heads of the little flowers (6), [x, y, r], for a light on each
+//   plants     the box of each little yellow plant (6, 7, 8) in the plants picture, so each sways on its own
+//   crystals   the crystals (22), [x, y, r], for their glints
+//   sprouts    the little yellow sprouts of the future (small caps of 21), [x, y, r], for a light on each
 //   head, rulito  where Sid's head and the card's rulito (41) are, and the rulito's colour
 // The originals are not kept in the repo once converted. Usage: node scripts/convert-upekkha.mjs
 import { mkdir, writeFile } from 'node:fs/promises';
@@ -27,8 +30,8 @@ const S = 2160;
 // Pictures made of one or more layers, drawn in this order. 41 (the rulito over Sid) is not converted: the scene draws
 // it in code, as every rulito; only its place and colour are kept
 const pictures = {
-    doodles: [1], water: [3], fern: [9],
-    land: [2, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32],
+    doodles: [1], water: [3], pond: [2, 5], shine: [4], plants: [6, 7, 8], fern: [9],
+    land: [10, 11, 12, 13, 14, 15, 16, 17, 18, 20, 21], crystals: [22, 23, 24], rocks: [25, 26, 27, 28, 29, 30, 31, 32],
     sid: [35, 36, 37, 38, 39, 40],
 };
 const PAD = 4;
@@ -100,7 +103,7 @@ const stipple = (data, step, size) => {
 };
 
 await mkdir(target, { recursive: true });
-const scene = { size: S, boxes: {}, regions: {}, dots: { color: 0, list: [] }, aura: [], glow: [], flowers: [] };
+const scene = { size: S, boxes: {}, regions: {}, dots: { color: 0, list: [] }, aura: [], glow: [], flowers: [], plants: [], crystals: [] };
 
 // Plain pictures (the doodles of the sky are only its three strokes: its specks are particles)
 const specks = (await load(1)).data;
@@ -432,9 +435,30 @@ scene.aura = [...stipple((await load(33)).data, 6, [1.6, 1.4]), ...stipple((awai
     scene.rulitoColor = `#${hex(cr / n, cg / n, cb / n).toString(16).padStart(6, '0')}`;
 }
 
+// ---- The little yellow plants (heads, stems and leaves), each on its own so each sways from its foot: their boxes
+// in art px (inside the plants picture, by its box), and the crystals (their fill), as [x, y, r] for their glints
+{
+    const flat = await rawOf(await flatten(pictures.plants));
+    const near = new Uint8Array(S * S * 4);
+    for (let i = 0; i < S * S; i++) if (flat[i * 4 + 3] > 20) near[i * 4 + 3] = 255;
+    for (let pass = 0; pass < 18; pass++) {
+        const was = Uint8Array.from(near);
+        for (let i = S; i < S * S - S; i++) if (!was[i * 4 + 3] && (was[(i - 1) * 4 + 3] || was[(i + 1) * 4 + 3] || was[(i - S) * 4 + 3] || was[(i + S) * 4 + 3])) near[i * 4 + 3] = 255;
+    }
+    scene.plants = blobsOf(near, S, S).filter((b) => b.area > 2000).map((b) => {
+        const keep = new Set(b.pixels);
+        return boxOf(flat, S, S, (i) => keep.has(i));
+    });
+    // The little yellow sprouts of the future (the small caps of 21, not the big mushrooms'), for a light on each
+    const caps = (await load(21)).data;
+    scene.sprouts = blobsOf(caps, S, S).filter((b) => b.area > 40 && b.area < 2500).map((b) => [Math.round(b.x), Math.round(b.y), Math.round(Math.sqrt(b.area / Math.PI))]);
+    const { data } = await load(22);
+    scene.crystals = blobsOf(data, S, S).filter((b) => b.area > 150).map((b) => [Math.round(b.x), Math.round(b.y), Math.round(Math.sqrt(b.area / Math.PI))]);
+}
+
 await writeFile(path.join(root, 'src', 'composables', 'upekkhaScene.json'), JSON.stringify(scene));
 const R = scene.regions;
 console.log(Object.keys(scene.boxes).length, 'pictures; regions: ground', R.past.loops.length, 'loops; edges', R.edge.map((e) => e.x.length).join(' '), 'rows;',
     R.bubbles.length, 'bubbles; horizon', R.horizon, '; colours', ['sky', 'future', 'past', 'ground'].map((k) => R[k].color.toString(16)).join(' '),
     `; ${scene.dots.list.length} specks (${scene.dots.color.toString(16)}); aura ${scene.aura.length}; glow ${scene.glow.length} (${scene.glowColor.toString(16)}); flowers`,
-    JSON.stringify(scene.flowers), 'head', scene.head, 'rulito', scene.rulito, scene.rulitoColor);
+    JSON.stringify(scene.flowers), 'plants', scene.plants.length, 'crystals', scene.crystals.length, 'sprouts', scene.sprouts.length, 'head', scene.head, 'rulito', scene.rulito, scene.rulitoColor);
