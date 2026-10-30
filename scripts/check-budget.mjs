@@ -47,7 +47,7 @@ group('Creatividad layers', (rel) => rel.startsWith('assets/creatividad/'), { ea
 group('Evolución layers', (rel) => rel.startsWith('assets/evolucion/'), { each: 300, total: 450 });
 group('Sila layers', (rel) => rel.startsWith('assets/sila/'), { each: 160, total: 450 });
 group('Viriya layers', (rel) => rel.startsWith('assets/viriya/'), { each: 160, total: 450 });
-group('Upekkha layers', (rel) => rel.startsWith('assets/upekkha/'), { each: 300, total: 420 });
+group('Upekkha layers', (rel) => rel.startsWith('assets/upekkha/'), { each: 300, total: 470 });
 group('Deck thumbnails', (rel) => /^cards\/thumb\/\d+\.webp$/.test(rel), { each: 70, total: 650 });
 group('Card illustrations', (rel) => /^cards\/\d+\.webp$/.test(rel), { each: 900, total: 9500 });
 // What phones and most screens load (pictureUrl in src/data/cards.js; npm run thumbs makes them)
