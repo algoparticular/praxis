@@ -2,10 +2,11 @@
 // cropped to its own box, and src/composables/upekkhaScene.json, all in px of the 2160 square:
 //   boxes      the box of every picture
 //   regions    the flat colours behind the drawing are not in the export, and are not pictures: they are read from the
-//              card (public/cards/9.webp) where no layer covers it, and kept as outlines to fill in code: the sky (the
-//              mint, with the deep teal of the future over its right side, bubbles and all) and the ground (the orange
-//              of the past on the left, the teal on the right). Each is { color, loops: [[x, y, x, y, ...], ...] },
-//              filled even-odd; `edges` says what colour each one has past the left and right of the frame
+//              card (public/cards/9.webp) where no layer covers it: the four colours (sky: the mint and the deep teal
+//              of the future; ground: the orange of the past and its teal), the outline of the ground (past.loops,
+//              filled even-odd), the edge between the two colours of each half (edge: [sky, ground], each
+//              { y0, step, x: [...] }, the card's S) and the bubbles of one colour in the other near it (bubbles:
+//              [x, y, rx, ry, angle, plane, colour] ellipses), which the scene brings to life
 //   dots       the specks of the sky (1), as [x, y, radius], and the colour they are on the card
 //   aura       the stipple round Sid (33, 34), as dots [x, y, radius]
 //   glow       the yellow stipple round the mushrooms (19), as dots
@@ -277,16 +278,117 @@ for (const [name, layers] of Object.entries(pictures)) {
     // the teal over its right side
     scene.regions = {
         sky: { color: colorOf(id('mint')) },
-        future: { color: colorOf(id('future')), loops: outline((c) => c === id('future')) },
+        future: { color: colorOf(id('future')) },
         past: { color: colorOf(id('past')), loops: outline(isGround) },
-        ground: { color: colorOf(id('ground')), loops: outline((c) => c === id('ground')) },
+        ground: { color: colorOf(id('ground')) },
     };
-    // Past the frame: the colour of the sky and of the ground at each edge, and where the future starts on the top row
-    const row = (y) => [...Array(N).keys()].map((x) => label[y * N + x]);
-    const top = row(0);
-    scene.regions.futureTop = top.indexOf(id('future')) * G;
     const lastSky = (x) => { let y = 0; while (y < N - 1 && !isGround(label[y * N + x])) y++; return y * G; };
     scene.regions.horizon = [lastSky(0), lastSky(N - 1)];
+
+    // The edge between the two colours of each half, and the bubbles of one colour in the other, read again pixel by
+    // pixel (the cells above are too coarse for them): every bare pixel takes its nearest colour, a small majority
+    // filter takes out the texture's specks. The edge is where the main body of the second colour (the future, the
+    // teal of the ground) starts on each row, where the drawing does not hide it, joined across what it hides and
+    // smoothed: { y0, step, x: [...] } in art px. The bubbles are every other blob of either colour, as ellipses
+    // [x, y, rx, ry, angle, plane (0 the sky, 1 the ground), colour (0 the first, 1 the second)]
+    const cls = new Int8Array(S * S).fill(-1);
+    for (let i = 0; i < S * S; i++) {
+        if (covered[i]) continue;
+        const r = card[i * 3], g = card[i * 3 + 1], b = card[i * 3 + 2];
+        let best = 0, bestD = Infinity;
+        names.forEach((name, c) => { const [cr, cg, cb] = COLORS[name]; const d = (r - cr) ** 2 + (g - cg) ** 2 + (b - cb) ** 2; if (d < bestD) { bestD = d; best = c; } });
+        cls[i] = best;
+    }
+    {
+        const copy = Int8Array.from(cls);
+        for (let y = 2; y < S - 2; y++) {
+            for (let x = 2; x < S - 2; x++) {
+                const i = y * S + x;
+                if (copy[i] < 0) continue;
+                const count = [0, 0, 0, 0];
+                for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) { const c = copy[i + dy * S + dx]; if (c >= 0) count[c]++; }
+                cls[i] = count.indexOf(Math.max(...count));
+            }
+        }
+    }
+    const blobsOfClass = (c) => {
+        const seen = new Uint8Array(S * S);
+        const out = [];
+        for (let start = 0; start < S * S; start++) {
+            if (seen[start] || cls[start] !== c) continue;
+            const pixels = [start];
+            seen[start] = 1;
+            for (let q = 0; q < pixels.length; q++) {
+                const i = pixels[q], x = i % S;
+                for (const j of [x > 0 ? i - 1 : -1, x < S - 1 ? i + 1 : -1, i - S, i + S]) {
+                    if (j < 0 || j >= S * S || seen[j] || cls[j] !== c) continue;
+                    seen[j] = 1;
+                    pixels.push(j);
+                }
+            }
+            out.push(pixels);
+        }
+        return out.sort((a, b) => b.length - a.length);
+    };
+    const STEP = 8;
+    const edgeOf = (first, second, y0, y1, end = null) => {
+        const main = new Uint8Array(S * S);
+        blobsOfClass(second)[0].forEach((i) => { main[i] = 1; });
+        const rows = [];
+        for (let y = y0; y <= y1; y += STEP) {
+            const xs = [];
+            for (let yy = y; yy < Math.min(S, y + STEP); yy++) {
+                for (let x = 1; x < S; x++) {
+                    const i = yy * S + x;
+                    if (!main[i]) continue;
+                    // Only where the first colour is bare right beside it: elsewhere the drawing hides the edge
+                    if (cls[i - 1] === first || cls[i - 2] === first) xs.push(x);
+                    break;
+                }
+            }
+            rows.push(xs.length > STEP / 2 ? xs.reduce((a, b) => a + b, 0) / xs.length : null);
+        }
+        // Hidden down to its end (the sky's, behind Sid), it goes to where the next one starts
+        if (end !== null && rows[rows.length - 1] === null) rows[rows.length - 1] = end;
+        // Joined across what is hidden, held at the ends, then smoothed
+        const known = rows.map((x, i) => (x === null ? -1 : i)).filter((i) => i >= 0);
+        const x = rows.map((v, i) => {
+            if (v !== null) return v;
+            const a = [...known].reverse().find((k) => k < i), b = known.find((k) => k > i);
+            if (a === undefined) return rows[b];
+            if (b === undefined) return rows[a];
+            return rows[a] + ((rows[b] - rows[a]) * (i - a)) / (b - a);
+        });
+        const R = 4;
+        const smooth = x.map((_, i) => {
+            let sum = 0, w = 0;
+            for (let k = -R; k <= R; k++) { const j = Math.min(x.length - 1, Math.max(0, i + k)); const g = Math.exp(-(k * k) / (R * R / 2)); sum += x[j] * g; w += g; }
+            return Math.round(sum / w);
+        });
+        return { y0, step: STEP, x: smooth };
+    };
+    const horizon = Math.max(...scene.regions.horizon);
+    const groundEdge = edgeOf(id('past'), id('ground'), Math.min(...scene.regions.horizon) - 40, S);
+    scene.regions.edge = [edgeOf(id('mint'), id('future'), 0, horizon, groundEdge.x[0]), groundEdge];
+    // The bubbles: blobs that are not the main body of their colour, big enough and near the edge (farther away they
+    // are bits of colour shut in by the drawing), as ellipses from their moments
+    const edgeAt = (plane, y) => { const e = scene.regions.edge[plane]; return e.x[Math.min(e.x.length - 1, Math.max(0, Math.round((y - e.y0) / e.step)))]; };
+    scene.regions.bubbles = [];
+    [[id('mint'), 0, 0], [id('future'), 0, 1], [id('past'), 1, 0], [id('ground'), 1, 1]].forEach(([c, plane, colour]) => {
+        blobsOfClass(c).slice(1).forEach((pixels) => {
+            if (pixels.length < 300) return;
+            let sx = 0, sy = 0;
+            pixels.forEach((i) => { sx += i % S; sy += Math.floor(i / S); });
+            const mx = sx / pixels.length, my = sy / pixels.length;
+            if (Math.abs(mx - edgeAt(plane, my)) > 260) return;
+            let xx = 0, yy = 0, xy = 0;
+            pixels.forEach((i) => { const dx = (i % S) - mx, dy = Math.floor(i / S) - my; xx += dx * dx; yy += dy * dy; xy += dx * dy; });
+            xx /= pixels.length; yy /= pixels.length; xy /= pixels.length;
+            const tr = (xx + yy) / 2, det = Math.sqrt(Math.max(0, ((xx - yy) / 2) ** 2 + xy * xy));
+            const angle = 0.5 * Math.atan2(2 * xy, xx - yy);
+            scene.regions.bubbles.push([Math.round(mx), Math.round(my), Math.round(2 * Math.sqrt(tr + det)), Math.round(2 * Math.sqrt(Math.max(1, tr - det))), +angle.toFixed(2), plane, colour]);
+        });
+    });
 }
 
 // ---- The specks of the sky: dots, in the colour they are on the card
@@ -332,7 +434,7 @@ scene.aura = [...stipple((await load(33)).data, 6, [1.6, 1.4]), ...stipple((awai
 
 await writeFile(path.join(root, 'src', 'composables', 'upekkhaScene.json'), JSON.stringify(scene));
 const R = scene.regions;
-console.log(Object.keys(scene.boxes).length, 'pictures; regions', ['future', 'past', 'ground'].map((k) => `${k} ${R[k].loops.length} loops ${R[k].loops.reduce((s, l) => s + l.length / 2, 0)} pts`).join(', '),
-    'futureTop', R.futureTop, 'horizon', R.horizon, '; colours', ['sky', 'future', 'past', 'ground'].map((k) => R[k].color.toString(16)).join(' '),
+console.log(Object.keys(scene.boxes).length, 'pictures; regions: ground', R.past.loops.length, 'loops; edges', R.edge.map((e) => e.x.length).join(' '), 'rows;',
+    R.bubbles.length, 'bubbles; horizon', R.horizon, '; colours', ['sky', 'future', 'past', 'ground'].map((k) => R[k].color.toString(16)).join(' '),
     `; ${scene.dots.list.length} specks (${scene.dots.color.toString(16)}); aura ${scene.aura.length}; glow ${scene.glow.length} (${scene.glowColor.toString(16)}); flowers`,
     JSON.stringify(scene.flowers), 'head', scene.head, 'rulito', scene.rulito, scene.rulitoColor);

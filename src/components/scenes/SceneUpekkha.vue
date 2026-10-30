@@ -13,15 +13,17 @@
     // go makes his aura a little brighter. With the eight of a round let go, he is still in the middle, his aura shines,
     // the name lights up and the rulito is born over his head, where the card draws it (`rulito`: E minor has no seventh
     // to resolve, it climbs to the octave). Then the thoughts start coming again: impermanence.
-    // The flat colours behind the drawing are not pictures: their outlines were read from the card by the converter and
-    // the stage draws them (field()) as the two sides of a cell membrane: the edge between the two halves of the sky,
-    // and of the ground, keeps the drawn shape and breathes, with a thin light membrane along it, and they never mix;
-    // it stirs more the more he is pulled, and a thought let go leaves a small drop of its colour that drifts home. The specks of the sky, the stipple round Sid and
+    // The flat colours behind the drawing are not pictures: the edge between the two halves of the sky, and of the
+    // ground, and the bubbles of one colour in the other were read from the card by the converter, and the stage draws
+    // them (field()) as two liquids that never mix, with a thin light membrane between them: the edge keeps the card's S
+    // and a slow wave runs along it, and the card's bubbles are alive: they fall back into their own colour and bud off
+    // it again, slipping into the other; it stirs more the more he is pulled, and a thought let go leaves a small drop
+    // of its colour that drifts home and falls into it. The specks of the sky, the stipple round Sid and
     // the yellow light of the mushrooms are particles. It is drawn in WebGL (useLayerStage), with the land mirrored past
     // the frame on wide screens. From upekkhaScene.json and public/assets/upekkha (made by scripts/convert-upekkha.mjs).
     import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
     import { createParallax } from '../../composables/useParallax.js';
-    import { createLayerStage } from '../../composables/useLayerStage.js';
+    import { createLayerStage, FIELD_RANGE } from '../../composables/useLayerStage.js';
     import { startStardust } from '../../composables/useStardust.js';
     import { createSparks } from '../../composables/useSparks.js';
     import { play } from '../../composables/useSound.js';
@@ -331,15 +333,15 @@
         return named;
     };
 
-    // ---- The two halves, as the two sides of a cell membrane: the colours are drawn by the stage (field() in
-    // useLayerStage), which lets the edge between them breathe and draws the membrane, and never mixes them. The scene only draws, small and
-    // when the screen changes size, where each colour is: red, which of the two (softened round the edge, so the edge
-    // can move within that band), green, where the ground is. Past the frame the land goes on mirrored
+    // ---- The two halves, as two liquids that never mix: the colours are drawn by the stage (field() in useLayerStage),
+    // which moves the edge between them and draws the membrane. The scene only writes, small and when the screen
+    // changes size, how far each px is from the edge (red; the edge is the curve the converter read from the card, a
+    // smooth S, read on the slope so it is a true distance) and, for the ground, where it is (green). Past the frame the
+    // land goes on mirrored, and above it the sky's edge comes back down as in a mirror, so it never ends in a line
     const skyField = document.createElement('canvas');
     const groundField = document.createElement('canvas');
     const MARGIN = 120;                     // px drawn past each edge, for the camera's slide
     const FIELD = 0.5;                      // the fields' px per screen px: they are smooth, small is enough
-    const SOFT = 1;                         // how soft the edge is (box blur radius, field px, three passes): how far it can move
     const fill = (ctx, loops) => {
         ctx.beginPath();
         loops.forEach((loop) => {
@@ -349,8 +351,14 @@
         });
         ctx.fill('evenodd');
     };
-    // In art px, for the frame and its mirrored copies on each side
-    const copies = (ctx, area, draw) => {
+    // What the ground covers (white on black), as 0..1 per field px, in the frame and its mirrored copies on each side
+    const groundShape = (width, height, area) => {
+        const cv = document.createElement('canvas');
+        cv.width = width;
+        cv.height = height;
+        const ctx = cv.getContext('2d', { willReadFrequently: true });
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, width, height);
         [-1, 0, 1].forEach((side) => {
             ctx.save();
             ctx.scale(FIELD, FIELD);
@@ -359,82 +367,116 @@
             ctx.scale(k(), k());
             if (side) { ctx.translate(side < 0 ? 0 : 2 * SIZE, 0); ctx.scale(-1, 1); }
             ctx.fillStyle = '#fff';
-            draw(ctx);
+            fill(ctx, R.past.loops);
+            ctx.fillRect(0, SIZE - 2, SIZE, SIZE);
             ctx.restore();
         });
-    };
-    // What a drawing covers (white on black), as 0..1 per field px
-    const coverOf = (width, height, area, draw) => {
-        const cv = document.createElement('canvas');
-        cv.width = width;
-        cv.height = height;
-        const ctx = cv.getContext('2d', { willReadFrequently: true });
-        ctx.fillStyle = '#000';
-        ctx.fillRect(0, 0, width, height);
-        copies(ctx, area, draw);
         const px = ctx.getImageData(0, 0, width, height).data;
-        const out = new Float32Array(width * height);
-        for (let i = 0; i < out.length; i++) out[i] = px[i * 4] / 255;
+        const out = new Uint8ClampedArray(width * height);
+        for (let i = 0; i < out.length; i++) out[i] = px[i * 4];
+        // Softened a little (one box blur each way) so the shader can draw its edge smooth
+        const tmp = new Uint8ClampedArray(out.length);
+        for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) {
+            const i = y * width + x;
+            tmp[i] = (out[i - (x > 0 ? 1 : 0)] + out[i] + out[i + (x < width - 1 ? 1 : 0)]) / 3;
+        }
+        for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) {
+            const i = y * width + x;
+            out[i] = (tmp[i - (y > 0 ? width : 0)] + tmp[i] + tmp[i + (y < height - 1 ? width : 0)]) / 3;
+        }
         return out;
     };
-    // A box blur, `passes` times each way (three come close to a gaussian)
-    const blur = (values, width, height, radius, passes) => {
-        let a = values, b = new Float32Array(values.length);
-        const run = (from, to, n, stride, count, step) => {
-            for (let line = 0; line < count; line++) {
-                const base = line * step;
-                let sum = 0;
-                for (let i = -radius; i <= radius; i++) sum += from[base + Math.min(n - 1, Math.max(0, i)) * stride];
-                for (let i = 0; i < n; i++) {
-                    to[base + i * stride] = sum / (2 * radius + 1);
-                    sum += from[base + Math.min(n - 1, i + radius + 1) * stride] - from[base + Math.max(0, i - radius) * stride];
-                }
-            }
-        };
-        for (let p = 0; p < passes; p++) {
-            run(a, b, width, 1, height, width);
-            run(b, a, height, width, width, 1);
-        }
-        return a;
+    // The edge of a half (0 the sky, 1 the ground) at a height, art px: above the sky's first row it comes back down
+    const edgeAt = (plane, y) => {
+        const e = R.edge[plane];
+        if (plane === 0 && y < 0) y = -y;
+        const f = Math.min(e.x.length - 1, Math.max(0, (y - e.y0) / e.step));
+        const i = Math.min(e.x.length - 2, Math.floor(f));
+        return e.x[i] + (e.x[i + 1] - e.x[i]) * (f - i);
     };
-    const writeField = (canvas, width, height, which, shape) => {
+    const writeField = (canvas, width, height, area, plane, shape) => {
         canvas.width = width;
         canvas.height = height;
         const ctx = canvas.getContext('2d');
         const image = ctx.createImageData(width, height);
-        for (let i = 0; i < width * height; i++) {
-            image.data[i * 4] = Math.round(which[i] * 255);
-            image.data[i * 4 + 1] = shape ? Math.round(shape[i] * 255) : 255;
-            image.data[i * 4 + 3] = 255;
+        const scale = k();
+        for (let fy = 0; fy < height; fy++) {
+            const ya = (area.top + (fy + 0.5) / FIELD - F.y) / scale;
+            const e = edgeAt(plane, ya);
+            const slope = (edgeAt(plane, ya + 6) - edgeAt(plane, ya - 6)) / 12;
+            const norm = scale / Math.sqrt(1 + slope * slope) / (2 * FIELD_RANGE);
+            for (let fx = 0; fx < width; fx++) {
+                let xa = (area.left + (fx + 0.5) / FIELD - F.x) / scale;
+                if (xa < 0) xa = -xa;
+                else if (xa > SIZE) xa = 2 * SIZE - xa;
+                const i = fy * width + fx;
+                image.data[i * 4] = Math.round(Math.min(1, Math.max(0, 0.5 + (xa - e) * norm)) * 255);
+                image.data[i * 4 + 1] = shape ? shape[i] : 255;
+                image.data[i * 4 + 3] = 255;
+            }
         }
         ctx.putImageData(image, 0, 0);
     };
     const paintRegions = (w, h) => {
         const area = { left: -MARGIN, top: -MARGIN, w: w + 2 * MARGIN, h: h + 2 * MARGIN };
         const width = Math.ceil(area.w * FIELD), height = Math.ceil(area.h * FIELD);
-        // The sky: the future over the right side of the mint, and above the frame the colours of its top row
-        const future = coverOf(width, height, area, (ctx) => {
-            fill(ctx, R.future.loops);
-            ctx.fillRect(R.futureTop, -SIZE, SIZE - R.futureTop, SIZE + 12);
-        });
-        writeField(skyField, width, height, blur(future, width, height, SOFT, 3), null);
-        // The ground: the teal over the right side of the orange of the past; under the frame (a wide screen pushes it a
-        // little under the bottom) it goes on
-        const teal = coverOf(width, height, area, (ctx) => {
-            fill(ctx, R.ground.loops);
-            ctx.fillRect(SIZE / 2, SIZE - 2, SIZE / 2, SIZE);
-        });
-        const shape = coverOf(width, height, area, (ctx) => {
-            fill(ctx, R.past.loops);
-            ctx.fillRect(0, SIZE - 2, SIZE, SIZE);
-        });
-        writeField(groundField, width, height, blur(teal, width, height, SOFT, 3), blur(shape, width, height, 1, 1));
+        writeField(skyField, width, height, area, 0, null);
+        writeField(groundField, width, height, area, 1, groundShape(width, height, area));
         drops.length = 0;
         return area;
     };
 
-    // A thought let go leaves a small drop of its colour in the sky, which drifts back to its own half and melts into it
-    // through the membrane
+    // ---- The bubbles of the card, alive: one colour slipping into the other without mixing. Those that are close
+    // together go as one cluster, as the card draws them. A cluster rests out in the other colour, swaying, then floats
+    // back to the edge and falls into its own colour; a while later it buds off it again, the biggest first and the
+    // small ones after it, and floats out to somewhere near where the card has it
+    const clusters = [];
+    R.bubbles.forEach(([x, y, rx, ry, angle, plane, colour]) => {
+        const b = { x, y, rx, ry, angle, phase: Math.random() * 6.28 };
+        const near = clusters.find((c) => c.plane === plane && c.colour === colour && c.members.some((m) => Math.hypot(m.x - x, m.y - y) < 170));
+        if (near) near.members.push(b);
+        else clusters.push({ plane, colour, members: [b], state: 'home', timer: 3 + Math.random() * 12, p: 1, dx: 0, dy: 0 });
+    });
+    const HOME = [10, 18], GO = 3.6, AWAY = [1.5, 4], COME = 5;     // s resting out, going in, gone, coming out
+    const LAG = 0.14;                       // how far behind its cluster each smaller bubble goes
+    const moveClusters = (dt, t) => {
+        clusters.forEach((c) => {
+            c.timer -= dt;
+            if (c.state === 'home' && c.timer <= 0) { c.state = 'in'; }
+            else if (c.state === 'in') {
+                c.p = Math.max(0, c.p - dt / GO);
+                if (!c.p) { c.state = 'away'; c.timer = AWAY[0] + Math.random() * (AWAY[1] - AWAY[0]); }
+            } else if (c.state === 'away' && c.timer <= 0) {
+                c.state = 'out';
+                c.dx = (Math.random() - 0.5) * 70;
+                c.dy = (Math.random() - 0.5) * 90;
+            } else if (c.state === 'out') {
+                c.p = Math.min(1, c.p + dt / COME);
+                if (c.p === 1) { c.state = 'home'; c.timer = HOME[0] + Math.random() * (HOME[1] - HOME[0]); }
+            }
+        });
+        const list = [[], []];
+        const scale = k();
+        clusters.forEach((c) => {
+            const toward = c.colour ? 1 : -1;               // where its own colour is: the second is on the right
+            const n = c.members.length;
+            c.members.forEach((m, j) => {
+                const lag = j * LAG, most = (n - 1) * LAG;
+                const p = ease(Math.min(1, Math.max(0, (c.p * (1 + most) - lag))));
+                const breathe = 1 + 0.05 * Math.sin(t * 0.8 + m.phase);
+                const hx = m.x + c.dx + Math.sin(t * 0.45 + m.phase) * 7, hy = m.y + c.dy + Math.cos(t * 0.33 + m.phase) * 9;
+                // Gone: well inside its own colour, past the edge where its home is
+                const gx = edgeAt(c.plane, hy) + toward * (Math.max(m.rx, m.ry) + 40);
+                const x = gx + (hx - gx) * p;
+                const y = hy - Math.sin(Math.PI * p) * 24 * toward;
+                const angle = m.angle + Math.sin(t * 0.27 + m.phase) * 0.18;
+                list[c.plane].push([sx(x), sy(y), m.rx * breathe * scale, m.ry / breathe * scale, angle, toward]);
+            });
+        });
+        return list;
+    };
+
+    // A thought let go leaves a small drop of its colour in the sky, which drifts back to its own half and falls into it
     const drops = [];
     const dropFrom = (th) => {
         if (drops.length >= 8) drops.shift();
@@ -449,11 +491,10 @@
             d.age += dt;
             d.x += (home + d.sign * F.size * 0.35 - d.x) * Math.min(1, dt * 0.3);
             d.y += (-F.size * 0.01 + Math.sin(d.age * 1.6) * 5) * dt;
-            const there = d.sign > 0 ? d.x > home + F.size * 0.1 : d.x < home - F.size * 0.1;
-            if (there || d.age > 8) d.r *= Math.exp(-dt * 0.8);
+            if (d.age > 12) d.r *= Math.exp(-dt * 0.8);
             if (d.r < 2) drops.splice(i, 1);
         }
-        L.sky.drops = drops.map((d) => [d.x, d.y, d.r, d.sign]);
+        return drops.map((d) => [d.x, d.y, d.r, d.r, 0, d.sign]);
     };
 
     const AURA_GROUP = 1;
@@ -516,10 +557,7 @@
     const place = (w, h) => {
         layout(w, h);
         area = paintRegions(w, h);
-        L.sky.place(area);
-        L.sky.refresh();
-        L.ground.place(area);
-        L.ground.refresh();
+        [L.sky, L.ground].forEach((field) => { field.place(area); field.refresh(); field.uniforms.uScale.value = k(); });
         L.doodles.place(rectOf(B.doodles));
         const water = rectOf(B.water), land = rectOf(B.land);
         // The mirrored copies: about the frame's left edge, and about its right one
@@ -571,7 +609,9 @@
 
         // ---- The two halves: the edge between them churns more the farther he is pulled, and rests (still apart) when
         // he is still
-        moveDrops(dt);
+        const [skyBubbles, groundBubbles] = moveClusters(reduced ? 0 : dt, reduced ? 0 : t);
+        L.sky.bubbles = [...skyBubbles, ...moveDrops(dt)];
+        L.ground.bubbles = groundBubbles;
         const unrest = Math.min(1, Math.abs(lean));
         L.sky.uniforms.uWobble.value = (1 + 0.5 * unrest) * (1 - 0.45 * named);
         L.ground.uniforms.uWobble.value = (0.7 + 0.3 * unrest) * (1 - 0.45 * named);
