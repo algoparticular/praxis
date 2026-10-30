@@ -82,6 +82,7 @@
         "deck": {
             "name": "El Oráculo de las Partículas",
             "filterAll": "Todas",
+            "filterScenes": "Interactivas",
             "filterParamis": "Paramis",
             "filterRegular": "Regulares",
             "filterSpecial": "Especiales"

@@ -10,6 +10,7 @@
     import { play } from '../composables/useSound.js';
     import { preloadThumbs } from '../composables/useDeckRing.js';
     import { deck } from '../data/cards.js';
+    import { hasScene } from '../data/sceneNames.js';
 
     // three.js only loads when the deck is opened (see DeckRing). Meanwhile the skeleton holds the ring's place,
     // so the text below it does not come up into the first screen.
@@ -31,9 +32,11 @@
         { key: 'paramis', label: 'deck.filterParamis', category: 'Paramis' },
         { key: 'regular', label: 'deck.filterRegular', category: 'Regular' },
         { key: 'special', label: 'deck.filterSpecial', category: 'Special' },
+        // The cards whose page already has its own scene (and game)
+        { key: 'scenes', label: 'deck.filterScenes', only: (card) => hasScene(card.id) },
     ].map((filter) => ({
         ...filter,
-        cards: filter.category ? cards.filter((card) => card.category === filter.category) : cards,
+        cards: filter.only ? cards.filter(filter.only) : filter.category ? cards.filter((card) => card.category === filter.category) : cards,
     })).filter((filter) => filter.cards.length > 0);
 
     const active = ref('all');
@@ -282,7 +285,7 @@
         color: #F7F8F1;
     }
 
-    /* On phones the four chips only fit in one row without the counts */
+    /* On phones the chips go without the counts ("Con escena" goes to a second row) */
     @media screen and (max-width: 480px) {
         .chip span {
             display: none;
