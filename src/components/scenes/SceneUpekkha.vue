@@ -586,6 +586,26 @@
         return { x: outside(y) + (inside(y) + w.toward * 30 - outside(y)) * p, y };
     };
 
+    // A bubble moving as a liquid, as the thoughts do: it trembles like jelly, and the faster it goes the more it
+    // stretches along its way (its speed read from where it was the frame before, art px). Returns it for the field
+    const liquid = (m, x, y, angle, dt, t, j, scale, toward) => {
+        const vx = m.px === undefined || !dt ? 0 : (x - m.px) / dt, vy = m.py === undefined || !dt ? 0 : (y - m.py) / dt;
+        m.px = x; m.py = y;
+        m.speed = (m.speed ?? 0) + (Math.hypot(vx, vy) - (m.speed ?? 0)) * Math.min(1, dt * 4);
+        const stretch = Math.min(0.3, m.speed / 260);
+        const jelly = 0.07 * Math.sin(t * (2.6 + 0.4 * j) + m.phase);
+        let a = angle;
+        if (stretch > 0.02) {
+            // Its long side turns towards its way, the more the faster
+            let d = Math.atan2(vy, vx) - a;
+            d = Math.atan2(Math.sin(d), Math.cos(d));
+            if (d > Math.PI / 2) d -= Math.PI;
+            if (d < -Math.PI / 2) d += Math.PI;
+            a += d * Math.min(1, stretch * 4);
+        }
+        return [sx(x), sy(y), m.rx * (1 + jelly + stretch) * scale, m.ry * (1 - jelly - stretch * 0.5) * scale, a, toward];
+    };
+
     const moveClusters = (dt, t) => {
         clusters.forEach((c) => {
             c.timer -= dt;
@@ -612,19 +632,26 @@
         clusters.forEach((c) => {
             const toward = c.colour ? 1 : -1;               // where its own colour is: the second is on the right
             const n = c.members.length;
+            const lead = c.members[0];
             c.members.forEach((m, j) => {
                 const lag = j * LAG, most = (n - 1) * LAG;
                 const p = ease(Math.min(1, Math.max(0, (c.p * (1 + most) - lag))));
-                const breathe = 1 + 0.06 * Math.sin(t * 0.8 + m.phase);
-                // Out, it roams slowly round its place
-                const hx = m.x + c.dx + Math.sin(t * 0.21 + m.phase) * 22, hy = m.y + c.dy + Math.cos(t * 0.17 + m.phase) * 30;
+                // Out, it roams slowly round its place; the small ones breathe in to the big one until they touch it
+                // and merge, and out again
+                const roam = (b) => [b.x + c.dx + Math.sin(t * 0.21 + b.phase) * 22, b.y + c.dy + Math.cos(t * 0.17 + b.phase) * 30];
+                let [hx, hy] = roam(m);
+                if (j) {
+                    const [lx, ly] = roam(lead);
+                    const near = 0.72 + 0.3 * Math.sin(t * (0.9 + 0.2 * j) + m.phase);
+                    hx = lx + (hx - lx) * near;
+                    hy = ly + (hy - ly) * near + Math.sin(t * 1.3 + m.phase) * 6;
+                }
                 // Gone: well inside its own colour, past the edge, somewhere else along it
                 const gy = hy + c.ey;
                 const gx = edgeAt(c.plane, gy) + toward * (Math.max(m.rx, m.ry) + 40);
                 const x = gx + (hx - gx) * p;
                 const y = gy + (hy - gy) * p - Math.sin(Math.PI * p) * 24 * toward;
-                const angle = m.angle + Math.sin(t * 0.27 + m.phase) * 0.25;
-                list[c.plane].push([sx(x), sy(y), m.rx * breathe * scale, m.ry / breathe * scale, angle, toward]);
+                list[c.plane].push(liquid(m, x, y, m.angle + Math.sin(t * 0.27 + m.phase) * 0.25, dt, t, j, scale, toward));
             });
         });
         for (let i = wanderers.length - 1; i >= 0; i--) {
@@ -632,12 +659,11 @@
             w.age += dt;
             if (w.age > w.out + w.stay + w.home + 1.5) { wanderers.splice(i, 1); continue; }
             w.members.forEach((m, j) => {
-                // The smaller ones follow the first, a little behind it
+                // The smaller ones follow the first, a little behind it, closing in until they touch it and parting
                 const at = wandererAt(w, Math.max(0, w.age - j * 0.5));
                 const sway = Math.sin(t * 0.9 + m.phase) * 8;
-                const breathe = 1 + 0.07 * Math.sin(t * 1.1 + m.phase);
-                const angle = m.angle + Math.sin(t * 0.4 + m.phase) * 0.3;
-                list[w.plane].push([sx(at.x + m.off[0] * 0.3 + sway), sy(at.y + m.off[1] * 0.4), m.rx * breathe * scale, m.ry / breathe * scale, angle, w.toward]);
+                const near = j ? 0.6 + 0.45 * Math.sin(t * (1 + 0.2 * j) + m.phase) : 1;
+                list[w.plane].push(liquid(m, at.x + m.off[0] * 0.3 * near + sway, at.y + m.off[1] * 0.4 * near, m.angle + Math.sin(t * 0.4 + m.phase) * 0.3, dt, t, j, scale, w.toward));
             });
         }
         return list;
