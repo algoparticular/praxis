@@ -101,7 +101,7 @@
     const CLING = 1.6;                      // s held to cling with all its weight
     const LEAN = 0.32;                      // how far one clinging thought leans him (of the most he leans)
     const DELAY = 0.6, GROW = 2.2, LINGER = 2.8, EAT = 3.4;     // the rulito: born, kept, gone
-    const thoughts = Array.from({ length: MAX_ON + 1 }, (_, i) => ({ i, state: 'off', x: 0, y: 0, vx: 0, vy: 0, side: 1, r: 1, age: 0, pop: 0, slot: 0, phase: Math.random() * 6.28, hint: 0, held: 0 }));
+    const thoughts = Array.from({ length: MAX_ON + 1 }, (_, i) => ({ i, state: 'off', x: 0, y: 0, vx: 0, vy: 0, side: 1, r: 1, age: 0, pop: 0, slot: 0, phase: Math.random() * 6.28, hint: 0, held: 0, shape: [], insist: 0 }));
     let deck = [];
     let spawned = 0;
     let released = 0;
@@ -135,14 +135,14 @@
         if (!th) return;
         const side = deck[spawned % TOTAL];
         spawned += 1;
-        const r = Math.max(18, 70 * k());
+        const r = Math.max(16, 70 * k() * (0.7 + Math.random() * 0.6));
         const top = titleBottom() + r * 1.4, bottom = Math.max(top + 1, sy(1150));
         const y = top + Math.random() * (bottom - top);
         const x = side < 0 ? -r * 1.6 : W + r * 1.6;
         const to = headAt();
         const d = Math.hypot(to.x - x, to.y - y) || 1;
         const speed = Math.max(F.size * 0.045, d / TRAVEL);
-        Object.assign(th, { state: 'float', x, y, vx: (to.x - x) / d * speed, vy: (to.y - y) / d * speed, side, r, age: 0, pop: 0, hint: 0, held: 0, phase: Math.random() * 6.28 });
+        Object.assign(th, { state: 'float', x, y, vx: (to.x - x) / d * speed, vy: (to.y - y) / d * speed, side, r, age: 0, pop: 0, hint: 0, held: 0, phase: Math.random() * 6.28, shape: newShape(), insist: Math.random() < 0.3 ? 1 : 0 });
         const node = L.thoughts[th.i];
         // The past carries the future's teal, the future the past's mint, as the bubbles of the card
         const c = side < 0 ? FUTURE : MINT;
@@ -372,7 +372,7 @@
                 const gy = h.y - headR * 0.55 + slot * th.r * 1.4 + Math.sin(th.age * 1.3 + th.phase) * th.r * 0.12;
                 th.x += (gx - th.x) * Math.min(1, dt * 3);
                 th.y += (gy - th.y) * Math.min(1, dt * 3);
-                pull += th.side * LEAN;
+                pull += th.side * LEAN * (1 + 0.6 * th.insist);
             }
             if (th.state === 'held') {
                 // Held: it clings, heavier the longer
@@ -719,23 +719,57 @@
         L.thoughts = thoughts.map(() => {
             const group = air.group();
             const light = group.glow({ rect: { left: 0, top: 0, w: 1, h: 1 }, color: AURA, stops: [[0, 0.4], [0.4, 0.14], [0.7, 0]], bloom: true });
-            const parts = [0, 1, 2].map(() => group.disc({ rect: { left: 0, top: 0, w: 1, h: 1 } }));
+            const parts = [0, 1, 2, 3].map(() => group.disc({ rect: { left: 0, top: 0, w: 1, h: 1 } }));
             group.opacity = 0;
             return { group, light, parts };
         });
     };
 
-    // The cluster of a thought: one big oval and two small ones beside it, as the bubbles of the card
-    const BUBBLES = [[0, 0, 1, 1.3, -14], [0.95, -0.55, 0.42, 0.56, 10], [1.0, 0.25, 0.3, 0.38, -6]];
-    const placeThought = (th) => {
+    // The shape of a thought: one big oval and none to three small drops round it, as the bubbles of the card, each
+    // thought its own: [dx, dy, w, h, turn (deg), phase] in its radius, the big one first
+    const newShape = () => {
+        const shape = [[0, 0, 0.85 + Math.random() * 0.35, 1.1 + Math.random() * 0.45, (Math.random() - 0.5) * 30, 0]];
+        const n = Math.floor(Math.random() * 4);
+        let angle = -1.2 + Math.random() * 0.6;
+        for (let j = 0; j < n; j++) {
+            const size = 0.22 + Math.random() * 0.28;
+            const dist = 0.85 + size * 0.6 + Math.random() * 0.2;
+            shape.push([Math.cos(angle) * dist, Math.sin(angle) * dist, size, size * (1.1 + Math.random() * 0.4), (Math.random() - 0.5) * 40, Math.random() * 6.28]);
+            angle += 0.7 + Math.random() * 0.6;
+        }
+        return shape;
+    };
+    // Each frame: the thought moves as a liquid. The big drop stretches along its way and trembles like jelly; the small
+    // ones drift round it, close in until they touch it and part again. Clinging to him, it flattens a little against
+    // his aura and quivers; an insistent one quivers more
+    const placeThought = (th, t) => {
         const node = L.thoughts[th.i];
         const r = th.r;
         node.light.place({ left: -r * 2.4, top: -r * 2.4, w: r * 4.8, h: r * 4.8 });
-        BUBBLES.forEach(([dx, dy, w, h, turn], j) => {
-            const part = node.parts[j];
-            const ox = dx * r * th.side * -1;
-            part.place({ left: ox - w * r * 0.55, top: dy * r - h * r * 0.55, w: w * r * 1.1, h: h * r * 1.1 }, { x: ox, y: dy * r });
-            part.rotate = turn * -th.side;
+        const speed = th.state === 'float' ? Math.hypot(th.vx, th.vy) / Math.max(1, F.size * 0.1) : 0;
+        const stretch = Math.min(0.22, speed * 0.12);
+        const clinging = th.state === 'stuck' || th.state === 'held' ? 1 : 0;
+        const quiver = clinging * (0.04 + 0.05 * th.insist + 0.05 * th.held) * Math.sin(t * 17 + th.phase);
+        const away = -th.side;           // the side away from him
+        node.parts.forEach((part, j) => {
+            const piece = th.shape[j];
+            if (!piece) { part.opacity = 0; return; }
+            part.opacity = 1;
+            const [dx, dy, w, h, turn, phase] = piece;
+            let ox = dx * r * away, oy = dy * r;
+            if (j) {
+                // The small drops breathe in and out round the big one: in, they touch it and seem to merge
+                const breathe = 0.82 + 0.22 * Math.sin(t * (0.9 + 0.2 * j) + phase);
+                ox *= breathe;
+                oy = oy * breathe + Math.sin(t * 1.3 + phase) * r * 0.08;
+            }
+            const jelly = 0.07 * Math.sin(t * (2.6 + 0.4 * j) + th.phase + phase);
+            const sx = 1 + jelly + (j ? 0 : stretch) - (j ? 0 : 0.1 * clinging) + quiver;
+            const sy = 1 - jelly - (j ? 0 : stretch * 0.6) + (j ? 0 : 0.06 * clinging) - quiver;
+            part.place({ left: ox - w * r * 0.55, top: oy - h * r * 0.55, w: w * r * 1.1, h: h * r * 1.1 }, { x: ox, y: oy });
+            part.sx = sx;
+            part.sy = sy;
+            part.rotate = turn * away + (j ? Math.sin(t * 0.7 + phase) * 12 : 0);
         });
         node.group.pivot = { x: 0, y: 0 };
     };
@@ -844,7 +878,7 @@
         thoughts.forEach((th) => {
             const node = L.thoughts[th.i];
             if (th.state === 'off') { node.group.opacity = 0; return; }
-            placeThought(th);
+            placeThought(th, t);
             node.group.x = th.x;
             node.group.y = th.y;
             const popping = th.state === 'pop' ? ease(Math.min(1, th.pop)) : 0;
