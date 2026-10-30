@@ -661,7 +661,6 @@
         const sky = s.depth(zFor(DEPTH.sky));
         L.skyNode = sky;
         L.sky = sky.field({ source: skyField, colors: [MINT, FUTURE] });
-        L.doodles = sky.image('/assets/upekkha/doodles.webp');
         sky.enter({ y: 20, delay: 0, duration: 1600 });
 
         const land = s.depth(zFor(DEPTH.land));
@@ -672,9 +671,14 @@
         // own, swaying from its foot), the fern, the land, the crystals (a light sweeps across them now and then) and
         // the rocks and line work over them
         const trio = (name, opts) => [-1, 0, 1].map((side) => ({ side, name, node: land.image(`/assets/upekkha/${name}.webp`, opts) }));
-        L.water = trio('water', { water: 1.3 });
+        L.water = trio('water');
         L.pond = trio('pond');
-        L.shine = trio('shine', { shimmer: 0.8 });
+        // The little waves and the white shines of the pond, each on its own, drifting on the water
+        const pieces = (name, boxes) => boxes.map((box) => {
+            const [x, y, w, h] = box, P = B[name];
+            return { box, phase: Math.random() * 6.28, copies: trio(name, { crop: [(x - P[0]) / P[2], (y - P[1]) / P[3], w / P[2], h / P[3]] }) };
+        });
+        L.floating = [...pieces('waves', art.waves), ...pieces('shine', art.shines)];
         L.plants = art.plants.map((box) => {
             const [x, y, w, h] = box, P = B.plants;
             const crop = [(x - P[0]) / P[2], (y - P[1]) / P[3], w / P[2], h / P[3]];
@@ -732,11 +736,11 @@
         layout(w, h);
         area = paintRegions(w, h);
         [L.sky, L.ground].forEach((field) => { field.place(area); field.refresh(); field.uniforms.uScale.value = k(); });
-        L.doodles.place(rectOf(B.doodles));
         // The mirrored copies: about the frame's left edge, and about its right one
         const mirror = (r, side) => (side < 0 ? { ...r, left: 2 * sx(0) - r.left - r.w } : side > 0 ? { ...r, left: 2 * sx(SIZE) - r.left - r.w } : r);
         const lay = (copies, rect) => copies.forEach(({ side, node }) => { node.place(mirror(rect, side)); node.sx = side ? -1 : 1; });
-        [L.water, L.pond, L.shine, L.fern, L.land, L.crystals, L.rocks].forEach((copies) => lay(copies, rectOf(B[copies[0].name])));
+        L.floating.forEach(({ box, copies }) => lay(copies, rectOf(box)));
+        [L.water, L.pond, L.fern, L.land, L.crystals, L.rocks].forEach((copies) => lay(copies, rectOf(B[copies[0].name])));
         L.plants.forEach(({ box, copies }) => lay(copies, rectOf(box)));
         const at = (node, [x, y, r], times, least) => {
             const d = Math.max(least, r * times * k());
@@ -793,9 +797,6 @@
         L.sky.uniforms.uWobble.value = (1 + 0.5 * unrest) * (1 - 0.45 * named);
         L.ground.uniforms.uWobble.value = (0.7 + 0.3 * unrest) * (1 - 0.45 * named);
 
-        // ---- The sky's doodles drift a little
-        L.doodles.y = Math.sin(t * 0.4) * 6 * ramp;
-        L.doodles.x = Math.sin(t * 0.23) * 8 * ramp;
         L.skyNode.y = scroll * 8;
         L.landNode.y = scroll * 18;
 
@@ -812,11 +813,11 @@
             g.node.opacity = p > 0 && p < 1 ? Math.sin(Math.PI * p) ** 3 : 0;
             g.node.scale = 0.7 + 0.5 * Math.max(0, Math.min(1, p));
         });
-        // ---- The pond's shine drifts on the water
-        L.shine.forEach(({ node, side }) => {
-            node.x = Math.sin(t * 0.35) * 0.006 * F.size * ramp * (side ? -1 : 1);
-            node.y = Math.sin(t * 0.5 + 1) * 0.002 * F.size * ramp;
-        });
+        // ---- The little waves and the shines drift on the water, each at its own pace, and back
+        L.floating.forEach(({ copies, phase }) => copies.forEach(({ node, side }) => {
+            node.x = Math.sin(t * 0.3 + phase) * 0.01 * F.size * ramp * (side ? -1 : 1);
+            node.y = Math.sin(t * 0.45 + phase * 1.7) * 0.0025 * F.size * ramp;
+        }));
 
         // ---- Sid: he breathes, leans to where he is pulled, and his aura grows calmer and brighter
         const lift = Math.sin(t * 0.7) * 2.5 * ramp;
@@ -872,15 +873,14 @@
         stageEl = root.value.closest('.stage');
         build(stage);
         stage.onResize((w, h) => place(w, h));
-        const after = (node) => node.mesh.renderOrder + 0.5;
-        const before = (node, n = 0) => node.mesh.renderOrder - 0.5 + n * 0.01;
+        const after = (node, n = 0) => node.mesh.renderOrder + 0.5 + n * 0.01;
         const fromArt = (list, colour, scale = 1) => list.map(([x, y, r]) => [sx(x), sy(y), Math.max(1.2, 2 * r * k() * scale), colour]);
         dust = startStardust(null, {
             stage,
             manual: true,
             groups: [
                 // 0: the specks of the sky
-                { colors: [art.dots.color], parallax: 0, drift: 2.5, twinkle: 0.55, reach: 0, opacity: 0.75, order: after(L.doodles), points: () => fromArt(art.dots.list, art.dots.color) },
+                { colors: [art.dots.color], parallax: 0, drift: 2.5, twinkle: 0.55, reach: 0, opacity: 0.75, order: after(L.sky, 2), points: () => fromArt(art.dots.list, art.dots.color) },
                 // 1: the aura round Sid, brighter as he lets go
                 { colors: [AURA], parallax: 0, drift: 1.4, jitter: 0.35, twinkle: 0.4, reach: 0, bloom: true, order: after(L.calm), points: () => fromArt(art.aura, AURA, 1.2) },
                 // 2: the yellow light round the mushrooms, alive and stirred by a finger
@@ -890,8 +890,8 @@
                 // 4: sparks
                 { ...sparks.group(), order: 1e6 },
                 // 5: the far stars, behind everything but the two halves; 6: shooting stars over the night
-                { colors: [STAR_INK], parallax: 0, drift: 1.2, twinkle: 0.75, reach: 0, opacity: 0.9, order: before(L.doodles), points: farStars },
-                { colors: [0xffffff], dynamic: shooting, look: 'soft', parallax: 0, drift: 0, twinkle: 0, reach: 0, order: before(L.doodles, 1) },
+                { colors: [STAR_INK], parallax: 0, drift: 1.2, twinkle: 0.75, reach: 0, opacity: 0.9, order: after(L.sky), points: farStars },
+                { colors: [0xffffff], dynamic: shooting, look: 'soft', parallax: 0, drift: 0, twinkle: 0, reach: 0, order: after(L.sky, 1) },
                 // 7: spores over the night's ground, in front of it
                 { colors: [GLOW], dynamic: sporeGroup, look: 'soft', parallax: 0, drift: 0, twinkle: 0, reach: 0, bloom: true, order: after(L.rocks[2].node) },
                 // 8: a light dust floating up, close to the eye
