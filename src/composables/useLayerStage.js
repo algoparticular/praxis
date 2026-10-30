@@ -197,13 +197,13 @@ const DISC_FRAGMENT = `
 // Two colours that meet and never mix, as two liquids with a membrane between them. The map's red is how far each px is
 // from the edge between them (0.5 on it, more on the second colour's side, FIELD_RANGE px to either end) and its
 // green, with uShaped, where it is drawn at all. The edge keeps the shape it was drawn with and lives: a slow wave runs
-// along it and a slow swell pushes it in and out. uBubbles are bubbles of one colour in the other (centre and radii,
+// along it (one up, one down) and a slow swell pushes it in and out; a light runs along the membrane. uBubbles are bubbles of one colour in the other (centre and radii,
 // px; uTurns: their angle, and +1 for the second colour, -1 for the first): near their own colour they join it with a
 // neck, like a drop budding off a liquid or falling back into it. uScale is how many px a unit of the drawing is, so the
 // wave and the swell keep their size on every screen. Where the two meet there is a membrane: a thin band
 // a little lighter than either side, with a brighter line on each of its faces (uDpr keeps it as thick on every screen)
 export const FIELD_RANGE = 128;
-const FIELD_BUBBLES = 24;
+export const FIELD_BUBBLES = 24;
 const FIELD_FRAGMENT = `
     uniform sampler2D map;
     uniform vec3 uA;
@@ -215,6 +215,7 @@ const FIELD_FRAGMENT = `
     uniform float uShaped;
     uniform float uDpr;
     uniform float uScale;
+    uniform vec4 uWave;            // a long wave travelling along the edge: amplitude px, wavelength px, phase, y px of its origin
     uniform vec4 uRect;            // where the plane is, px: left, top, width, height
     uniform vec4 uBubbles[${FIELD_BUBBLES}];
     uniform vec2 uTurns[${FIELD_BUBBLES}];
@@ -236,9 +237,12 @@ const FIELD_FRAGMENT = `
         // The distance to the edge (px, > 0 on the second colour), moved by a wave running along it and a slow swell
         float d = (c.r - 0.5) * ${2 * FIELD_RANGE}.0;
         vec2 u = px / uScale;
-        float wave = sin(u.y / 460.0 - t * 0.25);
-        float swell = noise(u / 640.0 + vec2(t * 0.035, -t * 0.025)) - 0.5;
-        d += (wave * 4.0 + swell * 30.0) * uScale * uWobble;
+        // Two long waves that travel along it, one up and one down, so it never stands still
+        float wave = sin(u.y / 300.0 - t * 0.9) * 0.7 + sin(u.y / 520.0 + t * 0.45) * 0.3;
+        float swell = noise(u / 640.0 + vec2(t * 0.04, -t * 0.05)) - 0.5;
+        d += (wave * 4.0 + swell * 22.0) * uScale * uWobble;
+        // and the long wave the scene sets, an S that travels along the whole edge
+        if (uWave.y > 0.0) d += uWave.x * sin(6.2832 * (px.y - uWave.w) / uWave.y - uWave.z);
         // The bubbles, each an ellipse, joined to what is of its colour with a neck
         for (int i = 0; i < ${FIELD_BUBBLES}; i++) {
             vec4 b = uBubbles[i];
@@ -258,7 +262,9 @@ const FIELD_FRAGMENT = `
         float dist = abs(d);
         float band = 1.0 - smoothstep(1.4, 2.2, dist);
         float faces = 1.0 - smoothstep(0.3, 0.8, abs(dist - 1.6));
-        col = mix(col, vec3(1.0), band * 0.08 + faces * 0.14);
+        // and a light that runs along it now and then, as along a living membrane
+        float glint = pow(0.5 + 0.5 * sin(u.y / 120.0 - t * 1.3 + 2.0 * swell), 4.0);
+        col = mix(col, vec3(1.0), band * 0.08 + faces * (0.12 + 0.2 * glint));
         float a = 1.0;
         if (uShaped > 0.0) {
             float ws = max(fwidth(c.g), 0.0001);
@@ -516,7 +522,8 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
         // the scene (red: the distance to the edge, 0.5 + px / (2 * FIELD_RANGE); green, with shaped, where it is drawn).
         // node.bubbles is its list of up to FIELD_BUBBLES bubbles, [x, y, rx, ry, angle, ±1] each (px, in the plane's
         // space; +1 of the second colour), read every frame; call node.refresh() after drawing on the canvas, and set
-        // uniforms.uScale to the px of a unit of the drawing
+        // uniforms.uScale to the px of a unit of the drawing; uniforms.uWave is a long wave that travels
+        // along the edge (amplitude px, wavelength px, phase, y px of its origin)
         field({ rect, source, colors = [0x000000, 0xffffff], shaped = false, flow = 1 } = {}) {
             const node = new Node(this);
             const texture = new THREE.CanvasTexture(source);
@@ -535,6 +542,7 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
                 uShaped: { value: shaped ? 1 : 0 },
                 uDpr: { value: dpr },
                 uScale: { value: 1 },
+                uWave: { value: new THREE.Vector4(0, 0, 0, 0) },
                 uRect: { value: new THREE.Vector4(0, 0, 1, 1) },
                 uBubbles: { value: Array.from({ length: FIELD_BUBBLES }, () => new THREE.Vector4(0, 0, 0, 0)) },
                 uTurns: { value: Array.from({ length: FIELD_BUBBLES }, () => new THREE.Vector2(0, 0)) },

@@ -23,7 +23,7 @@
     // the frame on wide screens. From upekkhaScene.json and public/assets/upekkha (made by scripts/convert-upekkha.mjs).
     import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
     import { createParallax } from '../../composables/useParallax.js';
-    import { createLayerStage, FIELD_RANGE } from '../../composables/useLayerStage.js';
+    import { createLayerStage, FIELD_RANGE, FIELD_BUBBLES } from '../../composables/useLayerStage.js';
     import { startStardust } from '../../composables/useStardust.js';
     import { createSparks } from '../../composables/useSparks.js';
     import { play } from '../../composables/useSound.js';
@@ -60,14 +60,23 @@
     const sy = (y) => F.y + y * k();
     const rectOf = ([left, top, w, h]) => ({ left: sx(left), top: sy(top), w: w * k(), h: h * k() });
     const SPAN = 1500, FOCUS = 1075;        // art px across that must be seen on a phone, and their middle
-    const DROP = 0.08;                      // how much of the frame goes under the bottom of a wide screen
+    const BOTTOM = 1640, SID_TOP = 560;     // wide screens: the art row at the bottom, and the top of Sid's head
+    const TOP = 130;                        // px left over him for the card's name
     const layout = (w, h) => {
         W = w; H = h;
         const phone = w < h;
-        const size = phone ? Math.min(0.78 * h, w * SIZE / SPAN) : Math.min(Math.max(0.6 * w, 0.55 * h), 0.92 * h);
-        let x = w / 2 - size / 2;
-        if (phone && size > w) x = Math.min(0, Math.max(w - size, w / 2 - FOCUS * size / SIZE));
-        F = { x, y: h - size + (phone ? 0 : DROP * size), size };
+        if (phone) {
+            const size = Math.min(0.78 * h, w * SIZE / SPAN);
+            let x = w / 2 - size / 2;
+            if (size > w) x = Math.min(0, Math.max(w - size, w / 2 - FOCUS * size / SIZE));
+            F = { x, y: h - size, size };
+            return;
+        }
+        // On a wide screen the drawing fills the width (its mirrored copies stay out of sight) and goes on under the
+        // bottom of the screen, as far as Sid and a strip of ground in front of him still show; only a screen too wide
+        // for that leaves room at the sides
+        const size = Math.min(w, Math.max(0.4 * w, (h - TOP) * SIZE / (BOTTOM - SID_TOP)));
+        F = { x: w / 2 - size / 2, y: h - BOTTOM * size / SIZE, size };
     };
 
     const SLIDE = 46;
@@ -92,7 +101,7 @@
     const CLING = 1.6;                      // s held to cling with all its weight
     const LEAN = 0.32;                      // how far one clinging thought leans him (of the most he leans)
     const DELAY = 0.6, GROW = 2.2, LINGER = 2.8, EAT = 3.4;     // the rulito: born, kept, gone
-    const thoughts = Array.from({ length: MAX_ON + 1 }, (_, i) => ({ i, state: 'off', x: 0, y: 0, vx: 0, vy: 0, side: 1, r: 1, age: 0, pop: 0, slot: 0, phase: Math.random() * 6.28, hint: 0, held: 0 }));
+    const thoughts = Array.from({ length: MAX_ON + 1 }, (_, i) => ({ i, state: 'off', x: 0, y: 0, vx: 0, vy: 0, side: 1, r: 1, age: 0, pop: 0, slot: 0, phase: Math.random() * 6.28, hint: 0, held: 0, shape: [], insist: 0 }));
     let deck = [];
     let spawned = 0;
     let released = 0;
@@ -126,14 +135,14 @@
         if (!th) return;
         const side = deck[spawned % TOTAL];
         spawned += 1;
-        const r = Math.max(18, 70 * k());
+        const r = Math.max(16, 70 * k() * (0.7 + Math.random() * 0.6));
         const top = titleBottom() + r * 1.4, bottom = Math.max(top + 1, sy(1150));
         const y = top + Math.random() * (bottom - top);
         const x = side < 0 ? -r * 1.6 : W + r * 1.6;
         const to = headAt();
         const d = Math.hypot(to.x - x, to.y - y) || 1;
         const speed = Math.max(F.size * 0.045, d / TRAVEL);
-        Object.assign(th, { state: 'float', x, y, vx: (to.x - x) / d * speed, vy: (to.y - y) / d * speed, side, r, age: 0, pop: 0, hint: 0, held: 0, phase: Math.random() * 6.28 });
+        Object.assign(th, { state: 'float', x, y, vx: (to.x - x) / d * speed, vy: (to.y - y) / d * speed, side, r, age: 0, pop: 0, hint: 0, held: 0, phase: Math.random() * 6.28, shape: newShape(), insist: Math.random() < 0.3 ? 1 : 0 });
         const node = L.thoughts[th.i];
         // The past carries the future's teal, the future the past's mint, as the bubbles of the card
         const c = side < 0 ? FUTURE : MINT;
@@ -142,7 +151,7 @@
     };
 
     // Let a thought go: it bursts into motes that rise and fade, and he swings back
-    const letGoOf = (th, clung = false) => {
+    const letGoOf = (th, clung = false, quiet = false) => {
         if (th.state === 'off' || th.state === 'pop') return;
         th.state = 'pop';
         th.pop = 0;
@@ -150,7 +159,7 @@
         idle = 0;
         const c = th.side < 0 ? FUTURE : MINT;
         sparks.burst(th.x, th.y, { n: Math.round(16 + 10 * th.held), colors: [c, AURA, c], speed: 70 + 40 * th.held, life: 1.8, size: 4.2, spread: th.r * 0.8 });
-        play(clung ? 'exhale' : 'release');
+        if (!quiet) play(clung ? 'exhale' : 'release');
         dropFrom(th);
         if (released >= TOTAL) setTimeout(() => { if (!gone) still(); }, DELAY * 1000);
     };
@@ -205,12 +214,38 @@
         if (!touch || !event.cancelable || reduced || win) return;
         if (thoughtAt(onCanvas(touch), 1.7)) event.preventDefault();
     };
-    // A touch on Sid: he breathes; with the keyboard, Enter on him lets go of the thought nearest to him
+    // Pressing Sid, as in Vipassana and Nekkhamma: a tap makes his aura breathe; held, he gathers a breath (`inhale`),
+    // and let go once it is gathered he breathes out (`exhale`) and every thought clinging to him goes at once, one
+    // quickly after the other (not those still on their way). With the keyboard, Enter on him lets go of the nearest
+    const BREATH_AT = 0.35, BREATH = 1.6;   // s held before it is a breath, and s more to gather it whole
+    let breath = null;                      // { pointerId, at, breathing }
+    let charge = 0;                         // 0..1 the breath gathered
+    let swell = 0;                          // how far his aura has swelled with it (follows charge, softly)
     const touchSid = (event) => {
         if (event?.clientX !== undefined && thoughtAt(onCanvas(event))) return;
         idle = 0;
-        play('tap');
-        dust?.boost(AURA_GROUP, 0.5);
+        if (reduced || breath) return;
+        breath = { pointerId: event?.pointerId, at: lastT, breathing: false };
+        window.addEventListener('pointerup', breatheOut);
+        window.addEventListener('pointercancel', breatheOut);
+    };
+    const breatheOut = (event) => {
+        if (!breath || (event && event.pointerId !== breath.pointerId)) return;
+        window.removeEventListener('pointerup', breatheOut);
+        window.removeEventListener('pointercancel', breatheOut);
+        const { breathing } = breath;
+        breath = null;
+        idle = 0;
+        const clinging = thoughts.filter((th) => th.state === 'stuck');
+        if (charge >= 1 && !win && clinging.length) {
+            play('exhale');
+            dust?.boost(AURA_GROUP, 1.2);
+            clinging.forEach((th, j) => setTimeout(() => { if (!gone) letGoOf(th, false, true); }, 120 + j * 160));
+            sceneMilestone('breath_released', { thoughts: clinging.length });
+        } else if (!breathing) {
+            play('tap');
+            dust?.boost(AURA_GROUP, 0.5);
+        } else dust?.boost(AURA_GROUP, 0.4 + 0.6 * charge);
     };
     const onKey = (event) => {
         if (event.key !== 'Enter' && event.key !== ' ') return;
@@ -238,6 +273,110 @@
                 data.sizes[i] = 2.6 + 1.6 * th.held;
                 data.alphas[i] = Math.min(1, th.held * 1.4) * (0.5 + 0.5 * Math.sin(u * Math.PI));
             }
+        },
+    };
+
+    // ---- The sky, alive as Dana's: a far plane of tiny stars (on the mint of the past they are specks of its ink, on
+    // the night of the future pale stars), shooting stars now and then over the night, a light dust floating up close
+    // to the eye, and low over the night's ground, spores rising from the mushrooms and fading before they get high
+    const put = (data, i, x, y, size, alpha, color) => {
+        data.positions[i * 3] = x;
+        data.positions[i * 3 + 1] = y;
+        data.sizes[i] = size;
+        data.alphas[i] = alpha;
+        data.tints[i * 3] = ((color >> 16) & 255) / 255;
+        data.tints[i * 3 + 1] = ((color >> 8) & 255) / 255;
+        data.tints[i * 3 + 2] = (color & 255) / 255;
+    };
+    // Which half of the sky a point of the screen is on (true: the night of the future)
+    const onNight = (x, y) => {
+        let xa = (x - F.x) / k();
+        const ya = (y - F.y) / k();
+        if (xa < 0) xa = -xa;
+        else if (xa > SIZE) xa = 2 * SIZE - xa;
+        return xa > edgeAt(0, ya);
+    };
+    const STAR_INK = art.dots.color, STAR = [0xfaf3d4, 0xd8f4f2, 0xf6e27c];
+    const farStars = (w, h) => {
+        const bottom = sy(1250), list = [];
+        const n = Math.round(Math.min(320, (w * h) / 2600));
+        for (let i = 0; i < n; i++) {
+            const x = -40 + Math.random() * (w + 80), y = -40 + Math.random() * (bottom + 40);
+            // None close to the edge: it sways, and a star must not end up in the other half's colour
+            if (Math.abs(onNight(x - 150 * k(), y) - onNight(x + 150 * k(), y))) continue;
+            const night = onNight(x, y);
+            list.push([x, y, night ? 1.6 + Math.random() * 2.6 : 1 + Math.random() * 1.4, night ? STAR[i % 3] : STAR_INK]);
+        }
+        return list;
+    };
+    // Shooting stars, silent: over the night, away from the edge, a soft cream head and a yellow tail that fades
+    const TAIL = 22, SHOOTERS = 2;
+    const shooters = Array.from({ length: SHOOTERS }, (_, j) => ({ at: 3 + j * 5, x: 0, y: 0, dx: 0, dy: 0, T: 1 }));
+    const shooting = {
+        count: SHOOTERS * TAIL,
+        update(t, data) {
+            if (!stage) return;
+            const w = stage.width, h = stage.height;
+            shooters.forEach((f, j) => {
+                if (t > f.at + f.T) {
+                    f.at = t + 4 + Math.random() * 9;
+                    f.T = 0.7 + Math.random() * 0.5;
+                    const speed = (0.3 + Math.random() * 0.25) * Math.max(w, h);
+                    // From near the edge, out into the night (to the right), falling
+                    const y = titleBottom() + Math.random() * Math.max(10, sy(800) - titleBottom());
+                    f.x = sx(edgeAt(0, (y - F.y) / k())) + 40 + Math.random() * 80;
+                    f.y = y;
+                    f.dx = speed;
+                    f.dy = speed * (0.25 + Math.random() * 0.3);
+                }
+                const u = (t - f.at) / f.T;
+                for (let n = 0; n < TAIL; n++) {
+                    const i = j * TAIL + n;
+                    const life = Math.max(0, u - n * 0.006);
+                    const x = f.x + f.dx * life * f.T, y = f.y + f.dy * life * f.T;
+                    if (u < 0 || u > 1 || !onNight(x, y)) { data.alphas[i] = 0; continue; }
+                    put(data, i, x, y, n ? Math.max(1.6, 6 - n * 0.2) : 9, Math.min(1, Math.sin(u * Math.PI) * 1.4) * (1 - n / TAIL) ** 0.7, n < 3 ? 0xfffbe6 : 0xf6e27c);
+                }
+            });
+        },
+    };
+    // Spores: born round the mushrooms of the night (where their yellow light is), they rise slowly, sway and fade low
+    const SPORES = 60;
+    let nightGlow = null;
+    const spores = Array.from({ length: SPORES }, () => ({ at: -Math.random() * 8, T: 1, x: 0, y: 0, rise: 0, phase: 0, size: 2, color: GLOW }));
+    const sporeGroup = {
+        count: SPORES,
+        update(t, data) {
+            nightGlow ??= art.glow.filter(([x, y]) => x > edgeAt(1, y) + 60);
+            if (!stage || !nightGlow.length) return;
+            spores.forEach((p, i) => {
+                if (t > p.at + p.T) {
+                    const [x, y] = nightGlow[Math.floor(Math.random() * nightGlow.length)];
+                    Object.assign(p, { at: t + Math.random() * 1.5, T: 5 + Math.random() * 5, x, y, rise: 60 + Math.random() * 140, phase: Math.random() * 6.28, size: 3.5 + Math.random() * 4, color: Math.random() < 0.7 ? GLOW : 0xe4ffb0 });
+                }
+                const u = (t - p.at) / p.T;
+                if (u < 0) { data.alphas[i] = 0; return; }
+                const ax = p.x + Math.sin(t * 0.8 + p.phase) * 18 + u * 30 * Math.sin(p.phase), ay = p.y - p.rise * u;
+                put(data, i, sx(ax), sy(ay), p.size, Math.sin(Math.PI * Math.min(1, u)) * (0.75 + 0.25 * Math.sin(t * 3 + p.phase)), p.color);
+            });
+        },
+    };
+
+    // The air coming in while he gathers a breath: motes of light drawn in from all round him to his chest
+    const AIR = 64;
+    const air = Array.from({ length: AIR }, (_, i) => ({ angle: (i / AIR) * 6.2832 + Math.random() * 0.3, offset: Math.random(), speed: 0.55 + Math.random() * 0.35, far: 0.8 + Math.random() * 0.5 }));
+    const airGroup = {
+        count: AIR,
+        update(t, data) {
+            if (!stage || !L.sid || swell < 0.01) { data.alphas.fill(0); return; }
+            const chest = L.sid.toScreen(sx(HEAD[0]), sy(1120));
+            const R = 420 * k();
+            air.forEach((m, i) => {
+                const u = (t * m.speed + m.offset) % 1;           // 0 far out .. 1 at his chest
+                const r = R * m.far * (1 - u) ** 1.4;
+                const a = m.angle + u * 0.6;                        // drawn in with a little turn
+                put(data, i, chest.x + Math.cos(a) * r, chest.y + Math.sin(a) * r * 0.9, 4 + 5 * u, Math.min(1, charge * 1.3) * Math.sin(Math.PI * u), u > 0.7 ? 0xffffff : AURA);
+            });
         },
     };
 
@@ -279,7 +418,7 @@
                 const gy = h.y - headR * 0.55 + slot * th.r * 1.4 + Math.sin(th.age * 1.3 + th.phase) * th.r * 0.12;
                 th.x += (gx - th.x) * Math.min(1, dt * 3);
                 th.y += (gy - th.y) * Math.min(1, dt * 3);
-                pull += th.side * LEAN;
+                pull += th.side * LEAN * (1 + 0.6 * th.insist);
             }
             if (th.state === 'held') {
                 // Held: it clings, heavier the longer
@@ -287,8 +426,19 @@
                 pull += th.side * (LEAN + (1.4 - LEAN) * th.held);
             }
         });
-        // His balance: a spring, so he swings back and settles when he lets go
-        const goal = win ? 0 : Math.max(-1, Math.min(1, pull));
+        // The breath: past BREATH_AT a press on him is a breath, gathered over BREATH
+        if (breath && !win) {
+            const holding = t - breath.at;
+            if (holding > BREATH_AT && !breath.breathing) { breath.breathing = true; play('inhale'); }
+            charge = Math.min(1, Math.max(0, (holding - BREATH_AT) / BREATH));
+            if (charge > 0 && Math.random() < dt * 10 * charge) {
+                const at = headAt();
+                sparks.burst(at.x + (Math.random() - 0.5) * 90 * k(), at.y + 140 * k(), { n: 2, colors: [AURA], speed: 25, life: 1.2, size: 3, spread: 30 * k() });
+            }
+        } else charge = Math.max(0, charge - dt * 2.5);
+        // His balance: a spring, so he swings back and settles when he lets go. Gathering a breath he is still: the
+        // thoughts cannot pull him
+        const goal = win ? 0 : Math.max(-1, Math.min(1, pull * (1 - charge)));
         leanV += ((goal - lean) * 26 - leanV * 3.2) * dt;
         lean += leanV * dt;
 
@@ -389,16 +539,37 @@
     // The edge of a half (0 the sky, 1 the ground) at a height, art px. Above the sky's first row it goes on the way
     // it comes in (up and to the right, as the card's future sweeps in from the top corner), bending slowly upright
     const RISE = 320;                       // art px over which it bends upright above the frame
-    const edgeAt = (plane, y) => {
+    // The card's edge is softened (`FLAT`: a little of its S, more of its general line), so the S that shows is the
+    // long wave that travels down it, one in the sky and one in the ground
+    const FLAT = 0.6;
+    const soften = (x) => {
+        const sigma = 30, out = [];
+        for (let i = 0; i < x.length; i++) {
+            let sum = 0, w = 0;
+            for (let k = -3 * sigma; k <= 3 * sigma; k += 2) { const j = Math.min(x.length - 1, Math.max(0, i + k)); const g = Math.exp(-(k * k) / (2 * sigma * sigma)); sum += x[j] * g; w += g; }
+            out.push(x[i] + (sum / w - x[i]) * FLAT);
+        }
+        return out;
+    };
+    const edges = [R.edge[0].x, R.edge[1].x].map(soften);
+    const lineAt = (plane, y, xs) => {
         const e = R.edge[plane];
         if (plane === 0 && y < 0) {
-            const slope = (e.x[3] - e.x[0]) / (3 * e.step);
-            return e.x[0] - slope * RISE * (1 - Math.exp(y / RISE));
+            const slope = (xs[3] - xs[0]) / (3 * e.step);
+            return xs[0] - slope * RISE * (1 - Math.exp(y / RISE));
         }
-        const f = Math.min(e.x.length - 1, Math.max(0, (y - e.y0) / e.step));
-        const i = Math.min(e.x.length - 2, Math.floor(f));
-        return e.x[i] + (e.x[i + 1] - e.x[i]) * (f - i);
+        const f = Math.min(xs.length - 1, Math.max(0, (y - e.y0) / e.step));
+        const i = Math.min(xs.length - 2, Math.floor(f));
+        return xs[i] + (xs[i + 1] - xs[i]) * (f - i);
     };
+    // The edge drawn (softened), and the card's own, which the card's bubbles keep their distance from
+    const edgeAt = (plane, y) => lineAt(plane, y, edges[plane]);
+    const cardEdgeAt = (plane, y) => lineAt(plane, y, R.edge[plane].x);
+    // The long wave: an S as tall as each half that travels down it (art px), and where the edge is now with it
+    const WAVE = [{ amp: 70, length: 1500, speed: 0.22 }, { amp: 45, length: 900, speed: 0.3 }];
+    const phase = [0, 0];
+    const waveAt = (plane, y) => WAVE[plane].amp * Math.sin(6.2832 * y / WAVE[plane].length - phase[plane]);
+    const edgeNow = (plane, y) => edgeAt(plane, y) - waveAt(plane, y);
     const writeField = (canvas, width, height, area, plane, shape) => {
         canvas.width = width;
         canvas.height = height;
@@ -431,53 +602,155 @@
         return area;
     };
 
-    // ---- The bubbles of the card, alive: one colour slipping into the other without mixing. Those that are close
-    // together go as one cluster, as the card draws them. A cluster rests out in the other colour, swaying, then floats
-    // back to the edge and falls into its own colour; a while later it buds off it again, the biggest first and the
-    // small ones after it, and floats out to somewhere near where the card has it
+    // ---- The bubbles, alive: one colour slipping into the other without mixing. Those of the card that are close
+    // together go as one cluster, as the card draws them. A cluster rests out in the other colour, swaying and roaming
+    // a little, then floats back to the edge and falls into its own colour; a while later it buds off it again from
+    // another place along the edge, the biggest first and the small ones after it, and floats out to somewhere near
+    // where the card has it. Besides them, wanderers: small clusters that bud off anywhere along the edge, cross into
+    // the other colour, drift there a while and come back to fall in somewhere else
     const clusters = [];
     R.bubbles.forEach(([x, y, rx, ry, angle, plane, colour]) => {
         const b = { x, y, rx, ry, angle, phase: Math.random() * 6.28 };
         const near = clusters.find((c) => c.plane === plane && c.colour === colour && c.members.some((m) => Math.hypot(m.x - x, m.y - y) < 170));
         if (near) near.members.push(b);
-        else clusters.push({ plane, colour, members: [b], state: 'home', timer: 3 + Math.random() * 12, p: 1, dx: 0, dy: 0 });
+        else clusters.push({ plane, colour, members: [b], state: 'home', timer: 14 + Math.random() * 16, p: 1, dx: 0, dy: 0, ey: 0 });
     });
-    const HOME = [10, 18], GO = 3.6, AWAY = [1.5, 4], COME = 5;     // s resting out, going in, gone, coming out
+    const HOME = [22, 36], GO = 3.6, AWAY = [1.5, 4], COME = 5;     // s resting out (they are the yin and yang's eyes: they stay), going in, gone, coming out
     const LAG = 0.14;                       // how far behind its cluster each smaller bubble goes
+    const between = ([a, b]) => a + Math.random() * (b - a);
+
+    const SPAN_Y = [[-150, 1150], [1420, 2120]];    // where along the edge of each half wanderers bud off (art px)
+    const WANDERERS = [3, 3];               // at most at once, in the sky and in the ground
+    const wanderers = [];
+    let nextWanderer = 2;
+    const newWanderer = () => {
+        const counts = [0, 1].map((plane) => wanderers.filter((w) => w.plane === plane).length);
+        const open = [0, 1].filter((plane) => counts[plane] < WANDERERS[plane]);
+        if (!open.length) return;
+        const plane = open[Math.floor(Math.random() * open.length)];
+        const toward = Math.random() < 0.5 ? 1 : -1;
+        const y = between(SPAN_Y[plane]);
+        const size = between([16, 42]);
+        const angle = 1.3 + (Math.random() - 0.5) * 0.8;
+        const n = 1 + Math.floor(Math.random() * 3);
+        const members = Array.from({ length: n }, (_, j) => {
+            const r = size * Math.pow(0.55, j);
+            return { rx: r * between([1.3, 1.9]), ry: r, angle: angle + (Math.random() - 0.5) * 0.4, phase: Math.random() * 6.28, off: [(Math.random() - 0.5) * size, j * size * 1.3] };
+        });
+        const reach = between([90, 260]);
+        const rise = (Math.random() - 0.5) * 300;
+        wanderers.push({
+            plane, toward, members, age: 0,
+            from: y, to: y + rise, back: y + rise + (Math.random() - 0.5) * 320, reach,
+            out: between([5, 8]), stay: between([3, 9]), home: between([5, 7]),
+            drift: (Math.random() - 0.5) * 14,
+        });
+    };
+    // Where a wanderer is at a time (art px): out of its own colour, drifting, then back in somewhere else
+    const wandererAt = (w, t) => {
+        const inside = (y) => edgeNow(w.plane, y) + w.toward * 70;
+        const outside = (y) => edgeNow(w.plane, y) - w.toward * w.reach;
+        if (t < w.out) {
+            const p = ease(Math.max(0, t / w.out));
+            const y = w.from + (w.to - w.from) * p;
+            return { x: inside(y) + (outside(y) - inside(y)) * p, y };
+        }
+        if (t < w.out + w.stay) {
+            const y = w.to + w.drift * (t - w.out);
+            return { x: outside(y), y };
+        }
+        const p = ease(Math.min(1, (t - w.out - w.stay) / w.home));
+        const y0 = w.to + w.drift * w.stay, y = y0 + (w.back - y0) * p;
+        return { x: outside(y) + (inside(y) + w.toward * 30 - outside(y)) * p, y };
+    };
+
+    // A bubble moving as a liquid, as the thoughts do: it trembles like jelly, and the faster it goes the more it
+    // stretches along its way (its speed read from where it was the frame before, art px). Returns it for the field
+    const liquid = (m, x, y, angle, dt, t, j, scale, toward) => {
+        const vx = m.px === undefined || !dt ? 0 : (x - m.px) / dt, vy = m.py === undefined || !dt ? 0 : (y - m.py) / dt;
+        m.px = x; m.py = y;
+        m.speed = (m.speed ?? 0) + (Math.hypot(vx, vy) - (m.speed ?? 0)) * Math.min(1, dt * 4);
+        const stretch = Math.min(0.3, m.speed / 260);
+        const jelly = 0.07 * Math.sin(t * (2.6 + 0.4 * j) + m.phase);
+        let a = angle;
+        if (stretch > 0.02) {
+            // Its long side turns towards its way, the more the faster
+            let d = Math.atan2(vy, vx) - a;
+            d = Math.atan2(Math.sin(d), Math.cos(d));
+            if (d > Math.PI / 2) d -= Math.PI;
+            if (d < -Math.PI / 2) d += Math.PI;
+            a += d * Math.min(1, stretch * 4);
+        }
+        return [sx(x), sy(y), m.rx * (1 + jelly + stretch) * scale, m.ry * (1 - jelly - stretch * 0.5) * scale, a, toward];
+    };
+
     const moveClusters = (dt, t) => {
         clusters.forEach((c) => {
             c.timer -= dt;
-            if (c.state === 'home' && c.timer <= 0) { c.state = 'in'; }
+            if (c.state === 'home' && c.timer <= 0) { c.state = 'in'; c.ey = (Math.random() - 0.5) * 300; }
             else if (c.state === 'in') {
                 c.p = Math.max(0, c.p - dt / GO);
-                if (!c.p) { c.state = 'away'; c.timer = AWAY[0] + Math.random() * (AWAY[1] - AWAY[0]); }
+                if (!c.p) { c.state = 'away'; c.timer = between(AWAY); }
             } else if (c.state === 'away' && c.timer <= 0) {
                 c.state = 'out';
-                c.dx = (Math.random() - 0.5) * 70;
-                c.dy = (Math.random() - 0.5) * 90;
+                c.ey = (Math.random() - 0.5) * 300;
+                c.dx = (Math.random() - 0.5) * 40;
+                c.dy = (Math.random() - 0.5) * 60;
             } else if (c.state === 'out') {
                 c.p = Math.min(1, c.p + dt / COME);
-                if (c.p === 1) { c.state = 'home'; c.timer = HOME[0] + Math.random() * (HOME[1] - HOME[0]); }
+                if (c.p === 1) { c.state = 'home'; c.timer = between(HOME); }
             }
         });
+        if (dt) {
+            nextWanderer -= dt;
+            if (nextWanderer <= 0) { newWanderer(); nextWanderer = between([2.5, 5]); }
+        }
         const list = [[], []];
         const scale = k();
         clusters.forEach((c) => {
             const toward = c.colour ? 1 : -1;               // where its own colour is: the second is on the right
             const n = c.members.length;
+            const lead = c.members[0];
             c.members.forEach((m, j) => {
                 const lag = j * LAG, most = (n - 1) * LAG;
                 const p = ease(Math.min(1, Math.max(0, (c.p * (1 + most) - lag))));
-                const breathe = 1 + 0.05 * Math.sin(t * 0.8 + m.phase);
-                const hx = m.x + c.dx + Math.sin(t * 0.45 + m.phase) * 7, hy = m.y + c.dy + Math.cos(t * 0.33 + m.phase) * 9;
-                // Gone: well inside its own colour, past the edge where its home is
-                const gx = edgeAt(c.plane, hy) + toward * (Math.max(m.rx, m.ry) + 40);
+                // Out, it roams slowly round its place; the small ones breathe in to the big one until they touch it
+                // and merge, and out again
+                // They ride the wave (the card's bubbles are the eyes of a yin and yang: each sits in the other's lobe of
+                // the S, as far from the edge as the card has it, and goes with it as it waves), and circle slowly round their place
+                const roam = (b) => {
+                    const y = b.y + c.dy + Math.cos(t * 0.17 + b.phase) * 14;
+                    return [edgeNow(c.plane, y) + (b.x - cardEdgeAt(c.plane, b.y)) + c.dx + Math.sin(t * 0.21 + b.phase) * 10, y];
+                };
+                let [hx, hy] = roam(m);
+                if (j) {
+                    const [lx, ly] = roam(lead);
+                    const near = 0.72 + 0.3 * Math.sin(t * (0.9 + 0.2 * j) + m.phase);
+                    hx = lx + (hx - lx) * near;
+                    hy = ly + (hy - ly) * near + Math.sin(t * 1.3 + m.phase) * 6;
+                }
+                // Gone: well inside its own colour, past the edge, somewhere else along it
+                const gy = hy + c.ey;
+                const gx = edgeNow(c.plane, gy) + toward * (Math.max(m.rx, m.ry) + 40);
                 const x = gx + (hx - gx) * p;
-                const y = hy - Math.sin(Math.PI * p) * 24 * toward;
-                const angle = m.angle + Math.sin(t * 0.27 + m.phase) * 0.18;
-                list[c.plane].push([sx(x), sy(y), m.rx * breathe * scale, m.ry / breathe * scale, angle, toward]);
+                const y = gy + (hy - gy) * p - Math.sin(Math.PI * p) * 24 * toward;
+                // Yin and yang: as the bubbles of one colour swell, those of the other shrink, and back
+                const balance = 1 + 0.14 * Math.sin(t * 0.32 + (c.colour ? 0 : Math.PI));
+                list[c.plane].push(liquid(m, x, y, m.angle + Math.sin(t * 0.27 + m.phase) * 0.25, dt, t, j, scale * balance, toward));
             });
         });
+        for (let i = wanderers.length - 1; i >= 0; i--) {
+            const w = wanderers[i];
+            w.age += dt;
+            if (w.age > w.out + w.stay + w.home + 1.5) { wanderers.splice(i, 1); continue; }
+            w.members.forEach((m, j) => {
+                // The smaller ones follow the first, a little behind it, closing in until they touch it and parting
+                const at = wandererAt(w, Math.max(0, w.age - j * 0.5));
+                const sway = Math.sin(t * 0.9 + m.phase) * 8;
+                const near = j ? 0.6 + 0.45 * Math.sin(t * (1 + 0.2 * j) + m.phase) : 1;
+                list[w.plane].push(liquid(m, at.x + m.off[0] * 0.3 * near + sway, at.y + m.off[1] * 0.4 * near, m.angle + Math.sin(t * 0.4 + m.phase) * 0.3, dt, t, j, scale, w.toward));
+            });
+        }
         return list;
     };
 
@@ -508,19 +781,39 @@
         const sky = s.depth(zFor(DEPTH.sky));
         L.skyNode = sky;
         L.sky = sky.field({ source: skyField, colors: [MINT, FUTURE] });
-        L.doodles = sky.image('/assets/upekkha/doodles.webp');
         sky.enter({ y: 20, delay: 0, duration: 1600 });
 
         const land = s.depth(zFor(DEPTH.land));
         L.landNode = land;
         L.ground = land.field({ source: groundField, colors: [R.past.color, R.ground.color], shaped: true, flow: 0.7 });
-        L.water = [-1, 0, 1].map((side) => ({ side, node: land.image('/assets/upekkha/water.webp', { water: 0.7 }) }));
-        L.fern = [-1, 0, 1].map((side) => ({ side, node: land.image('/assets/upekkha/fern.webp', { wind: { amp: 5, speed: 0.7, root: 'bottom' } }) }));
-        L.land = [-1, 0, 1].map((side) => ({ side, node: land.image('/assets/upekkha/land.webp') }));
-        L.flowers = art.flowers.map(() => {
-            const g = land.glow({ rect: { left: 0, top: 0, w: 1, h: 1 }, color: 0xfff0a0, stops: [[0, 0.55], [0.3, 0.22], [0.65, 0]], bloom: true });
-            return g;
+        // In the order the card draws them, each in the frame and in its mirrored copies: the pond (its water rippling
+        // with light, its outline, the white of its shine drifting and trembling), the little yellow plants (each on its
+        // own, swaying from its foot), the fern, the land, the crystals (a light sweeps across them now and then) and
+        // the rocks and line work over them
+        const trio = (name, opts) => [-1, 0, 1].map((side) => ({ side, name, node: land.image(`/assets/upekkha/${name}.webp`, opts) }));
+        L.water = trio('water');
+        L.pond = trio('pond');
+        // The little waves and the white shines of the pond, each on its own, drifting on the water
+        const pieces = (name, boxes) => boxes.map((box) => {
+            const [x, y, w, h] = box, P = B[name];
+            return { box, phase: Math.random() * 6.28, copies: trio(name, { crop: [(x - P[0]) / P[2], (y - P[1]) / P[3], w / P[2], h / P[3]] }) };
         });
+        L.floating = [...pieces('waves', art.waves), ...pieces('shine', art.shines)];
+        L.plants = art.plants.map((box) => {
+            const [x, y, w, h] = box, P = B.plants;
+            const crop = [(x - P[0]) / P[2], (y - P[1]) / P[3], w / P[2], h / P[3]];
+            // The taller, the more it sways
+            return { box, copies: trio('plants', { crop, wind: { amp: Math.min(9, 2 + h / 60), speed: 0.8 + Math.random() * 0.5, root: 'bottom' } }) };
+        });
+        L.fern = trio('fern', { wind: { amp: 5, speed: 0.7, root: 'bottom' } });
+        L.land = trio('land');
+        L.crystals = trio('crystals', { sheen: 0.9 });
+        L.rocks = trio('rocks');
+        const light = (color, strength) => land.glow({ rect: { left: 0, top: 0, w: 1, h: 1 }, color, stops: [[0, strength], [0.3, strength * 0.4], [0.65, 0]], bloom: true });
+        L.flowers = art.flowers.map(() => light(0xfff0a0, 0.6));
+        L.sprouts = art.sprouts.map(() => light(0xfff0a0, 0.5));
+        // A crystal glints now and then: a quick light, as a facet catches the sun
+        L.glints = art.crystals.map(() => ({ node: light(0xf4fbff, 0.9), at: 2 + Math.random() * 8 }));
         land.enter({ y: 40, delay: 100, duration: 1700 });
 
         const sid = s.depth(zFor(DEPTH.sid));
@@ -528,6 +821,15 @@
         L.sid = sid.group();
         L.calm = L.sid.glow({ rect: { left: 0, top: 0, w: 1, h: 1 }, color: AURA, stops: [[0, 0.5], [0.35, 0.2], [0.7, 0]], bloom: true });
         L.calm.opacity = 0;
+        // His aura as he gathers a breath: three shells of light in his own shape, behind him, that open out one after
+        // the other
+        L.halo = [3, 4, 5].map((blur) => {
+            const shell = L.sid.image('/assets/upekkha/sid.webp', { blur, bloom: true, vignette: 0.12 });
+            shell.uniforms.uTint.value.setRGB(1, 1, 0.96);
+            shell.uniforms.uTintAmount.value = 1;
+            shell.opacity = 0;
+            return shell;
+        });
         L.body = L.sid.image('/assets/upekkha/sid.webp');
         L.rulito = L.sid.canvas(rulito.value.canvas, { bloom: true });
         sid.enter({ y: 60, delay: 300, duration: 1900 });
@@ -537,23 +839,57 @@
         L.thoughts = thoughts.map(() => {
             const group = air.group();
             const light = group.glow({ rect: { left: 0, top: 0, w: 1, h: 1 }, color: AURA, stops: [[0, 0.4], [0.4, 0.14], [0.7, 0]], bloom: true });
-            const parts = [0, 1, 2].map(() => group.disc({ rect: { left: 0, top: 0, w: 1, h: 1 } }));
+            const parts = [0, 1, 2, 3].map(() => group.disc({ rect: { left: 0, top: 0, w: 1, h: 1 } }));
             group.opacity = 0;
             return { group, light, parts };
         });
     };
 
-    // The cluster of a thought: one big oval and two small ones beside it, as the bubbles of the card
-    const BUBBLES = [[0, 0, 1, 1.3, -14], [0.95, -0.55, 0.42, 0.56, 10], [1.0, 0.25, 0.3, 0.38, -6]];
-    const placeThought = (th) => {
+    // The shape of a thought: one big oval and none to three small drops round it, as the bubbles of the card, each
+    // thought its own: [dx, dy, w, h, turn (deg), phase] in its radius, the big one first
+    const newShape = () => {
+        const shape = [[0, 0, 0.85 + Math.random() * 0.35, 1.1 + Math.random() * 0.45, (Math.random() - 0.5) * 30, 0]];
+        const n = Math.floor(Math.random() * 4);
+        let angle = -1.2 + Math.random() * 0.6;
+        for (let j = 0; j < n; j++) {
+            const size = 0.22 + Math.random() * 0.28;
+            const dist = 0.85 + size * 0.6 + Math.random() * 0.2;
+            shape.push([Math.cos(angle) * dist, Math.sin(angle) * dist, size, size * (1.1 + Math.random() * 0.4), (Math.random() - 0.5) * 40, Math.random() * 6.28]);
+            angle += 0.7 + Math.random() * 0.6;
+        }
+        return shape;
+    };
+    // Each frame: the thought moves as a liquid. The big drop stretches along its way and trembles like jelly; the small
+    // ones drift round it, close in until they touch it and part again. Clinging to him, it flattens a little against
+    // his aura and quivers; an insistent one quivers more
+    const placeThought = (th, t) => {
         const node = L.thoughts[th.i];
         const r = th.r;
         node.light.place({ left: -r * 2.4, top: -r * 2.4, w: r * 4.8, h: r * 4.8 });
-        BUBBLES.forEach(([dx, dy, w, h, turn], j) => {
-            const part = node.parts[j];
-            const ox = dx * r * th.side * -1;
-            part.place({ left: ox - w * r * 0.55, top: dy * r - h * r * 0.55, w: w * r * 1.1, h: h * r * 1.1 }, { x: ox, y: dy * r });
-            part.rotate = turn * -th.side;
+        const speed = th.state === 'float' ? Math.hypot(th.vx, th.vy) / Math.max(1, F.size * 0.1) : 0;
+        const stretch = Math.min(0.22, speed * 0.12);
+        const clinging = th.state === 'stuck' || th.state === 'held' ? 1 : 0;
+        const quiver = clinging * (0.04 + 0.05 * th.insist + 0.05 * th.held + 0.08 * charge) * Math.sin(t * 17 + th.phase);
+        const away = -th.side;           // the side away from him
+        node.parts.forEach((part, j) => {
+            const piece = th.shape[j];
+            if (!piece) { part.opacity = 0; return; }
+            part.opacity = 1;
+            const [dx, dy, w, h, turn, phase] = piece;
+            let ox = dx * r * away, oy = dy * r;
+            if (j) {
+                // The small drops breathe in and out round the big one: in, they touch it and seem to merge
+                const breathe = 0.82 + 0.22 * Math.sin(t * (0.9 + 0.2 * j) + phase);
+                ox *= breathe;
+                oy = oy * breathe + Math.sin(t * 1.3 + phase) * r * 0.08;
+            }
+            const jelly = 0.07 * Math.sin(t * (2.6 + 0.4 * j) + th.phase + phase);
+            const sx = 1 + jelly + (j ? 0 : stretch) - (j ? 0 : 0.1 * clinging) + quiver;
+            const sy = 1 - jelly - (j ? 0 : stretch * 0.6) + (j ? 0 : 0.06 * clinging) - quiver;
+            part.place({ left: ox - w * r * 0.55, top: oy - h * r * 0.55, w: w * r * 1.1, h: h * r * 1.1 }, { x: ox, y: oy });
+            part.sx = sx;
+            part.sy = sy;
+            part.rotate = turn * away + (j ? Math.sin(t * 0.7 + phase) * 12 : 0);
         });
         node.group.pivot = { x: 0, y: 0 };
     };
@@ -563,19 +899,22 @@
         layout(w, h);
         area = paintRegions(w, h);
         [L.sky, L.ground].forEach((field) => { field.place(area); field.refresh(); field.uniforms.uScale.value = k(); });
-        L.doodles.place(rectOf(B.doodles));
-        const water = rectOf(B.water), land = rectOf(B.land);
         // The mirrored copies: about the frame's left edge, and about its right one
         const mirror = (r, side) => (side < 0 ? { ...r, left: 2 * sx(0) - r.left - r.w } : side > 0 ? { ...r, left: 2 * sx(SIZE) - r.left - r.w } : r);
-        L.water.forEach(({ side, node }) => { node.place(mirror(water, side)); node.sx = side ? -1 : 1; });
-        L.land.forEach(({ side, node }) => { node.place(mirror(land, side)); node.sx = side ? -1 : 1; });
-        L.fern.forEach(({ side, node }) => { node.place(mirror(rectOf(B.fern), side)); node.sx = side ? -1 : 1; });
-        art.flowers.forEach(([x, y, r], i) => {
-            const d = Math.max(40, r * 6 * k());
-            L.flowers[i].place({ left: sx(x) - d / 2, top: sy(y) - d / 2, w: d, h: d });
-        });
+        const lay = (copies, rect) => copies.forEach(({ side, node }) => { node.place(mirror(rect, side)); node.sx = side ? -1 : 1; });
+        L.floating.forEach(({ box, copies }) => lay(copies, rectOf(box)));
+        [L.water, L.pond, L.fern, L.land, L.crystals, L.rocks].forEach((copies) => lay(copies, rectOf(B[copies[0].name])));
+        L.plants.forEach(({ box, copies }) => lay(copies, rectOf(box)));
+        const at = (node, [x, y, r], times, least) => {
+            const d = Math.max(least, r * times * k());
+            node.place({ left: sx(x) - d / 2, top: sy(y) - d / 2, w: d, h: d });
+        };
+        art.flowers.forEach((f, i) => at(L.flowers[i], f, 6, 40));
+        art.sprouts.forEach((f, i) => at(L.sprouts[i], f, 6, 26));
+        art.crystals.forEach((f, i) => at(L.glints[i].node, f, 3.4, 30));
 
         L.body.place(rectOf(B.sid));
+        L.halo.forEach((shell) => shell.place(rectOf(B.sid)));
         L.sid.pivot = { x: sx(BASE[0]), y: sy(BASE[1]) };
         const cd = 1300 * k();
         L.calm.place({ left: sx(HEAD[0]) - cd / 2, top: sy(1060) - cd / 2, w: cd, h: cd });
@@ -614,42 +953,67 @@
 
         // ---- The two halves: the edge between them churns more the farther he is pulled, and rests (still apart) when
         // he is still
+        if (!reduced) WAVE.forEach((w, i) => { phase[i] = w.speed * t; });
+        [L.sky, L.ground].forEach((field, i) => field.uniforms.uWave.value.set(WAVE[i].amp * k(), WAVE[i].length * k(), phase[i], F.y));
         const [skyBubbles, groundBubbles] = moveClusters(reduced ? 0 : dt, reduced ? 0 : t);
-        L.sky.bubbles = [...skyBubbles, ...moveDrops(dt)];
-        L.ground.bubbles = groundBubbles;
+        // As many as the stage draws (FIELD_BUBBLES): the drops of thoughts let go first, the wanderers last
+        L.sky.bubbles = [...moveDrops(dt), ...skyBubbles].slice(0, FIELD_BUBBLES);
+        L.ground.bubbles = groundBubbles.slice(0, FIELD_BUBBLES);
         const unrest = Math.min(1, Math.abs(lean));
         L.sky.uniforms.uWobble.value = (1 + 0.5 * unrest) * (1 - 0.45 * named);
         L.ground.uniforms.uWobble.value = (0.7 + 0.3 * unrest) * (1 - 0.45 * named);
 
-        // ---- The sky's doodles drift a little
-        L.doodles.y = Math.sin(t * 0.4) * 6 * ramp;
-        L.doodles.x = Math.sin(t * 0.23) * 8 * ramp;
         L.skyNode.y = scroll * 8;
         L.landNode.y = scroll * 18;
 
-        // ---- The little flowers glow
+        // ---- The little flowers and the sprouts glow, each breathing at its own pace, and the crystals glint
         art.flowers.forEach((_, i) => {
-            const g = L.flowers[i];
-            g.opacity = 0.55 + 0.2 * Math.sin(t * 1.4 + i * 1.7) * ramp + 0.25 * named;
+            L.flowers[i].opacity = 0.55 + 0.35 * Math.sin(t * (0.9 + 0.13 * i) + i * 1.7) * ramp + 0.25 * named;
         });
+        art.sprouts.forEach((_, i) => {
+            L.sprouts[i].opacity = 0.45 + 0.4 * Math.sin(t * (1.1 + 0.17 * i) + i * 2.3) * ramp + 0.25 * named;
+        });
+        L.glints.forEach((g) => {
+            if (!reduced && t > g.at + 1.2) g.at = t + 3 + Math.random() * 9;
+            const p = (t - g.at) / 1.2;
+            g.node.opacity = p > 0 && p < 1 ? Math.sin(Math.PI * p) ** 3 : 0;
+            g.node.scale = 0.7 + 0.5 * Math.max(0, Math.min(1, p));
+        });
+        // ---- The little waves and the shines drift on the water, each at its own pace, and back
+        L.floating.forEach(({ copies, phase }) => copies.forEach(({ node, side }) => {
+            node.x = Math.sin(t * 0.3 + phase) * 0.01 * F.size * ramp * (side ? -1 : 1);
+            node.y = Math.sin(t * 0.45 + phase * 1.7) * 0.0025 * F.size * ramp;
+        }));
 
         // ---- Sid: he breathes, leans to where he is pulled, and his aura grows calmer and brighter
         const lift = Math.sin(t * 0.7) * 2.5 * ramp;
         L.sid.x = lean * 0.05 * F.size;
         L.sid.y = lift;
         L.sid.rotate = lean * 5;
-        L.body.sy = 1 + 0.01 * Math.sin(t * 0.7) * ramp;
-        L.calm.opacity = Math.min(1, 0.15 + 0.45 * calm + 0.5 * named);
-        L.calm.scale = 0.85 + 0.25 * calm + 0.15 * named + 0.03 * Math.sin(t * 0.7);
-        L.body.uniforms.uBright.value = 1 + 0.06 * calm + 0.12 * named;
+        // Gathering a breath he fills up: a little taller and wider, and brighter
+        L.body.sy = 1 + 0.01 * Math.sin(t * 0.7) * ramp + 0.06 * swell;
+        L.body.sx = 1 + 0.035 * swell;
+        L.halo.forEach((shell, i) => {
+            // Each shell a little later and farther out than the one inside it, breathing softly while held
+            const open = Math.max(0, Math.min(1, swell * 1.25 - i * 0.12));
+            shell.scale = 1 + open * (0.07 + 0.08 * i) + 0.015 * Math.sin(t * 2.2 - i * 0.8) * open;
+            shell.opacity = open * (0.55 - 0.15 * i);
+        });
+        L.calm.opacity = Math.min(1, 0.15 + 0.45 * calm + 0.5 * named + 0.5 * swell);
+        L.calm.scale = 0.85 + 0.25 * calm + 0.15 * named + 0.55 * swell + 0.03 * Math.sin(t * 0.7);
+        L.body.uniforms.uBright.value = 1 + 0.06 * calm + 0.12 * named + 0.18 * swell;
         L.sidNode.y = scroll * 26;
-        dust?.fade(AURA_GROUP, 0.55 + 0.45 * Math.max(calm, named));
+        // Gathering a breath his aura swells out round him and brightens; let go, it settles back
+        swell += (charge - swell) * Math.min(1, dt * (charge > swell ? 5 : 3));
+        dust?.fade(AURA_GROUP, Math.min(1, 0.55 + 0.45 * Math.max(calm, named) + 0.45 * swell));
+        dust?.grow(AURA_GROUP, 0.12 * swell, sx(HEAD[0]), sy(1060));
+        if (swell > 0.05) dust?.boost(AURA_GROUP, 0.5 * swell);
 
         // ---- The thoughts
         thoughts.forEach((th) => {
             const node = L.thoughts[th.i];
             if (th.state === 'off') { node.group.opacity = 0; return; }
-            placeThought(th);
+            placeThought(th, t);
             node.group.x = th.x;
             node.group.y = th.y;
             const popping = th.state === 'pop' ? ease(Math.min(1, th.pop)) : 0;
@@ -665,6 +1029,11 @@
         dust?.turn(AURA_GROUP, L.sid.rotate, sx(BASE[0]), sy(BASE[1]));
         dust?.shift(AURA_GROUP, sidDrift.x + L.sid.x, sidDrift.y + L.sidNode.y + L.sid.y);
         dust?.shift(2, landDrift.x, landDrift.y + L.landNode.y);
+        // The far stars move less than the sky, the dust close to the eye more: depth
+        dust?.shift(5, skyDrift.x * 0.6, skyDrift.y * 0.6 + L.skyNode.y);
+        dust?.shift(6, skyDrift.x * 0.6, skyDrift.y * 0.6 + L.skyNode.y);
+        dust?.shift(7, landDrift.x, landDrift.y + L.landNode.y);
+        dust?.shift(8, skyDrift.x * 2.2, skyDrift.y * 2.2);
         stage.render(t);
         if (frames++ % 2 === 0) placeHits();
     };
@@ -682,14 +1051,14 @@
         stageEl = root.value.closest('.stage');
         build(stage);
         stage.onResize((w, h) => place(w, h));
-        const after = (node) => node.mesh.renderOrder + 0.5;
+        const after = (node, n = 0) => node.mesh.renderOrder + 0.5 + n * 0.01;
         const fromArt = (list, colour, scale = 1) => list.map(([x, y, r]) => [sx(x), sy(y), Math.max(1.2, 2 * r * k() * scale), colour]);
         dust = startStardust(null, {
             stage,
             manual: true,
             groups: [
                 // 0: the specks of the sky
-                { colors: [art.dots.color], parallax: 0, drift: 1.5, twinkle: 0.3, reach: 0, opacity: 0.75, order: after(L.doodles), points: () => fromArt(art.dots.list, art.dots.color) },
+                { colors: [art.dots.color], parallax: 0, drift: 2.5, twinkle: 0.55, reach: 0, opacity: 0.75, order: after(L.sky, 2), points: () => fromArt(art.dots.list, art.dots.color) },
                 // 1: the aura round Sid, brighter as he lets go
                 { colors: [AURA], parallax: 0, drift: 1.4, jitter: 0.35, twinkle: 0.4, reach: 0, bloom: true, order: after(L.calm), points: () => fromArt(art.aura, AURA, 1.2) },
                 // 2: the yellow light round the mushrooms, alive and stirred by a finger
@@ -698,6 +1067,15 @@
                 { colors: [AURA], dynamic: threadGroup, look: 'soft', parallax: 0, drift: 0, twinkle: 0, reach: 0, bloom: true, order: 1e6 - 1 },
                 // 4: sparks
                 { ...sparks.group(), order: 1e6 },
+                // 5: the far stars, behind everything but the two halves; 6: shooting stars over the night
+                { colors: [STAR_INK], parallax: 0, drift: 1.2, twinkle: 0.75, reach: 0, opacity: 0.9, order: after(L.sky), points: farStars },
+                { colors: [0xffffff], dynamic: shooting, look: 'soft', parallax: 0, drift: 0, twinkle: 0, reach: 0, order: after(L.sky, 1) },
+                // 7: spores over the night's ground, in front of it
+                { colors: [GLOW], dynamic: sporeGroup, look: 'soft', parallax: 0, drift: 0, twinkle: 0, reach: 0, bloom: true, order: after(L.rocks[2].node) },
+                // 8: a light dust floating up, close to the eye
+                { count: 34, colors: [0xfffbe6, 0xf6f0c0, 0xd8f4f2], size: [2, 5.5], look: 'soft', parallax: 0, drift: 9, flow: [0, -6], twinkle: 0.6, reach: 90, push: 20, opacity: 0.45, bloom: true, order: 1e6 - 2 },
+                // 9: the air coming in to him as he gathers a breath
+                { colors: [AURA], dynamic: airGroup, look: 'soft', parallax: 0, drift: 0, twinkle: 0, reach: 0, bloom: true, order: 1e6 - 1.5 },
             ],
         });
         if (reduced) dust.reveal();
@@ -721,6 +1099,8 @@
         root.value?.removeEventListener('touchstart', onTouchStart);
         window.removeEventListener('pointerup', release);
         window.removeEventListener('pointercancel', release);
+        window.removeEventListener('pointerup', breatheOut);
+        window.removeEventListener('pointercancel', breatheOut);
     });
 </script>
 
@@ -771,7 +1151,7 @@
         cursor: pointer;
         pointer-events: auto;
         -webkit-tap-highlight-color: transparent;
-        touch-action: manipulation;
+        touch-action: none;                    /* held, a finger drifts a little: the phone must not take it for a scroll */
         outline: none;
     }
 
