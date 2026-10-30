@@ -5,7 +5,8 @@
     // its loop, taking GROW seconds to be whole (quick at first, easing as it gets there); when it is, it flares, throws sparks and the blue spores multiply
     // (they swell for a few seconds and settle back). Let go and its tail starts
     // to catch up with its head (EAT seconds for the whole stroke) until it shrinks back into a dot and is gone, so
-    // no hold is wasted. The next one has another shape. When it is completed the card's name lights up too, and the
+    // no hold is wasted. The next one has another shape. Once it is gone the roots fade away too, and the next hold grows
+    // another network. When it is completed the card's name lights up too, and the
     // scene blooms: the rulito, the cone, the roots and the sparks glow (the only moment the stage blooms).
     // It is drawn in WebGL (useLayerStage): the layers come from the artwork itself (public/assets/paciencia, made by
     // scripts/convert-paciencia.mjs), each at its depth, and the camera slides
@@ -274,12 +275,15 @@
     const GROW = 2.6;                       // seconds of holding to draw it whole
     const LINGER = 0.9;                     // seconds a whole rulito stays before its tail starts to go
     const EAT = 3.4;                        // seconds for the tail to go all the way along it
+    const ROOTS_LINGER = 0.6, ROOTS_FADE = 2.4; // once the rulito is gone, the roots wait a moment and fade away
     let held = false;
     let head = 0;                           // how far along its stroke the front of the rulito is (0..1)
     let tail = 0;                           // and the back of it
     let idle = 0;                           // seconds since the cone was let go
     let grown = 0;                          // 0..1, how long it has been held, on its way to GROW
-    let rootGrow = 0;                       // 0..1, how far the roots have spread: they stay once grown
+    let rootGrow = 0;                       // 0..1, how far the roots have spread: they stay while the rulito lives
+    let rootsOn = 1;                        // 0..1, the roots fading away when it is over
+    let bare = 0;                           // seconds without a hold or a rulito
     let level = 0;                          // 0..3, times it has been completed: the roots shine more each time
     let wave = -1;                          // where the wave of light is along the roots (0..1), or -1
     let pop = 0;                            // 1 when it completes, down to 0: a little bump in its size
@@ -489,6 +493,17 @@
         }
         if (head >= 1 && !full) { full = true; pop = 1; bloom(); }
         if (head > 0 && head - tail < 0.0005) { head = 0; tail = 0; grown = 0; full = false; rulito.value.reshape(); play('release'); }
+        // The roots stay while it is held and while the rulito lives; then they fade away, and the next hold grows
+        // another network from the cone
+        if (held || head > 0) {
+            bare = 0;
+            rootsOn = Math.min(1, rootsOn + dt / 0.4);
+        } else if (rootGrow > 0) {
+            bare += dt;
+            if (bare > ROOTS_LINGER) rootsOn = Math.max(0, rootsOn - dt / ROOTS_FADE);
+            if (rootsOn <= 0) { rootGrow = 0; rootsOn = 1; roots.reshape(); }
+        }
+        L.roots.opacity = rootsOn;
         const flare = full && head - tail > 0.9 ? Math.max(pop, Math.sin(t * 4) * 0.5 + 0.5) : 0;
         const charge = Math.max(head - tail, rootGrow * 0.6);
         roots.frame({ grow: rootGrow, pulse: wave, level, t, size: box.ground.w });
