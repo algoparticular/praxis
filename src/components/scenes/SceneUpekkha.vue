@@ -23,7 +23,7 @@
     // the frame on wide screens. From upekkhaScene.json and public/assets/upekkha (made by scripts/convert-upekkha.mjs).
     import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
     import { createParallax } from '../../composables/useParallax.js';
-    import { createLayerStage, FIELD_RANGE } from '../../composables/useLayerStage.js';
+    import { createLayerStage, FIELD_RANGE, FIELD_BUBBLES } from '../../composables/useLayerStage.js';
     import { startStardust } from '../../composables/useStardust.js';
     import { createSparks } from '../../composables/useSparks.js';
     import { play } from '../../composables/useSound.js';
@@ -431,35 +431,89 @@
         return area;
     };
 
-    // ---- The bubbles of the card, alive: one colour slipping into the other without mixing. Those that are close
-    // together go as one cluster, as the card draws them. A cluster rests out in the other colour, swaying, then floats
-    // back to the edge and falls into its own colour; a while later it buds off it again, the biggest first and the
-    // small ones after it, and floats out to somewhere near where the card has it
+    // ---- The bubbles, alive: one colour slipping into the other without mixing. Those of the card that are close
+    // together go as one cluster, as the card draws them. A cluster rests out in the other colour, swaying and roaming
+    // a little, then floats back to the edge and falls into its own colour; a while later it buds off it again from
+    // another place along the edge, the biggest first and the small ones after it, and floats out to somewhere near
+    // where the card has it. Besides them, wanderers: small clusters that bud off anywhere along the edge, cross into
+    // the other colour, drift there a while and come back to fall in somewhere else
     const clusters = [];
     R.bubbles.forEach(([x, y, rx, ry, angle, plane, colour]) => {
         const b = { x, y, rx, ry, angle, phase: Math.random() * 6.28 };
         const near = clusters.find((c) => c.plane === plane && c.colour === colour && c.members.some((m) => Math.hypot(m.x - x, m.y - y) < 170));
         if (near) near.members.push(b);
-        else clusters.push({ plane, colour, members: [b], state: 'home', timer: 3 + Math.random() * 12, p: 1, dx: 0, dy: 0 });
+        else clusters.push({ plane, colour, members: [b], state: 'home', timer: 3 + Math.random() * 12, p: 1, dx: 0, dy: 0, ey: 0 });
     });
-    const HOME = [10, 18], GO = 3.6, AWAY = [1.5, 4], COME = 5;     // s resting out, going in, gone, coming out
+    const HOME = [8, 14], GO = 3.6, AWAY = [1.5, 4], COME = 5;      // s resting out, going in, gone, coming out
     const LAG = 0.14;                       // how far behind its cluster each smaller bubble goes
+    const between = ([a, b]) => a + Math.random() * (b - a);
+
+    const SPAN_Y = [[-150, 1150], [1420, 2120]];    // where along the edge of each half wanderers bud off (art px)
+    const WANDERERS = [4, 4];               // at most at once, in the sky and in the ground
+    const wanderers = [];
+    let nextWanderer = 2;
+    const newWanderer = () => {
+        const counts = [0, 1].map((plane) => wanderers.filter((w) => w.plane === plane).length);
+        const open = [0, 1].filter((plane) => counts[plane] < WANDERERS[plane]);
+        if (!open.length) return;
+        const plane = open[Math.floor(Math.random() * open.length)];
+        const toward = Math.random() < 0.5 ? 1 : -1;
+        const y = between(SPAN_Y[plane]);
+        const size = between([16, 42]);
+        const angle = 1.3 + (Math.random() - 0.5) * 0.8;
+        const n = 1 + Math.floor(Math.random() * 3);
+        const members = Array.from({ length: n }, (_, j) => {
+            const r = size * Math.pow(0.55, j);
+            return { rx: r * between([1.3, 1.9]), ry: r, angle: angle + (Math.random() - 0.5) * 0.4, phase: Math.random() * 6.28, off: [(Math.random() - 0.5) * size, j * size * 1.3] };
+        });
+        const reach = between([90, 260]);
+        const rise = (Math.random() - 0.5) * 300;
+        wanderers.push({
+            plane, toward, members, age: 0,
+            from: y, to: y + rise, back: y + rise + (Math.random() - 0.5) * 320, reach,
+            out: between([5, 8]), stay: between([3, 9]), home: between([5, 7]),
+            drift: (Math.random() - 0.5) * 14,
+        });
+    };
+    // Where a wanderer is at a time (art px): out of its own colour, drifting, then back in somewhere else
+    const wandererAt = (w, t) => {
+        const inside = (y) => edgeAt(w.plane, y) + w.toward * 70;
+        const outside = (y) => edgeAt(w.plane, y) - w.toward * w.reach;
+        if (t < w.out) {
+            const p = ease(Math.max(0, t / w.out));
+            const y = w.from + (w.to - w.from) * p;
+            return { x: inside(y) + (outside(y) - inside(y)) * p, y };
+        }
+        if (t < w.out + w.stay) {
+            const y = w.to + w.drift * (t - w.out);
+            return { x: outside(y), y };
+        }
+        const p = ease(Math.min(1, (t - w.out - w.stay) / w.home));
+        const y0 = w.to + w.drift * w.stay, y = y0 + (w.back - y0) * p;
+        return { x: outside(y) + (inside(y) + w.toward * 30 - outside(y)) * p, y };
+    };
+
     const moveClusters = (dt, t) => {
         clusters.forEach((c) => {
             c.timer -= dt;
-            if (c.state === 'home' && c.timer <= 0) { c.state = 'in'; }
+            if (c.state === 'home' && c.timer <= 0) { c.state = 'in'; c.ey = (Math.random() - 0.5) * 300; }
             else if (c.state === 'in') {
                 c.p = Math.max(0, c.p - dt / GO);
-                if (!c.p) { c.state = 'away'; c.timer = AWAY[0] + Math.random() * (AWAY[1] - AWAY[0]); }
+                if (!c.p) { c.state = 'away'; c.timer = between(AWAY); }
             } else if (c.state === 'away' && c.timer <= 0) {
                 c.state = 'out';
-                c.dx = (Math.random() - 0.5) * 70;
-                c.dy = (Math.random() - 0.5) * 90;
+                c.ey = (Math.random() - 0.5) * 300;
+                c.dx = (Math.random() - 0.5) * 120;
+                c.dy = (Math.random() - 0.5) * 160;
             } else if (c.state === 'out') {
                 c.p = Math.min(1, c.p + dt / COME);
-                if (c.p === 1) { c.state = 'home'; c.timer = HOME[0] + Math.random() * (HOME[1] - HOME[0]); }
+                if (c.p === 1) { c.state = 'home'; c.timer = between(HOME); }
             }
         });
+        if (dt) {
+            nextWanderer -= dt;
+            if (nextWanderer <= 0) { newWanderer(); nextWanderer = between([1.5, 4]); }
+        }
         const list = [[], []];
         const scale = k();
         clusters.forEach((c) => {
@@ -468,16 +522,31 @@
             c.members.forEach((m, j) => {
                 const lag = j * LAG, most = (n - 1) * LAG;
                 const p = ease(Math.min(1, Math.max(0, (c.p * (1 + most) - lag))));
-                const breathe = 1 + 0.05 * Math.sin(t * 0.8 + m.phase);
-                const hx = m.x + c.dx + Math.sin(t * 0.45 + m.phase) * 7, hy = m.y + c.dy + Math.cos(t * 0.33 + m.phase) * 9;
-                // Gone: well inside its own colour, past the edge where its home is
-                const gx = edgeAt(c.plane, hy) + toward * (Math.max(m.rx, m.ry) + 40);
+                const breathe = 1 + 0.06 * Math.sin(t * 0.8 + m.phase);
+                // Out, it roams slowly round its place
+                const hx = m.x + c.dx + Math.sin(t * 0.21 + m.phase) * 22, hy = m.y + c.dy + Math.cos(t * 0.17 + m.phase) * 30;
+                // Gone: well inside its own colour, past the edge, somewhere else along it
+                const gy = hy + c.ey;
+                const gx = edgeAt(c.plane, gy) + toward * (Math.max(m.rx, m.ry) + 40);
                 const x = gx + (hx - gx) * p;
-                const y = hy - Math.sin(Math.PI * p) * 24 * toward;
-                const angle = m.angle + Math.sin(t * 0.27 + m.phase) * 0.18;
+                const y = gy + (hy - gy) * p - Math.sin(Math.PI * p) * 24 * toward;
+                const angle = m.angle + Math.sin(t * 0.27 + m.phase) * 0.25;
                 list[c.plane].push([sx(x), sy(y), m.rx * breathe * scale, m.ry / breathe * scale, angle, toward]);
             });
         });
+        for (let i = wanderers.length - 1; i >= 0; i--) {
+            const w = wanderers[i];
+            w.age += dt;
+            if (w.age > w.out + w.stay + w.home + 1.5) { wanderers.splice(i, 1); continue; }
+            w.members.forEach((m, j) => {
+                // The smaller ones follow the first, a little behind it
+                const at = wandererAt(w, Math.max(0, w.age - j * 0.5));
+                const sway = Math.sin(t * 0.9 + m.phase) * 8;
+                const breathe = 1 + 0.07 * Math.sin(t * 1.1 + m.phase);
+                const angle = m.angle + Math.sin(t * 0.4 + m.phase) * 0.3;
+                list[w.plane].push([sx(at.x + m.off[0] * 0.3 + sway), sy(at.y + m.off[1] * 0.4), m.rx * breathe * scale, m.ry / breathe * scale, angle, w.toward]);
+            });
+        }
         return list;
     };
 
@@ -615,8 +684,9 @@
         // ---- The two halves: the edge between them churns more the farther he is pulled, and rests (still apart) when
         // he is still
         const [skyBubbles, groundBubbles] = moveClusters(reduced ? 0 : dt, reduced ? 0 : t);
-        L.sky.bubbles = [...skyBubbles, ...moveDrops(dt)];
-        L.ground.bubbles = groundBubbles;
+        // As many as the stage draws (FIELD_BUBBLES): the drops of thoughts let go first, the wanderers last
+        L.sky.bubbles = [...moveDrops(dt), ...skyBubbles].slice(0, FIELD_BUBBLES);
+        L.ground.bubbles = groundBubbles.slice(0, FIELD_BUBBLES);
         const unrest = Math.min(1, Math.abs(lean));
         L.sky.uniforms.uWobble.value = (1 + 0.5 * unrest) * (1 - 0.45 * named);
         L.ground.uniforms.uWobble.value = (0.7 + 0.3 * unrest) * (1 - 0.45 * named);
