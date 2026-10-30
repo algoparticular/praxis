@@ -436,8 +436,9 @@
                 sparks.burst(at.x + (Math.random() - 0.5) * 90 * k(), at.y + 140 * k(), { n: 2, colors: [AURA], speed: 25, life: 1.2, size: 3, spread: 30 * k() });
             }
         } else charge = Math.max(0, charge - dt * 2.5);
-        // His balance: a spring, so he swings back and settles when he lets go
-        const goal = win ? 0 : Math.max(-1, Math.min(1, pull));
+        // His balance: a spring, so he swings back and settles when he lets go. Gathering a breath he is still: the
+        // thoughts cannot pull him
+        const goal = win ? 0 : Math.max(-1, Math.min(1, pull * (1 - charge)));
         leanV += ((goal - lean) * 26 - leanV * 3.2) * dt;
         lean += leanV * dt;
 
@@ -820,6 +821,15 @@
         L.sid = sid.group();
         L.calm = L.sid.glow({ rect: { left: 0, top: 0, w: 1, h: 1 }, color: AURA, stops: [[0, 0.5], [0.35, 0.2], [0.7, 0]], bloom: true });
         L.calm.opacity = 0;
+        // His aura as he gathers a breath: three shells of light in his own shape, behind him, that open out one after
+        // the other
+        L.halo = [3, 4, 5].map((blur) => {
+            const shell = L.sid.image('/assets/upekkha/sid.webp', { blur, bloom: true, vignette: 0.12 });
+            shell.uniforms.uTint.value.setRGB(1, 1, 0.96);
+            shell.uniforms.uTintAmount.value = 1;
+            shell.opacity = 0;
+            return shell;
+        });
         L.body = L.sid.image('/assets/upekkha/sid.webp');
         L.rulito = L.sid.canvas(rulito.value.canvas, { bloom: true });
         sid.enter({ y: 60, delay: 300, duration: 1900 });
@@ -904,6 +914,7 @@
         art.crystals.forEach((f, i) => at(L.glints[i].node, f, 3.4, 30));
 
         L.body.place(rectOf(B.sid));
+        L.halo.forEach((shell) => shell.place(rectOf(B.sid)));
         L.sid.pivot = { x: sx(BASE[0]), y: sy(BASE[1]) };
         const cd = 1300 * k();
         L.calm.place({ left: sx(HEAD[0]) - cd / 2, top: sy(1060) - cd / 2, w: cd, h: cd });
@@ -982,6 +993,12 @@
         // Gathering a breath he fills up: a little taller and wider, and brighter
         L.body.sy = 1 + 0.01 * Math.sin(t * 0.7) * ramp + 0.06 * swell;
         L.body.sx = 1 + 0.035 * swell;
+        L.halo.forEach((shell, i) => {
+            // Each shell a little later and farther out than the one inside it, breathing softly while held
+            const open = Math.max(0, Math.min(1, swell * 1.25 - i * 0.12));
+            shell.scale = 1 + open * (0.07 + 0.08 * i) + 0.015 * Math.sin(t * 2.2 - i * 0.8) * open;
+            shell.opacity = open * (0.55 - 0.15 * i);
+        });
         L.calm.opacity = Math.min(1, 0.15 + 0.45 * calm + 0.5 * named + 0.5 * swell);
         L.calm.scale = 0.85 + 0.25 * calm + 0.15 * named + 0.55 * swell + 0.03 * Math.sin(t * 0.7);
         L.body.uniforms.uBright.value = 1 + 0.06 * calm + 0.12 * named + 0.18 * swell;
@@ -989,7 +1006,8 @@
         // Gathering a breath his aura swells out round him and brightens; let go, it settles back
         swell += (charge - swell) * Math.min(1, dt * (charge > swell ? 5 : 3));
         dust?.fade(AURA_GROUP, Math.min(1, 0.55 + 0.45 * Math.max(calm, named) + 0.45 * swell));
-        dust?.grow(AURA_GROUP, 0.32 * swell, sx(HEAD[0]), sy(1060));
+        dust?.grow(AURA_GROUP, 0.12 * swell, sx(HEAD[0]), sy(1060));
+        if (swell > 0.05) dust?.boost(AURA_GROUP, 0.5 * swell);
 
         // ---- The thoughts
         thoughts.forEach((th) => {
