@@ -1,23 +1,21 @@
 // The roots of Paciencia (its verb is Arraigar, take root): a glowing network that spreads under the field of
 // mushrooms from the pine cone, drawn on a 2D canvas that lies over the mushrooms picture (same box, so it moves with it).
 // Every visit grows a different network. It is a set of paths made once: from the foot of the cone a few main roots
-// spread to both sides, they branch, and a thin root reaches up to each mushroom cap that is near enough (mushroomCaps.json
-// says where the caps are, as fractions of the picture). Each point knows when the root gets to it (`t`, 0 at the cone
+// spread to both sides, they branch, and a thin root reaches up to each mushroom cap that is near enough (`caps` says
+// where they are, [x, y, width] in fractions of the picture, and `cone` where the foot of the cone is). Each point knows when the root gets to it (`t`, 0 at the cone
 // to 1 at the farthest tip), so one number, `grow`, says how far the roots have spread. `pulse` is a wave of light
 // that runs along them (it lights each cap as it gets there); `level` (0..3) is how many times it has completed, which
 // makes the network brighter and thicker. Light is the pine cone's own gold.
 
-import caps from './mushroomCaps.json';
-
-const ASPECT = 2400 / 225;                   // the mushrooms picture is 2400 x 225
-const ORIGIN = [0.4767 * ASPECT, 0.72];      // the foot of the pine cone, in units of the picture's height
 const TOP = 0.3, BOTTOM = 0.78;              // the roots stay in the band that is on screen, among the stems
 const STEP = 0.05;
 const GOLD = '255, 226, 120';
 
 const rand = (min, max) => min + Math.random() * (max - min);
 
-export function createRoots(canvas) {
+// aspect: the picture's width over its height
+export function createRoots(canvas, { caps = [], cone = [0.5, 0.72], aspect: ASPECT = 2400 / 225 } = {}) {
+    const ORIGIN = [cone[0] * ASPECT, cone[1]];      // the foot of the pine cone, in units of the picture's height
     const ctx = canvas.getContext('2d');
     let paths = [];
     let nodes = [];                          // the caps the roots reach: where, how big, and when the root gets there
@@ -84,7 +82,7 @@ export function createRoots(canvas) {
     const frame = ({ grow = 0, pulse = -1, level = 0, t = 0, size = null }) => {
         const width = size ?? canvas.clientWidth;
         if (!width) return;
-        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        const dpr = Math.min(window.devicePixelRatio || 1, 2, 4096 / width);
         const cw = Math.round(width * dpr), ch = Math.round(width / ASPECT * dpr);
         if (canvas.width !== cw || canvas.height !== ch) { canvas.width = cw; canvas.height = ch; }
         const unit = ch;                                              // canvas pixels per unit of height

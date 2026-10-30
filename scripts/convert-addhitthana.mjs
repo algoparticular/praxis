@@ -1,4 +1,4 @@
-// The layers of Addhitthana as exported (2160px PNGs in originales/aditana/Addhitthana-N.png) -> public/assets/addhitthana/*.webp,
+// The layers of Addhitthana as exported (2160px PNGs in originales/aditana/Addhitthana-N.png; they are in the git history from commit 5181012 and are not kept in the repo once converted) -> public/assets/addhitthana/*.webp,
 // each cropped to its own box, and src/composables/addhitthanaScene.json: the box of every picture (and whether it touches
 // a side or the top of the square, so the scene can mirror it past the frame where the screen shows more than it), and every dot of the stipples (round
 // the moon, Particular's aura and the little light by the boat) as [x, y, radius, colour], so the scene draws them as real
