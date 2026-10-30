@@ -362,6 +362,24 @@
         },
     };
 
+    // The air coming in while he gathers a breath: motes of light drawn in from all round him to his chest
+    const AIR = 64;
+    const air = Array.from({ length: AIR }, (_, i) => ({ angle: (i / AIR) * 6.2832 + Math.random() * 0.3, offset: Math.random(), speed: 0.55 + Math.random() * 0.35, far: 0.8 + Math.random() * 0.5 }));
+    const airGroup = {
+        count: AIR,
+        update(t, data) {
+            if (!stage || !L.sid || swell < 0.01) { data.alphas.fill(0); return; }
+            const chest = L.sid.toScreen(sx(HEAD[0]), sy(1120));
+            const R = 420 * k();
+            air.forEach((m, i) => {
+                const u = (t * m.speed + m.offset) % 1;           // 0 far out .. 1 at his chest
+                const r = R * m.far * (1 - u) ** 1.4;
+                const a = m.angle + u * 0.6;                        // drawn in with a little turn
+                put(data, i, chest.x + Math.cos(a) * r, chest.y + Math.sin(a) * r * 0.9, 4 + 5 * u, Math.min(1, charge * 1.3) * Math.sin(Math.PI * u), u > 0.7 ? 0xffffff : AURA);
+            });
+        },
+    };
+
     // Every frame: the thoughts, his balance, his aura and the rulito
     const game = (t, dt) => {
         idle += dt;
@@ -520,21 +538,37 @@
     // The edge of a half (0 the sky, 1 the ground) at a height, art px. Above the sky's first row it goes on the way
     // it comes in (up and to the right, as the card's future sweeps in from the top corner), bending slowly upright
     const RISE = 320;                       // art px over which it bends upright above the frame
-    const edgeAt = (plane, y) => {
+    // The card's edge is softened (`FLAT`: a little of its S, more of its general line), so the S that shows is the
+    // long wave that travels down it, one in the sky and one in the ground
+    const FLAT = 0.6;
+    const soften = (x) => {
+        const sigma = 30, out = [];
+        for (let i = 0; i < x.length; i++) {
+            let sum = 0, w = 0;
+            for (let k = -3 * sigma; k <= 3 * sigma; k += 2) { const j = Math.min(x.length - 1, Math.max(0, i + k)); const g = Math.exp(-(k * k) / (2 * sigma * sigma)); sum += x[j] * g; w += g; }
+            out.push(x[i] + (sum / w - x[i]) * FLAT);
+        }
+        return out;
+    };
+    const edges = [R.edge[0].x, R.edge[1].x].map(soften);
+    const lineAt = (plane, y, xs) => {
         const e = R.edge[plane];
         if (plane === 0 && y < 0) {
-            const slope = (e.x[3] - e.x[0]) / (3 * e.step);
-            return e.x[0] - slope * RISE * (1 - Math.exp(y / RISE));
+            const slope = (xs[3] - xs[0]) / (3 * e.step);
+            return xs[0] - slope * RISE * (1 - Math.exp(y / RISE));
         }
-        const f = Math.min(e.x.length - 1, Math.max(0, (y - e.y0) / e.step));
-        const i = Math.min(e.x.length - 2, Math.floor(f));
-        return e.x[i] + (e.x[i + 1] - e.x[i]) * (f - i);
+        const f = Math.min(xs.length - 1, Math.max(0, (y - e.y0) / e.step));
+        const i = Math.min(xs.length - 2, Math.floor(f));
+        return xs[i] + (xs[i + 1] - xs[i]) * (f - i);
     };
-    // The edge rises and falls slowly, whole, as a wave that breathes (art px it is carried down, per half); where it
-    // is now is where the bubbles are measured from
-    const drift = [0, 0];
-    const SWAY = [110, 60];                 // art px, the sky's and the ground's
-    const edgeNow = (plane, y) => edgeAt(plane, y - drift[plane]);
+    // The edge drawn (softened), and the card's own, which the card's bubbles keep their distance from
+    const edgeAt = (plane, y) => lineAt(plane, y, edges[plane]);
+    const cardEdgeAt = (plane, y) => lineAt(plane, y, R.edge[plane].x);
+    // The long wave: an S as tall as each half that travels down it (art px), and where the edge is now with it
+    const WAVE = [{ amp: 70, length: 1500, speed: 0.22 }, { amp: 45, length: 900, speed: 0.3 }];
+    const phase = [0, 0];
+    const waveAt = (plane, y) => WAVE[plane].amp * Math.sin(6.2832 * y / WAVE[plane].length - phase[plane]);
+    const edgeNow = (plane, y) => edgeAt(plane, y) - waveAt(plane, y);
     const writeField = (canvas, width, height, area, plane, shape) => {
         canvas.width = width;
         canvas.height = height;
@@ -682,8 +716,11 @@
                 // Out, it roams slowly round its place; the small ones breathe in to the big one until they touch it
                 // and merge, and out again
                 // They ride the wave (the card's bubbles are the eyes of a yin and yang: each sits in the other's lobe of
-                // the S, and goes up and down with it), and circle slowly round their place
-                const roam = (b) => [b.x + c.dx + Math.sin(t * 0.21 + b.phase) * 10, b.y + c.dy + drift[c.plane] + Math.cos(t * 0.17 + b.phase) * 14];
+                // the S, as far from the edge as the card has it, and goes with it as it waves), and circle slowly round their place
+                const roam = (b) => {
+                    const y = b.y + c.dy + Math.cos(t * 0.17 + b.phase) * 14;
+                    return [edgeNow(c.plane, y) + (b.x - cardEdgeAt(c.plane, b.y)) + c.dx + Math.sin(t * 0.21 + b.phase) * 10, y];
+                };
                 let [hx, hy] = roam(m);
                 if (j) {
                     const [lx, ly] = roam(lead);
@@ -905,12 +942,8 @@
 
         // ---- The two halves: the edge between them churns more the farther he is pulled, and rests (still apart) when
         // he is still
-        if (!reduced) {
-            drift[0] = SWAY[0] * (Math.sin(t * 0.16) * 0.75 + Math.sin(t * 0.07 + 1) * 0.25);
-            drift[1] = SWAY[1] * Math.sin(t * 0.12 + 2);
-        }
-        L.sky.uniforms.uDrift.value = drift[0] * k();
-        L.ground.uniforms.uDrift.value = drift[1] * k();
+        if (!reduced) WAVE.forEach((w, i) => { phase[i] = w.speed * t; });
+        [L.sky, L.ground].forEach((field, i) => field.uniforms.uWave.value.set(WAVE[i].amp * k(), WAVE[i].length * k(), phase[i], F.y));
         const [skyBubbles, groundBubbles] = moveClusters(reduced ? 0 : dt, reduced ? 0 : t);
         // As many as the stage draws (FIELD_BUBBLES): the drops of thoughts let go first, the wanderers last
         L.sky.bubbles = [...moveDrops(dt), ...skyBubbles].slice(0, FIELD_BUBBLES);
@@ -946,10 +979,12 @@
         L.sid.x = lean * 0.05 * F.size;
         L.sid.y = lift;
         L.sid.rotate = lean * 5;
-        L.body.sy = 1 + 0.01 * Math.sin(t * 0.7) * ramp;
+        // Gathering a breath he fills up: a little taller and wider, and brighter
+        L.body.sy = 1 + 0.01 * Math.sin(t * 0.7) * ramp + 0.06 * swell;
+        L.body.sx = 1 + 0.035 * swell;
         L.calm.opacity = Math.min(1, 0.15 + 0.45 * calm + 0.5 * named + 0.5 * swell);
         L.calm.scale = 0.85 + 0.25 * calm + 0.15 * named + 0.55 * swell + 0.03 * Math.sin(t * 0.7);
-        L.body.uniforms.uBright.value = 1 + 0.06 * calm + 0.12 * named;
+        L.body.uniforms.uBright.value = 1 + 0.06 * calm + 0.12 * named + 0.18 * swell;
         L.sidNode.y = scroll * 26;
         // Gathering a breath his aura swells out round him and brightens; let go, it settles back
         swell += (charge - swell) * Math.min(1, dt * (charge > swell ? 5 : 3));
@@ -1021,6 +1056,8 @@
                 { colors: [GLOW], dynamic: sporeGroup, look: 'soft', parallax: 0, drift: 0, twinkle: 0, reach: 0, bloom: true, order: after(L.rocks[2].node) },
                 // 8: a light dust floating up, close to the eye
                 { count: 34, colors: [0xfffbe6, 0xf6f0c0, 0xd8f4f2], size: [2, 5.5], look: 'soft', parallax: 0, drift: 9, flow: [0, -6], twinkle: 0.6, reach: 90, push: 20, opacity: 0.45, bloom: true, order: 1e6 - 2 },
+                // 9: the air coming in to him as he gathers a breath
+                { colors: [AURA], dynamic: airGroup, look: 'soft', parallax: 0, drift: 0, twinkle: 0, reach: 0, bloom: true, order: 1e6 - 1.5 },
             ],
         });
         if (reduced) dust.reveal();

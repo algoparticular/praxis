@@ -215,7 +215,7 @@ const FIELD_FRAGMENT = `
     uniform float uShaped;
     uniform float uDpr;
     uniform float uScale;
-    uniform float uDrift;          // px the edge is carried down (up, if negative)
+    uniform vec4 uWave;            // a long wave travelling along the edge: amplitude px, wavelength px, phase, y px of its origin
     uniform vec4 uRect;            // where the plane is, px: left, top, width, height
     uniform vec4 uBubbles[${FIELD_BUBBLES}];
     uniform vec2 uTurns[${FIELD_BUBBLES}];
@@ -232,8 +232,6 @@ const FIELD_FRAGMENT = `
     }
     void main() {
         vec4 c = texture2D(map, vUv);
-        // The edge carried up or down whole (only the distance: where the ground is drawn stays)
-        c.r = texture2D(map, vUv + vec2(0.0, uDrift / max(uRect.w, 1.0))).r;
         vec2 px = uRect.xy + vec2(vUv.x, 1.0 - vUv.y) * uRect.zw;
         float t = uTime * uFlow;
         // The distance to the edge (px, > 0 on the second colour), moved by a wave running along it and a slow swell
@@ -242,7 +240,9 @@ const FIELD_FRAGMENT = `
         // Two long waves that travel along it, one up and one down, so it never stands still
         float wave = sin(u.y / 300.0 - t * 0.9) * 0.7 + sin(u.y / 520.0 + t * 0.45) * 0.3;
         float swell = noise(u / 640.0 + vec2(t * 0.04, -t * 0.05)) - 0.5;
-        d += (wave * 11.0 + swell * 30.0) * uScale * uWobble;
+        d += (wave * 4.0 + swell * 22.0) * uScale * uWobble;
+        // and the long wave the scene sets, an S that travels along the whole edge
+        if (uWave.y > 0.0) d += uWave.x * sin(6.2832 * (px.y - uWave.w) / uWave.y - uWave.z);
         // The bubbles, each an ellipse, joined to what is of its colour with a neck
         for (int i = 0; i < ${FIELD_BUBBLES}; i++) {
             vec4 b = uBubbles[i];
@@ -522,7 +522,8 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
         // the scene (red: the distance to the edge, 0.5 + px / (2 * FIELD_RANGE); green, with shaped, where it is drawn).
         // node.bubbles is its list of up to FIELD_BUBBLES bubbles, [x, y, rx, ry, angle, ±1] each (px, in the plane's
         // space; +1 of the second colour), read every frame; call node.refresh() after drawing on the canvas, and set
-        // uniforms.uScale to the px of a unit of the drawing; uniforms.uDrift carries the edge down by that many px
+        // uniforms.uScale to the px of a unit of the drawing; uniforms.uWave is a long wave that travels
+        // along the edge (amplitude px, wavelength px, phase, y px of its origin)
         field({ rect, source, colors = [0x000000, 0xffffff], shaped = false, flow = 1 } = {}) {
             const node = new Node(this);
             const texture = new THREE.CanvasTexture(source);
@@ -541,7 +542,7 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
                 uShaped: { value: shaped ? 1 : 0 },
                 uDpr: { value: dpr },
                 uScale: { value: 1 },
-                uDrift: { value: 0 },
+                uWave: { value: new THREE.Vector4(0, 0, 0, 0) },
                 uRect: { value: new THREE.Vector4(0, 0, 1, 1) },
                 uBubbles: { value: Array.from({ length: FIELD_BUBBLES }, () => new THREE.Vector4(0, 0, 0, 0)) },
                 uTurns: { value: Array.from({ length: FIELD_BUBBLES }, () => new THREE.Vector2(0, 0)) },
