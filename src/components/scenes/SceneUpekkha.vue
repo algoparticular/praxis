@@ -220,6 +220,7 @@
     const BREATH_AT = 0.35, BREATH = 1.6;   // s held before it is a breath, and s more to gather it whole
     let breath = null;                      // { pointerId, at, breathing }
     let charge = 0;                         // 0..1 the breath gathered
+    let swell = 0;                          // how far his aura has swelled with it (follows charge, softly)
     const touchSid = (event) => {
         if (event?.clientX !== undefined && thoughtAt(onCanvas(event))) return;
         idle = 0;
@@ -301,6 +302,8 @@
         const n = Math.round(Math.min(320, (w * h) / 2600));
         for (let i = 0; i < n; i++) {
             const x = -40 + Math.random() * (w + 80), y = -40 + Math.random() * (bottom + 40);
+            // None close to the edge: it sways, and a star must not end up in the other half's colour
+            if (Math.abs(onNight(x - 150 * k(), y) - onNight(x + 150 * k(), y))) continue;
             const night = onNight(x, y);
             list.push([x, y, night ? 1.6 + Math.random() * 2.6 : 1 + Math.random() * 1.4, night ? STAR[i % 3] : STAR_INK]);
         }
@@ -527,6 +530,11 @@
         const i = Math.min(e.x.length - 2, Math.floor(f));
         return e.x[i] + (e.x[i + 1] - e.x[i]) * (f - i);
     };
+    // The edge rises and falls slowly, whole, as a wave that breathes (art px it is carried down, per half); where it
+    // is now is where the bubbles are measured from
+    const drift = [0, 0];
+    const SWAY = [110, 60];                 // art px, the sky's and the ground's
+    const edgeNow = (plane, y) => edgeAt(plane, y - drift[plane]);
     const writeField = (canvas, width, height, area, plane, shape) => {
         canvas.width = width;
         canvas.height = height;
@@ -570,14 +578,14 @@
         const b = { x, y, rx, ry, angle, phase: Math.random() * 6.28 };
         const near = clusters.find((c) => c.plane === plane && c.colour === colour && c.members.some((m) => Math.hypot(m.x - x, m.y - y) < 170));
         if (near) near.members.push(b);
-        else clusters.push({ plane, colour, members: [b], state: 'home', timer: 3 + Math.random() * 12, p: 1, dx: 0, dy: 0, ey: 0 });
+        else clusters.push({ plane, colour, members: [b], state: 'home', timer: 14 + Math.random() * 16, p: 1, dx: 0, dy: 0, ey: 0 });
     });
-    const HOME = [8, 14], GO = 3.6, AWAY = [1.5, 4], COME = 5;      // s resting out, going in, gone, coming out
+    const HOME = [22, 36], GO = 3.6, AWAY = [1.5, 4], COME = 5;     // s resting out (they are the yin and yang's eyes: they stay), going in, gone, coming out
     const LAG = 0.14;                       // how far behind its cluster each smaller bubble goes
     const between = ([a, b]) => a + Math.random() * (b - a);
 
     const SPAN_Y = [[-150, 1150], [1420, 2120]];    // where along the edge of each half wanderers bud off (art px)
-    const WANDERERS = [4, 4];               // at most at once, in the sky and in the ground
+    const WANDERERS = [3, 3];               // at most at once, in the sky and in the ground
     const wanderers = [];
     let nextWanderer = 2;
     const newWanderer = () => {
@@ -605,8 +613,8 @@
     };
     // Where a wanderer is at a time (art px): out of its own colour, drifting, then back in somewhere else
     const wandererAt = (w, t) => {
-        const inside = (y) => edgeAt(w.plane, y) + w.toward * 70;
-        const outside = (y) => edgeAt(w.plane, y) - w.toward * w.reach;
+        const inside = (y) => edgeNow(w.plane, y) + w.toward * 70;
+        const outside = (y) => edgeNow(w.plane, y) - w.toward * w.reach;
         if (t < w.out) {
             const p = ease(Math.max(0, t / w.out));
             const y = w.from + (w.to - w.from) * p;
@@ -651,8 +659,8 @@
             } else if (c.state === 'away' && c.timer <= 0) {
                 c.state = 'out';
                 c.ey = (Math.random() - 0.5) * 300;
-                c.dx = (Math.random() - 0.5) * 120;
-                c.dy = (Math.random() - 0.5) * 160;
+                c.dx = (Math.random() - 0.5) * 40;
+                c.dy = (Math.random() - 0.5) * 60;
             } else if (c.state === 'out') {
                 c.p = Math.min(1, c.p + dt / COME);
                 if (c.p === 1) { c.state = 'home'; c.timer = between(HOME); }
@@ -660,7 +668,7 @@
         });
         if (dt) {
             nextWanderer -= dt;
-            if (nextWanderer <= 0) { newWanderer(); nextWanderer = between([1.5, 4]); }
+            if (nextWanderer <= 0) { newWanderer(); nextWanderer = between([2.5, 5]); }
         }
         const list = [[], []];
         const scale = k();
@@ -673,7 +681,9 @@
                 const p = ease(Math.min(1, Math.max(0, (c.p * (1 + most) - lag))));
                 // Out, it roams slowly round its place; the small ones breathe in to the big one until they touch it
                 // and merge, and out again
-                const roam = (b) => [b.x + c.dx + Math.sin(t * 0.21 + b.phase) * 22, b.y + c.dy + Math.cos(t * 0.17 + b.phase) * 30];
+                // They ride the wave (the card's bubbles are the eyes of a yin and yang: each sits in the other's lobe of
+                // the S, and goes up and down with it), and circle slowly round their place
+                const roam = (b) => [b.x + c.dx + Math.sin(t * 0.21 + b.phase) * 10, b.y + c.dy + drift[c.plane] + Math.cos(t * 0.17 + b.phase) * 14];
                 let [hx, hy] = roam(m);
                 if (j) {
                     const [lx, ly] = roam(lead);
@@ -683,10 +693,12 @@
                 }
                 // Gone: well inside its own colour, past the edge, somewhere else along it
                 const gy = hy + c.ey;
-                const gx = edgeAt(c.plane, gy) + toward * (Math.max(m.rx, m.ry) + 40);
+                const gx = edgeNow(c.plane, gy) + toward * (Math.max(m.rx, m.ry) + 40);
                 const x = gx + (hx - gx) * p;
                 const y = gy + (hy - gy) * p - Math.sin(Math.PI * p) * 24 * toward;
-                list[c.plane].push(liquid(m, x, y, m.angle + Math.sin(t * 0.27 + m.phase) * 0.25, dt, t, j, scale, toward));
+                // Yin and yang: as the bubbles of one colour swell, those of the other shrink, and back
+                const balance = 1 + 0.14 * Math.sin(t * 0.32 + (c.colour ? 0 : Math.PI));
+                list[c.plane].push(liquid(m, x, y, m.angle + Math.sin(t * 0.27 + m.phase) * 0.25, dt, t, j, scale * balance, toward));
             });
         });
         for (let i = wanderers.length - 1; i >= 0; i--) {
@@ -893,6 +905,12 @@
 
         // ---- The two halves: the edge between them churns more the farther he is pulled, and rests (still apart) when
         // he is still
+        if (!reduced) {
+            drift[0] = SWAY[0] * (Math.sin(t * 0.16) * 0.75 + Math.sin(t * 0.07 + 1) * 0.25);
+            drift[1] = SWAY[1] * Math.sin(t * 0.12 + 2);
+        }
+        L.sky.uniforms.uDrift.value = drift[0] * k();
+        L.ground.uniforms.uDrift.value = drift[1] * k();
         const [skyBubbles, groundBubbles] = moveClusters(reduced ? 0 : dt, reduced ? 0 : t);
         // As many as the stage draws (FIELD_BUBBLES): the drops of thoughts let go first, the wanderers last
         L.sky.bubbles = [...moveDrops(dt), ...skyBubbles].slice(0, FIELD_BUBBLES);
@@ -929,11 +947,14 @@
         L.sid.y = lift;
         L.sid.rotate = lean * 5;
         L.body.sy = 1 + 0.01 * Math.sin(t * 0.7) * ramp;
-        L.calm.opacity = Math.min(1, 0.15 + 0.45 * calm + 0.5 * named + 0.4 * charge);
-        L.calm.scale = 0.85 + 0.25 * calm + 0.15 * named + 0.2 * charge + 0.03 * Math.sin(t * 0.7);
+        L.calm.opacity = Math.min(1, 0.15 + 0.45 * calm + 0.5 * named + 0.5 * swell);
+        L.calm.scale = 0.85 + 0.25 * calm + 0.15 * named + 0.55 * swell + 0.03 * Math.sin(t * 0.7);
         L.body.uniforms.uBright.value = 1 + 0.06 * calm + 0.12 * named;
         L.sidNode.y = scroll * 26;
-        dust?.fade(AURA_GROUP, 0.55 + 0.45 * Math.max(calm, named));
+        // Gathering a breath his aura swells out round him and brightens; let go, it settles back
+        swell += (charge - swell) * Math.min(1, dt * (charge > swell ? 5 : 3));
+        dust?.fade(AURA_GROUP, Math.min(1, 0.55 + 0.45 * Math.max(calm, named) + 0.45 * swell));
+        dust?.grow(AURA_GROUP, 0.32 * swell, sx(HEAD[0]), sy(1060));
 
         // ---- The thoughts
         thoughts.forEach((th) => {

@@ -215,6 +215,7 @@ const FIELD_FRAGMENT = `
     uniform float uShaped;
     uniform float uDpr;
     uniform float uScale;
+    uniform float uDrift;          // px the edge is carried down (up, if negative)
     uniform vec4 uRect;            // where the plane is, px: left, top, width, height
     uniform vec4 uBubbles[${FIELD_BUBBLES}];
     uniform vec2 uTurns[${FIELD_BUBBLES}];
@@ -231,6 +232,8 @@ const FIELD_FRAGMENT = `
     }
     void main() {
         vec4 c = texture2D(map, vUv);
+        // The edge carried up or down whole (only the distance: where the ground is drawn stays)
+        c.r = texture2D(map, vUv + vec2(0.0, uDrift / max(uRect.w, 1.0))).r;
         vec2 px = uRect.xy + vec2(vUv.x, 1.0 - vUv.y) * uRect.zw;
         float t = uTime * uFlow;
         // The distance to the edge (px, > 0 on the second colour), moved by a wave running along it and a slow swell
@@ -519,7 +522,7 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
         // the scene (red: the distance to the edge, 0.5 + px / (2 * FIELD_RANGE); green, with shaped, where it is drawn).
         // node.bubbles is its list of up to FIELD_BUBBLES bubbles, [x, y, rx, ry, angle, ±1] each (px, in the plane's
         // space; +1 of the second colour), read every frame; call node.refresh() after drawing on the canvas, and set
-        // uniforms.uScale to the px of a unit of the drawing
+        // uniforms.uScale to the px of a unit of the drawing; uniforms.uDrift carries the edge down by that many px
         field({ rect, source, colors = [0x000000, 0xffffff], shaped = false, flow = 1 } = {}) {
             const node = new Node(this);
             const texture = new THREE.CanvasTexture(source);
@@ -538,6 +541,7 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
                 uShaped: { value: shaped ? 1 : 0 },
                 uDpr: { value: dpr },
                 uScale: { value: 1 },
+                uDrift: { value: 0 },
                 uRect: { value: new THREE.Vector4(0, 0, 1, 1) },
                 uBubbles: { value: Array.from({ length: FIELD_BUBBLES }, () => new THREE.Vector4(0, 0, 0, 0)) },
                 uTurns: { value: Array.from({ length: FIELD_BUBBLES }, () => new THREE.Vector2(0, 0)) },
