@@ -458,9 +458,10 @@
         L.larva.y = ((me.y - LARVA_AT.y) + Math.sin(t * 0.9) * 0.0025) * F.size;
         L.larva.rotate = (tilt + Math.sin(t * 0.6) * 4 * ramp) * (1 - 0.6 * nest) + 6 * nest;
         L.larva.scale = 1 + Math.min(me.hit, 0.3) * 0.12;
-        // At home it curls up against the nucleus, breathing slowly
-        L.larva.sx = 1 + nest * (0.05 + 0.015 * Math.sin(t * 1.2));
-        L.larva.sy = 1 - nest * (0.08 + 0.02 * Math.sin(t * 1.2));
+        // It breathes as it swims; at home it curls up against the nucleus, breathing slowly
+        const breath = reduced ? 0 : Math.sin(t * 1.2) * ramp;
+        L.larva.sx = 1 + nest * 0.05 + (0.01 + 0.005 * nest) * breath;
+        L.larva.sy = 1 - nest * 0.08 + (0.018 + 0.002 * nest) * breath;
         // The rulito goes with it
         L.rulito.x = L.larva.x;
         L.rulito.y = L.larva.y;

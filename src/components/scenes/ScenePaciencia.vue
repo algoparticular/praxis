@@ -93,10 +93,39 @@
         return { W, H, sun, sunGlow, boat, glyph, rulitoCanvas, ground, grass, coneRect, coneGlow, coneHalo, coneCentre, hit };
     };
 
+    // The sun, measured on its old picture (in fractions of its box): its solid middle and its colour; and its stippled
+    // rim, made here, thinning outwards as the picture had it
+    const SUN = { x: 0.516, y: 0.496, r: 0.36, color: 0xf3f4f5 };
+    const SUN_RIM = Array.from({ length: 900 }, () => {
+        const a = Math.random() * Math.PI * 2;
+        const out = Math.random() ** 1.8;
+        return { dx: Math.cos(a) * SUN.r * (0.96 + 0.44 * out), dy: Math.sin(a) * SUN.r * (0.96 + 0.44 * out), size: 1.4 + Math.random() * 1.6 * (1 - 0.5 * out), seed: Math.random() * 6.28 };
+    });
+    const sunRim = {
+        count: SUN_RIM.length,
+        update(t, data) {
+            if (!box || !L.sun) return;
+            const drift = stage.drift(L.back.z);
+            const w = box.sun.w, k = w / 110;
+            const cx = box.sun.left + SUN.x * w + drift.x, cy = box.sun.top + SUN.y * box.sun.h + L.sun.y + drift.y;
+            const sc = L.sun.scale;
+            SUN_RIM.forEach((d, i) => {
+                const j = reduced ? 0 : 0.6 * Math.sin(t * 1.7 + d.seed);
+                data.positions[i * 3] = cx + d.dx * w * sc + j;
+                data.positions[i * 3 + 1] = cy + d.dy * w * sc + j * 0.7;
+                data.sizes[i] = Math.max(1.1, d.size * k);
+                data.alphas[i] = reduced ? 1 : 0.75 + 0.25 * Math.sin(t * 2.3 + d.seed * 3);
+                data.tints[i * 3] = 0.953; data.tints[i * 3 + 1] = 0.957; data.tints[i * 3 + 2] = 0.961;
+            });
+        },
+    };
+
     const build = (s) => {
         const back = s.depth(depthFor(8));
         L.sunGlow = back.glow({ rect: { left: 0, top: 0, w: 1, h: 1 }, color: 0xffffff, stops: [[0, 0.5], [0.3, 0.3], [0.62, 0]] });
-        L.sun = back.image(ASSETS + 'sun.webp', { shimmer: 1, blur: 0.6 });
+        // The sun is not a picture: a disc in code, its stippled rim live particles (sunRim)
+        L.back = back;
+        L.sun = back.disc({ rect: { left: 0, top: 0, w: 1, h: 1 }, color: SUN.color });
         const mid = s.depth(depthFor(22));
         L.boat = mid.group();
         L.hull = L.boat.image(ASSETS + 'boat-bare.webp');
@@ -124,7 +153,9 @@
 
     const place = (W, H) => {
         box = layout(W, H);
-        L.sun.place(box.sun);
+        const sr = SUN.r * box.sun.w;
+        const sc = { x: box.sun.left + SUN.x * box.sun.w, y: box.sun.top + SUN.y * box.sun.h };
+        L.sun.place({ left: sc.x - sr, top: sc.y - sr, w: 2 * sr, h: 2 * sr });
         L.sunGlow.place(box.sunGlow, { x: box.sun.left + box.sun.w / 2, y: box.sun.top + box.sun.h / 2 });
         // The boat rocks about a point near its keel (85% down), and carries the rulito
         const keel = { x: box.boat.left + box.boat.w / 2, y: box.boat.top + box.boat.h * 0.85 };
@@ -323,7 +354,8 @@
         const behindGround = L.grass.mesh.renderOrder - 0.5;
         const back = await createStardust(null, { stage, groups: spores.groups.back.map((g, i) => ({ ...g, order: behindGround + i * 0.01 })) });
         const front = await createStardust(null, { stage, groups: spores.groups.front.map((g, i) => ({ ...g, order: 1e6 + i })) });
-        particles = { back, front };
+        const rim = await createStardust(null, { stage, groups: [{ dynamic: sunRim, look: 'hard', parallax: 0, drift: 0, jitter: 0, twinkle: 0, reach: 0, order: L.sun.mesh.renderOrder + 0.5 }] });
+        particles = { back, front, rim };
         if (gone) return;
         parallax = createParallax(root.value, frame);
         enter();
@@ -336,6 +368,7 @@
         spores?.destroy();
         particles?.back?.destroy();
         particles?.front?.destroy();
+        particles?.rim?.destroy();
         stage?.destroy();
         stageEl?.style.removeProperty('--name-glow');
         window.removeEventListener('pointerup', release);

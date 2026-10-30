@@ -320,6 +320,9 @@
         N_.char.y = y;
         N_.char.rotate = rotate;
         N_.char.scale = scale;
+        // his breath is taller than it is wide (the chest rises): part of the swell goes up, a little comes off the sides
+        N_.char.sy = 1 + (scale - 1) * 0.6;
+        N_.char.sx = 1 - (scale - 1) * 0.25;
         N_.halo.opacity = glow.alpha;
         N_.halo.scale = 1 + glow.blur / Math.max(box?.w ?? 300, 1) * 1.6;
     };

@@ -982,7 +982,11 @@
         awake = Math.max(0, awake - dt * 0.4);
         bob = Math.sin(t * 0.75) * 0.009 * geo.s * ramp;
         N_.sid.y = bob - s * 30;
-        N_.sid.scale = 1 + 0.035 * awake * awake + Math.sin(t * 0.9) * 0.004 * ramp;
+        // he breathes from his middle (taller as he breathes in, a little narrower)
+        const breath = reducedMotion ? 0 : Math.sin(t * 0.8) * ramp;
+        N_.sid.scale = 1 + 0.035 * awake * awake;
+        N_.sid.sy = 1 + 0.012 * breath;
+        N_.sid.sx = 1 - 0.004 * breath;
         N_.body.uniforms.uBright.value = 1 + 0.3 * awake;
         N_.body.uniforms.uSaturate.value = 1 + 0.4 * awake;
         // The coloured particles follow the parts they belong to
