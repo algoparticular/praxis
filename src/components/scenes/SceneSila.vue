@@ -419,6 +419,22 @@
         if (sidHit.value) put(sidHit.value, L.figures.boxOnScreen(rectOf([1170, 1220, 380, 600])));
     };
 
+    // On a phone, a finger put down on Particular, on Sid or on the glow of a mushroom must not move the page: otherwise
+    // the browser takes a drag (stirring the glow, or a tap that slides a little) for a scroll and cancels it. Anywhere
+    // else the page scrolls as usual
+    const TOUCH_MIN = 44;                   // px: how near a small mushroom a finger may land and still stir it
+    const onTouchStart = (event) => {
+        const touch = event.touches[0];
+        if (!touch || !event.cancelable || !stage || !root.value) return;
+        const box = root.value.getBoundingClientRect();
+        const x = touch.clientX - box.left, y = touch.clientY - box.top;
+        const onMushroom = MUSHROOMS.some((M, m) => {
+            const p = mushroomAt(m);
+            return Math.hypot(p.x - x, p.y - y) < Math.max(TOUCH_MIN, M.reach * k());
+        });
+        if (onMushroom) event.preventDefault();
+    };
+
     const enter = () => {
         if (entered || !props.active || !stage) return;
         entered = true;
@@ -607,6 +623,7 @@
             ],
         });
         if (reduced) dust.reveal();
+        root.value.addEventListener('touchstart', onTouchStart, { passive: false });
         parallax = createParallax(root.value, frame);
         enter();
     };
@@ -618,6 +635,7 @@
         parallax?.destroy();
         dust?.destroy();
         stage?.destroy();
+        root.value?.removeEventListener('touchstart', onTouchStart);
         stageEl?.style.removeProperty('--name-glow');
     });
 </script>
@@ -661,7 +679,8 @@
         visibility: hidden;
     }
 
-    /* Taps only, so the page still scrolls from them */
+    /* A tap that slides a little must not be taken for a scroll (the beat would be lost): the page scrolls from
+       anywhere else */
     .hit {
         position: absolute;
         left: 0;
@@ -672,7 +691,10 @@
         cursor: pointer;
         pointer-events: auto;
         -webkit-tap-highlight-color: transparent;
-        touch-action: manipulation;
+        touch-action: none;
+        -webkit-touch-callout: none;
+        user-select: none;
+        -webkit-user-select: none;
         outline: none;
     }
 

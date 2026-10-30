@@ -33,7 +33,7 @@ La energía de los chakras corre en dos sentidos:
 
 Los siete verbos, uno por chakra, quedan ordenados entre dos polos:
 - **Arraigar** (raíz) es el polo de la manifestación: de la materia a la manifestación. Está probado en Paciencia y en Hogar.
-- **Soltar** (corona) es el polo de la liberación: del entendimiento a la existencia. Está probado en Vipassana y en Nekkhamma.
+- **Soltar** (corona) es el polo de la liberación: del entendimiento a la existencia. Está probado en Vipassana, en Nekkhamma y en Upekkha.
 - **Dar y recibir** (corazón) es donde las dos corrientes se encuentran. Las notas de Belén lo dicen así: "dos triángulos entrelazados, el movimiento descendente del espíritu en la materia y la liberación ascendente de la materia en el espíritu: equilibrio perfecto en el corazón". Está implementado en Dana: compartir la luz de la llamita con todos los de la isla, y que vuelva multiplicada (ver más abajo, en "Dinámicas").
 - **Fluir, Encender, Resonar y Ver** serían los pasos entre un polo y el otro. Ver está probado en Pañña, Encender en Evolución Espiritual, Fluir en Khanti y Resonar en Sincronicidad (a tiempo), en Creatividad (composición libre) y en Sacca (eco).
 
@@ -78,7 +78,7 @@ Las palabras del libro para cada chakra, subiendo y bajando:
 
 Cada carta tiene un verbo (`verb` en `src/data/cards.json`, lista en `src/data/verbs.js`). El verbo define la **dinámica**: qué hace la persona con la escena. La ilustración, el sonido y el significado los pone cada carta. Los siete verbos son uno por personaje y chakra (ver arriba).
 
-Los siete verbos se probaron en una escena: **Arraigar en Paciencia** (y, hacia adentro, en **Hogar**), **Fluir en Khanti**, **Encender en Evolución Espiritual** (frotar y lanzar el fuego), **Dar y recibir en Dana** (compartir la luz), **Resonar en Sincronicidad** (y, como composición libre, en **Creatividad**, y como eco, en **Sacca**), **Ver en Pañña** y **Soltar en Vipassana** (y en **Nekkhamma**). Lo implementado no es fijo: son ideas probadas y pueden cambiar. Lo que se dice de las otras cartas son propuestas, tomando como punto de partida lo que ya hacen las escenas.
+Los siete verbos se probaron en una escena: **Arraigar en Paciencia** (y, hacia adentro, en **Hogar**), **Fluir en Khanti**, **Encender en Evolución Espiritual** (frotar y lanzar el fuego), **Dar y recibir en Dana** (compartir la luz), **Resonar en Sincronicidad** (y, como composición libre, en **Creatividad**, y como eco, en **Sacca**), **Ver en Pañña** y **Soltar en Vipassana** (y en **Nekkhamma** y **Upekkha**). Lo implementado no es fijo: son ideas probadas y pueden cambiar. Lo que se dice de las otras cartas son propuestas, tomando como punto de partida lo que ya hacen las escenas.
 
 Orden de los verbos: Arraigar (raíz) y Soltar (corona) son los dos polos, la corriente de manifestación y la de liberación, y Dar y recibir (corazón) es donde se encuentran. Los dos polos y el centro están probados: el centro, en Dana. Ver arriba, sección "Dos corrientes".
 
@@ -244,7 +244,18 @@ La escena sigue estática con movimiento reducido, así que todavía no se puede
 Con teclado, Enter o espacio sobre una lucecita corta su hilo; sobre él es un toque y mantenido es juntar el aire. Con movimiento reducido la escena queda quieta y no se juega.
 **Dónde se tocó:** `SceneNekkhamma.vue` (`cut()`, `forward()`, `back()`, `follow()`, `dissolve()`, `press()` y `letGo()`; `ANCHORS`, `threads`, `CLOUD`, `ORDER`, los grupos `threadGroup`, `lineGroup`, `cloudGroup` y `flyers`), el efecto `dissolve` de `useLayerStage.js`, y las capas y los puntos de `scripts/convert-nekkhamma.mjs`.
 
-**Cartas:** Nekkhamma (hecha), Upekkha, Ciclos, Perdón, Vipassana (hecha).
+**Cómo funciona hoy en Upekkha:** Sid medita entre dos mitades: a la izquierda el pasado (el cielo menta, la tierra naranja, el estanque quieto) y a la derecha el futuro (el cielo turquesa, los hongos y los cristales). *"Los pensamientos se mueven en estas dos direcciones, pasado y futuro"*; *"buscar vivir en el pasado es como abrazarte fuerte al ancla de tu barco"*.
+- *Los pensamientos llegan.* De los dos lados llegan flotando hacia él pensamientos: burbujas del color de la otra mitad, como las de la carta (las del pasado traen el turquesa del futuro, las del futuro el menta del pasado). Ocho por ronda, cuatro de cada lado, mezclados; como mucho tres a la vez.
+- *Se pegan y lo sacan del centro.* El que llega se queda junto a su cabeza, de su lado, y lo inclina hacia ahí; cuantos más de un lado, más se inclina. Su equilibrio es un resorte: cuando se suelta algo, se balancea y vuelve.
+- *Soltar un pensamiento.* Tocarlo lo suelta al levantar el dedo: estalla en motas que suben y se apagan (`release`). Cada uno soltado hace un poco más brillante su aura: ese es el contador.
+- *Aferrarse.* Mantener apretado un pensamiento es aferrarse (el demonio del séptimo chakra es el apego): crece, un hilo de puntos lo une a su cabeza y lo tira fuerte hacia su lado. Al soltarlo es una exhalación (`exhale`) y Sid vuelve al centro. No se pierde nada: se suelta igual, pero se ve lo que cuesta.
+- *La pista, sin palabras.* Si pasan 7 s sin tocar, el pensamiento más cerca de él brilla.
+- *La membrana.* Las dos mitades se tocan y no se mezclan, como los dos lados de una membrana celular: el borde conserva la forma del dibujo y respira, con una membrana fina y clara a lo largo, en el cielo y en la tierra. Se mueve un poco más cuanto más tiran de Sid, y un pensamiento soltado deja una gotita de su color que vuelve a su mitad.
+- *Ecuanimidad.* Con los ocho soltados queda quieto en el medio, su aura brilla, se ilumina el nombre y nace el rulito sobre su cabeza, donde lo dibuja la carta (`converge` y `rulito`: Mi menor no tiene séptima que resolver). Cuando el rulito se va, los pensamientos vuelven a llegar: *"todo pasa, todo cambia constantemente"*. Hito: `equanimous`.
+Con teclado, Enter o espacio sobre Sid suelta el pensamiento más cercano. Con movimiento reducido la escena queda quieta y no se juega.
+**Dónde se tocó:** `SceneUpekkha.vue` (`spawn()`, `letGoOf()`, `still()`, `press()`, `release()`, `game()`, `threadGroup`, `paintRegions()`), y las capas, los colores de fondo y los puntos de `scripts/convert-upekkha.mjs`.
+
+**Cartas:** Nekkhamma (hecha), Upekkha (hecha), Ciclos, Perdón, Vipassana (hecha).
 
 ### Sin verbo todavía: el silencio (carta 10)
 No hay nada que leer ni decir; la invitación es sentir el corazón. Su verbo va entre Fa (Dar y recibir), Sol (Resonar) o La (Ver), por decidir. Si tiene un juego, sería no jugar: la escena responde solo si se deja de tocar.

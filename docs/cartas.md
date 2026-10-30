@@ -70,7 +70,7 @@ Se cambia una línea en `src/data/cardChords.js`, por ejemplo `28: 'Em'`. Se esc
 | 6 | Sacca | Paramis | Resonar | Sol7 | Escena propia, verbo jugable |
 | 7 | Addhitthana | Paramis | Arraigar | Mi mayor | Ilustración plana |
 | 8 | Metta | Paramis | Dar y recibir | Famaj7 | Ilustración plana |
-| 9 | Upekkha | Paramis | Soltar | Mi menor | Ilustración plana |
+| 9 | Upekkha | Paramis | Soltar | Mi menor | Escena propia, verbo jugable |
 | 10 | " ... " | Special | por decidir | Sol mayor | Ilustración plana |
 | 11 | Aceptación | Regular | Fluir | Si menor | Ilustración plana |
 | 12 | Armonía | Regular | Resonar | Domaj7 | Ilustración plana |
