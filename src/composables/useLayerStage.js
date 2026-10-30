@@ -236,9 +236,9 @@ const FIELD_FRAGMENT = `
         // The distance to the edge (px, > 0 on the second colour), moved by a wave running along it and a slow swell
         float d = (c.r - 0.5) * ${2 * FIELD_RANGE}.0;
         vec2 u = px / uScale;
-        float wave = sin(u.y / 160.0 - t * 0.55) * 0.6 + sin(u.y / 70.0 + t * 0.9) * 0.25;
-        float swell = noise(u / 420.0 + vec2(t * 0.06, -t * 0.04)) - 0.5;
-        d += (wave * 18.0 + swell * 60.0) * uScale * uWobble;
+        float wave = sin(u.y / 380.0 - t * 0.35);
+        float swell = noise(u / 520.0 + vec2(t * 0.05, -t * 0.035)) - 0.5;
+        d += (wave * 7.0 + swell * 45.0) * uScale * uWobble;
         // The bubbles, each an ellipse, joined to what is of its colour with a neck
         for (int i = 0; i < ${FIELD_BUBBLES}; i++) {
             vec4 b = uBubbles[i];
