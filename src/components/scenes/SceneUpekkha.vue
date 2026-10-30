@@ -241,6 +241,90 @@
         },
     };
 
+    // ---- The sky, alive as Dana's: a far plane of tiny stars (on the mint of the past they are specks of its ink, on
+    // the night of the future pale stars), shooting stars now and then over the night, a light dust floating up close
+    // to the eye, and low over the night's ground, spores rising from the mushrooms and fading before they get high
+    const put = (data, i, x, y, size, alpha, color) => {
+        data.positions[i * 3] = x;
+        data.positions[i * 3 + 1] = y;
+        data.sizes[i] = size;
+        data.alphas[i] = alpha;
+        data.tints[i * 3] = ((color >> 16) & 255) / 255;
+        data.tints[i * 3 + 1] = ((color >> 8) & 255) / 255;
+        data.tints[i * 3 + 2] = (color & 255) / 255;
+    };
+    // Which half of the sky a point of the screen is on (true: the night of the future)
+    const onNight = (x, y) => {
+        let xa = (x - F.x) / k();
+        const ya = (y - F.y) / k();
+        if (xa < 0) xa = -xa;
+        else if (xa > SIZE) xa = 2 * SIZE - xa;
+        return xa > edgeAt(0, ya);
+    };
+    const STAR_INK = art.dots.color, STAR = [0xfaf3d4, 0xd8f4f2, 0xf6e27c];
+    const farStars = (w, h) => {
+        const bottom = sy(1250), list = [];
+        const n = Math.round(Math.min(320, (w * h) / 2600));
+        for (let i = 0; i < n; i++) {
+            const x = -40 + Math.random() * (w + 80), y = -40 + Math.random() * (bottom + 40);
+            const night = onNight(x, y);
+            list.push([x, y, night ? 1.6 + Math.random() * 2.6 : 1 + Math.random() * 1.4, night ? STAR[i % 3] : STAR_INK]);
+        }
+        return list;
+    };
+    // Shooting stars, silent: over the night, away from the edge, a soft cream head and a yellow tail that fades
+    const TAIL = 22, SHOOTERS = 2;
+    const shooters = Array.from({ length: SHOOTERS }, (_, j) => ({ at: 3 + j * 5, x: 0, y: 0, dx: 0, dy: 0, T: 1 }));
+    const shooting = {
+        count: SHOOTERS * TAIL,
+        update(t, data) {
+            if (!stage) return;
+            const w = stage.width, h = stage.height;
+            shooters.forEach((f, j) => {
+                if (t > f.at + f.T) {
+                    f.at = t + 4 + Math.random() * 9;
+                    f.T = 0.7 + Math.random() * 0.5;
+                    const speed = (0.3 + Math.random() * 0.25) * Math.max(w, h);
+                    // From near the edge, out into the night (to the right), falling
+                    const y = titleBottom() + Math.random() * Math.max(10, sy(800) - titleBottom());
+                    f.x = sx(edgeAt(0, (y - F.y) / k())) + 40 + Math.random() * 80;
+                    f.y = y;
+                    f.dx = speed;
+                    f.dy = speed * (0.25 + Math.random() * 0.3);
+                }
+                const u = (t - f.at) / f.T;
+                for (let n = 0; n < TAIL; n++) {
+                    const i = j * TAIL + n;
+                    const life = Math.max(0, u - n * 0.006);
+                    const x = f.x + f.dx * life * f.T, y = f.y + f.dy * life * f.T;
+                    if (u < 0 || u > 1 || !onNight(x, y)) { data.alphas[i] = 0; continue; }
+                    put(data, i, x, y, n ? Math.max(1.6, 6 - n * 0.2) : 9, Math.min(1, Math.sin(u * Math.PI) * 1.4) * (1 - n / TAIL) ** 0.7, n < 3 ? 0xfffbe6 : 0xf6e27c);
+                }
+            });
+        },
+    };
+    // Spores: born round the mushrooms of the night (where their yellow light is), they rise slowly, sway and fade low
+    const SPORES = 60;
+    let nightGlow = null;
+    const spores = Array.from({ length: SPORES }, () => ({ at: -Math.random() * 8, T: 1, x: 0, y: 0, rise: 0, phase: 0, size: 2, color: GLOW }));
+    const sporeGroup = {
+        count: SPORES,
+        update(t, data) {
+            nightGlow ??= art.glow.filter(([x, y]) => x > edgeAt(1, y) + 60);
+            if (!stage || !nightGlow.length) return;
+            spores.forEach((p, i) => {
+                if (t > p.at + p.T) {
+                    const [x, y] = nightGlow[Math.floor(Math.random() * nightGlow.length)];
+                    Object.assign(p, { at: t + Math.random() * 1.5, T: 5 + Math.random() * 5, x, y, rise: 60 + Math.random() * 140, phase: Math.random() * 6.28, size: 3.5 + Math.random() * 4, color: Math.random() < 0.7 ? GLOW : 0xe4ffb0 });
+                }
+                const u = (t - p.at) / p.T;
+                if (u < 0) { data.alphas[i] = 0; return; }
+                const ax = p.x + Math.sin(t * 0.8 + p.phase) * 18 + u * 30 * Math.sin(p.phase), ay = p.y - p.rise * u;
+                put(data, i, sx(ax), sy(ay), p.size, Math.sin(Math.PI * Math.min(1, u)) * (0.75 + 0.25 * Math.sin(t * 3 + p.phase)), p.color);
+            });
+        },
+    };
+
     // Every frame: the thoughts, his balance, his aura and the rulito
     const game = (t, dt) => {
         idle += dt;
@@ -766,6 +850,11 @@
         dust?.turn(AURA_GROUP, L.sid.rotate, sx(BASE[0]), sy(BASE[1]));
         dust?.shift(AURA_GROUP, sidDrift.x + L.sid.x, sidDrift.y + L.sidNode.y + L.sid.y);
         dust?.shift(2, landDrift.x, landDrift.y + L.landNode.y);
+        // The far stars move less than the sky, the dust close to the eye more: depth
+        dust?.shift(5, skyDrift.x * 0.6, skyDrift.y * 0.6 + L.skyNode.y);
+        dust?.shift(6, skyDrift.x * 0.6, skyDrift.y * 0.6 + L.skyNode.y);
+        dust?.shift(7, landDrift.x, landDrift.y + L.landNode.y);
+        dust?.shift(8, skyDrift.x * 2.2, skyDrift.y * 2.2);
         stage.render(t);
         if (frames++ % 2 === 0) placeHits();
     };
@@ -784,13 +873,14 @@
         build(stage);
         stage.onResize((w, h) => place(w, h));
         const after = (node) => node.mesh.renderOrder + 0.5;
+        const before = (node, n = 0) => node.mesh.renderOrder - 0.5 + n * 0.01;
         const fromArt = (list, colour, scale = 1) => list.map(([x, y, r]) => [sx(x), sy(y), Math.max(1.2, 2 * r * k() * scale), colour]);
         dust = startStardust(null, {
             stage,
             manual: true,
             groups: [
                 // 0: the specks of the sky
-                { colors: [art.dots.color], parallax: 0, drift: 1.5, twinkle: 0.3, reach: 0, opacity: 0.75, order: after(L.doodles), points: () => fromArt(art.dots.list, art.dots.color) },
+                { colors: [art.dots.color], parallax: 0, drift: 2.5, twinkle: 0.55, reach: 0, opacity: 0.75, order: after(L.doodles), points: () => fromArt(art.dots.list, art.dots.color) },
                 // 1: the aura round Sid, brighter as he lets go
                 { colors: [AURA], parallax: 0, drift: 1.4, jitter: 0.35, twinkle: 0.4, reach: 0, bloom: true, order: after(L.calm), points: () => fromArt(art.aura, AURA, 1.2) },
                 // 2: the yellow light round the mushrooms, alive and stirred by a finger
@@ -799,6 +889,13 @@
                 { colors: [AURA], dynamic: threadGroup, look: 'soft', parallax: 0, drift: 0, twinkle: 0, reach: 0, bloom: true, order: 1e6 - 1 },
                 // 4: sparks
                 { ...sparks.group(), order: 1e6 },
+                // 5: the far stars, behind everything but the two halves; 6: shooting stars over the night
+                { colors: [STAR_INK], parallax: 0, drift: 1.2, twinkle: 0.75, reach: 0, opacity: 0.9, order: before(L.doodles), points: farStars },
+                { colors: [0xffffff], dynamic: shooting, look: 'soft', parallax: 0, drift: 0, twinkle: 0, reach: 0, order: before(L.doodles, 1) },
+                // 7: spores over the night's ground, in front of it
+                { colors: [GLOW], dynamic: sporeGroup, look: 'soft', parallax: 0, drift: 0, twinkle: 0, reach: 0, bloom: true, order: after(L.rocks[2].node) },
+                // 8: a light dust floating up, close to the eye
+                { count: 34, colors: [0xfffbe6, 0xf6f0c0, 0xd8f4f2], size: [2, 5.5], look: 'soft', parallax: 0, drift: 9, flow: [0, -6], twinkle: 0.6, reach: 90, push: 20, opacity: 0.45, bloom: true, order: 1e6 - 2 },
             ],
         });
         if (reduced) dust.reveal();
