@@ -19,6 +19,7 @@ const scenes = {
     4: stage(() => import('../components/scenes/SceneViriya.vue')),
     5: stage(() => import('../components/scenes/SceneKhanti.vue')),
     6: stage(() => import('../components/scenes/SceneSacca.vue')),
+    7: stage(() => import('../components/scenes/SceneAddhitthana.vue')),
     9: stage(() => import('../components/scenes/SceneUpekkha.vue')),
     20: stage(() => import('../components/scenes/SceneCreatividad.vue')),
     22: stage(() => import('../components/scenes/SceneEvolucion.vue')),
@@ -31,5 +32,5 @@ const scenes = {
 export const sceneFor = (id) => scenes[id] ?? SceneFlat;
 
 // The scene's name for analytics (the components are async and anonymous)
-const names = { 0: 'nekkhamma', 1: 'sila', 2: 'dana', 3: 'panna', 4: 'viriya', 5: 'khanti', 6: 'sacca', 9: 'upekkha', 20: 'creatividad', 22: 'evolucion', 25: 'hogar', 27: 'paciencia', 29: 'sincronicidad', 31: 'vipassana' };
+const names = { 0: 'nekkhamma', 1: 'sila', 2: 'dana', 3: 'panna', 4: 'viriya', 5: 'khanti', 6: 'sacca', 7: 'addhitthana', 9: 'upekkha', 20: 'creatividad', 22: 'evolucion', 25: 'hogar', 27: 'paciencia', 29: 'sincronicidad', 31: 'vipassana' };
 export const sceneNameFor = (id) => names[id] ?? 'flat';

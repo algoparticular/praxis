@@ -29,7 +29,8 @@
 //   bright, saturate, tint + tintAmount  for lighting a layer up (the pine cone held)
 // and layers drawn in code: glow (a soft radial light, CSS radial-gradient stops), disc (a plain disc of colour,
 // with { water } the light of the water rippling across it) and field (two colours that meet and never mix, with a
-// membrane between them and bubbles of one in the other: Upekkha's two halves).
+// membrane between them and bubbles of one in the other: Upekkha's two halves) and rain (a storm: streaks of rain
+// slanting with the wind over the faint wavy lines of the wind on the sky, and a lightning: Addhitthana).
 //
 // Underlay. A scene that draws something with its own three.js scene and camera (Vipassana's field of cells) hands it
 // to underlay(fn): it is drawn inside every render, over the layers marked { under: true } and under all the others.
@@ -271,6 +272,70 @@ const FIELD_FRAGMENT = `
             a = smoothstep(0.5 - ws, 0.5 + ws, c.g);
         }
         gl_FragColor = vec4(col, 1.0) * a * uOpacity;
+    }`;
+
+// A storm drawn in code over the whole plane (Addhitthana): thin streaks of rain slanting with the wind, and under them
+// the faint wavy lines of the wind on the sky, as the card draws them. Everything is in px of the screen (uRect, as the
+// field), so it keeps its size on every screen. The scene moves it: uFall is how far the rain has fallen and uFlow how
+// far the wind has carried its lines (both px, added up by the scene, so a gust changes their speed without a jump),
+// uSlant how much the streaks lean (px across for each px down, + to the left), uRain how many columns rain (0..1) and
+// uFlash a lightning, a pale light over all of it
+const RAIN_FRAGMENT = `
+    uniform vec3 uColor;
+    uniform vec3 uLines;
+    uniform float uOpacity;
+    uniform float uFall;
+    uniform vec2 uFlow;
+    uniform float uSlant;
+    uniform float uRain;
+    uniform float uHatch;
+    uniform float uFlash;
+    uniform vec4 uStreak;          // column width, streak length, gap between streaks, thickness (px)
+    uniform float uScale;          // px of a unit of the drawing (the wind's lines)
+    uniform float uDpr;
+    uniform vec4 uRect;
+    varying vec2 vUv;
+    float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+    float noise(vec2 p) {
+        vec2 i = floor(p), f = fract(p);
+        f = f * f * (3.0 - 2.0 * f);
+        return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x), mix(hash(i + vec2(0.0, 1.0)), hash(i + 1.0), f.x), f.y);
+    }
+    void main() {
+        vec2 px = uRect.xy + vec2(vUv.x, 1.0 - vUv.y) * uRect.zw;
+        vec4 col = vec4(0.0);
+        // The wind's lines: the level lines of a slow noise carried by the wind, thin and faint
+        if (uHatch > 0.0) {
+            vec2 u = (px + uFlow) / (uScale * 90.0);
+            float n = noise(u) * 0.6 + noise(u * 2.3 + 7.1) * 0.3 + noise(u * 5.1 - 3.7) * 0.1;
+            float k = n * 9.0;
+            float edge = min(fract(k), 1.0 - fract(k)) / max(fwidth(k), 0.0001);
+            float line = 1.0 - smoothstep(0.4 * uDpr, 1.2 * uDpr, edge);
+            float a = line * uHatch * (0.55 + 0.45 * noise(u * 0.7 + 3.0));
+            col = vec4(uLines * a, a);
+        }
+        // The rain: columns of a streak each, leaning with the wind, each falling at its own pace
+        if (uRain > 0.0) {
+            vec2 q = vec2(px.x + px.y * uSlant, px.y);
+            float cw = uStreak.x;
+            float c = floor(q.x / cw);
+            float r1 = hash(vec2(c, 1.7)), r2 = hash(vec2(c, 5.3)), r3 = hash(vec2(c, 9.1)), r4 = hash(vec2(c, 13.9));
+            float period = uStreak.y + uStreak.z * (0.6 + 0.8 * r3);
+            float y = q.y - uFall * (0.75 + 0.5 * r1) + r2 * 997.0;
+            float f = mod(y, period);
+            float len = uStreak.y * (0.6 + 0.6 * r4);
+            float along = step(f, len) * smoothstep(0.0, len * 0.5, f) * (1.0 - smoothstep(len * 0.7, len, f));
+            float dx = abs(fract(q.x / cw) - (0.2 + 0.6 * r2)) * cw / sqrt(1.0 + uSlant * uSlant);
+            float aa = 0.7 / uDpr;
+            float across = 1.0 - smoothstep(uStreak.w * 0.5, uStreak.w * 0.5 + aa, dx);
+            float a = along * across * step(r1 * 0.97 + r4 * 0.03, uRain) * (0.45 + 0.55 * r3);
+            col = col * (1.0 - a) + vec4(uColor * a, a);
+        }
+        if (uFlash > 0.0) {
+            float a = uFlash;
+            col = col * (1.0 - a) + vec4(vec3(0.78, 0.9, 1.0) * a, a);
+        }
+        gl_FragColor = col * uOpacity;
     }`;
 
 const QUAD_VERTEX = `
@@ -561,6 +626,34 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
                 }
                 texture.needsUpdate = true;
             };
+            return node;
+        }
+
+        // A storm over the whole plane (RAIN_FRAGMENT): rain streaks in color and the wind's lines in lines. The scene
+        // moves it through its uniforms (uFall, uFlow, uSlant, uRain, uHatch, uFlash) and sets uScale to the px of a unit
+        // of its drawing
+        rain({ rect, color = 0xffffff, lines = 0x000000, streak = [10, 70, 260, 1.2] } = {}) {
+            const node = new Node(this);
+            const uniforms = {
+                uColor: { value: new THREE.Color(...parseColor(color)) },
+                uLines: { value: new THREE.Color(...parseColor(lines)) },
+                uOpacity: { value: 1 },
+                uFall: { value: 0 },
+                uFlow: { value: new THREE.Vector2(0, 0) },
+                uSlant: { value: 0.3 },
+                uRain: { value: 1 },
+                uHatch: { value: 0 },
+                uFlash: { value: 0 },
+                uStreak: { value: new THREE.Vector4(...streak) },
+                uScale: { value: 1 },
+                uDpr: { value: dpr },
+                uRect: { value: new THREE.Vector4(0, 0, 1, 1) },
+            };
+            const material = new THREE.ShaderMaterial({
+                uniforms, vertexShader: GLOW_VERTEX, fragmentShader: RAIN_FRAGMENT,
+                transparent: true, depthTest: false, depthWrite: false, premultipliedAlpha: true,
+            });
+            node.attach(new THREE.Mesh(new THREE.PlaneGeometry(1, 1), material), rect ?? { left: 0, top: 0, w: 1, h: 1 }, null, false);
             return node;
         }
 
