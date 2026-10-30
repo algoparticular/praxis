@@ -14,9 +14,9 @@
     // the name lights up and the rulito is born over his head, where the card draws it (`rulito`: E minor has no seventh
     // to resolve, it climbs to the octave). Then the thoughts start coming again: impermanence.
     // The flat colours behind the drawing are not pictures: their outlines were read from the card by the converter and
-    // the stage draws them (field()) as water and oil: the edge between the two halves of the sky, and of the ground,
-    // moves slowly, bulges, lets drops pinch off and takes them back, and they never mix; it churns more the more he is
-    // pulled, and a thought let go leaves a drop of its colour that drifts home. The specks of the sky, the stipple round Sid and
+    // the stage draws them (field()) as the two sides of a cell membrane: the edge between the two halves of the sky,
+    // and of the ground, keeps the drawn shape and breathes, with a thin light membrane along it, and they never mix;
+    // it stirs more the more he is pulled, and a thought let go leaves a small drop of its colour that drifts home. The specks of the sky, the stipple round Sid and
     // the yellow light of the mushrooms are particles. It is drawn in WebGL (useLayerStage), with the land mirrored past
     // the frame on wide screens. From upekkhaScene.json and public/assets/upekkha (made by scripts/convert-upekkha.mjs).
     import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
@@ -331,15 +331,15 @@
         return named;
     };
 
-    // ---- The two halves, as water and oil: the colours are drawn by the stage (field() in useLayerStage), which moves
-    // the edge between them, lets drops pinch off and come back, and never mixes them. The scene only draws, small and
+    // ---- The two halves, as the two sides of a cell membrane: the colours are drawn by the stage (field() in
+    // useLayerStage), which lets the edge between them breathe and draws the membrane, and never mixes them. The scene only draws, small and
     // when the screen changes size, where each colour is: red, which of the two (softened round the edge, so the edge
     // can move within that band), green, where the ground is. Past the frame the land goes on mirrored
     const skyField = document.createElement('canvas');
     const groundField = document.createElement('canvas');
     const MARGIN = 120;                     // px drawn past each edge, for the camera's slide
-    const FIELD = 0.35;                     // the fields' px per screen px: they are smooth, small is enough
-    const SOFT = 3;                         // how soft the edge is (box blur radius, field px, three passes): how far it can move
+    const FIELD = 0.5;                      // the fields' px per screen px: they are smooth, small is enough
+    const SOFT = 1;                         // how soft the edge is (box blur radius, field px, three passes): how far it can move
     const fill = (ctx, loops) => {
         ctx.beginPath();
         loops.forEach((loop) => {
@@ -417,9 +417,7 @@
             fill(ctx, R.future.loops);
             ctx.fillRect(R.futureTop, -SIZE, SIZE - R.futureTop, SIZE + 12);
         });
-        const sky = blur(future, width, height, SOFT, 3);
-        writeField(skyField, width, height, sky, null);
-        fluids.sky.edge = edgeOf(sky, width, height, area);
+        writeField(skyField, width, height, blur(future, width, height, SOFT, 3), null);
         // The ground: the teal over the right side of the orange of the past; under the frame (a wide screen pushes it a
         // little under the bottom) it goes on
         const teal = coverOf(width, height, area, (ctx) => {
@@ -430,80 +428,32 @@
             fill(ctx, R.past.loops);
             ctx.fillRect(0, SIZE - 2, SIZE, SIZE);
         });
-        const ground = blur(teal, width, height, SOFT, 3);
-        const land = blur(shape, width, height, 1, 1);
-        writeField(groundField, width, height, ground, land);
-        // Only where the ground is, well under its top edge
-        fluids.ground.edge = edgeOf(ground, width, height, area, (i) => land[i] > 0.99 && land[i - 12 * width] > 0.99);
-        fluids.sky.drops.length = fluids.ground.drops.length = 0;
+        writeField(groundField, width, height, blur(teal, width, height, SOFT, 3), blur(shape, width, height, 1, 1));
+        drops.length = 0;
         return area;
     };
 
-    // Drops of one colour let loose in the other. Now and then one swells out of the edge, pinches off, wanders a little
-    // into the other colour and goes back to melt into its own (water and oil); a thought let go leaves one in the sky,
-    // of its colour, which drifts home. `edge` holds points of each edge (where the field is half and half, in screen px
-    // at rest) with the way into the second colour
-    const fluids = { sky: { drops: [], edge: [], next: 1, most: 4 }, ground: { drops: [], edge: [], next: 2, most: 2 } };
-    const edgeOf = (values, width, height, area, keep = () => true) => {
-        const points = [];
-        for (let tries = 0; points.length < 160 && tries < 60000; tries++) {
-            const x = 1 + Math.floor(Math.random() * (width - 2)), y = 1 + Math.floor(Math.random() * (height - 2));
-            const i = y * width + x;
-            if (Math.abs(values[i] - 0.5) > 0.06 || !keep(i)) continue;
-            const gx = values[i + 1] - values[i - 1], gy = values[i + width] - values[i - width];
-            const g = Math.hypot(gx, gy);
-            if (g < 1e-4) continue;
-            const px = area.left + x / FIELD, py = area.top + y / FIELD;
-            if (px < -40 || px > W + 40 || py < 0 || py > H) continue;
-            points.push([px, py, gx / g, gy / g]);
-        }
-        return points;
-    };
-    const loose = (fluid, x, y, r, sign, out = null) => {
-        if (fluid.drops.length >= 8) fluid.drops.shift();
-        fluid.drops.push({ x, y, r, sign, out, age: 0, life: out ? 7 + Math.random() * 4 : 9 });
-    };
+    // A thought let go leaves a small drop of its colour in the sky, which drifts back to its own half and melts into it
+    // through the membrane
+    const drops = [];
     const dropFrom = (th) => {
+        if (drops.length >= 8) drops.shift();
         const drift = stage.drift(L.skyNode.z);
         // The past's thoughts carry the future's teal (the field's second colour)
-        loose(fluids.sky, th.x - drift.x, th.y - drift.y - L.skyNode.y, th.r * 0.9, th.side < 0 ? 1 : -1);
+        drops.push({ x: th.x - drift.x, y: th.y - drift.y - L.skyNode.y, r: th.r * 0.45, sign: th.side < 0 ? 1 : -1, age: 0 });
     };
-    const moveDrops = (t, dt) => {
+    const moveDrops = (dt) => {
         const home = sx(HEAD[0]);
-        for (const [name, fluid] of Object.entries(fluids)) {
-            // A new one swells out of the edge, into the other colour
-            if (t > fluid.next && fluid.edge.length && fluid.drops.filter((d) => d.out).length < fluid.most) {
-                fluid.next = t + 1.6 + Math.random() * 2.4;
-                const [x, y, nx, ny] = fluid.edge[Math.floor(Math.random() * fluid.edge.length)];
-                const sign = Math.random() < 0.5 ? 1 : -1;
-                const r = (name === 'sky' ? 12 + Math.random() * 14 : 8 + Math.random() * 9) * Math.max(0.7, F.size / 900);
-                // A drop of the second colour goes against the way into it, one of the first along it
-                loose(fluid, x, y, r, sign, { x, y, nx: -sign * nx, ny: -sign * ny, far: r * (2.2 + Math.random() * 2.5), phase: Math.random() * 6.28 });
-            }
-            for (let i = fluid.drops.length - 1; i >= 0; i--) {
-                const d = fluid.drops[i];
-                d.age += dt;
-                if (d.out) {
-                    // Out, a while away, and back: it pinches off going and melts in coming back
-                    const u = d.age / d.life;
-                    const reach = Math.sin(Math.min(1, u) * Math.PI) ** 0.7;
-                    const wander = Math.sin(d.age * 0.9 + d.out.phase) * d.r * 0.8 * reach;
-                    d.x = d.out.x + d.out.nx * d.out.far * reach - d.out.ny * wander;
-                    d.y = d.out.y + d.out.ny * d.out.far * reach + d.out.nx * wander;
-                    if (u >= 1) fluid.drops.splice(i, 1);
-                    continue;
-                }
-                // A thought's drop: towards its own half, rising a little; once there it melts into its colour
-                const goal = home + d.sign * F.size * 0.35;
-                d.x += (goal - d.x) * Math.min(1, dt * 0.25);
-                d.y += (-F.size * 0.012 + Math.sin(d.age * 1.6) * 6) * dt;
-                const there = d.sign > 0 ? d.x > home + F.size * 0.12 : d.x < home - F.size * 0.12;
-                if (there || d.age > d.life) d.r *= Math.exp(-dt * 0.6);
-                if (d.r < 3) fluid.drops.splice(i, 1);
-            }
+        for (let i = drops.length - 1; i >= 0; i--) {
+            const d = drops[i];
+            d.age += dt;
+            d.x += (home + d.sign * F.size * 0.35 - d.x) * Math.min(1, dt * 0.3);
+            d.y += (-F.size * 0.01 + Math.sin(d.age * 1.6) * 5) * dt;
+            const there = d.sign > 0 ? d.x > home + F.size * 0.1 : d.x < home - F.size * 0.1;
+            if (there || d.age > 8) d.r *= Math.exp(-dt * 0.8);
+            if (d.r < 2) drops.splice(i, 1);
         }
-        L.sky.drops = fluids.sky.drops.map((d) => [d.x, d.y, d.r, d.sign]);
-        L.ground.drops = fluids.ground.drops.map((d) => [d.x, d.y, d.r, d.sign]);
+        L.sky.drops = drops.map((d) => [d.x, d.y, d.r, d.sign]);
     };
 
     const AURA_GROUP = 1;
@@ -511,13 +461,13 @@
     const build = (s) => {
         const sky = s.depth(zFor(DEPTH.sky));
         L.skyNode = sky;
-        L.sky = sky.field({ source: skyField, colors: [MINT, FUTURE], flow: 1.5 });
+        L.sky = sky.field({ source: skyField, colors: [MINT, FUTURE] });
         L.doodles = sky.image('/assets/upekkha/doodles.webp');
         sky.enter({ y: 20, delay: 0, duration: 1600 });
 
         const land = s.depth(zFor(DEPTH.land));
         L.landNode = land;
-        L.ground = land.field({ source: groundField, colors: [R.past.color, R.ground.color], shaped: true, flow: 0.9 });
+        L.ground = land.field({ source: groundField, colors: [R.past.color, R.ground.color], shaped: true, flow: 0.7 });
         L.water = [-1, 0, 1].map((side) => ({ side, node: land.image('/assets/upekkha/water.webp', { water: 0.7 }) }));
         L.fern = [-1, 0, 1].map((side) => ({ side, node: land.image('/assets/upekkha/fern.webp', { wind: { amp: 5, speed: 0.7, root: 'bottom' } }) }));
         L.land = [-1, 0, 1].map((side) => ({ side, node: land.image('/assets/upekkha/land.webp') }));
@@ -621,10 +571,10 @@
 
         // ---- The two halves: the edge between them churns more the farther he is pulled, and rests (still apart) when
         // he is still
-        moveDrops(t, dt);
+        moveDrops(dt);
         const unrest = Math.min(1, Math.abs(lean));
-        L.sky.uniforms.uWobble.value = (1 + 0.6 * unrest) * (1 - 0.45 * named);
-        L.ground.uniforms.uWobble.value = (0.75 + 0.3 * unrest) * (1 - 0.45 * named);
+        L.sky.uniforms.uWobble.value = (1 + 0.5 * unrest) * (1 - 0.45 * named);
+        L.ground.uniforms.uWobble.value = (0.7 + 0.3 * unrest) * (1 - 0.45 * named);
 
         // ---- The sky's doodles drift a little
         L.doodles.y = Math.sin(t * 0.4) * 6 * ramp;
