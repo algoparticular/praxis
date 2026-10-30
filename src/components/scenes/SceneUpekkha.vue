@@ -337,7 +337,7 @@
     // which moves the edge between them and draws the membrane. The scene only writes, small and when the screen
     // changes size, how far each px is from the edge (red; the edge is the curve the converter read from the card, a
     // smooth S, read on the slope so it is a true distance) and, for the ground, where it is (green). Past the frame the
-    // land goes on mirrored, and above it the sky's edge comes back down as in a mirror, so it never ends in a line
+    // land goes on mirrored, and above it the sky's edge goes on the way it comes in, so it never ends in a line
     const skyField = document.createElement('canvas');
     const groundField = document.createElement('canvas');
     const MARGIN = 120;                     // px drawn past each edge, for the camera's slide
@@ -386,10 +386,15 @@
         }
         return out;
     };
-    // The edge of a half (0 the sky, 1 the ground) at a height, art px: above the sky's first row it comes back down
+    // The edge of a half (0 the sky, 1 the ground) at a height, art px. Above the sky's first row it goes on the way
+    // it comes in (up and to the right, as the card's future sweeps in from the top corner), bending slowly upright
+    const RISE = 320;                       // art px over which it bends upright above the frame
     const edgeAt = (plane, y) => {
         const e = R.edge[plane];
-        if (plane === 0 && y < 0) y = -y;
+        if (plane === 0 && y < 0) {
+            const slope = (e.x[3] - e.x[0]) / (3 * e.step);
+            return e.x[0] - slope * RISE * (1 - Math.exp(y / RISE));
+        }
         const f = Math.min(e.x.length - 1, Math.max(0, (y - e.y0) / e.step));
         const i = Math.min(e.x.length - 2, Math.floor(f));
         return e.x[i] + (e.x[i + 1] - e.x[i]) * (f - i);
