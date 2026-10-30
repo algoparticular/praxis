@@ -28,9 +28,9 @@
     if (use3D.value) preloadThumbs(cards.map((card) => card.id).sort((a, b) => Math.min(a, cards.length - a) - Math.min(b, cards.length - b)));
 
     const filters = [
-        // The cards whose page already has its own scene (and game), first
-        { key: 'scenes', label: 'deck.filterScenes', only: (card) => hasScene(card.id) },
         { key: 'all', label: 'deck.filterAll', category: null },
+        // The cards whose page already has its own scene (and game), right after all of them
+        { key: 'scenes', label: 'deck.filterScenes', only: (card) => hasScene(card.id) },
         { key: 'paramis', label: 'deck.filterParamis', category: 'Paramis' },
         { key: 'regular', label: 'deck.filterRegular', category: 'Regular' },
         { key: 'special', label: 'deck.filterSpecial', category: 'Special' },
