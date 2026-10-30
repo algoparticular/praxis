@@ -11,6 +11,10 @@
 // Besides the spores that leave the caps there is a dust: a standing population of tiny motes hanging in the clear air above
 // the mushrooms, in the manner of the dust around the hero's spiral. They twinkle, drift along slow currents that differ
 // from one height to the next, wrap round the edges, and when the pointer blows they are sent flying and then drift back.
+//
+// With `onPuff(cap, lead)` the scene is told which cap is about to let go of a puff `lead` seconds before it does (0
+// when it is at once), so the mushroom can gather itself and pop as its spores come out; and now and then, on their
+// own, one of them sneezes: a bigger puff that climbs higher.
 
 import caps from './mushroomCaps.json';
 
@@ -50,7 +54,7 @@ const makeGlow = (rgb = '20, 100, 118', core = 0.55) => {
 // With { points: true } nothing is drawn on `canvas` (it may be a WebGL stage's): the cloud is handed over as particle
 // groups for useStardust (`groups.back`, `groups.front`, dynamic, in CSS px of the canvas) and is moved by their updates;
 // `locate()` then says where the mushrooms picture is, relative to the canvas, as there is no DOM picture to measure.
-export function createSpores(canvas, { source, animate = true, front = null, points = false, locate = null } = {}) {
+export function createSpores(canvas, { source, animate = true, front = null, points = false, locate = null, onPuff = null } = {}) {
     const ctx = points ? null : canvas.getContext('2d');
     const ctxFront = points ? null : front?.getContext('2d') ?? null;    // optional second canvas, in front of the mushrooms, for the pine cone's sparks
     const glow = points ? null : makeGlow();
@@ -64,8 +68,9 @@ export function createSpores(canvas, { source, animate = true, front = null, poi
 
     let width = 0, height = 0, dpr = 1;
     let frame = 0, visible = true, last = 0, clock = 0;
-    let nextTrickle = 0, nextPuff = 1.2;
-    const pending = [];                 // puffs that wait for the wave of the swell to get to their cap: { cap, at }
+    let nextTrickle = 0, nextPuff = 1.2, nextSneeze = 4;
+    const LEAD = 0.7;                   // seconds a mushroom gathers itself before it lets go (with onPuff)
+    const pending = [];                 // puffs that wait for their time (the wave of the swell, a mushroom gathering): { cap, at, count?, kick? }
     let surge = 0, surgeFor = 1;        // 1 right after surge() and down to 0 over surgeFor seconds: the cloud swells, then settles
     const pointer = { x: -9999, y: -9999, vx: 0, vy: 0, active: false, pressed: false, lastX: 0, lastY: 0, lastT: 0 };
 
@@ -247,8 +252,10 @@ export function createSpores(canvas, { source, animate = true, front = null, poi
     const step = (dt, t) => {
         // Release. First the baseline: whenever the cloud is below its usual size, a few more come out of the caps
         for (let i = pending.length - 1; i >= 0; i--) {
-            if (t < pending[i].at) continue;
-            puff(pending[i].cap, Math.round(rand(16, 26)), rand(50, 90), [0, 0]);
+            const p = pending[i];
+            if (t < p.at) continue;
+            if (!p.told) onPuff?.(p.cap, 0);
+            puff(p.cap, p.count ?? Math.round(rand(16, 26)), p.kick ?? rand(50, 90), [0, 0]);
             pending.splice(i, 1);
         }
         surge = Math.max(0, surge - dt / surgeFor);
@@ -259,8 +266,21 @@ export function createSpores(canvas, { source, animate = true, front = null, poi
             nextTrickle = t + rand(0.02, 0.06) * (1 - 0.6 * surge);
         }
         if (t > nextPuff) {
-            puff(pickCap(), Math.round(rand(10, 22) * (1 + 1.5 * surge)), rand(16, 34) * (1 + 0.5 * surge), [0, 0]);
+            const cap = pickCap(), count = Math.round(rand(10, 22) * (1 + 1.5 * surge)), kick = rand(16, 34) * (1 + 0.5 * surge);
+            // Told, the mushroom gathers itself first and the puff waits for it
+            if (onPuff) {
+                onPuff(cap, LEAD);
+                pending.push({ cap, at: t + LEAD, count, kick, told: true });
+            } else {
+                puff(cap, count, kick, [0, 0]);
+            }
             nextPuff = t + rand(1.2, 3.2) * (1 - 0.6 * surge);
+        }
+        if (onPuff && t > nextSneeze) {
+            const cap = pickCap();
+            onPuff(cap, LEAD * 1.6, true);
+            pending.push({ cap, at: t + LEAD * 1.6, count: Math.round(rand(30, 44)), kick: rand(55, 85), told: true });
+            nextSneeze = t + rand(5, 9);
         }
 
         // Spores are gone before they climb to the sky; when the cloud swells it climbs much higher, into the boat's air

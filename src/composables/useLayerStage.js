@@ -27,6 +27,11 @@
 //   dissolve 0xRRGGBB  it can come undone from the bottom up: uniforms.uDissolve.value.y is how far (0 whole .. 1 gone),
 //            along a ragged edge (noise) that glows in that colour as it eats in (Nekkhamma's Sid)
 //   bright, saturate, tint + tintAmount  for lighting a layer up (the pine cone held)
+//   sway     true  parts of the picture lean and stretch on their own about a point, the picture bending softly round
+//            them (Paciencia's mushrooms): node.sways is a list of up to SWAYS [u, v, w, angle (deg), stretch], u, v the
+//            point (fractions of the picture, from its top left), w the part's width (a fraction of the picture's),
+//            stretch its height (1 as drawn; it narrows as it grows, as something soft); read every frame. What would
+//            come from outside the picture is see-through, so a picture can be shown in a taller box (crop) to have room
 // and layers drawn in code: glow (a soft radial light, CSS radial-gradient stops), disc (a plain disc of colour,
 // with { water } the light of the water rippling across it) and field (two colours that meet and never mix, with a
 // membrane between them and bubbles of one in the other: Upekkha's two halves).
@@ -82,6 +87,7 @@ const CAUSTIC = `
         return clamp(pow(abs(c), 14.0), 0.0, 1.0);
     }`;
 
+export const SWAYS = 16;
 const LAYER_FRAGMENT = `
     uniform sampler2D map;
     uniform float uTime;
@@ -100,6 +106,9 @@ const LAYER_FRAGMENT = `
     uniform vec3 uDissolveGlow;
     uniform vec2 uSize;
     uniform vec4 uCrop;            // the part of the texture shown: u, v of its corner and its size (0, 0, 1, 1: all of it)
+    uniform float uSways;          // how many parts sway (-1: it does not sway at all)
+    uniform vec4 uSway[${SWAYS}];       // u, v (from the top left), width (fractions of the picture), angle (rad)
+    uniform float uStretch[${SWAYS}];
     float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
     float noise(vec2 p) {
         vec2 i = floor(p), f = fract(p);
@@ -115,7 +124,33 @@ const LAYER_FRAGMENT = `
         if (uShimmer > 0.0) {
             uv += vec2(sin(uv.y * 38.0 + uTime * 2.1), cos(uv.x * 31.0 + uTime * 1.7)) * 0.004 * uShimmer;
         }
-        vec4 c = texture2D(map, uCrop.xy + uv * uCrop.zw, uBias);
+        vec2 at = uCrop.xy + uv * uCrop.zw;
+        if (uSways > 0.0) {
+            // Where each px comes from: undo each part's lean and stretch about its point, fully on the part and
+            // fading round it (it reaches up over what it carries and less down what carries it)
+            vec2 size = uSize / uCrop.zw;
+            vec2 q = vec2(at.x, 1.0 - at.y) * size;
+            vec2 move = vec2(0.0);
+            for (int i = 0; i < ${SWAYS}; i++) {
+                if (float(i) >= uSways) break;
+                vec4 s = uSway[i];
+                vec2 o = s.xy * size;
+                float r = s.z * size.x * 1.1;
+                vec2 d = q - o;
+                float e = length(vec2(d.x, d.y * (d.y < 0.0 ? 0.8 : 1.6))) / r;
+                if (e >= 1.0) continue;
+                float f = 1.0 - smoothstep(0.5, 1.0, e);
+                float a = -s.w * f;
+                vec2 b = vec2(d.x * cos(a) - d.y * sin(a), d.x * sin(a) + d.y * cos(a));
+                float k = 1.0 + (uStretch[i] - 1.0) * f;
+                b /= vec2(1.0 + (inversesqrt(max(uStretch[i], 0.1)) - 1.0) * f, k);
+                move += b - d;
+            }
+            q += move;
+            at = vec2(q.x, size.y - q.y) / size;
+        }
+        vec4 c = texture2D(map, at, uBias);
+        if (uSways >= 0.0 && (at.x < 0.0 || at.x > 1.0 || at.y < 0.0 || at.y > 1.0)) c = vec4(0.0);
         c.rgb *= uBright;
         float grey = dot(c.rgb, vec3(0.299, 0.587, 0.114));
         c.rgb = mix(vec3(grey), c.rgb, uSaturate);
@@ -443,7 +478,7 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
 
         // crop: [left, top, width, height] of the part of the texture shown, as fractions of it (from its top left)
         plane(texture, { rect = { left: 0, top: 0, w: 1, h: 1 }, pivot = null, crop = null, wind = null, shimmer = 0, water = 0, sheen = 0, sink = false, dissolve = null, blur = 0, bloom = false,
-            blending = 'normal', segments = null, under = false, vignette = 0 } = {}) {
+            blending = 'normal', segments = null, under = false, vignette = 0, sway = false } = {}) {
             const node = new Node(this);
             const segs = segments ?? (wind ? [24, 10] : [1, 1]);
             const uniforms = {
@@ -467,6 +502,9 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
                 // (the texture's v runs from its bottom up)
                 uCrop: { value: crop ? new THREE.Vector4(crop[0], 1 - crop[1] - crop[3], crop[2], crop[3]) : new THREE.Vector4(0, 0, 1, 1) },
                 uWind: { value: new THREE.Vector4(wind?.amp ?? 0, wind?.speed ?? 1, wind?.root === 'top' ? 1 : 0, Math.random() * 6.28) },
+                uSways: { value: sway ? 0 : -1 },
+                uSway: { value: Array.from({ length: SWAYS }, () => new THREE.Vector4()) },
+                uStretch: { value: new Array(SWAYS).fill(1) },
             };
             const material = new THREE.ShaderMaterial({
                 uniforms, vertexShader: LAYER_VERTEX, fragmentShader: LAYER_FRAGMENT,
@@ -475,6 +513,7 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
                 premultipliedAlpha: true,
             });
             node.attach(new THREE.Mesh(new THREE.PlaneGeometry(1, 1, segs[0], segs[1]), material), rect, pivot, bloom);
+            if (sway) node.sways = [];
             // Under: drawn first, beneath what a scene draws itself in the stage's renderer (underlay())
             if (under) node.mesh.layers.set(UNDER_LAYER);
             return node;
@@ -620,6 +659,15 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
                 if (u.uBubbles) {
                     u.uBubbles.value.forEach((v, i) => { const b = this.bubbles[i]; v.set(b?.[0] ?? 0, b?.[1] ?? 0, b?.[2] ?? 0, b?.[3] ?? 0); });
                     u.uTurns.value.forEach((v, i) => { const b = this.bubbles[i]; v.set(b?.[4] ?? 0, b?.[5] ?? 0); });
+                }
+                if (this.sways) {
+                    const n = Math.min(SWAYS, this.sways.length);
+                    u.uSways.value = n;
+                    for (let i = 0; i < n; i++) {
+                        const [su, sv, sw, angle, stretch] = this.sways[i];
+                        u.uSway.value[i].set(su, sv, sw, angle * Math.PI / 180);
+                        u.uStretch.value[i] = stretch;
+                    }
                 }
                 if (u.uEdge) u.uEdge.value = Math.min(0.5, 3 / Math.max(r.w, 1));
                 if (u.uClip) {
