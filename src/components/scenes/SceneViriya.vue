@@ -544,12 +544,12 @@
         L.sunGlow.opacity = 0.55 + 0.1 * breath + 0.4 * sunUp;
         L.sunGlow.scale = 1 + 0.04 * breath + 0.3 * sunUp;
         L.dusk.opacity = 0.25 + 0.55 * sunUp;
-        L.sunNode.y = scroll * 10 - 30 * k() * 4 * ease(sunUp);
+        L.sunNode.y = scroll * 10 - 30 * k() * 6 * ease(sunUp);
 
-        // ---- The wind's strokes are blown along: they drift and wrap round, rise and fall, lean and stretch as they go
+        // ---- The wind's strokes are blown along, from left to right: they drift and wrap round, rise and fall, lean and stretch as they go
         winds.forEach((wd) => {
             const node = L.winds[wd.i];
-            const moved = wd.x0 - wd.speed * t;
+            const moved = wd.x0 + wd.speed * t;               // from left to right
             const wrapped = span.left + ((((moved - span.left) % span.width) + span.width) % span.width);
             node.x = wrapped - wd.x0;
             const gust = Math.sin(t * 1.3 + wd.phase);
