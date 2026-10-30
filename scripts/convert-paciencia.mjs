@@ -1,9 +1,13 @@
-// The layers of Paciencia's boat as exported (3240px PNGs in originales/paciencia/Paciencia-N.png; they are in the git
-// history from commit 53d2632) -> public/assets/paciencia/boat.webp, an atlas of every piece of the boat and its crew,
-// public/assets/paciencia/cone.webp (the pine cone, layers 1 and 2) and src/composables/pacienciaScene.json: where
-// every piece sits (px of the 3240 square) and where it is in the atlas, so the scene can move each little being on
-// its own. Each being's outline is cut in two at the top of its head: its antennae on their own, so they can sway in
-// the wind while the body stays put. The originals are not kept in the repo once converted.
+// The layers of Paciencia as exported (3240px PNGs; they are in the git history: the boat in
+// originales/paciencia/Paciencia-N.png from commit 53d2632, the ground in originales/paciencia/paciencia-piso from
+// commit 8008718) -> public/assets/paciencia/boat.webp, an atlas of every piece of the boat and its crew,
+// cone.webp (the pine cone, layers 1 and 2 of the boat), plants.webp and mushrooms.webp (the strip of the ground: its
+// grass, and the coral with its mushrooms), and src/composables/pacienciaScene.json: where every piece of the boat
+// sits (px of the 3240 square) and where it is in the atlas, so the scene can move each little being on its own; and,
+// in fractions of the strip, where the caps of its mushrooms and the little balls of its coral are (they lean and
+// breathe, and the spores come out of the caps) and the room in the middle where the pine cone sits. Each being's
+// outline is cut in two at the top of its head: its antennae on their own, so they can sway in the wind while the
+// body stays put. The originals are not kept in the repo once converted.
 // Usage: node scripts/convert-paciencia.mjs
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
@@ -13,7 +17,8 @@ import sharp from 'sharp';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const source = path.join(root, 'originales', 'paciencia');
 const target = path.join(root, 'public', 'assets', 'paciencia');
-const file = (n) => path.join(source, `Paciencia-${n}.png`);
+const file = (n) => (typeof n === 'string' ? path.join(source, n) : path.join(source, `Paciencia-${n}.png`));
+const ground = (n) => `paciencia-piso/Paciencia-${n}.png`;
 
 const SCALE = 0.5;              // the atlas is at half the size of the export: the boat is about 1320px wide in it
 const PAD = 6;                  // room round each piece in the atlas, so the mipmaps do not bleed into the next one
@@ -122,7 +127,6 @@ const scene = {
         crop: [r4(at[i][0] / ATLAS_W), r4(at[i][1] / atlasH), r4(sizes[i][0] / ATLAS_W), r4(sizes[i][1] / atlasH)],
     }])),
 };
-await writeFile(path.join(root, 'src', 'composables', 'pacienciaScene.json'), JSON.stringify(scene));
 
 // The pine cone, in a box as the old one had it (its drawing 87% of the width, a little room for the glow), so it
 // sits where the cone of the mushrooms picture is and covers it
@@ -135,4 +139,57 @@ await webp(sharp({ create: { width: cw, height: ch, channels: 4, background: { r
     .composite([{ input: coneDrawing, left: Math.round(cw * 0.05), top: Math.round(ch * 0.07) }]))
     .toFile(path.join(target, 'cone.webp'));
 
-console.log(`boat.webp ${ATLAS_W}x${atlasH}, ${parts.length} pieces; cone.webp ${cw}x${ch}`);
+// ---- The ground ----
+// A strip at the foot of the square: its grass behind (1), and the coral, the little balls (3 blue, 4 yellow), the
+// shines, the caps (6, their shade 7) and all the line work (8) as one picture. The pine cone sits on the cut stem in
+// the gap in the middle (its drawing's foot there, as wide as it was against the old mushrooms)
+const GROUND = { grass: [1], mushrooms: [2, 3, 4, 5, 6, 7, 8] };
+const GROUND_SCALE = 0.6;
+const CONE_IN_GAP = { x: 1465, foot: 3015, w: 225 };     // px of the square: the middle and the foot of the cone's drawing
+const strips = {};
+for (const [name, layers] of Object.entries(GROUND)) strips[name] = await flatten(layers.map(ground));
+const top = boxOf(strips.mushrooms.data, strips.mushrooms.W, strips.mushrooms.H)[1] & ~1;
+const S = strips.mushrooms.W, SH = strips.mushrooms.H - top;
+for (const [name, picture] of Object.entries(strips)) {
+    const png = await sharp(picture.data, { raw: { width: picture.W, height: picture.H, channels: 4 } })
+        .extract({ left: 0, top, width: S, height: SH })
+        .resize(Math.round(S * GROUND_SCALE), Math.round(SH * GROUND_SCALE), { kernel: 'lanczos3' }).png().toBuffer();
+    await webp(sharp(png)).toFile(path.join(target, `${name}.webp`));
+}
+// The shapes of one layer: [u, v, w] each, the middle of its foot and its width in fractions of the strip
+const shapes = async (n, least) => {
+    const { data, info } = await load(ground(n));
+    const W = info.width, H = info.height, seen = new Uint8Array(W * H), out = [];
+    for (let i = 0; i < W * H; i++) {
+        if (seen[i] || data[i * 4 + 3] < 128) continue;
+        const stack = [i];
+        seen[i] = 1;
+        let x0 = W, y0 = H, x1 = 0, y1 = 0, area = 0;
+        while (stack.length) {
+            const j = stack.pop(), x = j % W, y = (j - x) / W;
+            area++;
+            x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y);
+            for (const k of [j - 1, j + 1, j - W, j + W]) {
+                if (k < 0 || k >= W * H || seen[k] || data[k * 4 + 3] < 128 || Math.abs((k % W) - x) > 1) continue;
+                seen[k] = 1;
+                stack.push(k);
+            }
+        }
+        if (area >= least) out.push([r4((x0 + x1) / 2 / S), r4((y1 - top) / SH), r4((x1 - x0) / S)]);
+    }
+    return out.sort((a, b) => a[0] - b[0]);
+};
+const coneH = CONE_IN_GAP.w * (c3 - c1) / (c2 - c0);
+const coneBox = { w: CONE_IN_GAP.w / 0.87 };
+coneBox.h = coneBox.w * 128 / 100;
+coneBox.x = CONE_IN_GAP.x - CONE_IN_GAP.w / 2 - 0.05 * coneBox.w;
+coneBox.y = CONE_IN_GAP.foot - coneH - 0.07 * coneBox.h;
+scene.ground = {
+    size: [S, SH],
+    caps: await shapes(6, 4000),
+    balls: [...await shapes(3, 1500), ...await shapes(4, 1500)].sort((a, b) => a[0] - b[0]),
+    cone: { x: r4(coneBox.x / S), y: r4((coneBox.y - top) / SH), w: r4(coneBox.w / S), h: r4(coneBox.h / SH) },
+};
+await writeFile(path.join(root, 'src', 'composables', 'pacienciaScene.json'), JSON.stringify(scene));
+
+console.log(`boat.webp ${ATLAS_W}x${atlasH}, ${parts.length} pieces; cone.webp ${cw}x${ch}; ground ${S}x${SH}: ${scene.ground.caps.length} caps, ${scene.ground.balls.length} balls`);

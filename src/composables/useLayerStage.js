@@ -87,7 +87,7 @@ const CAUSTIC = `
         return clamp(pow(abs(c), 14.0), 0.0, 1.0);
     }`;
 
-export const SWAYS = 16;
+export const SWAYS = 24;
 const LAYER_FRAGMENT = `
     uniform sampler2D map;
     uniform float uTime;
@@ -108,7 +108,7 @@ const LAYER_FRAGMENT = `
     uniform vec4 uCrop;            // the part of the texture shown: u, v of its corner and its size (0, 0, 1, 1: all of it)
     uniform float uSways;          // how many parts sway (-1: it does not sway at all)
     uniform vec4 uSway[${SWAYS}];       // u, v (from the top left), width (fractions of the picture), angle (rad)
-    uniform float uStretch[${SWAYS}];
+    uniform vec4 uStretch[${SWAYS / 4}];   // four to a vec4
     float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
     float noise(vec2 p) {
         vec2 i = floor(p), f = fract(p);
@@ -134,6 +134,9 @@ const LAYER_FRAGMENT = `
             for (int i = 0; i < ${SWAYS}; i++) {
                 if (float(i) >= uSways) break;
                 vec4 s = uSway[i];
+                vec4 g = uStretch[i / 4];
+                int m = i - (i / 4) * 4;
+                float stretch = m == 0 ? g.x : m == 1 ? g.y : m == 2 ? g.z : g.w;
                 vec2 o = s.xy * size;
                 float r = s.z * size.x * 1.1;
                 vec2 d = q - o;
@@ -142,8 +145,8 @@ const LAYER_FRAGMENT = `
                 float f = 1.0 - smoothstep(0.5, 1.0, e);
                 float a = -s.w * f;
                 vec2 b = vec2(d.x * cos(a) - d.y * sin(a), d.x * sin(a) + d.y * cos(a));
-                float k = 1.0 + (uStretch[i] - 1.0) * f;
-                b /= vec2(1.0 + (inversesqrt(max(uStretch[i], 0.1)) - 1.0) * f, k);
+                float k = 1.0 + (stretch - 1.0) * f;
+                b /= vec2(1.0 + (inversesqrt(max(stretch, 0.1)) - 1.0) * f, k);
                 move += b - d;
             }
             q += move;
@@ -504,7 +507,7 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
                 uWind: { value: new THREE.Vector4(wind?.amp ?? 0, wind?.speed ?? 1, wind?.root === 'top' ? 1 : 0, Math.random() * 6.28) },
                 uSways: { value: sway ? 0 : -1 },
                 uSway: { value: Array.from({ length: SWAYS }, () => new THREE.Vector4()) },
-                uStretch: { value: new Array(SWAYS).fill(1) },
+                uStretch: { value: Array.from({ length: SWAYS / 4 }, () => new THREE.Vector4(1, 1, 1, 1)) },
             };
             const material = new THREE.ShaderMaterial({
                 uniforms, vertexShader: LAYER_VERTEX, fragmentShader: LAYER_FRAGMENT,
@@ -666,7 +669,7 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
                     for (let i = 0; i < n; i++) {
                         const [su, sv, sw, angle, stretch] = this.sways[i];
                         u.uSway.value[i].set(su, sv, sw, angle * Math.PI / 180);
-                        u.uStretch.value[i] = stretch;
+                        u.uStretch.value[i >> 2].setComponent(i & 3, stretch);
                     }
                 }
                 if (u.uEdge) u.uEdge.value = Math.min(0.5, 3 / Math.max(r.w, 1));

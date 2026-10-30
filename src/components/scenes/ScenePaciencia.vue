@@ -10,7 +10,8 @@
     // It is drawn in WebGL (useLayerStage): the layers come from the artwork itself (public/assets/collaborate, and the
     // boat in public/assets/paciencia, made by scripts/convert-paciencia.mjs), each at its depth, and the camera slides
     // with the pointer or the tilt of the phone, so the ground (mushrooms with the grass behind them) moves most and the
-    // sun least. The grass sways in the wind and the air trembles over the sun.
+    // sun least. The ground is three strips side by side, the outer two mirrored, so it is wider than any screen without
+    // a seam. The grass sways in the wind and the air trembles over the sun.
     // The crew of the boat is alive, each in its own way, their antennae swaying in the wind: the one at the left looks
     // around and blinks, the one in the middle rows, the little one beside him hops now and then, the one up on the
     // spiral hums to and fro and the sleepy one at the right end nods off and wakes with a start. The mushrooms lean and
@@ -27,10 +28,8 @@
     import { play } from '../../composables/useSound.js';
     import { sceneMilestone } from '../../analytics.js';
     import Rulito from '../Rulito.vue';
-    import cone from '../../composables/pineCone.json';
     import rulitoAt from '../../composables/pacienciaRulito.json';
     import boatAt from '../../composables/pacienciaScene.json';
-    import caps from '../../composables/mushroomCaps.json';
 
     const props = defineProps({
         card: { type: Object, default: () => ({}) },
@@ -61,9 +60,22 @@
     const depthFor = (amp) => amp / (SLIDE + amp);
 
     const ASSETS = '/assets/collaborate/';
-    const BOAT = '/assets/paciencia/boat.webp';
-    const SIZES = { sun: [200, 191], boat: boatAt.box.slice(2), plants: [2400, 197], mushrooms: [2400, 225], cone: [100, 128] };
+    const GROUND = '/assets/paciencia/';
+    const BOAT = GROUND + 'boat.webp';
+    const SIZES = { sun: [200, 191], boat: boatAt.box.slice(2), strip: boatAt.ground.size, cone: [100, 128] };
     const ROOM = 0.25;                      // room over the mushrooms picture (a fraction of its height) for the caps to lean into
+
+    // The ground: two strips wide (where the roots and the spores are), with the middle strip as drawn and half of a
+    // mirrored one at each side, and a mirrored strip beyond each end so it never shows an edge. The places the strip
+    // knows (the caps, the cone) are fractions of one strip; here they are taken to fractions of the ground.
+    const TILES = [-1, 0, 1];
+    const tileAt = (k) => 0.25 + 0.5 * k;   // where strip k starts, in fractions of the ground
+    const onGround = (k, u) => tileAt(k) + 0.5 * (k ? 1 - u : u);
+    const art = boatAt.ground;
+    const cone = { x: tileAt(0) + 0.5 * art.cone.x, y: art.cone.y, w: 0.5 * art.cone.w, h: art.cone.h };
+    // The caps the spores come out of and the roots reach, on the ground (only those on it)
+    const groundCaps = TILES.flatMap((k) => art.caps.map(([u, v, w], i) => ({ k, i, at: [onGround(k, u), v, 0.5 * w] })))
+        .filter(({ at }) => at[0] > 0 && at[0] < 1);
 
     // The crew: the pieces of each being (from pacienciaScene.json), where its feet are (px of the artwork: it breathes
     // and leans about them), the wind in its antennae and its eyes, to blink (open ones) or not
@@ -90,15 +102,14 @@
         const boat = { left: W / 2 - boatW / 2, top: H - (strip * 1.3 + 0.05 * H) - boatH, w: boatW, h: boatH };
         // On a phone the strip is bigger (its foot stays put), so the pine cone sits higher and is easier to reach
         const groundW = Math.max(1.3 * W, strip * 10.67 * 1.1 * (narrow ? 1.3 : 1));
-        const groundH = groundW * SIZES.mushrooms[1] / SIZES.mushrooms[0];
+        const groundH = groundW / 2 * SIZES.strip[1] / SIZES.strip[0];
         const ground = { left: W / 2 - groundW / 2, top: H + 0.2 * strip - groundH, w: groundW, h: groundH };
         // Inside the boat: the rulito on the central Sama's head (its canvas is bigger than the glyph, for the glow)
         const rw = rulitoAt.w * boatW, rh = rw * 86 / 32;
         const glyph = { left: boat.left + rulitoAt.x * boatW, top: boat.top + rulitoAt.y * boatH, w: rw, h: rh };
         const rulitoCanvas = { left: glyph.left - 0.4375 * rw, top: glyph.top - 0.1628 * rh, w: rw * 1.875, h: rh * 1.3256 };
         // Inside the ground (fractions of the mushrooms picture)
-        const grassH = groundW * SIZES.plants[1] / SIZES.plants[0];
-        const grass = { left: ground.left, top: ground.top + groundH * 1.07 - grassH, w: groundW, h: grassH };
+        const tiles = TILES.map((k) => ({ left: ground.left + tileAt(k) * groundW, top: ground.top, w: groundW / 2, h: groundH }));
         const coneW = cone.w * groundW;
         const coneRect = { left: ground.left + cone.x * groundW, top: ground.top + cone.y * groundH, w: coneW, h: coneW * SIZES.cone[1] / SIZES.cone[0] };
         const glowSize = cone.w * groundW * 3.4;
@@ -111,7 +122,7 @@
             w: cone.w * groundW * 1.7, h: cone.h * groundH * 1.2,
         };
         const sunGlow = { left: sun.left - sunW * 0.55, top: sun.top - sunH * 0.55, w: sunW * 2.1, h: sunH * 2.1 };
-        return { W, H, sun, sunGlow, boat, glyph, rulitoCanvas, ground, grass, coneRect, coneGlow, coneHalo, coneCentre, hit };
+        return { W, H, sun, sunGlow, boat, glyph, rulitoCanvas, ground, tiles, coneRect, coneGlow, coneHalo, coneCentre, hit };
     };
 
     // The sun, measured on its old picture (in fractions of its box): its solid middle and its colour; and its stippled
@@ -176,18 +187,20 @@
         L.rulito = L.c.canvas(rulito.value.canvas, { bloom: true });
         const near = s.depth(depthFor(40));
         L.ground = near.group();
-        L.grass = L.ground.image(ASSETS + 'plants.webp', { wind: { amp: 5, speed: 0.9 } });
+        L.grass = TILES.map(() => L.ground.image(GROUND + 'grass.webp', { wind: { amp: 5, speed: 0.9 } }));
         const rootsCanvas = document.createElement('canvas');
-        roots = createRoots(rootsCanvas);
+        roots = createRoots(rootsCanvas, {
+            caps: groundCaps.map(({ at }) => at), cone: [cone.x + cone.w / 2, cone.y + cone.h * 1.05], aspect: 2 * SIZES.strip[0] / SIZES.strip[1],
+        });
         L.roots = L.ground.canvas(rootsCanvas, { bloom: true, blending: 'add' });
         // In a box taller than the picture, so the caps at its top can lean and stretch into the air
-        L.mushrooms = L.ground.image(ASSETS + 'mushrooms.webp', { sway: true, crop: [0, -ROOM, 1, 1 + ROOM] });
+        L.mushrooms = TILES.map(() => L.ground.image(GROUND + 'mushrooms.webp', { sway: true, crop: [0, -ROOM, 1, 1 + ROOM] }));
         L.coneGlow = L.ground.glow({
             rect: { left: 0, top: 0, w: 1, h: 1 }, color: [1, 0.93, 0.5],
             stops: [[0, 0.5], [0.38 * 0.7071, 0.18], [0.7 * 0.7071, 0]],
         });
         L.coneHalo = L.ground.glow({ rect: { left: 0, top: 0, w: 1, h: 1 }, color: [1, 0.95, 0.6], stops: [[0, 0.7], [0.25, 0.35], [0.6, 0]], bloom: true });
-        L.cone = L.ground.image('/assets/paciencia/cone.webp', { bloom: true });
+        L.cone = L.ground.image(GROUND + 'cone.webp', { bloom: true });
         L.coneGlow.opacity = 0;
         L.coneHalo.opacity = 0;
         L.sun.enter({ y: -30, scale: 0.6, duration: 1800 });
@@ -221,9 +234,14 @@
         L.rulito.place(box.rulitoCanvas, { x: box.glyph.left + box.glyph.w / 2, y: box.glyph.top + box.glyph.h });
         // The ground is one piece, so the grass behind the mushrooms always lines up with them; it turns about its foot
         L.ground.pivot = { x: W / 2, y: box.ground.top + box.ground.h };
-        L.grass.place(box.grass);
+        // The strips at the sides are mirrored (about their own middle)
+        TILES.forEach((k, n) => {
+            const t = box.tiles[n];
+            L.grass[n].place(t);
+            L.mushrooms[n].place({ ...t, top: t.top - ROOM * t.h, h: t.h * (1 + ROOM) });
+            L.grass[n].sx = L.mushrooms[n].sx = k ? -1 : 1;
+        });
         L.roots.place(box.ground);
-        L.mushrooms.place({ ...box.ground, top: box.ground.top - ROOM * box.ground.h, h: box.ground.h * (1 + ROOM) });
         L.coneGlow.place(box.coneGlow);
         L.coneHalo.place(box.coneHalo);
         L.cone.place(box.coneRect);
@@ -242,7 +260,7 @@
 
     // Where the mushrooms picture is now, for the spores to leave from the real caps
     const mushroomsOnScreen = () => {
-        const b = L.mushrooms.boxOnScreen(box.ground);
+        const b = L.ground.boxOnScreen(box.ground);
         return { left: b.left, top: b.top, width: b.width, height: b.height };
     };
 
@@ -399,31 +417,38 @@
     // ---- The mushrooms ----
     // Each leans and breathes on its stem; told that it is about to let go of its spores (onPuff), it gathers itself
     // (it shrinks and trembles) and pops as they come out, springing back
-    const shrooms = caps.map(() => ({ phase: Math.random() * 6.28, gather: -1, lead: 0, big: false, pop: 0, v: 0 }));
-    const onPuff = (i, lead, big = false) => {
-        const m = shrooms[i];
+    // Every cap and every little ball of each strip (each strip its own, so the copies do not move together)
+    const swayer = () => ({ phase: Math.random() * 6.28, gather: -1, lead: 0, big: false, pop: 0, v: 0 });
+    const shrooms = TILES.map(() => ({ caps: art.caps.map(swayer), balls: art.balls.map(swayer) }));
+    const onPuff = (n, lead, big = false) => {
+        const c = groundCaps[n];
+        const m = c && shrooms[TILES.indexOf(c.k)].caps[c.i];
         if (!m) return;
         if (lead > 0) { m.gather = lastT ?? 0; m.lead = lead; m.big = big; }
         else { m.gather = -1; m.v += big ? 12 : 9; }
     };
-    const moveMushrooms = (t, dt, ramp) => {
-        L.mushrooms.sways = caps.map(([u, v, w], i) => {
-            const m = shrooms[i];
-            let angle = (2.4 * Math.sin(t * 0.7 + m.phase) + 1 * Math.sin(t * 1.9 + m.phase * 2)) * ramp;
-            let stretch = 1 + 0.035 * Math.sin(t * 1.2 + m.phase) * ramp;
-            if (m.gather >= 0) {
-                const p = Math.min(1, (t - m.gather) / m.lead);
-                stretch *= 1 - (m.big ? 0.18 : 0.1) * ease(p);
-                angle += Math.sin(t * 38 + m.phase) * 1.4 * p;
-                if (p >= 1) { m.gather = -1; m.v += m.big ? 12 : 9; }
-            }
-            // The pop: a spring
-            m.v += (-90 * m.pop - 7 * m.v) * dt;
-            m.pop += m.v * dt;
-            return [u, v, w, angle, stretch * (1 + m.pop * 0.12)];
-        });
+    const mushroom = ([u, v, w], m, t, dt, ramp) => {
+        let angle = (2.4 * Math.sin(t * 0.7 + m.phase) + 1 * Math.sin(t * 1.9 + m.phase * 2)) * ramp;
+        let stretch = 1 + 0.035 * Math.sin(t * 1.2 + m.phase) * ramp;
+        if (m.gather >= 0) {
+            const p = Math.min(1, (t - m.gather) / m.lead);
+            stretch *= 1 - (m.big ? 0.18 : 0.1) * ease(p);
+            angle += Math.sin(t * 38 + m.phase) * 1.4 * p;
+            if (p >= 1) { m.gather = -1; m.v += m.big ? 12 : 9; }
+        }
+        // The pop: a spring
+        m.v += (-90 * m.pop - 7 * m.v) * dt;
+        m.pop += m.v * dt;
+        return [u, v, w, angle, stretch * (1 + m.pop * 0.12)];
     };
 
+    const moveMushrooms = (t, dt, ramp) => {
+        // The little balls of the coral only nod and breathe, quicker and lighter
+        const ball = ([u, v, w], m) => [u, v, w, 4 * Math.sin(t * 1.3 + m.phase) * ramp, 1 + 0.05 * Math.sin(t * 2.1 + m.phase) * ramp];
+        L.mushrooms.forEach((node, n) => {
+            node.sways = [...art.caps.map((cap, i) => mushroom(cap, shrooms[n].caps[i], t, dt, ramp)), ...art.balls.map((b, i) => ball(b, shrooms[n].balls[i]))];
+        });
+    };
     const frame = ({ x, y, scroll, t, ramp }) => {
         if (!stage || !box) return;
         const s = scroll;
@@ -508,9 +533,9 @@
         build(stage);
         stage.onResize((W, H) => place(W, H));
         // The spores need the layout (where the caps are) before they seed the air
-        spores = createSpores(canvas.value, { points: true, locate: mushroomsOnScreen, animate: !reduced, onPuff });
+        spores = createSpores(canvas.value, { points: true, locate: mushroomsOnScreen, animate: !reduced, onPuff, caps: groundCaps.map(({ at }) => at) });
         // The spore cloud hangs in the air behind the mushrooms (drawn just before the grass), the cone's sparks in front
-        const behindGround = L.grass.mesh.renderOrder - 0.5;
+        const behindGround = L.grass[0].mesh.renderOrder - 0.5;
         const back = await createStardust(null, { stage, groups: spores.groups.back.map((g, i) => ({ ...g, order: behindGround + i * 0.01 })) });
         const front = await createStardust(null, { stage, groups: spores.groups.front.map((g, i) => ({ ...g, order: 1e6 + i })) });
         const rim = await createStardust(null, { stage, groups: [{ dynamic: sunRim, look: 'hard', parallax: 0, drift: 0, jitter: 0, twinkle: 0, reach: 0, order: L.sun.mesh.renderOrder + 0.5 }] });

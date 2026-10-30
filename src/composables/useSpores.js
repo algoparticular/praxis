@@ -1,6 +1,6 @@
 // Fungal spores for the Paciencia scene, drawn on a 2D canvas over the field of mushrooms.
 //
-// They are released from the real caps of the mushrooms (mushroomCaps.json holds where each cap is, as fractions of
+// They are released from the real caps of the mushrooms (`caps` holds where each cap is, [x, y, width] in fractions of
 // the mushrooms picture, so the emitters follow the picture whatever its size or parallax). A few at a time trickle
 // out from under the caps, now and then a cap lets go of a whole puff, and brushing a cap with the pointer shakes one
 // loose. Once in the air a spore is almost weightless: a slow buoyant rise, a drifting breeze that changes over time,
@@ -15,8 +15,6 @@
 // With `onPuff(cap, lead)` the scene is told which cap is about to let go of a puff `lead` seconds before it does (0
 // when it is at once), so the mushroom can gather itself and pop as its spores come out; and now and then, on their
 // own, one of them sneezes: a bigger puff that climbs higher.
-
-import caps from './mushroomCaps.json';
 
 const smooth = (edge0, edge1, x) => {
     const k = Math.min(1, Math.max(0, (x - edge0) / (edge1 - edge0)));
@@ -54,7 +52,7 @@ const makeGlow = (rgb = '20, 100, 118', core = 0.55) => {
 // With { points: true } nothing is drawn on `canvas` (it may be a WebGL stage's): the cloud is handed over as particle
 // groups for useStardust (`groups.back`, `groups.front`, dynamic, in CSS px of the canvas) and is moved by their updates;
 // `locate()` then says where the mushrooms picture is, relative to the canvas, as there is no DOM picture to measure.
-export function createSpores(canvas, { source, animate = true, front = null, points = false, locate = null, onPuff = null } = {}) {
+export function createSpores(canvas, { source, animate = true, front = null, points = false, locate = null, onPuff = null, caps = [] } = {}) {
     const ctx = points ? null : canvas.getContext('2d');
     const ctxFront = points ? null : front?.getContext('2d') ?? null;    // optional second canvas, in front of the mushrooms, for the pine cone's sparks
     const glow = points ? null : makeGlow();
@@ -64,7 +62,6 @@ export function createSpores(canvas, { source, animate = true, front = null, poi
     const MOTES = small ? 340 : 620;      // dust in the clear air: this is what makes the cloud     // the cloud never thins out below this: it is part of the composition
     const MAX = small ? 520 : 760;        // and the pointer can stir up a lot more on top of it
     const spores = [];
-    const totalWidth = caps.reduce((sum, cap) => sum + cap[2], 0);
 
     let width = 0, height = 0, dpr = 1;
     let frame = 0, visible = true, last = 0, clock = 0;
