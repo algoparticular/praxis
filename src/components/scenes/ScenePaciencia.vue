@@ -7,8 +7,8 @@
     // to catch up with its head (EAT seconds for the whole stroke) until it shrinks back into a dot and is gone, so
     // no hold is wasted. The next one has another shape. When it is completed the card's name lights up too, and the
     // scene blooms: the rulito, the cone, the roots and the sparks glow (the only moment the stage blooms).
-    // It is drawn in WebGL (useLayerStage): the layers come from the artwork itself (public/assets/collaborate, and the
-    // boat in public/assets/paciencia, made by scripts/convert-paciencia.mjs), each at its depth, and the camera slides
+    // It is drawn in WebGL (useLayerStage): the layers come from the artwork itself (public/assets/paciencia, made by
+    // scripts/convert-paciencia.mjs), each at its depth, and the camera slides
     // with the pointer or the tilt of the phone, so the ground (mushrooms with the grass behind them) moves most and the
     // sun least. The ground is three strips side by side, the outer two mirrored, so it is wider than any screen without
     // a seam. The grass sways in the wind and the air trembles over the sun.
@@ -59,7 +59,6 @@
     const SLIDE_Y = 18;
     const depthFor = (amp) => amp / (SLIDE + amp);
 
-    const ASSETS = '/assets/collaborate/';
     const GROUND = '/assets/paciencia/';
     const BOAT = GROUND + 'boat.webp';
     const SIZES = { sun: [200, 191], boat: boatAt.box.slice(2), strip: boatAt.ground.size, cone: [100, 128] };
