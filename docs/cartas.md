@@ -62,15 +62,15 @@ Se cambia una línea en `src/data/cardChords.js`, por ejemplo `28: 'Em'`. Se esc
 | # | Carta | Categoría | Verbo | Acorde | En la app |
 |---|---|---|---|---|---|
 | 0 | Nekkhamma | Paramis | Soltar | Si menor | Escena propia, verbo jugable |
-| 1 | Sila | Paramis | Resonar | Sol7 | Ilustración plana |
+| 1 | Sila | Paramis | Resonar | Sol7 | Escena propia, verbo jugable |
 | 2 | Dana | Paramis | Dar y recibir | Si mayor | Escena propia, verbo jugable |
 | 3 | Pañña | Paramis | Ver | Lam7 | Escena propia, verbo jugable |
-| 4 | Viriya | Paramis | Encender | Mi mayor | Ilustración plana |
+| 4 | Viriya | Paramis | Encender | Mi mayor | Escena propia, verbo jugable |
 | 5 | Khanti | Paramis | Fluir | Remaj7 | Escena propia, verbo jugable |
 | 6 | Sacca | Paramis | Resonar | Sol7 | Escena propia, verbo jugable |
 | 7 | Addhitthana | Paramis | Arraigar | Mi mayor | Ilustración plana |
 | 8 | Metta | Paramis | Dar y recibir | Famaj7 | Ilustración plana |
-| 9 | Upekkha | Paramis | Soltar | Mi menor | Ilustración plana |
+| 9 | Upekkha | Paramis | Soltar | Mi menor | Escena propia, verbo jugable |
 | 10 | " ... " | Special | por decidir | Sol mayor | Ilustración plana |
 | 11 | Aceptación | Regular | Fluir | Si menor | Ilustración plana |
 | 12 | Armonía | Regular | Resonar | Domaj7 | Ilustración plana |

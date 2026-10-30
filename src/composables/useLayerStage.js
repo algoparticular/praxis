@@ -27,8 +27,9 @@
 //   dissolve 0xRRGGBB  it can come undone from the bottom up: uniforms.uDissolve.value.y is how far (0 whole .. 1 gone),
 //            along a ragged edge (noise) that glows in that colour as it eats in (Nekkhamma's Sid)
 //   bright, saturate, tint + tintAmount  for lighting a layer up (the pine cone held)
-// and layers drawn in code: glow (a soft radial light, CSS radial-gradient stops) and disc (a plain disc of colour,
-// with { water } the light of the water rippling across it).
+// and layers drawn in code: glow (a soft radial light, CSS radial-gradient stops), disc (a plain disc of colour,
+// with { water } the light of the water rippling across it) and field (two colours that meet and never mix, with a
+// membrane between them and bubbles of one in the other: Upekkha's two halves).
 //
 // Underlay. A scene that draws something with its own three.js scene and camera (Vipassana's field of cells) hands it
 // to underlay(fn): it is drawn inside every render, over the layers marked { under: true } and under all the others.
@@ -191,6 +192,79 @@ const DISC_FRAGMENT = `
             col += vec3(caustic(vUv, uTime)) * 0.1 * uWater;
         }
         gl_FragColor = vec4(col * a, a) * uOpacity;
+    }`;
+
+// Two colours that meet and never mix, as two liquids with a membrane between them. The map's red is how far each px is
+// from the edge between them (0.5 on it, more on the second colour's side, FIELD_RANGE px to either end) and its
+// green, with uShaped, where it is drawn at all. The edge keeps the shape it was drawn with and lives: a slow wave runs
+// along it and a slow swell pushes it in and out. uBubbles are bubbles of one colour in the other (centre and radii,
+// px; uTurns: their angle, and +1 for the second colour, -1 for the first): near their own colour they join it with a
+// neck, like a drop budding off a liquid or falling back into it. uScale is how many px a unit of the drawing is, so the
+// wave and the swell keep their size on every screen. Where the two meet there is a membrane: a thin band
+// a little lighter than either side, with a brighter line on each of its faces (uDpr keeps it as thick on every screen)
+export const FIELD_RANGE = 128;
+const FIELD_BUBBLES = 24;
+const FIELD_FRAGMENT = `
+    uniform sampler2D map;
+    uniform vec3 uA;
+    uniform vec3 uB;
+    uniform float uOpacity;
+    uniform float uTime;
+    uniform float uWobble;
+    uniform float uFlow;
+    uniform float uShaped;
+    uniform float uDpr;
+    uniform float uScale;
+    uniform vec4 uRect;            // where the plane is, px: left, top, width, height
+    uniform vec4 uBubbles[${FIELD_BUBBLES}];
+    uniform vec2 uTurns[${FIELD_BUBBLES}];
+    varying vec2 vUv;
+    float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+    float noise(vec2 p) {
+        vec2 i = floor(p), f = fract(p);
+        f = f * f * (3.0 - 2.0 * f);
+        return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x), mix(hash(i + vec2(0.0, 1.0)), hash(i + 1.0), f.x), f.y);
+    }
+    float smin(float a, float b, float k) {
+        float h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0);
+        return mix(b, a, h) - k * h * (1.0 - h);
+    }
+    void main() {
+        vec4 c = texture2D(map, vUv);
+        vec2 px = uRect.xy + vec2(vUv.x, 1.0 - vUv.y) * uRect.zw;
+        float t = uTime * uFlow;
+        // The distance to the edge (px, > 0 on the second colour), moved by a wave running along it and a slow swell
+        float d = (c.r - 0.5) * ${2 * FIELD_RANGE}.0;
+        vec2 u = px / uScale;
+        float wave = sin(u.y / 460.0 - t * 0.25);
+        float swell = noise(u / 640.0 + vec2(t * 0.035, -t * 0.025)) - 0.5;
+        d += (wave * 4.0 + swell * 30.0) * uScale * uWobble;
+        // The bubbles, each an ellipse, joined to what is of its colour with a neck
+        for (int i = 0; i < ${FIELD_BUBBLES}; i++) {
+            vec4 b = uBubbles[i];
+            if (b.z <= 0.0) continue;
+            float an = uTurns[i].x;
+            vec2 q = px - b.xy;
+            q = vec2(q.x * cos(an) + q.y * sin(an), -q.x * sin(an) + q.y * cos(an));
+            vec2 r = b.zw;
+            float k0 = length(q / r), k1 = length(q / (r * r));
+            float e = k0 * (k0 - 1.0) / max(k1, 0.0001);
+            float neck = 0.25 * min(r.x, r.y) + 2.0;
+            d = uTurns[i].y > 0.0 ? -smin(-d, e, neck) : smin(d, e, neck);
+        }
+        float aa = 0.6 / uDpr + 0.35;
+        vec3 col = mix(uA, uB, smoothstep(-aa, aa, d));
+        // The membrane: a band a little lighter, its two faces brighter
+        float dist = abs(d);
+        float band = 1.0 - smoothstep(1.4, 2.2, dist);
+        float faces = 1.0 - smoothstep(0.3, 0.8, abs(dist - 1.6));
+        col = mix(col, vec3(1.0), band * 0.08 + faces * 0.14);
+        float a = 1.0;
+        if (uShaped > 0.0) {
+            float ws = max(fwidth(c.g), 0.0001);
+            a = smoothstep(0.5 - ws, 0.5 + ws, c.g);
+        }
+        gl_FragColor = vec4(col, 1.0) * a * uOpacity;
     }`;
 
 const QUAD_VERTEX = `
@@ -438,6 +512,50 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
             return node;
         }
 
+        // Two colours that meet and never mix, with a membrane between them (FIELD_FRAGMENT): source is a canvas drawn by
+        // the scene (red: the distance to the edge, 0.5 + px / (2 * FIELD_RANGE); green, with shaped, where it is drawn).
+        // node.bubbles is its list of up to FIELD_BUBBLES bubbles, [x, y, rx, ry, angle, ±1] each (px, in the plane's
+        // space; +1 of the second colour), read every frame; call node.refresh() after drawing on the canvas, and set
+        // uniforms.uScale to the px of a unit of the drawing
+        field({ rect, source, colors = [0x000000, 0xffffff], shaped = false, flow = 1 } = {}) {
+            const node = new Node(this);
+            const texture = new THREE.CanvasTexture(source);
+            texture.colorSpace = THREE.NoColorSpace;
+            texture.generateMipmaps = false;
+            texture.minFilter = THREE.LinearFilter;
+            textures.push(texture);
+            const uniforms = {
+                map: { value: texture },
+                uA: { value: new THREE.Color(...parseColor(colors[0])) },
+                uB: { value: new THREE.Color(...parseColor(colors[1])) },
+                uOpacity: { value: 1 },
+                uTime: { value: 0 },
+                uWobble: { value: 1 },
+                uFlow: { value: flow },
+                uShaped: { value: shaped ? 1 : 0 },
+                uDpr: { value: dpr },
+                uScale: { value: 1 },
+                uRect: { value: new THREE.Vector4(0, 0, 1, 1) },
+                uBubbles: { value: Array.from({ length: FIELD_BUBBLES }, () => new THREE.Vector4(0, 0, 0, 0)) },
+                uTurns: { value: Array.from({ length: FIELD_BUBBLES }, () => new THREE.Vector2(0, 0)) },
+            };
+            const material = new THREE.ShaderMaterial({
+                uniforms, vertexShader: GLOW_VERTEX, fragmentShader: FIELD_FRAGMENT,
+                transparent: true, depthTest: false, depthWrite: false, premultipliedAlpha: true,
+            });
+            node.attach(new THREE.Mesh(new THREE.PlaneGeometry(1, 1), material), rect ?? { left: 0, top: 0, w: 1, h: 1 }, null, false);
+            node.bubbles = [];
+            let size = [source.width, source.height];
+            node.refresh = () => {
+                if (source.width !== size[0] || source.height !== size[1]) {
+                    size = [source.width, source.height];
+                    texture.dispose();
+                }
+                texture.needsUpdate = true;
+            };
+            return node;
+        }
+
         attach(mesh, rect, pivot, bloom) {
             this.mesh = mesh;
             mesh.renderOrder = ++order;
@@ -490,6 +608,11 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
                 u.uOpacity.value = opacity;
                 if (u.uTime) u.uTime.value = time;
                 if (u.uSize) u.uSize.value.set(r.w, r.h);
+                if (u.uRect) u.uRect.value.set(r.left, r.top, r.w, r.h);
+                if (u.uBubbles) {
+                    u.uBubbles.value.forEach((v, i) => { const b = this.bubbles[i]; v.set(b?.[0] ?? 0, b?.[1] ?? 0, b?.[2] ?? 0, b?.[3] ?? 0); });
+                    u.uTurns.value.forEach((v, i) => { const b = this.bubbles[i]; v.set(b?.[4] ?? 0, b?.[5] ?? 0); });
+                }
                 if (u.uEdge) u.uEdge.value = Math.min(0.5, 3 / Math.max(r.w, 1));
                 if (u.uClip) {
                     if (clip) u.uClip.value.set(clip.left * dpr, (height - clip.top - clip.h) * dpr, (clip.left + clip.w) * dpr, (height - clip.top) * dpr);
