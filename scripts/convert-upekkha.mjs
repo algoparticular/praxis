@@ -359,10 +359,10 @@ for (const [name, layers] of Object.entries(pictures)) {
             if (b === undefined) return rows[a];
             return rows[a] + ((rows[b] - rows[a]) * (i - a)) / (b - a);
         });
-        const R = 4;
+        const SIGMA = 7;                                // rows: rounds the S off (its bump is soft, as a liquid's)
         const smooth = x.map((_, i) => {
             let sum = 0, w = 0;
-            for (let k = -R; k <= R; k++) { const j = Math.min(x.length - 1, Math.max(0, i + k)); const g = Math.exp(-(k * k) / (R * R / 2)); sum += x[j] * g; w += g; }
+            for (let k = -3 * SIGMA; k <= 3 * SIGMA; k++) { const j = Math.min(x.length - 1, Math.max(0, i + k)); const g = Math.exp(-(k * k) / (2 * SIGMA * SIGMA)); sum += x[j] * g; w += g; }
             return Math.round(sum / w);
         });
         return { y0, step: STEP, x: smooth };
