@@ -4,7 +4,8 @@
     // Its verb is Arraigar (to hold until something grows). The wind carries the boat off the middle; the little light
     // beside it is the middle, the one thing the wind does not move (the purpose: "your evolution and purpose"). Holding
     // Particular (finger, click or key), he rows: the boat goes back under the light and steadies, the storm cannot rock
-    // it, and while it stays there, steady, the rulito is drawn over his head. Whole, it sounds the card's chord an octave
+    // it; while it stays there, steady, the light reaches him (motes fly from it to him and he fills with it), and only
+    // once he shines with it the rulito is drawn over his head. Whole, it sounds the card's chord an octave
     // up, the name lights up, the little light rises to the moon and the storm stops: the rain and the wind go, the
     // clouds open a little and the full moon is left (`calm`, 0 the storm .. 1 the storm over). Let go, the tail of the
     // rulito catches up with its head, as in Paciencia (no hold is wasted; held again it comes back); once whole it stays
@@ -46,7 +47,7 @@
     // big as the boat allows (it fits the width), and the sky over it (the moon and the high clouds) lifted towards the
     // top of the screen, so the storm fills it
     const SIZE = art.size;
-    const SPAN = 1880;                      // art px the boat needs across: its scrolls, and room for the wind to move it
+    const SPAN = 2100;                      // art px the boat needs across: its scrolls, and room for the wind to move it
     let F = { x: 0, y: 0, size: 1 };
     let lift = 0;
     const k = () => F.size / SIZE;
@@ -100,6 +101,35 @@
     let row = 0;                            // 0..1, he rows (eased)
     const ease = (p) => p * p * (3 - 2 * p);
 
+    // ---- The motes of light that fly from the little light to him: slots of a dynamic group, in screen px
+    const FLYERS = 120;
+    const fly = Array.from({ length: FLYERS }, () => ({ on: false }));
+    let flyNext = 0;
+    const send = (from, to, { dur = 0.9, size = 6 } = {}) => {
+        const f = fly[flyNext];
+        flyNext = (flyNext + 1) % FLYERS;
+        const d = Math.hypot(to.x - from.x, to.y - from.y);
+        Object.assign(f, { on: true, at: lastT, dur, size, x0: from.x, y0: from.y, x1: to.x, y1: to.y,
+            cx: (from.x + to.x) / 2 + (Math.random() - 0.5) * d * 0.3, cy: (from.y + to.y) / 2 - d * (0.1 + Math.random() * 0.25) });
+    };
+    const flyers = {
+        count: FLYERS,
+        update(t, data) {
+            for (let i = 0; i < FLYERS; i++) {
+                const f = fly[i];
+                let p = f.on ? (t - f.at) / f.dur : -1;
+                if (f.on && p >= 1) { f.on = false; p = -1; }
+                if (p < 0) { data.alphas[i] = 0; data.sizes[i] = 0; continue; }
+                const e = p * p * (3 - 2 * p);
+                const a = 1 - e;
+                data.positions[i * 3] = a * a * f.x0 + 2 * a * e * f.cx + e * e * f.x1;
+                data.positions[i * 3 + 1] = a * a * f.y0 + 2 * a * e * f.cy + e * e * f.y1;
+                data.sizes[i] = f.size * (1 - 0.5 * e);
+                data.alphas[i] = Math.min(1, p * 6) * Math.min(1, (1 - p) * 3);
+            }
+        },
+    };
+
     const L = {};
     // Mirrored about the side (or the top) of the card it touches, a few px into it so no seam shows between the two
     const mirrorOf = ([x, y, w, h], side) => (side === 't' ? [x, -y - h + 6, w, h] : [side === 'l' ? -x - w + 6 : 2 * SIZE - x - w - 6, y, w, h]);
@@ -125,7 +155,8 @@
         const cloudNodes = (cl) => {
             const node = plane(cl.plane);
             cl.nodes = [{ node: node.image(A(cl.name)), side: '' }];
-            [...cl.sides].forEach((side) => {
+            // (not past the top: the cap of dark over the card covers that)
+            [...cl.sides.replace('t', '')].forEach((side) => {
                 const copy = node.image(A(cl.name));
                 if (side === 't') copy.sy = -1; else copy.sx = -1;
                 cl.nodes.push({ node: copy, side });
@@ -133,6 +164,8 @@
         };
         clouds.filter((cl) => cl.plane !== 'front').forEach(cloudNodes);
         L.sky = plane('sky');
+        // Over the card, the dark of the clouds: the high clouds fade into it instead of ending in the card's straight edge
+        L.cap = L.sky.canvas(capCanvas);
         L.mid = plane('mid');
         L.sky.enter({ y: -30, delay: 150, duration: 2000 });
         L.mid.enter({ y: -20, delay: 250, duration: 1900 });
@@ -146,6 +179,7 @@
         L.auraGlow = L.boat.glow({ rect: { left: 0, top: 0, w: 1, h: 1 }, color: 0xffe14d, stops: [[0, 0.45], [0.35, 0.2], [0.7, 0]] });
         L.aura = L.boat.image(A('aura'));
         L.sid = L.boat.image(A('sid'));
+        L.sid.uniforms.uTint.value.setHex(0xffe98a);           // the warm of the light that fills him
         L.hull = L.boat.image(A('hull'));
         L.oar = L.boat.image(A('oar'));
         L.rulito = L.boat.canvas(rulito.value.canvas, { bloom: true });
@@ -160,6 +194,25 @@
         L.front.enter({ y: 50, delay: 100, duration: 1600 });
         // Rain in front of everything, sparser and bigger
         L.rainFront = s.depth(zFor(DEPTH.rainFront)).rain({ color: 0xb4d3e6 });
+    };
+
+    // The cap: the dark of the clouds, opaque above the card and fading out just inside its top edge
+    const capCanvas = document.createElement('canvas');
+    const CAP_FADE = 150;                   // art px inside the card over which it fades
+    const drawCap = (above) => {
+        const fade = CAP_FADE * k();
+        capCanvas.width = 4;
+        capCanvas.height = 256;
+        const ctx = capCanvas.getContext('2d');
+        const g = ctx.createLinearGradient(0, 0, 0, 256);
+        const solid = above / (above + fade);
+        g.addColorStop(0, NAVY);
+        g.addColorStop(solid, NAVY);
+        g.addColorStop(solid + (1 - solid) * 0.5, 'rgba(0, 42, 66, 0.55)');
+        g.addColorStop(1, 'rgba(0, 42, 66, 0)');
+        ctx.fillStyle = g;
+        ctx.fillRect(0, 0, 4, 256);
+        L.cap.refresh();
     };
 
     // The size of the storm's strokes: as the card's on a big screen, never too thin on a phone
@@ -188,6 +241,10 @@
         L.moonGlow.place({ left: moon.left + moon.w / 2 - md / 2, top: moon.top + moon.h / 2 - md / 2, w: md, h: md });
 
         clouds.forEach((cl) => cl.nodes.forEach(({ node, side }) => node.place(rectOf(side ? mirrorOf(cl.box, side) : cl.box))));
+        // The cap reaches well above the screen (the sky is lifted on a phone, and the clouds open upwards)
+        const above = sy(0) + lift + 0.5 * h;
+        drawCap(above);
+        L.cap.place({ left: -0.5 * w, top: sy(0) - above, w: 2 * w, h: above + CAP_FADE * k() });
         L.mark.place(rectOf(B.mark));
 
         const hull = rectOf(B.hull);
@@ -227,17 +284,20 @@
         sidHit.value.style.height = `${Math.max(48, b.height).toFixed(1)}px`;
     };
     // ---- The game
-    const HOLD = 4.2;                       // s of holding the boat steady under the light for the rulito to be whole
+    const CHARGE = 1.6;                     // s steady under the light before he shines with it (and the rulito can start)
+    const HOLD = 3.4;                       // s more of holding him there for the rulito to be whole
     const NEAR = 0.035;                     // how far from the light (a fraction of the card) the boat is under it
     const STILL = 0.08;                     // and how fast it may still move (the card's size per second)
-    const LINGER = 9;                       // s the storm stays over with the rulito whole, before its tail goes
+    const LINGER = 4;                       // s the storm stays over with the rulito whole, before its tail goes
     const EAT = 3.4;                        // s for the tail to go all the way along it
     const RISE = 2.6;                       // s the little light takes to rise to the moon
     const HINT = 7;                         // s alone before the light calls him
     let held = false;
     let shine = 0;                          // his aura lit by a touch
     let steady = 0;                         // 0..1, the boat under the light and still, eased
+    let charge = 0;                         // 0..1, the light filling him, on its way to CHARGE
     let grown = 0;                          // 0..1, how long it has been held steady, on its way to HOLD
+    let moteAt = 0;
     let head = 0;                           // how far along its stroke the front of the rulito is (0..1)
     let tail = 0;                           // and the back of it
     let idle = 0;                           // s since he was let go
@@ -369,7 +429,7 @@
         // the wind and leans with its speed, and bobs. Held, he rows: the boat goes back under the light, firmly, and
         // the storm hardly rocks it
         const rowing = held && !reduced;
-        const span = 0.09 * F.size;
+        const span = 0.16 * F.size;
         const drifting = (-gust * 1.6 + Math.sin(t * 0.21) * 0.45 + Math.sin(t * 0.13 + 2) * 0.25) * span * storm * ramp;
         // (eased into the reach: the stronger the gust, the closer to the edge, never past it)
         const goal = rowing ? 0 : 0.85 * reach * Math.tanh(drifting / (0.85 * reach));
@@ -381,7 +441,8 @@
         const rock = (Math.sin(t * 0.9) * 2.4 + Math.sin(t * 1.63 + 1) * 1.1) * (0.25 + 0.75 * storm * Math.min(1.2, wind)) * firm;
         L.boat.x = boat.x;
         L.boat.y = (Math.sin(t * 1.1) * 7 + Math.sin(t * 0.47) * 4) * kk * 2.2 * (0.4 + 0.6 * storm) * firm * ramp;
-        L.boat.rotate = (rock - boat.v / Math.max(1, F.size) * 40) * ramp;
+        // (a gust leans it over, as it pushes it)
+        L.boat.rotate = (rock - boat.v / Math.max(1, F.size) * 60 + gust * 5 * firm * (rowing ? 0.3 : 1)) * ramp;
         L.boatNode.y = scroll * 22;
         L.fern.uniforms.uWind.value.x = (6 + 26 * wind * storm) * kk * 2.2;
         // He rows while held: long strokes of the oar; at rest it only rocks
@@ -392,14 +453,29 @@
         const near = Math.max(0, 1 - Math.abs(boat.x) / (NEAR * F.size)) * Math.max(0, 1 - Math.abs(boat.v) / (STILL * F.size));
         steady += ((rowing ? near : 0) - steady) * Math.min(1, dt * 4);
         pop = Math.max(0, pop - dt * 2.2);
+        // First the light reaches him (it fills him while the boat stays under it); only once he shines with it is the
+        // rulito drawn
+        const reaching = rowing && steady > 0.6;
+        if (reaching) {
+            const before = charge;
+            charge = Math.min(1, charge + dt / CHARGE);
+            if (before < 1 && charge >= 1) play('kindle', { step: 0 });
+        } else if (!full) charge = Math.max(0, charge - dt / 1.2);
+        if (reaching && t - moteAt > 0.05 && !reduced) {
+            moteAt = t;
+            const lb0 = rectOf(art.boxes.light), sb = rectOf(art.boxes.aura);
+            const from = L.light.toScreen(lb0.left + lb0.w / 2, lb0.top + lb0.h / 2);
+            const to = L.boat.toScreen(sb.left + sb.w * (0.35 + 0.3 * Math.random()), sb.top + sb.h * (0.25 + 0.5 * Math.random()));
+            send(from, to, { dur: 0.7 + Math.random() * 0.4, size: (9 + Math.random() * 7) * Math.max(0.8, F.size / 700) });
+        }
         if (rowing) {
             idle = 0;
-            if (steady > 0.5) {
+            if (steady > 0.5 && charge >= 1) {
                 const before = grown;
                 grown = Math.min(1, grown + dt / HOLD * steady);
                 head = Math.max(head, 1 - (1 - grown) ** 1.6);
-                // A note of the chord for each quarter of the way, climbing
-                [0.25, 0.5, 0.75].forEach((q, i) => { if (before < q && grown >= q) play('kindle', { step: i / 3 }); });
+                // A note of the chord for each third of the way, climbing
+                [1 / 3, 2 / 3].forEach((q, i) => { if (before < q && grown >= q) play('kindle', { step: (i + 1) / 3 }); });
             }
             tail = Math.max(0, tail - dt / 0.8);
         } else if (head > 0) {
@@ -408,7 +484,7 @@
         }
         if (head >= 1 && !full) complete();
         if (head > 0 && head - tail < 0.0005) {
-            head = 0; tail = 0; grown = 0; full = false;
+            head = 0; tail = 0; grown = 0; charge = 0; full = false;
             rulito.value?.reshape();
             play('release');
         }
@@ -425,7 +501,7 @@
         stage.bloom = named;
         // The storm: it softens while the rulito grows, stops once it is whole and comes back slowly when it goes
         const calmGoal = full ? Math.min(1, (head - tail) * 1.5) : 0.3 * (head - tail);
-        calm += (calmGoal - calm) * Math.min(1, dt * (calmGoal > calm ? 0.7 : 0.18));
+        calm += (calmGoal - calm) * Math.min(1, dt * (calmGoal > calm ? 0.7 : 0.3));
         rise = full && head - tail > 0.5 ? Math.min(1, rise + dt / RISE) : Math.max(0, rise - dt / 3);
         // The hint: left alone, the light calls him now and then (a pulse of it, and his aura answers)
         if (!held && !full && !reduced && t - lastTouch > HINT && t - hintAt > HINT && ramp >= 1) { hintAt = t; hint = 1; dust?.boost(2, 0.8); }
@@ -434,12 +510,15 @@
         // His aura breathes, and shines when he is touched, while he rows and under the light
         shine = Math.max(0, shine - dt * 1.2);
         const breath = Math.sin(t * 0.9);
-        const lit = Math.max(shine, 0.6 * row, steady, hint * 0.7);
-        L.aura.scale = 1 + 0.015 * breath + 0.06 * lit;
-        L.aura.uniforms.uBright.value = 1 + 0.06 * breath + 0.25 * lit;
-        L.auraGlow.opacity = 0.45 + 0.1 * breath + 0.3 * lit + 0.2 * calm;
-        L.auraGlow.scale = 1 + 0.12 * steady;
-        L.sid.uniforms.uBright.value = 1 + 0.15 * light;
+        const lit = Math.max(shine, 0.4 * row, 0.5 * steady, hint * 0.7);
+        const filled = ease(charge);
+        L.aura.scale = 1 + 0.015 * breath + 0.05 * lit + 0.14 * filled;
+        L.aura.uniforms.uBright.value = 1 + 0.06 * breath + 0.2 * lit + 0.25 * filled;
+        L.auraGlow.opacity = Math.min(1, 0.45 + 0.1 * breath + 0.25 * lit + 0.45 * filled + 0.2 * calm);
+        L.auraGlow.scale = 1 + 0.35 * filled;
+        // He fills with the light: warmer and brighter
+        L.sid.uniforms.uBright.value = 1 + 0.15 * light + 0.18 * filled;
+        L.sid.uniforms.uTintAmount.value = 0.22 * filled;
         L.hull.uniforms.uBright.value = 1 + 0.15 * light;
         // The little light is alive: it hovers in its place, the middle (the wind does not move it), flickering and
         // breathing; it shines more as the boat comes under it, calls him when he is alone, and once the rulito is whole
@@ -497,6 +576,8 @@
                 { colors: [0xffe030], parallax: 0, drift: 2, jitter: 0.35, twinkle: 0.4, reach: 0, order: after(L.aura), points: () => fromArt(art.dots.aura) },
                 // 2: the loose dots of the little light
                 { colors: [0xffe030], parallax: 0, drift: 2.4, jitter: 0.4, twinkle: 0.5, reach: 0, bloom: true, order: after(L.lightCore), points: () => fromArt(art.dots.light) },
+                // 3: the light flying from it to him
+                { dynamic: flyers, colors: [0xfff1a8], look: 'soft', parallax: 0, drift: 1, twinkle: 0.2, reach: 0, bloom: true, order: after(L.lightCore) + 1 },
             ],
         });
         if (reduced) dust.reveal();
