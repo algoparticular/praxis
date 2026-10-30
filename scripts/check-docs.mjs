@@ -1,5 +1,5 @@
 // Keeps the card table in docs/cartas.md in step with the data it comes from: cards.json (name, category, verb),
-// cardChords.js (chord) and cardScenes.js (scene). The table between the two markers in the doc is generated;
+// cardChords.js (chord) and sceneNames.js (scene). The table between the two markers in the doc is generated;
 // the reasons table above it is written by hand, so only its chord column is checked.
 // Usage: npm run check:docs (fails when out of date), npm run docs (rewrites the table)
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -13,7 +13,7 @@ const at = (...parts) => path.join(root, ...parts);
 const write = process.argv.includes('--write');
 
 const cards = JSON.parse(readFileSync(at('src', 'data', 'cards.json'), 'utf8'));
-const scenesSource = readFileSync(at('src', 'data', 'cardScenes.js'), 'utf8');
+const scenesSource = readFileSync(at('src', 'data', 'sceneNames.js'), 'utf8');
 const withScene = new Set([...scenesSource.match(/const names = \{([^}]*)\}/)[1].matchAll(/(\d+):/g)].map((m) => Number(m[1])));
 // Cards whose verb can be played in the scene today. Update it when another card gets a game.
 const PLAYABLE = new Set([0, 1, 2, 3, 4, 5, 6, 7, 9, 20, 22, 25, 27, 29, 31]);

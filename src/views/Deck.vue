@@ -10,6 +10,7 @@
     import { play } from '../composables/useSound.js';
     import { preloadThumbs } from '../composables/useDeckRing.js';
     import { deck } from '../data/cards.js';
+    import { hasScene } from '../data/sceneNames.js';
 
     // three.js only loads when the deck is opened (see DeckRing). Meanwhile the skeleton holds the ring's place,
     // so the text below it does not come up into the first screen.
@@ -28,12 +29,14 @@
 
     const filters = [
         { key: 'all', label: 'deck.filterAll', category: null },
+        // The cards whose page already has its own scene (and game), right after all of them
+        { key: 'scenes', label: 'deck.filterScenes', only: (card) => hasScene(card.id) },
         { key: 'paramis', label: 'deck.filterParamis', category: 'Paramis' },
         { key: 'regular', label: 'deck.filterRegular', category: 'Regular' },
         { key: 'special', label: 'deck.filterSpecial', category: 'Special' },
     ].map((filter) => ({
         ...filter,
-        cards: filter.category ? cards.filter((card) => card.category === filter.category) : cards,
+        cards: filter.only ? cards.filter(filter.only) : filter.category ? cards.filter((card) => card.category === filter.category) : cards,
     })).filter((filter) => filter.cards.length > 0);
 
     const active = ref('all');
@@ -75,12 +78,16 @@
         <header class="deckHead">
             <h1>{{ $t("nav.deck") }}</h1>
             <nav class="filters">
-                <button v-for="filter in filters" :key="filter.key"
-                    class="chip" :class="{ active: filter.key === active }"
-                    :aria-pressed="filter.key === active"
-                    @click="choose(filter.key)">
-                    {{ $t(filter.label) }} <span>{{ filter.cards.length }}</span>
-                </button>
+                <template v-for="(filter, i) in filters" :key="filter.key">
+                    <button
+                        class="chip" :class="{ active: filter.key === active }"
+                        :aria-pressed="filter.key === active"
+                        @click="choose(filter.key)">
+                        {{ $t(filter.label) }} <span>{{ filter.cards.length }}</span>
+                    </button>
+                    <!-- On phones the chips go in two rows: three, then the last two -->
+                    <i v-if="i === 2" class="break" aria-hidden="true"></i>
+                </template>
             </nav>
         </header>
 
@@ -282,8 +289,18 @@
         color: #F7F8F1;
     }
 
-    /* On phones the four chips only fit in one row without the counts */
+    .break {
+        display: none;
+    }
+
+    /* On phones the chips go without the counts, in two rows: three, then two */
     @media screen and (max-width: 480px) {
+        .break {
+            display: block;
+            flex-basis: 100%;
+            height: 0;
+        }
+
         .chip span {
             display: none;
         }

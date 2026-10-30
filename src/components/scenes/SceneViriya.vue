@@ -76,6 +76,7 @@
     const AURA = 0xe9edd8;
     const FIRE = [0xffb069, 0xff9a5c, 0xffd29a, 0xfff3d6, 0xf2b036];
     const ease = (p) => p * p * (3 - 2 * p);
+    const SUN_RISE = 180;                   // how far the sun comes up when the way is lit (art px)
     const centreOf = ([x, y, w, h]) => [x + w / 2, y + h / 2];
     const SPIRAL = centreOf(art.spiral);
 
@@ -446,11 +447,27 @@
         L.flame.opacity = L.flameCore.opacity = 0;
     };
 
+    // The sky, from the card: the navy above, down through the sunset to the horizon. As the sun comes up (`up`, 0..1)
+    // the sunset climbs with it and spreads, and the navy above lightens towards a dawn blue
+    const DAWN = [0x4a, 0x80, 0xb8];
+    let skyH = 1, skyUp = -1;
+    const paintSky = (up) => {
+        skyUp = up;
+        const rise = SUN_RISE * k() * up;
+        const stops = art.sky.map(([y, c]) => {
+            const above = Math.max(0, Math.min(1, (900 - y) / 500));             // how far up the sky this stop is
+            const mix = 0.45 * up * above;
+            const rgb = [c >> 16, (c >> 8) & 255, c & 255].map((v, j) => Math.round(v + (DAWN[j] - v) * mix));
+            const at = sy(y) - rise * (0.6 + 0.8 * above);
+            return `rgb(${rgb.join(', ')}) ${Math.max(-50, Math.min(150, at / skyH * 100)).toFixed(1)}%`;
+        });
+        root.value.style.background = `linear-gradient(to bottom, ${stops.join(', ')})`;
+    };
+
     const place = (w, h) => {
         layout(w, h);
-        // The sky, from the card: the navy above, down through the sunset to the horizon
-        const stops = art.sky.map(([y, c]) => `#${c.toString(16).padStart(6, '0')} ${Math.max(-50, Math.min(150, sy(y) / h * 100)).toFixed(1)}%`);
-        root.value.style.background = `linear-gradient(to bottom, ${stops.join(', ')})`;
+        skyH = h;
+        paintSky(skyUp);
 
         const sr = SUN.r * k();
         L.sun.place({ left: sx(SUN.x) - sr, top: sy(SUN.y) - sr, w: 2 * sr, h: 2 * sr });
@@ -544,12 +561,13 @@
         L.sunGlow.opacity = 0.55 + 0.1 * breath + 0.4 * sunUp;
         L.sunGlow.scale = 1 + 0.04 * breath + 0.3 * sunUp;
         L.dusk.opacity = 0.25 + 0.55 * sunUp;
-        L.sunNode.y = scroll * 10 - 30 * k() * 4 * ease(sunUp);
+        L.sunNode.y = scroll * 10 - SUN_RISE * k() * ease(sunUp);
+        if (Math.abs(ease(sunUp) - skyUp) > 0.004 || (sunUp === 0 && skyUp > 0)) paintSky(ease(sunUp));
 
-        // ---- The wind's strokes are blown along: they drift and wrap round, rise and fall, lean and stretch as they go
+        // ---- The wind's strokes are blown along, from left to right: they drift and wrap round, rise and fall, lean and stretch as they go
         winds.forEach((wd) => {
             const node = L.winds[wd.i];
-            const moved = wd.x0 - wd.speed * t;
+            const moved = wd.x0 + wd.speed * t;               // from left to right
             const wrapped = span.left + ((((moved - span.left) % span.width) + span.width) % span.width);
             node.x = wrapped - wd.x0;
             const gust = Math.sin(t * 1.3 + wd.phase);

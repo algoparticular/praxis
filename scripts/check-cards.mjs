@@ -59,6 +59,11 @@ const scenes = readFileSync(at('src', 'data', 'cardScenes.js'), 'utf8');
 for (const [, id] of scenes.matchAll(/^\s*(\d+):\s*(?:lazy|stage)\(/gm)) {
     if (!seen.has(Number(id))) errors.push(`src/data/cardScenes.js lists a scene for card ${id}, which does not exist`);
 }
+// and sceneNames.js (analytics, the deck page's filter) names exactly those
+const staged = [...scenes.matchAll(/^\s*(\d+):\s*(?:lazy|stage)\(/gm)].map(([, id]) => id).sort().join();
+const namesSource = readFileSync(at('src', 'data', 'sceneNames.js'), 'utf8');
+const named = [...namesSource.match(/const names = \{([^}]*)\}/)[1].matchAll(/(\d+):/g)].map(([, id]) => id).sort().join();
+if (staged !== named) errors.push(`src/data/sceneNames.js names the scenes of cards ${named}, but cardScenes.js has scenes for ${staged}`);
 
 // After a build: the share page and the share picture of every card
 if (existsSync(at('dist', 'index.html'))) {

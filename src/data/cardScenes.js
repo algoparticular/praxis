@@ -31,6 +31,6 @@ const scenes = {
 
 export const sceneFor = (id) => scenes[id] ?? SceneFlat;
 
-// The scene's name for analytics (the components are async and anonymous)
-const names = { 0: 'nekkhamma', 1: 'sila', 2: 'dana', 3: 'panna', 4: 'viriya', 5: 'khanti', 6: 'sacca', 7: 'addhitthana', 9: 'upekkha', 20: 'creatividad', 22: 'evolucion', 25: 'hogar', 27: 'paciencia', 29: 'sincronicidad', 31: 'vipassana' };
-export const sceneNameFor = (id) => names[id] ?? 'flat';
+// The scene's name for analytics (the components are async and anonymous), in sceneNames.js so the deck page can
+// know which cards have a scene without loading any of them
+export { sceneNameFor } from './sceneNames.js';

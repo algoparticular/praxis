@@ -82,6 +82,7 @@
         "deck": {
             "name": "The Oracle of the Particles",
             "filterAll": "All",
+            "filterScenes": "Interactive",
             "filterParamis": "Paramis",
             "filterRegular": "Regular",
             "filterSpecial": "Special"
