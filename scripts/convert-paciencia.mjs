@@ -37,7 +37,7 @@ const PIECES = [
     { name: 'tBody', layers: [20] }, { name: 'tLine', layers: [21], antennae: 20 }, { name: 'tEyes', layers: [22] },
     { name: 'rBody', layers: [23] }, { name: 'rLine', layers: [24], antennae: 23 }, { name: 'rEyes', layers: [25] },
 ];
-const CONE = [1, 2];
+const CONE = [1, 2];                      // its stippled glow (1) and the cone itself (2)
 
 const load = async (n) => sharp(file(n)).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
 const webp = (img) => img.webp({ quality: 90, alphaQuality: 100, effort: 5 });
@@ -142,10 +142,11 @@ await webp(sharp({ create: { width: cw, height: ch, channels: 4, background: { r
 // ---- The ground ----
 // A strip at the foot of the square: its grass behind (1), and the coral, the little balls (3 blue, 4 yellow), the
 // shines, the caps (6, their shade 7) and all the line work (8) as one picture. The pine cone sits on the cut stem in
-// the gap in the middle (its drawing's foot there, as wide as it was against the old mushrooms)
+// the gap in the middle (the foot of the cone itself there, not of its glow, which reaches lower; its drawing as wide as
+// it was against the old mushrooms)
 const GROUND = { grass: [1], mushrooms: [2, 3, 4, 5, 6, 7, 8] };
 const GROUND_SCALE = 0.6;
-const CONE_IN_GAP = { x: 1465, foot: 3015, w: 225 };     // px of the square: the middle and the foot of the cone's drawing
+const CONE_IN_GAP = { x: 1465, foot: 3015, w: 225 };     // px of the square: the middle of the drawing, the cone's foot
 const strips = {};
 for (const [name, layers] of Object.entries(GROUND)) strips[name] = await flatten(layers.map(ground));
 const top = boxOf(strips.mushrooms.data, strips.mushrooms.W, strips.mushrooms.H)[1] & ~1;
@@ -179,7 +180,8 @@ const shapes = async (n, least) => {
     }
     return out.sort((a, b) => a[0] - b[0]);
 };
-const coneH = CONE_IN_GAP.w * (c3 - c1) / (c2 - c0);
+const coneFoot = await load(CONE[1]).then(({ data, info }) => boxOf(data, info.width, info.height)[3]);
+const coneH = CONE_IN_GAP.w * (coneFoot - c1) / (c2 - c0);
 const coneBox = { w: CONE_IN_GAP.w / 0.87 };
 coneBox.h = coneBox.w * 128 / 100;
 coneBox.x = CONE_IN_GAP.x - CONE_IN_GAP.w / 2 - 0.05 * coneBox.w;

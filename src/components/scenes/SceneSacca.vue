@@ -254,12 +254,12 @@
 
     // ---- Four beads in the air under the boat, between its hull and the dunes, one per note of the phrase: lit in its
     // colour as it is repeated right
-    const BEADS_AT = [1147, 1812];           // art px: under the middle of the hull, above the dunes
+    const BEADS_AT = [1147, 1855];           // art px: under the middle of the hull, clear of it, above the dunes
     const beadAt = (j) => {
         const gap = Math.max(22, 95 * k());
         const p = L.boat.toScreen(sx(BEADS_AT[0]), sy(BEADS_AT[1]));
-        // they hang with the boat but do not rock with it: a small arc, the outer ones a little higher
-        return { x: p.x + (j - 1.5) * gap, y: p.y - Math.abs(j - 1.5) * gap * 0.12 };
+        // they hang with the boat but do not rock with it, in a straight line
+        return { x: p.x + (j - 1.5) * gap, y: p.y };
     };
     // Each is a navy ring (so it reads on any sky) round a dot: cream while waiting, the note's colour once repeated
     const NAVY = rgb(0x143246);
