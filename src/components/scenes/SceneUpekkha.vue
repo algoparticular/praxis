@@ -60,14 +60,23 @@
     const sy = (y) => F.y + y * k();
     const rectOf = ([left, top, w, h]) => ({ left: sx(left), top: sy(top), w: w * k(), h: h * k() });
     const SPAN = 1500, FOCUS = 1075;        // art px across that must be seen on a phone, and their middle
-    const DROP = 0.08;                      // how much of the frame goes under the bottom of a wide screen
+    const BOTTOM = 1640, SID_TOP = 560;     // wide screens: the art row at the bottom, and the top of Sid's head
+    const TOP = 130;                        // px left over him for the card's name
     const layout = (w, h) => {
         W = w; H = h;
         const phone = w < h;
-        const size = phone ? Math.min(0.78 * h, w * SIZE / SPAN) : Math.min(Math.max(0.6 * w, 0.55 * h), 0.92 * h);
-        let x = w / 2 - size / 2;
-        if (phone && size > w) x = Math.min(0, Math.max(w - size, w / 2 - FOCUS * size / SIZE));
-        F = { x, y: h - size + (phone ? 0 : DROP * size), size };
+        if (phone) {
+            const size = Math.min(0.78 * h, w * SIZE / SPAN);
+            let x = w / 2 - size / 2;
+            if (size > w) x = Math.min(0, Math.max(w - size, w / 2 - FOCUS * size / SIZE));
+            F = { x, y: h - size, size };
+            return;
+        }
+        // On a wide screen the drawing fills the width (its mirrored copies stay out of sight) and goes on under the
+        // bottom of the screen, as far as Sid and a strip of ground in front of him still show; only a screen too wide
+        // for that leaves room at the sides
+        const size = Math.min(w, Math.max(0.4 * w, (h - TOP) * SIZE / (BOTTOM - SID_TOP)));
+        F = { x: w / 2 - size / 2, y: h - BOTTOM * size / SIZE, size };
     };
 
     const SLIDE = 46;
