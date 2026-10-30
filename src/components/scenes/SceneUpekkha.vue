@@ -151,7 +151,7 @@
     };
 
     // Let a thought go: it bursts into motes that rise and fade, and he swings back
-    const letGoOf = (th, clung = false) => {
+    const letGoOf = (th, clung = false, quiet = false) => {
         if (th.state === 'off' || th.state === 'pop') return;
         th.state = 'pop';
         th.pop = 0;
@@ -159,7 +159,7 @@
         idle = 0;
         const c = th.side < 0 ? FUTURE : MINT;
         sparks.burst(th.x, th.y, { n: Math.round(16 + 10 * th.held), colors: [c, AURA, c], speed: 70 + 40 * th.held, life: 1.8, size: 4.2, spread: th.r * 0.8 });
-        play(clung ? 'exhale' : 'release');
+        if (!quiet) play(clung ? 'exhale' : 'release');
         dropFrom(th);
         if (released >= TOTAL) setTimeout(() => { if (!gone) still(); }, DELAY * 1000);
     };
@@ -214,12 +214,37 @@
         if (!touch || !event.cancelable || reduced || win) return;
         if (thoughtAt(onCanvas(touch), 1.7)) event.preventDefault();
     };
-    // A touch on Sid: he breathes; with the keyboard, Enter on him lets go of the thought nearest to him
+    // Pressing Sid, as in Vipassana and Nekkhamma: a tap makes his aura breathe; held, he gathers a breath (`inhale`),
+    // and let go once it is gathered he breathes out (`exhale`) and every thought clinging to him goes at once, one
+    // quickly after the other (not those still on their way). With the keyboard, Enter on him lets go of the nearest
+    const BREATH_AT = 0.35, BREATH = 1.6;   // s held before it is a breath, and s more to gather it whole
+    let breath = null;                      // { pointerId, at, breathing }
+    let charge = 0;                         // 0..1 the breath gathered
     const touchSid = (event) => {
         if (event?.clientX !== undefined && thoughtAt(onCanvas(event))) return;
         idle = 0;
-        play('tap');
-        dust?.boost(AURA_GROUP, 0.5);
+        if (reduced || breath) return;
+        breath = { pointerId: event?.pointerId, at: lastT, breathing: false };
+        window.addEventListener('pointerup', breatheOut);
+        window.addEventListener('pointercancel', breatheOut);
+    };
+    const breatheOut = (event) => {
+        if (!breath || (event && event.pointerId !== breath.pointerId)) return;
+        window.removeEventListener('pointerup', breatheOut);
+        window.removeEventListener('pointercancel', breatheOut);
+        const { breathing } = breath;
+        breath = null;
+        idle = 0;
+        const clinging = thoughts.filter((th) => th.state === 'stuck');
+        if (charge >= 1 && !win && clinging.length) {
+            play('exhale');
+            dust?.boost(AURA_GROUP, 1.2);
+            clinging.forEach((th, j) => setTimeout(() => { if (!gone) letGoOf(th, false, true); }, 120 + j * 160));
+            sceneMilestone('breath_released', { thoughts: clinging.length });
+        } else if (!breathing) {
+            play('tap');
+            dust?.boost(AURA_GROUP, 0.5);
+        } else dust?.boost(AURA_GROUP, 0.4 + 0.6 * charge);
     };
     const onKey = (event) => {
         if (event.key !== 'Enter' && event.key !== ' ') return;
@@ -380,6 +405,16 @@
                 pull += th.side * (LEAN + (1.4 - LEAN) * th.held);
             }
         });
+        // The breath: past BREATH_AT a press on him is a breath, gathered over BREATH
+        if (breath && !win) {
+            const holding = t - breath.at;
+            if (holding > BREATH_AT && !breath.breathing) { breath.breathing = true; play('inhale'); }
+            charge = Math.min(1, Math.max(0, (holding - BREATH_AT) / BREATH));
+            if (charge > 0 && Math.random() < dt * 10 * charge) {
+                const at = headAt();
+                sparks.burst(at.x + (Math.random() - 0.5) * 90 * k(), at.y + 140 * k(), { n: 2, colors: [AURA], speed: 25, life: 1.2, size: 3, spread: 30 * k() });
+            }
+        } else charge = Math.max(0, charge - dt * 2.5);
         // His balance: a spring, so he swings back and settles when he lets go
         const goal = win ? 0 : Math.max(-1, Math.min(1, pull));
         leanV += ((goal - lean) * 26 - leanV * 3.2) * dt;
@@ -775,7 +810,7 @@
         const speed = th.state === 'float' ? Math.hypot(th.vx, th.vy) / Math.max(1, F.size * 0.1) : 0;
         const stretch = Math.min(0.22, speed * 0.12);
         const clinging = th.state === 'stuck' || th.state === 'held' ? 1 : 0;
-        const quiver = clinging * (0.04 + 0.05 * th.insist + 0.05 * th.held) * Math.sin(t * 17 + th.phase);
+        const quiver = clinging * (0.04 + 0.05 * th.insist + 0.05 * th.held + 0.08 * charge) * Math.sin(t * 17 + th.phase);
         const away = -th.side;           // the side away from him
         node.parts.forEach((part, j) => {
             const piece = th.shape[j];
@@ -894,8 +929,8 @@
         L.sid.y = lift;
         L.sid.rotate = lean * 5;
         L.body.sy = 1 + 0.01 * Math.sin(t * 0.7) * ramp;
-        L.calm.opacity = Math.min(1, 0.15 + 0.45 * calm + 0.5 * named);
-        L.calm.scale = 0.85 + 0.25 * calm + 0.15 * named + 0.03 * Math.sin(t * 0.7);
+        L.calm.opacity = Math.min(1, 0.15 + 0.45 * calm + 0.5 * named + 0.4 * charge);
+        L.calm.scale = 0.85 + 0.25 * calm + 0.15 * named + 0.2 * charge + 0.03 * Math.sin(t * 0.7);
         L.body.uniforms.uBright.value = 1 + 0.06 * calm + 0.12 * named;
         L.sidNode.y = scroll * 26;
         dust?.fade(AURA_GROUP, 0.55 + 0.45 * Math.max(calm, named));
@@ -988,6 +1023,8 @@
         root.value?.removeEventListener('touchstart', onTouchStart);
         window.removeEventListener('pointerup', release);
         window.removeEventListener('pointercancel', release);
+        window.removeEventListener('pointerup', breatheOut);
+        window.removeEventListener('pointercancel', breatheOut);
     });
 </script>
 
@@ -1038,7 +1075,7 @@
         cursor: pointer;
         pointer-events: auto;
         -webkit-tap-highlight-color: transparent;
-        touch-action: manipulation;
+        touch-action: none;                    /* held, a finger drifts a little: the phone must not take it for a scroll */
         outline: none;
     }
 
