@@ -62,6 +62,8 @@
     const SLIDE_Y = 30;
     const zFor = (amp) => amp / (SLIDE + amp);
     const PLANET = -760;            // the planet moved to the left, out of the way of the cloud's galaxy (art px)
+    const PLANET_AT = [1251.3, 454.2];  // the middle of its body on the card (art px), measured on the old picture
+    const PLANET_PINK = 0xf16878, PLANET_EDGE = 0x222236;
     const DEPTH = { wind: 5, planet: 9, cloud: 15, ground: 26, sid: 26 };
     const WIND = { amp: 4, speed: 0.9 };            // the plants sway (in the shader); the buds on them sway along
 
@@ -296,7 +298,9 @@
         L.wind = wind.image('/assets/nekkhamma/wind.webp', { blur: 1 });
         const far = s.depth(zFor(DEPTH.planet));
         L.planet = far.group();
-        L.planetBody = L.planet.image('/assets/nekkhamma/planet.webp');
+        // The planet's body is not a picture: a pink disc with its dark outline, in code (the ring is drawing: a picture)
+        L.planetEdge = L.planet.disc({ rect: { left: 0, top: 0, w: 1, h: 1 }, color: PLANET_EDGE });
+        L.planetBody = L.planet.disc({ rect: { left: 0, top: 0, w: 1, h: 1 }, color: PLANET_PINK });
         L.ring = L.planet.image('/assets/nekkhamma/ring.webp');
         const cosmos = s.depth(zFor(DEPTH.cloud));
         L.cosmos = cosmos;
@@ -329,7 +333,9 @@
         layout(w, h);
         const B = art.boxes;
         L.wind.place(rectOf(B.wind));
-        L.planetBody.place(rectOf(B.planet, PLANET));
+        const disc = (r) => ({ left: sx(PLANET_AT[0] + PLANET) - r * k(), top: sy(PLANET_AT[1]) - r * k(), w: 2 * r * k(), h: 2 * r * k() });
+        L.planetEdge.place(disc(37.5));
+        L.planetBody.place(disc(30.5));
         L.ring.place(rectOf(B.ring, PLANET));
         const planet = rectOf(B.planet, PLANET);
         L.planet.pivot = { x: planet.left + planet.w / 2, y: planet.top + planet.h / 2 };
@@ -414,8 +420,8 @@
         update(t, data) {
             const cut = cutOf(level);
             line.forEach((d, i) => {
-                data.positions[i * 3] = sx(d.x);
-                data.positions[i * 3 + 1] = sy(d.y) + L.sid.y;
+                data.positions[i * 3] = sx(1080) + (sx(d.x) - sx(1080)) * L.sid.sx;
+                data.positions[i * 3 + 1] = sy(FEET) + (sy(d.y) - sy(FEET)) * L.sid.sy + L.sid.y;
                 data.sizes[i] = d.size * k() * 2;
                 // A dot of his line shows once the edge has passed it, until it rises or he takes that part back
                 const there = d.h < cut && !d.off;
@@ -570,6 +576,10 @@
         // Sid breathes a little and shines while the breath gathers, when he lets go and when he comes back
         flash = Math.max(0, flash - dt * 1.4);
         L.sid.y = Math.sin(t * 1.1) * 2 * ramp;
+        // and breathes from his feet (the dots of his line, once he comes undone, breathe with him)
+        const breath = reduced ? 0 : Math.sin(t * 0.8) * ramp;
+        L.sid.sy = 1 + 0.014 * breath;
+        L.sid.sx = 1 - 0.005 * breath;
         L.sid.uniforms.uBright.value = 1 + 0.35 * charge + 0.3 * flash;
         L.rulito.y = L.sid.y;
         const ad = SID_H * k() * (1.1 + 0.3 * charge);

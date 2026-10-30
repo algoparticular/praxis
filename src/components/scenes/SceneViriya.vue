@@ -288,6 +288,13 @@
         },
     };
 
+    // Every LOOK s the walker leans out to look down the path for a moment (0..1, eased in and out)
+    const LOOK = 11;
+    const lookout = (t) => {
+        const p = (Math.max(0, t) % LOOK) / 3;
+        return p < 1 ? Math.sin(p * Math.PI) ** 2 : 0;
+    };
+
     // Every frame: the heat, the flight, the lights, the sun and the rulito
     const game = (t, dt) => {
         idle += dt;
@@ -412,7 +419,7 @@
             g.opacity = 0;
             return g;
         });
-        L.targets = TARGETS.map((T) => L.valley.image(`/assets/viriya/${T.name}.webp`, T.kind === 'flower' ? { wind: { amp: 3, speed: 0.8, root: 'bottom' } } : {}));
+        L.targets = TARGETS.map((T) => L.valley.image(`/assets/viriya/${T.name}.webp`, { wind: T.kind === 'flower' ? { amp: 3, speed: 0.8, root: 'bottom' } : { amp: 1.6, speed: 0.6, root: 'bottom' } }));
         valley.enter({ y: 40, delay: 100, duration: 1700 });
         // The cliff, and on it the walker with his aura, his staff and the rulito
         const cliff = s.depth(zFor(DEPTH.cliff));
@@ -567,8 +574,11 @@
         L.valleyNode.y = scroll * 20;
 
         // ---- The walker: he breathes; the spiral is a torch; his aura warms as the staff is rubbed
+        // and now and then he leans out a little to look down the path, then stands back
         L.walker.y = Math.sin(t * 0.8) * 2 * ramp;
-        L.body.sy = 1 + 0.008 * Math.sin(t * 1.1) * ramp;
+        L.walker.rotate = reduced ? 0 : 2.5 * lookout(t) * (1 - charge);
+        L.body.sy = 1 + 0.012 * Math.sin(t * 1.1) * ramp;
+        L.body.sx = 1 - 0.004 * Math.sin(t * 1.1) * ramp;
         L.staff.rotate = Math.sin(t * 0.7) * 0.6 * ramp + (rubbing ? Math.sin(t * 30) * 0.8 : 0);
         L.torch.opacity = Math.min(1, 1.2 * charge * (0.85 + 0.15 * Math.sin(t * 7)) + hint * 0.5);
         L.torch.scale = 0.6 + 0.6 * charge + 0.3 * hint;

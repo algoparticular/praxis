@@ -16,6 +16,8 @@ const target = path.join(root, 'public', 'assets', 'nekkhamma');
 
 // 11 (the rulito over Sid's head) is not converted: the scene draws it in code, as every rulito; nor are 27 and 28,
 // the cloud's two little galaxies: the scene has a galaxy of particles instead (useGalaxy, as Dana's)
+// 7 (the planet's body) is converted only for its box: the scene draws it in code (a disc with its outline), so
+// planet.webp is not shipped; delete it after a conversion
 const pictures = {
     1: 'ground', 2: 'mark', 5: 'plants', 7: 'planet', 8: 'ring', 10: 'wind',
     12: 'sid',

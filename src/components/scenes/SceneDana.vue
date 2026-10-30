@@ -658,6 +658,12 @@
         });
     };
 
+    // Every GLANCE s the friend on the left turns to the other for a moment (0..1, eased in and out)
+    const GLANCE = 8;
+    const glance = (t) => {
+        const p = (Math.max(0, t) % GLANCE) / 2;
+        return p < 1 ? Math.sin(p * Math.PI) ** 2 : 0;
+    };
     const onFrame = ({ x, y, scroll, t, ramp }) => {
         if (!stage || !frame.s) return;
         const s = scroll;
@@ -668,8 +674,16 @@
         sway.y = y;
         // The island floats, and everything standing on it floats with it: one group, so the friends never lift off it
         L.isle.y = Math.sin(t * 0.55) * 9 * ramp - s * 30;
-        L.left.scale = 1 + Math.sin(t * 0.9 + 0.8) * 0.004 * ramp;
-        L.right.scale = 1 + Math.sin(t * 0.9) * 0.004 * ramp;
+        // The two friends breathe from their feet, each at its own pace, and sway a little; now and then the one on the
+        // left turns to the one with the flame, and he answers with a nod (only a little: the flame is in his hand)
+        const look = reducedMotion ? 0 : glance(t);
+        const breathL = Math.sin(t * 0.85 + 0.8) * ramp, breathR = Math.sin(t * 0.95) * ramp;
+        L.left.sy = 1 + 0.016 * breathL;
+        L.left.sx = 1 - 0.006 * breathL;
+        L.left.rotate = Math.sin(t * 0.5 + 1) * 1.2 * ramp + 4 * look;
+        L.right.sy = 1 + 0.014 * breathR;
+        L.right.sx = 1 - 0.005 * breathR;
+        L.right.rotate = Math.sin(t * 0.45) * 0.5 * ramp - 1.2 * glance(t - 0.6);
         // The flame stays in his hand, bobbing a little on its own, and grows with what it gives
         L.flame.x = -x * 6;
         L.flame.y = Math.sin(t * 1.3) * 4 * ramp - y * 4;

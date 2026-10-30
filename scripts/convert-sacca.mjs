@@ -117,7 +117,8 @@ for (const [name, layers] of Object.entries(pictures)) {
     scene.boxes[name] = box;
 }
 
-// The moon: the biggest blob (with its soft edge) is the picture, every other blob a dot
+// The moon: the biggest blob is its disc, which the scene draws in code (with its ragged rim as particles), so only its
+// box is kept; every other blob is a dot
 for (const [name, n] of Object.entries(stippled)) {
     const { data, info } = await load(n);
     const W = info.width, H = info.height;
@@ -125,10 +126,7 @@ for (const [name, n] of Object.entries(stippled)) {
     const keep = grown(main.pixels, W, H, 3);
     const solid = Buffer.from(data);
     for (let i = 0; i < W * H; i++) if (!keep[i]) solid[i * 4 + 3] = 0;
-    const box = boxOf(solid, W, H);
-    await webp(sharp(solid, { raw: { width: W, height: H, channels: 4 } }).extract({ left: box[0], top: box[1], width: box[2], height: box[3] }))
-        .toFile(path.join(target, `${name}.webp`));
-    scene.boxes[name] = box;
+    scene.boxes[name] = boxOf(solid, W, H);
     scene.dots[name] = rest.filter((b) => b.area >= 3)
         .map((b) => [Math.round(b.x), Math.round(b.y), +Math.sqrt(b.area / Math.PI).toFixed(1), colorIndex(...b.rgb)]);
 }
