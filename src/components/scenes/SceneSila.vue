@@ -1,21 +1,25 @@
 <script setup>
     // Sila: "I find peace in doing good in resonance with the voice of my soul". Under a great moon on a quiet night,
-    // Particular stands on a box at a pink lectern, about to speak; Sid sits beside him on the grass, listening, and the
-    // mushrooms glow in the grass round them.
+    // a heart (drawn as a little being, Fa, the heart chakra) stands on a box at a pink lectern, about to speak; Sid sits
+    // beside it on the grass, listening, and the mushrooms glow in the grass round them.
     // Its verb is Resonar on time (be there at the right moment): Sid's heart beats on a steady pulse, the voice of the
     // heart ("the guide against the distractions that appear before our senses and the chatter of the mind"), while
-    // little glints flash in the sky out of time. Touching Particular (or his lectern) on a heartbeat makes him speak: a
+    // little glints flash in the sky out of time. Touching the heart at the lectern (the heart, the lectern or its box: one
+    // place to play) on a heartbeat makes it speak: a
     // note of the card's chord, Sol7, climbing Sol, Si, Re, Fa; and a small light leaves the lectern low over the grass,
     // in secret (the card's invitation: "in secret, do something good for others"), and lights a mushroom far from him.
-    // A touch out of time sounds muted, nothing lit is lost, and that heartbeat is gone: it has to be listened to.
+    // In time, the heart and the lectern flash together and the light is seen going; a touch out of time sounds muted, the
+    // heart goes grey and wavers a moment with no light, nothing lit is lost, and that heartbeat is gone: it has to be
+    // listened to.
     // With the six mushrooms lit the card's G7 resolves to C major (as in Sacca: the root, the good done takes root),
-    // their light gathers over Particular and the rulito is born there, where the card draws it, in its pink.
+    // their light gathers over the heart and the rulito is born there, where the card draws it, in its pink.
     // Before the first touch the heart beats in light only; from then on it is heard while someone plays. Left alone 7 s,
-    // the heart sends its beat to the lectern a few times (the hint, with no words). A touch on Sid lets his heart be heard.
+    // Sid's heart sends its beat to the lectern a few times (the hint, with no words). Sid is not played: a touch on him
+    // only makes his heart glow a little, silent, so it does not compete with the lectern.
     // It is drawn in WebGL (useLayerStage): the clouds (cut out of the illustration into one atlas, drifting), the moon,
     // the grass and the figures are planes; the stipple of the moon, the stars and the orange glow of the mushrooms are
     // particles (useStardust), from silaScene.json (made by scripts/convert-sila.mjs): the glow is alive, every mote of
-    // it moved by the wind and stirred by a finger. The touch targets are DOM elements kept over Particular and Sid.
+    // it moved by the wind and stirred by a finger. The touch targets are DOM elements kept over the lectern and Sid.
     import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
     import { createParallax } from '../../composables/useParallax.js';
     import { createLayerStage } from '../../composables/useLayerStage.js';
@@ -69,7 +73,7 @@
     const CREAM = 0xfff4c8;                 // the moon
     const ORANGE = 0xffd39c;                // the glow of the mushrooms
     const PINK = 0xf38baa;                  // the lectern and the rulito
-    const HEART = 0x62c37a;                 // Vulpes, the heart chakra: Sid's heart
+    const HEART = 0x62c37a;                 // the heart chakra (Fa): Sid's heart
     const rgb = (c) => [((c >> 16) & 255) / 255, ((c >> 8) & 255) / 255, (c & 255) / 255];
     const ease = (p) => p * p * (3 - 2 * p);
     const SID_HEART = [1322, 1668];         // art px: the middle of his lower body
@@ -135,7 +139,8 @@
     let missed = null;                      // the heartbeat a touch out of time used up
     let spoken = null;                      // the heartbeat a touch in time already answered
     let said = 0;                           // notes said in time: they climb the chord
-    let voice = 0;                          // Particular speaking
+    let voice = 0;                          // the heart at the lectern speaking
+    let lost = 0;                           // the heart at the lectern, lost for a moment after a touch out of time
     let heart = 0;                          // Sid's heart, now
     let wins = 0;
     let win = null;
@@ -212,7 +217,7 @@
     };
     const rulitoAt = () => L.figures.toScreen(glyph.left + glyph.w / 2, glyph.top + glyph.h * 0.5);
 
-    // ---- Touching Particular: in time with the heart, he speaks and a light goes, in secret, to a mushroom
+    // ---- Touching the heart at the lectern: in time with Sid's heart, it speaks and a light goes, low, to a mushroom
     const touchSpeaker = () => {
         lastTouch = lastT;
         hintAt = lastT + AGAIN;
@@ -225,15 +230,17 @@
             // Out of time: a muted drop, nothing lost; this heartbeat is gone, the next one can be caught
             if (spoken !== beat) missed = beat;
             play('miss');
-            if (!reduced) sparks.burst(from.x, from.y, { n: 4, colors: [PINK], speed: 40, size: 3.4, spread: 6, life: 0.9 });
+            lost = 1;
+            voice = 0;
             return;
         }
         spoken = beat;
         play('resonate', { step: (said % 4) / 4 });
         said += 1;
         voice = 1;
-        sparks.burst(from.x, from.y, { n: 10, colors: [PINK, CREAM, ORANGE], speed: 70, size: 4, spread: 10, life: 1.3 });
-        // The light goes to a mushroom not yet lit, the farthest from him: low over the grass, faint, in secret
+        lost = 0;
+        sparks.burst(from.x, from.y, { n: 16, colors: [PINK, CREAM, ORANGE], speed: 90, size: 4.6, spread: 12, life: 1.4 });
+        // The light goes to a mushroom not yet lit, one of the farthest: low over the grass, seen going all the way
         const free = MUSHROOMS.map((_, m) => m).filter((m) => !claimed[m]);
         if (!free.length) return;
         const far = free.sort((a, b) => Math.abs(MUSHROOMS[b].x - LECTERN_TOP[0]) - Math.abs(MUSHROOMS[a].x - LECTERN_TOP[0]));
@@ -241,7 +248,7 @@
         claimed[m] = true;
         const to = mushroomAt(m);
         const dur = 1.3 + Math.abs(to.x - from.x) / Math.max(W, 1) * 0.8;
-        for (let j = 0; j < 3; j++) send(from, to, { dur, size: 5 - j, c0: CREAM, c1: ORANGE, arc: 0.12, alpha: 0.55 - j * 0.12, at: lastT + j * 0.07 });
+        for (let j = 0; j < 4; j++) send(from, to, { dur, size: 9 - 1.5 * j, c0: CREAM, c1: ORANGE, arc: 0.12, alpha: 1 - j * 0.18, at: lastT + j * 0.06 });
         arrivals.push({ at: lastT + dur + 0.1, m });
     };
     const arrivals = [];
@@ -254,14 +261,9 @@
         }
         if (on.every(Boolean)) setTimeout(() => { if (!gone) complete(); }, 500);
     };
-    // Sid: his heart is heard (and beats stronger)
+    // Sid is not played: his heart only glows a little, silent (the lectern is where the game is)
     const touchSid = () => {
-        lastTouch = lastT;
-        hintAt = lastT + AGAIN;
-        heard = true;
-        heart = Math.max(heart, 0.8);
-        if (reduced) play('tap');
-        else play('heartbeat', 1.2);
+        heart = Math.max(heart, 0.5);
     };
     const onKey = (event, action) => {
         if (event.key !== 'Enter' && event.key !== ' ') return;
@@ -269,7 +271,7 @@
         action();
     };
 
-    // The six lit: G7 resolves to C major, the light of every mushroom gathers over Particular and the rulito is born there
+    // The six lit: G7 resolves to C major, the light of every mushroom gathers over the heart at the lectern and the rulito is born there
     const complete = () => {
         if (win) return;
         wins += 1;
@@ -319,7 +321,7 @@
         L.lines = ground.image('/assets/sila/lines.webp');
         L.sparkle = ground.image('/assets/sila/sparkle.webp');
         ground.enter({ y: 50, delay: 100, duration: 1600 });
-        // The figures: Sid with the light of his heart, the box, Particular and his lectern, and the rulito over him
+        // The figures: Sid with the light of his heart, the box, the heart at its lectern, and the rulito over it
         const figures = s.depth(zFor(DEPTH.figures));
         L.figuresNode = figures;
         L.figures = figures.group();
@@ -406,7 +408,7 @@
         return title.getBoundingClientRect().bottom - root.value.getBoundingClientRect().top;
     };
 
-    // The touch targets: Particular with his lectern, and Sid
+    // The touch targets: one place to play, the heart with its lectern and its box; and Sid
     const placeHits = () => {
         if (!L.figures) return;
         const put = (el, b, min = 48) => {
@@ -415,11 +417,11 @@
             el.style.width = `${bw.toFixed(1)}px`;
             el.style.height = `${bh.toFixed(1)}px`;
         };
-        if (speakerHit.value) put(speakerHit.value, L.figures.boxOnScreen(rectOf([610, 1140, 480, 560])));
+        if (speakerHit.value) put(speakerHit.value, L.figures.boxOnScreen(rectOf([610, 1140, 480, 785])));
         if (sidHit.value) put(sidHit.value, L.figures.boxOnScreen(rectOf([1170, 1220, 380, 600])));
     };
 
-    // On a phone, a finger put down on Particular, on Sid or on the glow of a mushroom must not move the page: otherwise
+    // On a phone, a finger put down on the lectern, on Sid or on the glow of a mushroom must not move the page: otherwise
     // the browser takes a drag (stirring the glow, or a tap that slides a little) for a scroll and cancels it. Anywhere
     // else the page scrolls as usual
     const TOUCH_MIN = 44;                   // px: how near a small mushroom a finger may land and still stir it
@@ -478,7 +480,7 @@
         if (!win && !reduced && ramp > 0.9 && t > hintAt) { hintUntil = t + 3 * BEAT; hintAt = t + AGAIN + 3 * BEAT; }
         // The lectern answers on the beat while the hint lasts (just as the light sent the beat before arrives)
         const hinting = t < hintUntil + BEAT;
-        L.lecternGlow.opacity = Math.max(hinting ? 0.8 * lub : 0, 0.7 * ease(voice));
+        L.lecternGlow.opacity = Math.max(hinting ? 0.8 * lub : 0, ease(voice));
         L.lecternGlow.mesh.visible = L.lecternGlow.opacity > 0.01;
         missed = missed !== null && missed < beat - 1 ? null : missed;
 
@@ -495,7 +497,7 @@
         // ---- The secret lights arriving at their mushrooms
         for (let i = arrivals.length - 1; i >= 0; i--) if (t >= arrivals[i].at) { arrive(arrivals[i].m); arrivals.splice(i, 1); }
 
-        // ---- The win: the rulito is born over Particular, kept, gone; then the mushrooms go back to waiting
+        // ---- The win: the rulito is born over the heart at the lectern, kept, gone; then the mushrooms go back to waiting
         let named = 0;
         if (win && rulito.value) {
             win.age += dt;
@@ -550,7 +552,7 @@
         L.groundNode.y = scroll * 24;
         L.figuresNode.y = scroll * 28;
 
-        // ---- Sid's heart beats; Particular stretches up as he speaks
+        // ---- Sid's heart beats; the heart at the lectern stretches up as it speaks, and goes grey and wavers when lost
         heart = Math.max(0, heart - dt * 0.8);
         const h = Math.min(1, pulse + 0.6 * heart);
         L.heart.opacity = Math.min(1, 0.18 + 0.55 * h + 0.25 * together);
@@ -563,8 +565,13 @@
         const v = ease(voice);
         L.particular.sy = 1 + 0.06 * v + 0.006 * Math.sin(t * 0.9) * ramp;
         L.particular.sx = 1 - 0.025 * v;
-        L.particular.uniforms.uBright.value = 1 + 0.12 * v + 0.15 * named;
-        L.voice.opacity = Math.min(1, 0.8 * v + 0.55 * named);
+        lost = Math.max(0, lost - dt * 1.6);
+        const lo = ease(lost);
+        L.particular.uniforms.uBright.value = 1 + 0.25 * v + 0.15 * named - 0.18 * lo;
+        L.particular.uniforms.uSaturate.value = 1 - 0.75 * lo;
+        L.particular.rotate = Math.sin(t * 26) * 3 * lo;
+        L.voice.opacity = Math.min(1, v + 0.55 * named);
+        L.voice.scale = 1 + 0.25 * v;
         L.voice.mesh.visible = L.voice.opacity > 0.01;
 
         // The particles that belong to a layer follow it
@@ -643,13 +650,13 @@
 <template>
     <div class="scene" ref="root">
         <canvas class="stageCanvas" ref="canvas"></canvas>
-        <!-- The rulito is drawn on its own canvas, which the stage shows as a texture over Particular -->
+        <!-- The rulito is drawn on its own canvas, which the stage shows as a texture over the heart at the lectern -->
         <Rulito ref="rulito" class="offstage" color="#f38baa" />
         <div ref="sidHit" class="hit" role="button" tabindex="0"
-            :aria-label="$i18n.locale === 'en' ? 'Sid: listen to his heart' : 'Sid: escuchá su corazón'"
+            :aria-label="$i18n.locale === 'en' ? 'Sid, listening to his heart' : 'Sid, escuchando su corazón'"
             @pointerdown.prevent="touchSid" @keydown="onKey($event, touchSid)"></div>
         <div ref="speakerHit" class="hit" role="button" tabindex="0"
-            :aria-label="$i18n.locale === 'en' ? 'Particular at the lectern: touch him on each heartbeat' : 'Particular en el atril: tocalo con cada latido'"
+            :aria-label="$i18n.locale === 'en' ? 'The heart at the lectern: touch it on each heartbeat' : 'El corazón en el atril: tocalo con cada latido'"
             @pointerdown.prevent="touchSpeaker" @keydown="onKey($event, touchSpeaker)"></div>
     </div>
 </template>
