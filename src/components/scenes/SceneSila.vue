@@ -130,10 +130,12 @@
     // ---- The beat: Sid's heart, steady and calm; lub on the beat, dub a little after
     const BEAT = 1.15;                      // s from one heartbeat to the next
     const DUB = 0.19;
-    const IN_TIME = 0.24;                   // a touch this close to a heartbeat (s, either side) is in time
+    // A touch from EARLY s before a heartbeat to LATE s after it is in time: more room after, since a finger tends to
+    // land just after the beat it heard or saw
+    const EARLY = 0.22, LATE = 0.34;
     const AGAIN = 7;                        // s alone before the hint
     const LISTEN = 9;                       // s after the last touch the heart is still heard
-    const beatOf = (t) => Math.round(t / BEAT);
+    const beatOf = (t) => Math.round((t - (LATE - EARLY) / 2) / BEAT);
     let lastBeat = -1;
     let heard = false;
     let lastTouch = -Infinity;
@@ -234,13 +236,19 @@
         lastTouch = lastT;
         hintAt = lastT + AGAIN;
         if (reduced || win) { play('tap'); voice = Math.max(voice, 0.4); return; }
+        const first = !heard;
         heard = true;
         const beat = beatOf(lastT);
         const off = lastT - beat * BEAT;
         const from = lecternTop();
-        if (Math.abs(off) > IN_TIME || missed === beat || spoken === beat) {
+        // Touched again on a heartbeat it already answered: nothing, it is not a stumble
+        if (spoken === beat) return;
+        if (off < -EARLY || off > LATE || missed === beat) {
+            // The first touch, before the heart was heard, is not a stumble: it starts the heartbeat, and Sid's heart
+            // beats bright on the next one, to show where it is
+            if (first) { callAt = (Math.floor(lastT / BEAT) + 1) * BEAT; return; }
             // Out of time: a muted drop, nothing lost; this heartbeat is gone, the next one can be caught
-            if (spoken !== beat) missed = beat;
+            missed = beat;
             play('miss');
             lost = 1;
             voice = 0;
@@ -508,8 +516,8 @@
 
         // ---- The chatter: glints in the sky out of time
         if (!reduced && t > glintAt && ramp > 0.9) {
-            const off = Math.abs(t - Math.round(t / BEAT) * BEAT);
-            if (off > 0.32) { glint(); glintAt = t + 0.6 + Math.random() * 1.8; }
+            const off = t - beatOf(t) * BEAT;
+            if (off < -EARLY - 0.1 || off > LATE + 0.1) { glint(); glintAt = t + 0.6 + Math.random() * 1.8; }
         }
         sparkle = Math.max(0, sparkle - dt * 2.2);
         L.sparkle.scale = 1 + 0.6 * ease(sparkle);
