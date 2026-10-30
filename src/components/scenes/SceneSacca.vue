@@ -10,9 +10,9 @@
     // one"): every cloud turns the cream of the moon, its light flies to the lookout and the rulito is born over him,
     // where the card draws it. A touch on the lookout asks him to sing again; left alone, he sings it again by himself.
     // How to play is shown without words: each note he sings flies from him to the clouds of its colour and lights them
-    // as it arrives (he is the one singing, the clouds are what answers); on the person's turn the clouds of the colour
-    // that comes next breathe, and four beads over his head light up, one per note repeated. Before the first touch he
-    // sings with lights only, in silence, as every scene.
+    // as it arrives (he is the one singing, the clouds are what answers); four beads over his head light up, one per note
+    // repeated; and on the person's turn, left alone a while, the clouds of the colour that comes next breathe (a hint).
+    // Before the first touch he sings with lights only, in silence, as every scene.
     // It is drawn in WebGL (useLayerStage): the clouds (each one cut out of the illustration, in one atlas, spread over the
     // whole sky and drifting past at the depth of their colour), the moon, the boat and the dunes are planes; Sid's body
     // and its glow are drawn in code (his shape, traced from his outline, filled on a canvas; a soft light and a stipple of
@@ -155,7 +155,8 @@
     // ---- The game: the lookout sings a phrase of the four colours; it is repeated by touching them in that order
     const GAP = 0.85;                       // s between the sung notes
     const SLOWER = 1.25, GAP_MAX = 1.5;     // each time it has to be sung again after a mistake
-    const AGAIN = 7;                        // s alone before he sings it again (the hint)
+    const HINT = 3.5;                       // s alone on the person's turn before the clouds of the next colour breathe
+    const AGAIN = 7;                        // s alone before he sings it again
     const FIRST = 3.2;                      // s after the scene starts, the first time he sings
     const FLIGHT = 0.55;                    // s a sung note takes to fly from him to the clouds of its colour
     const shuffled = (last) => {
@@ -595,10 +596,12 @@
         stage.bloom = Math.max(named, 0.25 * one);
 
         // ---- The clouds drift past, each colour at its own pace, and light up when sung or answered
-        // On the person's turn the clouds of the colour that comes next breathe; the beads show from the first phrase on
-        const hintC = !reduced && mode === 'answer' && !singing && t - answerSince > 0.6 ? phrase[got] : -1;
+        // On the person's turn, left alone HINT s, the clouds of the colour that comes next breathe; the beads show from the
+        // first phrase on
+        const still = mode === 'answer' ? t - Math.max(lastTouch, answerSince) : 0;
+        const hintC = !reduced && mode === 'answer' && !singing && still > HINT ? phrase[got] : -1;
         next += ((hintC >= 0 ? 1 : 0) - next) * Math.min(1, dt * 3);
-        const breathe = next * (0.5 + 0.5 * Math.sin((t - answerSince) * 3.4 - Math.PI / 2));
+        const breathe = next * (0.5 + 0.5 * Math.sin((still - HINT) * 3.4 - Math.PI / 2));
         beads += ((sung > 0 && !win && !reduced ? 1 : 0) - beads) * Math.min(1, dt * 2);
         let hinted = hintC;
         if (hintC < 0 && next > 0.01) hinted = lastHint;
