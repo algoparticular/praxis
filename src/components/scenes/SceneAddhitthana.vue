@@ -46,7 +46,7 @@
     // big as the boat allows (it fits the width), and the sky over it (the moon and the high clouds) lifted towards the
     // top of the screen, so the storm fills it
     const SIZE = art.size;
-    const SPAN = 1640;                      // art px the boat needs across, its scrolls included
+    const SPAN = 1880;                      // art px the boat needs across: its scrolls, and room for the wind to move it
     let F = { x: 0, y: 0, size: 1 };
     let lift = 0;
     const k = () => F.size / SIZE;
@@ -96,6 +96,7 @@
 
     // ---- The boat: the wind carries it off the middle and back (a spring), it rocks and bobs
     const boat = { x: 0, v: 0 };
+    let reach = 1;                          // px the boat may go off the middle each way (place())
     let row = 0;                            // 0..1, he rows (eased)
     const ease = (p) => p * p * (3 - 2 * p);
 
@@ -190,6 +191,9 @@
         L.mark.place(rectOf(B.mark));
 
         const hull = rectOf(B.hull);
+        // How far the wind may carry the boat: never past the edges of the screen (its scrolls included, and room for it
+        // to rock), so it can always be reached and rescued; on a narrow screen at least a little
+        reach = Math.max(0.03 * w, Math.min(hull.left, w - hull.left - hull.w) - 0.03 * hull.w);
         L.boat.pivot = { x: hull.left + hull.w * 0.5, y: hull.top + hull.h * 0.8 };
         L.fern.place(rectOf(B.fern));
         const aura = rectOf(B.aura);
@@ -367,10 +371,12 @@
         const rowing = held && !reduced;
         const span = 0.09 * F.size;
         const drifting = (-gust * 1.6 + Math.sin(t * 0.21) * 0.45 + Math.sin(t * 0.13 + 2) * 0.25) * span * storm * ramp;
-        const goal = rowing ? 0 : drifting;
+        // (eased into the reach: the stronger the gust, the closer to the edge, never past it)
+        const goal = rowing ? 0 : 0.85 * reach * Math.tanh(drifting / (0.85 * reach));
         const [pull, damp] = rowing ? [4.5, 3.6] : [1.4, 1.1];
         boat.v += ((goal - boat.x) * pull - boat.v * damp) * dt;
         boat.x += boat.v * dt;
+        if (Math.abs(boat.x) > reach) { boat.x = Math.sign(boat.x) * reach; boat.v = 0; }
         const firm = 1 - 0.75 * steady;
         const rock = (Math.sin(t * 0.9) * 2.4 + Math.sin(t * 1.63 + 1) * 1.1) * (0.25 + 0.75 * storm * Math.min(1.2, wind)) * firm;
         L.boat.x = boat.x;
