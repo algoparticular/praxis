@@ -8,8 +8,11 @@
     // he glows with it) and the palest ones, the lightest, Si (the crown). A wrong colour sounds muted, the lights go out
     // and the lookout sings it again, slower. Repeated whole, the four colours become one ("deep down the truth is only
     // one"): every cloud turns the cream of the moon, its light flies to the lookout and the rulito is born over him,
-    // where the card draws it. A touch on the lookout asks him to sing again; left alone, he sings it again by himself
-    // (the hint, with no words). Before the first touch he sings with lights only, in silence, as every scene.
+    // where the card draws it. A touch on the lookout asks him to sing again; left alone, he sings it again by himself.
+    // How to play is shown without words: each note he sings flies from him to the clouds of its colour and lights them
+    // as it arrives (he is the one singing, the clouds are what answers); on the person's turn the clouds of the colour
+    // that comes next breathe, and four beads over his head light up, one per note repeated. Before the first touch he
+    // sings with lights only, in silence, as every scene.
     // It is drawn in WebGL (useLayerStage): the clouds (each one cut out of the illustration, in one atlas, spread over the
     // whole sky and drifting past at the depth of their colour), the moon, the boat and the dunes are planes; Sid's body
     // and its glow are drawn in code (his shape, traced from his outline, filled on a canvas; a soft light and a stipple of
@@ -154,6 +157,7 @@
     const SLOWER = 1.25, GAP_MAX = 1.5;     // each time it has to be sung again after a mistake
     const AGAIN = 7;                        // s alone before he sings it again (the hint)
     const FIRST = 3.2;                      // s after the scene starts, the first time he sings
+    const FLIGHT = 0.55;                    // s a sung note takes to fly from him to the clouds of its colour
     const shuffled = (last) => {
         let p;
         do {
@@ -173,7 +177,11 @@
     let answerSince = 0;
     let lastT = 0;
     let lastTouch = -Infinity;
+    let lastHint = -1;                      // the colour last breathing, kept while its breath fades out
     const shine = COLOURS.map(() => 0);     // a colour being sung (or answered), 1 on the note, fading
+    const arrive = COLOURS.map(() => null); // when the note sung of a colour reaches its clouds (scene time)
+    let next = 0;                           // how much the clouds of the colour that comes next breathe (the hint)
+    let beads = 0;                          // how much the four beads over the lookout show
     const on = COLOURS.map(() => false);    // a colour already repeated right
     const lit = COLOURS.map(() => 0);       // how lit each colour looks (eases towards `on`)
     let voice = 0;                          // the lookout singing a note
@@ -221,6 +229,38 @@
     };
     const sparks = createSparks(260);
 
+    // ---- Four beads over the lookout's head, one per note of the phrase: lit in its colour as it is repeated right
+    const beadAt = (j) => {
+        const r = rectOf(art.boxes.lookout);
+        const x = r.left + r.w / 2 + (j - 1.5) * r.w * 0.22;
+        // a small arc, the outer ones a little lower
+        return L.boat.toScreen(x, r.top - r.h * 0.12 + Math.abs(j - 1.5) * r.h * 0.05);
+    };
+    // Each is a navy ring (the moon is behind them) round a dot: cream while waiting, the note's colour once repeated
+    const NAVY = rgb(0x143246);
+    const beadGroup = {
+        count: 8,
+        update(t, data) {
+            const size = 0.8 + 0.2 * Math.min(1, F.size / 600);
+            for (let j = 0; j < 4; j++) {
+                const ring = j, dot = j + 4;
+                if (beads < 0.01 || !L.boat) {
+                    data.alphas[ring] = data.alphas[dot] = 0;
+                    data.sizes[ring] = data.sizes[dot] = 0;
+                    continue;
+                }
+                const p = beadAt(j);
+                const done = j < got;
+                const fill = done ? rgb(COLOURS[phrase[j]].hex) : rgb(CREAM);
+                [ring, dot].forEach((i) => { data.positions[i * 3] = p.x; data.positions[i * 3 + 1] = p.y; });
+                data.sizes[ring] = (done ? 13 : 10) * size;
+                data.sizes[dot] = (done ? 10 : 6) * size;
+                data.alphas[ring] = beads * (done ? 0.9 : 0.6);
+                data.alphas[dot] = beads;
+                for (let c = 0; c < 3; c++) { data.tints[ring * 3 + c] = NAVY[c]; data.tints[dot * 3 + c] = fill[c]; }
+            }
+        },
+    };
     const L = {};
 
     // Where things are on screen now
@@ -240,21 +280,26 @@
         mode = 'sing';
         got = 0;
         on.fill(false);
+        arrive.fill(null);
         sung += 1;
         singing = { at: lastT, played: 0 };
     };
     const singNote = (c) => {
-        shine[c] = 1;
         voice = 1;
         voiceColour = COLOURS[c].glow;
         if (c === HEART) { heart = 1; dust?.boost(1, 0.5); }
         if (heard) play('sing', { step: step(c), length: gap * 0.8 });
-        // A few notes rise from him into the air, in the colour sung
+        // The note flies from him to every cloud of its colour in sight, and lights them as it arrives
+        if (reduced) { shine[c] = 1; return; }
+        arrive[c] = lastT + FLIGHT + 0.1;
         const from = lookoutTop();
-        for (let j = 0; j < 3; j++) {
-            send(from, { x: from.x + (Math.random() - 0.5) * 140 * k() * 4, y: from.y - (90 + Math.random() * 120) * k() * 3 },
-                { dur: 1.3 + Math.random() * 0.5, size: 7, c0: CREAM, c1: COLOURS[c].hex, at: lastT + j * 0.06, arc: 0.1 });
-        }
+        clouds.forEach((cl) => {
+            if (cl.c !== c || cl.hidden) return;
+            const p = cloudCentre(cl);
+            if (p.x < 0 || p.x > W) return;
+            // a head and a short tail, so it reads as a light that travels
+            for (let j = 0; j < 3; j++) send(from, p, { dur: FLIGHT, size: 12 - 3 * j, c0: CREAM, c1: COLOURS[c].glow, at: lastT + j * 0.05, arc: 0.12 });
+        });
     };
 
     // A finger on the box of a cloud may also be on the box of another (they are at least 44px and drift past each other):
@@ -509,7 +554,7 @@
         if (singAt !== null && t >= singAt && ramp > 0.9 && !win) singNow();
         if (singing) {
             while (singing.played < phrase.length && t >= singing.at + singing.played * gap) singNote(phrase[singing.played++]);
-            if (singing.played >= phrase.length && t >= singing.at + (phrase.length - 0.4) * gap + 0.3) {
+            if (singing.played >= phrase.length && t >= singing.at + (phrase.length - 0.4) * gap + 0.3 + FLIGHT) {
                 singing = null;
                 mode = 'answer';
                 answerSince = t;
@@ -550,7 +595,16 @@
         stage.bloom = Math.max(named, 0.25 * one);
 
         // ---- The clouds drift past, each colour at its own pace, and light up when sung or answered
+        // On the person's turn the clouds of the colour that comes next breathe; the beads show from the first phrase on
+        const hintC = !reduced && mode === 'answer' && !singing && t - answerSince > 0.6 ? phrase[got] : -1;
+        next += ((hintC >= 0 ? 1 : 0) - next) * Math.min(1, dt * 3);
+        const breathe = next * (0.5 + 0.5 * Math.sin((t - answerSince) * 3.4 - Math.PI / 2));
+        beads += ((sung > 0 && !win && !reduced ? 1 : 0) - beads) * Math.min(1, dt * 2);
+        let hinted = hintC;
+        if (hintC < 0 && next > 0.01) hinted = lastHint;
+        lastHint = hinted;
         COLOURS.forEach((_, c) => {
+            if (arrive[c] !== null && t >= arrive[c]) { shine[c] = 1; arrive[c] = null; }
             shine[c] = Math.max(0, shine[c] - dt / (gap * 0.95));
             lit[c] += ((on[c] ? 1 : 0) - lit[c]) * Math.min(1, dt * (on[c] ? 6 : 1.2));
         });
@@ -559,19 +613,20 @@
             const glow = L.cloudGlows[cl.i];
             const sh = ease(shine[cl.c]);
             const l = lit[cl.c];
+            const b = cl.c === hinted ? breathe : 0;
             cl.ring = Math.max(0, cl.ring - dt * 2.6);
             const moved = cl.x0 - COLOURS[cl.c].speed * t;
             const wrapped = span.left + ((((moved - span.left) % span.width) + span.width) % span.width);
             node.x = wrapped - cl.x0;
             node.y = Math.sin(t * 0.35 + cl.phase) * 4 * ramp - 7 * sh;
-            node.scale = 1 + 0.09 * sh + 0.04 * l + 0.1 * cl.ring * cl.ring;
-            node.uniforms.uBright.value = 1 + 0.3 * sh + 0.15 * l + 0.25 * cl.ring + 0.15 * one;
+            node.scale = 1 + 0.09 * sh + 0.04 * l + 0.1 * cl.ring * cl.ring + 0.05 * b;
+            node.uniforms.uBright.value = 1 + 0.3 * sh + 0.15 * l + 0.25 * cl.ring + 0.15 * one + 0.15 * b;
             node.uniforms.uTint.value.setHex(CREAM);
             node.uniforms.uTintAmount.value = 0.85 * one;
             glow.x = node.x;
             glow.y = node.y;
             glow.scale = node.scale * (1 + 0.08 * sh);
-            glow.opacity = Math.min(1, 0.85 * sh + 0.45 * l + 0.5 * cl.ring + 0.35 * one);
+            glow.opacity = Math.min(1, 0.85 * sh + 0.45 * l + 0.5 * cl.ring + 0.35 * one + 0.4 * b);
             glow.mesh.visible = glow.opacity > 0.01;
         });
 
@@ -636,6 +691,8 @@
                 { dynamic: flyers, look: 'soft', parallax: 0, drift: 1.5, twinkle: 0.2, reach: 0, bloom: true, order: after(L.mark) + 1 },
                 // 3: sparks
                 { ...sparks.group(), order: after(L.mark) + 2 },
+                // 4: the four beads over the lookout
+                { dynamic: beadGroup, look: 'hard', parallax: 0, drift: 0, jitter: 0, twinkle: 0, reach: 0, order: after(L.lookout) },
             ],
         });
         if (reduced) dust.reveal();
