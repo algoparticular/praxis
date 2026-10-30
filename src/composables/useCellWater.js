@@ -12,6 +12,8 @@
 // `ghost` set the swimmer goes past the bodies instead of bumping into them (it only bounces off the wall).
 // `calm` (0..1) stills the water: at 1 the bodies stop where they are. With `home` set ({ x, y }) the swimmer leaves its
 // course and swims there, slowing as it arrives, past the bodies; cleared, it takes up a course again from where it is.
+// startle(dx, dy) is a touch on the swimmer: it darts off that way (screen or frame direction, away from the finger;
+// (0, 0) for any way), leaning towards the open water, and slows back into a course; for a moment it does not go home.
 
 const TAU = Math.PI * 2;
 
@@ -26,6 +28,26 @@ export function createCellWater({ bounds, swimmer, bodies, speed = 0.011, restit
     }));
     const byId = Object.fromEntries(list.map((b) => [b.id, b]));
     const api = { swimmer: me, wall: swimmer.wall ?? swimmer.r, ghost: false, calm: 0, home: null };
+    let darting = 0;                        // seconds left of a dart, while it does not go home
+
+    const startle = (dx = 0, dy = 0) => {
+        let d = Math.hypot(dx, dy);
+        let ax = d ? dx / d : 0, ay = d ? dy / d : 0;
+        if (!d) { const a = Math.random() * TAU; ax = Math.cos(a); ay = Math.sin(a); }
+        // Near the wall it turns back towards the middle, so it does not dart straight into it
+        const cx = bounds.x - me.x, cy = bounds.y - me.y;
+        const cd = Math.hypot(cx, cy) || 1e-6;
+        const near = Math.min(1, cd / (bounds.r - api.wall || 1e-6));
+        ax += cx / cd * 1.4 * near * near;
+        ay += cy / cd * 1.4 * near * near;
+        const turn = Math.atan2(ay, ax) + (Math.random() - 0.5) * 0.7;
+        const kick = speed * 10;
+        me.vx = Math.cos(turn) * kick;
+        me.vy = Math.sin(turn) * kick;
+        me.heading = turn;
+        me.hit = 0.6;
+        darting = 1.6;
+    };
 
     const step = (dt, t) => {
         dt = Math.min(dt, 0.05);
@@ -44,7 +66,9 @@ export function createCellWater({ bounds, swimmer, bodies, speed = 0.011, restit
         });
 
         // The swimmer: its heading drifts, and its velocity eases towards it so a bounce settles into a new course
-        if (api.home) {
+        darting = Math.max(0, darting - dt);
+        const homing = api.home && !darting;
+        if (homing) {
             // Going home: straight there, quick while far and slowing to a stop as it arrives
             const hx = api.home.x - me.x;
             const hy = api.home.y - me.y;
@@ -66,7 +90,7 @@ export function createCellWater({ bounds, swimmer, bodies, speed = 0.011, restit
         me.hit = Math.max(0, me.hit - dt);
 
         // Bumping into bodies: push out of them, bounce, and hand them part of the blow
-        if (!api.ghost && !api.home) list.forEach((b) => {
+        if (!api.ghost && !homing) list.forEach((b) => {
             b.circles.forEach(([cx, cy, cr]) => {
                 const dx = me.x - (cx + b.x);
                 const dy = me.y - (cy + b.y);
@@ -114,5 +138,5 @@ export function createCellWater({ bounds, swimmer, bodies, speed = 0.011, restit
         }
     };
 
-    return Object.assign(api, { offset: (id) => byId[id] ?? { x: 0, y: 0 }, step });
+    return Object.assign(api, { offset: (id) => byId[id] ?? { x: 0, y: 0 }, step, startle });
 }

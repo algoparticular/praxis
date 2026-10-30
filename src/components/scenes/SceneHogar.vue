@@ -19,8 +19,9 @@
     // up it and that mushroom's cap lights with the spark's warmth, and the spark grows. Meanwhile the rulito is born
     // over the larva's head; it is whole when the last mushroom is lit: it flares, a wave of light runs out of the
     // nucleus along every root and each mushroom throws its spores as it gets there. Let go and time runs again: the
-    // crown turns, the larva wanders off and the rulito's tail catches up with its head. The roots stay, dimmer, and the
-    // lit caps keep a glow, brighter each time it is completed (up to three), so the next time the rulito is born at once.
+    // crown turns, the larva wanders off and the rulito's tail catches up with its head. Once the rulito is gone the roots
+    // and the lit caps fade away, and the next hold grows them again (brighter each time it is completed, up to three).
+    // Touching the larva (a Sama) makes it dart off through the water, away from the finger.
     import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
     import { createParallax } from '../../composables/useParallax.js';
     import { createLayerStage } from '../../composables/useLayerStage.js';
@@ -43,6 +44,7 @@
     const canvas = ref(null);
     const hits = ref([]);                   // the mushrooms' touch targets
     const coreHit = ref(null);              // the nucleus's
+    const larvaHit = ref(null);             // the larva's
     const rulito = ref(null);
     let stageEl = null;                     // the card's stage, where the name is lit from (--name-glow)
     let stage = null;
@@ -171,6 +173,23 @@
         play('tap');
     };
     const warm = () => dust?.boost(0, 0.4);
+    // Touching the larva: it darts off through the water, away from the finger
+    const startle = (event) => {
+        const box = event.currentTarget.getBoundingClientRect();
+        const away = event.clientX === undefined ? [0, 0] : [box.left + box.width / 2 - event.clientX, box.top + box.height / 2 - event.clientY];
+        water?.startle(...away);
+        play('tap');
+        if (reduced || !stage) return;
+        const area = canvas.value.getBoundingClientRect();
+        sparks.burst(box.left + box.width / 2 - area.left, box.top + box.height / 2 - area.top, {
+            n: 8, colors: [0xffd29a, 0xfff3d6, 0xffb069], speed: 60, life: 1.4, size: 3.4, spread: 6,
+        });
+    };
+    const onLarvaKey = (event) => {
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+        event.preventDefault();
+        startle(event);
+    };
     const onKey = (event) => {
         if (event.key !== 'Enter' && event.key !== ' ') return;
         event.preventDefault();
@@ -185,6 +204,7 @@
     const LINGER = 0.9, EAT = 3.4;          // a whole rulito stays, then its tail goes all the way along it
     const BEAD = 0.45;                      // seconds the light takes to run back up a root to its mushroom
     const PULSE_TIME = 1.4;                 // and the wave out of the nucleus, along all of them
+    const ROOTS_LINGER = 0.6, ROOTS_FADE = 2.4; // once the rulito is gone, the roots wait a moment and fade away
     const WALL_CROWNED = 0.12;              // how far the larva keeps from the wall while the rulito is over its head
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const rootsCanvas = document.createElement('canvas');
@@ -200,7 +220,9 @@
     let still = 0;                          // 0..1, how stopped time is
     let nest = 0;                           // 0..1, the larva curled up at home
     let turnNow = 0;                        // how far the crown has turned (degrees)
-    let grow = 0;                           // 0..1, how far the roots have grown: they stay once grown
+    let grow = 0;                           // 0..1, how far the roots have grown: they stay while the rulito lives
+    let rootsOn = 1;                        // 0..1, the roots and the lit caps fading away when it is over
+    let bare = 0;                           // seconds without a hold or a rulito
     let grown = 0;                          // 0..1, how long it has been held, on its way to GROW
     let head = 0;                           // how far along its stroke the front of the rulito is (0..1)
     let tail = 0;                           // and the back of it
@@ -295,6 +317,26 @@
         }
         if (head >= 1 && !full) { full = true; pop = 1; bloom(); }
         if (head > 0 && head - tail < 0.0005) { head = 0; tail = 0; grown = 0; full = false; rulito.value.reshape(); play('release'); }
+        // The roots stay while it is held and while the rulito lives; then they fade away with the light of the caps,
+        // and the next hold grows them from the mushrooms again
+        if (held || head > 0) {
+            bare = 0;
+            rootsOn = Math.min(1, rootsOn + dt / 0.4);
+        } else if (grow > 0) {
+            bare += dt;
+            if (bare > ROOTS_LINGER) rootsOn = Math.max(0, rootsOn - dt / ROOTS_FADE);
+            if (rootsOn <= 0) {
+                grow = 0;
+                rootsOn = 1;
+                litCount = 0;
+                lit.fill(-1);
+                back.fill(-1);
+                capGlow.fill(0);
+                roots.frame({ grow: 0, size: ROOT_AREA.w * F.size });
+                L.roots.refresh();
+            }
+        }
+        L.roots.opacity = rootsOn;
         // A root that reaches the nucleus sends a bead of light back up to its mushroom, which lights
         const whole = Math.min(1, Math.max(0, (head - tail - 0.6) / 0.4));
         const rest = 0.22 + 0.1 * level;
@@ -310,7 +352,7 @@
             const want = lit[i] < BEAD ? 0 : held || whole > 0 ? 1 : rest;
             capGlow[i] += (want - capGlow[i]) * Math.min(1, dt * (want > capGlow[i] ? 5 : 1));
             const flash = wave >= 1 ? Math.exp(-(wave - 1) * 6) : 0;
-            L.caps[i].opacity = Math.min(1, capGlow[i] + (lit[i] >= 0 ? flash : 0));
+            L.caps[i].opacity = Math.min(1, capGlow[i] + (lit[i] >= 0 ? flash : 0)) * rootsOn;
         });
         // The spark: it grows with the lit mushrooms; before the first hold it breathes, faintly, so it is noticed
         const hint = touched || reduced ? 0 : 0.25 * (0.5 + 0.5 * Math.sin(t * 1.3));
@@ -407,6 +449,15 @@
             el.style.translate = `${(c.x - d / 2).toFixed(1)}px ${(c.y - d / 2).toFixed(1)}px`;
             el.style.width = el.style.height = `${d.toFixed(1)}px`;
         });
+        // The larva's, going with it
+        const me = water.swimmer;
+        const lh = larvaHit.value;
+        if (lh) {
+            const c = L.planet.toScreen(F.x + me.x * F.size, F.y + (me.y - 0.008) * F.size);
+            const d = Math.max(52, 0.08 * F.size * L.planet.scale);
+            lh.style.translate = `${(c.x - d / 2).toFixed(1)}px ${(c.y - d / 2).toFixed(1)}px`;
+            lh.style.width = lh.style.height = `${d.toFixed(1)}px`;
+        }
         // The nucleus's, bigger than it so a finger finds it
         const el = coreHit.value;
         if (!el) return;
@@ -556,6 +607,9 @@
         <div v-for="(cap, i) in CAPS" :key="i" :ref="(el) => { hits[i] = el; }" class="hit" role="button" tabindex="-1"
             :aria-label="$i18n.locale === 'en' ? 'Mushroom' : 'Hongo'"
             @pointerdown.prevent="spores" @pointerenter="warm" @keydown="onKey"></div>
+        <!-- The larva darts off when touched (before the nucleus, which is over it where they meet) -->
+        <div class="hit larva" ref="larvaHit" role="button" tabindex="0" aria-label="Larva"
+            @pointerdown.prevent="startle" @keydown="onLarvaKey"></div>
         <!-- The nucleus is held, not tapped -->
         <div class="hit core" ref="coreHit" role="button" tabindex="0" :aria-label="$i18n.locale === 'en' ? 'Nucleus' : 'Núcleo'"
             @pointerdown.prevent="hold" @pointerenter="hover(true)" @pointerleave="hover(false)"
@@ -600,7 +654,12 @@
         outline: none;
     }
 
-    .core:focus-visible {
+    .larva {
+        outline: none;
+    }
+
+    .core:focus-visible,
+    .larva:focus-visible {
         outline: 2px solid rgba(255, 210, 154, 0.9);
         outline-offset: 2px;
     }

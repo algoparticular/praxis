@@ -16,6 +16,7 @@
     // listen, so what was composed keeps sounding as a tune. Touching a lit one puts it out. With seven lit the tune is
     // complete: the chord resolves (C7 to F), the rulito is born over the jellyfish's head, the name lights up and the stage blooms; after one more
     // turn each piece goes out as it passes the comb for the last time and the crown slows down again.
+    // Touching the jellyfish makes it dart off through the water, away from the finger.
     import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
     import { createParallax } from '../../composables/useParallax.js';
     import { createLayerStage } from '../../composables/useLayerStage.js';
@@ -36,6 +37,7 @@
     const root = ref(null);
     const canvas = ref(null);
     const hits = ref([]);                   // the touch targets of the crown's pieces
+    const jellyHit = ref(null);             // the jellyfish's
     const rulito = ref(null);
     let stageEl = null;                     // the card's stage, where the name is lit from (--name-glow)
     let stage = null;
@@ -155,6 +157,23 @@
         compose(CROWN.indexOf(piece));
     };
     const warm = () => dust?.boost(0, 0.4);
+    // Touching the jellyfish: it darts off through the water, away from the finger
+    const startle = (event) => {
+        const box = event.currentTarget.getBoundingClientRect();
+        const away = event.clientX === undefined ? [0, 0] : [box.left + box.width / 2 - event.clientX, box.top + box.height / 2 - event.clientY];
+        water?.startle(...away);
+        play('tap');
+        if (reduced || !stage) return;
+        const area = canvas.value.getBoundingClientRect();
+        sparks.burst(box.left + box.width / 2 - area.left, box.top + box.height / 2 - area.top, {
+            n: 8, colors: [0xffd29a, 0xffffff, 0xc9f0b0], speed: 60, life: 1.4, size: 3.4, spread: 6,
+        });
+    };
+    const onJellyKey = (event) => {
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+        event.preventDefault();
+        startle(event);
+    };
     const onKey = (piece) => (event) => {
         if (event.key !== 'Enter' && event.key !== ' ') return;
         event.preventDefault();
@@ -357,8 +376,17 @@
         CROWN.forEach((p, i) => L.lights[i].place(square(p.cx / 100, p.cy / 100, Math.max(p.r * 3.2, 5) / 100)));
     };
 
-    // The touch targets follow their pieces as the crown turns
+    // The touch targets follow their pieces as the crown turns, and the jellyfish's goes with it
+    const JELLY_MID = { x: (JELLY.box[0] + JELLY.box[2] / 2) / 100 - JELLY.x, y: (JELLY.box[1] + JELLY.box[3] / 2) / 100 - JELLY.y };
     const placeHits = () => {
+        const me = water.swimmer;
+        const jh = jellyHit.value;
+        if (jh) {
+            const c = L.planet.toScreen(F.x + (me.x + JELLY_MID.x * 0.5) * F.size, F.y + (me.y + JELLY_MID.y * 0.5) * F.size);
+            const d = Math.max(52, 0.09 * F.size * L.planet.scale);
+            jh.style.translate = `${(c.x - d / 2).toFixed(1)}px ${(c.y - d / 2).toFixed(1)}px`;
+            jh.style.width = jh.style.height = `${d.toFixed(1)}px`;
+        }
         hits.value.forEach((el, i) => {
             if (!el) return;
             const p = CROWN[i];
@@ -514,6 +542,9 @@
         <canvas class="stageCanvas" ref="canvas"></canvas>
         <!-- The rulito is drawn on its own canvas, which the stage shows as a texture over the jellyfish's bell -->
         <Rulito ref="rulito" class="offstage" color="#f2b036" />
+        <!-- The jellyfish darts off when touched -->
+        <div class="hit" ref="jellyHit" role="button" tabindex="0" :aria-label="$i18n.locale === 'en' ? 'Jellyfish' : 'Medusa'"
+            @pointerdown.prevent="startle" @keydown="onJellyKey"></div>
         <!-- The music box: each coral or weed lit plays its note every time it passes the top -->
         <div v-for="(p, i) in CROWN" :key="'hit' + p.id" :ref="(el) => { hits[i] = el; }" class="hit" role="button" tabindex="0"
             :aria-label="p.kind === 'coral' ? ($i18n.locale === 'en' ? 'Coral: a note of the tune' : 'Coral: una nota de la melodía') : ($i18n.locale === 'en' ? 'Sea grass: a low note of the tune' : 'Alga: una nota grave de la melodía')"
