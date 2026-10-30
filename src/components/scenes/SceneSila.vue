@@ -16,6 +16,8 @@
     // Before the first touch the heart beats in light only; from then on it is heard while someone plays. Left alone 7 s,
     // Sid's heart sends its beat to the lectern a few times (the hint, with no words). Sid is not played: a touch on him
     // only makes his heart glow a little, silent, so it does not compete with the lectern.
+    // While it waits the scene is alive: the heart at the lectern breathes, sways on its feet and now and then turns to
+    // Sid; Sid breathes and leans towards it when it speaks; four tufts of grass sway with the wind of the glow.
     // It is drawn in WebGL (useLayerStage): the clouds (cut out of the illustration into one atlas, drifting), the moon,
     // the grass and the figures are planes; the stipple of the moon, the stars and the orange glow of the mushrooms are
     // particles (useStardust), from silaScene.json (made by scripts/convert-sila.mjs): the glow is alive, every mote of
@@ -78,6 +80,7 @@
     const ease = (p) => p * p * (3 - 2 * p);
     const SID_HEART = [1322, 1668];         // art px: the middle of his lower body
     const LECTERN_TOP = [944, 1382];        // art px: the star on the lectern
+    const TUFTS = art.tufts;                // the tufts of grass that sway, [x, y, w, h] art px
 
     // ---- The clouds: each one cut out of the illustration (one atlas), resting where the card draws it and drifting
     const [AW, AH] = art.atlas;
@@ -141,6 +144,13 @@
     let said = 0;                           // notes said in time: they climb the chord
     let voice = 0;                          // the heart at the lectern speaking
     let lost = 0;                           // the heart at the lectern, lost for a moment after a touch out of time
+    let lean = 0;                           // Sid leaning towards the heart while it speaks
+    // Every LOOK s the heart at the lectern turns to Sid for a moment (0..1, eased in and out)
+    const LOOK = 9;
+    const turnTo = (t) => {
+        const p = (Math.max(0, t) % LOOK) / 1.8;
+        return p < 1 ? Math.sin(p * Math.PI) ** 2 : 0;
+    };
     let heart = 0;                          // Sid's heart, now
     let wins = 0;
     let win = null;
@@ -319,6 +329,14 @@
         });
         L.rocks = ground.image('/assets/sila/rocks.webp');
         L.lines = ground.image('/assets/sila/lines.webp');
+        // The four big tufts of grass, cut out of the line work (scripts/split-sila-grass.mjs), sway with the same wind as
+        // the glow: its wave crosses them from left to right (the phase), in gusts (the amplitude, set every frame)
+        const [, , GW, GH] = B.grass;
+        L.tufts = TUFTS.map(([x, y, w, h]) => {
+            const tuft = ground.image('/assets/sila/grass.webp', { crop: [(x - B.grass[0]) / GW, (y - B.grass[1]) / GH, w / GW, h / GH], wind: { amp: 4, speed: 0.9 } });
+            tuft.uniforms.uWind.value.w = -(x + w / 2) * 0.0035;
+            return tuft;
+        });
         L.sparkle = ground.image('/assets/sila/sparkle.webp');
         ground.enter({ y: 50, delay: 100, duration: 1600 });
         // The figures: Sid with the light of his heart, the box, the heart at its lectern, and the rulito over it
@@ -371,6 +389,7 @@
         L.ground.forEach(({ node, side }) => node.place({ ...ground, left: ground.left + side * ground.w }));
         L.rocks.place(rectOf(B.rocks));
         L.lines.place(rectOf(B.lines));
+        TUFTS.forEach((t, i) => L.tufts[i].place(rectOf(t)));
         const sp = rectOf(B.sparkle);
         L.sparkle.place(sp, { x: sp.left + sp.w / 2, y: sp.top + sp.h / 2 });
         MUSHROOMS.forEach((M, m) => {
@@ -525,6 +544,7 @@
 
         // ---- The mushrooms: a lit one glows full and breathes with the heart; the others wait, dim
         gust = 0.5 + 0.5 * Math.sin(t * 0.21) * Math.sin(t * 0.13 + 1);
+        L.tufts.forEach((tuft) => { tuft.uniforms.uWind.value.x = reduced ? 0 : (2.5 + 5 * gust) * ramp; });
         MUSHROOMS.forEach((_, m) => {
             const goal = reduced ? 1 : on[m] ? 1 : DIM;
             lit[m] += (goal - lit[m]) * Math.min(1, dt * (on[m] ? 3 : 0.5));
@@ -559,17 +579,25 @@
         L.heart.scale = 1 + 0.12 * h;
         L.heartCore.opacity = Math.min(1, 0.1 + 0.7 * h);
         L.heartCore.scale = 1 + 0.2 * h;
-        L.sid.scale = 1 + 0.008 * pulse;
-        L.sid.y = Math.sin(t * 0.7) * 1.5 * ramp;
+        // Sid listens: he breathes slowly and, when the heart speaks, leans a little towards it
         voice = Math.max(0, voice - dt * 2);
         const v = ease(voice);
-        L.particular.sy = 1 + 0.06 * v + 0.006 * Math.sin(t * 0.9) * ramp;
-        L.particular.sx = 1 - 0.025 * v;
+        lean += ((voice > 0.3 && !reduced ? 1 : 0) - lean) * Math.min(1, dt * (voice > 0.3 ? 4 : 0.9));
+        const sidBreath = Math.sin(t * 0.75) * ramp;
+        L.sid.sy = 1 + 0.008 * pulse + 0.014 * sidBreath;
+        L.sid.sx = 1 + 0.008 * pulse - 0.005 * sidBreath;
+        L.sid.rotate = -2.5 * ease(lean);
+        L.sid.y = Math.sin(t * 0.7) * 1.5 * ramp;
+        // The heart at the lectern, alive while it waits: it breathes, sways a little on its feet and now and then turns
+        // to Sid (to the right) for a moment
+        const turn = reduced ? 0 : turnTo(t);
+        L.particular.sy = 1 + 0.06 * v + 0.014 * Math.sin(t * 0.9) * ramp;
+        L.particular.sx = 1 - 0.025 * v - 0.006 * Math.sin(t * 0.9) * ramp;
         lost = Math.max(0, lost - dt * 1.6);
         const lo = ease(lost);
         L.particular.uniforms.uBright.value = 1 + 0.25 * v + 0.15 * named - 0.18 * lo;
         L.particular.uniforms.uSaturate.value = 1 - 0.75 * lo;
-        L.particular.rotate = Math.sin(t * 26) * 3 * lo;
+        L.particular.rotate = Math.sin(t * 26) * 3 * lo + (Math.sin(t * 0.55) * 1.2 * ramp + 3.5 * turn) * (1 - lo);
         L.voice.opacity = Math.min(1, v + 0.55 * named);
         L.voice.scale = 1 + 0.25 * v;
         L.voice.mesh.visible = L.voice.opacity > 0.01;

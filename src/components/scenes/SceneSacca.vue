@@ -12,7 +12,9 @@
     // How to play is shown without words: each note he sings flies from him to the clouds of its colour and lights them
     // as it arrives (he is the one singing, the clouds are what answers); four beads over his head light up, one per note
     // repeated; and on the person's turn, left alone a while, the clouds of the colour that comes next breathe (a hint).
-    // Before the first touch he sings with lights only, in silence, as every scene.
+    // Before the first touch he sings with lights only, in silence, as every scene. Between songs he keeps watch, looking
+    // to one side and the other, and just before singing he turns to the front and draws himself up; Sid breathes in the
+    // boat, and fine sand blows off the dunes.
     // It is drawn in WebGL (useLayerStage): the clouds (each one cut out of the illustration, in one atlas, spread over the
     // whole sky and drifting past at the depth of their colour), the moon, the boat and the dunes are planes; Sid's body
     // and its glow are drawn in code (his shape, traced from his outline, filled on a canvas; a soft light and a stipple of
@@ -130,6 +132,8 @@
         }
         return dots;
     })();
+    // He breathes from where he lies: his body and his lines scale about the bottom of his shape
+    const sidPivot = () => { const r = rectOf(SID_BOX); return { x: r.left + r.w / 2, y: r.top + r.h }; };
     const sidCanvas = document.createElement('canvas');
     const drawSid = () => {
         const dpr = stage?.dpr ?? 1;
@@ -148,7 +152,7 @@
         ctx.closePath();
         ctx.fillStyle = SID_FILL;
         ctx.fill();
-        L.sidFill.place({ left: r.left - pad, top: r.top - pad, w: r.w + 2 * pad, h: r.h + 2 * pad });
+        L.sidFill.place({ left: r.left - pad, top: r.top - pad, w: r.w + 2 * pad, h: r.h + 2 * pad }, sidPivot());
         L.sidFill.refresh();
     };
 
@@ -159,6 +163,7 @@
     const AGAIN = 7;                        // s alone before he sings it again
     const FIRST = 3.2;                      // s after the scene starts, the first time he sings
     const FLIGHT = 0.55;                    // s a sung note takes to fly from him to the clouds of its colour
+    const PREP = 0.8;                       // s he gets ready before he sings (he turns to the front and draws himself up)
     const shuffled = (last) => {
         let p;
         do {
@@ -186,6 +191,10 @@
     const on = COLOURS.map(() => false);    // a colour already repeated right
     const lit = COLOURS.map(() => 0);       // how lit each colour looks (eases towards `on`)
     let voice = 0;                          // the lookout singing a note
+    let gaze = 0;                           // where the lookout looks while he keeps watch (-1 left .. 1 right)
+    // Keeping watch: a few seconds to each side, with a look to the front in between
+    const WATCH = [0, -1, -1, 0, 1, 1, 0, 0.4, -0.6];
+    const watchAt = (t) => WATCH[Math.floor(Math.max(0, t) / 1.6) % WATCH.length];
     let voiceColour = COLOURS[0].glow;
     let heart = 0;                          // Sid's heart, on Fa
     let one = 0;                            // the colours becoming one (the cream of the moon)
@@ -262,6 +271,39 @@
             }
         },
     };
+    // ---- Sand blown off the dunes: fine grains that rise from the crests and drift to the left with the clouds, in gusts
+    const SAND = 46;
+    const sand = Array.from({ length: SAND }, () => ({ at: -Infinity, life: 1 }));
+    const SAND_COLOURS = [0xfffbe8, 0xfff0dc, 0xfde6cf].map(rgb);
+    let dunesOff = { x: 0, y: 0 };
+    const sandGroup = {
+        count: SAND,
+        update(t, data) {
+            const top = rectOf(art.boxes.mountains).top;
+            const gust = 0.5 + 0.5 * Math.sin(t * 0.23) * Math.sin(t * 0.11 + 2);
+            for (let i = 0; i < SAND; i++) {
+                const g = sand[i];
+                let p = (t - g.at) / g.life;
+                if (p >= 1 || p < 0) {
+                    // a new grain now and then, more often in a gust
+                    if (reduced || !L.dunesNode || Math.random() > 0.02 + 0.08 * gust) { data.alphas[i] = 0; data.sizes[i] = 0; continue; }
+                    Object.assign(g, {
+                        at: t, life: 2.2 + Math.random() * 2.4, x: Math.random() * (W + 80), y: top + (0.06 + Math.random() * 0.35) * (F.size * 0.14),
+                        vx: -(18 + Math.random() * 30) * (0.7 + 0.6 * gust), vy: -(3 + Math.random() * 7), size: 1.8 + Math.random() * 2,
+                        c: SAND_COLOURS[i % SAND_COLOURS.length], wob: Math.random() * 6.28,
+                    });
+                    p = 0;
+                }
+                const age = p * g.life;
+                data.positions[i * 3] = g.x + g.vx * age + dunesOff.x;
+                data.positions[i * 3 + 1] = g.y + g.vy * age + Math.sin(age * 3 + g.wob) * 2 + dunesOff.y;
+                data.sizes[i] = g.size;
+                data.alphas[i] = 0.9 * Math.min(1, p * 5) * Math.min(1, (1 - p) * 2.5);
+                for (let c = 0; c < 3; c++) data.tints[i * 3 + c] = g.c[c];
+            }
+        },
+    };
+
     const L = {};
 
     // Where things are on screen now
@@ -491,7 +533,7 @@
         const body = rectOf(SID_BOX);
         const gd = Math.max(body.w, body.h) * 2;
         L.sidGlow.place({ left: body.left + body.w / 2 - gd / 2, top: body.top + body.h * 0.55 - gd / 2, w: gd, h: gd });
-        L.sid.place(rectOf(B.sid));
+        L.sid.place(rectOf(B.sid), sidPivot());
         L.mast.place(rectOf(B.mast));
         const look = rectOf(B.lookout);
         // He sings from the cup: he stretches up from its rim
@@ -562,7 +604,7 @@
             }
         }
         // Left alone, he sings it again (half repeated, it starts again)
-        if (mode === 'answer' && t - Math.max(lastTouch, answerSince) > AGAIN) { singAt = t; mode = 'sing'; }
+        if (mode === 'answer' && t - Math.max(lastTouch, answerSince) > AGAIN) { singAt = t + PREP; mode = 'sing'; }
 
         // ---- The win: the colours become one, the rulito is born over him, kept, gone; then another phrase
         let named = 0;
@@ -645,17 +687,28 @@
         L.boat.rotate = Math.sin(t * 0.45) * 1.4 * ramp;
         L.boatNode.y = scroll * 22;
         const v = ease(voice);
-        L.lookout.sy = 1 + 0.08 * v;
-        L.lookout.sx = 1 - 0.03 * v;
+        // Between songs he keeps watch, looking to one side and the other from the cup; just before singing he turns to
+        // the front and draws himself up (it tells that a song is coming)
+        const prep = !reduced && singAt !== null && !win ? Math.min(1, Math.max(0, 1 - (singAt - t) / PREP)) : 0;
+        const busy = Math.max(prep, singing ? 1 : 0, v);
+        gaze += ((reduced ? 0 : watchAt(t)) * (1 - busy) - gaze) * Math.min(1, dt * 2.5);
+        L.lookout.rotate = 7 * gaze;
+        L.lookout.sy = 1 + 0.08 * v + 0.05 * ease(prep) + 0.01 * Math.sin(t * 1.1) * ramp;
+        L.lookout.sx = 1 - 0.03 * v - 0.015 * ease(prep);
         L.lookout.uniforms.uBright.value = 1 + 0.15 * v + 0.2 * named;
         L.voice.mesh.material.uniforms.uColor.value.setHex(voiceColour);
         L.voice.opacity = Math.min(1, 0.85 * v + 0.6 * named);
         L.voice.mesh.visible = L.voice.opacity > 0.01;
         const breath = Math.sin(t * 0.9);
+        const chest = breath * ramp * (reduced ? 0 : 1);
+        L.sid.sy = L.sidFill.sy = 1 + 0.018 * chest;
+        L.sid.sx = L.sidFill.sx = 1 - 0.006 * chest;
         L.sidFill.uniforms.uBright.value = 1 + 0.04 * breath + 0.1 * heart;
         L.sidGlow.opacity = 0.5 + 0.12 * breath + 0.45 * heart;
         L.sidGlow.scale = 1 + 0.04 * breath + 0.12 * heart;
         L.dunesNode.y = scroll * 30;
+        const dunesDrift = stage.drift(L.dunesNode.z);
+        dunesOff = { x: dunesDrift.x, y: dunesDrift.y + L.dunesNode.y };
 
         // The particles that belong to a layer follow it
         const moonDrift = stage.drift(L.moonNode.z), boatDrift = stage.drift(L.boatNode.z);
@@ -696,6 +749,8 @@
                 { ...sparks.group(), order: after(L.mark) + 2 },
                 // 4: the four beads over the lookout
                 { dynamic: beadGroup, look: 'hard', parallax: 0, drift: 0, jitter: 0, twinkle: 0, reach: 0, order: after(L.lookout) },
+                // 5: sand blown off the dunes, in front of them
+                { dynamic: sandGroup, look: 'hard', parallax: 0, drift: 0, jitter: 0, twinkle: 0, reach: 0, order: after(L.mark) },
             ],
         });
         if (reduced) dust.reveal();
