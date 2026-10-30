@@ -9,8 +9,8 @@
     // note of the card's chord, Sol7, climbing Sol, Si, Re, Fa; and a small light leaves the lectern low over the grass,
     // in secret (the card's invitation: "in secret, do something good for others"), and lights a mushroom far from him.
     // In time, the heart and the lectern flash together and the light is seen going; a touch out of time sounds muted, the
-    // heart goes grey and wavers a moment with no light, nothing lit is lost, and that heartbeat is gone: it has to be
-    // listened to.
+    // heart shrinks and trembles a moment with no light (it stumbled) and on the next heartbeat Sid's heart beats bright
+    // (that is where the beat is); nothing lit is lost, and that heartbeat is gone: it has to be listened to.
     // With the six mushrooms lit the card's G7 resolves to C major (as in Sacca: the root, the good done takes root),
     // their light gathers over the heart and the rulito is born there, where the card draws it, in its pink.
     // Before the first touch the heart beats in light only; from then on it is heard while someone plays. Left alone 7 s,
@@ -144,6 +144,8 @@
     let said = 0;                           // notes said in time: they climb the chord
     let voice = 0;                          // the heart at the lectern speaking
     let lost = 0;                           // the heart at the lectern, lost for a moment after a touch out of time
+    let callAt = null;                      // then, on the next heartbeat, Sid's heart beats bright: there is the beat
+    let call = 0;
     let lean = 0;                           // Sid leaning towards the heart while it speaks
     // Every LOOK s the heart at the lectern turns to Sid for a moment (0..1, eased in and out)
     const LOOK = 9;
@@ -242,6 +244,7 @@
             play('miss');
             lost = 1;
             voice = 0;
+            callAt = (Math.floor(lastT / BEAT) + 1) * BEAT;     // on the next heartbeat
             return;
         }
         spoken = beat;
@@ -572,13 +575,17 @@
         L.groundNode.y = scroll * 24;
         L.figuresNode.y = scroll * 28;
 
-        // ---- Sid's heart beats; the heart at the lectern stretches up as it speaks, and goes grey and wavers when lost
+        // ---- Sid's heart beats; the heart at the lectern stretches up as it speaks, and shrinks and trembles when lost
         heart = Math.max(0, heart - dt * 0.8);
         const h = Math.min(1, pulse + 0.6 * heart);
-        L.heart.opacity = Math.min(1, 0.18 + 0.55 * h + 0.25 * together);
-        L.heart.scale = 1 + 0.12 * h;
-        L.heartCore.opacity = Math.min(1, 0.1 + 0.7 * h);
-        L.heartCore.scale = 1 + 0.2 * h;
+        // After a touch out of time, Sid's heart beats bright on the next heartbeat: there is the beat
+        if (callAt !== null && t >= callAt) { callAt = null; call = 1; }
+        call = Math.max(0, call - dt * 1.3);
+        const c = ease(call);
+        L.heart.opacity = Math.min(1, 0.18 + 0.55 * h + 0.25 * together + 0.5 * c);
+        L.heart.scale = 1 + 0.12 * h + 0.45 * c;
+        L.heartCore.opacity = Math.min(1, 0.1 + 0.7 * h + 0.4 * c);
+        L.heartCore.scale = 1 + 0.2 * h + 0.5 * c;
         // Sid listens: he breathes slowly and, when the heart speaks, leans a little towards it
         voice = Math.max(0, voice - dt * 2);
         const v = ease(voice);
@@ -591,12 +598,12 @@
         // The heart at the lectern, alive while it waits: it breathes, sways a little on its feet and now and then turns
         // to Sid (to the right) for a moment
         const turn = reduced ? 0 : turnTo(t);
-        L.particular.sy = 1 + 0.06 * v + 0.014 * Math.sin(t * 0.9) * ramp;
-        L.particular.sx = 1 - 0.025 * v - 0.006 * Math.sin(t * 0.9) * ramp;
+        // Lost (a touch out of time): it shrinks and trembles a moment, as if it stumbled
         lost = Math.max(0, lost - dt * 1.6);
         const lo = ease(lost);
-        L.particular.uniforms.uBright.value = 1 + 0.25 * v + 0.15 * named - 0.18 * lo;
-        L.particular.uniforms.uSaturate.value = 1 - 0.75 * lo;
+        L.particular.sy = (1 + 0.06 * v + 0.014 * Math.sin(t * 0.9) * ramp) * (1 - 0.1 * lo);
+        L.particular.sx = (1 - 0.025 * v - 0.006 * Math.sin(t * 0.9) * ramp) * (1 - 0.06 * lo);
+        L.particular.uniforms.uBright.value = 1 + 0.25 * v + 0.15 * named;
         L.particular.rotate = Math.sin(t * 26) * 3 * lo + (Math.sin(t * 0.55) * 1.2 * ramp + 3.5 * turn) * (1 - lo);
         L.voice.opacity = Math.min(1, v + 0.55 * named);
         L.voice.scale = 1 + 0.25 * v;

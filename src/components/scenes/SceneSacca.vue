@@ -10,8 +10,9 @@
     // one"): every cloud turns the cream of the moon, its light flies to the lookout and the rulito is born over him,
     // where the card draws it. A touch on the lookout asks him to sing again; left alone, he sings it again by himself.
     // How to play is shown without words: each note he sings flies from him to the clouds of its colour and lights them
-    // as it arrives (he is the one singing, the clouds are what answers); four beads over his head light up, one per note
-    // repeated; and on the person's turn, left alone a while, the clouds of the colour that comes next breathe (a hint).
+    // as it arrives (he is the one singing, the clouds are what answers); four beads in the air under the boat light up, one
+    // per note repeated; and on the person's turn, left alone a while, the clouds of the colour that comes next breathe (a
+    // hint).
     // Before the first touch he sings with lights only, in silence, as every scene. Between songs he keeps watch, looking
     // to one side and the other, and just before singing he turns to the front and draws himself up; Sid breathes in the
     // boat, and fine sand blows off the dunes.
@@ -83,6 +84,18 @@
     const HEART = 3;                        // the colour of Fa: Sid's heart glows with it
     const step = (c) => COLOURS[c].note / 4;
     const CREAM = 0xfffbd6;                 // the moon: all the colours become this one
+    // The moon is not a picture: a disc drawn in code (measured on the card: its solid middle) and its ragged rim as live
+    // particles, made here, thinning outwards as the card stipples it
+    const MOON = { x: 1082, y: 1073, r: 506, color: 0xfefbd6 };
+    const MOON_RIM = (() => {
+        const dots = [];
+        for (let d = 0; d < 2600; d++) {
+            const a = Math.random() * Math.PI * 2;
+            const out = 62 * Math.random() ** 2.2;
+            dots.push([MOON.x + Math.cos(a) * (MOON.r - 8 + out), MOON.y + Math.sin(a) * (MOON.r - 8 + out), 4 + Math.random() * 4.5 * (1 - out / 80), MOON.color]);
+        }
+        return dots;
+    })();
     const rgb = (c) => [((c >> 16) & 255) / 255, ((c >> 8) & 255) / 255, (c & 255) / 255];
 
     // Every cloud: its colour, where it is drawn (art px) and its part of the atlas; where it rests on screen is worked
@@ -239,14 +252,16 @@
     };
     const sparks = createSparks(260);
 
-    // ---- Four beads over the lookout's head, one per note of the phrase: lit in its colour as it is repeated right
+    // ---- Four beads in the air under the boat, between its hull and the dunes, one per note of the phrase: lit in its
+    // colour as it is repeated right
+    const BEADS_AT = [1147, 1812];           // art px: under the middle of the hull, above the dunes
     const beadAt = (j) => {
-        const r = rectOf(art.boxes.lookout);
-        const x = r.left + r.w / 2 + (j - 1.5) * r.w * 0.22;
-        // a small arc, the outer ones a little lower
-        return L.boat.toScreen(x, r.top - r.h * 0.12 + Math.abs(j - 1.5) * r.h * 0.05);
+        const gap = Math.max(22, 95 * k());
+        const p = L.boat.toScreen(sx(BEADS_AT[0]), sy(BEADS_AT[1]));
+        // they hang with the boat but do not rock with it: a small arc, the outer ones a little higher
+        return { x: p.x + (j - 1.5) * gap, y: p.y - Math.abs(j - 1.5) * gap * 0.12 };
     };
-    // Each is a navy ring (the moon is behind them) round a dot: cream while waiting, the note's colour once repeated
+    // Each is a navy ring (so it reads on any sky) round a dot: cream while waiting, the note's colour once repeated
     const NAVY = rgb(0x143246);
     const beadGroup = {
         count: 8,
@@ -263,8 +278,8 @@
                 const done = j < got;
                 const fill = done ? rgb(COLOURS[phrase[j]].hex) : rgb(CREAM);
                 [ring, dot].forEach((i) => { data.positions[i * 3] = p.x; data.positions[i * 3 + 1] = p.y; });
-                data.sizes[ring] = (done ? 13 : 10) * size;
-                data.sizes[dot] = (done ? 10 : 6) * size;
+                data.sizes[ring] = (done ? 15 : 12) * size;
+                data.sizes[dot] = (done ? 12 : 7) * size;
                 data.alphas[ring] = beads * (done ? 0.9 : 0.6);
                 data.alphas[dot] = beads;
                 for (let c = 0; c < 3; c++) { data.tints[ring * 3 + c] = NAVY[c]; data.tints[dot * 3 + c] = fill[c]; }
@@ -466,7 +481,7 @@
         L.moonNode = moon;
         // (not in the bloom: so big and so light, it would wash out the lookout and the rulito in front of it)
         L.moonGlow = moon.glow({ rect: { left: 0, top: 0, w: 1, h: 1 }, color: CREAM, stops: [[0, 0.5], [0.32, 0.22], [0.62, 0]] });
-        L.moon = moon.image('/assets/sacca/moon.webp');
+        L.moon = moon.disc({ rect: { left: 0, top: 0, w: 1, h: 1 }, color: MOON.color });
         moon.enter({ y: 30, delay: 200, duration: 2200 });
         // The boat and what it carries rock together
         const boat = s.depth(zFor(DEPTH.boat));
@@ -521,7 +536,8 @@
         span = { left: -SLIDE * 2 - widest / 2, width: w + SLIDE * 4 + widest };
 
         const moon = rectOf(B.moon);
-        L.moon.place(moon);
+        const mr = MOON.r * k();
+        L.moon.place({ left: sx(MOON.x) - mr, top: sy(MOON.y) - mr, w: 2 * mr, h: 2 * mr });
         const md = moon.w * 1.5;
         L.moonGlow.place({ left: moon.left + moon.w / 2 - md / 2, top: moon.top + moon.h / 2 - md / 2, w: md, h: md });
 
@@ -677,7 +693,6 @@
 
         // ---- The moon breathes; it shines more as the colours become one
         L.moonGlow.opacity = 0.45 + 0.1 * Math.sin(t * 0.5) + 0.25 * one;
-        L.moon.uniforms.uBright.value = 1 + 0.06 * one;
         L.moonNode.y = Math.sin(t * 0.2) * 3 * ramp + scroll * 12;
 
         // ---- The boat rocks; the lookout stretches up on each note he sings; Sid glows, more with his heart (Fa)
@@ -739,8 +754,9 @@
             stage,
             manual: true,
             groups: [
-                // 0: the stipple round the moon
-                { colors: [CREAM], parallax: 0, drift: 1.6, jitter: 0.2, twinkle: 0.3, reach: 0, order: after(L.moon), points: () => fromArt(art.dots.moon) },
+                // 0: the stipple round the moon and its ragged rim, alive
+                { colors: [CREAM], parallax: 0, drift: 1.8, jitter: 0.45, twinkle: 0.35, reach: 0, order: after(L.moon),
+                    points: () => fromArt(art.dots.moon).concat(fromArt(MOON_RIM, (c) => c)) },
                 // 1: Sid's glow, a stipple round him, made in code
                 { colors: [0xfef3b3], parallax: 0, drift: 2.2, jitter: 0.35, twinkle: 0.45, reach: 0, bloom: true, order: after(L.sidGlow), points: () => fromArt(SID_DOTS, (c) => c) },
                 // 2: the notes in the air and the light that goes to the lookout
@@ -748,7 +764,7 @@
                 // 3: sparks
                 { ...sparks.group(), order: after(L.mark) + 2 },
                 // 4: the four beads over the lookout
-                { dynamic: beadGroup, look: 'hard', parallax: 0, drift: 0, jitter: 0, twinkle: 0, reach: 0, order: after(L.lookout) },
+                { dynamic: beadGroup, look: 'hard', parallax: 0, drift: 0, jitter: 0, twinkle: 0, reach: 0, order: after(L.hull) },
                 // 5: sand blown off the dunes, in front of them
                 { dynamic: sandGroup, look: 'hard', parallax: 0, drift: 0, jitter: 0, twinkle: 0, reach: 0, order: after(L.mark) },
             ],
