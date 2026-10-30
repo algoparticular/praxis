@@ -78,12 +78,16 @@
         <header class="deckHead">
             <h1>{{ $t("nav.deck") }}</h1>
             <nav class="filters">
-                <button v-for="filter in filters" :key="filter.key"
-                    class="chip" :class="{ active: filter.key === active }"
-                    :aria-pressed="filter.key === active"
-                    @click="choose(filter.key)">
-                    {{ $t(filter.label) }} <span>{{ filter.cards.length }}</span>
-                </button>
+                <template v-for="(filter, i) in filters" :key="filter.key">
+                    <button
+                        class="chip" :class="{ active: filter.key === active }"
+                        :aria-pressed="filter.key === active"
+                        @click="choose(filter.key)">
+                        {{ $t(filter.label) }} <span>{{ filter.cards.length }}</span>
+                    </button>
+                    <!-- On phones the chips go in two rows: three, then the last two -->
+                    <i v-if="i === 2" class="break" aria-hidden="true"></i>
+                </template>
             </nav>
         </header>
 
@@ -285,8 +289,18 @@
         color: #F7F8F1;
     }
 
-    /* On phones the chips go without the counts ("Con escena" goes to a second row) */
+    .break {
+        display: none;
+    }
+
+    /* On phones the chips go without the counts, in two rows: three, then two */
     @media screen and (max-width: 480px) {
+        .break {
+            display: block;
+            flex-basis: 100%;
+            height: 0;
+        }
+
         .chip span {
             display: none;
         }
