@@ -168,6 +168,8 @@ export function createGiving({ count, source, target, can = () => true, reduced 
         motes,
         get win() { return win; },
         get busy() { return !!win || returning; },
+        // Nothing is moving: no rulito, no lights in the air, every glow at rest (a still scene can stop drawing)
+        get settled() { return !win && !returning && !lights.length && state.every((s) => Math.abs(s.goal - s.lit) < 0.01 && s.flash < 0.01); },
         touched() { idle = 0; },
     };
 }

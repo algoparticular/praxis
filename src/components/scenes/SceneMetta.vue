@@ -366,6 +366,7 @@
     const touchOne = (c, event) => {
         event?.stopPropagation();
         if (!stage) return;
+        parallax?.wake(12);
         if (c === SID) touchSid();
         else giving.give(OTHERS.indexOf(c));
     };
@@ -373,6 +374,7 @@
     // A touch anywhere else: the chord strummed, and the lights flare
     const strum = () => {
         if (!stage) return;
+        parallax?.wake(3);
         play('star');
         dust?.boost(G.halo, 0.6);
         dust?.boost(G.auraEdge, 0.9);
@@ -474,6 +476,7 @@
         stage.look(x * SLIDE, y * SLIDE_Y);
         const live = reduced ? 0 : ramp;
         giving.step(dt);
+        if (!giving.settled) parallax?.wake(3);      // a still scene (reduced motion) keeps drawing while it is played
 
         // ---- The lights: the yellow one barely breathes; the turquoise one breathes with Sid, swells when he is
         // touched, and is fuller once he has loved himself

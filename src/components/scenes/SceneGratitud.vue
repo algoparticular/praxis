@@ -358,6 +358,7 @@
     const thank = (i, event) => {
         event?.stopPropagation();
         if (!stage) return;
+        parallax?.wake(12);
         giving.give(i);
     };
     const onThankKey = (event, i) => {
@@ -475,6 +476,7 @@
         touch.flare = Math.max(0, touch.flare - dt * 1.1);
         touch.sid = Math.max(0, touch.sid - dt * 1.8);
         giving.step(dt);
+        if (!giving.settled) parallax?.wake(3);      // a still scene (reduced motion) keeps drawing while it is played
         const lit = (id) => { const n = THANKED.findIndex((g) => g.id === id), st = giving.state[n]; return Math.min(1.3, st.lit + 0.5 * st.flash + 0.4 * boost * st.lit); };
         shine += (shineGoal - shine) * Math.min(1, dt * (shineGoal < shine ? 0.35 : 1.6));
         boost = Math.max(0, boost - dt * 0.5);

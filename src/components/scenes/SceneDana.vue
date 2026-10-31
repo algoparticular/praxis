@@ -195,15 +195,16 @@
         const at = fp(x, y);
         return onCanvas(at.x, at.y);
     };
-    const burstPx = (at, n, colors, speed = 120) => sparks.burst(at.x, at.y, { n, colors, speed, size: 5, spread: unit() * 1.2 });
+    const burstPx = (at, n, colors, speed = 120) => { if (!reducedMotion) sparks.burst(at.x, at.y, { n, colors, speed, size: 5, spread: unit() * 1.2 }); };
     const burstAt = (x, y, n, colors, speed) => burstPx(toCanvas(x, y), n, colors, speed);
 
     // The old touch: the little flame leaps, and sparks fly
     const touch = () => {
+        parallax?.wake(3);
         const at = anchor();
         if (!at) return;
         fire.flare(1);
-        sparks.burst(at.halo.x, at.halo.y, { n: 34, colors: EMBERS, speed: 130, size: 5.2, spread: at.halo.r * 0.5 });
+        if (!reducedMotion) sparks.burst(at.halo.x, at.halo.y, { n: 34, colors: EMBERS, speed: 130, size: 5.2, spread: at.halo.r * 0.5 });
         play('star');
     };
 
@@ -219,6 +220,7 @@
         lift: () => unit() * 5,
         linger: 2.2,
         lag: STAGGER,
+        reduced: reducedMotion,
         on: {
             // A spark leaves the flame
             give: () => {
@@ -271,11 +273,8 @@
     });
     const state = giving.state;
 
-    // Giving one a light (with reduced motion the scene is still and the flame only leaps)
-    const give = (i) => {
-        if (reducedMotion) { touch(); return; }
-        giving.give(i);
-    };
+    // Giving one a light. With reduced motion it is played the same, without flights or sparks: the light is there at once
+    const give = (i) => { parallax?.wake(12); giving.give(i); };
 
     // The two rulitos, while the lights are back
     let rulitosShown = false;
@@ -322,6 +321,7 @@
         const dt = Math.min(0.05, Math.max(0, t - lastT));
         lastT = t;
         giving.step(dt);
+        if (!giving.settled) parallax?.wake(3);      // a still scene (reduced motion) keeps drawing while it is played
         shine += (shineGoal - shine) * Math.min(1, dt * (shineGoal < shine ? 0.35 : 1.6));
         shineFlash = Math.max(0, shineFlash - dt * 1.2);
         size += (sizeGoal - size) * Math.min(1, dt * (sizeGoal < size ? 0.8 : 4));
