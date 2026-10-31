@@ -107,7 +107,7 @@
         right: 0;
         bottom: 15vh;               /* until the ring says where its card ends; then just under it */
         margin: 0;
-        padding-top: 22px;
+        padding-top: 24px;
         text-align: center;
         font-family: 'Caveat', 'Nunito', helvetica, sans-serif;
         font-size: 28px;
