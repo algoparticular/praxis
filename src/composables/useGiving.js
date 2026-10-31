@@ -1,5 +1,5 @@
-// Dar y recibir (give and receive): the engine shared by the cards of the verb that came after Dana (Metta, Gratitud;
-// Dana keeps its own, which this one follows). There is a source of light and those who can receive it. The gesture is
+// Dar y recibir (give and receive): the engine shared by the cards of the verb (Dana, where it was born, Metta and
+// Gratitud). There is a source of light and those who can receive it. The gesture is
 // a touch: each touch sends a light from the source to that one (it flies in an arc, and lights him up when it
 // arrives). There is no order and nothing is lost: touching one who has his light already only makes him glow. When
 // everyone has been given one, they all send a light back to the source at once, without being asked, and the rulito
@@ -14,10 +14,15 @@
 //   on.balance(wins)  they are back: the rulito is born on.full()     the rulito is whole
 //   on.fade()         the rulito starts to go and the lights fade      on.puff(x, y, colors)  a trail of sparks
 //   on.hint(i)        left alone HINT s, i (who has no light yet) glimmers
-const GROW = 2.6, LINGER = 2.4, EAT = 3.4, DELAY = 0.5;
+//   on.returned(i)    i's light is back at the source
+// Options: `lift()` how high an arc goes over the higher of its ends (px, plus 0.3 of its length); `linger` s the whole
+// rulito stays; `lag` s a second rulito is born after the first (Dana's two friends): the rulito is whole when that
+// one is too, and win.grown(lag) says how far it has grown.
+const GROW = 2.6, EAT = 3.4, DELAY = 0.5;
 const HINT = 7;
 
-export function createGiving({ count, source, target, can = () => true, reduced = false, colors = [0xffffff], back = colors, on = {} }) {
+export function createGiving({ count, source, target, can = () => true, reduced = false, colors = [0xffffff], back = colors,
+    lift = () => 20, linger = 2.4, lag = 0, on = {} }) {
     const state = Array.from({ length: count }, () => ({ lit: 0, goal: 0, coming: false, given: false, flash: 0 }));
     const lights = [];                       // { from(), to(), age, T, colors, arrive, x, y }
     let returning = false;
@@ -66,7 +71,7 @@ export function createGiving({ count, source, target, can = () => true, reduced 
         on.back?.();
         state.forEach((s, i) => {
             s.flash = 1;
-            send(() => target(i), source, { T: 1.1, delay: i * 0.04, colors: back });
+            send(() => target(i), source, { T: 1.1, delay: i * 0.04, colors: back, arrive: () => on.returned?.(i) });
         });
         setTimeout(balance, reduced ? 300 : 1300);
     };
@@ -76,7 +81,10 @@ export function createGiving({ count, source, target, can = () => true, reduced 
         returning = false;
         if (win) return;
         wins += 1;
-        win = { age: 0, head: 0, tail: 0, full: false, fullAt: 0, back: false, pop: 0 };
+        win = {
+            age: 0, head: 0, tail: 0, full: false, fullAt: 0, back: false, pop: 0,
+            grown(late = 0) { return 1 - (1 - Math.min(1, Math.max(0, (this.age - DELAY - late) / GROW))) ** 1.6; },
+        };
         on.balance?.(wins);
     };
 
@@ -84,14 +92,14 @@ export function createGiving({ count, source, target, can = () => true, reduced 
         if (!win) return;
         win.age += dt;
         win.pop = Math.max(0, win.pop - dt * 2.2);
-        win.head = 1 - (1 - Math.min(1, Math.max(0, (win.age - DELAY) / GROW))) ** 1.6;
-        if (win.head >= 1 && !win.full) {
+        win.head = win.grown(0);
+        if (win.head >= 1 && win.grown(lag) >= 1 && !win.full) {
             win.full = true;
             win.fullAt = win.age;
             win.pop = 1;
             on.full?.();
         }
-        if (win.full && !win.back && win.age - win.fullAt > LINGER) {
+        if (win.full && !win.back && win.age - win.fullAt > linger) {
             win.back = true;
             state.forEach((s) => { s.given = false; s.goal = 0; });
             on.fade?.();
@@ -113,7 +121,7 @@ export function createGiving({ count, source, target, can = () => true, reduced 
             const e = 1 - (1 - u) ** 2;               // it slows as it gets there
             const q = 1 - e;
             const a = l.from(), b = l.to();
-            const c = { x: (a.x + b.x) / 2, y: Math.min(a.y, b.y) - (20 + distance(a, b) * 0.3) };
+            const c = { x: (a.x + b.x) / 2, y: Math.min(a.y, b.y) - (lift() + distance(a, b) * 0.3) };
             l.x = q * q * a.x + 2 * q * e * c.x + e * e * b.x;
             l.y = q * q * a.y + 2 * q * e * c.y + e * e * b.y;
             if (puff) on.puff?.(l.x, l.y, l.colors);

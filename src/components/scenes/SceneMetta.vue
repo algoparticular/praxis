@@ -98,8 +98,8 @@
         return { name, inner: Math.hypot(x - AURA.x, y - AURA.y) < AURA.r + 40, phase: Math.random() * 6.28 };
     });
 
-    // ---- Who is on the hill, left to right as drawn: the beings, the fox, the kitten (`squirrel` in the files) and Sid.
-    // Each breathes from its feet at its own pace, blinks, glances about and has a way of its own (`way`, see live());
+    // ---- Who is on the hill, left to right as drawn: the beings, the fox, the kitten and Sid.
+    // Each breathes from its feet at its own pace, blinks, glances about and has a way of its own (`way`, see way());
     // `pitch` is their note in the card's chord when they are given a light (left low, right high)
     const CHARACTERS = [
         { name: 'being0', way: 'rock', pitch: 0.12, es: 'Ser de pie', en: 'Standing being' },
@@ -109,7 +109,7 @@
         { name: 'being4', way: 'pair', pitch: 0.75, es: 'Ser del brazo', en: 'Being arm in arm' },
         { name: 'being5', way: 'hum', pitch: 0.9, es: 'Ser sentado', en: 'Sitting being' },
         { name: 'fox', way: 'sniff', depth: 'front', sway: [0.72, 0.85, 0.42], breath: 0.006, pitch: 1, eyes: null, es: 'Zorro', en: 'Fox' },
-        { name: 'squirrel', way: 'hop', depth: 'front', sway: [0.2, 0.55, 0.45], breath: 0.008, pitch: 0.2, eyes: null, es: 'Gatito', en: 'Kitten' },
+        { name: 'kitten', way: 'hop', depth: 'front', sway: [0.2, 0.55, 0.45], breath: 0.008, pitch: 0.2, eyes: null, es: 'Gatito', en: 'Kitten' },
         { name: 'sid', way: 'still', depth: 'sid', breath: 0.016, es: 'Sid', en: 'Sid' },
     ].map((c, i) => ({
         depth: 'beings', eyes: `eyes:${c.name}`, ...c, i, breath: c.breath ?? 0.011, pace: 0.7 + ((i * 0.37) % 0.5), phase: i * 1.7,
