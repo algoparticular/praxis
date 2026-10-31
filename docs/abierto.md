@@ -1,6 +1,6 @@
 # Abierto
 
-Última pestaña de "Anima por dentro": lo que falta decidir, agrupado por tema.
+Séptima pestaña de "Anima GDD": lo que falta decidir, agrupado por tema.
 
 ## Verbos y cartas
 - Los siete verbos se probaron en una escena: Arraigar (Paciencia, Hogar y Addhitthana), Fluir (Khanti), Encender (Evolución Espiritual y Viriya), Dar y recibir (Dana), Resonar (Sincronicidad y Sila, en su forma "a tiempo"; Creatividad, como composición libre, y Sacca, como eco), Ver (Pañña) y Soltar (Vipassana, Nekkhamma y Upekkha). Todos pueden cambiar.

@@ -1,6 +1,6 @@
 # Cartas
 
-Cuarta pestaña de "Anima por dentro": lo que tenemos hoy de cada una de las 33 cartas, junto. El texto de cada carta (descripción, afirmación e invitación, en español e inglés), sus colores y su ilustración viven en `src/data/cards.json`, que es la fuente de verdad (cómo editarla: `editar-cartas.md`). Acá está el resto: su verbo, su acorde y qué hace en la app.
+Tercera pestaña de "Anima GDD": lo que tenemos hoy de cada una de las 33 cartas, junto. El texto de cada carta (descripción, afirmación e invitación, en español e inglés), sus colores y su ilustración viven en `src/data/cards.json`, que es la fuente de verdad (cómo editarla: `editar-cartas.md`). Acá está el resto: su verbo, su acorde y qué hace en la app.
 
 ## Dónde está cada cosa de una carta
 

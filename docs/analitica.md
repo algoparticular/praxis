@@ -61,4 +61,4 @@ Para empezar: `card_left` con promedio de `fps` y de `slow_pct`, desglosado por 
 Una foto sacada de PostHog el 29 de octubre. Son pocas visitas y muchas deben ser pruebas del equipo: sirven para ver que todo llega, no para sacar conclusiones.
 - 45 visitas (31 desde iPhone, 8 desde Android, 7 desde Mac); 58 cartas abiertas (47 sacadas, 11 por enlace); 44 cartas sacadas (28 del anillo de `/deck`, 10 del mazo completo, 6 de The Nine); 9 veces se bajó hasta la lectura; 7 veces se abrió compartir y 5 se compartió.
 - En las cartas planas casi nadie toca la escena (1 de 19 visitas) y se quedan unos 5 segundos; en Vipassana y Pañña tocan casi todos y se quedan casi un minuto. Pañña es la que más se juega: la figura se vio 8 veces y se deshizo 9.
-- El detalle por escena y por hito está en la pestaña Analítica del artefacto "Anima por dentro".
+- El detalle por escena y por hito está en la pestaña Analítica del artefacto "Anima GDD".

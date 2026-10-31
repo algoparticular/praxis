@@ -1,6 +1,6 @@
 # Música
 
-Tercera pestaña de "Anima por dentro". Todo lo de música en un lugar: la teoría y cómo la usamos en Anima. El acorde de cada carta, con su razón, está en `cartas.md`. El código vive en `src/data/cardChords.js` y el sonido en `src/audio/synth.js`.
+Cuarta pestaña de "Anima GDD". Todo lo de música en un lugar: la teoría y cómo la usamos en Anima. El acorde de cada carta, con su razón, está en `cartas.md`. El código vive en `src/data/cardChords.js` y el sonido en `src/audio/synth.js`.
 
 # Primera parte: teoría musical
 
