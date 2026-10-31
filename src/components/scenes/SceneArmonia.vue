@@ -133,12 +133,11 @@
             return { C, group, pictures, left: !!C.sides[0], phase: i * 2.1 };
         });
         currents.enter({ y: -16, delay: 250, duration: 2200 });
-        // Behind the sand: a seaweed, a tube coral and the little mark
+        // Behind the sand: a seaweed and a tube coral
         const back = s.depth(zFor(DEPTH.back));
         L.backNode = back;
         L.weedR = back.image('/assets/armonia/weedR.webp', { wind: { amp: 9, speed: 0.7, root: 'bottom' } });
         L.tubeL = back.image('/assets/armonia/tubeL.webp', { wind: { amp: 1.6, speed: 0.6, root: 'bottom' } });
-        L.mark = back.image('/assets/armonia/mark.webp');
         L.beyondBack = BEYOND.filter((b) => b.back).map((b) => ({ ...b, node: back.image(`/assets/armonia/${b.name}.webp`, { wind: b.wind }) }));
         back.enter({ y: 30, delay: 150, duration: 1800 });
         // The sand, going on past the frame, with the light of the water across it
@@ -202,7 +201,6 @@
         });
         L.weedR.place(rectOf(B.weedR));
         L.tubeL.place(rectOf(B.tubeL));
-        L.mark.place(rectOf(B.mark));
         const sand = rectOf(B.sand);
         L.sand.forEach(({ node, side }) => node.place({ ...sand, left: sand.left + side * (sand.w - SEAM) }));
         [...L.beyondBack, ...L.beyondFront].forEach((b) => {
@@ -306,7 +304,6 @@
         L.sandNode.y = scroll * 18;
         L.jelliesNode.y = scroll * 24;
         L.frontNode.y = scroll * 30;
-        L.mark.opacity = 0.85 + 0.15 * Math.sin(t * 1.3);
         // ---- The jellyfish: a stroke of the bell every PULSE s (and when touched), rising with it; leaning together
         const lean = reduced ? 0 : ease(leanOf(t));
         jellies.forEach((J) => {

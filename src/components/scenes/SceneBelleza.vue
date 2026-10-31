@@ -133,7 +133,6 @@
         // On the near plane: the cairn, the bush (it sways) and the mushrooms (they lean and breathe) with their light
         const near = L.planes[2].node;
         L.cairn = near.image(ASSETS + 'cairn.webp');
-        L.mark = near.image(ASSETS + 'mark.webp');
         L.bush = near.image(ASSETS + 'bush.webp', { wind: { amp: 4, speed: 0.8, root: 'bottom' } });
         L.shine = near.glow({ rect: { left: 0, top: 0, w: 1, h: 1 }, color: GLOW, stops: [[0, 0.42], [0.35, 0.16], [0.7, 0]] });
         L.mushrooms = near.image(ASSETS + 'mushrooms.webp', { sway: true, crop: [0, -ROOM, 1, 1 + ROOM] });
@@ -192,7 +191,6 @@
         });
 
         L.cairn.place(rectOf(B.cairn));
-        L.mark.place(rectOf(B.mark));
         const bush = rectOf(B.bush);
         L.bush.place(bush, { x: bush.left + bush.w / 2, y: bush.top + bush.h });
         const m = rectOf(B.mushrooms);

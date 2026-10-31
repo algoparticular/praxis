@@ -19,7 +19,7 @@
 //              24, 37, 40; the dots that would fall on a crown or an outline are dropped, as the layer order hid them)
 //   motes      the yellow specks floating in the water (52), as dots [x, y, radius]
 // The plants are pictures of their own so each can sway: the seaweeds (4-6, 28-30), the teal corals (12-14, 25-27,
-// 31-33) and the pink tube corals (7-9, 15-17); the sand (10, 11) and the little mark on it (3) are pictures too.
+// 31-33) and the pink tube corals (7-9, 15-17); the sand (10, 11) is a picture too; the little mark on it (3), the Algo Particular logo, is a signature and is dropped.
 // The shading of the bells (44, 49) was a dark layer laid over the cream at about a fifth in the card (a blend mode the
 // export lost): it is kept at SHADE of its alpha. Every layer is used; none of them is the card's rulito (it has none).
 // The originals are not kept in the repo once converted. Usage: node scripts/convert-armonia.mjs
@@ -37,7 +37,7 @@ const SHADE = 0.2;
 
 // Pictures made of one or more layers, drawn in this order (as the layers were)
 const pictures = {
-    mark: [3], weedR: [4, 5, 6], tubeL: [7, 8, 9], sand: [10, 11],
+    weedR: [4, 5, 6], tubeL: [7, 8, 9], sand: [10, 11],
     coralR: [12, 13, 14], tubeR: [15, 16, 17], anemR: [19, 20, 22, 23],
     coralL: [25, 26, 27], weedL: [28, 29, 30], coralL2: [31, 32, 33], anemL: [35, 36, 38, 39],
     tentL: [42], bellL: [43, 44, 45], eyesL: [46],

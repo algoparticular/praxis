@@ -12,8 +12,7 @@
 //   canopy     the leaves of the canopy, the wavy strokes in the sky (the green 6 and the blue strokes of 10 that do not
 //              belong to a tree), each cut out into one atlas (canopy.webp) so each can stir on its own: [x, y, w, h
 //              where it is drawn, x, y where it is in the atlas]
-//   bush, mushrooms, cairn, mark  cut out of the ground as their own pictures, so they can sway and glow (and the
-//              mark 32, the little sign by the mushrooms, is not repeated where the ground is mirrored past the frame); caps is where each
+//   bush, mushrooms, cairn  cut out of the ground as their own pictures, so they can sway and glow; caps is where each
 //              mushroom's yellow cap is (13, solid: [x of its middle, y of its bottom, width]), for the sway
 //   legs, left, right  the two beings in their embrace: their crossed legs (20, 25), the one behind (18, 19, 21 and its
 //              eyes 30) and the one in front with the other's arm round it (22, 23, 24, 26, 27, 28, 29, 31), so each
@@ -21,7 +20,7 @@
 //   motes      the loose yellow dots over the forest (15), as dots [x, y, radius]
 //   aura       the yellow stipple round the two (16), as dots [x, y, radius], as dense as it is
 //   spores     the yellow stipple round the mushrooms (13 but its caps), the same way
-// Not converted: 17 came empty, and there is no rulito in this card (32 is a mark on the ground).
+// Not converted: 17 came empty, and there is no rulito in this card (32 is the Algo Particular mark, a signature: it is cut out of the ground and dropped).
 // The originals are not kept in the repo once converted. Usage: node scripts/convert-belleza.mjs
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
@@ -285,7 +284,8 @@ const capOf = new Int32Array(S * S).fill(-1);
     });
     // The faint pixels round a blob go with it
     const near = (arr, i) => arr[i] >= 0 ? arr[i] : [i - 1, i + 1, i - S, i + S, i - 2, i + 2, i - 2 * S, i + 2 * S].map((j) => (j >= 0 && j < S * S ? arr[j] : -1)).find((v) => v >= 0) ?? -1;
-    for (const [r, name] of names.entries()) await cut(name, ground, (i) => near(region, i) === r);
+    // The mark is the Algo Particular logo, a signature: the scenes do not show it
+    for (const [r, name] of names.entries()) if (name !== 'mark') await cut(name, ground, (i) => near(region, i) === r);
     for (let p = 0; p < 3; p++) await cut(`ground${PLANES[p]}`, ground, (i) => near(region, i) < 0 && near(band, i) === p);
 }
 
