@@ -2,27 +2,36 @@
     // Gratitud: "the door you open every time you give thanks". A small island in a calm turquoise sea, under a peach sun
     // with a pink heart: a house with a pink roof, a palm with a little light shining over its crown, a beach of stippled
     // sand, a dock with a pink boat moored at it, and Sid sitting in his chair in the shade of the palm, looking out to sea.
-    // Far away a chain of striped islands lies on the horizon.
-    // Its verb will be Dar y recibir (as Dana's): it is not played yet. Until then the scene is only alive: the sea's
-    // little waves bob, sway and shine each on its own, the clouds drift across the sky, the sun breathes and its stipple
-    // trembles, the palm and the pale plant sway in the breeze (the light over the palm goes with the palm's crown and
-    // breathes), the boat rocks at the dock, the plant's sparkles twinkle and the sand can be stirred with a finger, and
-    // Sid breathes, blinks and now and then turns to look at the light. A touch strums the card's chord (`star`) and the
-    // light over the palm, the sun and the sparkles flare; a touch on Sid makes him hop in his chair (`tap`).
+    // Far away a chain of striped islands (the mountains) lies on the horizon.
+    // Its verb is Dar y recibir (Dana's engine, useGiving.js): Sid gives thanks to each thing. A touch on the sun, the
+    // house, the light over the palm, the boat, the mountains or the pale plant sends a light of thanks from Sid to it in
+    // an arc; it lights up (a cloud of warm dots round it, and its own light: the sun swells, the house and the boat glow,
+    // the light over the palm flares, the mountains shine, the plant's sparkles flare) and sounds its note. No order,
+    // nothing lost: touching one already thanked only makes it glow. When all six have been thanked they all send a light
+    // back to Sid at once ("al dar las gracias tu Espíritu se ilumina"): his aura opens, the rulito is born over his head,
+    // the card's name lights up and `rulito` sounds. Then the lights fade, slowly, and it can be played again.
+    // The scene is alive: the sea's little waves bob, roll and stretch each on its own, the clouds drift across the sky,
+    // the sun breathes and its stipple trembles, the palm and the pale plant sway in the breeze (the light over the palm
+    // goes with the palm's crown and breathes), the boat rocks and bobs at the dock, the plant's sparkles twinkle and the
+    // sand can be stirred with a finger, and Sid breathes, blinks and now and then turns to look at the light. A touch
+    // anywhere else strums the card's chord (`star`); a touch on Sid makes him hop in his chair.
     // The sky and the sea are one flat colour, the card's (in no layer: read from the card by the converter), drawn as
     // the page's background; the sun (two discs, peach and pink) and the light over the palm are discs drawn in code with
     // their stippled edges as live particles, and so are the sand's stipple and the plant's sparkles. The clouds and the
     // waves are cut out into two atlases; past the frame (on a wide screen, and under it on a phone) the sea goes on with
     // the same waves shuffled, so it never shows a twin. The soft green shine beside each wave is in no layer either: it
-    // is a glow in code.
+    // is a glow in code. Reduced motion keeps it still; the game still plays, without flights or sparks.
     // It is drawn in WebGL (useLayerStage): the sun, the clouds, the far islands, the waves, the island and the boat are
     // planes at their depths. From gratitudScene.json and public/assets/gratitud (made by scripts/convert-gratitud.mjs).
-    // For the game to come: the house, the palm, the light, the plant, Sid and the boat are each their own picture.
     import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
     import { createParallax } from '../../composables/useParallax.js';
     import { createLayerStage } from '../../composables/useLayerStage.js';
     import { startStardust } from '../../composables/useStardust.js';
+    import { createSparks } from '../../composables/useSparks.js';
+    import { createGiving, fill, rulitoBox } from '../../composables/useGiving.js';
     import { play } from '../../composables/useSound.js';
+    import { sceneMilestone } from '../../analytics.js';
+    import Rulito from '../Rulito.vue';
     import art from '../../composables/gratitudScene.json';
 
     const props = defineProps({
@@ -33,6 +42,8 @@
     const root = ref(null);
     const canvas = ref(null);
     const sidHit = ref(null);
+    const rulito = ref(null);
+    const hits = ref([]);
     let stageEl = null;
     let stage = null;
     let parallax = null;
@@ -75,7 +86,7 @@
     const [CW, CH] = art.cloudAtlas;
     const clouds = art.clouds.map(([x, y, w, h, ax, ay], i) => ({
         i, art: { x: x + w / 2, y: y + h / 2, w, h }, crop: [ax / CW, ay / CH, w / CW, h / CH],
-        rest: { left: 0, top: 0, w: 1, h: 1 }, x0: 0, phase: Math.random() * 6.28, speed: 7 + (i % 3) * 3, depth: i % 3,
+        rest: { left: 0, top: 0, w: 1, h: 1 }, x0: 0, phase: Math.random() * 6.28, speed: 15 + (i % 3) * 7, depth: i % 3,
     }));
     const CLOUD_TOP = Math.min(...art.clouds.map((c) => c[1] + c[3] / 2));
     const CLOUD_BOTTOM = Math.max(...art.clouds.map((c) => c[1] + c[3] / 2));
@@ -111,6 +122,7 @@
     });
 
     const L = {};
+    let glyph = { left: 0, top: 0, w: 1, h: 1 };
     const touch = { sid: 0, flare: 0, look: 0 };
     let lastT = 0;
 
@@ -123,7 +135,7 @@
     };
 
     // Where the palm's crown is pushed by its wind (the same sway as its shader), so the light over it goes with it
-    const PALM_WIND = { amp: 5, speed: 0.75 };
+    const PALM_WIND = { amp: 9, speed: 0.8 };
     const palmSway = (t) => {
         const u = L.palm?.uniforms;
         if (!u) return 0;
@@ -152,6 +164,7 @@
         // The far islands on the horizon
         const hills = s.depth(zFor(DEPTH.hills));
         L.hillsNode = hills;
+        L.hillsGlow = hills.glow({ rect: { left: 0, top: 0, w: 1, h: 1 }, color: 0xfff0b0, stops: [[0, 0.6], [0.35, 0.25], [0.7, 0]], bloom: true });
         L.hills = hills.image('/assets/gratitud/hills.webp');
         hills.enter({ y: 24, delay: 200, duration: 1800 });
         // The waves at four depths, the farther first; each with the soft green shine beside it
@@ -168,6 +181,7 @@
         // The boat (behind the island's dock), rocking on its own
         const boat = s.depth(zFor(DEPTH.boat));
         L.boatNode = boat;
+        L.boatGlow = boat.glow({ rect: { left: 0, top: 0, w: 1, h: 1 }, color: 0xffd6a6, stops: [[0, 0.6], [0.35, 0.25], [0.7, 0]], bloom: true });
         L.boat = boat.image('/assets/gratitud/boat.webp');
         boat.enter({ y: 40, delay: 450, duration: 1900 });
         // The island, and on it the house, the plant, the palm with its light and Sid
@@ -175,15 +189,20 @@
         L.islandNode = island;
         L.island = island.group();
         L.ground = L.island.image('/assets/gratitud/island.webp');
+        L.houseGlow = L.island.glow({ rect: { left: 0, top: 0, w: 1, h: 1 }, color: 0xffd27a, stops: [[0, 0.6], [0.35, 0.25], [0.7, 0]], bloom: true });
+        L.plantGlow = L.island.glow({ rect: { left: 0, top: 0, w: 1, h: 1 }, color: 0xc8fbff, stops: [[0, 0.6], [0.35, 0.25], [0.7, 0]], bloom: true });
         L.house = L.island.image('/assets/gratitud/house.webp');
-        L.plant = L.island.image('/assets/gratitud/plant.webp', { wind: { amp: 2.2, speed: 0.9, root: 'bottom' } });
+        L.plant = L.island.image('/assets/gratitud/plant.webp', { wind: { amp: 4.5, speed: 1, root: 'bottom' } });
         L.glowWide = L.island.glow({ rect: { left: 0, top: 0, w: 1, h: 1 }, color: 0xffe66a, stops: [[0, 0.4], [0.3, 0.16], [0.7, 0]], bloom: true });
         L.beacon = L.island.disc({ rect: { left: 0, top: 0, w: 1, h: 1 }, color: art.beacon.color });
         L.palm = L.island.image('/assets/gratitud/palm.webp', { wind: { ...PALM_WIND, root: 'bottom' } });
         L.light = L.island.image('/assets/gratitud/light.webp');
         L.sid = L.island.group();
+        L.sidGlow = L.sid.glow({ rect: { left: 0, top: 0, w: 1, h: 1 }, color: 0xfff3a8, stops: [[0, 0.7], [0.3, 0.3], [0.7, 0]], bloom: true });
         L.sidBody = L.sid.image('/assets/gratitud/sid.webp');
         L.lids = art.eyes.map(() => L.sid.disc({ rect: { left: 0, top: 0, w: 1, h: 1 }, color: art.pale }));
+        // The rulito over his head, born when the thanks come back
+        L.rulito = L.sid.canvas(rulito.value.canvas, { bloom: true });
         island.enter({ y: 40, delay: 100, duration: 1800 });
     };
 
@@ -215,6 +234,8 @@
         cloudSpan = { left: -SLIDE * 2 - widest / 2, width: w + SLIDE * 4 + widest };
 
         L.hills.place(rectOf(B.hills));
+        const hb = B.hills;
+        L.hillsGlow.place(rectOf([hb[0] - 60, hb[1] - 90, hb[2] + 120, hb[3] + 160]));
 
         waves.forEach((wv) => {
             const ww = wv.art.w * k() * wv.grow, wh = wv.art.h * k() * wv.grow;
@@ -234,11 +255,15 @@
 
         const boat = rectOf(B.boat);
         L.boat.place(boat, { x: boat.left + boat.w * 0.45, y: boat.top + boat.h * 0.8 });
+        L.boatGlow.place({ left: boat.left - boat.w * 0.25, top: boat.top - boat.h * 0.4, w: boat.w * 1.5, h: boat.h * 1.8 });
 
         L.ground.place(rectOf(B.island));
         L.house.place(rectOf(B.house));
+        const house = rectOf(B.house);
+        L.houseGlow.place({ left: house.left - house.w * 0.35, top: house.top - house.h * 0.35, w: house.w * 1.7, h: house.h * 1.7 });
         const plant = rectOf(B.plant);
         L.plant.place(plant, { x: plant.left + plant.w / 2, y: plant.top + plant.h });
+        L.plantGlow.place({ left: plant.left - plant.w * 0.6, top: plant.top - plant.h * 0.9, w: plant.w * 2.2, h: plant.h * 2.8 });
         const palm = rectOf(B.palm);
         L.palm.place(palm, { x: palm.left + palm.w * 0.45, y: palm.top + palm.h });
         L.light.place(rectOf(B.light));
@@ -250,11 +275,136 @@
         const sid = rectOf(B.sid);
         L.sidBody.place(sid, { x: sid.left + sid.w / 2, y: sid.top + sid.h });
         L.sid.pivot = { x: sid.left + sid.w / 2, y: sid.top + sid.h };
+        L.sidGlow.place({ left: sid.left - sid.w * 1.6, top: sid.top - sid.h * 0.9, w: sid.w * 4.2, h: sid.h * 2.8 });
+        // The rulito stands over his head, a little wider than his head
+        const rw = 60 * k(), rh = rw * 86 / 32;
+        glyph = { left: sx(B.sid[0] + B.sid[2] / 2) - rw / 2, top: sy(B.sid[1] - 14) - rh, w: rw, h: rh };
+        rulito.value.frame({ width: glyph.w });
+        L.rulito.place(rulitoBox(glyph), { x: glyph.left + glyph.w / 2, y: glyph.top + glyph.h });
+        L.rulito.refresh();
         art.eyes.forEach(([x, y, r], i) => {
             const er = Math.max(0.8, r * 1.9 * k());
             L.lids[i].place({ left: sx(x) - er, top: sy(y) - er, w: 2 * er, h: 2 * er });
         });
         placeHits();
+    };
+
+    /* ---------- The game: Sid gives thanks to each thing ---------- */
+
+    // Those who are thanked, each with where the light lands (art px, on its node), how far its glow of dots reaches (rx,
+    // ry, art px), its note in the card's chord, its touch box (art px) and the node that carries it
+    const SUN = art.sun[0];
+    const THANKED = [
+        { id: 'sun', es: 'El sol', en: 'The sun', at: [SUN.x, SUN.y], rx: SUN.r * 1.25, ry: SUN.r * 1.25, pitch: 1,
+            box: [SUN.x - SUN.r, SUN.y - SUN.r, 2 * SUN.r, 2 * SUN.r], node: () => L.sunNode },
+        { id: 'hills', es: 'Las montañas', en: 'The mountains', at: [B.hills[0] + B.hills[2] / 2, B.hills[1] + B.hills[3] * 0.45], rx: B.hills[2] * 0.48, ry: B.hills[3] * 0.7, pitch: 0.7,
+            box: B.hills, node: () => L.hills },
+        { id: 'light', es: 'La luz de la palmera', en: 'The light over the palm', at: [art.beacon.x, art.beacon.y], rx: 70, ry: 70, pitch: 0.85, sways: true,
+            box: [art.beacon.x - 70, art.beacon.y - 70, 140, 150], node: () => L.island },
+        { id: 'house', es: 'La casa', en: 'The house', at: [B.house[0] + B.house[2] * 0.45, B.house[1] + B.house[3] * 0.5], rx: B.house[2] * 0.6, ry: B.house[3] * 0.55, pitch: 0.45,
+            box: B.house, node: () => L.island },
+        { id: 'plant', es: 'La planta', en: 'The plant', at: [B.plant[0] + B.plant[2] / 2, B.plant[1] + B.plant[3] * 0.4], rx: B.plant[2] * 0.7, ry: B.plant[3] * 0.8, pitch: 0.3,
+            box: [B.plant[0] - 20, B.plant[1] - 30, B.plant[2] + 40, B.plant[3] + 40], node: () => L.island },
+        { id: 'boat', es: 'El bote', en: 'The boat', at: [B.boat[0] + B.boat[2] * 0.5, B.boat[1] + B.boat[3] * 0.55], rx: B.boat[2] * 0.55, ry: B.boat[3] * 0.6, pitch: 0.15,
+            box: B.boat, node: () => L.boat },
+    ];
+    const SID_PITCH = 0.55;
+    const THANKS = [0xfff3a8, 0xffd6a6, 0xffffff, 0xfdc492, 0xf47a79];
+    const unit = () => F.size / 100;
+    const sparks = createSparks(320);
+    const burst = (at, n, colors, speed = 110) => {
+        if (reduced) return;
+        sparks.burst(at.x, at.y, { n, colors, speed, size: Math.max(5, unit() * 0.9), spread: unit() * 1.2 });
+    };
+    // Where things are on the canvas now
+    const sidChest = () => L.sid.toScreen(sx(B.sid[0] + B.sid[2] / 2), sy(B.sid[1] + B.sid[3] * 0.4));
+    const spot = (g) => g.node().toScreen(sx(g.at[0]) + (g.sways ? palmSway(lastT) : 0), sy(g.at[1]));
+    let shine = 0, shineGoal = 0, boost = 0, boatKick = 0;
+    const giving = createGiving({
+        count: THANKED.length,
+        source: sidChest,
+        target: (i) => spot(THANKED[i]),
+        reduced,
+        colors: THANKS,
+        on: {
+            give: () => { touch.sid = Math.max(touch.sid, 0.5); play('give', { from: SID_PITCH }); },
+            again: (i) => { burst(spot(THANKED[i]), 12, THANKS, 70); play('tap'); },
+            receive: (i, n) => {
+                const g = THANKED[i];
+                shineGoal = 0.15 + 0.12 * n;
+                if (g.id === 'boat') boatKick = 1;
+                if (g.id === 'plant') dust?.boost(4, 1);
+                if (g.id === 'sun') { dust?.boost(0, 1); dust?.boost(1, 1); }
+                if (g.id === 'light') dust?.boost(2, 1);
+                burst(spot(g), 24, THANKS, 100);
+                play('link', { from: SID_PITCH, to: g.pitch, level: 1 });
+            },
+            back: () => play('converge'),
+            balance: (wins) => {
+                rulito.value?.reshape();
+                boost = 1;
+                shineGoal = 1.2;
+                touch.sid = 1;
+                burst(sidChest(), 50, THANKS, 150);
+                play('star');
+                sceneMilestone('light_shared', { times: wins });
+            },
+            full: () => { boost = 1; play('rulito'); },
+            fade: () => { shineGoal = 0; },
+            puff: (x, y, colors) => burst({ x, y }, 2, colors, 40),
+            hint: () => { touch.flare = Math.max(touch.flare, 0.3); },
+        },
+    });
+    const thank = (i, event) => {
+        event?.stopPropagation();
+        if (!stage) return;
+        giving.give(i);
+    };
+    const onThankKey = (event, i) => {
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+        event.preventDefault();
+        thank(i);
+    };
+
+    // The glow of what has been thanked: a soft cloud of warm dots round each, rising slowly
+    const DOTS = 44;
+    const thankedGlow = {
+        count: THANKED.length * DOTS,
+        update(t, data) {
+            if (!L.sid) return;
+            for (let i = 0; i < data.count; i++) {
+                const n = Math.floor(i / DOTS), g = THANKED[n], s = giving.state[n];
+                const a = Math.sin(i * 12.9898) * 0.5 + 0.5, b = Math.sin(i * 78.233 + 2) * 0.5 + 0.5;
+                const life = (a + t * (0.08 + 0.1 * b)) % 1;
+                const angle = i * 2.399 + t * 0.15;
+                const at = spot(g);
+                const rx = g.rx * k() * (0.7 + 0.5 * b) * (1 + boost * 0.3), ry = g.ry * k() * (0.7 + 0.5 * b);
+                const level = Math.min(1.2, s.lit + s.flash * 0.7 + boost * s.lit * 0.5);
+                fill(data, i, at.x + Math.cos(angle) * rx, at.y + Math.sin(angle) * ry - life * ry * 0.4,
+                    unit() * (1.2 + 1.4 * b), 0.85 * level * Math.sin(life * Math.PI) ** 0.8 * (0.75 + 0.25 * Math.sin(t * 3 + i)),
+                    THANKS[i % THANKS.length]);
+            }
+        },
+    };
+    // Sid's aura of dots: it opens a little with every thanks, and most when they come back
+    const SID_DOTS = 90;
+    const sidAura = {
+        count: SID_DOTS,
+        update(t, data) {
+            if (!L.sid) return;
+            const c = L.sid.toScreen(sx(B.sid[0] + B.sid[2] / 2), sy(B.sid[1] + B.sid[3] * 0.5));
+            const r = B.sid[3] * 0.55 * k();
+            const level = Math.min(1.4, 0.05 + shine + 0.6 * boost);
+            for (let i = 0; i < data.count; i++) {
+                const a = Math.sin(i * 53.1) * 0.5 + 0.5, b = Math.sin(i * 17.9 + 2) * 0.5 + 0.5;
+                const life = (a + t * (0.06 + 0.1 * b)) % 1;
+                const angle = i * 2.399 + t * 0.1;
+                const reach = r * (0.7 + 0.6 * life) * (1 + 0.4 * Math.min(1, level));
+                fill(data, i, c.x + Math.cos(angle) * reach * 0.75, c.y + Math.sin(angle) * reach,
+                    unit() * (0.9 + 1 * b), Math.min(1, level) * Math.sin(life * Math.PI) ** 0.7 * (0.7 + 0.3 * Math.sin(t * 2.6 + i)),
+                    THANKS[i % 3]);
+            }
+        },
     };
 
     // Where the card's name ends (the stage's h1, over the scene), so nothing is laid under it
@@ -264,9 +414,18 @@
         return title.getBoundingClientRect().bottom - root.value.getBoundingClientRect().top;
     };
 
-    // The touch target: Sid (small, so at least a finger's size)
+    // The touch targets: Sid (small, so at least a finger's size) and everything that can be thanked
     const placeHits = () => {
         if (!L.sid || !sidHit.value) return;
+        THANKED.forEach((g, i) => {
+            const el = hits.value[i];
+            if (!el) return;
+            const b = g.node().boxOnScreen(rectOf(g.box));
+            const bw = Math.max(44, b.width), bh = Math.max(44, b.height);
+            el.style.translate = `${(b.left + b.width / 2 - bw / 2 + (g.sways ? palmSway(lastT) : 0)).toFixed(1)}px ${(b.top + b.height / 2 - bh / 2).toFixed(1)}px`;
+            el.style.width = `${bw.toFixed(1)}px`;
+            el.style.height = `${bh.toFixed(1)}px`;
+        });
         const b = L.sid.boxOnScreen(rectOf(B.sid));
         const bw = Math.max(56, b.width * 1.6), bh = Math.max(56, b.height * 1.3);
         sidHit.value.style.translate = `${(b.left + b.width / 2 - bw / 2).toFixed(1)}px ${(b.top + b.height / 2 - bh / 2).toFixed(1)}px`;
@@ -306,6 +465,8 @@
     };
 
     let frames = 0;
+    let rulitoShown = false;
+    const ease = (u) => u * u * (3 - 2 * u);
     const frame = ({ x, y, scroll, t, ramp }) => {
         if (!stage || !L.sid) return;
         const dt = Math.min(0.1, Math.max(0, t - lastT));
@@ -313,13 +474,27 @@
         stage.look(x * SLIDE, y * SLIDE_Y);
         touch.flare = Math.max(0, touch.flare - dt * 1.1);
         touch.sid = Math.max(0, touch.sid - dt * 1.8);
+        giving.step(dt);
+        const lit = (id) => { const n = THANKED.findIndex((g) => g.id === id), st = giving.state[n]; return Math.min(1.3, st.lit + 0.5 * st.flash + 0.4 * boost * st.lit); };
+        shine += (shineGoal - shine) * Math.min(1, dt * (shineGoal < shine ? 0.35 : 1.6));
+        boost = Math.max(0, boost - dt * 0.5);
+        boatKick = Math.max(0, boatKick - dt * 0.6);
 
         // ---- The sun breathes; its light swells a little with a touch
         const breath = Math.sin(t * 0.55);
-        L.suns[0].scale = 1 + 0.015 * breath * ramp + 0.04 * touch.flare;
-        L.suns[1].scale = 1 + 0.025 * Math.sin(t * 0.55 + 0.8) * ramp + 0.06 * touch.flare;
-        L.halo.opacity = 0.6 + 0.2 * breath * ramp + 0.4 * touch.flare;
-        L.halo.scale = 1 + 0.05 * breath * ramp;
+        const sunLit = lit('sun');
+        L.suns[0].scale = 1 + 0.015 * breath * ramp + 0.04 * touch.flare + 0.05 * sunLit;
+        L.suns[1].scale = 1 + 0.025 * Math.sin(t * 0.55 + 0.8) * ramp + 0.06 * touch.flare + 0.08 * sunLit;
+        L.halo.opacity = Math.min(1, 0.6 + 0.2 * breath * ramp + 0.4 * touch.flare + 0.4 * sunLit);
+        L.halo.scale = 1 + 0.05 * breath * ramp + 0.25 * sunLit;
+        // ---- What has been thanked glows
+        L.hillsGlow.opacity = 0.75 * lit('hills') * (0.85 + 0.15 * Math.sin(t * 1.3));
+        L.houseGlow.opacity = 0.8 * lit('house') * (0.85 + 0.15 * Math.sin(t * 1.1 + 1));
+        L.plantGlow.opacity = 0.8 * lit('plant') * (0.85 + 0.15 * Math.sin(t * 1.5 + 2));
+        L.boatGlow.opacity = 0.7 * lit('boat') * (0.85 + 0.15 * Math.sin(t * 1.2 + 3));
+        // ---- And Sid's spirit lights up with every thanks, most when they all come back
+        L.sidGlow.opacity = Math.min(1, 0.9 * shine + 0.5 * boost);
+        L.sidGlow.scale = 1 + 0.08 * Math.sin(t * 1.2) * ramp + 0.25 * boost;
         L.sunNode.y = scroll * 8;
         L.hillsNode.y = scroll * 14;
 
@@ -330,8 +505,9 @@
             const moved = c.x0 + c.speed * t;
             const wrapped = cloudSpan.left + ((((moved - cloudSpan.left) % cloudSpan.width) + cloudSpan.width) % cloudSpan.width);
             node.x = wrapped - c.x0;
-            node.y = Math.sin(t * 0.4 + c.phase) * 6 * ramp;
-            node.sx = 1 + 0.05 * Math.sin(t * 0.6 + c.phase) * ramp;
+            node.y = Math.sin(t * 0.4 + c.phase) * 11 * ramp;
+            node.sx = 1 + 0.08 * Math.sin(t * 0.6 + c.phase) * ramp;
+            node.sy = 1 + 0.06 * Math.sin(t * 0.5 + c.phase * 2) * ramp;
         });
 
         // ---- The waves bob and sway, stretch a little as they roll, and their shine breathes
@@ -339,21 +515,26 @@
             waves.forEach((wv) => {
                 if (!wv.seen) return;
                 const p = t * wv.speed + wv.phase;
-                const lift = Math.sin(p) * 3 * wv.grow * ramp;
-                const roll = Math.sin(p * 0.45) * 7 * wv.grow * ramp;
+                const lift = Math.sin(p) * 6 * wv.grow * ramp;
+                const roll = (Math.sin(p * 0.45) * 18 + Math.sin(p * 0.21 + 1) * 8) * wv.grow * ramp;
                 wv.node.x = wv.shine.x = roll;
                 wv.node.y = lift;
                 wv.shine.y = lift * 0.5;
-                wv.node.sx = (wv.mirror ? -1 : 1) * (1 + 0.06 * Math.sin(p + 1.2) * ramp);
-                wv.node.sy = 1 - 0.08 * Math.sin(p + 1.2) * ramp;
+                wv.node.sx = (wv.mirror ? -1 : 1) * (1 + 0.12 * Math.sin(p + 1.2) * ramp);
+                wv.node.sy = 1 - 0.14 * Math.sin(p + 1.2) * ramp;
+                wv.node.rotate = Math.sin(p * 0.8 + 0.5) * 3 * ramp;
                 wv.shine.opacity = 0.65 + 0.35 * Math.sin(p * 0.8 + 2);
             });
         }
         L.waveNodes.forEach((node, d) => { node.y = scroll * (14 + 6 * d); });
 
         // ---- The boat rocks at the dock
-        L.boat.rotate = (Math.sin(t * 0.8) * 1.6 + Math.sin(t * 1.9) * 0.4) * ramp;
-        L.boat.y = Math.sin(t * 0.8 + 0.9) * 2.5 * ramp;
+        const kick = Math.sin(t * 3) * 4 * boatKick;
+        L.boat.rotate = (Math.sin(t * 0.8) * 3.5 + Math.sin(t * 1.9) * 0.9) * ramp + kick * ramp;
+        L.boat.y = (Math.sin(t * 0.8 + 0.9) * 5 + Math.sin(t * 1.7) * 1.5) * ramp;
+        L.boat.x = Math.sin(t * 0.37) * 4 * ramp;
+        L.boatGlow.x = L.boat.x;
+        L.boatGlow.y = L.boat.y;
         L.boatNode.y = scroll * 24;
         L.islandNode.y = scroll * 24;
 
@@ -361,9 +542,10 @@
         const sway = palmSway(t);
         L.light.x = L.beacon.x = L.glowWide.x = sway;
         const glow = 0.5 + 0.5 * Math.sin(t * 1.1);
-        L.beacon.scale = 1 + 0.06 * glow * ramp + 0.25 * touch.flare;
-        L.glowWide.opacity = Math.min(1, 0.45 + 0.25 * glow * ramp + 0.6 * touch.flare);
-        L.glowWide.scale = 1 + 0.1 * glow * ramp + 0.35 * touch.flare;
+        const lightLit = lit('light');
+        L.beacon.scale = 1 + 0.06 * glow * ramp + 0.25 * touch.flare + 0.3 * lightLit;
+        L.glowWide.opacity = Math.min(1, 0.45 + 0.25 * glow * ramp + 0.6 * touch.flare + 0.5 * lightLit);
+        L.glowWide.scale = 1 + 0.1 * glow * ramp + 0.35 * touch.flare + 0.5 * lightLit;
 
         // ---- Sid breathes, blinks, turns to look up at the light now and then, and hops when touched
         L.sidBody.sy = 1 + 0.02 * Math.sin(t * 1.2) * ramp;
@@ -385,7 +567,27 @@
         dust?.shift(2, islandDrift.x + sway, islandDrift.y + L.islandNode.y);
         dust?.shift(3, islandDrift.x, islandDrift.y + L.islandNode.y);
         dust?.shift(4, islandDrift.x, islandDrift.y + L.islandNode.y);
-        stage.bloom = Math.max(0, 0.5 * touch.flare);
+        // ---- The rulito over Sid, while the thanks are back
+        const win = giving.win;
+        let named = 0;
+        if (win) {
+            const whole = Math.min(1, Math.max(0, (win.head - win.tail - 0.6) / 0.4));
+            named = Math.max(win.pop, 0.8 * ease(whole));
+            stageEl?.style.setProperty('--name-glow', named.toFixed(3));
+            const flare = win.full && win.head - win.tail > 0.9 ? Math.max(win.pop, Math.sin(t * 4) * 0.5 + 0.5) : 0;
+            const tail = Math.min(win.head, win.tail);
+            rulito.value.frame({ head: win.head, tail, flare, t, fade: Math.min(1, (win.head - tail) * 14), width: glyph.w });
+            L.rulito.refresh();
+            L.rulito.rotate = Math.sin(t * 1.8) * 3;
+            L.rulito.scale = 1 + 0.2 * win.pop * win.pop;
+            rulitoShown = true;
+        } else if (rulitoShown) {
+            rulitoShown = false;
+            rulito.value.frame({ width: glyph.w });
+            L.rulito.refresh();
+            stageEl?.style.setProperty('--name-glow', '0');
+        }
+        stage.bloom = Math.max(0.5 * touch.flare, named, 0.3 * boost);
         stage.render(t);
         if (frames++ % 2 === 0) placeHits();
     };
@@ -406,6 +608,7 @@
         const after = (node) => node.mesh.renderOrder + 0.5;
         const fromArt = (list, colour, scale = 1) => list.map(([x, y, r]) => [sx(x), sy(y), Math.max(1.2, 2 * r * k() * scale), colour]);
         const [outer, inner] = art.sun;
+        const soft = (dynamic, extra = {}) => ({ colors: [0xffffff], dynamic, parallax: 0, drift: 0, twinkle: 0, reach: 0, look: 'soft', ...extra });
         dust = startStardust(null, {
             stage,
             manual: true,
@@ -419,6 +622,12 @@
                 { colors: [0x1a1611], parallax: 0, drift: 0.6, jitter: 0.15, twinkle: 0, reach: 46, push: 9, look: 'hard', order: after(L.ground), points: () => fromArt(art.sand, 0x1a1611) },
                 // 4: the sparkles round the pale plant
                 { colors: [0xb8eef0], parallax: 0, drift: 2.5, jitter: 0.3, twinkle: 0.85, reach: 40, push: 8, look: 'hard', order: after(L.plant), points: () => fromArt(art.sparkle, 0xb8eef0, 1.1) },
+                // 5: Sid's aura of dots, behind him
+                soft(sidAura, { order: L.sidBody.mesh.renderOrder - 0.5, bloom: true }),
+                // 6, 7, 8: what is thanked glows, the lights in the air and their sparks, in front of everything
+                soft(thankedGlow, { order: 1e6, bloom: true }),
+                soft(giving.motes(() => unit() * 1.5), { order: 1e6 + 1, bloom: true }),
+                { ...sparks.group(), order: 1e6 + 2, bloom: true },
             ],
         });
         if (reduced) dust.reveal();
@@ -433,12 +642,19 @@
         parallax?.destroy();
         dust?.destroy();
         stage?.destroy();
+        stageEl?.style.removeProperty('--name-glow');
     });
 </script>
 
 <template>
     <div class="scene" ref="root" @pointerdown="onScene">
         <canvas class="stageCanvas" ref="canvas"></canvas>
+        <!-- The rulito is drawn on its own canvas, which the stage shows over Sid's head -->
+        <Rulito ref="rulito" class="offstage" color="#fff6c2" />
+        <!-- Everything Sid can thank (placeHits keeps them over what they belong to), and Sid -->
+        <div v-for="(g, i) in THANKED" :key="g.id" :ref="(el) => { hits[i] = el; }" class="hit" role="button" tabindex="0"
+            :aria-label="$i18n.locale === 'en' ? g.en : g.es"
+            @pointerdown="thank(i, $event)" @keydown="onThankKey($event, i)"></div>
         <div ref="sidHit" class="hit" role="button" tabindex="0"
             :aria-label="$i18n.locale === 'en' ? 'Sid, sitting by the palm' : 'Sid, sentado junto a la palmera'"
             @pointerdown="onSid" @keydown="onKey"></div>
@@ -462,6 +678,14 @@
         pointer-events: none;
     }
 
+    .offstage {
+        position: absolute;
+        left: -9999px;
+        top: 0;
+        width: 40px;
+        visibility: hidden;
+    }
+
     .hit {
         position: absolute;
         left: 0;
@@ -472,6 +696,7 @@
         cursor: pointer;
         pointer-events: auto;
         -webkit-tap-highlight-color: transparent;
+        touch-action: manipulation;
         outline: none;
     }
 
