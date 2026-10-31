@@ -84,7 +84,7 @@ Se cambia una línea en `src/data/cardChords.js`, por ejemplo `28: 'Em'`. Se esc
 | 20 | Creatividad | Regular | Resonar | Do7 | Escena propia, verbo jugable |
 | 21 | Desafío | Regular | Encender | Re7 | Escena propia, sin juego todavía |
 | 22 | Evolución Espiritual | Regular | Encender | Si7 | Escena propia, verbo jugable |
-| 23 | Fe | Regular | Arraigar | Si mayor | Ilustración plana |
+| 23 | Fe | Regular | Arraigar | Si mayor | Escena propia, sin juego todavía |
 | 24 | Gratitud | Regular | Dar y recibir | Solmaj7 | Escena propia, sin juego todavía |
 | 25 | Hogar | Regular | Arraigar | Do mayor | Escena propia, verbo jugable |
 | 26 | Honestidad | Regular | Resonar | Solm7 | Escena propia, sin juego todavía |
