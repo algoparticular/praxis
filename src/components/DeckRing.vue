@@ -10,7 +10,8 @@
 
     const props = defineProps({
         cards: Array,
-        ids: { type: Array, default: null } // ids to show as an arc; null shows the whole deck as a circle
+        ids: { type: Array, default: null }, // ids to show as an arc; null shows the whole deck as a circle
+        clearTop: { type: Number, default: 0 } // px at the top taken by the page's title and filters, kept clear of the card
     });
 
     // Sent when WebGL fails after all, so the page can fall back to the flat grid
@@ -55,6 +56,7 @@
             if (destroyed) ring.destroy();
             else {
                 if (props.ids) ring.setFilter(props.ids);
+                ring.setClearTop(props.clearTop);
                 ready.value = true;
                 finishVisit = startTableVisit('deck');
             }
@@ -65,6 +67,7 @@
     });
 
     watch(() => props.ids, (ids) => ring?.setFilter(ids));
+    watch(() => props.clearTop, (px) => ring?.setClearTop(px));
 
     onBeforeUnmount(() => {
         destroyed = true;

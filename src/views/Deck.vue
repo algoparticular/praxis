@@ -59,11 +59,21 @@
     const starCanvas = ref(null);
     let starField = null;
 
+    // Where the title and filters end: the ring keeps its card in front clear of them
+    const head = ref(null);
+    const headBottom = ref(0);
+    let headObserver = null;
+
     onMounted(() => {
         starField = createStarField(starCanvas.value, sky.value, { onShoot: () => play('star') });
+        headObserver = new ResizeObserver(() => { headBottom.value = head.value.offsetTop + head.value.offsetHeight; });
+        headObserver.observe(head.value);
     });
 
-    onBeforeUnmount(() => starField?.destroy());
+    onBeforeUnmount(() => {
+        starField?.destroy();
+        headObserver?.disconnect();
+    });
 </script>
 
 <template>
@@ -75,7 +85,7 @@
             :hasBack="true"
             :hasMenu="true"/>
 
-        <header class="deckHead">
+        <header class="deckHead" ref="head">
             <h1>{{ $t("nav.deck") }}</h1>
             <nav class="filters">
                 <template v-for="(filter, i) in filters" :key="filter.key">
@@ -91,7 +101,7 @@
             </nav>
         </header>
 
-        <DeckRing v-if="use3D" :cards="cards" :ids="ids" @unsupported="use3D = false"/>
+        <DeckRing v-if="use3D" :cards="cards" :ids="ids" :clear-top="headBottom" @unsupported="use3D = false"/>
         <DeckTemplate v-else :cards="current.cards"/>
         <button v-if="use3D" class="more" @click="showAbout">{{ $t("about.more") }}</button>
 
