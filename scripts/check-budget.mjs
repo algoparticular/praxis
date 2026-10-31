@@ -54,6 +54,7 @@ group('Aceptación layers', (rel) => rel.startsWith('assets/aceptacion/'), { eac
 group('Belleza layers', (rel) => rel.startsWith('assets/belleza/'), { each: 200, total: 600 });
 group('Hogar layers', (rel) => rel.startsWith('assets/hogar/'), { each: 200, total: 400 });
 group('Sincronicidad layers', (rel) => rel.startsWith('assets/sincronicidad/'), { each: 100, total: 380 });
+group('Celebración layers', (rel) => rel.startsWith('assets/celebracion/'), { each: 120, total: 560 });
 group('Paciencia layers', (rel) => rel.startsWith('assets/paciencia/'), { each: 320, total: 750 });
 group('Deck thumbnails', (rel) => /^cards\/thumb\/\d+\.webp$/.test(rel), { each: 70, total: 650 });
 group('Card illustrations', (rel) => /^cards\/\d+\.webp$/.test(rel), { each: 900, total: 9500 });
