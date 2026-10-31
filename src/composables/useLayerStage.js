@@ -121,10 +121,17 @@ const LAYER_FRAGMENT = `
         return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x), mix(hash(i + vec2(0.0, 1.0)), hash(i + 1.0), f.x), f.y);
     }
     uniform vec4 uClip;            // device px: x0, y0, x1, y1 (from the bottom left); x1 < x0 means no clip
+    uniform float uClipSoft;       // device px over which the clip's top and bottom fade in (0: a hard cut)
     uniform float uVignette;       // 0..0.5: it fades out towards its four edges (a blurred glow must not end in a hard box)
     varying vec2 vUv;
     void main() {
-        if (uClip.z >= uClip.x && (gl_FragCoord.x < uClip.x || gl_FragCoord.x > uClip.z || gl_FragCoord.y < uClip.y || gl_FragCoord.y > uClip.w)) discard;
+        float clipA = 1.0;
+        if (uClip.z >= uClip.x) {
+            if (gl_FragCoord.x < uClip.x || gl_FragCoord.x > uClip.z) discard;
+            if (uClipSoft > 0.0) clipA = smoothstep(uClip.y - uClipSoft, uClip.y + uClipSoft, gl_FragCoord.y) * (1.0 - smoothstep(uClip.w - uClipSoft, uClip.w + uClipSoft, gl_FragCoord.y));
+            else if (gl_FragCoord.y < uClip.y || gl_FragCoord.y > uClip.w) discard;
+            if (clipA <= 0.0) discard;
+        }
         vec2 uv = vUv;
         if (uShimmer > 0.0) {
             uv += vec2(sin(uv.y * 38.0 + uTime * 2.1), cos(uv.x * 31.0 + uTime * 1.7)) * 0.004 * uShimmer;
@@ -192,7 +199,7 @@ const LAYER_FRAGMENT = `
             vec2 e = min(vUv, 1.0 - vUv);
             c *= smoothstep(0.0, uVignette, e.x) * smoothstep(0.0, uVignette, e.y);
         }
-        gl_FragColor = vec4(c.rgb, c.a) * uOpacity;
+        gl_FragColor = vec4(c.rgb, c.a) * uOpacity * clipA;
     }`;
 
 const GLOW_VERTEX = `
@@ -265,6 +272,7 @@ const FIELD_FRAGMENT = `
     uniform float uScale;
     uniform vec4 uWave;            // a long wave travelling along the edge: amplitude px, wavelength px, phase, y px of its origin
     uniform vec4 uRect;            // where the plane is, px: left, top, width, height
+    uniform vec4 uDent;            // a dent pressed into the edge: centre px, radius px (whole inside it, gone at twice), px towards the first colour
     uniform vec4 uBubbles[${FIELD_BUBBLES}];
     uniform vec4 uTurns[${FIELD_BUBBLES}];
     varying vec2 vUv;
@@ -291,6 +299,8 @@ const FIELD_FRAGMENT = `
         d += (wave * 4.0 + swell * 22.0) * uScale * uWobble;
         // and the long wave the scene sets, an S that travels along the whole edge
         if (uWave.y > 0.0) d += uWave.x * sin(6.2832 * (px.y - uWave.w) / uWave.y - uWave.z);
+        // and a dent the scene presses into it (Ciclos: the day flowing over the moon as a cycle closes)
+        if (uDent.z > 0.0) d -= uDent.w * (1.0 - smoothstep(uDent.z, 2.0 * uDent.z, length(px - uDent.xy)));
         // The bubbles, each an ellipse, joined to what is of its colour with a neck
         for (int i = 0; i < ${FIELD_BUBBLES}; i++) {
             vec4 b = uBubbles[i];
@@ -352,6 +362,7 @@ const FIELD_MASK_CHUNK = `
     uniform float fmSide;
     uniform vec4 fmWave;
     uniform vec4 fmRect;
+    uniform vec4 fmDent;
     uniform vec2 fmShift;          // how far the field has moved on screen from where it rests, px
     uniform vec2 fmScreen;         // the canvas's height (px) and its pixel ratio
     float fmHash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
@@ -370,6 +381,7 @@ const FIELD_MASK_CHUNK = `
         float swell = fmNoise(u / 640.0 + vec2(t * 0.04, -t * 0.05)) - 0.5;
         d += (wave * 4.0 + swell * 22.0) * fmScale * fmWobble;
         if (fmWave.y > 0.0) d += fmWave.x * sin(6.2832 * (px.y - fmWave.w) / fmWave.y - fmWave.z);
+        if (fmDent.z > 0.0) d -= fmDent.w * (1.0 - smoothstep(fmDent.z, 2.0 * fmDent.z, length(px - fmDent.xy)));
         float aa = 0.6 / fmScreen.y + 0.35;
         return smoothstep(-aa, aa, d * fmSide);
     }
@@ -539,6 +551,7 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
             this.opacity = 1;
             this.entrance = null;
             this.clip = null;                            // { left, top, w, h } on screen (px): it and what hangs from it are cut there
+                                                         // (with soft: px over which its top and bottom fade instead)
             this.mesh = null;
             this.rect = null;
             (parent ? parent.inner : scene).add(this.object);
@@ -638,6 +651,7 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
                 uDissolve: { value: new THREE.Vector2(dissolve === null ? 0 : 1, 0) },
                 uDissolveGlow: { value: new THREE.Color(...parseColor(dissolve ?? 0xffffff)) },
                 uClip: { value: new THREE.Vector4(1, 0, 0, 0) },
+                uClipSoft: { value: 0 },
                 uVignette: { value: vignette },
                 uSize: { value: new THREE.Vector2(1, 1) },
                 // (the texture's v runs from its bottom up)
@@ -704,7 +718,8 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
         // node.bubbles is its list of up to FIELD_BUBBLES bubbles, [x, y, rx, ry, angle, ±1, neck, wax] each (px, in the
         // plane's space; +1 of the second colour; neck and wax as in FIELD_FRAGMENT, optional), read every frame; call node.refresh() after drawing on the canvas, and set
         // uniforms.uScale to the px of a unit of the drawing; uniforms.uWave is a long wave that travels
-        // along the edge (amplitude px, wavelength px, phase, y px of its origin)
+        // along the edge (amplitude px, wavelength px, phase, y px of its origin) and uniforms.uDent a dent pressed into
+        // it (centre x, y px, radius px, how many px the edge gives way towards the first colour; its masks follow it)
         field({ rect, source, colors = [0x000000, 0xffffff], shaped = false, alone = false, flow = 1 } = {}) {
             const node = new Node(this);
             const texture = new THREE.CanvasTexture(source);
@@ -726,6 +741,7 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
                 uScale: { value: 1 },
                 uWave: { value: new THREE.Vector4(0, 0, 0, 0) },
                 uRect: { value: new THREE.Vector4(0, 0, 1, 1) },
+                uDent: { value: new THREE.Vector4(0, 0, 0, 0) },
                 uBubbles: { value: Array.from({ length: FIELD_BUBBLES }, () => new THREE.Vector4(0, 0, 0, 0)) },
                 uTurns: { value: Array.from({ length: FIELD_BUBBLES }, () => new THREE.Vector4(0, 0, 0, 0)) },
             };
@@ -742,7 +758,7 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
                 if (!shared) {
                     shared = {
                         fmMap: uniforms.map, fmTime: uniforms.uTime, fmFlow: uniforms.uFlow, fmWobble: uniforms.uWobble,
-                        fmScale: uniforms.uScale, fmWave: uniforms.uWave, fmRect: uniforms.uRect,
+                        fmScale: uniforms.uScale, fmWave: uniforms.uWave, fmRect: uniforms.uRect, fmDent: uniforms.uDent,
                         fmShift: { value: new THREE.Vector2(0, 0) }, fmScreen: { value: new THREE.Vector2(1, 1) },
                     };
                     maskFields.push({ node, shared });
@@ -868,6 +884,7 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
                 if (u.uClip) {
                     if (clip) u.uClip.value.set(clip.left * dpr, (height - clip.top - clip.h) * dpr, (clip.left + clip.w) * dpr, (height - clip.top) * dpr);
                     else u.uClip.value.set(1, 0, 0, 0);
+                    if (u.uClipSoft) u.uClipSoft.value = (clip?.soft ?? 0) * dpr;
                 }
             }
             this.children.forEach((child) => child.update(opacity, clip));
