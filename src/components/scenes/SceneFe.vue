@@ -257,6 +257,22 @@
         L.sky.refresh();
     };
 
+    // ---- The card's pure colour: over every picture the blue shapes tint, the same picture in its own colour (only what
+    // they are over, the rest transparent: made by the converter), with the same copies, effects and sways; it comes back
+    // as his light grows, and is whole once the game is won
+    const pureOf = (copies, name, options, node) => copies.map((copy) => {
+        const pure = node.image(`${ASSET}${name}-pure.webp`, options);
+        pure.sx = copy.node.sx;
+        pure.sy = copy.node.sy;
+        return { ...copy, node: pure };
+    });
+    let pureNodes = [];
+    const setPure = (amount) => {
+        pureNodes.forEach((node) => { node.opacity = amount; node.mesh.visible = amount > 0.003; });
+        dust?.fade(0, 1 - amount);
+        dust?.fade(6, amount);
+    };
+
     const build = (s) => {
         // The sky's blue shapes, at the depth of the far bank so they meet the land where the card has them meet
         const skyNode = s.depth(zFor(DEPTH.far));
@@ -281,7 +297,9 @@
             if (side) node.sx = -1;
             return { node, side };
         });
+        L.riverPure = pureOf(L.river, 'river', { water: 1 }, river);
         L.waves = waves.map((wv) => river.image(`${ASSET}waves.webp`, { crop: wv.crop }));
+        L.wavesPure = waves.map((wv) => river.image(`${ASSET}waves-pure.webp`, { crop: wv.crop }));
         river.enter({ y: 30, delay: 100, duration: 1700 });
         // The far bank, with the trunk (mirrored upwards over the frame) and the mushrooms
         const far = s.depth(zFor(DEPTH.far));
@@ -291,12 +309,14 @@
             if (side) node.sx = -1;
             return { node, side };
         });
+        L.farPure = pureOf(L.far, 'far', { sway: true }, far);
         L.trunk = [[0, 0], [-1, 0], [0, 1], [-1, 1]].map(([side, up]) => {
             const node = far.image(`${ASSET}trunk.webp`);
             if (side) node.sx = -1;
             if (up) node.sy = -1;
             return { node, side, up };
         });
+        L.trunkPure = pureOf(L.trunk, 'trunk', {}, far);
         L.capDotsAt = far.group();
         far.enter({ y: 40, delay: 50, duration: 1700 });
         // The near bank, and on it the lotus, the log and the two little mushrooms with their lights
@@ -307,9 +327,12 @@
             if (side) node.sx = -1;
             return { node, side };
         });
+        L.nearPure = pureOf(L.near, 'near', { sway: true }, near);
         L.log = near.image(`${ASSET}log.webp`);
+        L.logPure = near.image(`${ASSET}log-pure.webp`);
         L.budLight = near.glow({ rect: { left: 0, top: 0, w: 1, h: 1 }, color: art.colors.bud, stops: [[0, 0.5], [0.35, 0.18], [0.7, 0]] });
         L.lotus = near.image(`${ASSET}lotus.webp`, { wind: { amp: 4, speed: 0.7, root: 'bottom' } });
+        L.lotusPure = near.image(`${ASSET}lotus-pure.webp`, { wind: { amp: 4, speed: 0.7, root: 'bottom' } });
         L.sproutLights = [0, 1].map(() => near.glow({ rect: { left: 0, top: 0, w: 1, h: 1 }, color: art.colors.sprout, stops: [[0, 0.4], [0.35, 0.14], [0.7, 0]] }));
         L.sprouts = near.image(`${ASSET}sprouts.webp`, { wind: { amp: 3, speed: 1.1, root: 'bottom' } });
         near.enter({ y: 60, delay: 150, duration: 1800 });
@@ -323,6 +346,7 @@
         L.heart = L.sidGroup.glow({ rect: { left: 0, top: 0, w: 1, h: 1 }, color: art.colors.heart, stops: [[0, 0.75], [0.3, 0.32], [0.65, 0]], bloom: true });
         L.rulito = L.sidGroup.canvas(rulito.value.canvas, { bloom: true });
         sid.enter({ y: 70, delay: 350, duration: 1900 });
+        pureNodes = [...L.farPure, ...L.trunkPure, ...L.riverPure, ...L.nearPure].map((c) => c.node).concat(L.wavesPure, L.logPure, L.lotusPure);
     };
 
     const place = (w, h) => {
@@ -349,17 +373,19 @@
         span = { left: -SLIDE * 2 - widest / 2, width: w + SLIDE * 4 + widest };
 
         const river = rectOf(B.river);
-        L.river.forEach(({ node, side }) => node.place(flip(river, side)));
-        waves.forEach((wv, i) => L.waves[i].place(rectOf(wv.box)));
+        [...L.river, ...L.riverPure].forEach(({ node, side }) => node.place(flip(river, side)));
+        waves.forEach((wv, i) => { L.waves[i].place(rectOf(wv.box)); L.wavesPure[i].place(rectOf(wv.box)); });
         const far = rectOf(B.far);
-        L.far.forEach(({ node, side }) => node.place(flip(far, side)));
+        [...L.far, ...L.farPure].forEach(({ node, side }) => node.place(flip(far, side)));
         const trunk = rectOf(B.trunk);
-        L.trunk.forEach(({ node, side, up }) => node.place(flip(trunk, side, up)));
+        [...L.trunk, ...L.trunkPure].forEach(({ node, side, up }) => node.place(flip(trunk, side, up)));
         const near = rectOf(B.near);
-        L.near.forEach(({ node, side }) => node.place(flip(near, side)));
+        [...L.near, ...L.nearPure].forEach(({ node, side }) => node.place(flip(near, side)));
         L.log.place(rectOf(B.log));
+        L.logPure.place(rectOf(B.log));
         const lotus = rectOf(B.lotus);
         L.lotus.place(lotus, { x: lotus.left + lotus.w * 0.45, y: lotus.top + lotus.h });
+        L.lotusPure.place(lotus, { x: lotus.left + lotus.w * 0.45, y: lotus.top + lotus.h });
         const sprouts = rectOf(B.sprouts);
         L.sprouts.place(sprouts, { x: sprouts.left + sprouts.w / 2, y: sprouts.top + sprouts.h });
         const bud = BUD();
@@ -424,6 +450,7 @@
     };
 
     let frames = 0;
+    const wavesSeen = [];
     const frame = ({ x, y, scroll, t, ramp }) => {
         if (!stage || !L.sid) return;
         const dt = Math.min(0.1, Math.max(0, t - lastT));
@@ -443,22 +470,27 @@
         // ---- The little waves drift with the current and fade, then come back where they were
         waves.forEach((wv, i) => {
             const p = reduced ? 0.5 : ((t / wv.period + wv.phase) % 1);
-            L.waves[i].x = (p - 0.5) * 60 * k();
+            L.waves[i].x = L.wavesPure[i].x = (p - 0.5) * 60 * k();
             L.waves[i].opacity = reduced ? 1 : Math.min(1, Math.sin(p * Math.PI) * 1.6);
+            wavesSeen[i] = L.waves[i].opacity;
         });
 
         // ---- The far bank's mushrooms, ferns and tufts, and the near bank's bush and tufts
         if (!reduced) {
             const farSways = swaysOf(FAR_SWAYS, B.far, t, ramp);
-            L.far.forEach(({ node }) => { node.sways = farSways; });
+            [...L.far, ...L.farPure].forEach(({ node }) => { node.sways = farSways; });
             const nearSways = swaysOf(NEAR_SWAYS, B.near, t, ramp);
-            L.near.forEach(({ node }) => { node.sways = nearSways; });
+            [...L.near, ...L.nearPure].forEach(({ node }) => { node.sways = nearSways; });
         }
 
         // ---- The game: his light grows and the sky opens round him
         lit = rooting.step(dt, t);
         level = lit.head - lit.tail;
         const open = level > 0.001 ? OPEN * (1 - (1 - level) ** 1.7) * k() : 0;
+        // The land takes its own colour back as the sky opens, whole when it is won
+        const pure = Math.min(1, level * 1.15) ** 1.4;
+        setPure(pure);
+        L.wavesPure.forEach((node, i) => { node.opacity = pure * (wavesSeen[i] ?? 1); });
         const cx = sx(HEART[0]), cy = sy(HEART[1]);
         L.clearing.forEach((d, j) => {
             d.opacity = open > 1 ? 1 : 0;
@@ -481,7 +513,7 @@
         // ---- The lotus and its bud, the little mushrooms' lights
         budFlare = Math.max(0, budFlare - dt * 0.8);
         flare = Math.max(0, flare - dt * 0.7);
-        L.lotus.rotate = budFlare * Math.sin(t * 9) * 2.5;
+        L.lotus.rotate = L.lotusPure.rotate = budFlare * Math.sin(t * 9) * 2.5;
         L.lotus.uniforms.uBright.value = 1 + 0.12 * budFlare;
         L.budLight.opacity = 0.55 + 0.2 * Math.sin(t * 1.3) + 0.45 * budFlare;
         L.budLight.scale = 1 + 0.6 * budFlare;
@@ -520,6 +552,7 @@
         const farDrift = stage.drift(L.farNode.z), nearDrift = stage.drift(L.nearNode.z), sidDrift = stage.drift(L.sidNode.z);
         dust?.shift(0, farDrift.x, farDrift.y + L.farNode.y);
         dust?.shift(1, farDrift.x, farDrift.y + L.farNode.y);
+        dust?.shift(6, farDrift.x, farDrift.y + L.farNode.y);
         dust?.shift(2, nearDrift.x, nearDrift.y + L.nearNode.y);
         dust?.shift(3, nearDrift.x, nearDrift.y + L.nearNode.y);
         dust?.shift(4, sidDrift.x, sidDrift.y + L.sidNode.y + L.sidGroup.y);
@@ -562,8 +595,9 @@
         const after = (node) => node.mesh.renderOrder + 0.5;
         const fromArt = (list, colour, scale = 1) => list.map(([x, y, r, c]) => [sx(x), sy(y), Math.max(1.2, 2 * r * k() * scale), c ?? colour]);
         // The caps' stipple and the spores: on the far bank (and the right cap's mirrored past the frame)
-        const capDots = () => {
-            const list = fromArt(art.capDots, 0xff7777);
+        // (in their colour as seen, or in their own colour: the land's pure colour, group 6)
+        const capDots = (pureDots) => () => {
+            const list = fromArt(art.capDots.map(([x, y, r, c, own]) => [x, y, r, pureDots ? own ?? c : c]), 0xff7777);
             const edge = sx(SIZE);
             return [...list, ...list.filter(([x]) => x > edge - 260 * k()).map(([x, y, r, c]) => [2 * edge - x, y, r, c])];
         };
@@ -572,9 +606,9 @@
             manual: true,
             groups: [
                 // 0: the loose coral stipple round the caps
-                { parallax: 0, drift: 1.6, jitter: 0.4, twinkle: 0.25, reach: 0, order: after(L.far[2].node), points: capDots },
+                { parallax: 0, drift: 1.6, jitter: 0.4, twinkle: 0.25, reach: 0, order: after(L.farPure[2].node), points: capDots(false) },
                 // 1: spores rising from the caps
-                { colors: [0xffa8a0], dynamic: sporeGroup, parallax: 0, drift: 3, twinkle: 0.4, reach: 0, look: 'soft', order: after(L.far[2].node) + 0.1 },
+                { colors: [0xffa8a0], dynamic: sporeGroup, parallax: 0, drift: 3, twinkle: 0.4, reach: 0, look: 'soft', order: after(L.farPure[2].node) + 0.1 },
                 // 2: the glow of the two little mushrooms
                 { colors: [art.colors.sprout], parallax: 0, drift: 1.4, jitter: 0.5, twinkle: 0.5, reach: 60, push: 8, order: after(L.sprouts), points: () => fromArt(art.sproutGlow, art.colors.sprout) },
                 // 3: the glow of the lotus's bud
@@ -583,6 +617,8 @@
                 { colors: [art.colors.aura], parallax: 0, drift: 1.4, jitter: 0.4, twinkle: 0.45, reach: 0, order: after(L.warmth), points: () => fromArt(art.aura, art.colors.aura, 1.2) },
                 // 5: the light on his chest
                 { colors: [art.colors.heart], parallax: 0, drift: 1.8, jitter: 0.6, twinkle: 0.4, reach: 0, bloom: true, order: after(L.eyes), points: () => fromArt(art.heart, art.colors.heart, 1.2) },
+                // 6: the caps' stipple in its own colour, over the other, shown as the land takes its colour back
+                { parallax: 0, drift: 1.6, jitter: 0.4, twinkle: 0.25, reach: 0, order: after(L.farPure[2].node) + 0.05, points: capDots(true) },
             ],
         });
         if (reduced) dust.reveal();
