@@ -52,7 +52,7 @@ Las palabras del libro para cada chakra, subiendo y bajando:
 | Soltar | Corona | Entendimiento | Existencia |
 
 ## Decidido
-- Carta 10, **Tu verdad** (antes `" ... "`): es el silencio. No hay un mensaje en particular: invita a afirmar lo que uno ya sabe, lo primero que viene al leer su frase, y a sentir el corazón. Su verbo va entre Fa, Sol o La (por decidir); la forma, por definir.
+- Carta 10, **Tu verdad** (antes `" ... "`): es el silencio. No hay un mensaje en particular: invita a afirmar lo que uno ya sabe, lo primero que viene al leer su frase, y a sentir el corazón. Decidido: no tiene verbo ni juego, por ahora; la escena late como un corazón y responde al toque.
 - Nombre del personaje: **Sid** (Seed, semilla).
 - El bichito con pelos y antenas es un Sama. El ser dentro de la célula de Evolución es Sid.
 - Ciclos es **Soltar**, no Ver: *"¿Qué es tiempo de dejar ir?"*, *"sólo puedes avanzar si sos capaz de soltar lo viejo"*. Fluir se queda con Transformación, que habla de atravesar el cambio; Ciclos habla de cerrarlo.
@@ -260,8 +260,8 @@ Con teclado, Enter o espacio sobre Sid suelta el pensamiento más cercano. Con m
 
 **Cartas:** Nekkhamma (hecha), Upekkha (hecha), Ciclos, Perdón, Vipassana (hecha).
 
-### Sin verbo todavía: el silencio (carta 10)
-No hay nada que leer ni decir; la invitación es sentir el corazón. Su verbo va entre Fa (Dar y recibir), Sol (Resonar) o La (Ver), por decidir. Si tiene un juego, sería no jugar: la escena responde solo si se deja de tocar.
+### Sin verbo, a propósito: el silencio (carta 10)
+No hay nada que leer ni decir; la invitación es sentir el corazón. Decidido: no tiene verbo ni juego, por ahora. La escena late como un corazón y responde al toque, nada más.
 
 ## Piezas de código que ya sirven
 - `src/components/Rulito.vue`: el rulito dibujado en código sobre un canvas 2D, como una línea que viaja (punto, línea, lazo, y luego la cola alcanza a la cabeza). `frame({ head, tail, flare, t })` lo dibuja y `reshape()` le da una forma nueva. Es el premio común a todos los verbos.

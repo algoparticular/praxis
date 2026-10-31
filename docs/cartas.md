@@ -71,7 +71,7 @@ Se cambia una línea en `src/data/cardChords.js`, por ejemplo `28: 'Em'`. Se esc
 | 7 | Addhitthana | Paramis | Arraigar | Mi mayor | Escena propia, verbo jugable |
 | 8 | Metta | Paramis | Dar y recibir | Famaj7 | Escena propia, sin juego todavía |
 | 9 | Upekkha | Paramis | Soltar | Mi menor | Escena propia, verbo jugable |
-| 10 | Tu verdad | Special | por decidir | Sol mayor | Escena propia, sin juego todavía |
+| 10 | Tu verdad | Special | sin verbo | Sol mayor | Escena propia, sin juego todavía |
 | 11 | Aceptación | Regular | Fluir | Si menor | Escena propia, sin juego todavía |
 | 12 | Armonía | Regular | Resonar | Domaj7 | Escena propia, sin juego todavía |
 | 13 | Belleza | Regular | Ver | Lamaj7 | Escena propia, sin juego todavía |

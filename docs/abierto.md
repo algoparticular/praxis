@@ -11,7 +11,6 @@ Séptima pestaña de "Anima GDD": lo que falta decidir, agrupado por tema.
 - Resonar en Creatividad (caja de música): cuántas piezas hacen la melodía (`TUNE`, 7), la velocidad de la corona mientras suena (`PLAY_TURN`, una vuelta cada 12 s) y si las piezas encendidas y el peine se distinguen bien: probarlos con un teléfono en la mano.
 - Resonar en Sincronicidad: el pulso (`BEAT`, 1,3 s) y la ventana para acertar (`IN_TIME`, 0,28 s): probarlos con un teléfono en la mano.
 - Encender: cuánto hay que frotar (`RUB`), cuántos golpes dura el fuego (`FUEL`) y cuánto abarca cada golpe (`REACH`): ajustarlos con un teléfono en la mano. Hoy se encienden los doce en unos cinco a siete lanzamientos.
-- Verbo de la carta 10: Fa (Dar y recibir), Sol (Resonar) o La (Ver); falta elegirlo y definir su forma de juego.
 - Las fichas de Huit y Sid no tienen texto de historia, solo la tabla.
 
 ## Escenas de juego
@@ -30,7 +29,7 @@ Lo que queda de `plan-inmersivo.md`. Los pasos 1 a 6 y The Nine en 3D ya están 
 Hipótesis, no decisiones: ninguna está implementada ni validada con Belén. Están en `plan-inmersivo.md`.
 - Qué se puede llevar la persona. De menor a mayor compromiso: la afirmación como imagen para guardar o compartir (ya hay una imagen social por carta), la carta del día guardada en el dispositivo, la invitación como recordatorio o nota propia, y el rulito que le salió a cada persona.
 - Antes de construirlo, mirar en la analítica cuánta gente completa un juego y cuánta llega a la lectura (`pattern_seen`, `all_released`).
-- Las 33 cartas ya tienen escena viva, pero 18 todavía no tienen juego: llevar un verbo por vez a las cartas de su familia.
+- Las 33 cartas ya tienen escena viva, pero 17 todavía no tienen juego (la 10, Tu verdad, no lo tendrá por ahora): llevar un verbo por vez a las cartas de su familia.
 - Dos presupuestos de tamaño están justos (otras imágenes y ilustraciones de cartas): cada escena nueva con capas WebP los va a pedir.
 
 ## Música y secuencias
