@@ -165,9 +165,17 @@
     const ROOF = 120;
     const ROOF_COLOUR = '#2a7a82';          // Belleza's canopy teal, at night
     const roofCanvas = document.createElement('canvas');
-    // The shelves across the trunks where the card cuts them: [which of the canopy's leaves, the trunk's middle and how
-    // wide the shelf is, in art px]
-    const SEAMS = [[0, 256, 330], [2, 1695, 470]];
+    // The shelves across the trunks round where the card cuts them, three on each: [which of the canopy's leaves, its
+    // middle (x, y) and how wide it is, in art px, and whether it is turned round]
+    const SEAMS = [
+        [0, 236, -18, 330, false], [4, 330, -95, 250, true], [10, 200, 40, 230, false],
+        [2, 1695, -18, 470, false], [0, 1600, -105, 320, true], [4, 1800, 45, 300, false],
+    ];
+    // The roof's leaves: Belleza's, and as many again moved half the width across and a little lower, turned round
+    const ROOF_LEAVES = [
+        ...art.canopy.map(([x, y, w, h, ax, ay]) => ({ box: [x, y, w, h], at: [ax, ay], flip: false })),
+        ...art.canopy.map(([x, y, w, h, ax, ay]) => ({ box: [(x + 1080) % 2160, y + 90, w, h], at: [ax, ay], flip: true })),
+    ];
     const roofEdge = (ax) => ROOF + 38 * Math.sqrt(Math.abs(Math.sin(Math.PI * ax / 190 + Math.sin(ax / 530)))) + 30 * Math.sin(ax / 420 + 1);
     const drawRoof = (w, phone) => {
         L.roof.mesh.visible = phone;
@@ -189,15 +197,15 @@
         L.roof.place({ left: -MARGIN, top: -MARGIN, w: cw, h: ch });
         L.roof.refresh();
         L.roofLeaves.forEach(({ node, box }) => node.place(rectOf(box)));
-        SEAMS.forEach(([leaf, cx, sw], i) => {
+        SEAMS.forEach(([leaf, cx, cy, sw], i) => {
             const [, , w, h] = art.canopy[leaf], sh = sw * h / w;
-            L.seamLeaves[i].place(rectOf([cx - sw / 2, -18 - sh / 2, sw, sh]));
+            L.seamLeaves[i].place(rectOf([cx - sw / 2, cy - sh / 2, sw, sh]));
         });
     };
 
     const L = {};
     const build = (s) => {
-        // The land: the ground (code), the trees (and, where there is sky over the frame, their trunks going on up),
+        // The land: the ground (code), the trees (and, on a phone, their roof of leaves and crowns over the frame),
         // the marks of the ground, the glow of the fire on it, the fern and the lamps
         const land = s.depth(zFor(DEPTH.land));
         L.landNode = land;
@@ -210,10 +218,11 @@
         // drawn in code in a night teal, with Belleza's free leaves on it (recoloured, canopy.webp), each stirring in place
         L.roof = land.canvas(roofCanvas);
         const [AW, AH] = art.canopyAtlas;
-        L.roofLeaves = art.canopy.map(([x, y, w, h, ax, ay]) => ({
-            node: land.image(asset('canopy'), { crop: [ax / AW, ay / AH, w / AW, h / AH] }), box: [x, y, w, h],
-            phase: Math.random() * 6.28, speed: 0.3 + Math.random() * 0.25,
-        }));
+        L.roofLeaves = ROOF_LEAVES.map(({ box: [x, y, w, h], at: [ax, ay], flip }) => {
+            const node = land.image(asset('canopy'), { crop: [ax / AW, ay / AH, w / AW, h / AH] });
+            if (flip) node.sx = -1;
+            return { node, box: [x, y, w, h], phase: Math.random() * 6.28, speed: 0.3 + Math.random() * 0.25 };
+        });
         L.trees = ['treeLeft', 'treeRight'].map((name) => {
             const [, , w] = B[name];
             const end = name === 'treeLeft' ? 'Left' : 'Right';
@@ -226,9 +235,11 @@
             };
         });
         // and a shelf of leaves across each trunk where the card cuts it, in front: it hides where the crown begins
-        L.seamLeaves = SEAMS.map(([leaf]) => {
-            const [, , , , ax, ay] = art.canopy[leaf], [, , w, h] = art.canopy[leaf];
-            return land.image(asset('canopy'), { crop: [ax / AW, ay / AH, w / AW, h / AH] });
+        L.seamLeaves = SEAMS.map(([leaf, , , , flip]) => {
+            const [, , w, h, ax, ay] = art.canopy[leaf];
+            const node = land.image(asset('canopy'), { crop: [ax / AW, ay / AH, w / AW, h / AH] });
+            if (flip) node.sx = -1;
+            return node;
         });
         L.marks = [-1, 0, 1].map((side) => {
             const node = land.image(asset('marks'));

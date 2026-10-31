@@ -29,7 +29,7 @@ const FADE = 24;                // art px over which a crown's foot fades into i
 
 // ---- Celebración's colours (its trees) and Belleza's, for the recolouring
 const FROM = { fill: [243, 179, 162], line: [56, 80, 157], bark: [207, 135, 154], leaf: [139, 204, 167] };
-const TO = { fill: [238, 156, 165], line: [72, 67, 108], bark: [252, 210, 228], leaf: [139, 204, 167] };
+const TO = { fill: [239, 156, 166], line: [72, 67, 108], bark: [252, 210, 228], leaf: [139, 204, 167] };
 
 // ---- Which of Belleza's trees, and what of it: a point on its trunk, the row where its crown is cut (its trunk is one
 // piece there), and what else to leave out (the branches of the trees behind it, which touch it)
@@ -95,7 +95,7 @@ const recolour = (data) => {
         keys.forEach((k) => {
             const [r, g, b] = FROM[k];
             const d2 = (data[i] - r) ** 2 + (data[i + 1] - g) ** 2 + (data[i + 2] - b) ** 2;
-            const wgt = Math.exp(-d2 / (2 * 34 ** 2)) + 1e-9;
+            const wgt = Math.exp(-d2 / (2 * 16 ** 2)) + 1e-9;   // narrow: Belleza's pink becomes exactly Celebración's
             total += wgt;
             for (let c = 0; c < 3; c++) mix[c] += wgt * (TO[k][c] + (data[i + c] - FROM[k][c]) * (k === 'fill' ? 0 : 0.5));
         });
