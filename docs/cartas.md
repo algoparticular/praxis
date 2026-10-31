@@ -73,7 +73,7 @@ Se cambia una línea en `src/data/cardChords.js`, por ejemplo `28: 'Em'`. Se esc
 | 9 | Upekkha | Paramis | Soltar | Mi menor | Escena propia, verbo jugable |
 | 10 | " ... " | Special | por decidir | Sol mayor | Ilustración plana |
 | 11 | Aceptación | Regular | Fluir | Si menor | Ilustración plana |
-| 12 | Armonía | Regular | Resonar | Domaj7 | Ilustración plana |
+| 12 | Armonía | Regular | Resonar | Domaj7 | Escena propia, sin juego todavía |
 | 13 | Belleza | Regular | Ver | Lamaj7 | Ilustración plana |
 | 14 | Celebración | Regular | Fluir | Mimaj7 | Ilustración plana |
 | 15 | Ciclos | Regular | Soltar | Fa7 | Ilustración plana |
