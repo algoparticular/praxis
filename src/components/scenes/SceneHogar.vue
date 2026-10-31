@@ -1,24 +1,29 @@
 <script setup>
     // Hogar: a living cell-planet crowned with mushrooms, a little larva inside it, in a quiet grey sky.
-    // The layers come from the artwork (public/assets/hogar, cropped from sheets of 3240px: PIECES gives each
-    // one's box as a percentage of that square). The crown of mushrooms turns slowly. The inside is a watery system
-    // (useCellWater): every organelle bobs about where it was drawn, and the larva floats slowly, bumping into them
-    // and into the wall of the cell instead of going through, and giving them a nudge. The colour is code: the
-    // interior and the nucleus are plain discs (the interior with the light of the water rippling across it), the
-    // nucleus's stipple and the spore dust around the planet are particles (useStardust), and so are the faint dots of
-    // the sky. As in Pañña, the orange dust is a density map of the original stipple (hogarDust.json) drawn back as
-    // particles behind the crown; only the thin fringe hugging the mushrooms stays in the picture. Touching a mushroom
-    // throws spores (useSparks).
+    // Built from the layers of the illustration by scripts/convert-hogar.mjs (public/assets/hogar and hogarScene.json,
+    // in px of the 2160 square that the scene lays out as its frame). Only what has drawing in it is a picture: the
+    // crown (the gills, the pink caps and their red dots, the stalks and the spiky rim of the cell, and the line work, in
+    // one picture that turns slowly), the eight antennae among the mushrooms (each its own picture in the crown, swaying
+    // from its foot at its own pace, its blue tip a disc in code), the organelles (golgi, bucle, garabato, rulo,
+    // vesiculas, mitocondria: each its own picture) and the larva. The rest is code: the inside of the cell is a disc
+    // with the light of the water rippling across it, the nucleus a disc, the three little circles of the organelles
+    // discs; the nucleus's stipple and the loose specks inside the cell are particles at the dots of the drawing, and so
+    // are the loose orange dots round the planet and the purple dots of the sky (mirrored past the square, so they fill
+    // any screen). The dense orange stipple round the crown is a density map of the drawing, drawn back as particles that
+    // turn with the crown, so its lumps stay by the big mushrooms. The grey of the sky is the card's colour, behind it.
+    // The inside is a watery system (useCellWater): every organelle bobs about where it was drawn (the specks with
+    // them), and the larva floats slowly, bumping into them and into the wall of the cell instead of going through,
+    // and giving them a nudge; it breathes as it swims. Touching a mushroom throws spores (useSparks).
     // It is drawn in WebGL (useLayerStage): the planet is a group of planes at one depth, the camera slides with the
     // pointer or the tilt; the organelles tremble a little, as seen through water. The mushrooms' touch targets are DOM
     // elements kept over their caps as the crown turns.
     // Its verb is Arraigar (take root), as in Paciencia, but turned inwards: the home is inside, the "Divine spark" is
-    // the nucleus. Holding the nucleus stops time: the crown stops turning, the water calms and the organelles stay
-    // where they are, and the larva swims home and curls up against it. From the foot of every mushroom a root of light
-    // grows across the water to the nucleus (useCellRoots), one by one; when a root gets there, a bead of light runs back
-    // up it and that mushroom's cap lights with the spark's warmth, and the spark grows. Meanwhile the rulito is born
-    // over the larva's head; it is whole when the last mushroom is lit: it flares, a wave of light runs out of the
-    // nucleus along every root and each mushroom throws its spores as it gets there. Let go and time runs again: the
+    // the nucleus. Holding the nucleus stops time: the crown and its antennae stop, the water calms and the organelles
+    // stay where they are, and the larva swims home and curls up against it. From the foot of every mushroom a root of
+    // light grows across the water to the nucleus (useCellRoots), one by one; when a root gets there, a bead of light
+    // runs back up it and that mushroom's cap lights with the spark's warmth, and the spark grows. Meanwhile the rulito
+    // is born over the larva's head; it is whole when the last mushroom is lit: it flares, a wave of light runs out of
+    // the nucleus along every root and each mushroom throws its spores as it gets there. Let go and time runs again: the
     // crown turns, the larva wanders off and the rulito's tail catches up with its head. Once the rulito is gone the roots
     // and the lit caps fade away, and the next hold grows them again (brighter each time it is completed, up to three).
     // Touching the larva (a Sama) makes it dart off through the water, away from the finger.
@@ -32,8 +37,7 @@
     import { play } from '../../composables/useSound.js';
     import { sceneMilestone } from '../../analytics.js';
     import Rulito from '../Rulito.vue';
-    import dustCloud from '../../composables/hogarDust.json';
-    import CAPS from '../../composables/hogarCaps.json';
+    import art from '../../composables/hogarScene.json';
 
     const props = defineProps({
         card: { type: Object, default: () => ({}) },
@@ -60,55 +64,67 @@
     const L = {};                           // the layers (stage nodes)
     const els = {};                         // the floating pieces' nodes, by id
     let F = { x: 0, y: 0, size: 1 };        // the planet's square on screen at rest (px)
+    let screen = { w: 1, h: 1 };
 
-    // The camera slides SLIDE px at the edge of a swipe; the planet moves 18px across and 10 up and down, as before
+    // The camera slides SLIDE px at the edge of a swipe; the planet moves 18px across and 10 up and down
     const SLIDE = 50;
     const SLIDE_Y = 28;
     const PLANET_Z = 18 / (SLIDE + 18);
 
-    // Where each layer sits, in % of the 3240px square it was drawn in (left, top, width, height)
-    const CROWN = { left: 16.574, top: 22.654, w: 65.895, h: 64.506 };
-    const LARVA = { left: 42.037, top: 39.167, w: 5.031, h: 9.66 };
+    // The drawing is laid out in px of its 2160 square (hogarScene.json); the scene works in fractions of that frame
+    const S = art.size;
+    const frac = ([left, top, w, h]) => ({ left: left / S, top: top / S, w: w / S, h: h / S });
+    const CROWN = frac(art.boxes.crown);
+    const LARVA = frac(art.boxes.larva);
     // The pieces that float in the water. `circles` (frame fractions) are what the larva bumps into, `turn` how far
-    // each rocks, in degrees, `sway` how far it wanders, in frame fractions
+    // each rocks, in degrees, `sway` how far it wanders, in frame fractions. The three little circles (`puntos`) are
+    // discs and the loose specks (`motas`) particles; the others are pictures
     const PIECES = [
-        { id: 'motas', file: 'motas', box: { left: 34.66, top: 33.704, w: 32.407, h: 32.778 }, sway: 0.004, turn: 1 },
-        { id: 'golgi', file: 'golgi', box: { left: 45.093, top: 53.981, w: 16.698, h: 12.963 }, sway: 0.005, turn: 1.5, mass: 8,
+        { id: 'golgi', sway: 0.005, turn: 1.5, mass: 8,
             circles: [[0.541, 0.6225, 0.0155], [0.5423, 0.5926, 0.0137], [0.4991, 0.6336, 0.0108], [0.5225, 0.5988, 0.0103], [0.5454, 0.6543, 0.0103], [0.5148, 0.6265, 0.0101], [0.5083, 0.6049, 0.0099]] },
-        { id: 'bucle', file: 'bucle', box: { left: 34.938, top: 41.142, w: 5.772, h: 13.395 }, sway: 0.006, turn: 3, mass: 3,
+        { id: 'bucle', sway: 0.006, turn: 3, mass: 3,
             circles: [[0.3494, 0.4926, 0.0083], [0.3855, 0.4287, 0.0058], [0.3759, 0.5025, 0.005], [0.362, 0.5404, 0.0047], [0.3534, 0.5046, 0.0046], [0.3543, 0.4775, 0.0044], [0.3994, 0.4546, 0.0043]] },
-        { id: 'garabato', file: 'garabato', box: { left: 60.093, top: 39.475, w: 2.5, h: 5.278 }, sway: 0.007, turn: 6, mass: 1.5,
+        { id: 'garabato', sway: 0.007, turn: 6, mass: 1.5,
             circles: [[0.6157, 0.4235, 0.0062], [0.6247, 0.4336, 0.0056], [0.6028, 0.4068, 0.0049], [0.6114, 0.4151, 0.0046]] },
-        { id: 'rulo', file: 'rulo', box: { left: 46.42, top: 52.901, w: 1.914, h: 5.34 }, sway: 0.007, turn: 6, mass: 1.5,
+        { id: 'rulo', sway: 0.007, turn: 6, mass: 1.5,
             circles: [[0.4738, 0.5593, 0.0072], [0.4787, 0.5694, 0.0041], [0.4759, 0.5759, 0.0037], [0.479, 0.5432, 0.0035]] },
-        { id: 'vesiculas', file: 'vesiculas', box: { left: 38.148, top: 53.704, w: 5.525, h: 6.79 }, sway: 0.007, turn: 4, mass: 2,
+        { id: 'vesiculas', sway: 0.007, turn: 4, mass: 2,
             circles: [[0.4091, 0.5704, 0.0235]] },
-        { id: 'mitocondria', file: 'mitocondria', box: { left: 61.698, top: 45.772, w: 4.321, h: 7.84 }, sway: 0.006, turn: 8, mass: 3,
+        { id: 'mitocondria', sway: 0.006, turn: 8, mass: 3,
             circles: [[0.6386, 0.4905, 0.0195], [0.6386, 0.5255, 0.0195]] },
-        { id: 'puntos', file: 'puntos', box: { left: 48.765, top: 35.525, w: 3.426, h: 3.519 }, sway: 0.008, turn: 5 },
+        { id: 'puntos', sway: 0.008, turn: 5, discs: true },
+        { id: 'motas', sway: 0.004, turn: 0, specks: true },
     ];
+    const PUNTOS = art.puntos.map(([x, y, r]) => ({ x: x / S, y: y / S, r: r / S }));
+    const PUNTOS_AT = { x: PUNTOS.reduce((s, p) => s + p.x, 0) / PUNTOS.length, y: PUNTOS.reduce((s, p) => s + p.y, 0) / PUNTOS.length };
+    // The antennae: each sways from its foot; `tip` is its blue disc
+    const ANTENNAE = art.antennae.map(({ name, foot, tip }, i) => ({
+        name, box: frac(art.boxes[name]), foot: { x: foot[0] / S, y: foot[1] / S }, tip: { x: tip[0] / S, y: tip[1] / S, r: tip[2] / S },
+        rate: 0.45 + (i * 0.13) % 0.35, phase: i * 2.1, amp: 4 + (i % 3),
+    }));
 
-    // The planet's centre and radius in frame fractions: the interior disc's middle, and where the mushrooms start
-    const PLANET = { x: 0.5096, y: 0.5049, r: 0.24 };
-    // The nucleus, a disc inside it
-    const NUCLEUS = { x: 0.5359, y: 0.4694, r: 0.0585 };
-    const CELL = { x: 0.5096, y: 0.5049, r: 0.18 };           // the interior disc
-    const LARVA_AT = { x: 0.4454, y: 0.452, r: 0.02 };        // where the larva was drawn, and its body
+    // The inside of the cell (a disc), the planet round it (where the dust is spawned) and the nucleus, in frame fractions
+    const CELL = { x: art.cell.x / S, y: art.cell.y / S, r: art.cell.r / S };
+    const PLANET = { x: CELL.x, y: CELL.y, r: 0.24 };
+    const NUCLEUS = { x: art.nucleus.x / S, y: art.nucleus.y / S, r: art.nucleus.r / S };
+    const LARVA_AT = { x: art.larvaBody[0] / S, y: art.larvaBody[1] / S, r: 0.02 };   // where the larva was drawn, and its body
+    // The mushrooms' caps that can be touched, in % of the frame [x, y, r]
+    const CAPS = art.caps.map(([x, y, r]) => [x / S * 100, y / S * 100, r / S * 100]);
     // Home: where the larva curls up, against the nucleus's left side (from the nucleus's centre)
     const HOME = { x: -0.083, y: 0.02 };
     // The roots' canvas covers the inside of the planet; their feet are on the wall of the cell, under each mushroom
     const ROOT_AREA = { left: CELL.x - 0.2, top: CELL.y - 0.2, w: 0.4, h: 0.4 };
     const FOOT = CELL.r * 0.97;
     const SPARK = [1, 0.72, 0.44];                            // the warm light of the spark, and of the lit caps
-    const NUCLEUS_COLOR = [0x72 / 255, 0x55 / 255, 0x6f / 255];
+    const NUCLEUS_COLOR = [16, 8, 0].map((k) => ((art.nucleus.color >> k) & 255) / 255);
     const EMBER = [0xe0 / 255, 0x8e / 255, 0x6c / 255];       // the nucleus lit
-    // The dust of the original, back as particles: where the density map says there is stipple, as many dots as it covered
-    const grid = { ...dustCloud, bytes: Uint8Array.from(atob(dustCloud.data), (c) => c.charCodeAt(0)) };
-    const DUST_COLORS = [0xf8a275, 0xffb069, 0xf5976a, 0xffc08a];
+    // The dust of the drawing, back as particles: where the density map says there is stipple, as many dots as it covered
+    const grid = { ...art.dust, bytes: Uint8Array.from(atob(art.dust.data), (c) => c.charCodeAt(0)) };
+    const DUST_COLORS = [art.dustColor, 0xffb069, 0xf5976a, 0xffc08a];
+    const SPORES = [0xffb069, 0xff9a5c, 0xffd29a, 0xf08a8a];
     const dustPoints = () => {
-        const f = frameBox();
-        const k = f.size / 3240;
-        const dot = Math.max(1.8, 9 * k);
+        const k = F.size / S;
+        const dot = Math.max(1.8, 6 * k);
         const out = [];
         for (let row = 0; row < grid.rows; row++) {
             for (let col = 0; col < grid.cols; col++) {
@@ -119,8 +135,8 @@
                 if (Math.random() < wanted - n) n++;
                 for (let i = 0; i < n; i++) {
                     out.push([
-                        f.x + (grid.x + (col + Math.random()) * grid.cell) * k,
-                        f.y + (grid.y + (row + Math.random()) * grid.cell) * k,
+                        F.x + (grid.x + (col + Math.random()) * grid.cell) * k,
+                        F.y + (grid.y + (row + Math.random()) * grid.cell) * k,
                         dot * (0.7 + Math.random() * 0.7),
                         DUST_COLORS[Math.floor(Math.random() * DUST_COLORS.length)],
                     ]);
@@ -129,28 +145,48 @@
         }
         return out;
     };
-
-    // The square of the artwork on screen (3240px in the artwork), centred, big enough that the crown fills the middle
-    const layout = (W, H) => {
-        const size = Math.min(Math.max(1.28 * W, 0.89 * H), 1.6 * H);
-        F = { x: W / 2 - size / 2, y: H / 2 - size / 2 + 0.06 * H, size };
+    // Dots of the drawing ([x, y, radius] in px of the square) where they are on screen, as particles
+    const fromArt = (dots, colors, least = 1.4) => () => {
+        const k = F.size / S;
+        return dots.map(([x, y, r], i) => [F.x + x * k, F.y + y * k, Math.max(least, 2 * r * k), colors[i % colors.length]]);
     };
-    // A box given in % of the square, in px of the screen at rest
-    const inFrame = (l) => ({ left: F.x + l.left / 100 * F.size, top: F.y + l.top / 100 * F.size, w: l.w / 100 * F.size, h: l.h / 100 * F.size });
+    // The sky's dots fill the screen: the square's, and mirrored past each of its edges
+    const skyPoints = () => {
+        const k = F.size / S;
+        const out = [];
+        for (let ix = -2; ix <= 2; ix++) {
+            for (let iy = -2; iy <= 2; iy++) {
+                art.sky.forEach(([x, y, r]) => {
+                    const px = F.x + (ix * S + (ix % 2 ? S - x : x)) * k;
+                    const py = F.y + (iy * S + (iy % 2 ? S - y : y)) * k;
+                    if (px < -40 || py < -40 || px > screen.w + 40 || py > screen.h + 40) return;
+                    out.push([px, py, Math.max(1.6, 2 * r * k), art.skyColor]);
+                });
+            }
+        }
+        return out;
+    };
+
+    // The square of the artwork on screen, centred, big enough that the crown fills the middle, but never so big that
+    // the crown reaches up to the card's name
+    const layout = (W, H) => {
+        const middle = H / 2 + 0.06 * H;
+        const room = (middle - titleBottom(H) - 8) / (CELL.y - CROWN.top);
+        const size = Math.min(Math.max(1.28 * W, 0.89 * H), 1.6 * H, Math.max(room, 0.6 * Math.min(W, H)));
+        F = { x: W / 2 - CELL.x * size, y: middle - CELL.y * size, size };
+        screen = { w: W, h: H };
+    };
+    // Where the card's name ends, from the top of the scene (px)
+    const titleBottom = (h) => {
+        const title = stageEl?.querySelector('h1');
+        if (!title || !root.value) return 0.16 * h;
+        return title.getBoundingClientRect().bottom - root.value.getBoundingClientRect().top;
+    };
+    // A box given in fractions of the square, in px of the screen at rest
+    const inFrame = (l) => ({ left: F.x + l.left * F.size, top: F.y + l.top * F.size, w: l.w * F.size, h: l.h * F.size });
     const at = (fx, fy) => ({ x: F.x + fx * F.size, y: F.y + fy * F.size });
-    const frameBox = () => F;
     const discBox = (c) => ({ left: F.x + (c.x - c.r) * F.size, top: F.y + (c.y - c.r) * F.size, w: 2 * c.r * F.size, h: 2 * c.r * F.size });
 
-    // Stipple on the nucleus: thicker on its right, like the artwork
-    const nucleusStipple = () => {
-        for (;;) {
-            const a = Math.random() * Math.PI * 2;
-            const d = Math.sqrt(Math.random()) * NUCLEUS.r;
-            const u = Math.cos(a) * d / NUCLEUS.r;             // -1 (left) .. 1 (right)
-            if (Math.random() > 0.08 + 0.92 * Math.max(0, (u + 0.35) / 1.35) ** 2) continue;
-            return [F.x + (NUCLEUS.x + Math.cos(a) * d) * F.size, F.y + (NUCLEUS.y + Math.sin(a) * d) * F.size];
-        }
-    };
     const around = () => {
         const cx = F.x + PLANET.x * F.size;
         const cy = F.y + PLANET.y * F.size;
@@ -165,7 +201,7 @@
         const box = event.currentTarget.getBoundingClientRect();
         const area = canvas.value.getBoundingClientRect();
         sparks.burst(box.left + box.width / 2 - area.left, box.top + box.height / 2 - area.top, {
-            n: 26, colors: [0xffb069, 0xff9a5c, 0xffd29a, 0xf08a8a], speed: 120, life: 2.8, size: 4.6, spread: 8,
+            n: 26, colors: SPORES, speed: 120, life: 2.8, size: 4.6, spread: 8,
         });
         dust?.boost(0, 1.4);
         dust?.boost(1, 1);
@@ -233,6 +269,7 @@
     let wave = -1;                          // where the wave of light is along the roots (0..1), or -1
     let spark = 0;                          // the nucleus's light, eased
     let lastNote = -1;
+    let swayTime = 0;                       // the antennae's own clock, which stops with time
     let glyph = null;
 
     // Pressing the nucleus: time stops while it is held
@@ -279,7 +316,7 @@
         if (reduced || !stage) return;
         CAPS.forEach(([x, y]) => {
             const c = L.crown.toScreen(F.x + x / 100 * F.size, F.y + y / 100 * F.size);
-            sparks.burst(c.x, c.y, { n: 4, colors: [0xffb069, 0xff9a5c, 0xffd29a, 0xf08a8a], speed: 90, life: 2.2, size: 4, spread: 6 });
+            sparks.burst(c.x, c.y, { n: 4, colors: SPORES, speed: 90, life: 2.2, size: 4, spread: 6 });
         });
         front?.boost(0, 1.4);
     };
@@ -288,6 +325,7 @@
     const play_ = (t, dt, ramp) => {
         still += ((held ? 1 : 0) - still) * Math.min(1, dt * (held ? 2.5 : 0.7));
         turnNow += dt * 1.8 * ramp * (1 - still);
+        swayTime += dt * (1 - still);
         water.calm = still;
         const n = water.offset('nucleus');
         water.home = held ? { x: NUCLEUS.x + n.x + HOME.x, y: NUCLEUS.y + n.y + HOME.y } : null;
@@ -389,25 +427,38 @@
         water.wall += ((head > 0 ? WALL_CROWNED : LARVA_AT.r) - water.wall) * Math.min(1, dt * 1.5);
     };
 
+    const UNIT = { left: 0, top: 0, w: 1, h: 1 };
     const build = (s) => {
-        const planetDepth = s.depth(PLANET_Z);
-        L.planet = planetDepth.group();
-        L.interior = L.planet.disc({ rect: { left: 0, top: 0, w: 1, h: 1 }, color: 0x7e5e76, water: 1 });
+        L.planet = s.depth(PLANET_Z).group();
+        L.interior = L.planet.disc({ rect: UNIT, color: art.cell.color, water: 1 });
         // The spark's light, round the nucleus (seen when it is held). Not in the bloom: that pass would draw it without
         // the nucleus in front of it, a white-hot dot in the middle
-        L.spark = L.planet.glow({ rect: { left: 0, top: 0, w: 1, h: 1 }, color: SPARK, stops: [[0, 0.6], [0.3, 0.32], [0.62, 0]] });
+        L.spark = L.planet.glow({ rect: UNIT, color: SPARK, stops: [[0, 0.6], [0.3, 0.32], [0.62, 0]] });
         L.spark.opacity = 0;
-        L.nucleus = L.planet.disc({ rect: { left: 0, top: 0, w: 1, h: 1 }, color: 0x72556f });
-        PIECES.forEach((p) => { els[p.id] = L.planet.image(`/assets/hogar/${p.file}.webp`, { shimmer: 0.6 }); });
+        L.nucleus = L.planet.disc({ rect: UNIT, color: art.nucleus.color });
+        PIECES.forEach((p) => {
+            if (p.specks) return;
+            if (p.discs) {
+                els[p.id] = L.planet.group();
+                L.puntos = PUNTOS.map(() => els[p.id].disc({ rect: UNIT, color: art.puntosColor }));
+                return;
+            }
+            els[p.id] = L.planet.image(`/assets/hogar/${p.id}.webp`, { shimmer: 0.6 });
+        });
         // The roots, over the organelles and under the larva
         L.roots = L.planet.canvas(rootsCanvas, { blending: 'add', bloom: true });
         L.larva = L.planet.image('/assets/hogar/larva.webp');
         L.rulito = L.planet.canvas(rulito.value.canvas, { bloom: true });
         L.crown = L.planet.group();
+        // The antennae, under the mushrooms (as drawn), each swaying from its foot with its blue tip
+        L.antennae = ANTENNAE.map((a) => {
+            const node = L.crown.group();
+            return { node, tip: node.disc({ rect: UNIT, color: art.tipColor }), pic: node.image(`/assets/hogar/${a.name}.webp`) };
+        });
         L.crownPic = L.crown.image('/assets/hogar/crown.webp');
         // A light on every cap, seen when its root has reached the nucleus (it turns with the crown)
         L.caps = CAPS.map(() => {
-            const node = L.crown.glow({ rect: { left: 0, top: 0, w: 1, h: 1 }, color: SPARK, stops: [[0, 0.75], [0.32, 0.32], [0.64, 0]], bloom: true });
+            const node = L.crown.glow({ rect: UNIT, color: SPARK, stops: [[0, 0.75], [0.32, 0.32], [0.64, 0]], bloom: true });
             node.opacity = 0;
             return node;
         });
@@ -418,24 +469,38 @@
 
     const place = (W, H) => {
         layout(W, H);
-        const centre = at(PLANET.x, PLANET.y);
+        const centre = at(CELL.x, CELL.y);
         L.planet.pivot = centre;
         L.interior.place(discBox(CELL));
         L.nucleus.place(discBox(NUCLEUS));
         L.spark.place(square(NUCLEUS.x, NUCLEUS.y, NUCLEUS.r * 6));
-        L.roots.place(inFrame({ left: ROOT_AREA.left * 100, top: ROOT_AREA.top * 100, w: ROOT_AREA.w * 100, h: ROOT_AREA.h * 100 }));
-        PIECES.forEach((p) => els[p.id].place(inFrame(p.box)));
+        L.roots.place(inFrame(ROOT_AREA));
+        PIECES.forEach((p) => {
+            if (p.specks) return;
+            if (p.discs) {
+                els[p.id].pivot = at(PUNTOS_AT.x, PUNTOS_AT.y);
+                PUNTOS.forEach((c, i) => L.puntos[i].place(discBox(c)));
+                return;
+            }
+            els[p.id].place(inFrame(frac(art.boxes[p.id])));
+        });
         // The larva walks about on its feet
         const larva = inFrame(LARVA);
         L.larva.place(larva, { x: larva.left + larva.w / 2, y: larva.top + larva.h * 0.8 });
         // The rulito over its head (its canvas is bigger than the glyph, for the glow, as in Paciencia), going with it
         const rh = LARVA.h * 0.7, rw = rh * 32 / 86;
-        glyph = inFrame({ left: LARVA.left + LARVA.w / 2 - rw / 2, top: LARVA.top - 0.6 - rh, w: rw, h: rh });
+        glyph = inFrame({ left: LARVA.left + LARVA.w / 2 - rw / 2, top: LARVA.top - 0.006 - rh, w: rw, h: rh });
         L.rulito.place({ left: glyph.left - 0.4375 * glyph.w, top: glyph.top - 0.1628 * glyph.h, w: glyph.w * 1.875, h: glyph.h * 1.3256 },
             { x: glyph.left + glyph.w / 2, y: glyph.top + glyph.h });
-        // The crown turns about the middle of the interior (the disc's centre)
-        L.crown.pivot = at(0.5096, 0.5049);
+        // The crown turns about the middle of the inside of the cell
+        L.crown.pivot = centre;
         L.crownPic.place(inFrame(CROWN));
+        ANTENNAE.forEach((a, i) => {
+            const { node, tip, pic } = L.antennae[i];
+            node.pivot = at(a.foot.x, a.foot.y);
+            tip.place(discBox(a.tip));
+            pic.place(inFrame(a.box));
+        });
         CAPS.forEach(([x, y, r], i) => L.caps[i].place(square(x / 100, y / 100, Math.max(r * 3.4, 4.5) / 100)));
     };
 
@@ -487,10 +552,15 @@
         last = t;
         play_(t, Math.min(dt, 0.1), ramp);
         L.crown.rotate = turnNow;
+        // Each antenna sways from its foot at its own pace (still while time is stopped)
+        ANTENNAE.forEach((a, i) => {
+            L.antennae[i].node.rotate = (Math.sin(swayTime * a.rate + a.phase) + 0.4 * Math.sin(swayTime * a.rate * 2.3 + a.phase * 1.7)) * a.amp * ramp;
+        });
         water.step(dt * ramp, t);
         PIECES.forEach((p) => {
-            const o = water.offset(p.id);
             const node = els[p.id];
+            if (!node) return;
+            const o = water.offset(p.id);
             node.x = o.x * F.size;
             node.y = o.y * F.size;
             node.rotate = Math.sin(t * 0.15 + p.sway * 900) * p.turn * ramp + o.x * 120;
@@ -498,10 +568,17 @@
         const n = water.offset('nucleus');
         L.nucleus.x = n.x * F.size;
         L.nucleus.y = n.y * F.size;
-        // What is drawn in particles follows the planet: the halo of dust, and the nucleus's stipple with its own sway
+        // What is drawn in particles follows the planet: the dust round it turns with the crown, the nucleus's stipple
+        // and the specks float with the water
         const drift = stage.drift(PLANET_Z);
+        const centre = at(CELL.x, CELL.y);
         dust?.shift(0, drift.x, drift.y + py);
+        dust?.shift(1, drift.x, drift.y + py);
+        dust?.turn(0, turnNow, centre.x, centre.y);
+        dust?.turn(1, turnNow, centre.x, centre.y);
         front?.shift(1, drift.x + n.x * F.size, drift.y + py + n.y * F.size);
+        const m = water.offset('motas');
+        front?.shift(2, drift.x + m.x * F.size, drift.y + py + m.y * F.size);
         // The larva floats, leaning into its way and bobbing; a knock makes it squash a little
         const me = water.swimmer;
         tilt += (Math.max(-1, Math.min(1, me.vx / 0.012)) * 16 - tilt) * Math.min(1, dt * 1.5);
@@ -544,27 +621,27 @@
         // The layers and their layout first, so the particles measured on them are made again after them on a resize
         build(stage);
         stage.onResize((W, H) => place(W, H));
-        // The sky's faint dots, far behind
+        // The sky's dots, far behind
         sky = startStardust(null, {
             stage,
             groups: [{
-                count: 150, colors: [0x7c4a6e, 0x8e4f72, 0xa95b78], size: [2, 5],
-                drift: 6, twinkle: 0.4, reach: 120, push: 30, parallax: 10, opacity: 0.8, order: -20,
+                points: skyPoints, look: 'hard', drift: 6, twinkle: 0.4, reach: 120, push: 30, parallax: 10, opacity: 0.9, order: -20,
             }],
         });
-        // Behind the planet: the animated dust that the baked dust of the crown's picture sits in front of
+        // Behind the planet, turning with the crown: the dense stipple round it (group 0) and the loose dots farther out
+        // (group 1), both following the planet by hand
         dust = startStardust(null, {
             stage,
             groups: [
-                // The halo of the original stipple (group 0, which follows the planet by hand)
                 { points: dustPoints, look: 'hard', drift: 7, jitter: 0.9, twinkle: 0.5, reach: 120, push: 36, parallax: 0, order: -10 },
                 {
-                    count: 300, colors: [0xffb069, 0xff9a5c, 0xffd29a, 0xf08a8a], size: [2.5, 6.5], look: 'hard', spawn: around,
-                    drift: 30, jitter: 0.5, twinkle: 0.8, reach: 150, push: 46, parallax: 18, order: -9,
+                    points: fromArt(art.sparse, [art.sparseColor, 0xffb069, 0xffc08a, 0xf5976a], 1.8), look: 'hard',
+                    drift: 14, jitter: 0.5, twinkle: 0.8, reach: 150, push: 46, parallax: 0, order: -9,
                 },
             ],
         });
-        // In front: a few motes drifting across, and the nucleus's stipple (group 1, which follows the planet by hand)
+        // In front: a few motes drifting across (group 0); the nucleus's stipple (group 1) and the specks inside the cell
+        // (group 2), each following its body in the water by hand; and the spores
         front = startStardust(null, {
             stage,
             groups: [
@@ -573,10 +650,15 @@
                     drift: 34, jitter: 0.5, twinkle: 0.8, reach: 150, push: 46, parallax: 26, order: 1e6,
                 },
                 {
-                    count: 240, colors: [0x86667e, 0x93718a, 0x7d5d75], size: [1.4, 3.4], look: 'hard', spawn: nucleusStipple,
-                    drift: 2, jitter: 0.4, twinkle: 0.15, reach: 0, parallax: 0, opacity: 0.8,
+                    points: fromArt(art.stipple, [art.stippleColor, 0x86667e, 0x7f5f78], 1.2), look: 'hard',
+                    drift: 1.5, jitter: 0.4, twinkle: 0.15, reach: 0, parallax: 0,
                     // the stipple sits on the nucleus, under the organelles drawn over it
                     order: L.nucleus.mesh.renderOrder + 0.5,
+                },
+                {
+                    points: fromArt(art.specks, [art.specksColor], 1.2), look: 'hard',
+                    drift: 2, jitter: 0.3, twinkle: 0.2, reach: 0, parallax: 0,
+                    order: L.interior.mesh.renderOrder + 0.5,
                 },
                 // Spores thrown from the mushrooms that are touched
                 { ...sparks.group(), order: 1e6 + 1 },
