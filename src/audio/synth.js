@@ -923,3 +923,24 @@ export const createAmbient = (ctx, out, name = BASE_CHORD, { hushed = false } = 
         },
     };
 };
+
+// Honestidad (Resonar, an echo): a voice from outside is quieted. Its note (`step` 0..1 across the chord, as `sing`)
+// sinks a fourth and fades under a soft "shh" of air going down: the voice goes quiet and settles
+export const quiet = (ctx, out, time, harmony, { step = 0.5 } = {}) => {
+    const h = harmony ?? PLAIN;
+    const notes = h.tones(h.voice, 12);
+    const f = hz(notes[Math.round(Math.min(1, Math.max(0, step)) * (notes.length - 1))]);
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(f, time);
+    osc.frequency.exponentialRampToValueAtTime(f * 0.75, time + 0.55);
+    gain.gain.setValueAtTime(0.0001, time);
+    gain.gain.exponentialRampToValueAtTime(0.03, time + 0.03);
+    gain.gain.exponentialRampToValueAtTime(0.0001, time + 0.7);
+    osc.connect(gain);
+    gain.connect(out);
+    osc.start(time);
+    osc.stop(time + 0.75);
+    swish(ctx, out, time, { from: 3200, to: 700, duration: 0.8, level: 0.012, q: 0.6 });
+};
