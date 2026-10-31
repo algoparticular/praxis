@@ -33,7 +33,7 @@ export function createParallax(root, onFrame) {
 
     window.addEventListener('pointermove', onPointer, { passive: true });
     document.addEventListener('pointerleave', onLeave);
-    // Android and desktop browsers deliver tilt freely; iOS only once it was allowed (asked once, useTilt.js): until
+    // Android and desktop browsers deliver tilt freely; iOS only once it was allowed (asked on a touch, useTilt.js): until
     // then no events come and the pointer leads
     if (typeof DeviceOrientationEvent !== 'undefined') window.addEventListener('deviceorientation', onTilt, { passive: true });
     const visibility = new IntersectionObserver(([entry]) => { visible = entry.isIntersecting; });
