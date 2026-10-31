@@ -66,7 +66,7 @@
     const sx = (x) => F.x + x * k();
     const sy = (y) => F.y + y * k();
     const rectOf = ([left, top, w, h]) => ({ left: sx(left), top: sy(top), w: w * k(), h: h * k() });
-    const SPAN = 1750, FOCUS = 1090;        // art px across that must be seen on a phone, and their middle
+    const SPAN = 2100, FOCUS = 1115;        // art px across that must be seen on a phone (everyone round the fire whole, with a little air), and their middle
     const DROP = 0.06;                      // how much of the frame goes under the bottom of a wide screen
     const layout = (w, h) => {
         W = w;
