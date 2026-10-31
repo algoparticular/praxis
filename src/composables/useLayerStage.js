@@ -237,8 +237,10 @@ const DISC_FRAGMENT = `
 // from the edge between them (0.5 on it, more on the second colour's side, FIELD_RANGE px to either end) and its
 // green, with uShaped, where it is drawn at all. The edge keeps the shape it was drawn with and lives: a slow wave runs
 // along it (one up, one down) and a slow swell pushes it in and out; a light runs along the membrane. uBubbles are bubbles of one colour in the other (centre and radii,
-// px; uTurns: their angle, and +1 for the second colour, -1 for the first): near their own colour they join it with a
-// neck, like a drop budding off a liquid or falling back into it. uScale is how many px a unit of the drawing is, so the
+// px; uTurns: their angle, +1 for the second colour or -1 for the first, how thick their neck is (a fraction of their
+// smaller radius; 0.25 if 0) and how much they are wax), as the wax of a lava lamp: their outline slowly bulges and
+// gives, and near their own colour, or each other, they join it with a neck, thin as a drop or thick as wax that buds
+// off a liquid or falls back into it. uScale is how many px a unit of the drawing is, so the
 // wave and the swell keep their size on every screen. Where the two meet there is a membrane: a thin band
 // a little lighter than either side, with a brighter line on each of its faces (uDpr keeps it as thick on every screen)
 export const FIELD_RANGE = 128;
@@ -257,7 +259,7 @@ const FIELD_FRAGMENT = `
     uniform vec4 uWave;            // a long wave travelling along the edge: amplitude px, wavelength px, phase, y px of its origin
     uniform vec4 uRect;            // where the plane is, px: left, top, width, height
     uniform vec4 uBubbles[${FIELD_BUBBLES}];
-    uniform vec2 uTurns[${FIELD_BUBBLES}];
+    uniform vec4 uTurns[${FIELD_BUBBLES}];
     varying vec2 vUv;
     float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
     float noise(vec2 p) {
@@ -292,8 +294,19 @@ const FIELD_FRAGMENT = `
             vec2 r = b.zw;
             float k0 = length(q / r), k1 = length(q / (r * r));
             float e = k0 * (k0 - 1.0) / max(k1, 0.0001);
-            float neck = 0.25 * min(r.x, r.y) + 2.0;
-            d = uTurns[i].y > 0.0 ? -smin(-d, e, neck) : smin(d, e, neck);
+            float rm = min(r.x, r.y);
+            float neck = (uTurns[i].z > 0.0 ? uTurns[i].z : 0.25) * rm + 3.0;
+            float own = uTurns[i].y > 0.0 ? -d : d;
+            if (e > own + neck + 0.2 * rm * uTurns[i].w) continue;
+            // Wax, not glass: its outline slowly bulges and gives in a few places, each bubble on its own
+            vec2 n = q / max(r, vec2(0.001)) / max(k0, 0.001);
+            float c2 = n.x * n.x - n.y * n.y, s2 = 2.0 * n.x * n.y;
+            float c3 = n.x * (4.0 * n.x * n.x - 3.0), s3 = n.y * (3.0 - 4.0 * n.y * n.y);
+            float fi = float(i);
+            float w2 = uTime * 0.31 + fi * 1.7, w3 = -uTime * 0.23 + fi * 2.9;
+            e -= rm * uWobble * uTurns[i].w * (0.07 * (c2 * cos(w2) + s2 * sin(w2)) + 0.05 * (c3 * cos(w3) + s3 * sin(w3)));
+            float m = smin(own, e, neck);
+            d = uTurns[i].y > 0.0 ? -m : m;
         }
         float aa = 0.6 / uDpr + 0.35;
         vec3 col = mix(uA, uB, smoothstep(-aa, aa, d));
@@ -627,8 +640,8 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
 
         // Two colours that meet and never mix, with a membrane between them (FIELD_FRAGMENT): source is a canvas drawn by
         // the scene (red: the distance to the edge, 0.5 + px / (2 * FIELD_RANGE); green, with shaped, where it is drawn).
-        // node.bubbles is its list of up to FIELD_BUBBLES bubbles, [x, y, rx, ry, angle, ±1] each (px, in the plane's
-        // space; +1 of the second colour), read every frame; call node.refresh() after drawing on the canvas, and set
+        // node.bubbles is its list of up to FIELD_BUBBLES bubbles, [x, y, rx, ry, angle, ±1, neck, wax] each (px, in the
+        // plane's space; +1 of the second colour; neck and wax as in FIELD_FRAGMENT, optional), read every frame; call node.refresh() after drawing on the canvas, and set
         // uniforms.uScale to the px of a unit of the drawing; uniforms.uWave is a long wave that travels
         // along the edge (amplitude px, wavelength px, phase, y px of its origin)
         field({ rect, source, colors = [0x000000, 0xffffff], shaped = false, flow = 1 } = {}) {
@@ -652,7 +665,7 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
                 uWave: { value: new THREE.Vector4(0, 0, 0, 0) },
                 uRect: { value: new THREE.Vector4(0, 0, 1, 1) },
                 uBubbles: { value: Array.from({ length: FIELD_BUBBLES }, () => new THREE.Vector4(0, 0, 0, 0)) },
-                uTurns: { value: Array.from({ length: FIELD_BUBBLES }, () => new THREE.Vector2(0, 0)) },
+                uTurns: { value: Array.from({ length: FIELD_BUBBLES }, () => new THREE.Vector4(0, 0, 0, 0)) },
             };
             const material = new THREE.ShaderMaterial({
                 uniforms, vertexShader: GLOW_VERTEX, fragmentShader: FIELD_FRAGMENT,
@@ -754,7 +767,7 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
                 if (u.uRect) u.uRect.value.set(r.left, r.top, r.w, r.h);
                 if (u.uBubbles) {
                     u.uBubbles.value.forEach((v, i) => { const b = this.bubbles[i]; v.set(b?.[0] ?? 0, b?.[1] ?? 0, b?.[2] ?? 0, b?.[3] ?? 0); });
-                    u.uTurns.value.forEach((v, i) => { const b = this.bubbles[i]; v.set(b?.[4] ?? 0, b?.[5] ?? 0); });
+                    u.uTurns.value.forEach((v, i) => { const b = this.bubbles[i]; v.set(b?.[4] ?? 0, b?.[5] ?? 0, b?.[6] ?? 0, b?.[7] ?? 1); });
                 }
                 if (this.sways) {
                     const n = Math.min(SWAYS, this.sways.length);

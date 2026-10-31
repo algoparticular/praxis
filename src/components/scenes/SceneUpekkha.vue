@@ -91,6 +91,7 @@
     const HEAD = art.head;
     const BASE = [1083, 1530];              // where Sid sits: he leans about it
     const ease = (p) => p * p * (3 - 2 * p);
+    const smooth = (a, b, x) => ease(Math.min(1, Math.max(0, (x - a) / (b - a))));
 
     // ---- Soltar: the thoughts
     const TOTAL = 8;                        // thoughts in a round, half from each side
@@ -610,7 +611,7 @@
     // the other colour, drift there a while and come back to fall in somewhere else
     const clusters = [];
     R.bubbles.forEach(([x, y, rx, ry, angle, plane, colour]) => {
-        const b = { x, y, rx, ry, angle, phase: Math.random() * 6.28 };
+        const b = { x, y, rx, ry, angle, phase: Math.random() * 6.28, melt: 0.09 + Math.random() * 0.05 };
         const near = clusters.find((c) => c.plane === plane && c.colour === colour && c.members.some((m) => Math.hypot(m.x - x, m.y - y) < 170));
         if (near) near.members.push(b);
         else clusters.push({ plane, colour, members: [b], state: 'home', timer: 14 + Math.random() * 16, p: 1, dx: 0, dy: 0, ey: 0 });
@@ -619,7 +620,11 @@
     const LAG = 0.14;                       // how far behind its cluster each smaller bubble goes
     const between = ([a, b]) => a + Math.random() * (b - a);
 
-    const SPAN_Y = [[-150, 1150], [1420, 2120]];    // where along the edge of each half wanderers bud off (art px)
+    // Up in the sky, clear of Sid (his head starts at art row 612): the card's clusters are lifted (LIFT, art px) and
+    // wanderers bud off, go and come back only within SPAN_Y; in the ground, below where he sits
+    const LIFT = [220, 0];
+    const SPAN_Y = [[-100, 380], [1640, 2120]];     // where along the edge of each half wanderers go (art px)
+    const within = (plane, y) => Math.min(SPAN_Y[plane][1], Math.max(SPAN_Y[plane][0], y));
     const WANDERERS = [3, 3];               // at most at once, in the sky and in the ground
     const wanderers = [];
     let nextWanderer = 2;
@@ -635,15 +640,15 @@
         const n = 1 + Math.floor(Math.random() * 3);
         const members = Array.from({ length: n }, (_, j) => {
             const r = size * Math.pow(0.55, j);
-            return { rx: r * between([1.3, 1.9]), ry: r, angle: angle + (Math.random() - 0.5) * 0.4, phase: Math.random() * 6.28, off: [(Math.random() - 0.5) * size, j * size * 1.3] };
+            return { rx: r * between([1.15, 1.5]), ry: r, angle: angle + (Math.random() - 0.5) * 0.4, phase: Math.random() * 6.28, off: [(Math.random() - 0.5) * size, j * size * 1.3] };
         });
         const reach = between([90, 260]);
         const rise = (Math.random() - 0.5) * 300;
         wanderers.push({
             plane, toward, members, age: 0,
-            from: y, to: y + rise, back: y + rise + (Math.random() - 0.5) * 320, reach,
+            from: y, to: within(plane, y + rise), back: within(plane, y + rise + (Math.random() - 0.5) * 320), reach,
             out: between([5, 8]), stay: between([3, 9]), home: between([5, 7]),
-            drift: (Math.random() - 0.5) * 14,
+            drift: (Math.random() - 0.5) * 8,
         });
     };
     // Where a wanderer is at a time (art px): out of its own colour, drifting, then back in somewhere else
@@ -665,10 +670,14 @@
     };
 
     // A bubble moving as a liquid, as the thoughts do: it trembles like jelly, and the faster it goes the more it
-    // stretches along its way (its speed read from where it was the frame before, art px). Returns it for the field
-    const liquid = (m, x, y, angle, dt, t, j, scale, toward) => {
-        const vx = m.px === undefined || !dt ? 0 : (x - m.px) / dt, vy = m.py === undefined || !dt ? 0 : (y - m.py) / dt;
-        m.px = x; m.py = y;
+    // stretches along its way (its speed read from where it was the frame before, art px, over the time really gone:
+    // dt is cut short after a slow frame). Only as much as `turn` does its long side turn towards its way (a bubble
+    // at rest is carried by the wave, it does not swim). Returns it for the field, with how thick its neck is and how
+    // much it is wax (as in field() in useLayerStage)
+    const liquid = (m, x, y, angle, dt, t, j, scale, toward, neck = 0.3, wax = 1, turn = 1) => {
+        const gone = m.pt === undefined || !dt ? 0 : t - m.pt;
+        const vx = m.px === undefined || !gone ? 0 : (x - m.px) / gone, vy = m.py === undefined || !gone ? 0 : (y - m.py) / gone;
+        m.px = x; m.py = y; m.pt = t;
         m.speed = (m.speed ?? 0) + (Math.hypot(vx, vy) - (m.speed ?? 0)) * Math.min(1, dt * 4);
         const stretch = Math.min(0.3, m.speed / 260);
         const jelly = 0.07 * Math.sin(t * (2.6 + 0.4 * j) + m.phase);
@@ -679,21 +688,21 @@
             d = Math.atan2(Math.sin(d), Math.cos(d));
             if (d > Math.PI / 2) d -= Math.PI;
             if (d < -Math.PI / 2) d += Math.PI;
-            a += d * Math.min(1, stretch * 4);
+            a += d * Math.min(1, stretch * 4) * turn;
         }
-        return [sx(x), sy(y), m.rx * (1 + jelly + stretch) * scale, m.ry * (1 - jelly - stretch * 0.5) * scale, a, toward];
+        return [sx(x), sy(y), m.rx * (1 + jelly + stretch) * scale, m.ry * (1 - jelly - stretch * 0.5) * scale, a, toward, neck, wax];
     };
 
     const moveClusters = (dt, t) => {
         clusters.forEach((c) => {
             c.timer -= dt;
-            if (c.state === 'home' && c.timer <= 0) { c.state = 'in'; c.ey = (Math.random() - 0.5) * 300; }
+            if (c.state === 'home' && c.timer <= 0) { c.state = 'in'; c.ey = (Math.random() - (c.plane ? 0.5 : 0.75)) * 300; }
             else if (c.state === 'in') {
                 c.p = Math.max(0, c.p - dt / GO);
                 if (!c.p) { c.state = 'away'; c.timer = between(AWAY); }
             } else if (c.state === 'away' && c.timer <= 0) {
                 c.state = 'out';
-                c.ey = (Math.random() - 0.5) * 300;
+                c.ey = (Math.random() - (c.plane ? 0.5 : 0.75)) * 300;
                 c.dx = (Math.random() - 0.5) * 40;
                 c.dy = (Math.random() - 0.5) * 60;
             } else if (c.state === 'out') {
@@ -711,23 +720,33 @@
             const toward = c.colour ? 1 : -1;               // where its own colour is: the second is on the right
             const n = c.members.length;
             const lead = c.members[0];
+            // As the wax of a lava lamp: the small ones stay apart, as the card has them, and now and then one drifts
+            // slowly to the big one, joins it with a thick neck and melts into it (the big one swells with what it
+            // takes in), and a while later buds off it again and goes back to its place
+            const melts = c.members.map((m, j) => (j ? smooth(0.35, 1, 0.5 + 0.5 * Math.sin(t * m.melt + m.phase)) : 0));
+            const taken = c.members.reduce((sum, m, j) => sum + m.rx * m.ry * smooth(0.55, 1, melts[j]), 0);
+            const swell = Math.sqrt(1 + taken / (lead.rx * lead.ry));
+            // Never touching the edge while they rest (it swells and ripples on its own, and a bubble that touches it
+            // melts into it): the whole cluster keeps away from it, as the card has it, only farther if it must
+            const clear = (b) => Math.hypot(b.rx * Math.cos(b.angle), b.ry * Math.sin(b.angle)) * 1.15 + 0.4 * Math.min(b.rx, b.ry) + 16 / scale;
+            const push = Math.max(0, ...c.members.map((b) => clear(b) - Math.abs(b.x - cardEdgeAt(c.plane, b.y))));
             c.members.forEach((m, j) => {
                 const lag = j * LAG, most = (n - 1) * LAG;
                 const p = ease(Math.min(1, Math.max(0, (c.p * (1 + most) - lag))));
-                // Out, it roams slowly round its place; the small ones breathe in to the big one until they touch it
-                // and merge, and out again
                 // They ride the wave (the card's bubbles are the eyes of a yin and yang: each sits in the other's lobe of
                 // the S, as far from the edge as the card has it, and goes with it as it waves), and circle slowly round their place
                 const roam = (b) => {
-                    const y = b.y + c.dy + Math.cos(t * 0.17 + b.phase) * 14;
-                    return [edgeNow(c.plane, y) + (b.x - cardEdgeAt(c.plane, b.y)) + c.dx + Math.sin(t * 0.21 + b.phase) * 10, y];
+                    const y = b.y - LIFT[c.plane] + c.dy + Math.cos(t * 0.17 + b.phase) * 14;
+                    return [edgeNow(c.plane, y) + (b.x - cardEdgeAt(c.plane, b.y)) - toward * push + c.dx + Math.sin(t * 0.21 + b.phase) * 10, y];
                 };
                 let [hx, hy] = roam(m);
+                let size = j ? 1 - smooth(0.55, 1, melts[j]) : swell;
                 if (j) {
                     const [lx, ly] = roam(lead);
-                    const near = 0.72 + 0.3 * Math.sin(t * (0.9 + 0.2 * j) + m.phase);
+                    const near = 1 - ease(melts[j]);
                     hx = lx + (hx - lx) * near;
-                    hy = ly + (hy - ly) * near + Math.sin(t * 1.3 + m.phase) * 6;
+                    hy = ly + (hy - ly) * near;
+                    size = Math.sqrt(Math.max(0, size));
                 }
                 // Gone: well inside its own colour, past the edge, somewhere else along it
                 const gy = hy + c.ey;
@@ -736,7 +755,10 @@
                 const y = gy + (hy - gy) * p - Math.sin(Math.PI * p) * 24 * toward;
                 // Yin and yang: as the bubbles of one colour swell, those of the other shrink, and back
                 const balance = 1 + 0.14 * Math.sin(t * 0.32 + (c.colour ? 0 : Math.PI));
-                list[c.plane].push(liquid(m, x, y, m.angle + Math.sin(t * 0.27 + m.phase) * 0.25, dt, t, j, scale * balance, toward));
+                if (size < 0.05) return;
+                // At rest a thin neck, as drops; budding off, falling back or melting into the big one, thick, as wax
+                const neck = 0.3 + Math.max(0.6 * (1 - p), j ? 1.5 * smooth(0, 0.3, melts[j]) : 0);
+                list[c.plane].push(liquid(m, x, y, m.angle + Math.sin(t * 0.27 + m.phase) * 0.08, dt, t, j, scale * balance * size, toward, neck, 0.7, 1 - p));
             });
         });
         for (let i = wanderers.length - 1; i >= 0; i--) {
@@ -748,7 +770,7 @@
                 const at = wandererAt(w, Math.max(0, w.age - j * 0.5));
                 const sway = Math.sin(t * 0.9 + m.phase) * 8;
                 const near = j ? 0.6 + 0.45 * Math.sin(t * (1 + 0.2 * j) + m.phase) : 1;
-                list[w.plane].push(liquid(m, at.x + m.off[0] * 0.3 * near + sway, at.y + m.off[1] * 0.4 * near, m.angle + Math.sin(t * 0.4 + m.phase) * 0.3, dt, t, j, scale, w.toward));
+                list[w.plane].push(liquid(m, at.x + m.off[0] * 0.3 * near + sway, at.y + m.off[1] * 0.4 * near, m.angle + Math.sin(t * 0.4 + m.phase) * 0.3, dt, t, j, scale, w.toward, 0.8));
             });
         }
         return list;
