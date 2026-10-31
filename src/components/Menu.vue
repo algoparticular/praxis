@@ -6,7 +6,6 @@
     const props = defineProps({
         hasHome: Boolean,
         hasFullDeck: Boolean,
-        hasCollaborate: Boolean,
         // the volume sliders belong to the navigation menu only: the footer shows this same menu without them
         hasAudio: Boolean,
     });
@@ -36,8 +35,6 @@
     <nav id="menu">
         <a v-if="props.hasHome" @click="navigate('/')">{{ $t("nav.home") }}</a>
         <a v-if="props.hasFullDeck" @click="navigate('/deck')">{{ $t("nav.deck") }}</a>
-        
-        <a v-if="props.hasCollaborate" @click="navigate('/collaborate')">{{ $t("nav.collaborate") }}</a>
 
         <div v-if="props.hasAudio" id="audioMixer">
             <label>

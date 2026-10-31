@@ -117,7 +117,7 @@ const atlas = sharp({ create: { width: ATLAS_W, height: atlasH, channels: 4, bac
     .composite(parts.map((p, i) => ({ input: p.png, left: at[i][0], top: at[i][1] })));
 await webp(sharp(await atlas.png().toBuffer())).toFile(path.join(target, 'boat.webp'));
 
-// The boat's box: everything but the cone, as the boat picture of the Collaborate page was cut
+// The boat's box: everything but the cone, as the boat picture of the old Collaborate page was cut
 const all = parts.reduce((b, p) => [Math.min(b[0], p.box[0]), Math.min(b[1], p.box[1]), Math.max(b[2], p.box[2]), Math.max(b[3], p.box[3])], [Infinity, Infinity, 0, 0]);
 const r4 = (v) => Math.round(v * 1e5) / 1e5;
 const scene = {

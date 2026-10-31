@@ -32,7 +32,6 @@ const CPUS = availableParallelism();
 const pages = [
     { path: '/', name: 'landing', expect: '#hero', draws: true },
     { path: '/deck', name: 'deck', expect: '.deckPage', draws: true },
-    { path: '/collaborate', name: 'collaborate', expect: 'main, .content' },
     { path: '/oracle', name: 'oracle', expect: '.content' },
     { path: '/oracleTheNine', name: 'oracle the nine', expect: '.content' },
     { path: '/share/3', name: 'share', expect: '#share' },

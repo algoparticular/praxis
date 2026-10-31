@@ -21,7 +21,7 @@
     // one, they all send a light back to it at once, without being asked (the card: blessings come back multiplied), and
     // a rulito is born over each friend's head and the card's name lights up. Then the lights fade, slowly, and it can
     // be played again. Nothing is lost and there is no order: touching one already lit only makes it glow.
-    // The two friends come from one picture of the Collaborate page (public/assets/share/particles.webp), split into
+    // The two friends come from one picture of the old Collaborate page (share/particles.webp, in the git history), split into
     // public/assets/dana/left.webp and right.webp, with the rulito that was drawn over the right one taken out.
     import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
     import { createParallax } from '../../composables/useParallax.js';
