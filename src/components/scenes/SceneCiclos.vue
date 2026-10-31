@@ -1,24 +1,27 @@
 <script setup>
     // Ciclos: "I appreciate who I was, I honour who I am, and I project who I want to be". A teal starry night pours
-    // over the yellow day like a liquid that never mixes with it; inside it the moon passes in front of a red sun (an
-    // eclipse: only the sun's stippled corona shows round it), white clouds drift, and over rolling hills of green and sand, with white rocks, pink fans and tufts of grass, Sid sits
-    // meditating on a rock with his red aura round him.
+    // over the yellow day like a liquid that never mixes with it, and the round body in the sky is both: the white moon
+    // where the night is over it and a red sun, its corona stippled, where the day is (as in the card, the disc split by
+    // the edge between them). White clouds drift, and over rolling hills of green and sand, with white rocks, pink fans
+    // and tufts of grass, Sid sits meditating on a rock with his red aura round him.
     // Its verb will be Soltar (closing a cycle: letting go of the old so the new can begin); there is no game yet. Sid,
     // the moon and the sun are apart (each its own picture or drawn in code), so the game can move them. For now a touch
     // is only answered: on Sid his aura flares and the chord is strummed (`star`); on the moon it rocks a little and the
     // corona flares.
     // The sky is not a picture: day and night are two liquids drawn by the stage (field()), from the night's shape, drops
     // and colour that the converter read from the card (it is in no layer); its stars are particles that live only in
-    // the night. Nor is the
-    // sun: a disc drawn in code (the biggest circle inside its solid middle, hidden by the moon) with a warm light round
-    // it and its stippled corona as live particles; the moon's stippled shade and Sid's aura are particles too.
-    // It is drawn in WebGL (useLayerStage): the clouds (one atlas, at three depths), the sun, the moon, the hills in four
-    // planes (made by the converter from the regions between the drawing's lines, each plane filled in where the one in
-    // front hides it, so nothing opens up as they slide apart) and Sid; every fan and tuft is its own plane, swaying in
-    // the wind (shader). Beyond the frame the land goes on, each plane mirrored on both sides. The moon slowly rides back
-    // and forth over the sun and rocks, the corona trembles, Sid breathes and his aura with him. From ciclosScene.json
-    // and public/assets/ciclos (made by scripts/convert-ciclos.mjs). The touch targets are DOM elements over Sid and the
-    // moon.
+    // the night. Nor is the sun: a disc drawn in code (the biggest circle inside its solid middle, under the moon) with a
+    // warm light round it and its stippled corona as live particles; the moon's stippled shade and Sid's aura are
+    // particles too. Moon and sun follow the edge as it flows: the moon's picture and its shade are masked by the night
+    // side of the same field the sky is drawn with, the corona and the sun's lights by its day side (maskBy(), a
+    // group's `mask`), so where the day flows across the moon it gives way to the sun, and back.
+    // It is drawn in WebGL (useLayerStage): the sky, the clouds (one atlas, at three depths), the sun, the moon, the
+    // hills in four planes (made by the converter from the regions between the drawing's lines, each plane filled in
+    // where the one in front hides it, so nothing opens up as they slide apart) and Sid; every fan and tuft is its own
+    // plane, swaying in the wind (shader). Beyond the frame the land goes on, each plane mirrored on both sides. The moon
+    // slowly rides back and forth over the sun and rocks, the corona trembles, Sid breathes and his aura with him. From
+    // ciclosScene.json and public/assets/ciclos (made by scripts/convert-ciclos.mjs). The touch targets are DOM elements
+    // over Sid and the moon.
     import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
     import { createParallax } from '../../composables/useParallax.js';
     import { createLayerStage, FIELD_RANGE, FIELD_BUBBLES } from '../../composables/useLayerStage.js';
@@ -217,11 +220,15 @@
         L.warm = sun.glow({ rect: { left: 0, top: 0, w: 1, h: 1 }, color: 0xffa070, stops: [[0, 0.28], [0.3, 0.1], [0.7, 0]] });
         L.sunGlow = sun.glow({ rect: { left: 0, top: 0, w: 1, h: 1 }, color: SUN.color, stops: [[0, 0.7], [0.36, 0.3], [0.62, 0]], bloom: true });
         L.sun = sun.disc({ rect: { left: 0, top: 0, w: 1, h: 1 }, color: SUN.color });
+        // Its lights only over the day (over the night the moon is what is seen; the disc is under it, and bigger)
+        L.warm.maskBy(L.sky, -1);
+        L.sunGlow.maskBy(L.sky, -1);
         sun.enter({ y: 50, delay: 100, duration: 2400 });
         // The moon in front of it (its shade, particles, follows it)
         const moon = s.depth(zFor(DEPTH.moon));
         L.moonNode = moon;
-        L.moon = moon.image('/assets/ciclos/moon.webp');
+        // The moon only over the night: where the day flows across it, the sun is seen instead, as in the card
+        L.moon = moon.image('/assets/ciclos/moon.webp').maskBy(L.sky, 1);
         moon.enter({ y: 60, delay: 250, duration: 2400 });
         // The land, far to near; each plane with its plants, mirrored beyond the frame when it reaches its sides; Sid on
         // the second, on his rock
@@ -437,10 +444,10 @@
             stage,
             manual: true,
             groups: [
-                // 0: the sun's stippled corona round the moon, alive
-                { colors: [SUN.color], parallax: 0, drift: 1.8, jitter: 0.5, twinkle: 0.3, reach: 0, order: after(L.sun), points: () => fromArt(SUN.dots, SUN.color, 1.4) },
-                // 1: the moon's stippled shade
-                { colors: [SHADE], parallax: 0, drift: 0.4, jitter: 0.15, twinkle: 0.05, reach: 0, order: after(L.moon), points: () => fromArt(MOON.dots, SHADE, 1.5) },
+                // 0: the sun's stippled corona, alive, only over the day
+                { colors: [SUN.color], parallax: 0, drift: 1.8, jitter: 0.5, twinkle: 0.3, reach: 0, order: after(L.sun), mask: { field: L.sky, side: -1 }, points: () => fromArt(SUN.dots, SUN.color, 1.4) },
+                // 1: the moon's stippled shade, only over the night
+                { colors: [SHADE], parallax: 0, drift: 0.4, jitter: 0.15, twinkle: 0.05, reach: 0, order: after(L.moon), mask: { field: L.sky, side: 1 }, points: () => fromArt(MOON.dots, SHADE, 1.5) },
                 // 2: Sid's aura, under him
                 { colors: [AURA], parallax: 0, drift: 1.4, jitter: 0.4, twinkle: 0.4, reach: 0, bloom: true, order: L.body.mesh.renderOrder - 0.5, points: () => fromArt(art.sid.aura, AURA, 1.1) },
                 // 3: the stars, only in the night, just over it (mirrored with it beyond the frame)

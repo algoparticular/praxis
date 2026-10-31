@@ -419,26 +419,42 @@ const SKY = [0xfc, 0xdc, 0x8c];
         }
         edge = next;
     }
-    // Softened (where the clouds and the lines crossed its edge the guess leaves notches): blurred and cut again at half
-    let soft = Float32Array.from(label, (v) => v);
-    const R = 14;
-    for (let pass = 0; pass < 3; pass++) {
-        const tmp = new Float32Array(N);
-        for (let y = 0; y < S; y++) {
-            let sum = 0;
-            for (let x = -R; x <= R; x++) sum += soft[y * S + Math.min(S - 1, Math.max(0, x))];
+    // Softened (where the clouds and the lines crossed its edge the guess leaves notches): blurred and cut again at half.
+    // Round the moon and the sun, where the card hides the most of it and the guess has corners, much more, so the edge
+    // that splits the disc into moon and sun is a smooth curve
+    const blur = (from, R) => {
+        const out = Float32Array.from(from);
+        for (let pass = 0; pass < 3; pass++) {
+            const tmp = new Float32Array(N);
+            for (let y = 0; y < S; y++) {
+                let sum = 0;
+                for (let x = -R; x <= R; x++) sum += out[y * S + Math.min(S - 1, Math.max(0, x))];
+                for (let x = 0; x < S; x++) {
+                    tmp[y * S + x] = sum / (2 * R + 1);
+                    sum += out[y * S + Math.min(S - 1, x + R + 1)] - out[y * S + Math.max(0, x - R)];
+                }
+            }
             for (let x = 0; x < S; x++) {
-                tmp[y * S + x] = sum / (2 * R + 1);
-                sum += soft[y * S + Math.min(S - 1, x + R + 1)] - soft[y * S + Math.max(0, x - R)];
+                let sum = 0;
+                for (let y = -R; y <= R; y++) sum += tmp[Math.min(S - 1, Math.max(0, y)) * S + x];
+                for (let y = 0; y < S; y++) {
+                    out[y * S + x] = sum / (2 * R + 1);
+                    sum += tmp[Math.min(S - 1, y + R + 1) * S + x] - tmp[Math.max(0, y - R) * S + x];
+                }
             }
         }
-        for (let x = 0; x < S; x++) {
-            let sum = 0;
-            for (let y = -R; y <= R; y++) sum += tmp[Math.min(S - 1, Math.max(0, y)) * S + x];
-            for (let y = 0; y < S; y++) {
-                soft[y * S + x] = sum / (2 * R + 1);
-                sum += tmp[Math.min(S - 1, y + R + 1) * S + x] - tmp[Math.max(0, y - R) * S + x];
-            }
+        return out;
+    };
+    const labels = Float32Array.from(label, (v) => v);
+    let soft = blur(labels, 14);
+    {
+        const wide = blur(labels, 50);
+        const [mx, my, mw, mh] = boxOf(await raw([2]));
+        const cx = mx + mw / 2, cy = my + mh / 2, r = mw / 2;
+        for (let i = 0; i < N; i++) {
+            const x = i % S, y = (i - x) / S;
+            const w = Math.max(0, Math.min(1, (r + 160 - Math.hypot(x - cx, y - cy)) / 120));
+            if (w > 0) soft[i] += (wide[i] - soft[i]) * w;
         }
     }
     const TOP = 1300;            // under it all is land

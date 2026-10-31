@@ -37,6 +37,10 @@
 // membrane between them and bubbles of one in the other: Upekkha's two halves) and rain (a storm: streaks of rain
 // slanting with the wind over the faint wavy lines of the wind on the sky, and a lightning: Addhitthana).
 //
+// Masks. A picture, a glow or a group of particles can be kept to one side of a field, following its edge as it flows
+// (node.maskBy(field, side); a particle group's { mask: { field, side } }): Ciclos's moon over the night, its sun over
+// the day.
+//
 // Underlay. A scene that draws something with its own three.js scene and camera (Vipassana's field of cells) hands it
 // to underlay(fn): it is drawn inside every render, over the layers marked { under: true } and under all the others.
 //
@@ -325,6 +329,54 @@ const FIELD_FRAGMENT = `
         gl_FragColor = vec4(col, 1.0) * a * uOpacity;
     }`;
 
+// A field's mask (Ciclos: the moon only over the night, the sun only over the day): what is drawn with it is kept only
+// on one side of a field() (fmSide 1 on its second colour, -1 on its first), following its edge as it flows. The edge
+// is worked out as FIELD_FRAGMENT does (the same map, wave and swell; not its bubbles, to keep the uniforms few), from
+// where the px is on screen (gl_FragCoord) less how far the field has slid with the camera (fmShift). Kept in step
+// with FIELD_FRAGMENT by hand. A shader takes it with maskShader() and the define FIELD_MASK (node.maskBy(), or a
+// particle group's { mask })
+const FIELD_MASK_CHUNK = `
+    #ifdef FIELD_MASK
+    uniform sampler2D fmMap;
+    uniform float fmTime;
+    uniform float fmFlow;
+    uniform float fmWobble;
+    uniform float fmScale;
+    uniform float fmSide;
+    uniform vec4 fmWave;
+    uniform vec4 fmRect;
+    uniform vec2 fmShift;          // how far the field has moved on screen from where it rests, px
+    uniform vec2 fmScreen;         // the canvas's height (px) and its pixel ratio
+    float fmHash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+    float fmNoise(vec2 p) {
+        vec2 i = floor(p), f = fract(p);
+        f = f * f * (3.0 - 2.0 * f);
+        return mix(mix(fmHash(i), fmHash(i + vec2(1.0, 0.0)), f.x), mix(fmHash(i + vec2(0.0, 1.0)), fmHash(i + 1.0), f.x), f.y);
+    }
+    float fieldMask() {
+        vec2 px = vec2(gl_FragCoord.x / fmScreen.y, fmScreen.x - gl_FragCoord.y / fmScreen.y) - fmShift;
+        vec2 fuv = (px - fmRect.xy) / fmRect.zw;
+        float d = (texture2D(fmMap, vec2(fuv.x, 1.0 - fuv.y)).r - 0.5) * ${2 * FIELD_RANGE}.0;
+        float t = fmTime * fmFlow;
+        vec2 u = px / fmScale;
+        float wave = sin(u.y / 300.0 - t * 0.9) * 0.7 + sin(u.y / 520.0 + t * 0.45) * 0.3;
+        float swell = fmNoise(u / 640.0 + vec2(t * 0.04, -t * 0.05)) - 0.5;
+        d += (wave * 4.0 + swell * 22.0) * fmScale * fmWobble;
+        if (fmWave.y > 0.0) d += fmWave.x * sin(6.2832 * (px.y - fmWave.w) / fmWave.y - fmWave.z);
+        float aa = 0.6 / fmScreen.y + 0.35;
+        return smoothstep(-aa, aa, d * fmSide);
+    }
+    #endif`;
+// A fragment shader that can be masked by a field: the chunk before it, and `apply` (what the mask does to its colour,
+// e.g. 'gl_FragColor *= fieldMask();') at the end of its main
+export const maskShader = (fragment, apply) => FIELD_MASK_CHUNK + fragment.replace(/}\s*$/, `
+    #ifdef FIELD_MASK
+        ${apply}
+    #endif
+    }`);
+const LAYER_MASKABLE = maskShader(LAYER_FRAGMENT, 'gl_FragColor *= fieldMask();');
+const GLOW_MASKABLE = maskShader(GLOW_FRAGMENT, 'gl_FragColor.a *= fieldMask();');
+
 // A storm drawn in code over the whole plane (Addhitthana): thin streaks of rain slanting with the wind, and under them
 // the faint wavy lines of the wind on the sky, as the card draws them. Everything is in px of the screen (uRect, as the
 // field), so it keeps its size on every screen. The scene moves it: uFall is how far the rain has fallen and uFlow how
@@ -444,6 +496,7 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
     const BLOOM_LAYER = 1;
     const UNDER_LAYER = 2;
     const underlays = [];
+    const maskFields = [];                       // the fields something is masked by: { node, shared uniforms }
 
     let width = 1, height = 1, distance = 1;
     const look = { x: 0, y: 0 };                 // the camera's slide, px at the focal plane
@@ -588,7 +641,7 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
                 uStretch: { value: Array.from({ length: SWAYS / 4 }, () => new THREE.Vector4(1, 1, 1, 1)) },
             };
             const material = new THREE.ShaderMaterial({
-                uniforms, vertexShader: LAYER_VERTEX, fragmentShader: LAYER_FRAGMENT,
+                uniforms, vertexShader: LAYER_VERTEX, fragmentShader: LAYER_MASKABLE,
                 transparent: true, depthTest: false, depthWrite: false, side: THREE.DoubleSide,
                 blending: blending === 'add' ? THREE.AdditiveBlending : THREE.NormalBlending,
                 premultipliedAlpha: true,
@@ -612,7 +665,7 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
                 uAlpha: { value: new THREE.Vector4(s[0][1], s[1][1], s[2][1], s[3][1]) },
             };
             const material = new THREE.ShaderMaterial({
-                uniforms, vertexShader: GLOW_VERTEX, fragmentShader: GLOW_FRAGMENT,
+                uniforms, vertexShader: GLOW_VERTEX, fragmentShader: GLOW_MASKABLE,
                 transparent: true, depthTest: false, depthWrite: false,
             });
             node.attach(new THREE.Mesh(new THREE.PlaneGeometry(1, 1), material), rect, pivot, bloom);
@@ -673,6 +726,20 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
             });
             node.attach(new THREE.Mesh(new THREE.PlaneGeometry(1, 1), material), rect ?? { left: 0, top: 0, w: 1, h: 1 }, null, false);
             node.bubbles = [];
+            // What a masked material shares with it (fieldMask in FIELD_MASK_CHUNK): its own uniforms, and where it has
+            // moved to on screen, kept by render()
+            let shared = null;
+            node.maskUniforms = (side) => {
+                if (!shared) {
+                    shared = {
+                        fmMap: uniforms.map, fmTime: uniforms.uTime, fmFlow: uniforms.uFlow, fmWobble: uniforms.uWobble,
+                        fmScale: uniforms.uScale, fmWave: uniforms.uWave, fmRect: uniforms.uRect,
+                        fmShift: { value: new THREE.Vector2(0, 0) }, fmScreen: { value: new THREE.Vector2(1, 1) },
+                    };
+                    maskFields.push({ node, shared });
+                }
+                return { ...shared, fmSide: { value: side } };
+            };
             let size = [source.width, source.height];
             node.refresh = () => {
                 if (source.width !== size[0] || source.height !== size[1]) {
@@ -725,6 +792,16 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
         place(rect, pivot = null) {
             this.rect = { ...rect };
             this.pivot = pivot ? { ...pivot } : { x: rect.left + rect.w / 2, y: rect.top + rect.h / 2 };
+        }
+
+        // Kept only on one side of a field (field()): side 1 where it is of its second colour, -1 of its first. For
+        // pictures (image, canvas) and glows
+        maskBy(field, side = 1) {
+            const material = this.mesh.material;
+            Object.assign(material.uniforms, field.maskUniforms(side));
+            material.defines = { ...(material.defines ?? {}), FIELD_MASK: '' };
+            material.needsUpdate = true;
+            return this;
         }
 
         // The uniforms of its material (bright, saturate...), to light it
@@ -908,6 +985,7 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
         get width() { return width; },
         get height() { return height; },
         get dpr() { return dpr; },
+        maskShader,
 
         depth(z = 0) { return new Node(null, z); },
 
@@ -936,6 +1014,11 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
             aim();
             tickers.forEach((fn) => fn(t, dt));
             nodes.forEach((node) => node.update(1));
+            maskFields.forEach(({ node, shared }) => {
+                const at = node.toScreen(0, 0);
+                shared.fmShift.value.set(at.x, at.y);
+                shared.fmScreen.value.set(height, dpr);
+            });
             renderer.setRenderTarget(null);
             if (underlays.length) {
                 // The layers marked under, then what the scene draws itself (its own scene and camera), then the rest
