@@ -26,7 +26,7 @@ const chordName = (sym) => {
 };
 
 const rows = cards.map((card) => {
-    const verb = card.verb ? VERBS[card.verb].es : 'por decidir';
+    const verb = card.verb ? VERBS[card.verb].es : 'sin verbo';
     const app = !withScene.has(card.id) ? 'Ilustración plana' : PLAYABLE.has(card.id) ? 'Escena propia, verbo jugable' : 'Escena propia, sin juego todavía';
     return `| ${card.id} | ${card.name_es.trim()} | ${card.category} | ${verb} | ${chordName(chordFor(card.id))} | ${app} |`;
 });
