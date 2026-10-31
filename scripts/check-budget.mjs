@@ -49,13 +49,32 @@ group('Sila layers', (rel) => rel.startsWith('assets/sila/'), { each: 160, total
 group('Viriya layers', (rel) => rel.startsWith('assets/viriya/'), { each: 160, total: 450 });
 group('Upekkha layers', (rel) => rel.startsWith('assets/upekkha/'), { each: 300, total: 470 });
 group('Addhitthana layers', (rel) => rel.startsWith('assets/addhitthana/'), { each: 100, total: 480 });
+group('Armonía layers', (rel) => rel.startsWith('assets/armonia/'), { each: 100, total: 620 });
+group('Aceptación layers', (rel) => rel.startsWith('assets/aceptacion/'), { each: 120, total: 450 });
+group('Belleza layers', (rel) => rel.startsWith('assets/belleza/'), { each: 200, total: 600 });
+group('Hogar layers', (rel) => rel.startsWith('assets/hogar/'), { each: 200, total: 400 });
+group('Sincronicidad layers', (rel) => rel.startsWith('assets/sincronicidad/'), { each: 100, total: 380 });
+group('Celebración layers', (rel) => rel.startsWith('assets/celebracion/'), { each: 120, total: 560 });
+group('Ciclos layers', (rel) => rel.startsWith('assets/ciclos/'), { each: 160, total: 450 });
+group('Comunicación layers', (rel) => rel.startsWith('assets/comunicacion/'), { each: 300, total: 720 });
+group('Confianza layers', (rel) => rel.startsWith('assets/confianza/'), { each: 120, total: 260 });
+group('Compromiso layers', (rel) => rel.startsWith('assets/compromiso/'), { each: 120, total: 560 });
+group('Coraje layers', (rel) => rel.startsWith('assets/coraje/'), { each: 100, total: 300 });
+group('Desafío layers', (rel) => rel.startsWith('assets/desafio/'), { each: 160, total: 300 });
+group('Gratitud layers', (rel) => rel.startsWith('assets/gratitud/'), { each: 100, total: 300 });
+group('Honestidad layers', (rel) => rel.startsWith('assets/honestidad/'), { each: 100, total: 400 });
+group('Fe layers', (rel) => rel.startsWith('assets/fe/'), { each: 200, total: 500 });
+group('Perdón layers', (rel) => rel.startsWith('assets/perdon/'), { each: 170, total: 300 });
+group('Transformación layers', (rel) => rel.startsWith('assets/transformacion/'), { each: 120, total: 420 });
+group('Esperanza layers', (rel) => rel.startsWith('assets/esperanza/'), { each: 100, total: 250 });
+group('Metta layers', (rel) => rel.startsWith('assets/metta/'), { each: 100, total: 350 });
 group('Paciencia layers', (rel) => rel.startsWith('assets/paciencia/'), { each: 320, total: 750 });
 group('Deck thumbnails', (rel) => /^cards\/thumb\/\d+\.webp$/.test(rel), { each: 70, total: 650 });
 group('Card illustrations', (rel) => /^cards\/\d+\.webp$/.test(rel), { each: 900, total: 9500 });
 // What phones and most screens load (pictureUrl in src/data/cards.js; npm run thumbs makes them)
 group('Card illustrations 1440', (rel) => /^cards\/1440\/\d+\.webp$/.test(rel), { each: 450, total: 4600 });
 group('Share pictures', (rel) => /^og\/\d+\.jpg$/.test(rel), { each: 200, total: 2300 });
-group('Other pictures', (rel) => /^assets\/(?!panna\/|khanti\/|creatividad\/|evolucion\/|sila\/|viriya\/|upekkha\/|addhitthana\/|paciencia\/)[\w-]+\/.*\.(webp|jpg|png)$/.test(rel), { each: 900, total: 4600 });
+group('Other pictures', (rel) => /^assets\/(?!panna\/|khanti\/|creatividad\/|evolucion\/|sila\/|viriya\/|upekkha\/|addhitthana\/|paciencia\/|metta\/|esperanza\/|transformacion\/|perdon\/|fe\/|honestidad\/|gratitud\/|desafio\/|coraje\/|compromiso\/|sincronicidad\/|hogar\/|armonia\/|aceptacion\/|belleza\/|celebracion\/|ciclos\/|comunicacion\/|confianza\/)[\w-]+\/.*\.(webp|jpg|png)$/.test(rel), { each: 900, total: 4600 });
 
 const over = rows.filter((row) => row.value > row.limit);
 // Only what is close to its line (or over it) is worth printing; the rest is fine

@@ -28,7 +28,7 @@ Cada carta suena en su propio acorde, elegido por su texto (las reglas, en `musi
 | 7 | Addhitthana | Mi mayor | Mi, Sol#, Si → plexo, garganta, corona | Determinación para nutrir hábitos. Es la voluntad, el plexo solar en modo mayor. | Particular en el bote, bajo la tormenta |
 | 8 | Metta | Famaj7 | Fa, La, Do, Mi → corazón, tercer ojo, raíz, plexo | Amar primero a uno mismo para después dar: "soy Amor infinito". El corazón manda, y el acorde es amor sereno que confía en sí mismo. | Particular y otros, con un zorrito (Vulpes) |
 | 9 | Upekkha | Mi menor | Mi, Sol, Si → plexo, garganta, corona | Ecuanimidad e impermanencia: soltar el exceso de control. Es el equilibrio espiritual desde la introspección. | Particular, hongos (Sporá) |
-| 10 | " ... " | Sol mayor (base) | — | La carta en blanco no tiene texto que elija un acorde, así que se queda en el sonido de base. | — |
+| 10 | Tu verdad | Sol mayor (base) | — | La carta en blanco no tiene texto que elija un acorde, así que se queda en el sonido de base. | — |
 | 11 | Aceptación | Si menor | Si, Re, Fa# → corona, sacro, corazón | "Acepto y honro quién soy", soltar el control. La teoría lo describe como conexión espiritual con raíces emocionales, mirando hacia adentro. | Particular (dos) |
 | 12 | Armonía | Domaj7 | Do, Mi, Sol, Si → raíz, plexo, garganta, corona | "Vibro en armonía en mi aquí y ahora": equilibrio entre sonido y pausa, pausa de silencio interior. La raíz y la garganta se abren con calma, sin tensión. | Aura (dos medusas) |
 | 13 | Belleza | Lamaj7 | La, Do#, Mi, Sol# → tercer ojo, raíz, plexo, garganta | "Poder ver lo bello aún en la apariencia más desafiante", "reconozco mi belleza". Manda el tercer ojo (ver), el plexo es reconocerse a uno mismo y la séptima, la garganta, irradia lo bello hacia afuera; la séptima mayor lo hace con calma, "como la brisa suave". | Particular (dos, abrazados), árboles |
@@ -69,31 +69,31 @@ Se cambia una línea en `src/data/cardChords.js`, por ejemplo `28: 'Em'`. Se esc
 | 5 | Khanti | Paramis | Fluir | Remaj7 | Escena propia, verbo jugable |
 | 6 | Sacca | Paramis | Resonar | Sol7 | Escena propia, verbo jugable |
 | 7 | Addhitthana | Paramis | Arraigar | Mi mayor | Escena propia, verbo jugable |
-| 8 | Metta | Paramis | Dar y recibir | Famaj7 | Ilustración plana |
+| 8 | Metta | Paramis | Dar y recibir | Famaj7 | Escena propia, sin juego todavía |
 | 9 | Upekkha | Paramis | Soltar | Mi menor | Escena propia, verbo jugable |
-| 10 | " ... " | Special | por decidir | Sol mayor | Ilustración plana |
-| 11 | Aceptación | Regular | Fluir | Si menor | Ilustración plana |
-| 12 | Armonía | Regular | Resonar | Domaj7 | Ilustración plana |
-| 13 | Belleza | Regular | Ver | Lamaj7 | Ilustración plana |
-| 14 | Celebración | Regular | Fluir | Mimaj7 | Ilustración plana |
-| 15 | Ciclos | Regular | Soltar | Fa7 | Ilustración plana |
-| 16 | Compromiso | Regular | Arraigar | La mayor | Ilustración plana |
-| 17 | Comunicación | Regular | Resonar | Sol menor | Ilustración plana |
-| 18 | Confianza | Regular | Arraigar | La menor | Ilustración plana |
-| 19 | Coraje | Regular | Encender | Mi7 | Ilustración plana |
+| 10 | Tu verdad | Special | por decidir | Sol mayor | Escena propia, sin juego todavía |
+| 11 | Aceptación | Regular | Fluir | Si menor | Escena propia, sin juego todavía |
+| 12 | Armonía | Regular | Resonar | Domaj7 | Escena propia, sin juego todavía |
+| 13 | Belleza | Regular | Ver | Lamaj7 | Escena propia, sin juego todavía |
+| 14 | Celebración | Regular | Fluir | Mimaj7 | Escena propia, sin juego todavía |
+| 15 | Ciclos | Regular | Soltar | Fa7 | Escena propia, sin juego todavía |
+| 16 | Compromiso | Regular | Arraigar | La mayor | Escena propia, sin juego todavía |
+| 17 | Comunicación | Regular | Resonar | Sol menor | Escena propia, sin juego todavía |
+| 18 | Confianza | Regular | Arraigar | La menor | Escena propia, sin juego todavía |
+| 19 | Coraje | Regular | Encender | Mi7 | Escena propia, sin juego todavía |
 | 20 | Creatividad | Regular | Resonar | Do7 | Escena propia, verbo jugable |
-| 21 | Desafío | Regular | Encender | Re7 | Ilustración plana |
+| 21 | Desafío | Regular | Encender | Re7 | Escena propia, sin juego todavía |
 | 22 | Evolución Espiritual | Regular | Encender | Si7 | Escena propia, verbo jugable |
-| 23 | Fe | Regular | Arraigar | Si mayor | Ilustración plana |
-| 24 | Gratitud | Regular | Dar y recibir | Solmaj7 | Ilustración plana |
+| 23 | Fe | Regular | Arraigar | Si mayor | Escena propia, sin juego todavía |
+| 24 | Gratitud | Regular | Dar y recibir | Solmaj7 | Escena propia, sin juego todavía |
 | 25 | Hogar | Regular | Arraigar | Do mayor | Escena propia, verbo jugable |
-| 26 | Honestidad | Regular | Resonar | Solm7 | Ilustración plana |
+| 26 | Honestidad | Regular | Resonar | Solm7 | Escena propia, sin juego todavía |
 | 27 | Paciencia | Regular | Arraigar | Re mayor | Escena propia, verbo jugable |
-| 28 | Perdón | Regular | Soltar | Fa menor | Ilustración plana |
+| 28 | Perdón | Regular | Soltar | Fa menor | Escena propia, sin juego todavía |
 | 29 | Sincronicidad | Regular | Resonar | Sol mayor | Escena propia, verbo jugable |
-| 30 | Esperanza | Regular | Ver | Sim7 | Ilustración plana |
+| 30 | Esperanza | Regular | Ver | Sim7 | Escena propia, sin juego todavía |
 | 31 | Vipassana | Special | Soltar | Simaj7 | Escena propia, verbo jugable |
-| 32 | Transformación | Regular | Fluir | Rem7 | Ilustración plana |
+| 32 | Transformación | Regular | Fluir | Rem7 | Escena propia, sin juego todavía |
 <!-- tabla:fin -->
 
 Esta tabla se genera sola desde `cards.json` (nombre, categoría, verbo), `src/data/cardChords.js` (acorde) y `src/data/cardScenes.js` (escena). Después de cambiar alguno de los tres, correr `npm run docs`; `npm run check:docs` falla si quedó desactualizada. Qué verbo ya se juega está en `PLAYABLE`, dentro de `scripts/check-docs.mjs`. Qué hace cada escena al tocarla: `registro-cartas-vivas.md`.

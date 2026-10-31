@@ -3,9 +3,9 @@
 	import { useRoute, useRouter } from 'vue-router';
 	import CustomCursor from './components/CustomCursor.vue';
 	import FpsMeter from './components/FpsMeter.vue';
-	import { initSound, play, setCardChord } from './composables/useSound.js';
+	import { initSound, play, setCardChord, setHush } from './composables/useSound.js';
 	import { askTiltOnce } from './composables/useTilt.js';
-	import { chordFor } from './data/cardChords.js';
+	import { chordFor, isSilent } from './data/cardChords.js';
 	import { registerServiceWorker } from './pwa.js';
 
 	const router = useRouter();	
@@ -13,6 +13,8 @@
 
 	// Each card sounds in its own chord; everywhere else the app keeps its base one
 	watch(() => route.name === 'card' ? chordFor(route.params.id) : null, setCardChord, { immediate: true });
+	// and the card that is silence quiets the music while it is on screen
+	watch(() => route.name === 'card' && isSilent(route.params.id), setHush, { immediate: true });
 
 	// The frame counter, for trying the app on a phone: ?fps turns it on (it stays on while the tab is open), ?fps=0 off
 	const readFps = () => { try { return sessionStorage.getItem('fps') === '1'; } catch { return false; } };

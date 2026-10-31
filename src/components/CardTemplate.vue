@@ -127,7 +127,7 @@
                 <component :is="scene" :card="card" :active="ready" />
             </div>
 
-            <h1 class="title" v-if="hasAffirmation">{{ String(card['name_' + $i18n.locale] ?? '').trim() }}</h1>
+            <h1 class="title" v-if="String(card['name_' + $i18n.locale] ?? '').trim()">{{ String(card['name_' + $i18n.locale] ?? '').trim() }}</h1>
 
             <button class="action" :class="{ quiet: playing }" @click="share('stage')" :aria-label="$t('oracle.share')">
                 <svg class="icon share" width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">

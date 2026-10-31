@@ -40,6 +40,8 @@ const hasWebGL = () => {
 //   opacity    overall opacity
 //   order      with a stage: where it is drawn among the layers (the stage's draw order; default: after what exists)
 //   bloom      with a stage: the group also glows when the stage blooms
+//   mask       with a stage: { field, side } kept only on one side of a field() of it (side 1 its second colour, -1 its
+//              first), following its edge
 // Pass { groups: [...] } for several groups on one canvas, or a group's options directly for one. With { manual: true }
 // the particles stay invisible until reveal() is called, so they can wait for the pictures they belong with.
 // The result has shift(i, x, y): moves group i by (x, y) px, so a group can follow a layer that has parallax, and
@@ -163,7 +165,14 @@ export async function createStardust(canvas, options = {}) {
             uSteady: { value: steady ? 1 : 0 },
             uEdge: { value: edgeFade },
         };
-        const material = new THREE.ShaderMaterial({ transparent: true, depthWrite: false, depthTest: false, uniforms, vertexShader, fragmentShader });
+        // With a stage, kept to one side of one of its fields (useLayerStage: maskShader)
+        const mask = stage && group.mask ? group.mask : null;
+        if (mask) Object.assign(uniforms, mask.field.maskUniforms(mask.side ?? 1));
+        const material = new THREE.ShaderMaterial({
+            transparent: true, depthWrite: false, depthTest: false, uniforms, vertexShader,
+            fragmentShader: mask ? stage.maskShader(fragmentShader, 'gl_FragColor.a *= fieldMask();') : fragmentShader,
+            defines: mask ? { FIELD_MASK: '' } : {},
+        });
         const geometry = new THREE.BufferGeometry();
         const object = new THREE.Points(geometry, material);
         object.frustumCulled = false;

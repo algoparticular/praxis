@@ -52,7 +52,7 @@ Las palabras del libro para cada chakra, subiendo y bajando:
 | Soltar | Corona | Entendimiento | Existencia |
 
 ## Decidido
-- Carta 10 (`" ... "`): es el silencio. No hay nada que leer ni decir, la invitación es sentir el corazón. Su verbo va entre Fa, Sol o La (por decidir); la forma, por definir.
+- Carta 10, **Tu verdad** (antes `" ... "`): es el silencio. No hay un mensaje en particular: invita a afirmar lo que uno ya sabe, lo primero que viene al leer su frase, y a sentir el corazón. Su verbo va entre Fa, Sol o La (por decidir); la forma, por definir.
 - Nombre del personaje: **Sid** (Seed, semilla).
 - El bichito con pelos y antenas es un Sama. El ser dentro de la célula de Evolución es Sid.
 - Ciclos es **Soltar**, no Ver: *"¿Qué es tiempo de dejar ir?"*, *"sólo puedes avanzar si sos capaz de soltar lo viejo"*. Fluir se queda con Transformación, que habla de atravesar el cambio; Ciclos habla de cerrarlo.
