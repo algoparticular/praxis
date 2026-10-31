@@ -50,6 +50,7 @@ group('Viriya layers', (rel) => rel.startsWith('assets/viriya/'), { each: 160, t
 group('Upekkha layers', (rel) => rel.startsWith('assets/upekkha/'), { each: 300, total: 470 });
 group('Addhitthana layers', (rel) => rel.startsWith('assets/addhitthana/'), { each: 100, total: 480 });
 group('Armonía layers', (rel) => rel.startsWith('assets/armonia/'), { each: 100, total: 620 });
+group('Aceptación layers', (rel) => rel.startsWith('assets/aceptacion/'), { each: 120, total: 450 });
 group('Paciencia layers', (rel) => rel.startsWith('assets/paciencia/'), { each: 320, total: 750 });
 group('Deck thumbnails', (rel) => /^cards\/thumb\/\d+\.webp$/.test(rel), { each: 70, total: 650 });
 group('Card illustrations', (rel) => /^cards\/\d+\.webp$/.test(rel), { each: 900, total: 9500 });
