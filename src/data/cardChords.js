@@ -24,7 +24,7 @@ const CHORDS = {
     7: 'E', // Addhitthana: will
     8: 'Fmaj7', // Metta: loving oneself first, serene love that trusts itself (heart)
     9: 'Em', // Upekkha: balance, letting go of control
-    10: BASE_CHORD, // " ... ": the blank card keeps the base sound
+    10: BASE_CHORD, // Tu verdad (once " ... "): the blank card keeps the base sound
     11: 'Bm', // Aceptación
     12: 'Cmaj7', // Armonía: balance between sound and pause, security and expression opening calmly
     13: 'Amaj7', // Belleza: seeing beauty (third eye) and recognising one's own (plexus), radiating it calmly (the throat as its seventh)

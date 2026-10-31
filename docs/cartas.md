@@ -28,7 +28,7 @@ Cada carta suena en su propio acorde, elegido por su texto (las reglas, en `musi
 | 7 | Addhitthana | Mi mayor | Mi, Sol#, Si → plexo, garganta, corona | Determinación para nutrir hábitos. Es la voluntad, el plexo solar en modo mayor. | Particular en el bote, bajo la tormenta |
 | 8 | Metta | Famaj7 | Fa, La, Do, Mi → corazón, tercer ojo, raíz, plexo | Amar primero a uno mismo para después dar: "soy Amor infinito". El corazón manda, y el acorde es amor sereno que confía en sí mismo. | Particular y otros, con un zorrito (Vulpes) |
 | 9 | Upekkha | Mi menor | Mi, Sol, Si → plexo, garganta, corona | Ecuanimidad e impermanencia: soltar el exceso de control. Es el equilibrio espiritual desde la introspección. | Particular, hongos (Sporá) |
-| 10 | " ... " | Sol mayor (base) | — | La carta en blanco no tiene texto que elija un acorde, así que se queda en el sonido de base. | — |
+| 10 | Tu verdad | Sol mayor (base) | — | La carta en blanco no tiene texto que elija un acorde, así que se queda en el sonido de base. | — |
 | 11 | Aceptación | Si menor | Si, Re, Fa# → corona, sacro, corazón | "Acepto y honro quién soy", soltar el control. La teoría lo describe como conexión espiritual con raíces emocionales, mirando hacia adentro. | Particular (dos) |
 | 12 | Armonía | Domaj7 | Do, Mi, Sol, Si → raíz, plexo, garganta, corona | "Vibro en armonía en mi aquí y ahora": equilibrio entre sonido y pausa, pausa de silencio interior. La raíz y la garganta se abren con calma, sin tensión. | Aura (dos medusas) |
 | 13 | Belleza | Lamaj7 | La, Do#, Mi, Sol# → tercer ojo, raíz, plexo, garganta | "Poder ver lo bello aún en la apariencia más desafiante", "reconozco mi belleza". Manda el tercer ojo (ver), el plexo es reconocerse a uno mismo y la séptima, la garganta, irradia lo bello hacia afuera; la séptima mayor lo hace con calma, "como la brisa suave". | Particular (dos, abrazados), árboles |
@@ -71,7 +71,7 @@ Se cambia una línea en `src/data/cardChords.js`, por ejemplo `28: 'Em'`. Se esc
 | 7 | Addhitthana | Paramis | Arraigar | Mi mayor | Escena propia, verbo jugable |
 | 8 | Metta | Paramis | Dar y recibir | Famaj7 | Ilustración plana |
 | 9 | Upekkha | Paramis | Soltar | Mi menor | Escena propia, verbo jugable |
-| 10 | " ... " | Special | por decidir | Sol mayor | Ilustración plana |
+| 10 | Tu verdad | Special | por decidir | Sol mayor | Ilustración plana |
 | 11 | Aceptación | Regular | Fluir | Si menor | Escena propia, sin juego todavía |
 | 12 | Armonía | Regular | Resonar | Domaj7 | Escena propia, sin juego todavía |
 | 13 | Belleza | Regular | Ver | Lamaj7 | Escena propia, sin juego todavía |
