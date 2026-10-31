@@ -30,7 +30,17 @@ import sharp from 'sharp';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const source = path.join(root, 'originales', 'belleza');
 const target = path.join(root, 'public', 'assets', 'belleza');
-const file = (n) => path.join(source, `Destinados_3-${n}.png`);
+const exported = (n) => path.join(source, `Destinados_3-${n}.png`);
+// Some layers were exported without their layer opacity, so they came out far darker than on the card: the shading of the two beings (19, 23).
+// It is put back here (measured against the finished card), and the faded copy is used wherever the layer is.
+const FADED = { 19: 0.18, 23: 0.18 };
+const faded = {};
+for (const [n, k] of Object.entries(FADED)) {
+    const { data, info } = await sharp(exported(n)).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+    for (let i = 3; i < data.length; i += 4) data[i] = Math.round(data[i] * k);
+    faded[n] = await sharp(data, { raw: info }).png().toBuffer();
+}
+const file = (n) => faded[n] ?? exported(n);
 const ORIGINAL = 3240;
 const S = 2160;
 const PAD = 4;

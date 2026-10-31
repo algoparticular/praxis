@@ -1,6 +1,6 @@
 # Teoría
 
-Primera pestaña de "Anima por dentro" (el artefacto que junta las ideas del proyecto). Tiene dos partes, para no mezclar de dónde sale cada cosa. La música está aparte, en `musica.md`.
+Octava y última pestaña de "Anima GDD" (el artefacto que junta las ideas del proyecto). Tiene dos partes, para no mezclar de dónde sale cada cosa. La música está aparte, en `musica.md`.
 
 1. **La idea de Anima:** lo que proponemos nosotros con todo eso, y puede cambiar.
 2. **Los chakras y su tradición:** lo que viene de la tradición y del libro, no lo inventamos.

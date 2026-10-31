@@ -28,7 +28,7 @@ Todos llevan `lang` (`es`/`en`) e `installed` (la app corre como PWA instalada).
 | `card_reading_reached` | baja hasta la lectura | `card_id`, `seconds` |
 | `card_left` | una vez por visita: se va de la carta, la oculta (cambia de app o de pestaña) o cierra la página; `seconds` llega hasta ese momento | `card_id`, `scene`, `seconds`, `touches`, `milestones`, `read`, y la fluidez (abajo) |
 | `table_left` | deja una mesa 3D (sale, la oculta o cierra la página), solo si la mesa 3D llegó a mostrarse | `table`: `full` (`/oracle`) / `nine` (`/oracleTheNine`) / `deck` (el anillo de `/deck`), y la fluidez (abajo) |
-| `share_opened` | abre la pantalla de compartir | `card_id`, `from`: `stage` (el botón sobre la escena) / `reading` (el del final de la lectura) |
+| `share_opened` | abre la pantalla de compartir | `card_id`, `from`: `reading` (el botón del final de la lectura; hasta noviembre de 2026 también `stage`, un botón sobre la escena que se sacó) |
 | `share_clicked` | elige un canal | `card_id`, `channel` (`link`, `facebook`, `twitter`, `whatsapp`) |
 | `language_changed` | cambia el idioma | `to` |
 | `sound_toggled` | activa o apaga el sonido | `on` |
@@ -61,4 +61,4 @@ Para empezar: `card_left` con promedio de `fps` y de `slow_pct`, desglosado por 
 Una foto sacada de PostHog el 29 de octubre. Son pocas visitas y muchas deben ser pruebas del equipo: sirven para ver que todo llega, no para sacar conclusiones.
 - 45 visitas (31 desde iPhone, 8 desde Android, 7 desde Mac); 58 cartas abiertas (47 sacadas, 11 por enlace); 44 cartas sacadas (28 del anillo de `/deck`, 10 del mazo completo, 6 de The Nine); 9 veces se bajó hasta la lectura; 7 veces se abrió compartir y 5 se compartió.
 - En las cartas planas casi nadie toca la escena (1 de 19 visitas) y se quedan unos 5 segundos; en Vipassana y Pañña tocan casi todos y se quedan casi un minuto. Pañña es la que más se juega: la figura se vio 8 veces y se deshizo 9.
-- El detalle por escena y por hito está en la pestaña Analítica del artefacto "Anima por dentro".
+- El detalle por escena y por hito está en la pestaña Analítica del artefacto "Anima GDD".
