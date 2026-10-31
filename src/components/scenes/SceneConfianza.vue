@@ -3,9 +3,16 @@
     // aqua among scattered dots, with the chakana (the Andean cross) shining at its centre, the way home to oneself.
     // Three little beings wait at its three doors: Particular meditating at the top right, Aura (a jellyfish) on the left
     // and Vulpes at the bottom right; a little swimmer wanders among the dots.
-    // No game yet: its verb will be Arraigar (hold the centre and something grows: the way through the corridors lit to
-    // each door, as Paciencia's and Hogar's roots), so the corridors and the walls are separate pictures (a light can run
-    // between them), the chakana is its own picture and each being its own. The card has no rulito layer.
+    // Its verb is Arraigar ("the ultimate goal is to return to yourself, to return home"): holding the centre (finger,
+    // mouse or key) sends a light out from it along the corridors, as water fills a maze: it runs between the walls, at
+    // its own pace, and wherever it reaches it stays lit. The corridors are not drawn as such: the scene reads them from
+    // the pictures once (what is neither wall nor line inside the labyrinth), measures how far every point of them is
+    // from the centre going along them (a breadth-first walk) and draws the light on a small canvas from that. When the
+    // light reaches a door the being there lights up in its chakra's colour and hops (`kindle`, climbing); at the last
+    // door the rulito is born over the chakana (`rulito`, `converge`) and the three come home: each turns into a light of
+    // its colour that runs back along the lit way to the centre. The light is the rulito's stroke (useRooting.js): let go
+    // before, its tail runs out after its head and the corridors go dark from the centre outwards; when the rulito is
+    // gone the three are back at their doors. Left alone a while, the centre calls (a ring and a glow: the hint).
     // What is alive: the light round the chakana breathes and its stippled edge trembles (particles), and now and then a
     // ring of light goes out from it through the labyrinth, as a call; the dots drift at two depths; Particular breathes
     // and rises a little on his breath, Aura floats and her tentacles sway (wind from the top), Vulpes breathes and every
@@ -19,7 +26,12 @@
     import { createParallax } from '../../composables/useParallax.js';
     import { createLayerStage } from '../../composables/useLayerStage.js';
     import { startStardust } from '../../composables/useStardust.js';
+    import { createSparks } from '../../composables/useSparks.js';
+    import { createRooting } from '../../composables/useRooting.js';
     import { play } from '../../composables/useSound.js';
+    import { sceneMilestone } from '../../analytics.js';
+    import { CHAKRA_COLORS } from '../../data/chakraColors.js';
+    import Rulito from '../Rulito.vue';
     import { chordFor } from '../../data/cardChords.js';
     import { chordColors } from '../../data/chordColors.js';
     import art from '../../composables/confianzaScene.json';
@@ -32,6 +44,7 @@
     const root = ref(null);
     const canvas = ref(null);
     const centreHit = ref(null);
+    const rulito = ref(null);
     let stageEl = null;
     let stage = null;
     let parallax = null;
@@ -77,12 +90,202 @@
     const RING = 7;                                      // a ring of light leaves the centre every RING s
 
     // ---- The beings: where each one's feet are (art px), how it moves
-    const BEINGS = art.beings.map(({ name, box }) => ({ name, box, feet: [box[0] + box[2] / 2, box[1] + box[3]], hop: 1, phase: Math.random() * 6.28 }));
+    const BEINGS = art.beings.map(({ name, box }) => ({ name, box, feet: [box[0] + box[2] / 2, box[1] + box[3]], hop: 1, phase: Math.random() * 6.28, reached: false, home: -1, back: 0, glow: 0 }));
     const L = {};
     let lastT = 0;
     let flare = 0;
     const rings = [];                                    // { age } of every ring of light on its way out
     let nextRing = 3;
+
+    // ---- The game: the corridors, read from the pictures, and how far each point of them is from the centre along them
+    const MAZE_N = 400;                                  // px across the small map of the labyrinth
+    const maze = { w: MAZE_N, h: 1, dist: null, cells: null, top: 1, doors: [] };
+    const flood = document.createElement('canvas');
+    let floodImage = null;
+    const loadImage = (src) => new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.src = src;
+    });
+    const readMaze = async () => {
+        const [fill, lines] = await Promise.all([loadImage('/assets/confianza/mazeFill.webp'), loadImage('/assets/confianza/mazeLines.webp')]);
+        const [bx, by, bw, bh] = B.mazeFill;
+        const w = MAZE_N, h = Math.round(MAZE_N * bh / bw);
+        const c = document.createElement('canvas');
+        c.width = w; c.height = h;
+        const g = c.getContext('2d', { willReadFrequently: true });
+        g.drawImage(fill, 0, 0, w, h);
+        const a = g.getImageData(0, 0, w, h).data;
+        g.clearRect(0, 0, w, h);
+        g.drawImage(lines, 0, 0, w, h);
+        const b = g.getImageData(0, 0, w, h).data;
+        // A corridor is what is neither wall nor line, inside the labyrinth's rim
+        const free = new Uint8Array(w * h);
+        const R = w / 2 * 0.975;
+        for (let y = 0; y < h; y++) {
+            for (let x = 0; x < w; x++) {
+                const i = y * w + x;
+                free[i] = a[i * 4 + 3] < 60 && b[i * 4 + 3] < 60 && Math.hypot(x - w / 2, y - h / 2) < R ? 1 : 0;
+            }
+        }
+        // Walk out from the light round the chakana
+        const dist = new Int32Array(w * h).fill(-1);
+        const queue = new Int32Array(w * h);
+        let qh = 0, qt = 0;
+        const cx = (HEART.x - bx) / bw * w, cy = (HEART.y - by) / bh * h, r0 = HEART.r / bw * w;
+        for (let y = 0; y < h; y++) {
+            for (let x = 0; x < w; x++) {
+                const i = y * w + x;
+                if (free[i] && Math.hypot(x - cx, y - cy) < r0) { dist[i] = 0; queue[qt++] = i; }
+            }
+        }
+        while (qh < qt) {
+            const i = queue[qh++], x = i % w, y = (i - x) / w;
+            const next = [x > 0 ? i - 1 : -1, x < w - 1 ? i + 1 : -1, y > 0 ? i - w : -1, y < h - 1 ? i + w : -1];
+            next.forEach((j) => { if (j >= 0 && free[j] && dist[j] < 0) { dist[j] = dist[i] + 1; queue[qt++] = j; } });
+        }
+        // The doors: the point of the corridors nearest to each being's feet; and the way from it home, downhill
+        const doors = BEINGS.map((being) => {
+            const fx = (being.feet[0] - bx) / bw * w, fy = (being.feet[1] - by) / bh * h;
+            let best = -1, bestD = Infinity;
+            for (let i = 0; i < w * h; i++) {
+                if (dist[i] < 0) continue;
+                const x = i % w, y = (i - x) / w;
+                const d = (x - fx) ** 2 + (y - fy) ** 2;
+                if (d < bestD) { bestD = d; best = i; }
+            }
+            const way = [];
+            let i = best;
+            while (i >= 0 && dist[i] > 0) {
+                const x = i % w, y = (i - x) / w;
+                way.push([bx + (x + 0.5) / w * bw, by + (y + 0.5) / h * bh]);
+                const next = [x > 0 ? i - 1 : -1, x < w - 1 ? i + 1 : -1, y > 0 ? i - w : -1, y < h - 1 ? i + w : -1].filter((j) => j >= 0 && dist[j] >= 0 && dist[j] < dist[i]);
+                i = next.length ? next[0] : -1;
+            }
+            way.push([HEART.x, HEART.y]);
+            return { at: dist[best], way };
+        });
+        const top = Math.max(...doors.map((d) => d.at), 1);
+        const cells = [];
+        for (let i = 0; i < w * h; i++) if (dist[i] >= 0 && dist[i] <= top * 1.02) cells.push(i);
+        Object.assign(maze, { w, h, dist, cells: Int32Array.from(cells), top, doors: doors.map((d) => ({ ...d, v: d.at / top })) });
+        flood.width = w; flood.height = h;
+        floodImage = flood.getContext('2d').createImageData(w, h);
+    };
+    // The light along the corridors, from the rulito's stroke: lit from tail to head (0 the centre, 1 the farthest door),
+    // brightest at its front
+    const LIGHT = [255, 222, 128];
+    let drawnHead = -1, drawnTail = -1;
+    const drawFlood = (head, tail, t) => {
+        if (!floodImage || !L.flood) return;
+        if (Math.abs(head - drawnHead) < 0.0005 && Math.abs(tail - drawnTail) < 0.0005 && !(head > tail && head < 1)) return;
+        drawnHead = head; drawnTail = tail;
+        const data = floodImage.data;
+        data.fill(0);
+        const { cells, dist, top } = maze;
+        for (let n = 0; n < cells.length; n++) {
+            const i = cells[n];
+            const v = dist[i] / top;
+            if (v > head || v < tail) continue;
+            const front = Math.exp(-(head - v) * 22) * (head < 1 ? 1 : 0.3);
+            const back = Math.min(1, (v - tail) / 0.04 + (tail <= 0 ? 1 : 0));
+            const alpha = (0.66 + 0.34 * front + 0.08 * Math.sin(v * 60 - t * 4)) * back;
+            data[i * 4] = LIGHT[0];
+            data[i * 4 + 1] = LIGHT[1];
+            data[i * 4 + 2] = LIGHT[2] + 110 * front;
+            data[i * 4 + 3] = Math.max(0, Math.min(255, alpha * 255));
+        }
+        flood.getContext('2d').putImageData(floodImage, 0, 0);
+        L.flood.refresh();
+    };
+
+    // The beings come home: the light of each runs back along the lit way to the centre
+    const hexNum = (c) => parseInt(c.slice(1), 16);
+    const COLOR_OF = { particular: hexNum(CHAKRA_COLORS[6].light), aura: hexNum(CHAKRA_COLORS[4].light), vulpes: hexNum(CHAKRA_COLORS[3].light) };
+    const HOME = 2.2;                                    // s a being's light takes to come home
+    const HINT = 7;
+    const sparks = createSparks(320);
+    let glyph = { left: 0, top: 0, w: 1, h: 1 };
+    let lit = { head: 0, tail: 0, full: false, pop: 0, named: 0, flare: 0 };
+    let pressAt = -1;
+    let idleHint = 0;
+    const rooting = createRooting({
+        grow: 5.5, linger: 3.6, eat: 3.2, notes: [],
+        onComplete: (times) => {
+            play('rulito');
+            play('converge');
+            flare = 1;
+            sendRing();
+            dust?.boost(2, 1.4);
+            BEINGS.forEach((b, i) => setTimeout(() => { if (!gone) { b.home = 0; } }, 300 + i * 350));
+            sceneMilestone('home_reached', { times });
+        },
+        onReset: () => {
+            rulito.value?.reshape();
+            BEINGS.forEach((b) => { b.home = -1; b.back = 0; b.reached = false; b.hop = 0; });
+        },
+    });
+    const wayPoint = (way, p) => {
+        const f = Math.min(way.length - 1, p * (way.length - 1));
+        const i = Math.floor(f), e = f - i;
+        const a = way[i], b = way[Math.min(way.length - 1, i + 1)];
+        return [a[0] + (b[0] - a[0]) * e, a[1] + (b[1] - a[1]) * e];
+    };
+    // The light of each being on its way home: a few soft motes in its colour
+    const HOME_DOTS = 14;
+    const homeGroup = {
+        count: BEINGS.length * HOME_DOTS,
+        update(t, data) {
+            BEINGS.forEach((b, j) => {
+                const going = b.home >= 0 && b.home < 1 && maze.doors[j];
+                const [ax, ay] = going ? wayPoint(maze.doors[j].way, ease(b.home)) : [0, 0];
+                const c = COLOR_OF[b.name];
+                for (let n = 0; n < HOME_DOTS; n++) {
+                    const i = j * HOME_DOTS + n;
+                    const a = n * 2.4 + t * (1.5 + n * 0.1), r = (3 + (n % 5) * 5) * k() * 2.4;
+                    data.positions[i * 3] = sx(ax) + Math.cos(a) * r;
+                    data.positions[i * 3 + 1] = sy(ay) + Math.sin(a) * r;
+                    data.sizes[i] = (n < 3 ? 14 : 6) * Math.max(0.7, k() * 2.6);
+                    data.alphas[i] = going ? (n < 3 ? 0.9 : 0.6) : 0;
+                    data.tints[i * 3] = ((c >> 16) & 255) / 255;
+                    data.tints[i * 3 + 1] = ((c >> 8) & 255) / 255;
+                    data.tints[i * 3 + 2] = (c & 255) / 255;
+                }
+            });
+        },
+    };
+    const hold = () => {
+        if (reduced || !maze.cells) return;
+        rooting.hold();
+        idleHint = 0;
+    };
+    const letGo = () => { rooting.release(); idleHint = 0; };
+    const pressCentre = (event) => {
+        event?.preventDefault?.();
+        pressAt = lastT;
+        hold();
+        window.addEventListener('pointerup', liftCentre);
+        window.addEventListener('pointercancel', liftCentre);
+    };
+    const liftCentre = (event) => {
+        window.removeEventListener('pointerup', liftCentre);
+        window.removeEventListener('pointercancel', liftCentre);
+        letGo();
+        if (lastT - pressAt < 0.35) strum(event);
+        pressAt = -1;
+    };
+    // With the keyboard the key is the finger: held down the light goes out, let go it rests
+    const onKeyDown = (event) => {
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+        event.preventDefault();
+        if (event.repeat) return;
+        strum(null);
+        hold();
+    };
+    const onKeyUp = (event) => {
+        if (event.key === 'Enter' || event.key === ' ') letGo();
+    };
 
     const sendRing = () => {
         const free = L.rings.findIndex((_, i) => !rings.some((r) => r.i === i));
@@ -108,11 +311,6 @@
             if (x > box.left - pad && x < box.left + box.width + pad && y > box.top - pad && y < box.top + box.height + pad) b.hop = 0;
         });
     };
-    const onKey = (event) => {
-        if (event.key !== 'Enter' && event.key !== ' ') return;
-        event.preventDefault();
-        strum(null);
-    };
 
     const build = (s) => {
         // The far dots' plane (they are particles: the node is only their depth)
@@ -129,6 +327,8 @@
         L.heartGlow = maze.glow({ rect: { left: 0, top: 0, w: 1, h: 1 }, color: WARM, stops: [[0, 0.7], [0.3, 0.35], [0.62, 0]], bloom: true });
         L.heart = maze.disc({ rect: { left: 0, top: 0, w: 1, h: 1 }, color: HEART.color });
         L.fill = maze.image('/assets/confianza/mazeFill.webp');
+        // (the light along the corridors, between the walls)
+        L.flood = maze.canvas(flood, { bloom: true });
         // (the rings run along the corridors, under the walls)
         L.rings = [0, 1].map(() => {
             const g = maze.glow({ rect: { left: 0, top: 0, w: 1, h: 1 }, color: 0xfff8e8, stops: [[0.5, 0], [0.62, 0.6], [0.68, 0.28], [0.7, 0]] });
@@ -137,12 +337,16 @@
         });
         L.walls = maze.image('/assets/confianza/mazeLines.webp');
         L.chakana = maze.image('/assets/confianza/chakana.webp');
+        // The rulito over the chakana, when the three are home
+        L.rulito = maze.canvas(rulito.value.canvas, { bloom: true });
         maze.enter({ y: 30, scale: 0.96, delay: 100, duration: 1900 });
         // The three beings at the doors, a little in front
         const beings = s.depth(zFor(DEPTH.beings));
         L.beingsNode = beings;
         L.beings = BEINGS.map((b) => {
             const g = beings.group();
+            g.halo = g.glow({ rect: { left: 0, top: 0, w: 1, h: 1 }, color: COLOR_OF[b.name], stops: [[0, 0.7], [0.35, 0.3], [0.7, 0]], bloom: true });
+            g.halo.opacity = 0;
             g.body = g.image(`/assets/confianza/${b.name}.webp`, b.name === 'aura' ? { wind: { amp: 5, speed: 1.1, root: 'top' } } : {});
             return g;
         });
@@ -159,17 +363,24 @@
         const gd = r * 4.5;
         L.heartGlow.place({ left: cx - gd / 2, top: cy - gd / 2, w: gd, h: gd });
         L.fill.place(rectOf(B.mazeFill));
+        L.flood.place(rectOf(B.mazeFill));
         L.walls.place(rectOf(B.mazeLines));
         // A ring's light sits at 0.62 of the farthest corner: at full size it reaches the labyrinth's rim
         const rd = (B.mazeLines[2] / 2) / (0.62 * Math.SQRT1_2) * k();
         L.rings.forEach((g) => g.place({ left: cx - rd / 2, top: cy - rd / 2, w: rd, h: rd }));
         L.chakana.place(rectOf(B.chakana));
+        const gh = 250 * k(), gw = gh * 32 / 86;
+        glyph = { left: sx(HEART.x) - gw / 2, top: sy(B.chakana[1] - 30) - gh, w: gw, h: gh };
+        L.rulito.place({ left: glyph.left - 0.4375 * glyph.w, top: glyph.top - 0.1628 * glyph.h, w: glyph.w * 1.875, h: glyph.h * 1.3256 },
+            { x: glyph.left + glyph.w / 2, y: glyph.top + glyph.h });
         BEINGS.forEach((b, i) => {
             const g = L.beings[i];
             const feet = { x: sx(b.feet[0]), y: sy(b.feet[1]) };
             g.place({ left: 0, top: 0, w: 1, h: 1 }, feet);
             g.pivot = feet;
             g.body.place(rectOf(b.box), feet);
+            const r = rectOf(b.box), gd = Math.max(r.w, r.h) * 2;
+            g.halo.place({ left: r.left + r.w / 2 - gd / 2, top: r.top + r.h / 2 - gd / 2, w: gd, h: gd });
         });
         placeHit();
     };
@@ -244,6 +455,44 @@
         L.chakana.scale = 1 + 0.02 * Math.sin(t * 0.7 + 0.6) * ramp + 0.08 * flare * flare;
         L.chakana.uniforms.uBright.value = 1 + 0.08 * (breath * 0.5 + 0.5) * ramp + 0.25 * flare;
         if (!reduced && t > nextRing) { nextRing = t + RING; sendRing(); }
+
+        // ---- The game: the light along the corridors, from the rulito's stroke
+        lit = rooting.step(dt, t);
+        drawFlood(lit.head, lit.tail, t);
+        BEINGS.forEach((b, i) => {
+            const door = maze.doors[i];
+            if (!door || b.reached || lit.head < door.v - 0.001) return;
+            b.reached = true;
+            b.hop = 0;
+            b.glow = 1;
+            const order = BEINGS.filter((each) => each.reached).length;
+            play('kindle', { step: order / (BEINGS.length + 1) });
+            const p = L.beings[i].toScreen(sx(b.feet[0]), sy(b.feet[1] - b.box[3] / 2));
+            sparks.burst(p.x, p.y, { n: 14, colors: [COLOR_OF[b.name], 0xfff8e8], speed: 60, life: 1.4, size: 3.6, spread: 20 * kk });
+        });
+        // Let go and dark again past a door, the being there rests
+        BEINGS.forEach((b, i) => { if (b.reached && b.home < 0 && maze.doors[i] && lit.head - lit.tail < 0.001) b.reached = false; });
+        BEINGS.forEach((b, i) => {
+            if (b.home < 0 || b.home >= 1) return;
+            b.home = Math.min(1, b.home + dt / HOME);
+            if (b.home >= 1) {
+                flare = Math.max(flare, 0.8);
+                dust?.boost(2, 0.8);
+                sparks.burst(sx(HEART.x), sy(HEART.y), { n: 16, colors: [COLOR_OF[b.name], 0xfff8e8], speed: 70, life: 1.6, size: 4, spread: 20 * kk });
+            } else if (Math.random() < dt * 20) {
+                const [ax, ay] = wayPoint(maze.doors[i].way, ease(b.home));
+                sparks.burst(sx(ax), sy(ay), { n: 1, colors: [COLOR_OF[b.name]], speed: 12, life: 0.9, size: 3, spread: 3 });
+            }
+        });
+        if (rulito.value) {
+            rulito.value.frame({ head: lit.head, tail: lit.tail, flare: lit.flare, t, fade: Math.min(1, (lit.head - lit.tail) * 14), width: glyph.w });
+            L.rulito.refresh();
+        }
+        L.rulito.scale = 1 + 0.2 * lit.pop * lit.pop;
+        stageEl?.style.setProperty('--name-glow', lit.named.toFixed(3));
+        // The hint: left alone, the centre calls
+        idleHint = rooting.held ? 0 : idleHint + dt;
+        if (idleHint > HINT && !lit.full && !reduced && ramp >= 1) { idleHint = 0; flare = Math.max(flare, 0.6); sendRing(); }
         for (let i = rings.length - 1; i >= 0; i--) {
             const ring = rings[i];
             ring.age += dt / 4.2;
@@ -253,12 +502,20 @@
             if (ring.age >= 1) { g.opacity = 0; rings.splice(i, 1); }
         }
         L.rings.forEach((g) => { g.mesh.visible = g.opacity > 0.01; });
-        stage.bloom = 0.35 * flare;
+        stage.bloom = Math.max(0.35 * flare, lit.named, rooting.held ? 0.3 : 0);
+        L.heartGlow.opacity += 0.4 * (rooting.held ? 1 : 0) + 0.4 * lit.named;
 
         // ---- The beings
         BEINGS.forEach((b, i) => {
             const g = L.beings[i];
             b.hop = Math.min(1, b.hop + dt / 0.7);
+            // Lit when the light reaches its door; gone home as its light runs to the centre, and back when the rulito is gone
+            b.glow = Math.max(b.reached ? 0.55 + 0.15 * Math.sin(t * 3 + b.phase) : 0, b.glow - dt * 1.5);
+            g.halo.opacity = b.home >= 0 ? b.glow * (1 - Math.min(1, b.home * 4)) : b.glow;
+            b.back = b.home >= 0 ? Math.max(0, 1 - b.home * 3) : Math.min(1, b.back + dt / 0.8);
+            g.opacity = b.back;
+            g.scale = 0.6 + 0.4 * b.back;
+            g.body.uniforms.uBright.value = 1 + 0.25 * (b.reached ? 1 : 0);
             const hop = b.hop < 1 ? Math.sin(b.hop * Math.PI) : 0;
             const squash = b.hop < 1 ? Math.sin(b.hop * Math.PI * 2) * (1 - b.hop) : 0;
             const lift = -hop * Math.max(10, 40 * kk);
@@ -301,6 +558,7 @@
         dust?.shift(1, nearDrift.x, nearDrift.y + L.nearNode.y);
         dust?.shift(2, mazeDrift.x, mazeDrift.y + L.mazeNode.y);
         dust?.shift(3, nearDrift.x, nearDrift.y + L.nearNode.y);
+        dust?.shift(4, mazeDrift.x, mazeDrift.y + L.mazeNode.y);
         stage.render(t);
         if (frames++ % 3 === 0) placeHit();
     };
@@ -332,10 +590,15 @@
                     points: () => HEART.dots.map(([x, y, r]) => [sx(x), sy(y), Math.max(1.1, 2 * r * k()), HEART.color]) },
                 // 3: a few motes in the colours of the chord (Am: third eye, root, solar plexus), rising slowly
                 { colors: chord, look: 'soft', count: 26, size: [4, 9], flow: [0, -7], drift: 16, twinkle: 0.7, reach: 100, push: 26, edgeFade: 0.2, opacity: 0.5, parallax: 0, order: 1e6 },
+                // 4: the beings' lights coming home, along the corridors (under the walls), and 5: the sparks, in front
+                { colors: [0xffffff], look: 'soft', dynamic: homeGroup, parallax: 0, drift: 0, jitter: 0, twinkle: 0, reach: 0, bloom: true, order: after(L.flood) },
+                { ...sparks.group(), order: 1e6 + 1 },
             ],
         });
         if (reduced) dust.reveal();
         parallax = createParallax(root.value, frame);
+        readMaze().catch((e) => console.warn('The labyrinth could not be read', e));
+        if (import.meta.env.DEV) root.value.__game = { rooting, maze, BEINGS, get lit() { return lit; } };
         enter();
     };
 
@@ -343,6 +606,9 @@
     watch(() => props.active, enter);
     onBeforeUnmount(() => {
         gone = true;
+        stageEl?.style.removeProperty('--name-glow');
+        window.removeEventListener('pointerup', liftCentre);
+        window.removeEventListener('pointercancel', liftCentre);
         parallax?.destroy();
         dust?.destroy();
         stage?.destroy();
@@ -353,8 +619,10 @@
     <div class="scene" ref="root" @click="strum">
         <canvas class="stageCanvas" ref="canvas"></canvas>
         <div ref="centreHit" class="hit" role="button" tabindex="0"
-            :aria-label="$i18n.locale === 'en' ? 'The centre of the labyrinth: touch it to hear the card' : 'El centro del laberinto: tocalo para escuchar la carta'"
-            @keydown="onKey"></div>
+            :aria-label="$i18n.locale === 'en' ? 'The centre of the labyrinth: hold it to light the way home' : 'El centro del laberinto: mantenelo para iluminar el camino a casa'"
+            @pointerdown="pressCentre" @click.stop @keydown="onKeyDown" @keyup="onKeyUp"></div>
+        <!-- The rulito is drawn on its own canvas, which the stage shows as a texture over the chakana -->
+        <Rulito ref="rulito" class="offstage" color="#e8798f" />
     </div>
 </template>
 
@@ -384,8 +652,18 @@
         border-radius: 50%;
         cursor: pointer;
         pointer-events: auto;
+        touch-action: none;                    /* held, a finger drifts a little: the phone must not take it for a scroll */
         -webkit-tap-highlight-color: transparent;
         outline: none;
+    }
+
+    .offstage {
+        position: absolute;
+        left: -9999px;
+        top: 0;
+        width: 40px;
+        visibility: hidden;
+        pointer-events: none;
     }
 
     .hit:focus-visible {
