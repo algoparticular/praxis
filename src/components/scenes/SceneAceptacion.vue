@@ -31,7 +31,7 @@
     import { createLayerStage, FIELD_RANGE, FIELD_BUBBLES } from '../../composables/useLayerStage.js';
     import { startStardust } from '../../composables/useStardust.js';
     import { play } from '../../composables/useSound.js';
-    import { createFlow } from '../../composables/useFlow.js';
+    import { createFlow, routeThrough } from '../../composables/useFlow.js';
     import { sceneMilestone } from '../../analytics.js';
     import Rulito from '../Rulito.vue';
     import art from '../../composables/aceptacionScene.json';
@@ -202,7 +202,7 @@
     // ---- Fluir: the light's way, in art px. From the horizon, where the river begins between the two skies, it winds
     // from bank to bank (as far out as the river is wide there) down to the island, comes round it on the right, climbs
     // the right cairn, crosses over its top to the left one and goes down it. Waypoints joined by a Catmull-Rom curve,
-    // sampled every STEP px; the cairns are its two knots
+    // sampled every STEP px (routeThrough); the cairns are its two knots
     const STEP = 8;
     const CAIRN_X = [1028, 1118];           // the middle of each little cairn (left, right), its foot and its top
     const CAIRN_FOOT = 1925, CAIRN_TOP = 1802;
@@ -214,34 +214,8 @@
     ];
     const KNOTS = [[8, 10, 1], [13, 15, 0]];  // [first, last waypoint, which cairn] of each knot
     const ROUTE = (() => {
-        const dense = [], marks = [];
-        let length = 0;
-        const add = (x, y) => {
-            const last = dense[dense.length - 1];
-            if (last) length += Math.hypot(x - last[0], y - last[1]);
-            dense.push([x, y, length]);
-        };
-        for (let i = 0; i < WAY.length - 1; i++) {
-            const p0 = WAY[Math.max(0, i - 1)], p1 = WAY[i], p2 = WAY[i + 1], p3 = WAY[Math.min(WAY.length - 1, i + 2)];
-            marks[i] = length;
-            for (let j = i ? 1 : 0; j <= 24; j++) {
-                const t = j / 24, t2 = t * t, t3 = t2 * t;
-                const c = (a, b, c2, d) => 0.5 * (2 * b + (c2 - a) * t + (2 * a - 5 * b + 4 * c2 - d) * t2 + (3 * b - a - 3 * c2 + d) * t3);
-                add(c(p0[0], p1[0], p2[0], p3[0]), c(p0[1], p1[1], p2[1], p3[1]));
-            }
-        }
-        marks[WAY.length - 1] = length;
-        const n = Math.floor(length / STEP) + 1, xs = new Float32Array(n), ys = new Float32Array(n);
-        let j = 0;
-        for (let i = 0; i < n; i++) {
-            const at = i * STEP;
-            while (j < dense.length - 2 && dense[j + 1][2] < at) j++;
-            const a = dense[j], b = dense[j + 1], f = Math.min(1, Math.max(0, (at - a[2]) / Math.max(1e-6, b[2] - a[2])));
-            xs[i] = a[0] + (b[0] - a[0]) * f;
-            ys[i] = a[1] + (b[1] - a[1]) * f;
-        }
-        const index = (w) => Math.round(marks[w] / STEP);
-        return { n, xs, ys, stops: KNOTS.map(([a, b, cairn]) => ({ enter: index(a), exit: Math.min(n - 1, index(b)), cairn })) };
+        const r = routeThrough(WAY, STEP);
+        return { ...r, stops: KNOTS.map(([a, b, cairn]) => ({ enter: r.index(a), exit: r.index(b), cairn })) };
     })();
     const RX = (i) => ROUTE.xs[i], RY = (i) => ROUTE.ys[i];
     // How near the viewer a point of the river is (0 at the horizon, 1 at the foot of the card): the light is wider there

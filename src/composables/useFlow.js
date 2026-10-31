@@ -116,3 +116,35 @@ export const createFlow = ({
     };
     return f;
 };
+
+// A route through waypoints ([x, y] in the scene's units), joined by a Catmull-Rom curve and sampled every `step`:
+// { n, xs, ys, index(w) } (index: the sample at waypoint w), for createFlow's x, y and n
+export const routeThrough = (way, step = 8) => {
+    const dense = [], marks = [];
+    let length = 0;
+    const add = (x, y) => {
+        const last = dense[dense.length - 1];
+        if (last) length += Math.hypot(x - last[0], y - last[1]);
+        dense.push([x, y, length]);
+    };
+    for (let i = 0; i < way.length - 1; i++) {
+        const p0 = way[Math.max(0, i - 1)], p1 = way[i], p2 = way[i + 1], p3 = way[Math.min(way.length - 1, i + 2)];
+        marks[i] = length;
+        for (let j = i ? 1 : 0; j <= 24; j++) {
+            const t = j / 24, t2 = t * t, t3 = t2 * t;
+            const c = (a, b, c2, d) => 0.5 * (2 * b + (c2 - a) * t + (2 * a - 5 * b + 4 * c2 - d) * t2 + (3 * b - a - 3 * c2 + d) * t3);
+            add(c(p0[0], p1[0], p2[0], p3[0]), c(p0[1], p1[1], p2[1], p3[1]));
+        }
+    }
+    marks[way.length - 1] = length;
+    const n = Math.floor(length / step) + 1, xs = new Float32Array(n), ys = new Float32Array(n);
+    let j = 0;
+    for (let i = 0; i < n; i++) {
+        const at = i * step;
+        while (j < dense.length - 2 && dense[j + 1][2] < at) j++;
+        const a = dense[j], b = dense[j + 1] ?? a, f = Math.min(1, Math.max(0, (at - a[2]) / Math.max(1e-6, b[2] - a[2])));
+        xs[i] = a[0] + (b[0] - a[0]) * f;
+        ys[i] = a[1] + (b[1] - a[1]) * f;
+    }
+    return { n, xs, ys, index: (w) => Math.min(n - 1, Math.round(marks[w] / step)) };
+};
