@@ -16,7 +16,7 @@
     // its grass and plants). From esperanzaScene.json and public/assets/esperanza (made by scripts/convert-esperanza.mjs).
     // The card's rulito (the little squiggle in the sky) is not drawn: its box is kept for the game.
     import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
-    import { floorFor, floorLayer } from '../../data/stageFloor.js';
+    import { floorFor, floorUnder } from '../../data/stageFloor.js';
     import { createParallax } from '../../composables/useParallax.js';
     import { createLayerStage } from '../../composables/useLayerStage.js';
     import { startStardust } from '../../composables/useStardust.js';
@@ -146,7 +146,7 @@
     const place = (w, h) => {
         layout(w, h);
         // under the frame on a phone, its sand (stageFloor.js), over the sky
-        root.value.style.background = `${floorLayer(F.y + F.size - 30, F, FLOOR_COLOURS)}, #${art.sky.toString(16).padStart(6, '0')}`;
+        root.value.style.background = `${floorUnder(w, h, F, FLOOR_COLOURS)}#${art.sky.toString(16).padStart(6, '0')}`;
         const mr = MOON.r * k();
         const mg = mr * 3.4;
         L.moonGlow.place({ left: sx(MOON.x) - mg / 2, top: sy(MOON.y) - mg / 2, w: mg, h: mg });

@@ -1,7 +1,7 @@
-// The floor of a card's stage on a phone held upright: the round share button sits over the bottom of the stage
-// (CardTemplate.vue: 28 px from the bottom, 58 px tall) and the arrow down to the reading beside it, so a scene keeps
-// what is drawn above this band (its frame rests on it, not on the screen's edge) and fills the band with its own ground.
-// On a wide screen the button is beside the drawing, so there is no floor.
+// The floor of a card's stage on a phone held upright: the arrow down to the reading sits at the bottom of the stage
+// (CardTemplate.vue), over the screen's edge and its home bar, so a scene keeps what is drawn above this band (its
+// frame rests on it, not on the screen's edge) and fills the band with its own ground. On a wide screen nothing
+// changes: there is no floor and no band.
 export const FLOOR = 88;
 export const floorFor = (w, h) => (w < h ? FLOOR : 0);
 
@@ -9,6 +9,8 @@ export const floorFor = (w, h) => (w < h ? FLOOR : 0);
 // of the frame, so the ground's own picture covers its edge even when the parallax moves it) down to the bottom, the
 // colours of the ground along the card's bottom edge, `runs` ([x where it starts in art px of the 2160 square,
 // '#rrggbb'], read off the card), placed with the frame F ({ x, size } in px); past the frame the edge colours go on
+// Only on a phone (floorFor), so a wide screen keeps its background as it was: '' there, else the layer and a comma
+export const floorUnder = (w, h, F, runs) => (floorFor(w, h) ? `${floorLayer(F.y + F.size - 30, F, runs)}, ` : '');
 export const floorLayer = (top, F, runs) => {
     const k = F.size / 2160;
     const stops = [`${runs[0][1]} 0%`];

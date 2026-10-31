@@ -270,7 +270,7 @@
             [[crown, 'crown'], [tip, 'tip']].forEach(([node, kind]) => {
                 const c = rectOf(B[kind + end]);
                 node.place(c, { x: c.left + c.w / 2, y: c.top + c.h });
-                node.mesh.visible = c.top + c.h > top;
+                node.mesh.visible = w < h && c.top + c.h > top;            // on a phone only: a wide screen stays as it was
             });
             if (side && art.branch) {
                 // The branch goes on the way it goes, up to the left (its edge column stretched, turned about where it

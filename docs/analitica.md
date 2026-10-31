@@ -28,7 +28,7 @@ Todos llevan `lang` (`es`/`en`) e `installed` (la app corre como PWA instalada).
 | `card_reading_reached` | baja hasta la lectura | `card_id`, `seconds` |
 | `card_left` | una vez por visita: se va de la carta, la oculta (cambia de app o de pestaña) o cierra la página; `seconds` llega hasta ese momento | `card_id`, `scene`, `seconds`, `touches`, `milestones`, `read`, y la fluidez (abajo) |
 | `table_left` | deja una mesa 3D (sale, la oculta o cierra la página), solo si la mesa 3D llegó a mostrarse | `table`: `full` (`/oracle`) / `nine` (`/oracleTheNine`) / `deck` (el anillo de `/deck`), y la fluidez (abajo) |
-| `share_opened` | abre la pantalla de compartir | `card_id`, `from`: `stage` (el botón sobre la escena) / `reading` (el del final de la lectura) |
+| `share_opened` | abre la pantalla de compartir | `card_id`, `from`: `reading` (el botón del final de la lectura; hasta noviembre de 2026 también `stage`, un botón sobre la escena que se sacó) |
 | `share_clicked` | elige un canal | `card_id`, `channel` (`link`, `facebook`, `twitter`, `whatsapp`) |
 | `language_changed` | cambia el idioma | `to` |
 | `sound_toggled` | activa o apaga el sonido | `on` |

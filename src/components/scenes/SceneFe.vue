@@ -22,7 +22,7 @@
     // feScene.json and public/assets/fe (made by scripts/convert-fe.mjs). The touch targets are DOM elements over Sid
     // and the lotus.
     import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
-    import { floorFor, floorLayer } from '../../data/stageFloor.js';
+    import { floorFor, floorUnder } from '../../data/stageFloor.js';
     import { createParallax } from '../../composables/useParallax.js';
     import { createLayerStage } from '../../composables/useLayerStage.js';
     import { startStardust } from '../../composables/useStardust.js';
@@ -261,7 +261,7 @@
     const place = (w, h) => {
         layout(w, h);
         // under the frame on a phone, the ground along the card's bottom edge (stageFloor.js), over the yellow
-        root.value.style.background = `${floorLayer(F.y + F.size - 30, F, FLOOR_COLOURS)}, ${hexColour(art.sky.yellow)}`;
+        root.value.style.background = `${floorUnder(w, h, F, FLOOR_COLOURS)}${hexColour(art.sky.yellow)}`;
         const flip = (r, side, up = 0) => ({
             left: side === 0 ? r.left : side < 0 ? 2 * F.x - r.left - r.w : 2 * (F.x + F.size) - r.left - r.w,
             top: up ? 2 * F.y - r.top - r.h : r.top, w: r.w, h: r.h,

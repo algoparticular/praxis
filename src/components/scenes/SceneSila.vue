@@ -23,7 +23,7 @@
     // particles (useStardust), from silaScene.json (made by scripts/convert-sila.mjs): the glow is alive, every mote of
     // it moved by the wind and stirred by a finger. The touch targets are DOM elements kept over the lectern and Sid.
     import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
-    import { floorFor, floorLayer } from '../../data/stageFloor.js';
+    import { floorFor, floorUnder } from '../../data/stageFloor.js';
     import { createParallax } from '../../composables/useParallax.js';
     import { createLayerStage } from '../../composables/useLayerStage.js';
     import { startStardust } from '../../composables/useStardust.js';
@@ -375,7 +375,7 @@
         // The night sky of the card, a little deeper above
         const at = (y) => `${Math.max(0, Math.min(100, sy(y) / h * 100)).toFixed(1)}%`;
         // under the frame on a phone, the green of its grass (stageFloor.js)
-        root.value.style.background = `${floorLayer(F.y + F.size - 30, F, [[0, '#a4d4b0']])}, linear-gradient(to bottom, #6597b6 0%, #72a3c0 ${at(200)}, #77a7c3 ${at(1100)}, #82afc8 ${at(1740)}, #82afc8 100%)`;
+        root.value.style.background = `${floorUnder(w, h, F, [[0, '#a4d4b0']])}linear-gradient(to bottom, #6597b6 0%, #72a3c0 ${at(200)}, #77a7c3 ${at(1100)}, #82afc8 ${at(1740)}, #82afc8 100%)`;
 
         // The clouds where the card draws them, spread a little over a wide sky and never over the card's name; they
         // drift and wrap round
