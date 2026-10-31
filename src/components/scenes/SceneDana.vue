@@ -604,13 +604,13 @@
     const build = (st) => {
         const world = st.depth(depthFor(14));
         L.isle = world.group();
-        L.island = L.isle.image('/assets/share/island.webp');
+        L.island = L.isle.image('/assets/dana/island.webp');
         L.left = L.isle.image('/assets/dana/left.webp');
         L.right = L.isle.image('/assets/dana/right.webp');
         // A rulito over each head, in the cream of the one that was drawn
         L.rulitoL = L.isle.canvas(rulitoL.value.canvas, { bloom: true });
         L.rulitoR = L.isle.canvas(rulitoR.value.canvas, { bloom: true });
-        L.flame = L.isle.image('/assets/share/fire.webp', { bloom: true });
+        L.flame = L.isle.image('/assets/dana/fire.webp', { bloom: true });
         L.island.enter({ y: 150, duration: 1700 });
         L.left.enter({ y: 80, delay: 350, duration: 1900 });
         L.right.enter({ y: 80, delay: 420, duration: 1900 });
