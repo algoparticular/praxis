@@ -29,8 +29,11 @@ export const createThreads = ({ slots }) => {
     let flowPhase = 0;
     const drawn = [];
 
-    // Where a thread crosses the hole, `parting(f)` is how far (0..1) it is open at f, and `around(f, side)` how far a
-    // strand going round on that side (+1 or -1) is pushed off the thread's line there; null when it does not cross it
+    // Where a thread crosses the hole, `parting(f)` is how far (0..1) it is open at f, `around(f, side)` how far a
+    // strand going round on that side (+1 or -1) is pushed off the thread's line there, and `calm(f)` how still its helix
+    // is: wholly still inside the opening and waking slowly over a longer stretch on both sides, so the two strands draw
+    // one clean eye (if the helix came back as soon as the opening ended, its first turn made a neck and a second bulb,
+    // a vase); null when it does not cross it
     const opener = (x0, y0, dx, dy, length, nx, ny) => {
         const hole = api.hole;
         if (!hole || !(hole.opening > 0.001)) return null;
@@ -42,7 +45,11 @@ export const createThreads = ({ slots }) => {
             const u = (f * length - along) / span;
             return Math.abs(u) >= 1 ? 0 : hole.opening * (0.5 + 0.5 * Math.cos(Math.PI * u));
         };
-        return { parting, around: (f, side) => (off + side * hole.r) * parting(f) };
+        const calm = (f) => {
+            const u = Math.abs(f * length - along) / span;
+            return hole.opening * (1 - smooth(0.6, 1.8, u));
+        };
+        return { parting, calm, around: (f, side) => (off + side * hole.r) * parting(f) };
     };
 
     const api = {
@@ -85,7 +92,7 @@ export const createThreads = ({ slots }) => {
                     const near = 0.5 + 0.5 * Math.cos(wave);                  // 1 when the dot passes in front
                     const pulse = Math.max(0, Math.sin(f * 15 - t * 2.1)) ** 3;
                     // Round the hole the helix calms into two clean arcs, strand 0 on one side and strand 1 on the other
-                    const side = open ? Math.sin(wave) * width * lens * (1 - 0.8 * open.parting(f)) + open.around(f, strand ? -1 : 1)
+                    const side = open ? Math.sin(wave) * width * lens * (1 - open.calm(f)) + open.around(f, strand ? -1 : 1)
                         : Math.sin(wave) * width * lens;
                     place(f, side, (3.8 + 3 * near + 2.4 * pulse + 2.2 * surge) * unit * (0.4 + 0.6 * lens),
                         smooth(0, 0.08, f) * smooth(0, 0.08, 1 - f) * strength * (0.7 + 0.3 * near));
@@ -100,7 +107,7 @@ export const createThreads = ({ slots }) => {
                 const lens = Math.sin(Math.PI * f) ** 0.7;
                 const wave = Math.PI * 2 * turns * f + r(3) * 6.28;
                 const spread = (r(4) - 0.5) * 2 * width * 1.5 * lens + Math.sin(wave + t) * 4 * lens;
-                place(f, spread + (open ? open.around(f, r(4) < 0.5 ? -1 : 1) : 0), (1.4 + r(5) * 1.5) * unit,
+                place(f, open ? spread * (1 - 0.7 * open.calm(f)) + open.around(f, r(4) < 0.5 ? -1 : 1) : spread, (1.4 + r(5) * 1.5) * unit,
                     smooth(0, 0.08, f) * smooth(0, 0.08, 1 - f) * strength * (0.35 + 0.5 * r(6)) * (0.6 + 0.4 * Math.sin(t * 2 + d)));
             }
             drawn.push({ slot, from: [x0, y0], to: [x1, y1], colours: [ca, cb], strength, length, unit });
