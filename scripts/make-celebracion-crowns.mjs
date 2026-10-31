@@ -37,6 +37,9 @@ const CROWNS = {
     left: { seed: [525, 880], cut: 900, allow: (x, y) => x < 1150 && (y <= 700 || x < 720) && (y <= 820 || x > 300) },
     right: { seed: [2700, 700], cut: 800, allow: (x, y) => x >= 1960 && (y <= 560 || x < 2935) },
 };
+// Where Belleza's canopy leaves go over the card (art px): the highest at CANOPY_TOP, the rest under it, their spread
+// in height squeezed so they stay in the roof
+const CANOPY_TOP = -420, CANOPY_SQUEEZE = 0.75;
 // A shelf of leaves for the tips of the branches: the one at this point of Belleza's leaves (6)
 const SHELF = [2945, 225];
 
@@ -296,5 +299,17 @@ for (const side of ['left', 'right']) {
     scene.boxes[`tip${side === 'left' ? 'Left' : 'Right'}`] = tipBox;
     console.log(side, 'crown', box, 'scale', k.toFixed(2), 'tip', tipBox, 'slope', slope.toFixed(2));
 }
+
+// The roof of leaves over them: Belleza's free leaves of the canopy (its atlas, public/assets/belleza/canopy.webp, and
+// where they are, bellezaScene.json), their lines recoloured to Celebración's, laid over the card (art px, above its
+// top): the scene draws them on a canopy of its own on a phone, where the trunks go up into it
+const bel = JSON.parse(await readFile(path.join(root, 'src', 'composables', 'bellezaScene.json'), 'utf8'));
+const atlas = await loadRaw(path.join(root, 'public', 'assets', 'belleza', 'canopy.webp'));
+recolour(atlas.data);
+await webp(sharp(atlas.data, { raw: { width: atlas.w, height: atlas.h, channels: 4 } })).toFile(path.join(target, 'canopy.webp'));
+const top = Math.min(...bel.canopy.map(([, y]) => y));
+scene.canopy = bel.canopy.map(([x, y, w, h, ax, ay]) => [x, Math.round(CANOPY_TOP + (y - top) * CANOPY_SQUEEZE), w, h, ax, ay]);
+scene.canopyAtlas = [atlas.w, atlas.h];
+console.log('canopy', scene.canopy.length, 'leaves');
 
 await writeFile(sceneFile, JSON.stringify(scene));

@@ -161,6 +161,40 @@
         return s * STEM_WIND.amp * v * v;
     };
 
+    // ---- The roof of leaves over the frame, on a phone: its lower edge (art px), lumpy as a canopy seen from under it
+    const ROOF = 120;
+    const ROOF_COLOUR = '#2a7a82';          // Belleza's canopy teal, at night
+    const roofCanvas = document.createElement('canvas');
+    // The shelves across the trunks where the card cuts them: [which of the canopy's leaves, the trunk's middle and how
+    // wide the shelf is, in art px]
+    const SEAMS = [[0, 256, 330], [2, 1695, 470]];
+    const roofEdge = (ax) => ROOF + 38 * Math.sqrt(Math.abs(Math.sin(Math.PI * ax / 190 + Math.sin(ax / 530)))) + 30 * Math.sin(ax / 420 + 1);
+    const drawRoof = (w, phone) => {
+        L.roof.mesh.visible = phone;
+        L.roofLeaves.forEach(({ node }) => { node.mesh.visible = phone; });
+        L.seamLeaves.forEach((node) => { node.mesh.visible = phone; });
+        if (!phone) return;
+        const cw = Math.round(w + 2 * MARGIN), bottom = Math.max(...Array.from({ length: 40 }, (_, i) => sy(roofEdge((i / 39 * cw - MARGIN - F.x) / k()))));
+        const ch = Math.max(2, Math.round(bottom + MARGIN + 4));
+        if (roofCanvas.width !== cw || roofCanvas.height !== ch) { roofCanvas.width = cw; roofCanvas.height = ch; }
+        const g = roofCanvas.getContext('2d');
+        g.clearRect(0, 0, cw, ch);
+        g.fillStyle = ROOF_COLOUR;
+        g.beginPath();
+        g.moveTo(0, 0);
+        for (let x = 0; x <= cw; x += 2) g.lineTo(x, sy(roofEdge((x - MARGIN - F.x) / k())) + MARGIN);
+        g.lineTo(cw, 0);
+        g.closePath();
+        g.fill();
+        L.roof.place({ left: -MARGIN, top: -MARGIN, w: cw, h: ch });
+        L.roof.refresh();
+        L.roofLeaves.forEach(({ node, box }) => node.place(rectOf(box)));
+        SEAMS.forEach(([leaf, cx, sw], i) => {
+            const [, , w, h] = art.canopy[leaf], sh = sw * h / w;
+            L.seamLeaves[i].place(rectOf([cx - sw / 2, -18 - sh / 2, sw, sh]));
+        });
+    };
+
     const L = {};
     const build = (s) => {
         // The land: the ground (code), the trees (and, where there is sky over the frame, their trunks going on up),
@@ -172,6 +206,14 @@
         // in a crown and each thin branch the frame cuts in a flat end with a shelf of leaves, as Belleza's trees do
         // (scripts/make-celebracion-crowns.mjs), drawn behind the tree and swaying a little; the branch that leaves
         // the frame on the left goes on as its edge column, stretched, up to the left)
+        // On a phone, over the frame, a roof of leaves the trunks go up into, as Belleza's canopy: its mass is a canvas
+        // drawn in code in a night teal, with Belleza's free leaves on it (recoloured, canopy.webp), each stirring in place
+        L.roof = land.canvas(roofCanvas);
+        const [AW, AH] = art.canopyAtlas;
+        L.roofLeaves = art.canopy.map(([x, y, w, h, ax, ay]) => ({
+            node: land.image(asset('canopy'), { crop: [ax / AW, ay / AH, w / AW, h / AH] }), box: [x, y, w, h],
+            phase: Math.random() * 6.28, speed: 0.3 + Math.random() * 0.25,
+        }));
         L.trees = ['treeLeft', 'treeRight'].map((name) => {
             const [, , w] = B[name];
             const end = name === 'treeLeft' ? 'Left' : 'Right';
@@ -182,6 +224,11 @@
                 side: name === 'treeLeft' ? land.image(asset(name), { crop: [0, 0, 3 / w, 1] }) : null,
                 tree: land.image(asset(name)),
             };
+        });
+        // and a shelf of leaves across each trunk where the card cuts it, in front: it hides where the crown begins
+        L.seamLeaves = SEAMS.map(([leaf]) => {
+            const [, , , , ax, ay] = art.canopy[leaf], [, , w, h] = art.canopy[leaf];
+            return land.image(asset('canopy'), { crop: [ax / AW, ay / AH, w / AW, h / AH] });
         });
         L.marks = [-1, 0, 1].map((side) => {
             const node = land.image(asset('marks'));
@@ -261,6 +308,7 @@
         layout(w, h);
         paintSky(h);
         drawGround(w, h);
+        drawRoof(w, w < h);
         // The trees and, where the frame leaves sky over them or beside them, their trunks and branch going on
         const top = -MARGIN;
         L.trees.forEach(({ name, crown, tip, side, tree }) => {
@@ -356,6 +404,13 @@
         lastT = t;
         stage.look(x * SLIDE, y * SLIDE_Y);
         flare = Math.max(0, flare - dt * 0.7);
+        // The leaves of the roof stir in place
+        L.roofLeaves.forEach(({ node, phase, speed }) => {
+            const a = t * speed + phase;
+            node.x = Math.sin(a) * 5 * ramp;
+            node.y = Math.sin(a * 0.7 + 1.3) * 2.5 * ramp;
+            node.rotate = Math.sin(a * 1.3) * 1.4 * ramp;
+        });
 
         // ---- The fire flickers, flares when the chord is strummed, and throws embers
         const f = flicker(t) * ramp, g = flicker(t * 0.8, 2.3) * ramp;
