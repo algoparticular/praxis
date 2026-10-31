@@ -16,7 +16,7 @@ const cards = JSON.parse(readFileSync(at('src', 'data', 'cards.json'), 'utf8'));
 const scenesSource = readFileSync(at('src', 'data', 'sceneNames.js'), 'utf8');
 const withScene = new Set([...scenesSource.match(/const names = \{([^}]*)\}/)[1].matchAll(/(\d+):/g)].map((m) => Number(m[1])));
 // Cards whose verb can be played in the scene today. Update it when another card gets a game.
-const PLAYABLE = new Set([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 14, 20, 22, 24, 25, 27, 29, 31, 32]);
+const PLAYABLE = new Set([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 14, 17, 20, 22, 24, 25, 26, 27, 29, 31, 32]);
 
 const NOTE = { C: 'Do', D: 'Re', E: 'Mi', F: 'Fa', G: 'Sol', A: 'La', B: 'Si' };
 const chordName = (sym) => {
