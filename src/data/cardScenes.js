@@ -42,6 +42,7 @@ const scenes = {
     28: stage(() => import('../components/scenes/ScenePerdon.vue')),
     29: stage(() => import('../components/scenes/SceneSincronicidad.vue')),
     31: stage(() => import('../components/scenes/SceneVipassana.vue')),
+    32: stage(() => import('../components/scenes/SceneTransformacion.vue')),
 };
 
 export const sceneFor = (id) => scenes[id] ?? SceneFlat;

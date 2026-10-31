@@ -93,7 +93,7 @@ Se cambia una línea en `src/data/cardChords.js`, por ejemplo `28: 'Em'`. Se esc
 | 29 | Sincronicidad | Regular | Resonar | Sol mayor | Escena propia, verbo jugable |
 | 30 | Esperanza | Regular | Ver | Sim7 | Ilustración plana |
 | 31 | Vipassana | Special | Soltar | Simaj7 | Escena propia, verbo jugable |
-| 32 | Transformación | Regular | Fluir | Rem7 | Ilustración plana |
+| 32 | Transformación | Regular | Fluir | Rem7 | Escena propia, sin juego todavía |
 <!-- tabla:fin -->
 
 Esta tabla se genera sola desde `cards.json` (nombre, categoría, verbo), `src/data/cardChords.js` (acorde) y `src/data/cardScenes.js` (escena). Después de cambiar alguno de los tres, correr `npm run docs`; `npm run check:docs` falla si quedó desactualizada. Qué verbo ya se juega está en `PLAYABLE`, dentro de `scripts/check-docs.mjs`. Qué hace cada escena al tocarla: `registro-cartas-vivas.md`.
