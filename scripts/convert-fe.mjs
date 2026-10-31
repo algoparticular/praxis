@@ -23,6 +23,10 @@
 //   sproutGlow, budGlow  the coral glow of the two little mushrooms (8) and the green glow of the lotus bud (10), as dots
 //   aura, heart  the yellow stipple round Sid (17) and on his chest (20), as dots [x, y, radius]
 //   eyesAt     the centre of each eye
+//   pure       which pictures have a `NAME-pure.webp` (in the same box as the picture): what the blue shapes are over in each tinted picture, in its own colour
+//              (only those pixels, the rest transparent), so the game can lay the card's pure colour back over the
+//              land (Fe won); waves-pure.webp is the waves' atlas in their own colour, and every capDot has its own
+//              colour too, as a fifth number
 // Not converted: 15 and 16 (the blue shapes) are drawn in code and worked out into the pictures; 17 and 20 and the
 // stipple of 8 and 10 only as particles. There is no rulito layer and no Algo Particular mark (7 is a piece of the
 // hatching of the right stem). The originals are not kept in the repo once converted. Usage: node scripts/convert-fe.mjs
@@ -289,6 +293,26 @@ for (const name of names) {
     scene.boxes[name] = box;
     await save(name, buffers[name], box);
 }
+// The pure colour of what the blue shapes are over: only those pixels, untinted
+const pureOf = (p) => {
+    const out = Buffer.alloc(N * 4);
+    for (let i = 0; i < N; i++) {
+        const a = p[i * 4 + 3];
+        if (a <= 0 || blob[i] <= 0.004) continue;
+        out[i * 4] = Math.round(p[i * 4]); out[i * 4 + 1] = Math.round(p[i * 4 + 1]); out[i * 4 + 2] = Math.round(p[i * 4 + 2]);
+        out[i * 4 + 3] = Math.round(a * 255);
+    }
+    return out;
+};
+scene.pure = {};
+for (const name of names) {
+    if (['sid', 'eyes', 'waves'].includes(name)) continue;
+    const data = pureOf(pics[name]);
+    if (boxOf(data)[2] <= 2 * PAD + 1) continue;
+    // (in the same box as its picture, so it sways and is placed exactly as it)
+    scene.pure[name] = true;
+    await save(`${name}-pure`, data, scene.boxes[name]);
+}
 
 // Pieces of a picture or a layer cut out into one atlas, packed in rows: [x, y, w, h where it is, x, y in the atlas]
 const atlas = async (name, data, pieces) => {
@@ -318,6 +342,8 @@ const atlas = async (name, data, pieces) => {
     const w = await atlas('waves', buffers.waves, waveBoxes);
     scene.waveAtlas = w.size;
     scene.waves = w.pieces;
+    // The same atlas in the waves' own colour (the pieces fall in the same places)
+    await atlas('waves-pure', toBuffer(pics.waves, 'sid'), waveBoxes);
 }
 {
     const pieces = blobsOf(L[1]).filter((b) => b.area > 200).map((b) => { const [x0, y0, x1, y1] = boxOfPixels(b.pixels); return [x0 - 5, y0 - 5, x1 + 5, y1 + 5]; });
@@ -412,8 +438,9 @@ const dotsOf = (mask, layer, keep = () => true) => {
     for (const b of blobsOf(layer, (i) => mask[i] && keep(i), 30)) {
         if (b.area < 3) continue;
         const i = Math.round(b.y) * S + Math.round(b.x);
-        const c = tinted([layer[i * 4], layer[i * 4 + 1], layer[i * 4 + 2]], i);
-        out.push([Math.round(b.x), Math.round(b.y), +Math.max(1, Math.sqrt(b.area / Math.PI)).toFixed(1), hex(...c.map((v) => Math.max(0, Math.min(255, v))))]);
+        const raw = [layer[i * 4], layer[i * 4 + 1], layer[i * 4 + 2]];
+        const c = tinted(raw, i);
+        out.push([Math.round(b.x), Math.round(b.y), +Math.max(1, Math.sqrt(b.area / Math.PI)).toFixed(1), hex(...c.map((v) => Math.max(0, Math.min(255, v)))), hex(...raw)]);
     }
     return out;
 };

@@ -3,8 +3,14 @@
     // marble turns slowly inside its outline, with a ring of dark red dust round it; above, a balloon rises with a Sama in
     // it, carrying another Sama that hangs from its string, and a third little Sama floats by in its cup; below, Particular
     // sits in a leaf boat with a kitten, drifting.
-    // No game yet (its verb, Soltar, comes later: the pictures it will obviously need are kept apart: the balloon, the Sama
-    // hanging from it, Particular and his eyes, the kitten). The scene is alive: the marble of the planet turns and
+    // Its verb is Soltar ("I inhale love. I exhale forgiveness."): six knots of the ring's dark red dust, denser and
+    // churning, are grudges and blame held on to. A touch on one lets it go (`release`): it bursts into light motes and
+    // the stretch of the ring that was its own clears from it outwards, from dark red to a warm cream. Holding Particular
+    // is breathing in love (`inhale`: a light grows behind him and motes of light are drawn in to him); let go once it is
+    // gathered he breathes out forgiveness (`exhale`): a wave of light goes out from him and lets go of every knot it
+    // reaches. With the ring clear the planet shines, the balloon leaps, F minor gathers (`converge`) and the rulito the
+    // card draws over Particular is born (`rulito`); when it goes the ring darkens slowly and the knots gather again.
+    // Left alone a while, a knot throbs (the hint). The scene is alive: the marble of the planet turns and
     // shimmers, a soft light breathes behind it, its ring of dust flows round it in slow waves (every dot a particle, the
     // part behind the planet drawn under it and the part in front over it); the stars twinkle; the balloon bobs and leans,
     // the Sama hanging from it swings a little later; the cup rocks; the leaf rocks and bobs, Particular breathes, blinks
@@ -17,12 +23,15 @@
     // the frame (shifted copies of the card's stars, never a mirrored twin side by side); on a phone upright the frame is as
     // wide as the ring and the leaf allow, and the spare height is shared out between the sky above and below the planet.
     // It is drawn in WebGL (useLayerStage), from perdonScene.json and public/assets/perdon (made by
-    // scripts/convert-perdon.mjs). The card's rulito over Particular is not drawn: its box is kept for the game.
+    // scripts/convert-perdon.mjs). The card's rulito over Particular is not a picture: it is drawn by the game (Rulito.vue).
     import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
     import { createParallax } from '../../composables/useParallax.js';
     import { createLayerStage } from '../../composables/useLayerStage.js';
     import { startStardust } from '../../composables/useStardust.js';
+    import { createSparks } from '../../composables/useSparks.js';
     import { play } from '../../composables/useSound.js';
+    import { sceneMilestone } from '../../analytics.js';
+    import Rulito from '../Rulito.vue';
     import art from '../../composables/perdonScene.json';
 
     const props = defineProps({
@@ -32,6 +41,8 @@
 
     const root = ref(null);
     const canvas = ref(null);
+    const partHit = ref(null);
+    const rulito = ref(null);
     let stageEl = null;
     let stage = null;
     let parallax = null;
@@ -100,7 +111,7 @@
     const onRing = (flat) => Array.from({ length: flat.length / 3 }, (_, i) => {
         const [x, y, r] = [flat[i * 3], flat[i * 3 + 1], flat[i * 3 + 2] / 2];
         const u = (x - E.x) * ct + (y - E.y) * st, v = -(x - E.x) * st + (y - E.y) * ct;
-        return { a: Math.atan2(v / E.b, u / E.a), out: Math.hypot(u / E.a, v / E.b), r, phase: Math.random() * 0.8, x, y };
+        return { a: Math.atan2(v / E.b, u / E.a), out: Math.hypot(u / E.a, v / E.b), r, phase: Math.random() * 0.8, x, y, lit: 0, knot: 0, da: 0 };
     });
     const ring = { back: onRing(art.ring.back), front: onRing(art.ring.front) };
     // A point of the stage is drawn a little smaller than its size, with a soft edge: so the dots look as big as drawn
@@ -118,11 +129,87 @@
                 const u = Math.cos(a) * d.out * E.a, v = Math.sin(a) * d.out * E.b;
                 data.positions[i * 3] = F.x + (E.x + u * ct - v * st) * kk;
                 data.positions[i * 3 + 1] = F.y + (E.y + u * st + v * ct) * kk;
-                data.sizes[i] = Math.max(1.2, 2 * d.r * kk * DOT);
+                data.sizes[i] = Math.max(1.2, 2 * d.r * kk * DOT) * (1 + 0.25 * d.lit);
                 data.alphas[i] = 1;
+                for (let c = 0; c < 3; c++) data.tints[i * 3 + c] = DUST_RGB[c] + (LIGHT_RGB[c] - DUST_RGB[c]) * d.lit;
             }
         },
     });
+
+    // ---- The game: six knots in the ring, grudges held on to. Each is a clump of darker dots churning round a point of
+    // the ring (an angle on its ellipse); every dot of the ring belongs to its nearest knot and clears when it is let go
+    const rgb = (c) => [((c >> 16) & 255) / 255, ((c >> 8) & 255) / 255, (c & 255) / 255];
+    const LIGHT = 0xf3d9ac;                 // the ring cleared: a warm cream
+    const LOVE = 0xffb4a6;                  // what he breathes in
+    const DUST_RGB = rgb(DUST), LIGHT_RGB = rgb(LIGHT), KNOT_RGB = rgb(DUST).map((v) => v * 0.5);
+    const KNOT_AT = [-0.95, -0.4, 0.1, 0.65, 1.3, 1.95];     // angles on the ring's ellipse (0: its right end, π/2: its front)
+    const KNOT_DOTS = 64;
+    const CLEAR = 1.3;                      // radians a second the light runs along the ring from a knot let go
+    const angleGap = (a, b) => Math.abs(Math.atan2(Math.sin(a - b), Math.cos(a - b)));
+    const knots = KNOT_AT.map((a, i) => ({
+        i, a, state: 'here', at: 0, form: 1, hint: 0,
+        dots: Array.from({ length: KNOT_DOTS }, () => {
+            const g = (Math.random() + Math.random() + Math.random()) / 3 - 0.5;
+            return { oa: g * 0.22, oo: g * 0.16 + (Math.random() - 0.5) * 0.04, w: 0.6 + Math.random() * 0.9, ph: Math.random() * 6.28, r: 3 + Math.random() * 3.8 };
+        }),
+    }));
+    [...ring.back, ...ring.front].forEach((d) => {
+        let best = 0;
+        knots.forEach((kn, j) => { if (angleGap(d.a, kn.a) < angleGap(d.a, knots[best].a)) best = j; });
+        d.knot = best;
+        d.da = angleGap(d.a, knots[best].a);
+    });
+    // A point of the ring, on the stage at rest (the front half's plane)
+    const ringPoint = (a, out = 1) => {
+        const u = Math.cos(a) * out * E.a, v = Math.sin(a) * out * E.b;
+        return { x: F.x + (E.x + u * ct - v * st) * k(), y: F.y + (E.y + u * st + v * ct) * k() };
+    };
+    const knotGroup = {
+        count: knots.length * KNOT_DOTS,
+        update(t, data) {
+            const kk = k();
+            knots.forEach((kn, j) => {
+                const going = kn.state === 'going' || kn.state === 'gone' ? Math.min(1, (lastT - kn.at) / 0.9) : 0;
+                const spread = 1 + 3 * going + 2.5 * (1 - kn.form);
+                const show = (1 - going) * kn.form;
+                // A knot tightens and gives, slowly, as something held on to; the hint makes it throb
+                const throb = (1 + 0.14 * Math.sin(t * 1.3 + j * 1.9) * (reduced ? 0 : 1)) * (1 + 0.45 * kn.hint * (0.5 + 0.5 * Math.sin(t * 10)));
+                kn.dots.forEach((d, n) => {
+                    const i = j * KNOT_DOTS + n;
+                    const turn = t * d.w * (reduced ? 0 : 1) + d.ph;
+                    const p = ringPoint(kn.a + d.oa * Math.cos(turn) * spread * throb, 1 + d.oo * Math.sin(turn) * spread * throb);
+                    data.positions[i * 3] = p.x;
+                    data.positions[i * 3 + 1] = p.y - 40 * kk * going;
+                    data.sizes[i] = Math.max(1.4, 2 * d.r * kk * DOT) * (1 + 0.3 * kn.hint);
+                    data.alphas[i] = show;
+                    for (let c = 0; c < 3; c++) data.tints[i * 3 + c] = KNOT_RGB[c] + (LIGHT_RGB[c] - KNOT_RGB[c]) * going;
+                });
+            });
+        },
+    };
+    // The air he breathes in: motes drawn in to him from all round while he gathers a breath
+    const AIR = 60;
+    const air = Array.from({ length: AIR }, () => ({ a: Math.random() * 6.28, life: Math.random(), speed: 0.7 + Math.random() * 0.6, r: 2 + Math.random() * 2.5 }));
+    let charge = 0;
+    let airT = 0;
+    const airGroup = {
+        count: AIR,
+        update(t, data) {
+            const at = particularAt();
+            const reach = Math.max(120, 520 * k());
+            const dt = Math.min(0.1, Math.max(0, t - airT));
+            airT = t;
+            air.forEach((m, i) => {
+                m.life += dt * m.speed * 0.8;
+                if (m.life >= 1) { m.life = 0; m.a = Math.random() * 6.28; }
+                const r = reach * (1 - m.life) ** 1.4;
+                data.positions[i * 3] = at.x + Math.cos(m.a) * r;
+                data.positions[i * 3 + 1] = at.y + Math.sin(m.a) * r * 0.8;
+                data.sizes[i] = m.r * (0.6 + 0.8 * m.life) * Math.max(1, k() * 2.5);
+                data.alphas[i] = charge * Math.sin(Math.PI * m.life);
+            });
+        },
+    };
 
     // ---- The stars: the card's, and past the frame shifted copies of them (every other one mirrored and moved down by
     // a different part of the height, so no star has a twin beside it)
@@ -149,6 +236,191 @@
         return list;
     };
 
+    // ---- The game's state
+    const HINT = 7;                         // s alone before a knot throbs
+    const BREATH_AT = 0.35, BREATH = 1.6;   // s held on Particular before it is a breath, and s more to gather it whole
+    const WAVE_SPEED = 0.9;                 // the wave of forgiveness, in screen heights a second
+    const DELAY = 0.8, GROW = 2.2, LINGER = 3, EAT = 3.4;     // the rulito: born, kept, gone
+    const sparks = createSparks(360);
+    let idle = 0;
+    let win = null;
+    let wins = 0;
+    let breathUsed = false;
+    let breath = null;                      // { pointerId, at, breathing }
+    let wave = null;                        // { r, max, x, y } the wave going out from him
+    let skipClick = false;
+    let glyph = { left: 0, top: 0, w: 1, h: 1 };
+    let screenH = 1;
+    const left = () => knots.filter((kn) => kn.state === 'here' || kn.state === 'back');
+    const knotOnScreen = (kn) => {
+        const p = ringPoint(kn.a);
+        const d = stage.drift(L.frontNode.z);
+        return { x: p.x + d.x, y: p.y + d.y + lastScroll * 18 };
+    };
+    const particularAt = () => {
+        if (!L.particular) return { x: 0, y: 0 };
+        const b = B.particular;
+        return L.particular.toScreen(sx(b[0] + b[2] / 2), sy(b[1] + b[3] * 0.45) + spread);
+    };
+    const fromEvent = (event) => {
+        const area = canvas.value.getBoundingClientRect();
+        return { x: event.clientX - area.left, y: event.clientY - area.top };
+    };
+    const knotAt = (p) => {
+        if (reduced || win || !stage || !L.frontNode) return null;
+        let best = null, bestD = Infinity;
+        left().forEach((kn) => {
+            const c = knotOnScreen(kn);
+            const d = Math.hypot(c.x - p.x, c.y - p.y);
+            if (d < Math.max(40, 150 * k()) && d < bestD) { best = kn; bestD = d; }
+        });
+        return best;
+    };
+    // Let a knot go: it bursts into light and its stretch of the ring clears from it outwards
+    const letGo = (kn, quiet = false) => {
+        if (kn.state !== 'here' && kn.state !== 'back') return;
+        kn.state = 'going';
+        kn.at = lastT;
+        kn.hint = 0;
+        idle = 0;
+        const c = knotOnScreen(kn);
+        sparks.burst(c.x, c.y, { n: 22, colors: [LIGHT, CREAM, LOVE], speed: 80, life: 2, size: 4.2, spread: 60 * k() });
+        if (!quiet) play('release');
+        if (!win && !left().length) setTimeout(() => { if (!gone) forgive(); }, DELAY * 1000);
+    };
+    // The ring clear: the planet shines, the balloon leaps and the rulito is born over Particular
+    const forgive = () => {
+        if (win || left().length) return;
+        wins += 1;
+        win = { age: 0, head: 0, tail: 0, full: false, fullAt: 0, back: false, pop: 0 };
+        rulito.value?.reshape();
+        play('converge');
+        kick.balloon = 1;
+        kick.marble = 1;
+        dust?.boost(2, 1.2);
+        dust?.boost(3, 1.2);
+        sceneMilestone('forgiven', { times: wins, breath: breathUsed });
+        breathUsed = false;
+    };
+    // After: the ring darkens slowly and the knots gather again, one after the other
+    const gatherAgain = () => {
+        knots.forEach((kn, j) => setTimeout(() => { if (!gone) { kn.state = 'back'; kn.form = 0; } }, 1800 + j * 700));
+    };
+
+    // Pressing Particular: a tap is a touch like any other (he blinks, the leaf dips); held past BREATH_AT he breathes in
+    // love (`inhale`), and let go once it is gathered he breathes out forgiveness (`exhale`): a wave goes out from him
+    const touchParticular = (event) => {
+        idle = 0;
+        if (reduced || win || breath) return;
+        breath = { pointerId: event?.pointerId, at: lastT, breathing: false };
+        window.addEventListener('pointerup', breatheOut);
+        window.addEventListener('pointercancel', breatheOut);
+    };
+    const breatheOut = (event) => {
+        if (!breath || (event && event.pointerId !== breath.pointerId)) return;
+        window.removeEventListener('pointerup', breatheOut);
+        window.removeEventListener('pointercancel', breatheOut);
+        const { breathing } = breath;
+        breath = null;
+        idle = 0;
+        if (breathing) skipClick = true;
+        if (charge >= 1 && !win && left().length) {
+            play('exhale');
+            breathUsed = true;
+            const at = particularAt();
+            wave = { r: 0, x: at.x, y: at.y, max: Math.hypot(Math.max(at.x, canvas.value.clientWidth - at.x), Math.max(at.y, screenH - at.y)) + 60 };
+            sceneMilestone('breath_released', { knots: left().length });
+        }
+    };
+    const pressKnot = (event) => {
+        const kn = knotAt(fromEvent(event));
+        if (!kn) return;
+        event.preventDefault();
+        skipClick = true;
+        letGo(kn);
+    };
+    // Enter on Particular lets go of the knot nearest to him
+    const keyParticular = (event) => {
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+        event.preventDefault();
+        idle = 0;
+        const rest = left();
+        if (reduced || win || !rest.length) { play('star'); kick.leaf = 1; blinkNow = lastT; return; }
+        const at = particularAt();
+        rest.sort((a, b) => Math.hypot(knotOnScreen(a).x - at.x, knotOnScreen(a).y - at.y) - Math.hypot(knotOnScreen(b).x - at.x, knotOnScreen(b).y - at.y));
+        letGo(rest[0]);
+    };
+
+    // Every frame: the knots, the ring's light, the breath, its wave, the hint and the rulito
+    const game = (t, dt) => {
+        idle += dt;
+        knots.forEach((kn) => {
+            kn.hint = Math.max(0, kn.hint - dt * 0.8);
+            if (kn.state === 'going' && t - kn.at > 0.9) kn.state = 'gone';
+            if (kn.state === 'back') { kn.form = Math.min(1, kn.form + dt / 1.6); if (kn.form >= 1) kn.state = 'here'; }
+        });
+        // The ring clears from each knot let go, outwards along it; darkens again slowly when it gathers
+        [ring.back, ring.front].forEach((list) => list.forEach((d) => {
+            const kn = knots[d.knot];
+            const clear = (kn.state === 'going' || kn.state === 'gone') && d.da <= (t - kn.at) * CLEAR ? 1 : 0;
+            d.lit += (clear - d.lit) * Math.min(1, dt * (clear ? 3 : 0.5));
+        }));
+        // The breath
+        if (breath && !win) {
+            const holding = t - breath.at;
+            if (holding > BREATH_AT && !breath.breathing) { breath.breathing = true; play('inhale'); }
+            charge = Math.min(1, Math.max(0, (holding - BREATH_AT) / BREATH));
+        } else charge = Math.max(0, charge - dt * 2.5);
+        // The wave of forgiveness: a ring of light going out from him, letting go of every knot it reaches
+        if (wave) {
+            wave.r += WAVE_SPEED * screenH * dt;
+            for (let n = 0; n < 16; n++) {
+                const a = Math.random() * 6.28;
+                sparks.burst(wave.x + Math.cos(a) * wave.r, wave.y + Math.sin(a) * wave.r, { n: 1, colors: [LOVE, CREAM, LIGHT], speed: 14, life: 0.7, size: 3.4, spread: 3 });
+            }
+            left().forEach((kn) => {
+                const c = knotOnScreen(kn);
+                if (Math.hypot(c.x - wave.x, c.y - wave.y) <= wave.r) letGo(kn, true);
+            });
+            if (wave.r > wave.max) wave = null;
+        }
+        // The hint, without words: alone a while, a knot throbs
+        if (!win && !breath && !wave && idle > HINT && !reduced) {
+            const rest = knots.filter((kn) => kn.state === 'here');
+            if (rest.length) {
+                idle = 0;
+                const kn = rest[Math.floor(Math.random() * rest.length)];
+                kn.hint = 1;
+                const c = knotOnScreen(kn);
+                sparks.burst(c.x, c.y, { n: 6, colors: [LIGHT, LOVE], speed: 30, life: 1, size: 3, spread: 30 * k() });
+            }
+        }
+        // The rulito over Particular, as the card draws it
+        let named = 0;
+        if (win && rulito.value) {
+            win.age += dt;
+            win.pop = Math.max(0, win.pop - dt * 2.2);
+            win.head = 1 - (1 - Math.min(1, Math.max(0, (win.age - DELAY) / GROW))) ** 1.6;
+            if (win.head >= 1 && !win.full) { win.full = true; win.fullAt = win.age; win.pop = 1; play('rulito'); kick.balloon = 1; }
+            if (win.full && !win.back && win.age - win.fullAt > LINGER) win.back = true;
+            if (win.back) win.tail = Math.min(1, win.tail + dt / EAT);
+            const whole = Math.min(1, Math.max(0, (win.head - win.tail - 0.6) / 0.4));
+            named = Math.max(win.pop, 0.8 * whole * whole * (3 - 2 * whole));
+            const shine = win.full && win.head - win.tail > 0.9 ? Math.max(win.pop, Math.sin(t * 4) * 0.5 + 0.5) : 0;
+            rulito.value.frame({ head: win.head, tail: win.tail, flare: shine, t, fade: Math.min(1, (win.head - win.tail) * 14), width: glyph.w });
+            L.rulito.refresh();
+            L.rulito.scale = 1 + 0.2 * win.pop * win.pop;
+            if (win.back && win.tail >= 1) {
+                win = null;
+                rulito.value.frame({ width: glyph.w });
+                L.rulito.refresh();
+                gatherAgain();
+            }
+        }
+        stageEl?.style.setProperty('--name-glow', named.toFixed(3));
+        return named;
+    };
+
     // ---- A touch: the chord, a flare, and whatever is touched answers
     const kick = { balloon: 0, leaf: 0, cup: 0, marble: 0, tiny: 0 };
     let blinkAt = 2.5;
@@ -160,6 +432,7 @@
         balloon: [1350, 420], cup: [812, 642], leaf: [560, 2120], marble: [P.x, P.y], tiny: centreOf(art.doodles[0].at.slice(0, 4)),
     };
     const strum = (event) => {
+        if (skipClick) { skipClick = false; return; }
         if (!stage || !L.leaf) return;
         play('star');
         dust?.boost(0, 0.7);
@@ -230,8 +503,11 @@
         L.leafNode = leaf;
         L.leafGroup = leaf.group();
         L.particular = L.leafGroup.group();
+        L.love = L.particular.glow({ rect: { left: 0, top: 0, w: 1, h: 1 }, color: LOVE, stops: [[0, 0.7], [0.35, 0.3], [0.7, 0]], bloom: true });
+        L.love.opacity = 0;
         L.sid = L.particular.image('/assets/perdon/particular.webp');
         L.eyes = L.particular.image('/assets/perdon/eyes.webp');
+        L.rulito = L.particular.canvas(rulito.value.canvas, { bloom: true });
         L.kitten = L.leafGroup.image('/assets/perdon/kitten.webp', { sway: true });
         L.leaf = L.leafGroup.image('/assets/perdon/leaf.webp');
         leaf.enter({ y: 70, delay: 200, duration: 2000 });
@@ -271,6 +547,26 @@
         L.eyes.place(eyes);
         const kit = rectOf(B.kitten, down);
         L.kitten.place(kit, { x: kit.left + kit.w / 2, y: kit.top + kit.h });
+        const ld = body.h * 2.6;
+        L.love.place({ left: body.left + body.w / 2 - ld / 2, top: body.top + body.h * 0.45 - ld / 2, w: ld, h: ld });
+        // The rulito where the card draws it, over his head (its canvas is bigger than the glyph, for the glow)
+        const r = rectOf(art.rulito.box, down);
+        const gw = r.h * 32 / 86;
+        glyph = { left: r.left + r.w / 2 - gw / 2, top: r.top, w: gw, h: r.h };
+        L.rulito.place({ left: glyph.left - 0.4375 * glyph.w, top: glyph.top - 0.1628 * glyph.h, w: glyph.w * 1.875, h: glyph.h * 1.3256 },
+            { x: glyph.left + glyph.w / 2, y: glyph.top + glyph.h });
+        screenH = h;
+    };
+
+    // The touch target over Particular (at least 64 px)
+    const placeHit = () => {
+        const el = partHit.value;
+        if (!el || !L.particular) return;
+        const b = L.particular.boxOnScreen(rectOf(B.particular, spread));
+        const bw = Math.max(64, b.width * 1.3), bh = Math.max(64, b.height * 1.1);
+        el.style.translate = `${(b.left + b.width / 2 - bw / 2).toFixed(1)}px ${(b.top + b.height / 2 - bh / 2).toFixed(1)}px`;
+        el.style.width = `${bw.toFixed(1)}px`;
+        el.style.height = `${bh.toFixed(1)}px`;
     };
 
     const enter = () => {
@@ -279,10 +575,14 @@
         stage.ready().then(() => { if (!gone) { stage.start(); dust?.reveal(); } });
     };
 
+    let lastScroll = 0;
+    let frames = 0;
     const frame = ({ x, y, scroll, t, ramp }) => {
         if (!stage || !L.leaf) return;
         const dt = Math.min(0.1, Math.max(0, t - lastT));
         lastT = t;
+        lastScroll = scroll;
+        const named = game(t, dt);
         rampNow = ramp;
         stage.look(x * SLIDE, y * SLIDE_Y);
         Object.keys(kick).forEach((name) => { kick[name] = Math.max(0, kick[name] - dt * 0.7); });
@@ -324,8 +624,11 @@
         // breathes and its tail sways
         L.leafGroup.rotate = Math.sin(t * 0.5) * 1.6 * ramp + Math.sin(kick.leaf * 8) * 2.5 * kick.leaf;
         L.leafGroup.y = Math.sin(t * 0.37) * 12 * kk * ramp + 26 * kk * Math.sin(kick.leaf * Math.PI);
-        L.particular.sy = 1 + 0.018 * Math.sin(t * 1.05) * ramp;
-        L.particular.sx = 1 - 0.006 * Math.sin(t * 1.05) * ramp;
+        L.particular.sy = 1 + 0.018 * Math.sin(t * 1.05) * ramp + 0.04 * charge;
+        L.particular.sx = 1 - 0.006 * Math.sin(t * 1.05) * ramp + 0.02 * charge;
+        L.love.opacity = Math.max(charge, 0.8 * named);
+        L.love.scale = 0.8 + 0.4 * charge + 0.2 * named;
+        L.sid.uniforms.uBright.value = 1 + 0.15 * charge;
         if (!reduced && t > blinkAt) { blinkNow = t; blinkAt = t + 3 + Math.random() * 4; }
         const b = blinkNow >= 0 ? (t - blinkNow) / 0.16 : 2;
         L.eyes.sy = b < 1 ? 0.15 + 0.85 * Math.abs(1 - 2 * b) : 1;
@@ -343,7 +646,11 @@
         dust?.shift(1, ...drift(L.near, scroll * 10));
         dust?.shift(2, ...drift(L.backNode, scroll * 18));
         dust?.shift(3, ...drift(L.frontNode, scroll * 18));
+        dust?.shift(4, ...drift(L.frontNode, scroll * 18));
+        L.halo.opacity += 0.4 * named;
+        stage.bloom = Math.max(named, win ? 0.4 : 0, 0.4 * charge);
         stage.render(t);
+        if (frames++ % 2 === 0) placeHit();
     };
 
     const begin = async () => {
@@ -370,10 +677,17 @@
                 // 2, 3: the ring of dust, behind the planet and in front of it, flowing round it
                 { colors: [DUST], look: 'hard', dynamic: ringGroup(ring.back), parallax: 0, drift: 1.2, jitter: 0.35, twinkle: 0, reach: 0, order: after(L.halo) },
                 { colors: [DUST], look: 'hard', dynamic: ringGroup(ring.front), parallax: 0, drift: 1.2, jitter: 0.35, twinkle: 0, reach: 0, order: after(L.line) },
+                // 4: the knots, over the ring
+                { colors: [DUST], look: 'hard', dynamic: knotGroup, parallax: 0, drift: 1.4, jitter: 0.3, twinkle: 0, reach: 0, order: after(L.line) + 0.1 },
+                // 5: the air he breathes in, and 6: the motes of what is let go, in front of everything
+                { colors: [LOVE, CREAM], look: 'soft', dynamic: airGroup, parallax: 0, drift: 0, jitter: 0, twinkle: 0.2, reach: 0, bloom: true, order: 1e6 - 1 },
+                { ...sparks.group(), order: 1e6 },
             ],
         });
         if (reduced) dust.reveal();
         parallax = createParallax(root.value, frame);
+        root.value.addEventListener('pointerdown', pressKnot);
+        if (import.meta.env.DEV) root.value.__game = { get knots() { return knots; }, get win() { return win; }, knotOnScreen, particularAt };
         enter();
     };
 
@@ -381,6 +695,10 @@
     watch(() => props.active, enter);
     onBeforeUnmount(() => {
         gone = true;
+        stageEl?.style.removeProperty('--name-glow');
+        root.value?.removeEventListener('pointerdown', pressKnot);
+        window.removeEventListener('pointerup', breatheOut);
+        window.removeEventListener('pointercancel', breatheOut);
         parallax?.destroy();
         dust?.destroy();
         stage?.destroy();
@@ -390,6 +708,11 @@
 <template>
     <div class="scene" ref="root" @click="strum">
         <canvas class="stageCanvas" ref="canvas"></canvas>
+        <div ref="partHit" class="hit" role="button" tabindex="0"
+            :aria-label="$i18n.locale === 'en' ? 'Particular in his leaf: hold him to breathe in love and let go to breathe out forgiveness' : 'Particular en su hoja: mantenelo para inhalar amor y soltalo para exhalar perdón'"
+            @pointerdown.prevent="touchParticular" @keydown="keyParticular"></div>
+        <!-- The rulito is drawn on its own canvas, which the stage shows as a texture over Particular -->
+        <Rulito ref="rulito" class="offstage" :color="art.rulito ? `#${art.rulito.color.toString(16).padStart(6, '0')}` : '#f8e5ab'" />
     </div>
 </template>
 
@@ -407,6 +730,34 @@
         width: 100%;
         height: 100%;
         display: block;
+        pointer-events: none;
+    }
+
+    .hit {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 0;
+        height: 0;
+        border-radius: 50%;
+        cursor: pointer;
+        pointer-events: auto;
+        touch-action: none;                    /* held, a finger drifts a little: the phone must not take it for a scroll */
+        -webkit-tap-highlight-color: transparent;
+        outline: none;
+    }
+
+    .hit:focus-visible {
+        outline: 2px solid rgba(20, 50, 70, 0.7);
+        outline-offset: 2px;
+    }
+
+    .offstage {
+        position: absolute;
+        left: -9999px;
+        top: 0;
+        width: 40px;
+        visibility: hidden;
         pointer-events: none;
     }
 </style>

@@ -4,10 +4,16 @@
     // ferns and white rocks, a teal trunk rises on the left, and on this side of the water a lotus holds up a glowing
     // green bud, two little mushrooms glow coral and a log sleeps by its rocks. Over the yellow of the card lie great
     // blue shapes, like water poured over the drawing: where they pass, everything under them takes their hue.
-    // Its verb will be Arraigar (to hold until something grows); there is no game yet. Sid (and his heart), the lotus,
-    // the two little mushrooms and the log are each their own picture, so the game can light them. For now a touch is
-    // only answered: on Sid his heart flares and the chord is strummed (`star`); on the lotus its bud flares and it
-    // rocks a little (`tap`).
+    // Its verb is Arraigar ("higher beings will support you by removing barriers and allowing the luminosity of your
+    // being to manifest"): holding Sid (finger, mouse or key) the light on his chest grows, a warm light spreads from him
+    // over the land, and the blue of the sky opens round him: a clearing with a living edge grows out from his heart and
+    // the card's yellow shows through it, as a dawn; a note of the chord at each third (`kindle`). The light is the
+    // rulito's stroke (useRooting.js): whole, the sky over him is yellow, the rulito is born over his head (`rulito`, B
+    // major, and `converge`), the bud of the lotus and the little mushrooms flare and the name lights up; let go before,
+    // the tail catches up and the blue closes in again (holding again picks it up). Only the sky opens: the blue the
+    // card lays over the land is worked into its pictures (see below), so the land is lit by the warm light instead.
+    // Left alone a while, his heart beats strongly once (the hint). A quick touch on Sid flares his heart and strums the
+    // chord (`star`); on the lotus its bud flares and it rocks a little (`tap`).
     // The sky is not a picture: the card's yellow (the root's background) and the blue shapes, drawn in code from their
     // outlines (feScene.json `sky`), which the converter traced from layers 15 and 16. Those shapes are in Colour mode in
     // the illustration (their hue, the lightness of what is under them), which the stage cannot blend live: over the
@@ -25,7 +31,10 @@
     import { createParallax } from '../../composables/useParallax.js';
     import { createLayerStage } from '../../composables/useLayerStage.js';
     import { startStardust } from '../../composables/useStardust.js';
+    import { createRooting } from '../../composables/useRooting.js';
     import { play } from '../../composables/useSound.js';
+    import { sceneMilestone } from '../../analytics.js';
+    import Rulito from '../Rulito.vue';
     import art from '../../composables/feScene.json';
 
     const props = defineProps({
@@ -37,6 +46,7 @@
     const canvas = ref(null);
     const sidHit = ref(null);
     const lotusHit = ref(null);
+    const rulito = ref(null);
     let stageEl = null;
     let stage = null;
     let parallax = null;
@@ -153,6 +163,62 @@
         fn();
     };
 
+    // ---- The game: held, his light grows and the sky opens round him
+    const OPEN = 2300;                      // art px the clearing reaches, whole: past every corner of the card
+    const HINT = 7;
+    let glyph = { left: 0, top: 0, w: 1, h: 1 };
+    let lit = { head: 0, tail: 0, full: false, pop: 0, named: 0, flare: 0 };
+    let level = 0;                          // how far the light has grown, 0..1 (the rulito's stroke, head - tail)
+    const LOBES = 7;                        // the clearing's edge: discs round its rim, turning slowly, so it is a living blob
+    let pressAt = -1;
+    let idleHint = 0;
+    const rooting = createRooting({
+        grow: 4.4, linger: 3.4, eat: 3,
+        onNote: (step) => play('kindle', { step }),
+        onComplete: (times) => {
+            play('rulito');
+            play('converge');
+            flare = 1;
+            budFlare = 1;
+            dust?.boost(2, 1.2);
+            dust?.boost(3, 1.2);
+            dust?.boost(5, 1.4);
+            sceneMilestone('faith_held', { times });
+        },
+        onReset: () => rulito.value?.reshape(),
+    });
+    const hold = () => {
+        if (reduced) return;
+        rooting.hold();
+        idleHint = 0;
+    };
+    const letGo = () => { rooting.release(); idleHint = 0; };
+    const pressSid = (event) => {
+        event?.preventDefault?.();
+        pressAt = lastT;
+        hold();
+        window.addEventListener('pointerup', liftSid);
+        window.addEventListener('pointercancel', liftSid);
+    };
+    const liftSid = () => {
+        window.removeEventListener('pointerup', liftSid);
+        window.removeEventListener('pointercancel', liftSid);
+        letGo();
+        if (lastT - pressAt < 0.35) touchSid();
+        pressAt = -1;
+    };
+    // With the keyboard the key is the finger: held down his light grows, let go it rests
+    const onKeyDown = (event) => {
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+        event.preventDefault();
+        if (event.repeat) return;
+        touchSid();
+        hold();
+    };
+    const onKeyUp = (event) => {
+        if (event.key === 'Enter' || event.key === ' ') letGo();
+    };
+
     // ---- The sky, drawn in code: the card's yellow is the root's background; the blue shapes are drawn on a canvas,
     // with their copies past the frame (mirrored on both sides, and upwards over its top)
     const MARGIN = 90;
@@ -191,11 +257,30 @@
         L.sky.refresh();
     };
 
+    // ---- The card's pure colour: over every picture the blue shapes tint, the same picture in its own colour (only what
+    // they are over, the rest transparent: made by the converter), with the same copies, effects and sways; it comes back
+    // as his light grows, and is whole once the game is won
+    const pureOf = (copies, name, options, node) => copies.map((copy) => {
+        const pure = node.image(`${ASSET}${name}-pure.webp`, options);
+        pure.sx = copy.node.sx;
+        pure.sy = copy.node.sy;
+        return { ...copy, node: pure };
+    });
+    let pureNodes = [];
+    const setPure = (amount) => {
+        pureNodes.forEach((node) => { node.opacity = amount; node.mesh.visible = amount > 0.003; });
+        dust?.fade(0, 1 - amount);
+        dust?.fade(6, amount);
+    };
+
     const build = (s) => {
         // The sky's blue shapes, at the depth of the far bank so they meet the land where the card has them meet
         const skyNode = s.depth(zFor(DEPTH.far));
         L.skyNode = skyNode;
         L.sky = skyNode.canvas(skyCanvas);
+        // The clearing his light opens in the blue: the card's yellow, round his heart (a disc and lobes on its rim)
+        L.clearing = [skyNode.disc({ rect: { left: 0, top: 0, w: 1, h: 1 }, color: art.sky.yellow }), ...Array.from({ length: LOBES }, () => skyNode.disc({ rect: { left: 0, top: 0, w: 1, h: 1 }, color: art.sky.yellow }))];
+        L.clearing.forEach((d) => { d.opacity = 0; });
         // The clouds, at three depths
         L.clouds = [];
         L.cloudNodes = DEPTH.clouds.map((depth, d) => {
@@ -212,7 +297,9 @@
             if (side) node.sx = -1;
             return { node, side };
         });
+        L.riverPure = pureOf(L.river, 'river', { water: 1 }, river);
         L.waves = waves.map((wv) => river.image(`${ASSET}waves.webp`, { crop: wv.crop }));
+        L.wavesPure = waves.map((wv) => river.image(`${ASSET}waves-pure.webp`, { crop: wv.crop }));
         river.enter({ y: 30, delay: 100, duration: 1700 });
         // The far bank, with the trunk (mirrored upwards over the frame) and the mushrooms
         const far = s.depth(zFor(DEPTH.far));
@@ -222,12 +309,14 @@
             if (side) node.sx = -1;
             return { node, side };
         });
+        L.farPure = pureOf(L.far, 'far', { sway: true }, far);
         L.trunk = [[0, 0], [-1, 0], [0, 1], [-1, 1]].map(([side, up]) => {
             const node = far.image(`${ASSET}trunk.webp`);
             if (side) node.sx = -1;
             if (up) node.sy = -1;
             return { node, side, up };
         });
+        L.trunkPure = pureOf(L.trunk, 'trunk', {}, far);
         L.capDotsAt = far.group();
         far.enter({ y: 40, delay: 50, duration: 1700 });
         // The near bank, and on it the lotus, the log and the two little mushrooms with their lights
@@ -238,9 +327,12 @@
             if (side) node.sx = -1;
             return { node, side };
         });
+        L.nearPure = pureOf(L.near, 'near', { sway: true }, near);
         L.log = near.image(`${ASSET}log.webp`);
+        L.logPure = near.image(`${ASSET}log-pure.webp`);
         L.budLight = near.glow({ rect: { left: 0, top: 0, w: 1, h: 1 }, color: art.colors.bud, stops: [[0, 0.5], [0.35, 0.18], [0.7, 0]] });
         L.lotus = near.image(`${ASSET}lotus.webp`, { wind: { amp: 4, speed: 0.7, root: 'bottom' } });
+        L.lotusPure = near.image(`${ASSET}lotus-pure.webp`, { wind: { amp: 4, speed: 0.7, root: 'bottom' } });
         L.sproutLights = [0, 1].map(() => near.glow({ rect: { left: 0, top: 0, w: 1, h: 1 }, color: art.colors.sprout, stops: [[0, 0.4], [0.35, 0.14], [0.7, 0]] }));
         L.sprouts = near.image(`${ASSET}sprouts.webp`, { wind: { amp: 3, speed: 1.1, root: 'bottom' } });
         near.enter({ y: 60, delay: 150, duration: 1800 });
@@ -252,7 +344,9 @@
         L.sid = L.sidGroup.image(`${ASSET}sid.webp`);
         L.eyes = L.sidGroup.image(`${ASSET}eyes.webp`);
         L.heart = L.sidGroup.glow({ rect: { left: 0, top: 0, w: 1, h: 1 }, color: art.colors.heart, stops: [[0, 0.75], [0.3, 0.32], [0.65, 0]], bloom: true });
+        L.rulito = L.sidGroup.canvas(rulito.value.canvas, { bloom: true });
         sid.enter({ y: 70, delay: 350, duration: 1900 });
+        pureNodes = [...L.farPure, ...L.trunkPure, ...L.riverPure, ...L.nearPure].map((c) => c.node).concat(L.wavesPure, L.logPure, L.lotusPure);
     };
 
     const place = (w, h) => {
@@ -279,17 +373,19 @@
         span = { left: -SLIDE * 2 - widest / 2, width: w + SLIDE * 4 + widest };
 
         const river = rectOf(B.river);
-        L.river.forEach(({ node, side }) => node.place(flip(river, side)));
-        waves.forEach((wv, i) => L.waves[i].place(rectOf(wv.box)));
+        [...L.river, ...L.riverPure].forEach(({ node, side }) => node.place(flip(river, side)));
+        waves.forEach((wv, i) => { L.waves[i].place(rectOf(wv.box)); L.wavesPure[i].place(rectOf(wv.box)); });
         const far = rectOf(B.far);
-        L.far.forEach(({ node, side }) => node.place(flip(far, side)));
+        [...L.far, ...L.farPure].forEach(({ node, side }) => node.place(flip(far, side)));
         const trunk = rectOf(B.trunk);
-        L.trunk.forEach(({ node, side, up }) => node.place(flip(trunk, side, up)));
+        [...L.trunk, ...L.trunkPure].forEach(({ node, side, up }) => node.place(flip(trunk, side, up)));
         const near = rectOf(B.near);
-        L.near.forEach(({ node, side }) => node.place(flip(near, side)));
+        [...L.near, ...L.nearPure].forEach(({ node, side }) => node.place(flip(near, side)));
         L.log.place(rectOf(B.log));
+        L.logPure.place(rectOf(B.log));
         const lotus = rectOf(B.lotus);
         L.lotus.place(lotus, { x: lotus.left + lotus.w * 0.45, y: lotus.top + lotus.h });
+        L.lotusPure.place(lotus, { x: lotus.left + lotus.w * 0.45, y: lotus.top + lotus.h });
         const sprouts = rectOf(B.sprouts);
         L.sprouts.place(sprouts, { x: sprouts.left + sprouts.w / 2, y: sprouts.top + sprouts.h });
         const bud = BUD();
@@ -309,6 +405,11 @@
         const hd = 420 * k();
         L.heart.place({ left: sx(HEART[0]) - hd / 2, top: sy(HEART[1]) - hd / 2, w: hd, h: hd });
         L.sidGroup.pivot = { x: sx(1080), y: sy(2060) };
+        // The rulito over his head (its canvas is bigger than the glyph, for the glow)
+        const gh = 290 * k(), gw = gh * 32 / 86;
+        glyph = { left: sx(1090) - gw / 2, top: sy(B.sid[1] - 30) - gh, w: gw, h: gh };
+        L.rulito.place({ left: glyph.left - 0.4375 * glyph.w, top: glyph.top - 0.1628 * glyph.h, w: glyph.w * 1.875, h: glyph.h * 1.3256 },
+            { x: glyph.left + glyph.w / 2, y: glyph.top + glyph.h });
 
         // The sky's canvas covers the screen and a margin round it, for the parallax
         L.sky.place({ left: -MARGIN, top: -MARGIN, w: w + 2 * MARGIN, h: h + 2 * MARGIN });
@@ -349,6 +450,7 @@
     };
 
     let frames = 0;
+    const wavesSeen = [];
     const frame = ({ x, y, scroll, t, ramp }) => {
         if (!stage || !L.sid) return;
         const dt = Math.min(0.1, Math.max(0, t - lastT));
@@ -368,26 +470,54 @@
         // ---- The little waves drift with the current and fade, then come back where they were
         waves.forEach((wv, i) => {
             const p = reduced ? 0.5 : ((t / wv.period + wv.phase) % 1);
-            L.waves[i].x = (p - 0.5) * 60 * k();
+            L.waves[i].x = L.wavesPure[i].x = (p - 0.5) * 60 * k();
             L.waves[i].opacity = reduced ? 1 : Math.min(1, Math.sin(p * Math.PI) * 1.6);
+            wavesSeen[i] = L.waves[i].opacity;
         });
 
         // ---- The far bank's mushrooms, ferns and tufts, and the near bank's bush and tufts
         if (!reduced) {
             const farSways = swaysOf(FAR_SWAYS, B.far, t, ramp);
-            L.far.forEach(({ node }) => { node.sways = farSways; });
+            [...L.far, ...L.farPure].forEach(({ node }) => { node.sways = farSways; });
             const nearSways = swaysOf(NEAR_SWAYS, B.near, t, ramp);
-            L.near.forEach(({ node }) => { node.sways = nearSways; });
+            [...L.near, ...L.nearPure].forEach(({ node }) => { node.sways = nearSways; });
         }
+
+        // ---- The game: his light grows and the sky opens round him
+        lit = rooting.step(dt, t);
+        level = lit.head - lit.tail;
+        const open = level > 0.001 ? OPEN * (1 - (1 - level) ** 1.7) * k() : 0;
+        // The land takes its own colour back as the sky opens, whole when it is won
+        const pure = Math.min(1, level * 1.15) ** 1.4;
+        setPure(pure);
+        L.wavesPure.forEach((node, i) => { node.opacity = pure * (wavesSeen[i] ?? 1); });
+        const cx = sx(HEART[0]), cy = sy(HEART[1]);
+        L.clearing.forEach((d, j) => {
+            d.opacity = open > 1 ? 1 : 0;
+            if (open <= 1) return;
+            const a = j ? (j / LOBES) * Math.PI * 2 + t * 0.12 * (j % 2 ? 1 : -1) : 0;
+            const r = j ? open * (0.32 + 0.06 * Math.sin(t * 0.9 + j * 1.7)) : open;
+            const at = j ? open * 0.78 : 0;
+            d.place({ left: cx + Math.cos(a) * at - r, top: cy + Math.sin(a) * at - r, w: 2 * r, h: 2 * r });
+        });
+        if (rulito.value) {
+            rulito.value.frame({ head: lit.head, tail: lit.tail, flare: lit.flare, t, fade: Math.min(1, (lit.head - lit.tail) * 14), width: glyph.w });
+            L.rulito.refresh();
+        }
+        L.rulito.scale = 1 + 0.2 * lit.pop * lit.pop;
+        stageEl?.style.setProperty('--name-glow', lit.named.toFixed(3));
+        const held = rooting.held ? 1 : 0;
+        idleHint = held ? 0 : idleHint + dt;
+        if (idleHint > HINT && !lit.full && !reduced && ramp >= 1) { idleHint = 0; flare = Math.max(flare, 0.6); dust?.boost(4, 0.8); }
 
         // ---- The lotus and its bud, the little mushrooms' lights
         budFlare = Math.max(0, budFlare - dt * 0.8);
         flare = Math.max(0, flare - dt * 0.7);
-        L.lotus.rotate = budFlare * Math.sin(t * 9) * 2.5;
+        L.lotus.rotate = L.lotusPure.rotate = budFlare * Math.sin(t * 9) * 2.5;
         L.lotus.uniforms.uBright.value = 1 + 0.12 * budFlare;
         L.budLight.opacity = 0.55 + 0.2 * Math.sin(t * 1.3) + 0.45 * budFlare;
         L.budLight.scale = 1 + 0.6 * budFlare;
-        L.sproutLights.forEach((g, i) => { g.opacity = 0.5 + 0.2 * Math.sin(t * 1.1 + i * 2.4); });
+        L.sproutLights.forEach((g, i) => { g.opacity = 0.5 + 0.2 * Math.sin(t * 1.1 + i * 2.4) + 0.5 * budFlare; });
 
         // ---- Sid breathes (from his seat), blinks, and now and then looks to a side; the light on his chest beats slowly
         const breath = Math.sin(t * 1.05);
@@ -402,11 +532,14 @@
         L.eyes.x = look * 9 * k();
         L.eyes.y = -(L.sid.sy - 1) * (B.sid[1] + B.sid[3] - B.eyes[1] - B.eyes[3] / 2) * k();
         const beat = Math.max(0, Math.sin(t * 1.6)) ** 6;
-        L.heart.opacity = 0.55 + 0.25 * beat + 0.5 * flare;
-        L.heart.scale = 1 + 0.12 * beat + 0.5 * flare;
-        L.warmth.opacity = 0.35 + 0.1 * breath + 0.5 * flare;
-        L.sid.uniforms.uBright.value = 1 + 0.05 * flare;
-        dust?.fade(5, Math.min(1, 0.75 + 0.25 * beat + flare));
+        L.heart.opacity = 0.55 + 0.25 * beat + 0.5 * flare + 0.4 * level;
+        L.heart.scale = 1 + 0.12 * beat + 0.5 * flare + 1.2 * level;
+        // His warmth spreads over the land as his light grows
+        L.warmth.opacity = 0.35 + 0.1 * breath + 0.5 * flare + 0.55 * level;
+        L.warmth.scale = 1 + 3.2 * level;
+        L.sid.uniforms.uBright.value = 1 + 0.05 * flare + 0.1 * level;
+        L.sid.sy += 0.02 * held;
+        dust?.fade(5, Math.min(1, 0.75 + 0.25 * beat + flare + level));
 
         // ---- Scrolling away, the nearer planes go faster
         L.skyNode.y = L.farNode.y = scroll * 12;
@@ -419,11 +552,12 @@
         const farDrift = stage.drift(L.farNode.z), nearDrift = stage.drift(L.nearNode.z), sidDrift = stage.drift(L.sidNode.z);
         dust?.shift(0, farDrift.x, farDrift.y + L.farNode.y);
         dust?.shift(1, farDrift.x, farDrift.y + L.farNode.y);
+        dust?.shift(6, farDrift.x, farDrift.y + L.farNode.y);
         dust?.shift(2, nearDrift.x, nearDrift.y + L.nearNode.y);
         dust?.shift(3, nearDrift.x, nearDrift.y + L.nearNode.y);
         dust?.shift(4, sidDrift.x, sidDrift.y + L.sidNode.y + L.sidGroup.y);
         dust?.shift(5, sidDrift.x, sidDrift.y + L.sidNode.y + L.sidGroup.y);
-        stage.bloom = 0.35 * flare;
+        stage.bloom = Math.max(0.35 * flare, lit.named, 0.35 * level);
         stage.render(t);
         if (frames++ % 2 === 0) placeHits();
     };
@@ -461,8 +595,9 @@
         const after = (node) => node.mesh.renderOrder + 0.5;
         const fromArt = (list, colour, scale = 1) => list.map(([x, y, r, c]) => [sx(x), sy(y), Math.max(1.2, 2 * r * k() * scale), c ?? colour]);
         // The caps' stipple and the spores: on the far bank (and the right cap's mirrored past the frame)
-        const capDots = () => {
-            const list = fromArt(art.capDots, 0xff7777);
+        // (in their colour as seen, or in their own colour: the land's pure colour, group 6)
+        const capDots = (pureDots) => () => {
+            const list = fromArt(art.capDots.map(([x, y, r, c, own]) => [x, y, r, pureDots ? own ?? c : c]), 0xff7777);
             const edge = sx(SIZE);
             return [...list, ...list.filter(([x]) => x > edge - 260 * k()).map(([x, y, r, c]) => [2 * edge - x, y, r, c])];
         };
@@ -471,9 +606,9 @@
             manual: true,
             groups: [
                 // 0: the loose coral stipple round the caps
-                { parallax: 0, drift: 1.6, jitter: 0.4, twinkle: 0.25, reach: 0, order: after(L.far[2].node), points: capDots },
+                { parallax: 0, drift: 1.6, jitter: 0.4, twinkle: 0.25, reach: 0, order: after(L.farPure[2].node), points: capDots(false) },
                 // 1: spores rising from the caps
-                { colors: [0xffa8a0], dynamic: sporeGroup, parallax: 0, drift: 3, twinkle: 0.4, reach: 0, look: 'soft', order: after(L.far[2].node) + 0.1 },
+                { colors: [0xffa8a0], dynamic: sporeGroup, parallax: 0, drift: 3, twinkle: 0.4, reach: 0, look: 'soft', order: after(L.farPure[2].node) + 0.1 },
                 // 2: the glow of the two little mushrooms
                 { colors: [art.colors.sprout], parallax: 0, drift: 1.4, jitter: 0.5, twinkle: 0.5, reach: 60, push: 8, order: after(L.sprouts), points: () => fromArt(art.sproutGlow, art.colors.sprout) },
                 // 3: the glow of the lotus's bud
@@ -482,10 +617,13 @@
                 { colors: [art.colors.aura], parallax: 0, drift: 1.4, jitter: 0.4, twinkle: 0.45, reach: 0, order: after(L.warmth), points: () => fromArt(art.aura, art.colors.aura, 1.2) },
                 // 5: the light on his chest
                 { colors: [art.colors.heart], parallax: 0, drift: 1.8, jitter: 0.6, twinkle: 0.4, reach: 0, bloom: true, order: after(L.eyes), points: () => fromArt(art.heart, art.colors.heart, 1.2) },
+                // 6: the caps' stipple in its own colour, over the other, shown as the land takes its colour back
+                { parallax: 0, drift: 1.6, jitter: 0.4, twinkle: 0.25, reach: 0, order: after(L.farPure[2].node) + 0.05, points: capDots(true) },
             ],
         });
         if (reduced) dust.reveal();
         parallax = createParallax(root.value, frame);
+        if (import.meta.env.DEV) root.value.__game = { rooting, get lit() { return lit; } };
         enter();
     };
 
@@ -493,6 +631,9 @@
     watch(() => props.active, enter);
     onBeforeUnmount(() => {
         gone = true;
+        stageEl?.style.removeProperty('--name-glow');
+        window.removeEventListener('pointerup', liftSid);
+        window.removeEventListener('pointercancel', liftSid);
         parallax?.destroy();
         dust?.destroy();
         stage?.destroy();
@@ -505,9 +646,11 @@
         <div ref="lotusHit" class="hit" role="button" tabindex="0"
             :aria-label="$i18n.locale === 'en' ? 'The lotus and its glowing bud' : 'El loto y su brote que brilla'"
             @pointerdown.prevent="touchLotus" @keydown="onKey(touchLotus)($event)"></div>
-        <div ref="sidHit" class="hit" role="button" tabindex="0"
-            :aria-label="$i18n.locale === 'en' ? 'Sid, with a light on his chest' : 'Sid, con una luz en el pecho'"
-            @pointerdown.prevent="touchSid" @keydown="onKey(touchSid)($event)"></div>
+        <div ref="sidHit" class="hit sid" role="button" tabindex="0"
+            :aria-label="$i18n.locale === 'en' ? 'Sid, with a light on his chest: hold him and his light grows' : 'Sid, con una luz en el pecho: mantenelo y su luz crece'"
+            @pointerdown="pressSid" @keydown="onKeyDown" @keyup="onKeyUp"></div>
+        <!-- The rulito is drawn on its own canvas, which the stage shows as a texture over Sid -->
+        <Rulito ref="rulito" class="offstage" color="#ff7a6b" />
     </div>
 </template>
 
@@ -540,6 +683,19 @@
         touch-action: manipulation;
         -webkit-tap-highlight-color: transparent;
         outline: none;
+    }
+
+    .hit.sid {
+        touch-action: none;                    /* held, a finger drifts a little: the phone must not take it for a scroll */
+    }
+
+    .offstage {
+        position: absolute;
+        left: -9999px;
+        top: 0;
+        width: 40px;
+        visibility: hidden;
+        pointer-events: none;
     }
 
     .hit:focus-visible {
