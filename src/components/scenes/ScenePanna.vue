@@ -18,7 +18,6 @@
     // middle, the leaves and branches near) and the camera slides with the pointer or the tilt; the leaves bend a little
     // in the wind as they sway. The touch targets are DOM elements kept over what they belong to.
     import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
-    import { floorFor } from '../../data/stageFloor.js';
     import { createParallax } from '../../composables/useParallax.js';
     import { createLayerStage } from '../../composables/useLayerStage.js';
     import { startStardust } from '../../composables/useStardust.js';
@@ -107,7 +106,7 @@
         const tall = W / H <= 3 / 4;
         const s = Math.min(Math.max(W, (tall ? 0.7 : 0.62) * H), 0.85 * H);
         const sn = Math.min(s * 1.1, W * 1.25);
-        const lift = Math.max(floorFor(W, H), (H - s * 1.2) * 0.5);
+        const lift = Math.max(0, (H - s * 1.2) * 0.5);
         const sheetTop = H - (sn * -0.04 + lift) - sn;
         const half = Math.min(sn / 2, W / 2);
         const upTop = H - (sn * 0.96 - 1 + lift) - sn;

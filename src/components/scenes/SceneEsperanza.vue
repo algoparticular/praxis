@@ -16,7 +16,6 @@
     // its grass and plants). From esperanzaScene.json and public/assets/esperanza (made by scripts/convert-esperanza.mjs).
     // The card's rulito (the little squiggle in the sky) is not drawn: its box is kept for the game.
     import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
-    import { floorFor, floorUnder } from '../../data/stageFloor.js';
     import { createParallax } from '../../composables/useParallax.js';
     import { createLayerStage } from '../../composables/useLayerStage.js';
     import { startStardust } from '../../composables/useStardust.js';
@@ -59,7 +58,7 @@
         const size = phone ? Math.min(0.72 * h, w * SIZE / SPAN) : Math.min(Math.max(0.62 * w, 0.55 * h), 0.92 * h);
         let x = w / 2 - size / 2;
         if (phone && size > w) x = Math.min(0, Math.max(w - size, w / 2 - FOCUS * size / SIZE));
-        F = { x, y: h - floorFor(w, h) - size + (phone ? 0 : DROP * size), size };
+        F = { x, y: h - size + (phone ? 0 : DROP * size), size };
     };
 
     const SLIDE = 50;
@@ -141,12 +140,8 @@
         land.enter({ y: 40, delay: 100, duration: 1700 });
     };
 
-    // The ground along the card's bottom edge, for the band under the frame on a phone ([x in art px, colour], read off the card's bottom rows)
-    const FLOOR_COLOURS = [[0, '#c4a872']];
     const place = (w, h) => {
         layout(w, h);
-        // under the frame on a phone, its sand (stageFloor.js), over the sky
-        root.value.style.background = `${floorUnder(w, h, F, FLOOR_COLOURS)}#${art.sky.toString(16).padStart(6, '0')}`;
         const mr = MOON.r * k();
         const mg = mr * 3.4;
         L.moonGlow.place({ left: sx(MOON.x) - mg / 2, top: sy(MOON.y) - mg / 2, w: mg, h: mg });
@@ -248,6 +243,7 @@
         }
         if (gone) { made.destroy(); return; }
         stage = made;
+        root.value.style.background = `#${art.sky.toString(16).padStart(6, '0')}`;
         // The card's name is written in the teal of its sky: lit a little, it reads as a light in the night
         stageEl = root.value.closest('.stage');
         stageEl?.style.setProperty('--name-glow', NAME_GLOW);

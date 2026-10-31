@@ -16,7 +16,6 @@
     // go on too. From desafioScene.json and public/assets/desafio (made by scripts/convert-desafio.mjs). The touch
     // targets are DOM elements over Vulpes and the mushrooms.
     import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
-    import { floorFor } from '../../data/stageFloor.js';
     import { createParallax } from '../../composables/useParallax.js';
     import { createLayerStage } from '../../composables/useLayerStage.js';
     import { startStardust } from '../../composables/useStardust.js';
@@ -63,7 +62,7 @@
         else size = Math.min(0.98 * h, room * SIZE / (SIZE * (1 - DROP) - TOP), 1.2 * w);
         let x = w / 2 - size / 2;
         if (phone && size > w) x = Math.min(0, Math.max(w - size, w / 2 - FOCUS * size / SIZE));
-        F = { x, y: h - floorFor(w, h) - size + (phone ? 0 : DROP * size), size };
+        F = { x, y: h - size + (phone ? 0 : DROP * size), size };
     };
 
     const SLIDE = 46;

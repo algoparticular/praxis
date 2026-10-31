@@ -16,7 +16,6 @@
     // depths; beyond the frame the land goes on (the hills and the cliff mirrored on each side, as Sacca's dunes). From viriyaScene.json and
     // public/assets/viriya (made by scripts/convert-viriya.mjs). The touch target is a DOM element over the walker.
     import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
-    import { floorFor, floorUnder } from '../../data/stageFloor.js';
     import { createParallax } from '../../composables/useParallax.js';
     import { createLayerStage } from '../../composables/useLayerStage.js';
     import { startStardust } from '../../composables/useStardust.js';
@@ -64,7 +63,7 @@
         if (phone && size > w) x = Math.min(0, Math.max(w - size, w / 2 - FOCUS * size / SIZE));
         // On a wide screen the scene sits a little lower (the foot of the cliff and of the path go under the edge), for
         // more sky over the walker
-        F = { x, y: h - floorFor(w, h) - size + (phone ? 0 : DROP * size), size };
+        F = { x, y: h - size + (phone ? 0 : DROP * size), size };
     };
 
     const SLIDE = 50;
@@ -462,10 +461,8 @@
             const at = sy(y) - rise * (0.6 + 0.8 * above);
             return `rgb(${rgb.join(', ')}) ${Math.max(-50, Math.min(150, at / skyH * 100)).toFixed(1)}%`;
         });
-        // under the frame on a phone, the ground along the card's bottom edge: the cliff, the path and the hills
-        root.value.style.background = `${floorUnder(W, H, F, FLOOR_COLOURS)}linear-gradient(to bottom, ${stops.join(', ')})`;
+        root.value.style.background = `linear-gradient(to bottom, ${stops.join(', ')})`;
     };
-    const FLOOR_COLOURS = [[0, '#f69e7e'], [1680, '#068080']];   // the cliff and the path, and the hill at the right
 
     const place = (w, h) => {
         layout(w, h);

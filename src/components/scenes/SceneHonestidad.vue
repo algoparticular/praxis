@@ -18,7 +18,6 @@
     // their depths; on a wide screen the floor goes on past the frame with more seaweed and coral, smaller and farther
     // back. From honestidadScene.json and public/assets/honestidad (made by scripts/convert-honestidad.mjs).
     import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
-    import { floorFor } from '../../data/stageFloor.js';
     import { createParallax } from '../../composables/useParallax.js';
     import { createLayerStage } from '../../composables/useLayerStage.js';
     import { startStardust } from '../../composables/useStardust.js';
@@ -66,7 +65,7 @@
             const room = h - titleBottom(h) - 10;
             size = Math.min(Math.max(0.62 * w, 0.55 * h), 0.9 * h, room / (1 - DROP + (SUN_TOP - SUN.y) / SIZE));
         }
-        F = { x: w / 2 - size / 2, y: h - floorFor(w, h) - size * (1 - DROP), size };
+        F = { x: w / 2 - size / 2, y: h - size * (1 - DROP), size };
     };
 
     // Where the card's name ends (the stage's h1, over the scene)

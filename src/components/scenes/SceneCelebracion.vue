@@ -23,7 +23,6 @@
     // celebracionScene.json and public/assets/celebracion (made by scripts/convert-celebracion.mjs, then
     // scripts/make-celebracion-crowns.mjs).
     import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
-    import { floorFor } from '../../data/stageFloor.js';
     import { createParallax } from '../../composables/useParallax.js';
     import { createLayerStage } from '../../composables/useLayerStage.js';
     import { startStardust } from '../../composables/useStardust.js';
@@ -65,7 +64,7 @@
         const size = phone ? Math.min(0.72 * h, w * SIZE / SPAN) : Math.max(0.62 * w, 1.02 * h);
         let x = w / 2 - size / 2;
         if (phone && size > w) x = Math.min(0, Math.max(w - size, w / 2 - FOCUS * size / SIZE));
-        F = { x, y: h - floorFor(w, h) - size * (1 - (phone ? 0.02 : DROP)), size };
+        F = { x, y: h - size * (1 - (phone ? 0.02 : DROP)), size };
     };
 
     const SLIDE = 40;

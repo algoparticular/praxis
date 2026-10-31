@@ -19,7 +19,6 @@
     // and the rest is sky: nothing is mirrored. From corajeScene.json and public/assets/coraje (made by
     // scripts/convert-coraje.mjs). The touch target of Kätus is a DOM element over him.
     import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
-    import { floorFor } from '../../data/stageFloor.js';
     import { createParallax } from '../../composables/useParallax.js';
     import { createLayerStage } from '../../composables/useLayerStage.js';
     import { startStardust } from '../../composables/useStardust.js';
@@ -58,7 +57,7 @@
     const OVER = 0.025;                     // how much of the frame goes past the right edge (parallax never shows its end)
     const DROP = 0.07;                      // and under the bottom of a wide screen
     const MOON_TOP = B.moon[1];             // the top of the lip of the moon's mouth
-    const frameFor = (w, h, size, phone) => ({ x: w - size * (1 - OVER), y: h - floorFor(w, h) - size + (phone ? 0.02 : DROP) * size, size });
+    const frameFor = (w, h, size, phone) => ({ x: w - size * (1 - OVER), y: h - size + (phone ? 0.02 : DROP) * size, size });
     // On a wide screen, the biggest frame (up to MAX_H of the height) whose moon keeps clear of the card's name (and of the
     // top of the screen): the moon is a circle with its lip on top, kept GAP px from the name's box
     const MAX_H = 1.3, GAP = 18;

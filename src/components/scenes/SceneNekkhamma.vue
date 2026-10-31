@@ -15,7 +15,6 @@
     // threads and what flies from him to the cloud are particles (useStardust), from nekkhammaScene.json (made by
     // scripts/convert-nekkhamma.mjs). The touch targets are DOM elements kept over Sid and over his things.
     import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
-    import { floorFor } from '../../data/stageFloor.js';
     import { createParallax } from '../../composables/useParallax.js';
     import { createLayerStage } from '../../composables/useLayerStage.js';
     import { startStardust } from '../../composables/useStardust.js';
@@ -55,7 +54,7 @@
     const layout = (w, h) => {
         W = w; H = h;
         const size = w < h ? Math.min(0.7 * h, 2.1 * w) : Math.min(Math.max(w, 0.55 * h), 0.85 * h);
-        F = { x: w / 2 - size / 2, y: h - floorFor(w, h) - size, size };
+        F = { x: w / 2 - size / 2, y: h - size, size };
     };
 
     // The camera slides SLIDE px at the edge of a swipe; each layer moves as far as its depth (px)

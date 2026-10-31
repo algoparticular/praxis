@@ -20,7 +20,6 @@
     // It is drawn in WebGL (useLayerStage), from aceptacionScene.json and public/assets/aceptacion (made by
     // scripts/convert-aceptacion.mjs). The touch targets are DOM elements over the two beings.
     import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
-    import { floorFor, paintFloor } from '../../data/stageFloor.js';
     import { createParallax } from '../../composables/useParallax.js';
     import { createLayerStage, FIELD_RANGE, FIELD_BUBBLES } from '../../composables/useLayerStage.js';
     import { startStardust } from '../../composables/useStardust.js';
@@ -63,7 +62,7 @@
         const size = phone ? Math.min(0.72 * h, w * SIZE / SPAN) : Math.min(Math.max(0.6 * w, 0.55 * h), 0.95 * h);
         let x = w / 2 - size / 2;
         if (phone && size > w) x = Math.min(0, Math.max(w - size, w / 2 - FOCUS * size / SIZE));
-        F = { x, y: h - floorFor(w, h) - size + (phone ? 0 : DROP * size), size };
+        F = { x, y: h - size + (phone ? 0 : DROP * size), size };
         // On a tall screen the frame leaves a tall sky over it: what is in the sky (the sun, the planets, the specks)
         // is spread over all of it, from under the card's name down to the land, instead of keeping to the frame
         const tb = titleBox(h);
@@ -191,7 +190,6 @@
     // the card draws on the grass (dashes and ticks of the line's colour, and longer strokes a shade off the bank's),
     // smaller towards the horizon. Painted again when the screen changes size, always the same (a seeded random)
     const banks = [document.createElement('canvas'), document.createElement('canvas')];
-    const floorCanvas = document.createElement('canvas');
     const hexOf = (c) => `#${c.toString(16).padStart(6, '0')}`;
     const shade = (c, to, amount) => {
         const a = [c >> 16, (c >> 8) & 255, c & 255], b = [to >> 16, (to >> 8) & 255, to & 255];
@@ -287,7 +285,6 @@
         const land = s.depth(zFor(DEPTH.land));
         L.landNode = land;
         L.beyond = banks.map((bank) => land.canvas(bank));
-        L.floor = land.canvas(floorCanvas);
         L.river = land.image('/assets/aceptacion/river.webp', { water: 1 });
         L.groundL = land.image('/assets/aceptacion/groundL.webp');
         L.groundR = land.image('/assets/aceptacion/groundR.webp');
@@ -304,20 +301,8 @@
     };
 
     let area = { left: 0, top: 0, w: 1, h: 1 };
-    // The ground along the card's bottom edge, for the band under the frame on a phone ([x in art px, colour], read off the card's bottom rows)
-    const FLOOR_COLOURS = [[0, '#8acfbc'], [336, '#2c3447'], [408, '#07befb'], [1752, '#2b3548'], [1824, '#36848e']];
     const place = (w, h) => {
         layout(w, h);
-        // Under the frame on a phone, the river and its banks going on down (stageFloor.js), drawn on the land: the skies
-        // are drawn over the whole stage, so a background would not show
-        const floor = floorFor(w, h);
-        L.floor.mesh.visible = floor > 0;
-        if (floor > 0) {
-            const top = F.y + F.size - 30, left = -60, fw = w + 120, fh = h - top + 60;
-            paintFloor(floorCanvas, left, fw, fh, F, FLOOR_COLOURS);
-            L.floor.place({ left, top, w: fw, h: fh });
-            L.floor.refresh();
-        }
         area = { left: -MARGIN, top: -MARGIN, w: w + 2 * MARGIN, h: h + 2 * MARGIN };
         writeField(area);
         L.sky.place(area);

@@ -18,7 +18,6 @@
     // It is drawn in WebGL (useLayerStage), every group of layers at its own depth. From mettaScene.json and
     // public/assets/metta (made by scripts/convert-metta.mjs). The rulito's place is kept in the JSON for the game.
     import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
-    import { floorFor } from '../../data/stageFloor.js';
     import { createParallax } from '../../composables/useParallax.js';
     import { createLayerStage } from '../../composables/useLayerStage.js';
     import { startStardust } from '../../composables/useStardust.js';
@@ -57,7 +56,7 @@
         W = w; H = h;
         const phone = w < h;
         const size = phone ? Math.min(0.75 * h, w * SIZE / SPAN) : Math.min(Math.max(0.62 * w, 0.55 * h), 0.92 * h);
-        F = { x: w / 2 - size / 2, y: h - floorFor(w, h) - size + (phone ? 0 : DROP * size), size };
+        F = { x: w / 2 - size / 2, y: h - size + (phone ? 0 : DROP * size), size };
     };
 
     const SLIDE = 44;

@@ -22,7 +22,6 @@
     // the yellow light of the mushrooms are particles. It is drawn in WebGL (useLayerStage), with the land mirrored past
     // the frame on wide screens. From upekkhaScene.json and public/assets/upekkha (made by scripts/convert-upekkha.mjs).
     import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
-    import { floorFor } from '../../data/stageFloor.js';
     import { createParallax } from '../../composables/useParallax.js';
     import { createLayerStage, FIELD_RANGE, FIELD_BUBBLES } from '../../composables/useLayerStage.js';
     import { startStardust } from '../../composables/useStardust.js';
@@ -70,7 +69,7 @@
             const size = Math.min(0.78 * h, w * SIZE / SPAN);
             let x = w / 2 - size / 2;
             if (size > w) x = Math.min(0, Math.max(w - size, w / 2 - FOCUS * size / SIZE));
-            F = { x, y: h - floorFor(w, h) - size, size };
+            F = { x, y: h - size, size };
             return;
         }
         // On a wide screen the drawing fills the width (its mirrored copies stay out of sight) and goes on under the

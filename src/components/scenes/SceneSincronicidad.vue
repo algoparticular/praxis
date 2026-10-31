@@ -20,7 +20,6 @@
     // frame (mirrored), on a phone upright the frame is as big as the four bubbles and the fire allow across. The touch
     // targets are DOM elements kept over the bubbles.
     import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
-    import { floorFor } from '../../data/stageFloor.js';
     import { createParallax } from '../../composables/useParallax.js';
     import { createLayerStage } from '../../composables/useLayerStage.js';
     import { startStardust } from '../../composables/useStardust.js';
@@ -69,7 +68,7 @@
         size = Math.max(Math.min(size, room), Math.min(w, h) * 0.5);
         let x = w / 2 - size / 2;
         if (size > w) x = Math.min(0, Math.max(w - size, w / 2 - FOCUS * size / SIZE));
-        F = { x, y: h - floorFor(w, h) - size, size };
+        F = { x, y: h - size, size };
     };
     // Where the card's name ends (the stage's h1, over the scene)
     const titleBottom = (h) => {

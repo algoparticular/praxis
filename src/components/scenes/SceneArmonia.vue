@@ -17,7 +17,6 @@
     // plane at its depth; past the frame the currents and the sand are mirrored on both sides. From armoniaScene.json and
     // public/assets/armonia (made by scripts/convert-armonia.mjs). The touch targets are DOM elements over the jellyfish.
     import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
-    import { floorFor } from '../../data/stageFloor.js';
     import { createParallax } from '../../composables/useParallax.js';
     import { createLayerStage } from '../../composables/useLayerStage.js';
     import { startStardust } from '../../composables/useStardust.js';
@@ -53,11 +52,10 @@
     const DROP = 0.06;
     const layout = (w, h) => {
         const phone = w < h;
-        // on a phone the frame rests on the floor (stageFloor.js), and is no taller than the room left under the name
-        const size = phone ? Math.min(0.8 * (h - floorFor(w, h)), w * SIZE / SPAN) : Math.min(Math.max(0.62 * w, 0.55 * h), 0.9 * h);
+        const size = phone ? Math.min(0.8 * h, w * SIZE / SPAN) : Math.min(Math.max(0.62 * w, 0.55 * h), 0.9 * h);
         let x = w / 2 - size / 2;
         if (phone && size > w) x = Math.min(0, Math.max(w - size, w / 2 - FOCUS * size / SIZE));
-        F = { x, y: h - floorFor(w, h) - size + (phone ? 0 : DROP * size), size };
+        F = { x, y: h - size + (phone ? 0 : DROP * size), size };
     };
 
     const SLIDE = 46;
