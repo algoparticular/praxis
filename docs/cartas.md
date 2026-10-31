@@ -77,7 +77,7 @@ Se cambia una línea en `src/data/cardChords.js`, por ejemplo `28: 'Em'`. Se esc
 | 13 | Belleza | Regular | Ver | Lamaj7 | Escena propia, sin juego todavía |
 | 14 | Celebración | Regular | Fluir | Mimaj7 | Escena propia, sin juego todavía |
 | 15 | Ciclos | Regular | Soltar | Fa7 | Escena propia, sin juego todavía |
-| 16 | Compromiso | Regular | Arraigar | La mayor | Ilustración plana |
+| 16 | Compromiso | Regular | Arraigar | La mayor | Escena propia, sin juego todavía |
 | 17 | Comunicación | Regular | Resonar | Sol menor | Escena propia, sin juego todavía |
 | 18 | Confianza | Regular | Arraigar | La menor | Escena propia, sin juego todavía |
 | 19 | Coraje | Regular | Encender | Mi7 | Ilustración plana |
