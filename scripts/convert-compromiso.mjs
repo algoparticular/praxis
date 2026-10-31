@@ -20,8 +20,8 @@
 // edges), hull (11), boatLine (13, the boat's line and its curls), big and small (12 and 14: each being's body and hair;
 // the pole goes with the big one), plant (14: the little plant in the boat), eyes and eyesSmall (14).
 // Not converted: 7 (empty), 8 (the dome, in code), 2 (the cap, in code), the arcs of the dome and the cap in 10 (code),
-// the stars of 9 (particles), the rulito (in 9, drawn in code by the game) and the little cross with dots on the big
-// being's forehead (14) and among the signs of the cap (6): the Algo Particular mark, a signature, dropped from the scenes.
+// the stars of 9 (particles), the rulito (in 9, drawn in code by the game). The little cross with dots on the big
+// being's forehead (14) and among the signs of the cap (6), the Algo Particular mark, stays: it is drawn on them.
 // The originals are not kept in the repo once converted. Usage: node scripts/convert-compromiso.mjs [folder of originals]
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
@@ -249,13 +249,9 @@ const stemFill = await load(3);
 await save('stem', over(stemFill, await load(4)));
 await save('runes', await load(5), { flat: true });
 {
-    // Among the signs on the cap, the little cross with its four dots is the Algo Particular mark: dropped
-    const gills = await load(6);
-    const mark = blobsOf(gills).filter(inRect([578, 1254, 662, 1340]));
-    mark.forEach((b) => b.pixels.forEach((i) => { gills[i * 4 + 3] = 0; }));
-    const soft = maskOf(mark, 2);
-    for (let i = 0; i < W * H; i++) if (soft[i]) gills[i * 4 + 3] = 0;
-    await save('gills', gills, { flat: true, alpha: 70 });
+    // Among the signs on the cap, the little cross with its four dots is the Algo Particular mark: drawn on the cap, it
+    // stays (only a mark standing alone, as a signature, is left out of the scenes)
+    await save('gills', await load(6), { flat: true, alpha: 70 });
 }
 
 // The water: its four marbled pieces, each with the side of the frame it touches
@@ -305,7 +301,7 @@ await save('runes', await load(5), { flat: true });
 }
 
 // The boat and the two beings in it: the hull, the line with its curls, each being (body and hair), the little plant,
-// the eyes on their own (to blink). The little cross on the big being's forehead is the Algo Particular mark: dropped
+// the eyes on their own (to blink). The little cross on the big being's forehead (the Algo Particular mark) is his: it stays
 {
     await save('hull', await load(11), { flat: true });
     await save('boatLine', await load(13), { flat: true });
@@ -319,7 +315,7 @@ await save('runes', await load(5), { flat: true });
     const eyesSmall = hairBlobs.filter(inRect(EYES_SMALL));
     const mark = hairBlobs.filter(inRect(MARK));
     const small = hairBlobs.filter((b) => !eyesSmall.includes(b) && inRect(SMALL)(b));
-    const big = hairBlobs.filter((b) => b.area > 6 && ![plant, eyes, eyesSmall, mark, small].some((list) => list.includes(b)));
+    const big = hairBlobs.filter((b) => (b.area > 6 || mark.includes(b)) && ![plant, eyes, eyesSmall, small].some((list) => list.includes(b)));
     const bodyBlobs = blobsOf(bodies).filter((b) => b.area > 30);
     const bodySmall = bodyBlobs.filter((b) => b.x < 987), bodyBig = bodyBlobs.filter((b) => b.x >= 987);
     await save('plant', only(hair, maskOf(plant)), { flat: true });
@@ -329,7 +325,7 @@ await save('runes', await load(5), { flat: true });
     await save('eyesSmall', only(hair, maskOf(eyesSmall)), { flat: true });
     const feet = (blobs) => { const b = blobs[0].box; return [Math.round((b[0] + b[2]) / 2), b[3]]; };
     scene.beings = { big: { feet: feet(bodyBig) }, small: { feet: feet(bodySmall) } };
-    console.log('mark', mark.length, 'blobs dropped; eyes', eyes.length, eyesSmall.length, '; plant', plant.length, 'small hair', small.length);
+    console.log('mark', mark.length, 'blobs kept on his forehead; eyes', eyes.length, eyesSmall.length, '; plant', plant.length, 'small hair', small.length);
 }
 
 await writeFile(path.join(root, 'src', 'composables', 'compromisoScene.json'), JSON.stringify(scene));

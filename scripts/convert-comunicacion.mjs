@@ -17,8 +17,8 @@
 //            show through it; `near`, the ones over the trunks and the leaves (1), only those the ring of leaves does not hide
 //   crowns   the tree tops round the opening (the inner edge of the ring of leaves, 9), one in each of CROWNS sectors
 //            round the middle, as [x, y, width]: where the front picture's crowns sway on their own (`sway` in the stage)
-// Not converted: the stroke layer's Algo Particular mark on the trunk at the top right (the signature, dropped from the
-// scenes); the auras (drawn as particles) and the yellow dots (particles). The card has no rulito drawn.
+// The Algo Particular mark on the trunk at the top right (in the bark's strokes, 8) stays: it is drawn on the tree.
+// Not converted: the auras (drawn as particles) and the yellow dots (particles). The card has no rulito drawn.
 // The originals are not kept in the repo once converted. Usage: node scripts/convert-comunicacion.mjs
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
@@ -48,8 +48,6 @@ const BEINGS = [
     { name: 'being1', head: 15, lines: 16, aura: 14 },
     { name: 'being2', head: 12, lines: 13, aura: 11, eyes: true },
 ];
-// The mark (the signature) on the trunk at the top right, in layer 8: its middle and reach, in px of the 2160 square
-const MARK = { x: 2027, y: 529, r: 46 };
 
 // Each layer scaled to 2160, as PNG, once
 const scaled = new Map();
@@ -128,20 +126,6 @@ const save = async (name, png, { scale = 1, quality = 90, alpha = 100, blur = 0 
 
 await mkdir(target, { recursive: true });
 const scene = { size: S, boxes: {}, sky: [], beings: [], pollen: { far: [], near: [] }, crowns: [] };
-
-// The bark's strokes without the mark
-{
-    const data = await rawOf(await layer(8));
-    let dropped = 0;
-    for (const b of blobsOf(data)) {
-        if (Math.hypot(b.x - MARK.x, b.y - MARK.y) > MARK.r) continue;
-        const mask = around(b, 3);
-        for (let i = 0; i < S * S; i++) if (mask[i]) data[i * 4 + 3] = 0;
-        dropped++;
-    }
-    if (dropped < 3) throw new Error(`The mark was not found in layer 8 (${dropped} pieces)`);
-    scaled.set(8, await pngOf(data));
-}
 
 for (const [name, { layers, ...how }] of Object.entries(pictures)) scene.boxes[name] = await save(name, await flatten(layers), how);
 
