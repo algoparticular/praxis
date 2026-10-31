@@ -78,7 +78,7 @@ Las palabras del libro para cada chakra, subiendo y bajando:
 
 Cada carta tiene un verbo (`verb` en `src/data/cards.json`, lista en `src/data/verbs.js`). El verbo define la **dinámica**: qué hace la persona con la escena. La ilustración, el sonido y el significado los pone cada carta. Los siete verbos son uno por personaje y chakra (ver arriba).
 
-Los siete verbos se probaron en una escena: **Arraigar en Paciencia** (y, hacia adentro, en **Hogar**, y contra la tormenta, en **Addhitthana**), **Fluir en Khanti**, **Encender en Evolución Espiritual** (frotar y lanzar el fuego), **Dar y recibir en Dana** (compartir la luz; y en **Metta** y **Gratitud**), **Resonar en Sincronicidad** (y, como composición libre, en **Creatividad**, y como eco, en **Sacca**), **Ver en Pañña** (y, con ancestros en las estrellas, en **Esperanza**; mirando de cerca, en **Belleza**) y **Soltar en Vipassana** (y en **Nekkhamma** y **Upekkha**). Lo implementado no es fijo: son ideas probadas y pueden cambiar. Lo que se dice de las otras cartas son propuestas, tomando como punto de partida lo que ya hacen las escenas.
+Los siete verbos se probaron en una escena: **Arraigar en Paciencia** (y, hacia adentro, en **Hogar**, y contra la tormenta, en **Addhitthana**), **Fluir en Khanti**, **Encender en Evolución Espiritual** (frotar y lanzar el fuego; y en **Viriya**, **Coraje** y **Desafío**), **Dar y recibir en Dana** (compartir la luz; y en **Metta** y **Gratitud**), **Resonar en Sincronicidad** (y, como composición libre, en **Creatividad**, y como eco, en **Sacca**), **Ver en Pañña** (y, con ancestros en las estrellas, en **Esperanza**; mirando de cerca, en **Belleza**) y **Soltar en Vipassana** (y en **Nekkhamma** y **Upekkha**). Lo implementado no es fijo: son ideas probadas y pueden cambiar. Lo que se dice de las otras cartas son propuestas, tomando como punto de partida lo que ya hacen las escenas.
 
 Orden de los verbos: Arraigar (raíz) y Soltar (corona) son los dos polos, la corriente de manifestación y la de liberación, y Dar y recibir (corazón) es donde se encuentran. Los dos polos y el centro están probados: el centro, en Dana. Ver arriba, sección "Dos corrientes".
 
@@ -116,14 +116,14 @@ Cómo lo vestiría cada carta: Aceptación, una luz que baja por el río entre l
 **En Celebración, la ronda.** Una chispa sale del fuego y da la vuelta a la ronda pasando por los pies de cada uno (diez: el pequeño del borde derecho queda afuera porque en un teléfono no se ve) mientras el dedo la acompaña. Cada uno es un nudo, pero acá soltar es celebrar: cuando la chispa llega acompañada, salta (el zorro a los pies del Sama con él), queda con una luz tibia y la llama crece un poco. De vuelta en el fuego con todos encendidos, el fuego salta, todos saltan a la vez, se encienden las lámparas y nace el rulito sobre la punta de la llama; se ilumina el nombre. Después la chispa vuelve a nacer en el fuego. Unos 20 s. Código: `SceneCelebracion.vue` (`WAY`, `KNOTS`, `LIT`, `drawSpark()`, `finish()`, `stepWin()`).
 **Cartas:** Khanti, Aceptación, Transformación y Celebración (las cuatro hechas).
 
-### 3. Encender (Kätus, demonio: vergüenza): implementado en Evolución Espiritual y Viriya
+### 3. Encender (Kätus, demonio: vergüenza): implementado en Evolución Espiritual, Viriya, Coraje y Desafío
 **Dinámica:** frotar y lanzar. Primero se enciende el fuego con esfuerzo (frotar, como con dos palitos) y después se lo lanza con dirección (una honda): lo que toca se enciende.
 **Por qué así:** se probaron dos ideas antes. Tocar los bulbos en cualquier orden era el mismo gesto que Dana (un toque a cada uno). Mantener apretado para cargar y soltar se parecía demasiado a Arraigar (Paciencia) y a retener el aire en Vipassana. Frotar y tirar de una honda no los usa ningún otro verbo. Y la carta lo pide de adentro hacia afuera: *"una alma iluminada es capaz de transformar cada atmósfera que habita, siendo faro para otros"*. El demonio de Kätus es la vergüenza, esconder la propia luz; Sid está acurrucado y es él el que se enciende y sale disparado.
 **El motor, común a las cartas del verbo:** frotar una fuente hasta que prende, apuntar, lanzarla, y lo que toca se enciende y queda encendido; hay que encender todo. Sirve para las otras tres:
 - Desafío: el fuego que rebota por las paredes del laberinto hasta la luz del centro (la que mejor calza con los rebotes).
 - Coraje: Kätus en el borde del acantilado frota para juntar coraje y se lanza hacia la luna.
 - Viriya: frotar es la diligencia ("sin prisa pero sin pausa"); el lanzamiento enciende las flores del camino.
-Viriya ya tiene su juego (ver más abajo); Desafío y Coraje tienen escena viva, pero todavía sin juego.
+Las cuatro tienen su juego (ver más abajo). Coraje y Desafío usan el motor compartido de `useKindle.js` (frotar, la honda y el vuelo de la llama); Evolución y Viriya todavía tienen cada una su copia.
 **Cómo funciona hoy en Evolución Espiritual:**
 - *Al principio todo está apagado.* Los ocho bulbos, los cuatro hongos y sus bolitas azules están grises y sin brillo.
 - *Frotar.* Se frota con el dedo dentro de la célula, de un lado a otro: saltan chispas donde pasa el dedo, Sid se va calentando (brilla y le suben brasas) y suena una nota más del acorde de la carta con cada sexto del calor (`kindle`). Si se deja de frotar, se enfría despacio. Con unos 11 radios de la célula frotados, prende: un estallido de chispas (`ignite` y `star`). Dentro de la célula el dedo no mueve la página (`touch-action: none`): antes el teléfono tomaba el frotar o el tirón por un scroll y los cortaba; para bajar a la lectura se arrastra desde la corona o desde abajo.
@@ -147,7 +147,23 @@ Viriya ya tiene su juego (ver más abajo); Desafío y Coraje tienen escena viva,
 - *El cielo y el sol no son imágenes.* El cielo es un degradé dibujado en código desde los colores de la carta (el azul y el atardecer), y el sol es un disco en código con su borde punteado hecho de partículas que viven.
 **Dónde se tocó:** `SceneViriya.vue` (`press()`, `move()`, `letGo()`, `ignite()`, `launch()`, `catchFire()`, `dawn()`, `game()`, `aimGroup`, `RUB`, `STEADY`).
 
-**Cartas:** Evolución Espiritual (hecha), Viriya (hecha), Coraje, Desafío.
+**Cómo funciona hoy en Coraje:** Kätus está sentado al borde del acantilado, frente a una luna enorme con la mitad en sombra punteada. *"Inhala coraje. Exhala miedo"*, *"mantente en pie en tu luz"*.
+- *Frotar es juntar coraje.* Se frota sobre Kätus: saltan chispas, su luz crece y suena una nota del acorde (Mi7) con cada sexto del calor (`kindle`); si se para, se enfría. Caliente, su luz prende (`ignite`).
+- *La honda.* Encendido, se apoya el dedo y se tira hacia atrás; al soltar, una llama suya salta hacia el cielo, cae un poco, se frena y rebota en los bordes de la pantalla.
+- *La sombra de la luna.* La sombra punteada está partida en seis bandas (por su ángulo alrededor del centro de la luna, con la misma cantidad de puntos cada una). Cada banda que cruza la llama se llena de luz: su tinta se va y en su lugar brilla una luz cálida (`link`, más agudo de arriba a abajo). Lo encendido queda encendido; después de cuatro rebotes, o si se frena, la llama se apaga y hay que volver a frotar.
+- *La luna entera.* Con las seis bandas, Mi7 se resuelve en La (`resolve`), el halo de la luna se abre, Kätus se queda erguido en su luz y nace el rulito sobre él, donde lo dibuja la carta; se ilumina el nombre y suena `rulito`. Hito: `moon_lit` (con `times`). Después la sombra vuelve despacio y se puede volver a jugar.
+- *Pista, teclado y movimiento reducido,* como en Viriya: a los 7 s quieto saltan chispas de Kätus; Enter frota (un quinto cada vez) y, encendido, tira la llama hacia la banda en sombra más cercana; con movimiento reducido no se juega.
+**Dónde se tocó:** `SceneCoraje.vue` (`zones`, `catchFire()`, `full()`, `kindler`) y `useKindle.js`.
+
+**Cómo funciona hoy en Desafío:** Vulpes está sentado en la puerta de un laberinto redondo, con una luz en el centro. *"Al final del camino no solo encontrarás la salida, sino también una mejor versión de ti"*.
+- *Frotar.* Se frota sobre Vulpes hasta que su cola prende (`kindle`, `ignite`), como en Coraje.
+- *Por la puerta.* Encendida la cola, la honda lanza la llama. Las paredes que están delante del laberinto la hacen rebotar: solo entra por la puerta (y rebota también en los bordes de la pantalla). No hay error: rebota y se intenta de nuevo.
+- *Anillo por anillo.* Adentro, la llama corre sola por los pasillos, de afuera hacia adentro, media vuelta por cada anillo, y cada pared que cruza se enciende: un anillo de puntos de fuego a lo largo de ella (`link`). Enciende tantas paredes como fuerza tenía el tirón (una con un tirón corto, dos con uno mediano, tres con uno largo); las que ya estaban encendidas las pasa rápido. Sin fuerza se apaga (`miss`) donde llegó, y hay que volver a frotar.
+- *El centro.* Con las cuatro paredes encendidas llega a la luz del centro: estalla, Re7 se resuelve en Sol (`resolve`) y nace el rulito sobre la luz, en naranja de fuego (la carta no dibuja uno); se ilumina el nombre y suena `rulito`. Hito: `maze_lit` (con `times`). Después los anillos se apagan.
+- *Pista, teclado y movimiento reducido:* a los 7 s quieto saltan chispas de su cola; Enter frota y, encendida, tira la llama hacia la puerta; con movimiento reducido no se juega (un toque en Vulpes hace lo de siempre).
+**Dónde se tocó:** `SceneDesafio.vue` (`WALLS`, `DOOR`, `collide()`, `goIn()`, `runTick()`, `reach()`, `ringGroup`) y `useKindle.js`.
+
+**Cartas:** Evolución Espiritual (hecha), Viriya (hecha), Coraje (hecha), Desafío (hecha).
 
 ### 4. Dar y recibir (Vulpes, demonio: pena): implementado en Dana, Metta y Gratitud
 **Dinámica:** compartir la luz. Dar sin pensar y sin esperar nada a cambio, y descubrir que dar no vacía: lo dado vuelve multiplicado, sin pedirlo.

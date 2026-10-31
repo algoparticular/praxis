@@ -80,9 +80,9 @@ Se cambia una línea en `src/data/cardChords.js`, por ejemplo `28: 'Em'`. Se esc
 | 16 | Compromiso | Regular | Arraigar | La mayor | Escena propia, sin juego todavía |
 | 17 | Comunicación | Regular | Resonar | Sol menor | Escena propia, verbo jugable |
 | 18 | Confianza | Regular | Arraigar | La menor | Escena propia, sin juego todavía |
-| 19 | Coraje | Regular | Encender | Mi7 | Escena propia, sin juego todavía |
+| 19 | Coraje | Regular | Encender | Mi7 | Escena propia, verbo jugable |
 | 20 | Creatividad | Regular | Resonar | Do7 | Escena propia, verbo jugable |
-| 21 | Desafío | Regular | Encender | Re7 | Escena propia, sin juego todavía |
+| 21 | Desafío | Regular | Encender | Re7 | Escena propia, verbo jugable |
 | 22 | Evolución Espiritual | Regular | Encender | Si7 | Escena propia, verbo jugable |
 | 23 | Fe | Regular | Arraigar | Si mayor | Escena propia, sin juego todavía |
 | 24 | Gratitud | Regular | Dar y recibir | Solmaj7 | Escena propia, verbo jugable |
