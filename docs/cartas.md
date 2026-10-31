@@ -91,7 +91,7 @@ Se cambia una línea en `src/data/cardChords.js`, por ejemplo `28: 'Em'`. Se esc
 | 27 | Paciencia | Regular | Arraigar | Re mayor | Escena propia, verbo jugable |
 | 28 | Perdón | Regular | Soltar | Fa menor | Escena propia, sin juego todavía |
 | 29 | Sincronicidad | Regular | Resonar | Sol mayor | Escena propia, verbo jugable |
-| 30 | Esperanza | Regular | Ver | Sim7 | Ilustración plana |
+| 30 | Esperanza | Regular | Ver | Sim7 | Escena propia, sin juego todavía |
 | 31 | Vipassana | Special | Soltar | Simaj7 | Escena propia, verbo jugable |
 | 32 | Transformación | Regular | Fluir | Rem7 | Escena propia, sin juego todavía |
 <!-- tabla:fin -->

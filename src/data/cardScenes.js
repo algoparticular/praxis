@@ -41,6 +41,7 @@ const scenes = {
     27: stage(() => import('../components/scenes/ScenePaciencia.vue')),
     28: stage(() => import('../components/scenes/ScenePerdon.vue')),
     29: stage(() => import('../components/scenes/SceneSincronicidad.vue')),
+    30: stage(() => import('../components/scenes/SceneEsperanza.vue')),
     31: stage(() => import('../components/scenes/SceneVipassana.vue')),
     32: stage(() => import('../components/scenes/SceneTransformacion.vue')),
 };
