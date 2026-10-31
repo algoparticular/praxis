@@ -12,6 +12,7 @@
     import { createCharacterLife } from '../composables/useCharacterLife.js';
     import { oracleTop } from '../composables/oracleScroll.js';
     import ModeSelector from '../components/ModeSelector.vue';
+    import OracleScene from '../components/OracleScene.vue';
     import { iconConstellation } from '../composables/iconConstellation.js';
     import { play } from '../composables/useSound.js';
     
@@ -55,7 +56,6 @@
 
     const stopCorners = [];
     const stopReveals = [];
-    const idleAnimations = [];
 
     onBeforeUnmount(() => {
         unmounted = true;
@@ -65,7 +65,6 @@
         tailField?.destroy();
         stopCorners.forEach((stop) => stop());
         stopReveals.forEach((stop) => stop());
-        idleAnimations.forEach((animation) => animation.cancel());
     });
 
     // //ON MOUNTED
@@ -217,14 +216,12 @@
             });
         }
 
-        //Text and illustrations of the oracle block arrive one after the other when it comes into view.
+        //The text of the oracle block arrives one after the other when it comes into view.
         //Independent translate/scale/rotate are used so they do not fight the parallax, which owns transform.
         if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
             const pick = (selector) => document.querySelector('#oracle ' + selector);
             const copy = ['.copy .heading h3', '.copy > p', '.copy .modes'].map(pick);
-            const man = pick('.gfx .oracle.particle');
-            const tree = pick('.gfx .oracle.tree');
-            [...copy, man, tree].forEach((el) => { el.style.opacity = 0; });
+            copy.forEach((el) => { el.style.opacity = 0; });
 
             const reveal = ({ el, y = 24, scale = 1, delay = 0, duration = 900, origin, composite = 'replace' }) => {
                 if (origin) el.style.transformOrigin = origin;
@@ -235,10 +232,6 @@
                 el.style.opacity = '';
                 return animation.finished;
             };
-            const idle = (el, keyframes, duration) => idleAnimations.push(el.animate(keyframes, {
-                duration, direction: 'alternate', iterations: Infinity, easing: 'ease-in-out'
-            }));
-
             //The seed arrives first, above the quote, and the quote follows line by line
             const quote = [document.querySelector('#uno img'), ...document.querySelectorAll('#uno h2 .line')];
             quote.forEach((el) => { el.style.opacity = 0; });
@@ -251,13 +244,6 @@
                 copy.forEach((el, i) => reveal({ el, delay: i * 140 }));
             }, { amount: 0.5 }));
 
-            //The man on the rug and the bonsai are separate pieces: the man settles first, the bonsai drifts in behind him after
-            stopReveals.push(inView('#oracle .gfx', () => {
-                reveal({ el: man, y: 48, scale: 0.94, duration: 1200 })
-                    .then(() => idle(man, { translate: ['0 0', '0 -7px'] }, 4200)).catch(() => {});
-                reveal({ el: tree, y: 20, scale: 0.55, delay: 600, duration: 1400 })
-                    .then(() => idle(tree, { translate: ['0 0', '0 -12px'], rotate: ['-2deg', '2deg'] }, 6200)).catch(() => {});
-            }, { amount: 0.3 }));
         }
     });
 </script>
@@ -340,20 +326,7 @@
             </div>
         
             <div class="gfx">
-                <kinesis-element 
-                    class="oracle particle"
-                    tag="img"
-                    src="/assets/oracle/particle.webp"
-                    loading=”lazy”
-                    :strength="60"
-                    type="translate"/>
-                <kinesis-element 
-                    class="oracle tree"
-                    tag="img"
-                    src="/assets/oracle/tree.webp"
-                    loading=”lazy”
-                    :strength="50"
-                    type="translate"/>
+                <OracleScene />
             </div>
         </kinesis-container>
 
@@ -700,28 +673,12 @@
         transform: scale(-1, -1);
     }
 
+    /* The frame of the illustration (OracleScene: Sid on his rug, alive); its canvas reaches past it for the glows */
     .gfx {
         height: 32vh;
         width: 80vw;
         position: relative;
     }
-
-    .oracle {
-        height: auto;      
-    }
-
-    .oracle.particle {           
-        width: 80vw;
-    }
-
-    /* The bonsai floats behind the character, to his right */
-    .oracle.tree {
-        position: absolute;
-        top: 4%;
-        right: 15%;
-        z-index: -1;           
-        width: 20vw;     
-    }   
 
     /* DESKTOP */
     @media screen and (min-width: 769px) {
@@ -746,16 +703,6 @@
         .gfx {
             height: 52vh;
             width: 36vw;
-        }
-
-        .oracle.particle {
-            width: 34vw;
-        }
-
-        .oracle.tree {
-            width: 11vw;
-            top: 6%;
-            right: 14%;
         }
 
     }
