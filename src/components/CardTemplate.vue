@@ -33,21 +33,11 @@
 
     // Touching the scene counts: its touchable zones are role="button" (a finger that only drags the page to the reading
     // also lands a pointerdown on the stage, and that is not playing). Vipassana answers a click anywhere on it.
-    // While the scene is being played the share button steps back (smaller, faint), and it comes back a few seconds
-    // after the last touch, so it does not take room from the game
-    const playing = ref(false);
-    let playTimer = null;
-    const played = () => {
-        visit.touch();
-        playing.value = true;
-        clearTimeout(playTimer);
-        playTimer = setTimeout(() => { playing.value = false; }, 4000);
-    };
-    const onStageDown = (event) => { if (event.target.closest('[role="button"]') && !event.target.closest('.action')) played(); };
-    const onStageUp = () => { if (playing.value) played(); };
+    const played = () => visit.touch();
+    const onStageDown = (event) => { if (event.target.closest('[role="button"]')) played(); };
     const onStageClick = (event) => { if (sceneNameFor(props.id) === 'vipassana' && !event.target.closest('[role="button"]')) played(); };
 
-    // Sharing, from the button over the scene or from the one at the end of the reading
+    // Sharing, from the button at the end of the reading (the scene has none: it would sit over the drawing)
     const share = (from) => {
         track('share_opened', { card_id: props.id, from });
         router.push({ path: '/share/' + props.id });
@@ -109,7 +99,6 @@
     });
 
     onBeforeUnmount(() => {
-        clearTimeout(playTimer);
         window.removeEventListener('scroll', fadeCue);
         stopReveals.forEach((stop) => stop());
         transition?.el.remove();
@@ -122,18 +111,13 @@
 
 <template>
 	<main class="cardWrapper" :class="{ entering }" ref="root">
-        <section class="stage" ref="stage" @contextmenu.prevent @selectstart.prevent @pointerdown.capture="onStageDown" @pointerup.capture="onStageUp" @click.capture="onStageClick">
+        <section class="stage" ref="stage" @contextmenu.prevent @selectstart.prevent @pointerdown.capture="onStageDown" @click.capture="onStageClick">
             <div class="sceneHost" :class="{ ready }">
                 <component :is="scene" :card="card" :active="ready" />
             </div>
 
             <h1 class="title" v-if="String(card['name_' + $i18n.locale] ?? '').trim()">{{ String(card['name_' + $i18n.locale] ?? '').trim() }}</h1>
 
-            <button class="action" :class="{ quiet: playing }" @click="share('stage')" :aria-label="$t('oracle.share')">
-                <svg class="icon share" width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path fill-rule="evenodd" clip-rule="evenodd" d="M12.0002 9.66634C11.0797 9.66634 10.3335 8.92015 10.3335 7.99967C10.3335 7.0792 11.0797 6.33301 12.0002 6.33301H32.0002C32.9206 6.33301 33.6668 7.0792 33.6668 7.99967V27.9997C33.6668 28.9201 32.9206 29.6663 32.0002 29.6663C31.0797 29.6663 30.3335 28.9201 30.3335 27.9997V12.0234L9.17867 33.1782C8.5278 33.8291 7.47253 33.8291 6.82165 33.1782C6.17078 32.5273 6.17078 31.472 6.82165 30.8212L27.9765 9.66634H12.0002Z" />
-                </svg>
-            </button>
 
             <div class="cue" ref="cue" aria-hidden="true">
                 <svg width="28" height="28" viewBox="0 0 28 28" fill="none"><path d="M6 10.5L14 18.5L22 10.5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -227,30 +211,6 @@
         filter: brightness(calc(1 + var(--name-glow, 0) * 0.3));
     }
 
-    button.action {
-        position: absolute;
-        right: 24px;
-        bottom: 28px;
-        width: 58px;
-        height: 58px;
-        filter: none;
-        background-color: v-bind(colorAlt);
-        border: 4px solid v-bind(color);
-        transition: opacity 0.8s ease-out 0.2s, scale 0.6s ease-out, border 270ms ease-out, background-color 150ms ease-out;
-    }
-
-    /* While the scene is being played it steps back */
-    button.action.quiet {
-        opacity: 0.35;
-        scale: 0.72;
-        transition: opacity 0.4s ease-out, scale 0.4s ease-out, border 270ms ease-out, background-color 150ms ease-out;
-    }
-
-    button.action.quiet:hover,
-    button.action.quiet:focus-visible {
-        opacity: 1;
-        scale: 1;
-    }
 
     /* At the end of the reading: the card's own colours, turned around */
     .shareEnd {
@@ -281,18 +241,6 @@
         color: v-bind(colorAlt);
     }
 
-    button.action .icon path {
-        fill: v-bind(color);
-    }
-
-    button.action:hover {
-        background-color: v-bind(color);
-        border-color: v-bind(colorAlt);
-    }
-
-    button.action:hover .icon path {
-        fill: v-bind(colorAlt);
-    }
 
     .cue {
         position: absolute;
@@ -314,7 +262,6 @@
 
     /* While the card is still landing, only its colour and the card itself are there */
     .entering .title,
-    .entering .action,
     .entering .cue {
         opacity: 0;
     }
@@ -403,11 +350,6 @@
 
         .quote.invitation p {
             font-size: 19px;
-        }
-
-        button.action {
-            right: 40px;
-            bottom: 40px;
         }
     }
 

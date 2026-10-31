@@ -27,7 +27,17 @@ import sharp from 'sharp';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const source = path.join(root, 'originales', 'coraje');
 const target = path.join(root, 'public', 'assets', 'coraje');
-const file = (n) => path.join(source, `Frenar_1-${n}.png`);
+const exported = (n) => path.join(source, `Frenar_1-${n}.png`);
+// Some layers were exported without their layer opacity, so they came out far darker than on the card: the moon's crater strokes (4).
+// It is put back here (measured against the finished card), and the faded copy is used wherever the layer is.
+const FADED = { 4: 0.5 };
+const faded = {};
+for (const [n, k] of Object.entries(FADED)) {
+    const { data, info } = await sharp(exported(n)).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+    for (let i = 3; i < data.length; i += 4) data[i] = Math.round(data[i] * k);
+    faded[n] = await sharp(data, { raw: info }).png().toBuffer();
+}
+const file = (n) => faded[n] ?? exported(n);
 const S = 2160;
 
 // Pictures made of one or more layers, drawn in this order

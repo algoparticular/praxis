@@ -69,7 +69,7 @@ Se cambia una línea en `src/data/cardChords.js`, por ejemplo `28: 'Em'`. Se esc
 | 5 | Khanti | Paramis | Fluir | Remaj7 | Escena propia, verbo jugable |
 | 6 | Sacca | Paramis | Resonar | Sol7 | Escena propia, verbo jugable |
 | 7 | Addhitthana | Paramis | Arraigar | Mi mayor | Escena propia, verbo jugable |
-| 8 | Metta | Paramis | Dar y recibir | Famaj7 | Escena propia, sin juego todavía |
+| 8 | Metta | Paramis | Dar y recibir | Famaj7 | Escena propia, verbo jugable |
 | 9 | Upekkha | Paramis | Soltar | Mi menor | Escena propia, verbo jugable |
 | 10 | Tu verdad | Special | sin verbo | Sol mayor | Escena propia, sin juego todavía |
 | 11 | Aceptación | Regular | Fluir | Si menor | Escena propia, sin juego todavía |
@@ -85,7 +85,7 @@ Se cambia una línea en `src/data/cardChords.js`, por ejemplo `28: 'Em'`. Se esc
 | 21 | Desafío | Regular | Encender | Re7 | Escena propia, sin juego todavía |
 | 22 | Evolución Espiritual | Regular | Encender | Si7 | Escena propia, verbo jugable |
 | 23 | Fe | Regular | Arraigar | Si mayor | Escena propia, sin juego todavía |
-| 24 | Gratitud | Regular | Dar y recibir | Solmaj7 | Escena propia, sin juego todavía |
+| 24 | Gratitud | Regular | Dar y recibir | Solmaj7 | Escena propia, verbo jugable |
 | 25 | Hogar | Regular | Arraigar | Do mayor | Escena propia, verbo jugable |
 | 26 | Honestidad | Regular | Resonar | Solm7 | Escena propia, sin juego todavía |
 | 27 | Paciencia | Regular | Arraigar | Re mayor | Escena propia, verbo jugable |
