@@ -109,9 +109,19 @@
     const MARGIN = 120;                     // px drawn past each edge of the screen, for the camera's slide
     const FIELD = 0.5;                      // the field's px per screen px: it is smooth, small is enough
     const NIGHT_ROWS = NIGHT.rows.length * 2;
+    // Over the card the night takes the day little by little, with a wave: the edge of its top row moves left as it goes up
+    // (UP_SLOPE art px across for each px up, and a wave), so the yellow narrows and is gone instead of going on straight up
+    // (faster the higher, as a curve), and a wave along it. Only on a wide screen (wideScreen, set by place()): on a phone the
+    // little sky over the card stays as it was
+    const UP_SLOPE = 1.1, UP_WAVE = [150, 95];
+    let wideScreen = false;
     const nightAt = (xa, ya) => {
+        if (ya < 0 && wideScreen) {
+            const up = -ya;
+            xa += up * UP_SLOPE * (1 + up / 700) + UP_WAVE[0] * Math.sin(up / UP_WAVE[1] + 0.6) * Math.min(1, up / 90);
+            ya = 0;
+        }
         xa = Math.min(SIZE - 1, Math.max(0, xa));
-        ya = Math.max(0, ya);
         const runs = NIGHT.rows[Math.max(0, Math.min(NIGHT.rows.length - 1, Math.floor(Math.min(ya, NIGHT_ROWS - 1) / 2)))];
         const hx = xa / 2;
         let on = false;
@@ -282,6 +292,7 @@
         layout(w, h);
         paintSky(h);
         const area = { left: -MARGIN, top: -MARGIN, w: w + 2 * MARGIN, h: h + 2 * MARGIN };
+        wideScreen = w >= h;
         writeField(area);
         L.sky.place(area);
         L.sky.refresh();

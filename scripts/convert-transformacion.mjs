@@ -35,7 +35,17 @@ import sharp from 'sharp';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const source = path.join(root, 'originales', 'transformacion');
 const target = path.join(root, 'public', 'assets', 'transformacion');
-const file = (n) => path.join(source, `Transformación-${n}.png`);
+const exported = (n) => path.join(source, `Transformación-${n}.png`);
+// Some layers were exported without their layer opacity, so they came out far darker than on the card: the seed's shading (25).
+// It is put back here (measured against the finished card), and the faded copy is used wherever the layer is.
+const FADED = { 25: 0.34 };
+const faded = {};
+for (const [n, k] of Object.entries(FADED)) {
+    const { data, info } = await sharp(exported(n)).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+    for (let i = 3; i < data.length; i += 4) data[i] = Math.round(data[i] * k);
+    faded[n] = await sharp(data, { raw: info }).png().toBuffer();
+}
+const file = (n) => faded[n] ?? exported(n);
 const O = 3240;                 // the originals
 const S = 2160;                 // the scene's square
 const K = S / O;
