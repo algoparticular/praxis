@@ -22,6 +22,7 @@
     // feScene.json and public/assets/fe (made by scripts/convert-fe.mjs). The touch targets are DOM elements over Sid
     // and the lotus.
     import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
+    import { floorFor, floorLayer } from '../../data/stageFloor.js';
     import { createParallax } from '../../composables/useParallax.js';
     import { createLayerStage } from '../../composables/useLayerStage.js';
     import { startStardust } from '../../composables/useStardust.js';
@@ -66,7 +67,7 @@
         const size = phone ? Math.min(0.72 * h, w * SIZE / SPAN) : Math.min(w, h / (1 - DROP));
         let x = w / 2 - size / 2;
         if (phone && size > w) x = Math.min(0, Math.max(w - size, w / 2 - FOCUS * size / SIZE));
-        F = { x, y: h - size + (phone ? 0 : DROP * size), size };
+        F = { x, y: h - floorFor(w, h) - size + (phone ? 0 : DROP * size), size };
     };
 
     const SLIDE = 50;
@@ -255,8 +256,12 @@
         sid.enter({ y: 70, delay: 350, duration: 1900 });
     };
 
+    // The ground along the card's bottom edge, for the band under the frame on a phone ([x in art px, colour], read off the card's bottom rows)
+    const FLOOR_COLOURS = [[0, '#7592b3'], [384, '#63a67b'], [1392, '#7592b3']];
     const place = (w, h) => {
         layout(w, h);
+        // under the frame on a phone, the ground along the card's bottom edge (stageFloor.js), over the yellow
+        root.value.style.background = `${floorLayer(F.y + F.size - 30, F, FLOOR_COLOURS)}, ${hexColour(art.sky.yellow)}`;
         const flip = (r, side, up = 0) => ({
             left: side === 0 ? r.left : side < 0 ? 2 * F.x - r.left - r.w : 2 * (F.x + F.size) - r.left - r.w,
             top: up ? 2 * F.y - r.top - r.h : r.top, w: r.w, h: r.h,
@@ -455,7 +460,6 @@
         if (gone) { made.destroy(); return; }
         stage = made;
         stageEl = root.value.closest('.stage');
-        root.value.style.background = hexColour(art.sky.yellow);
         build(stage);
         stage.onResize((w, h) => place(w, h));
         const after = (node) => node.mesh.renderOrder + 0.5;

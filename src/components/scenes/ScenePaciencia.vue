@@ -21,6 +21,7 @@
     // rulito are 2D canvases drawn into the stage as textures. The touch target of the pine cone is a DOM element kept
     // over it, so it can be pressed with a finger and with the keyboard.
     import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
+    import { floorFor } from '../../data/stageFloor.js';
     import { createParallax } from '../../composables/useParallax.js';
     import { createLayerStage } from '../../composables/useLayerStage.js';
     import { createStardust } from '../../composables/useStardust.js';
@@ -99,11 +100,12 @@
         const sun = { left: W - (narrow ? 0.07 : 0.12) * W - sunW, top: (narrow ? 0.27 : 0.14) * H, w: sunW, h: sunH };
         const boatW = Math.min(0.88 * W, 0.54 * H, 560);
         const boatH = boatW * SIZES.boat[1] / SIZES.boat[0];
-        const boat = { left: W / 2 - boatW / 2, top: H - (strip * 1.3 + 0.05 * H) - boatH, w: boatW, h: boatH };
+        const floor = floorFor(W, H);
+        const boat = { left: W / 2 - boatW / 2, top: H - floor - (strip * 1.3 + 0.05 * H) - boatH, w: boatW, h: boatH };
         // On a phone the strip is bigger (its foot stays put), so the pine cone sits higher and is easier to reach
         const groundW = Math.max(1.3 * W, strip * 10.67 * 1.1 * (narrow ? 1.3 : 1));
         const groundH = groundW / 2 * SIZES.strip[1] / SIZES.strip[0];
-        const ground = { left: W / 2 - groundW / 2, top: H + 0.2 * strip - groundH, w: groundW, h: groundH };
+        const ground = { left: W / 2 - groundW / 2, top: H - floor + 0.2 * strip - groundH, w: groundW, h: groundH };
         // Inside the boat: the rulito on the central Sama's head (its canvas is bigger than the glyph, for the glow)
         const rw = rulitoAt.w * boatW, rh = rw * 86 / 32;
         const glyph = { left: boat.left + rulitoAt.x * boatW, top: boat.top + rulitoAt.y * boatH, w: rw, h: rh };

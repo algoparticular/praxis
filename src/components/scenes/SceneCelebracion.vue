@@ -19,9 +19,11 @@
     // middles are discs and every light is a glow in code. Drawn in WebGL (useLayerStage): the land (the trees, the marks
     // of the ground, the fern and the lamps), the beings behind the fire, the fire and the beings in front are planes at
     // four depths; on a wide screen the ground goes on past the frame (its marks mirrored), and where the frame leaves
-    // sky over or beside the trees their trunks and branch go on. From celebracionScene.json and public/assets/celebracion (made by
-    // scripts/convert-celebracion.mjs).
+    // sky over the trees they end in crowns borrowed from Belleza (and the left one's branch goes on beside it). From
+    // celebracionScene.json and public/assets/celebracion (made by scripts/convert-celebracion.mjs, then
+    // scripts/make-celebracion-crowns.mjs).
     import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
+    import { floorFor } from '../../data/stageFloor.js';
     import { createParallax } from '../../composables/useParallax.js';
     import { createLayerStage } from '../../composables/useLayerStage.js';
     import { startStardust } from '../../composables/useStardust.js';
@@ -63,7 +65,7 @@
         const size = phone ? Math.min(0.72 * h, w * SIZE / SPAN) : Math.max(0.62 * w, 1.02 * h);
         let x = w / 2 - size / 2;
         if (phone && size > w) x = Math.min(0, Math.max(w - size, w / 2 - FOCUS * size / SIZE));
-        F = { x, y: h - size * (1 - (phone ? 0.02 : DROP)), size };
+        F = { x, y: h - floorFor(w, h) - size * (1 - (phone ? 0.02 : DROP)), size };
     };
 
     const SLIDE = 40;
@@ -166,13 +168,17 @@
         const land = s.depth(zFor(DEPTH.land));
         L.landNode = land;
         L.ground = land.canvas(groundCanvas.value);
-        // (the trunks are not mirrored past the frame: twin trees would show the mirror; what the frame cuts goes on
-        // as the first rows or columns of the picture, stretched: up for the trunks, up to the left for the branch)
+        // (the trees are not mirrored past the frame: twin trees would show the mirror. Over the frame each trunk ends
+        // in a crown and each thin branch the frame cuts in a flat end with a shelf of leaves, as Belleza's trees do
+        // (scripts/make-celebracion-crowns.mjs), drawn behind the tree and swaying a little; the branch that leaves
+        // the frame on the left goes on as its edge column, stretched, up to the left)
         L.trees = ['treeLeft', 'treeRight'].map((name) => {
-            const [, , w, h] = B[name];
+            const [, , w] = B[name];
+            const end = name === 'treeLeft' ? 'Left' : 'Right';
             return {
                 name,
-                up: land.image(asset(name), { crop: [0, 0, 1, 3 / h] }),
+                crown: land.image(asset('crown' + end), { wind: { amp: 3, speed: 0.45, root: 'bottom' } }),
+                tip: land.image(asset('tip' + end), { wind: { amp: 2.5, speed: 0.6, root: 'bottom' } }),
                 side: name === 'treeLeft' ? land.image(asset(name), { crop: [0, 0, 3 / w, 1] }) : null,
                 tree: land.image(asset(name)),
             };
@@ -257,12 +263,15 @@
         drawGround(w, h);
         // The trees and, where the frame leaves sky over them or beside them, their trunks and branch going on
         const top = -MARGIN;
-        L.trees.forEach(({ name, up, side, tree }) => {
+        L.trees.forEach(({ name, crown, tip, side, tree }) => {
             const r = rectOf(B[name]);
             tree.place(r);
-            const reach = Math.max(0, r.top - top);
-            up.place({ left: r.left, top, w: r.w, h: reach + 1 });
-            up.mesh.visible = reach > 0;
+            const end = name === 'treeLeft' ? 'Left' : 'Right';
+            [[crown, 'crown'], [tip, 'tip']].forEach(([node, kind]) => {
+                const c = rectOf(B[kind + end]);
+                node.place(c, { x: c.left + c.w / 2, y: c.top + c.h });
+                node.mesh.visible = c.top + c.h > top;
+            });
             if (side && art.branch) {
                 // The branch goes on the way it goes, up to the left (its edge column stretched, turned about where it
                 // leaves the frame and narrowed to keep its thickness across)

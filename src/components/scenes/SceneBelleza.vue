@@ -16,6 +16,7 @@
     // sides. From bellezaScene.json and public/assets/belleza (made by scripts/convert-belleza.mjs). The touch target of
     // the two is a DOM element over them.
     import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
+    import { floorFor } from '../../data/stageFloor.js';
     import { createParallax } from '../../composables/useParallax.js';
     import { createLayerStage } from '../../composables/useLayerStage.js';
     import { startStardust } from '../../composables/useStardust.js';
@@ -58,7 +59,7 @@
         const size = phone ? Math.min(0.74 * h, w * SIZE / SPAN) : Math.min(Math.max(0.62 * w, 0.55 * h), 0.95 * h);
         let x = w / 2 - size / 2;
         if (phone && size > w) x = Math.min(0, Math.max(w - size, w / 2 - FOCUS * size / SIZE));
-        F = { x, y: h - size + (phone ? 0 : DROP * size), size };
+        F = { x, y: h - floorFor(w, h) - size + (phone ? 0 : DROP * size), size };
     };
 
     // ---- Depth: px each plane slides at the edge of a swipe
