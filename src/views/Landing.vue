@@ -12,6 +12,7 @@
     import { createCharacterLife } from '../composables/useCharacterLife.js';
     import { oracleTop } from '../composables/oracleScroll.js';
     import ModeSelector from '../components/ModeSelector.vue';
+    import { iconConstellation } from '../composables/iconConstellation.js';
     import { play } from '../composables/useSound.js';
     
     const router = useRouter();
@@ -44,6 +45,13 @@
     let starField = null;
     let tailField = null;
     let unmounted = false;
+
+    // Constellations: the mode looked at (hover or focus, or held by a finger) is drawn in the sky with its stars
+    const drawMode = (shown) => {
+        const oracle = document.getElementById('oracle');
+        const size = Math.min(oracle.clientWidth * 0.74, 340);
+        starField?.constellation(shown ? iconConstellation(shown.icon, oracle, { size }) : null, { color: shown?.color });
+    };
 
     const stopCorners = [];
     const stopReveals = [];
@@ -328,7 +336,7 @@
                     <h3>{{ $t("landing.oracleTitle") }}</h3>
                 </div>
                 <p>{{ $t("praxis.praxisIntro") }}</p>
-                <ModeSelector />
+                <ModeSelector @show="drawMode" />
             </div>
         
             <div class="gfx">

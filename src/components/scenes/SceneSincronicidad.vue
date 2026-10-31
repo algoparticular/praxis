@@ -179,13 +179,13 @@
     };
 
     const build = (s) => {
-        L.island = s.depth(zFor(ISLAND_DEPTH)).image('/assets/cocreate/isla.webp');
+        L.island = s.depth(zFor(ISLAND_DEPTH)).image('/assets/sincronicidad/isla.webp');
         // The rulito comes out of the pair's bubble, at its depth, and is drawn over everything
         L.rulito = s.depth(zFor(BUBBLES[BUBBLES.length - 1].depth)).canvas(rulito.value.canvas, { bloom: true });
         BUBBLES.forEach((b, i) => {
             // A lit bubble glows from behind, at its own depth
             L.halos.push(s.depth(zFor(b.depth)).glow({ rect: { left: 0, top: 0, w: 1, h: 1 }, color: STEPS[i].halo, stops: [[0, 0.6], [0.3, 0.3], [0.62, 0]], bloom: true }));
-            L.bubbles.push(s.depth(zFor(b.depth)).image(`/assets/cocreate/${b.file}.webp`, { shimmer: 0.35 }));
+            L.bubbles.push(s.depth(zFor(b.depth)).image(`/assets/sincronicidad/${b.file}.webp`, { shimmer: 0.35 }));
         });
         // From the far egg to the near pair (the pair is drawn last, over the island), each with its glow just behind it
         const order = [0, 1, 2, 3];
