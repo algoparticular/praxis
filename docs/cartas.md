@@ -74,15 +74,15 @@ Se cambia una línea en `src/data/cardChords.js`, por ejemplo `28: 'Em'`. Se esc
 | 10 | Tu verdad | Special | sin verbo | Sol mayor | Escena propia, sin juego todavía |
 | 11 | Aceptación | Regular | Fluir | Si menor | Escena propia, verbo jugable |
 | 12 | Armonía | Regular | Resonar | Domaj7 | Escena propia, verbo jugable |
-| 13 | Belleza | Regular | Ver | Lamaj7 | Escena propia, sin juego todavía |
+| 13 | Belleza | Regular | Ver | Lamaj7 | Escena propia, verbo jugable |
 | 14 | Celebración | Regular | Fluir | Mimaj7 | Escena propia, verbo jugable |
 | 15 | Ciclos | Regular | Soltar | Fa7 | Escena propia, verbo jugable |
 | 16 | Compromiso | Regular | Arraigar | La mayor | Escena propia, verbo jugable |
 | 17 | Comunicación | Regular | Resonar | Sol menor | Escena propia, verbo jugable |
 | 18 | Confianza | Regular | Arraigar | La menor | Escena propia, verbo jugable |
-| 19 | Coraje | Regular | Encender | Mi7 | Escena propia, sin juego todavía |
+| 19 | Coraje | Regular | Encender | Mi7 | Escena propia, verbo jugable |
 | 20 | Creatividad | Regular | Resonar | Do7 | Escena propia, verbo jugable |
-| 21 | Desafío | Regular | Encender | Re7 | Escena propia, sin juego todavía |
+| 21 | Desafío | Regular | Encender | Re7 | Escena propia, verbo jugable |
 | 22 | Evolución Espiritual | Regular | Encender | Si7 | Escena propia, verbo jugable |
 | 23 | Fe | Regular | Arraigar | Si mayor | Escena propia, verbo jugable |
 | 24 | Gratitud | Regular | Dar y recibir | Solmaj7 | Escena propia, verbo jugable |
@@ -91,7 +91,7 @@ Se cambia una línea en `src/data/cardChords.js`, por ejemplo `28: 'Em'`. Se esc
 | 27 | Paciencia | Regular | Arraigar | Re mayor | Escena propia, verbo jugable |
 | 28 | Perdón | Regular | Soltar | Fa menor | Escena propia, verbo jugable |
 | 29 | Sincronicidad | Regular | Resonar | Sol mayor | Escena propia, verbo jugable |
-| 30 | Esperanza | Regular | Ver | Sim7 | Escena propia, sin juego todavía |
+| 30 | Esperanza | Regular | Ver | Sim7 | Escena propia, verbo jugable |
 | 31 | Vipassana | Special | Soltar | Simaj7 | Escena propia, verbo jugable |
 | 32 | Transformación | Regular | Fluir | Rem7 | Escena propia, verbo jugable |
 <!-- tabla:fin -->

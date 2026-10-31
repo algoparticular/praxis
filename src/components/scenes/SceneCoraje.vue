@@ -3,13 +3,18 @@
     // sits at the very edge of a grassy cliff of blue crystals, wrapped in his own light, facing a great pale moon with an
     // open mouth, half in the shadow of its stipple; behind him on the grass, a cairn of blue stones and three little pink
     // mushrooms glowing; round them a quiet sky of warm stars and one little spiral galaxy.
-    // There is no game yet (its verb is Encender: Kätus rubs up his courage at the edge and throws himself towards the
-    // moon). Until then the scene is only alive: Kätus breathes and his light flickers as a flame does, he blinks now and
+    // Its verb is Encender (useKindle.js, the engine of Evolución and Viriya): rubbing Kätus gathers his courage (sparks,
+    // a note of the chord climbing with each sixth of the heat; stopping cools it) until his light catches; then he is a
+    // sling: pull back and let go, and a flame of his leaps towards the moon, falling a little and bouncing off the edges
+    // of the screen. The moon's shadow is six bands of its stipple: every band the flame crosses fills with light (its
+    // ink goes and a warm light glows in its place). With the whole moon lit, E7 resolves to A (`resolve`), Kätus stands
+    // tall in his light and the rulito the card draws over him is born; then the shadow comes back slowly ("stay standing
+    // in your light"). See docs/verbos-y-dinamicas.md.
+    // It is also alive: Kätus breathes and his light flickers as a flame does, he blinks now and
     // then and every LOOK s he leans out a little to look up at the moon; his tail stirs on the grass; the mushrooms'
     // light breathes; a sheen crosses the crystals of the cliff now and then; the stars twinkle and a silent shooting star
     // crosses the sky now and then; the galaxy turns slowly; the stipple of the moon trembles and a finger stirs it. A
-    // touch anywhere strums the card's chord (`star`) and the stars flare; a touch on Kätus makes his light leap up (he
-    // stands a little taller, his light flares).
+    // touch anywhere strums the card's chord (`star`) and the stars flare.
     // The sky is not a picture: the card's navy (read by the converter where no layer covers the card), a little deeper
     // towards the top of the screen. Nor is the moon's body: a disc in code, with its rim, the lip of its mouth, its
     // outline and its craters as one picture over it, and its stipple, the stars, Kätus's light and the mushrooms' glow
@@ -22,7 +27,11 @@
     import { createParallax } from '../../composables/useParallax.js';
     import { createLayerStage } from '../../composables/useLayerStage.js';
     import { startStardust } from '../../composables/useStardust.js';
+    import { createSparks } from '../../composables/useSparks.js';
+    import { createKindle, FIRE } from '../../composables/useKindle.js';
     import { play } from '../../composables/useSound.js';
+    import { sceneMilestone } from '../../analytics.js';
+    import Rulito from '../Rulito.vue';
     import art from '../../composables/corajeScene.json';
 
     const props = defineProps({
@@ -33,6 +42,7 @@
     const root = ref(null);
     const canvas = ref(null);
     const katusHit = ref(null);
+    const rulito = ref(null);
     let stageEl = null;
     let stage = null;
     let parallax = null;
@@ -106,6 +116,146 @@
     let time = 0;
     const L = {};
 
+
+    // ---- Encender: the moon's shadow, lit band by band
+    // The stipple of the shadow is split into ZONES bands by its angle round the moon's centre (as many dots in each):
+    // each band is two groups of particles, its ink and its light, so it can fill with light on its own
+    const ZONES = 6;
+    const zones = (() => {
+        const dots = art.stipple.map((d) => ({ d, a: Math.atan2(d[1] - MOON.y, d[0] - MOON.x) })).sort((p, q) => p.a - q.a);
+        return Array.from({ length: ZONES }, (_, z) => {
+            const list = dots.slice(Math.floor(z * dots.length / ZONES), Math.floor((z + 1) * dots.length / ZONES)).map((p) => p.d);
+            const cx = list.reduce((s, d) => s + d[0], 0) / list.length, cy = list.reduce((s, d) => s + d[1], 0) / list.length;
+            const r = Math.sqrt(list.reduce((s, d) => s + (d[0] - cx) ** 2 + (d[1] - cy) ** 2, 0) / list.length) * 1.5;
+            return { dots: list, x: cx, y: cy, r, on: false, lit: 0, flash: 0, pitch: 1 - z / (ZONES - 1) };
+        });
+    })();
+    const inkGroup = (z) => (z === 0 ? 2 : 5 + z);          // group 2 is the first band's ink; the others follow the old groups
+    const lightGroup = (z) => 5 + ZONES + z;
+    const LIGHT = 0xffe6a6;                 // the warm light that takes the place of the shadow
+    const HEAD = [1129, 1112];              // art px: where Kätus's light is, the source of the flame
+    const DELAY = 1.3, GROW = 2.2, LINGER = 2.6, EAT = 3.4;
+    let win = null;
+    let wins = 0;
+    let glyph = { left: 0, top: 0, w: 1, h: 1 };
+    let W = 1, H = 1;
+    let hint = 0;
+    let standing = 0;                       // 0..1: Kätus standing tall in his light while the moon is whole
+    const sparks = createSparks(420);
+
+    const zoneAt = (z) => L.moon.toScreen(sx(zones[z].x), sy(zones[z].y));
+    const headAt = () => L.katus.toScreen(sx(HEAD[0]), sy(HEAD[1]));
+    const kindler = createKindle({
+        size: () => F.size,
+        source: headAt,
+        canvas: () => canvas.value,
+        sparks,
+        busy: () => !!win || reduced,
+        speed: [1, 1.8],
+        collide: (f) => {
+            if (kindler.edges(W, H)) play('tap');
+            zones.forEach((zone, z) => {
+                if (zone.on) return;
+                const p = zoneAt(z);
+                if (Math.hypot(p.x - f.x, p.y - f.y) < Math.max(30, zone.r * k())) catchFire(z);
+            });
+        },
+        onKindle: (step) => play('kindle', { step }),
+        onIgnite: () => { play('ignite', 1); play('star'); leapAt = time; dust?.boost(3, 1.2); },
+        onLaunch: (pull) => { play('ignite', pull); leapAt = time; },
+    });
+
+    // A band of the shadow fills with light
+    const catchFire = (z) => {
+        const zone = zones[z];
+        zone.on = true;
+        zone.flash = 1;
+        const n = zones.filter((q) => q.on).length;
+        const p = zoneAt(z);
+        sparks.burst(p.x, p.y, { n: 30, colors: [LIGHT, 0xfff6dc, 0xffd29a, 0xffffff], speed: 120, life: 2.2, size: 5, spread: 10 });
+        dust?.boost(lightGroup(z), 1.4);
+        play('link', { from: (n - 1) / ZONES, to: zone.pitch, level: 0.9 });
+        if (n === ZONES) setTimeout(() => { if (!gone) full(); }, 500);
+    };
+    // The whole moon is lit: E7 resolves to A, Kätus stands tall in his light and the rulito is born over him
+    const full = () => {
+        if (win) return;
+        wins += 1;
+        win = { age: 0, head: 0, tail: 0, full: false, fullAt: 0, back: false, pop: 0 };
+        kindler.reset();
+        rulito.value?.reshape();
+        play('resolve');
+        dust?.boost(3, 1.6);
+        dust?.boost(1, 1.2);
+        sceneMilestone('moon_lit', { times: wins });
+    };
+    const winTick = (t, dt) => {
+        let named = 0;
+        if (win && rulito.value) {
+            win.age += dt;
+            win.pop = Math.max(0, win.pop - dt * 2.2);
+            win.head = 1 - (1 - Math.min(1, Math.max(0, (win.age - DELAY) / GROW))) ** 1.6;
+            if (win.head >= 1 && !win.full) { win.full = true; win.fullAt = win.age; win.pop = 1; leapAt = t; play('rulito'); }
+            if (win.full && !win.back && win.age - win.fullAt > LINGER) { win.back = true; zones.forEach((zone) => { zone.on = false; }); }
+            if (win.back) win.tail = Math.min(1, win.tail + dt / EAT);
+            const whole = Math.min(1, Math.max(0, (win.head - win.tail - 0.6) / 0.4));
+            named = Math.max(win.pop, 0.8 * ease(whole));
+            const flare = win.full && win.head - win.tail > 0.9 ? Math.max(win.pop, Math.sin(t * 4) * 0.5 + 0.5) : 0;
+            rulito.value.frame({ head: win.head, tail: win.tail, flare, t, fade: Math.min(1, (win.head - win.tail) * 14), width: glyph.w });
+            L.rulito.refresh();
+            L.rulito.scale = 1 + 0.2 * win.pop * win.pop;
+            if (win.back && win.tail >= 1) {
+                win = null;
+                rulito.value.frame({ width: glyph.w });
+                L.rulito.refresh();
+            }
+        }
+        stageEl?.style.setProperty('--name-glow', named.toFixed(3));
+        stage.bloom = Math.max(named, 0.35 * kindler.charge, kindler.mode === 'flying' ? 0.4 : 0);
+        return named;
+    };
+
+    // Pressing Kätus: cold, rub him; on fire, take the sling. With the keyboard: Enter rubs, and on fire throws the flame at
+    // the nearest band still in shadow
+    const press = (event) => {
+        if (reduced) { kindle(); return; }
+        kindler.press(event);
+        if (kindler.mode === 'cold' && !win) leapAt = Math.max(leapAt, time - LEAP * 0.5);
+    };
+    const nearestShadow = () => {
+        const s = headAt();
+        const todo = zones.map((_, z) => z).filter((z) => !zones[z].on);
+        if (!todo.length) return null;
+        return todo.map(zoneAt).reduce((best, p) => (Math.hypot(p.x - s.x, p.y - s.y) < Math.hypot(best.x - s.x, best.y - s.y) ? p : best));
+    };
+
+    // The sling, the sparks and the flame in flight
+    const flameTick = (t, dt) => {
+        kindler.update(t, dt);
+        const charge = kindler.charge;
+        if (!reduced && charge > 0.15 && Math.random() < dt * (4 + 14 * charge)) {
+            const s = headAt();
+            sparks.burst(s.x, s.y, { n: 1, colors: FIRE, speed: 20 + 40 * charge, life: 1.1, size: 2.5 + 2.5 * charge, spread: 10 });
+        }
+        // The hint, without words: still a while, sparks crackle on Kätus (rub him), or on fire his light beats (sling it)
+        if (!kindler.rubbing && !kindler.aiming && !win && kindler.mode !== 'flying' && kindler.idle > 7) {
+            kindler.idle = 0;
+            hint = 1;
+            const s = headAt();
+            sparks.burst(s.x, s.y, { n: 8, colors: FIRE, speed: 50, life: 0.9, size: 3.5, spread: 8 });
+        }
+        hint = Math.max(0, hint - dt * 1.4);
+        const flying = kindler.mode === 'flying';
+        L.flame.x = L.flameCore.x = kindler.flame.x;
+        L.flame.y = L.flameCore.y = kindler.flame.y;
+        L.flame.opacity = flying ? 0.95 : 0;
+        L.flameCore.opacity = flying ? 1 : 0;
+        L.flame.scale = 1 + 0.15 * Math.sin(t * 17);
+        L.flame.mesh.visible = L.flameCore.mesh.visible = flying;
+        L.torch.opacity = Math.min(1, 1.1 * charge * (0.85 + 0.15 * Math.sin(t * 7)) + hint * 0.5);
+        L.torch.scale = 0.6 + 0.6 * charge + 0.3 * hint;
+    };
+
     const build = (s) => {
         // The galaxy among the stars
         const far = s.depth(zFor(DEPTH.stars));
@@ -133,7 +283,15 @@
         L.tail = L.katus.image(ASSETS + 'tail.webp');
         L.body = L.katus.image(ASSETS + 'katus.webp');
         L.eye = L.katus.image(ASSETS + 'eye.webp');
+        L.torch = L.katus.glow({ rect: { left: 0, top: 0, w: 1, h: 1 }, color: [1, 0.74, 0.35], stops: [[0, 0.75], [0.3, 0.32], [0.62, 0]], bloom: true });
+        L.torch.opacity = 0;
+        L.rulito = L.katus.canvas(rulito.value.canvas, { bloom: true });
         land.enter({ y: 50, delay: 300, duration: 1900 });
+        // The flame in flight, at the focal plane (it does not move with the camera)
+        const air = s.depth(0);
+        L.flame = air.glow({ rect: { left: -1, top: -1, w: 2, h: 2 }, color: [1, 0.7, 0.32], stops: [[0, 0.9], [0.25, 0.5], [0.62, 0]], bloom: true });
+        L.flameCore = air.glow({ rect: { left: -1, top: -1, w: 2, h: 2 }, color: 0xfff6dc, stops: [[0, 1], [0.3, 0.6], [0.6, 0]], bloom: true });
+        L.flame.opacity = L.flameCore.opacity = 0;
     };
 
     // The sky, from the card: its navy, a little deeper towards the top of the screen
@@ -144,6 +302,7 @@
     };
 
     const place = (w, h) => {
+        W = w; H = h;
         layout(w, h, titleRect(h));
         paintSky();
         const g = rectOf(B.galaxy);
@@ -168,6 +327,19 @@
         L.body.place(rectOf(B.katus), { x: sx(FEET.x), y: sy(FEET.y) });
         const e = rectOf(B.eye);
         L.eye.place(e, { x: e.left + e.w / 2, y: e.top + e.h / 2 });
+        const td = 300 * k();
+        L.torch.place({ left: sx(HEAD[0]) - td / 2, top: sy(HEAD[1]) - td / 2, w: td, h: td });
+        // The rulito where the card draws it, over Kätus (its canvas is bigger than the glyph, for the glow)
+        const rr = rectOf(art.rulito);
+        const rw = rr.h * 32 / 86;
+        glyph = { left: rr.left + rr.w / 2 - rw / 2, top: rr.top, w: rw, h: rr.h };
+        rulito.value.frame({ width: glyph.w });
+        L.rulito.place({ left: glyph.left - 0.4375 * glyph.w, top: glyph.top - 0.1628 * glyph.h, w: glyph.w * 1.875, h: glyph.h * 1.3256 },
+            { x: glyph.left + glyph.w / 2, y: glyph.top + glyph.h });
+        L.rulito.refresh();
+        const fd = Math.max(46, 150 * k());
+        L.flame.place({ left: -fd / 2, top: -fd / 2, w: fd, h: fd });
+        L.flameCore.place({ left: -fd / 5, top: -fd / 5, w: fd / 2.5, h: fd / 2.5 });
     };
 
     // Where the card's name is (the stage's h1, over the scene), so the moon keeps under it
@@ -182,7 +354,7 @@
     const placeHit = () => {
         if (!L.katus || !katusHit.value) return;
         const b = L.katus.boxOnScreen(rectOf([B.katus[0] - 30, B.katus[1] - 20, B.katus[2] + 60, B.katus[3] + 30]));
-        const bw = Math.max(56, b.width), bh = Math.max(64, b.height);
+        const bw = Math.max(96, b.width * 1.6), bh = Math.max(112, b.height * 1.3);
         katusHit.value.style.translate = `${(b.left + b.width / 2 - bw / 2).toFixed(1)}px ${(b.top + b.height / 2 - bh / 2).toFixed(1)}px`;
         katusHit.value.style.width = `${bw.toFixed(1)}px`;
         katusHit.value.style.height = `${bh.toFixed(1)}px`;
@@ -205,7 +377,8 @@
     const onKey = (event) => {
         if (event.key !== 'Enter' && event.key !== ' ') return;
         event.preventDefault();
-        kindle();
+        if (reduced) { kindle(); return; }
+        kindler.key(nearestShadow);
     };
 
     // Shooting stars, silent: now and then one crosses the sky over the moon and is gone, with a tail of dots
@@ -269,6 +442,7 @@
     let frames = 0;
     const frame = ({ x, y, scroll, t, ramp }) => {
         if (!stage || !L.katus) return;
+        const dt = Math.min(0.1, Math.max(0, t - time));
         time = t;
         stage.look(x * SLIDE, y * SLIDE_Y);
 
@@ -287,8 +461,24 @@
         });
 
         // ---- Kätus: he breathes, his light flickers as a flame, he blinks, and now and then looks up at the moon
+        // ---- The game: the flame, the moon's shadow filling with light band by band, the rulito
+        const named = reduced ? 0 : winTick(t, dt);
+        if (!reduced) flameTick(t, dt);
+        let litCount = 0;
+        zones.forEach((zone, z) => {
+            zone.lit += ((zone.on ? 1 : 0) - zone.lit) * Math.min(1, dt * (zone.on ? 3 : 0.35));
+            zone.flash = Math.max(0, zone.flash - dt * 1.1);
+            litCount += zone.lit;
+            dust?.fade(inkGroup(z), 1 - 0.92 * zone.lit);
+            dust?.fade(lightGroup(z), Math.min(1, 0.75 * zone.lit + 0.5 * zone.flash));
+        });
+        const moonLit = litCount / ZONES;
+
         const leap = reduced ? 0 : Math.max(0, 1 - (t - leapAt) / LEAP);
-        const up = leap > 0 ? Math.sin((1 - leap) * Math.PI) : 0;
+        // Standing in his light: while the moon is whole he is taller and brighter
+        const tall = win && !win.back ? 1 : 0;
+        standing += (tall - standing) * Math.min(1, dt * 1.5);
+        const up = Math.max(leap > 0 ? Math.sin((1 - leap) * Math.PI) : 0, 0.6 * standing);
         const p = (Math.max(0, t - 4) % LOOK) / GAZE;
         const gaze = p < 1 ? ease(Math.min(1, p * 3)) * ease(Math.min(1, (1 - p) * 3)) : 0;
         const breath = Math.sin(t * 1.1);
@@ -306,8 +496,10 @@
         L.warmth.opacity = 0.8 + 0.12 * flicker * ramp + 0.4 * up;
         L.warmth.scale = 1 + (0.03 * flicker + 0.18 * up) * ramp;
         L.warmth.sy = 1 + 0.12 * up;
-        L.body.uniforms.uBright.value = 1 + 0.08 * up;
-        dust?.fade(3, Math.min(1, 0.85 + 0.1 * flicker + 0.3 * up));
+        L.body.uniforms.uBright.value = 1 + 0.08 * up + 0.12 * kindler.charge + 0.15 * named;
+        dust?.fade(3, Math.min(1, 0.85 + 0.1 * flicker + 0.3 * up + 0.3 * kindler.charge));
+        L.halo.opacity = Math.min(1, L.halo.opacity + 0.6 * moonLit);
+        L.halo.scale = 1 + 0.1 * moonLit;
         // His tail stirs on the grass
         L.tail.rotate = (2.2 * Math.sin(t * 0.7) + 1.2 * Math.sin(t * 1.9 + 1)) * ramp;
 
@@ -315,7 +507,10 @@
         const far = stage.drift(L.far.z), moon = stage.drift(L.moonNode.z), land = stage.drift(L.land.z);
         dust?.shift(0, far.x * 0.6, far.y * 0.6 + L.far.y);
         dust?.shift(1, far.x, far.y + L.far.y);
-        dust?.shift(2, moon.x, moon.y + L.moonNode.y);
+        zones.forEach((_, z) => {
+            dust?.shift(inkGroup(z), moon.x, moon.y + L.moonNode.y);
+            dust?.shift(lightGroup(z), moon.x, moon.y + L.moonNode.y);
+        });
         // Kätus's light goes with him as he leans
         const kx = land.x + L.katus.x, ky = land.y + L.land.y;
         dust?.turn(3, L.katus.rotate, sx(FEET.x), sy(FEET.y));
@@ -341,6 +536,8 @@
         const before = (node) => node.mesh.renderOrder - 0.5;
         const after = (node) => node.mesh.renderOrder + 0.5;
         const fromArt = (list, color, scale = 1) => list.map(([x, y, r]) => [sx(x), sy(y), Math.max(1.2, 2 * r * k() * scale), color]);
+        const inkOf = (z) => ({ colors: [INK], look: 'hard', parallax: 0, drift: 0.8, jitter: 0.35, twinkle: 0, reach: 80, push: 12, order: before(L.moon),
+            points: () => fromArt(zones[z].dots, INK, 1.75) });
         dust = startStardust(null, {
             stage,
             manual: true,
@@ -349,14 +546,21 @@
                 { count: 260, colors: [0xfaf0dc, 0xf6d9a8, 0xd8ecea], size: [1, 2.4], drift: 1.5, twinkle: 0.8, reach: 0, parallax: 0, opacity: 0.6, order: 0.1 },
                 // 1: the card's stars, warm, twinkling; a finger stirs them
                 { colors: [0xfec88a], look: 'hard', parallax: 0, drift: 2, twinkle: 0.5, reach: 110, push: 22, order: 0.12, points: starPoints },
-                // 2: the moon's stipple, trembling a little; a finger stirs it
-                { colors: [INK], look: 'hard', parallax: 0, drift: 0.8, jitter: 0.35, twinkle: 0, reach: 80, push: 12, order: before(L.moon), points: () => fromArt(art.stipple, INK, 1.75) },
+                // 2: the moon's stipple (its first band; the others are 6 to 10), trembling a little; a finger stirs it
+                inkOf(0),
                 // 3: Kätus's light, alive as a flame
                 { colors: [AURA], parallax: 0, drift: 2.2, jitter: 0.7, twinkle: 0.5, reach: 50, push: 8, order: after(L.warmth), points: () => fromArt(art.aura, AURA, 2) },
                 // 4: the mushrooms' glow
                 { colors: [PINK], parallax: 0, drift: 1.2, jitter: 0.4, twinkle: 0.45, reach: 50, push: 6, order: before(L.lines), points: () => fromArt(art.spores, PINK, 1.8) },
                 // 5: a shooting star now and then
                 { colors: [0xffffff], dynamic: shooting, parallax: 0, drift: 0, twinkle: 0, reach: 0, look: 'soft', order: 0.13 },
+                // 6-10: the other bands of the moon's stipple; 11-16: the light that takes the place of each band
+                ...zones.slice(1).map((_, z) => inkOf(z + 1)),
+                ...zones.map((zone) => ({ colors: [LIGHT], look: 'soft', parallax: 0, drift: 1.2, jitter: 0.5, twinkle: 0.5, reach: 80, push: 12, bloom: true,
+                    order: before(L.moon) + 0.01, points: () => fromArt(zone.dots, LIGHT, 2.6) })),
+                // 17: the sling; 18: sparks
+                { colors: [0xffffff], dynamic: kindler.aimGroup, parallax: 0, drift: 0, twinkle: 0, reach: 0, look: 'hard', order: 1e6 - 1 },
+                { ...sparks.group(), order: 1e6 },
             ],
         });
         if (reduced) dust.reveal();
@@ -371,15 +575,19 @@
         parallax?.destroy();
         dust?.destroy();
         stage?.destroy();
+        kindler.destroy();
+        stageEl?.style.removeProperty('--name-glow');
     });
 </script>
 
 <template>
     <div class="scene" ref="root" @click="strum">
         <canvas class="stageCanvas" ref="canvas"></canvas>
+        <!-- The rulito is drawn on its own canvas, which the stage shows over Kätus -->
+        <Rulito ref="rulito" class="offstage" color="#fec88a" />
         <div ref="katusHit" class="hit" role="button" tabindex="0"
-            :aria-label="$i18n.locale === 'en' ? 'Kätus at the edge of the cliff' : 'Kätus al borde del acantilado'"
-            @click.stop="kindle" @keydown="onKey"></div>
+            :aria-label="$i18n.locale === 'en' ? 'Kätus: rub him until his light catches, then pull back and let go to light the moon' : 'Kätus: frotalo hasta que su luz se encienda, después tirá hacia atrás y soltá para encender la luna'"
+            @pointerdown.prevent="press" @click.stop @keydown="onKey"></div>
     </div>
 </template>
 
@@ -409,9 +617,20 @@
         border-radius: 40%;
         cursor: pointer;
         pointer-events: auto;
-        touch-action: manipulation;
+        touch-action: none;                    /* rubbing and pulling drag the finger: not a scroll */
+        -webkit-touch-callout: none;
+        user-select: none;
+        -webkit-user-select: none;
         -webkit-tap-highlight-color: transparent;
         outline: none;
+    }
+
+    .offstage {
+        position: absolute;
+        left: -9999px;
+        top: 0;
+        width: 40px;
+        visibility: hidden;
     }
 
     .hit:focus-visible {

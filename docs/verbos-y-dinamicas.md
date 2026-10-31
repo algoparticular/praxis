@@ -35,7 +35,7 @@ Los siete verbos, uno por chakra, quedan ordenados entre dos polos:
 - **Arraigar** (raíz) es el polo de la manifestación: de la materia a la manifestación. Está probado en Paciencia, Hogar, Addhitthana, Compromiso, Confianza y Fe: las seis cartas del verbo se juegan.
 - **Soltar** (corona) es el polo de la liberación: del entendimiento a la existencia. Está probado en Vipassana, Nekkhamma, Upekkha, Ciclos y Perdón: las cinco cartas del verbo se juegan.
 - **Dar y recibir** (corazón) es donde las dos corrientes se encuentran. Las notas de Belén lo dicen así: "dos triángulos entrelazados, el movimiento descendente del espíritu en la materia y la liberación ascendente de la materia en el espíritu: equilibrio perfecto en el corazón". Está implementado en Dana: compartir la luz de la llamita con todos los de la isla, y que vuelva multiplicada; y con el mismo motor en Metta (empezando por uno mismo) y en Gratitud (agradecer a cada cosa) (ver más abajo, en "Dinámicas").
-- **Fluir, Encender, Resonar y Ver** serían los pasos entre un polo y el otro. Ver está probado en Pañña, Encender en Evolución Espiritual, Fluir en Khanti (y en Aceptación, Transformación y Celebración) y Resonar en Sincronicidad (a tiempo), en Creatividad (composición libre) y en Sacca (eco).
+- **Fluir, Encender, Resonar y Ver** serían los pasos entre un polo y el otro. Ver está probado en Pañña (y en Esperanza y Belleza), Encender en Evolución Espiritual, Fluir en Khanti (y en Aceptación, Transformación y Celebración) y Resonar en Sincronicidad (a tiempo), en Creatividad (composición libre) y en Sacca (eco).
 
 Esto se parece a lo que el rulito premia: en las notas del tercer chakra, "siento las dos corrientes, ascendente de liberación y descendente de manifestación, que se unen en mí para manifestar mi propósito de ser quien soy".
 
@@ -78,7 +78,7 @@ Las palabras del libro para cada chakra, subiendo y bajando:
 
 Cada carta tiene un verbo (`verb` en `src/data/cards.json`, lista en `src/data/verbs.js`). El verbo define la **dinámica**: qué hace la persona con la escena. La ilustración, el sonido y el significado los pone cada carta. Los siete verbos son uno por personaje y chakra (ver arriba).
 
-Los siete verbos se probaron en una escena: **Arraigar en Paciencia** (y, hacia adentro, en **Hogar**, contra la tormenta, en **Addhitthana**, y en **Compromiso**, **Confianza** y **Fe**), **Fluir en Khanti**, **Encender en Evolución Espiritual** (frotar y lanzar el fuego), **Dar y recibir en Dana** (compartir la luz; y en **Metta** y **Gratitud**), **Resonar en Sincronicidad** (y, como composición libre, en **Creatividad**, y como eco, en **Sacca**), **Ver en Pañña** y **Soltar en Vipassana** (y en **Nekkhamma**, **Upekkha**, **Ciclos** y **Perdón**). Lo implementado no es fijo: son ideas probadas y pueden cambiar. Lo que se dice de las otras cartas son propuestas, tomando como punto de partida lo que ya hacen las escenas.
+Los siete verbos se probaron en una escena: **Arraigar en Paciencia** (y, hacia adentro, en **Hogar**, contra la tormenta, en **Addhitthana**, y en **Compromiso**, **Confianza** y **Fe**), **Fluir en Khanti**, **Encender en Evolución Espiritual** (frotar y lanzar el fuego; y en **Viriya**, **Coraje** y **Desafío**), **Dar y recibir en Dana** (compartir la luz; y en **Metta** y **Gratitud**), **Resonar en Sincronicidad** (y, como composición libre, en **Creatividad**, y como eco, en **Sacca**), **Ver en Pañña** (y, con ancestros en las estrellas, en **Esperanza**; mirando de cerca, en **Belleza**) y **Soltar en Vipassana** (y en **Nekkhamma**, **Upekkha**, **Ciclos** y **Perdón**). Lo implementado no es fijo: son ideas probadas y pueden cambiar. Lo que se dice de las otras cartas son propuestas, tomando como punto de partida lo que ya hacen las escenas.
 
 Orden de los verbos: Arraigar (raíz) y Soltar (corona) son los dos polos, la corriente de manifestación y la de liberación, y Dar y recibir (corazón) es donde se encuentran. Los dos polos y el centro están probados: el centro, en Dana. Ver arriba, sección "Dos corrientes".
 
@@ -120,14 +120,14 @@ Cómo lo vestiría cada carta: Aceptación, una luz que baja por el río entre l
 **En Celebración, la ronda.** Una chispa sale del fuego y da la vuelta a la ronda pasando por los pies de cada uno (diez: el pequeño del borde derecho queda afuera porque en un teléfono no se ve) mientras el dedo la acompaña. Cada uno es un nudo, pero acá soltar es celebrar: cuando la chispa llega acompañada, salta (el zorro a los pies del Sama con él), queda con una luz tibia y la llama crece un poco. De vuelta en el fuego con todos encendidos, el fuego salta, todos saltan a la vez, se encienden las lámparas y nace el rulito sobre la punta de la llama; se ilumina el nombre. Después la chispa vuelve a nacer en el fuego. Unos 20 s. Código: `SceneCelebracion.vue` (`WAY`, `KNOTS`, `LIT`, `drawSpark()`, `finish()`, `stepWin()`).
 **Cartas:** Khanti, Aceptación, Transformación y Celebración (las cuatro hechas).
 
-### 3. Encender (Kätus, demonio: vergüenza): implementado en Evolución Espiritual y Viriya
+### 3. Encender (Kätus, demonio: vergüenza): implementado en Evolución Espiritual, Viriya, Coraje y Desafío
 **Dinámica:** frotar y lanzar. Primero se enciende el fuego con esfuerzo (frotar, como con dos palitos) y después se lo lanza con dirección (una honda): lo que toca se enciende.
 **Por qué así:** se probaron dos ideas antes. Tocar los bulbos en cualquier orden era el mismo gesto que Dana (un toque a cada uno). Mantener apretado para cargar y soltar se parecía demasiado a Arraigar (Paciencia) y a retener el aire en Vipassana. Frotar y tirar de una honda no los usa ningún otro verbo. Y la carta lo pide de adentro hacia afuera: *"una alma iluminada es capaz de transformar cada atmósfera que habita, siendo faro para otros"*. El demonio de Kätus es la vergüenza, esconder la propia luz; Sid está acurrucado y es él el que se enciende y sale disparado.
 **El motor, común a las cartas del verbo:** frotar una fuente hasta que prende, apuntar, lanzarla, y lo que toca se enciende y queda encendido; hay que encender todo. Sirve para las otras tres:
 - Desafío: el fuego que rebota por las paredes del laberinto hasta la luz del centro (la que mejor calza con los rebotes).
 - Coraje: Kätus en el borde del acantilado frota para juntar coraje y se lanza hacia la luna.
 - Viriya: frotar es la diligencia ("sin prisa pero sin pausa"); el lanzamiento enciende las flores del camino.
-Viriya ya tiene su juego (ver más abajo); Desafío y Coraje tienen escena viva, pero todavía sin juego.
+Las cuatro tienen su juego (ver más abajo). Coraje y Desafío usan el motor compartido de `useKindle.js` (frotar, la honda y el vuelo de la llama); Evolución y Viriya todavía tienen cada una su copia.
 **Cómo funciona hoy en Evolución Espiritual:**
 - *Al principio todo está apagado.* Los ocho bulbos, los cuatro hongos y sus bolitas azules están grises y sin brillo.
 - *Frotar.* Se frota con el dedo dentro de la célula, de un lado a otro: saltan chispas donde pasa el dedo, Sid se va calentando (brilla y le suben brasas) y suena una nota más del acorde de la carta con cada sexto del calor (`kindle`). Si se deja de frotar, se enfría despacio. Con unos 11 radios de la célula frotados, prende: un estallido de chispas (`ignite` y `star`). Dentro de la célula el dedo no mueve la página (`touch-action: none`): antes el teléfono tomaba el frotar o el tirón por un scroll y los cortaba; para bajar a la lectura se arrastra desde la corona o desde abajo.
@@ -151,7 +151,23 @@ Viriya ya tiene su juego (ver más abajo); Desafío y Coraje tienen escena viva,
 - *El cielo y el sol no son imágenes.* El cielo es un degradé dibujado en código desde los colores de la carta (el azul y el atardecer), y el sol es un disco en código con su borde punteado hecho de partículas que viven.
 **Dónde se tocó:** `SceneViriya.vue` (`press()`, `move()`, `letGo()`, `ignite()`, `launch()`, `catchFire()`, `dawn()`, `game()`, `aimGroup`, `RUB`, `STEADY`).
 
-**Cartas:** Evolución Espiritual (hecha), Viriya (hecha), Coraje, Desafío.
+**Cómo funciona hoy en Coraje:** Kätus está sentado al borde del acantilado, frente a una luna enorme con la mitad en sombra punteada. *"Inhala coraje. Exhala miedo"*, *"mantente en pie en tu luz"*.
+- *Frotar es juntar coraje.* Se frota sobre Kätus: saltan chispas, su luz crece y suena una nota del acorde (Mi7) con cada sexto del calor (`kindle`); si se para, se enfría. Caliente, su luz prende (`ignite`).
+- *La honda.* Encendido, se apoya el dedo y se tira hacia atrás; al soltar, una llama suya salta hacia el cielo, cae un poco, se frena y rebota en los bordes de la pantalla.
+- *La sombra de la luna.* La sombra punteada está partida en seis bandas (por su ángulo alrededor del centro de la luna, con la misma cantidad de puntos cada una). Cada banda que cruza la llama se llena de luz: su tinta se va y en su lugar brilla una luz cálida (`link`, más agudo de arriba a abajo). Lo encendido queda encendido; después de cuatro rebotes, o si se frena, la llama se apaga y hay que volver a frotar.
+- *La luna entera.* Con las seis bandas, Mi7 se resuelve en La (`resolve`), el halo de la luna se abre, Kätus se queda erguido en su luz y nace el rulito sobre él, donde lo dibuja la carta; se ilumina el nombre y suena `rulito`. Hito: `moon_lit` (con `times`). Después la sombra vuelve despacio y se puede volver a jugar.
+- *Pista, teclado y movimiento reducido,* como en Viriya: a los 7 s quieto saltan chispas de Kätus; Enter frota (un quinto cada vez) y, encendido, tira la llama hacia la banda en sombra más cercana; con movimiento reducido no se juega.
+**Dónde se tocó:** `SceneCoraje.vue` (`zones`, `catchFire()`, `full()`, `kindler`) y `useKindle.js`.
+
+**Cómo funciona hoy en Desafío:** Vulpes está sentado en la puerta de un laberinto redondo, con una luz en el centro. *"Al final del camino no solo encontrarás la salida, sino también una mejor versión de ti"*.
+- *Frotar.* Se frota sobre Vulpes hasta que su cola prende (`kindle`, `ignite`), como en Coraje.
+- *Por la puerta.* Encendida la cola, la honda lanza la llama. Las paredes que están delante del laberinto la hacen rebotar: solo entra por la puerta (y rebota también en los bordes de la pantalla). No hay error: rebota y se intenta de nuevo.
+- *Anillo por anillo.* Adentro, la llama corre sola por los pasillos, de afuera hacia adentro, media vuelta por cada anillo, y cada pared que cruza se enciende: un anillo de puntos de fuego a lo largo de ella (`link`). Enciende tantas paredes como fuerza tenía el tirón (una con un tirón corto, dos con uno mediano, tres con uno largo); las que ya estaban encendidas las pasa rápido. Sin fuerza se apaga (`miss`) donde llegó, y hay que volver a frotar.
+- *El centro.* Con las cuatro paredes encendidas llega a la luz del centro: estalla, Re7 se resuelve en Sol (`resolve`) y nace el rulito sobre la luz, en naranja de fuego (la carta no dibuja uno); se ilumina el nombre y suena `rulito`. Hito: `maze_lit` (con `times`). Después los anillos se apagan.
+- *Pista, teclado y movimiento reducido:* a los 7 s quieto saltan chispas de su cola; Enter frota y, encendida, tira la llama hacia la puerta; con movimiento reducido no se juega (un toque en Vulpes hace lo de siempre).
+**Dónde se tocó:** `SceneDesafio.vue` (`WALLS`, `DOOR`, `collide()`, `goIn()`, `runTick()`, `reach()`, `ringGroup`) y `useKindle.js`.
+
+**Cartas:** Evolución Espiritual (hecha), Viriya (hecha), Coraje (hecha), Desafío (hecha).
 
 ### 4. Dar y recibir (Vulpes, demonio: pena): implementado en Dana, Metta y Gratitud
 **Dinámica:** compartir la luz. Dar sin pensar y sin esperar nada a cambio, y descubrir que dar no vacía: lo dado vuelve multiplicado, sin pedirlo.
@@ -249,7 +265,7 @@ Con movimiento reducido la escena queda estática y no se juega (como Sincronici
 
 **Cartas:** Sincronicidad (hecha), Armonía, Sila (hecha) (a tiempo); Comunicación, Honestidad, Sacca (hecha) (eco); Creatividad (hecha, composición libre).
 
-### 6. Ver (Huit, demonio: ilusión): implementado en Pañña
+### 6. Ver (Huit, demonio: ilusión): implementado en Pañña, Esperanza y Belleza
 **Dinámica:** descubrir lo oculto, unir puntos, reconocer un patrón.
 **Cómo funciona hoy en Pañña:** las nueve luces de la escena (el sol, el tercer ojo de Sid, el hongo rosado grande del medio, las cuatro luciérnagas y los dos hongos azules) se unen arrastrando de una a otra, y hay una **figura** que ver.
 - *Nada viene unido.* La escena arranca limpia, sin la espiral del sol a la frente.
@@ -263,8 +279,25 @@ Con movimiento reducido la escena queda estática y no se juega (como Sincronici
 - *Teclado.* Enter en una luz la elige y Enter en otra las une; Enter otra vez en la misma la suelta.
 - *Movimiento reducido.* La escena queda estática y todavía no se puede jugar (como Vipassana): los toques siguen haciendo lo de siempre.
 **Dónde se tocó:** `ScenePanna.vue` (todos los hilos son un solo grupo de partículas, `helix()`; `LIGHTS`, `join()`, `seen()`). No cubre ni agrega ningún dibujo: son solo partículas.
+**Cómo funciona hoy en Esperanza:** *"la asistencia del universo con sus hilos invisibles de luz"*, *"tus ancestros están detrás tuyo"*. Usa los mismos hilos que Pañña (la hélice de puntos está en `useThreads.js`, compartida) y el mismo gesto, pero lo que se ve es un **ancestro**: una constelación con la forma de un ser como el de la duna.
+- *Las estrellas brillantes.* Entre las estrellas del cielo algunas brillan más, con un halo (en un teléfono, en el cielo abierto sobre la luna; en pantalla ancha, a la derecha de la luna, sobre el ser). Son las del ancestro que toca ver (sus seis o siete, en oro) y dos señuelos (más pálidos).
+- *Unir.* Como en Pañña: se arrastra de una estrella a otra y el hilo se engancha; soltar en el aire lo deshace y unir de nuevo dos ya unidas deshace ese hilo. Los hilos del ancestro quedan firmes y suenan fuerte (`link`, más agudo cuanto más alta la estrella); los demás, tenues. A los 7 s sin tocar, el ancestro se dibuja solo, tenue, y se va. Al último hilo se juzga: si no es la figura, los hilos se apagan (`unravel`, hito `pattern_reset`) y se intenta de nuevo el mismo ancestro.
+- *Los tres ancestros, siempre en el mismo orden:* uno **sentado** como el ser (hocico a la izquierda, dos orejas, la cola enroscada: 7 hilos), uno **caminando** (la cola alzada: 6) y el mayor, **descansando** (echado a lo largo: 6).
+- *Visto.* Sus hilos se encienden y corren (`converge`, hito `pattern_seen` con `figure`); al rato el ancestro se junta, se achica y va a pararse detrás del ser, en el cielo bajo junto a él, y le baja un hilo de luz: el ser mira hacia arriba y su aura crece. Entonces brillan las estrellas del siguiente.
+- *Los tres detrás.* Cuando llega el hilo del tercero, los tres hilos brillan y corren juntos hacia el ser (`converge`), su aura se abre (`open`) y nace el rulito sobre su cabeza (en el amarillo de las estrellas de la carta; la carta lo dibuja en el cielo, arriba a la derecha, que en un teléfono no se ve). Se ilumina el nombre y suena `rulito`; hito `ancestors_gathered`. Cuando el rulito se va, los ancestros vuelven a las estrellas y empieza de nuevo: *"siempre se puede volver a empezar"*.
+- *Tocar.* Un toque corto en una estrella brillante o en el cielo hace lo de siempre (rasguea el acorde, las estrellas destellan); en el ser, mira la luna.
+- *Teclado.* Enter en una estrella brillante la elige y Enter en otra las une. *Movimiento reducido:* la escena queda quieta y no se juega, como Pañña.
+**Dónde se tocó:** `SceneEsperanza.vue` (`FIGURES`, `join()`, `seen()`, `arrived()`, `gather()`, el grupo `sky`) y `useThreads.js`.
+
+**Cómo funciona hoy en Belleza:** *"poder ver lo bello aún en la apariencia más desafiante"*, *"hoy encuentra 3 aspectos bellos en ti"*. No hay luces que unir: lo bello está escondido en cosas comunes del bosque y se ve mirando con atención.
+- *Las cosas comunes.* Diez rincones sin nada especial pueden esconder una belleza: el arbusto lejano, un tronco lejano, unas piedras, un brote, la corteza del árbol grande, la hierba, un montículo, la piedra junto al helecho, la pila de piedras y el helecho (`SPOTS`). En cada ronda tres de los que se ven en la pantalla, separados entre sí, esconden una.
+- *Mirar de cerca.* Mantener el dedo quieto en cualquier lugar junta un anillo de atención de puntos que se cierra sobre él (1,1 s). Si había una belleza escondida ahí, florece: una flor de puntos en los colores del acorde (La, Do, Mi, Sol: tercer ojo, raíz, plexo, garganta) que se abre y gira despacio, con una luz suave alrededor de la cosa común, y suena `resonate` (más alto con cada una). Si no, el anillo se abre y se apaga en silencio: no hay error. Un toque corto sigue siendo una brisa (`star`), y tocar a los dos los abraza.
+- *La pista, sin palabras.* Cada 6 a 9 s una de las escondidas destella un momento, para quien esté mirando; después de 12 s sin encontrar nada, más seguido.
+- *Las tres.* Con la tercera, sus flores vuelan en arco hacia los dos (`converge`), que se abrazan; de ellos sale una luz que recorre todo el bosque como una brisa (los árboles se mecen, las motas destellan): *"tu resonancia se convierte en la de la belleza, y se irradia hacia todo lo que te rodea"*. Nace el rulito sobre ellos (en el amarillo de su polvo; la carta no dibuja uno), se ilumina el nombre y suena `rulito`; hito `beauty_seen`. Cuando se va, otras tres cosas esconden una belleza.
+- *Teclado.* Cada cosa común es un lugar enfocable: Enter la mira de cerca. *Movimiento reducido:* quieta y sin juego.
+**Dónde se tocó:** `SceneBelleza.vue` (`SPOTS`, `hide()`, `look()`, `reveal()`, `gather()`, el grupo `beauty`).
 **Variante posible:** despejar una niebla de partículas para revelar las luces (cubriría el arte de Pañña; encajaría mejor en Honestidad, que tiene burbujas) o primero descubrir y después unir.
-**Cartas:** Pañña (hecha), Belleza, Esperanza. Esperanza es la que mejor toma el motor de Pañña: su texto habla de *"hilos invisibles de luz"* y su ilustración es un cielo lleno de estrellas (unirlas en una constelación). Belleza (*"poder ver lo bello"*) no tiene luces dibujadas: necesita otro gesto, como descubrir lo bello escondido en el bosque.
+**Cartas:** Pañña (hecha), Esperanza (hecha), Belleza (hecha).
 
 ### 7. Soltar (Sid, demonio: apego): implementado en Vipassana
 **Dinámica:** dejar ir. Que las cosas se vayan sin agarrarlas, y que vuelvan.
