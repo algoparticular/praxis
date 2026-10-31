@@ -21,6 +21,7 @@
     const focus = ref(null);
     const label = ref(null);
     const ready = ref(false);           // the skeleton stays until the ring is drawn
+    const cardBottom = ref(null);       // px from the top of the ring to the bottom of the card in front
     let ring = null;
     let destroyed = false;
 
@@ -48,6 +49,7 @@
                 cards: props.cards,
                 onFocus: (card) => { focus.value = card; },
                 onPick: handlePick,
+                onLayout: (layout) => { cardBottom.value = layout.cardBottom; },
                 onSound: handleSound,
             });
             if (destroyed) ring.destroy();
@@ -78,7 +80,7 @@
             <DeckRingSkeleton v-if="!ready"/>
         </Transition>
         <Transition name="name" mode="out-in">
-            <p class="cardName" ref="label" :key="focus?.id" v-if="focus">{{ focus['name_' + $i18n.locale] }}</p>
+            <p class="cardName" ref="label" :key="focus?.id" v-if="focus" :style="cardBottom != null ? { top: `${cardBottom}px`, bottom: 'auto' } : null">{{ focus['name_' + $i18n.locale] }}</p>
         </Transition>
     </main>
 </template>
@@ -103,8 +105,9 @@
         position: absolute;
         left: 0;
         right: 0;
-        bottom: 15vh;
+        bottom: 15vh;               /* until the ring says where its card ends; then just under it */
         margin: 0;
+        padding-top: 22px;
         text-align: center;
         font-family: 'Caveat', 'Nunito', helvetica, sans-serif;
         font-size: 28px;

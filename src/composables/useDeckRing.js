@@ -50,7 +50,7 @@ export const preloadThumbs = (ids, concurrency = 6) => {
     for (let i = 0; i < concurrency; i++) worker();
 };
 
-export async function createDeckRing(canvas, { cards, onFocus, onPick, onSound }) {
+export async function createDeckRing(canvas, { cards, onFocus, onPick, onSound, onLayout }) {
     const THREE = await import('../three.js');
 
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -164,6 +164,10 @@ export async function createDeckRing(canvas, { cards, onFocus, onPick, onSound }
         worldHeight = 2 * camDist * half;
         // One card step on screen, so a drag moves the ring as far as the finger
         pxPerCard = (width / visibleWidth) * (CARD_W + 0.14);
+        // Where the bottom of the card in front lands on screen (scaled 1.28 and brought 0.5 forward in place()),
+        // so the card's name can sit right under it whatever the shape of the screen
+        const bottom = new THREE.Vector3(0, -CARD_H * 1.28 / 2, 0.5).project(camera);
+        onLayout?.({ cardBottom: ((1 - bottom.y) / 2) * height });
     };
     const resizeObserver = new ResizeObserver(resize);
     resizeObserver.observe(canvas);
