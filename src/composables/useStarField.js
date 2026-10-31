@@ -20,9 +20,10 @@ const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 
 // Constellations: how long a star takes to travel (s), how the departures spread along the line (s, from the first to
 // the last), how far apart the dots of a thread are (px) and how long the threads take to appear or go (s)
-const GATHER = { travel: 1.1, spread: 0.9, dotGap: 7, threads: 0.6 };
-// How long a constellation takes to be whole, from the first star leaving to the last thread drawn (s)
-export const CONSTELLATION_TIME = GATHER.spread + GATHER.travel + 0.25;
+const GATHER = { travel: 1, spread: 0.8, dotGap: 7, threads: 0.6 };
+// How long a constellation takes to be whole, from the first star leaving to the last thread drawn (s): never more
+// than 3 s, and the same on any phone, since it goes by the clock and not by frames
+export const CONSTELLATION_TIME = GATHER.spread + GATHER.travel + 0.2;
 
 // The shooting stars' head: a soft round mote, drawn once and stamped (the falloff of useStardust's 'soft')
 const DOT_COLORS = [CREAM];               // the head, in the cream of the stars of this sky
@@ -230,7 +231,8 @@ export function createStarField(canvas, container, { shootingEvery = [3, 7], sho
     const frame = (now) => {
         raf = requestAnimationFrame(frame);
         const time = now / 1000;
-        const dt = Math.min(time - last, 0.05);
+        const real = Math.min(time - last, 0.25);    // the time that really went by (a hidden tab is paused)
+        const dt = Math.min(real, 0.05);
         last = time;
 
         for (let i = shooting.length - 1; i >= 0; i--) {
@@ -238,16 +240,23 @@ export function createStarField(canvas, container, { shootingEvery = [3, 7], sho
             meteor.life += dt;
             if (meteor.life >= meteor.duration) shooting.splice(i, 1);
         }
-        // Constellations: each star waits its turn, then travels; the threads come and go with their figure
+        // Constellations: each star waits its turn, then travels; the threads come and go with their figure. They go by
+        // the clock (a slow phone drops frames, not time), so the figure is whole when the mode says it is
         for (const star of stars) {
             if (star.k === star.goal) continue;
-            if (star.wait > 0) { star.wait -= dt; continue; }
-            const stepK = dt / GATHER.travel;
+            let left = real;
+            if (star.wait > 0) {
+                star.wait -= left;
+                if (star.wait > 0) continue;
+                left = -star.wait;
+                star.wait = 0;
+            }
+            const stepK = left / GATHER.travel;
             star.k = star.goal > star.k ? Math.min(star.goal, star.k + stepK) : Math.max(star.goal, star.k - stepK);
         }
-        if (figure) figure.alpha = Math.min(1, figure.alpha + dt / GATHER.threads);
+        if (figure) figure.alpha = Math.min(1, figure.alpha + real / GATHER.threads);
         for (let i = leaving.length - 1; i >= 0; i--) {
-            leaving[i].alpha -= dt / (GATHER.threads * 0.6);
+            leaving[i].alpha -= real / (GATHER.threads * 0.6);
             if (leaving[i].alpha <= 0) leaving.splice(i, 1);
         }
 
