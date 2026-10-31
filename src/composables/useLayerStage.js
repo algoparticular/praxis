@@ -121,10 +121,17 @@ const LAYER_FRAGMENT = `
         return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x), mix(hash(i + vec2(0.0, 1.0)), hash(i + 1.0), f.x), f.y);
     }
     uniform vec4 uClip;            // device px: x0, y0, x1, y1 (from the bottom left); x1 < x0 means no clip
+    uniform float uClipSoft;       // device px over which the clip's top and bottom fade in (0: a hard cut)
     uniform float uVignette;       // 0..0.5: it fades out towards its four edges (a blurred glow must not end in a hard box)
     varying vec2 vUv;
     void main() {
-        if (uClip.z >= uClip.x && (gl_FragCoord.x < uClip.x || gl_FragCoord.x > uClip.z || gl_FragCoord.y < uClip.y || gl_FragCoord.y > uClip.w)) discard;
+        float clipA = 1.0;
+        if (uClip.z >= uClip.x) {
+            if (gl_FragCoord.x < uClip.x || gl_FragCoord.x > uClip.z) discard;
+            if (uClipSoft > 0.0) clipA = smoothstep(uClip.y - uClipSoft, uClip.y + uClipSoft, gl_FragCoord.y) * (1.0 - smoothstep(uClip.w - uClipSoft, uClip.w + uClipSoft, gl_FragCoord.y));
+            else if (gl_FragCoord.y < uClip.y || gl_FragCoord.y > uClip.w) discard;
+            if (clipA <= 0.0) discard;
+        }
         vec2 uv = vUv;
         if (uShimmer > 0.0) {
             uv += vec2(sin(uv.y * 38.0 + uTime * 2.1), cos(uv.x * 31.0 + uTime * 1.7)) * 0.004 * uShimmer;
@@ -192,7 +199,7 @@ const LAYER_FRAGMENT = `
             vec2 e = min(vUv, 1.0 - vUv);
             c *= smoothstep(0.0, uVignette, e.x) * smoothstep(0.0, uVignette, e.y);
         }
-        gl_FragColor = vec4(c.rgb, c.a) * uOpacity;
+        gl_FragColor = vec4(c.rgb, c.a) * uOpacity * clipA;
     }`;
 
 const GLOW_VERTEX = `
@@ -544,6 +551,7 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
             this.opacity = 1;
             this.entrance = null;
             this.clip = null;                            // { left, top, w, h } on screen (px): it and what hangs from it are cut there
+                                                         // (with soft: px over which its top and bottom fade instead)
             this.mesh = null;
             this.rect = null;
             (parent ? parent.inner : scene).add(this.object);
@@ -643,6 +651,7 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
                 uDissolve: { value: new THREE.Vector2(dissolve === null ? 0 : 1, 0) },
                 uDissolveGlow: { value: new THREE.Color(...parseColor(dissolve ?? 0xffffff)) },
                 uClip: { value: new THREE.Vector4(1, 0, 0, 0) },
+                uClipSoft: { value: 0 },
                 uVignette: { value: vignette },
                 uSize: { value: new THREE.Vector2(1, 1) },
                 // (the texture's v runs from its bottom up)
@@ -875,6 +884,7 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
                 if (u.uClip) {
                     if (clip) u.uClip.value.set(clip.left * dpr, (height - clip.top - clip.h) * dpr, (clip.left + clip.w) * dpr, (height - clip.top) * dpr);
                     else u.uClip.value.set(1, 0, 0, 0);
+                    if (u.uClipSoft) u.uClipSoft.value = (clip?.soft ?? 0) * dpr;
                 }
             }
             this.children.forEach((child) => child.update(opacity, clip));

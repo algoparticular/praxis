@@ -3,8 +3,15 @@
     // comes up from the viewer to the horizon of its coral cap, and over the cap a dome of night sky, full of stars, where
     // a boat floats with two beings in it, the big one with its long hair and a little one peeping over the side, a
     // little plant and a pole. Round the dome and under the cap, pale mint and a marbled water.
-    // Its verb will be Arraigar (hold until something grows); there is no game yet. A touch strums the card's chord and
-    // the stars and the motes flare; a touch on the beings makes the big one hop and blink and the little one peep.
+    // Its verb is Arraigar ("your path is lit by the mere fact of committing to your search"): holding the big being
+    // (finger, mouse or key) lights the path, from the viewer's feet up the stem to the horizon of the cap, at its own
+    // steady pace; the signs on it light up as the light passes them, a note of the chord at each third of the way
+    // (`kindle`), the big one glows and looks down the path and the boat steadies. The light is the rulito's stroke
+    // (useRooting.js): when it reaches the horizon the rulito the card draws in the sky is born (`rulito`, A major, and
+    // `converge`), the horizon flares and the name lights up; let go before, the light's tail climbs after its head and
+    // fades at the horizon (holding again picks it up). Left alone a while, the foot of the path glimmers and the big
+    // one's light breathes (the hint). A touch anywhere else strums the card's chord and the stars and the motes flare;
+    // a quick touch on the beings makes the big one hop and blink and the little one peep.
     // Nothing of the sky is a picture: the dome (a circle with its outline, cut where the cap hides it) and the cap (an
     // ellipse with its outline) are drawn in code from the card's colours, worked out by the converter; the stars are
     // particles (the drawn ones, and more for the dome past the frame), and so are the motes that rise from the horizon
@@ -18,7 +25,11 @@
     import { createParallax } from '../../composables/useParallax.js';
     import { createLayerStage } from '../../composables/useLayerStage.js';
     import { startStardust } from '../../composables/useStardust.js';
+    import { createSparks } from '../../composables/useSparks.js';
+    import { createRooting } from '../../composables/useRooting.js';
     import { play } from '../../composables/useSound.js';
+    import { sceneMilestone } from '../../analytics.js';
+    import Rulito from '../Rulito.vue';
     import art from '../../composables/compromisoScene.json';
 
     const props = defineProps({
@@ -29,6 +40,7 @@
     const root = ref(null);
     const canvas = ref(null);
     const beingsHit = ref(null);
+    const rulito = ref(null);
     let stageEl = null;
     let stage = null;
     let parallax = null;
@@ -124,11 +136,68 @@
         });
     };
 
+    // ---- The game: the lit stretch of the path, from the rulito's stroke (tail .. head), foot to horizon
+    const PATH = [2700, 1262];              // art y of the path's foot (the bottom of the card) and of its end, at the horizon
+    const PATH_X = [1100, 1052];            // its middle there
+    const PATH_HALF = [980, 150];           // half its width there
+    const HINT = 7;
+    const sparks = createSparks(260);
+    let screenH = 1;
+    let glyph = { left: 0, top: 0, w: 1, h: 1 };
+    let pressAt = -1;                       // when the beings were pressed (a quick touch is a greeting)
+    let idleHint = 0, hint = 0;
+    let lit = { head: 0, tail: 0, full: false, pop: 0, named: 0, flare: 0 };
+    const rooting = createRooting({
+        grow: 4.6, linger: 3.2, eat: 3,
+        onNote: (step) => play('kindle', { step }),
+        onComplete: (times) => {
+            play('rulito');
+            play('converge');
+            dust?.boost(2, 1.4);
+            dust?.boost(1, 1);
+            rulitoGlow = 1;
+            sceneMilestone('path_committed', { times });
+        },
+        onReset: () => rulito.value?.reshape(),
+    });
+    let rulitoGlow = 0;
+    // Where along the path (0 the foot, 1 the horizon) is which art y: slower as it goes away, as in perspective
+    const pathY = (p) => PATH[0] + (PATH[1] - PATH[0]) * (1 - (1 - p) ** 1.35);
+    const pathAt = (p) => {
+        const e = (PATH[0] - pathY(p)) / (PATH[0] - PATH[1]);
+        return { x: PATH_X[0] + (PATH_X[1] - PATH_X[0]) * e, y: pathY(p), half: PATH_HALF[0] + (PATH_HALF[1] - PATH_HALF[0]) * e };
+    };
+    const hold = () => {
+        if (reduced) return;
+        rooting.hold();
+        idleHint = 0;
+    };
+    const letGo = () => {
+        rooting.release();
+        idleHint = 0;
+    };
+    const pressBeings = (event) => {
+        event?.preventDefault?.();
+        pressAt = lastT;
+        play('tap');
+        hold();
+        window.addEventListener('pointerup', liftBeings);
+        window.addEventListener('pointercancel', liftBeings);
+    };
+    const liftBeings = () => {
+        window.removeEventListener('pointerup', liftBeings);
+        window.removeEventListener('pointercancel', liftBeings);
+        letGo();
+        if (lastT - pressAt < 0.35) greet();
+        pressAt = -1;
+    };
+
     // ---- The beings: they breathe, blink now and then (each at its own pace) and react to a touch
     const blinkAt = { big: 2.5, small: 4.2 };
     let hop = 0;                            // 0..1, the big being's hop (a touch), decaying
     let peep = 0;                           // the little one peeping up
     let rock = 0;                           // the boat rocked by a touch
+    let steady = 0;                         // the boat steadied while the path is held, eased
     let lastT = 0;
     const L = {};
     const blinkOf = (t, name) => {
@@ -183,7 +252,19 @@
         L.gills = mushroom.image(A('gills'));
         L.stem = mushroom.image(A('stem'));
         L.runes = mushroom.image(A('runes'));
+        // The path lit (the stem and its signs again, warm and bright, cut to the lit stretch), and the light at its front
+        L.stemLit = mushroom.image(A('stem'));
+        L.stemLit.uniforms.uTint.value.setRGB(1, 0.86, 0.6);
+        L.stemLit.uniforms.uTintAmount.value = 0.35;
+        L.stemLit.uniforms.uBright.value = 1.18;
+        L.runesLit = mushroom.image(A('runes'), { bloom: true });
+        L.runesLit.uniforms.uTint.value.setRGB(1, 0.93, 0.45);
+        L.runesLit.uniforms.uTintAmount.value = 0.85;
+        L.runesLit.uniforms.uBright.value = 1.3;
+        L.front = mushroom.glow({ rect: { left: 0, top: 0, w: 1, h: 1 }, color: 0xffe2a0, stops: [[0, 0.75], [0.35, 0.3], [0.7, 0]], bloom: true });
         L.lines = mushroom.image(A('lines'));
+        // The rulito the card draws in the sky, in its yellow
+        L.rulito = dome.canvas(rulito.value.canvas, { bloom: true });
         mushroom.enter({ y: 60, delay: 200, duration: 1800 });
     };
 
@@ -232,7 +313,17 @@
         L.gills.place(rectOf(B.gills));
         L.stem.place(rectOf(B.stem));
         L.runes.place(rectOf(B.runes));
+        L.stemLit.place(rectOf(B.stem));
+        L.runesLit.place(rectOf(B.runes));
         L.lines.place(rectOf(B.lines));
+        // The rulito where the card draws it, in the sky (on a phone that cuts it off, as far right as it is seen)
+        const [rx, ry] = art.rulito;
+        const gh = Math.max(56, 250 * k()), gw = gh * 32 / 86;
+        const gx = Math.min(sx(rx + 40), w - gw * 2.6);
+        glyph = { left: gx - gw / 2, top: Math.max(titleBottom(h) + 18, sy(ry - 60)), w: gw, h: gh };
+        L.rulito.place({ left: glyph.left - 0.4375 * glyph.w, top: glyph.top - 0.1628 * glyph.h, w: glyph.w * 1.875, h: glyph.h * 1.3256 },
+            { x: glyph.left + glyph.w / 2, y: glyph.top + glyph.h });
+        screenH = h;
     };
 
     // Where the card's name ends (the stage's h1, over the scene), so the boat keeps under it on a phone
@@ -254,24 +345,30 @@
 
     // A touch anywhere strums the card's chord and the stars and the motes flare; on the beings, they react
     const strum = () => {
+        if (pressAt >= 0) return;
         play('star');
         dust?.boost(0, 0.8);
         dust?.boost(1, 0.8);
         dust?.boost(2, 1);
         rock = 1;
     };
-    const greet = (event) => {
-        event?.stopPropagation();
-        play('tap');
+    const greet = () => {
         hop = 1;
         peep = 1;
         blinkAt.big = lastT;
         dust?.boost(2, 0.6);
     };
-    const onKey = (event) => {
+    // With the keyboard the key is the finger: held down the path is lit, let go it rests
+    const onKeyDown = (event) => {
         if (event.key !== 'Enter' && event.key !== ' ') return;
         event.preventDefault();
-        greet(event);
+        if (event.repeat) return;
+        play('tap');
+        greet();
+        hold();
+    };
+    const onKeyUp = (event) => {
+        if (event.key === 'Enter' || event.key === ' ') letGo();
     };
 
     const enter = () => {
@@ -288,10 +385,49 @@
         const m = reduced ? 0 : ramp;
         stage.look(x * SLIDE, y * SLIDE_Y);
 
-        // ---- The warm light behind the horizon breathes
+        // ---- The game: the path lit from the rulito's stroke
+        lit = rooting.step(dt, t);
+        const held = rooting.held;
+        rulitoGlow = Math.max(0, rulitoGlow - dt * 0.6);
+        const top = (p) => L.stemLit.toScreen(sx(pathAt(p).x), sy(pathAt(p).y)).y;
+        const on = lit.head - lit.tail > 0.001;
+        const soft = Math.max(12, 70 * k());
+        const clip = on ? { left: -4000, top: top(lit.head), w: 12000, h: Math.max(0, (lit.tail <= 0.001 ? screenH + 400 : top(lit.tail)) - top(lit.head)), soft } : { left: 0, top: 0, w: 0, h: 0 };
+        L.stemLit.clip = clip;
+        L.runesLit.clip = clip;
+        L.stemLit.opacity = on ? 1 : 0;
+        L.runesLit.opacity = on ? 0.9 + 0.1 * Math.sin(t * 3) : 0;
+        const fp = pathAt(lit.head);
+        const fw = fp.half * 2.4 * k(), fh = fw * 0.5;
+        L.front.place({ left: sx(fp.x) - fw / 2, top: sy(fp.y) - fh / 2, w: fw, h: fh });
+        L.front.opacity = on && !lit.full ? (held ? 0.9 : 0.5) + 0.1 * Math.sin(t * 6) : 0;
+        if (held && on && !lit.full && !reduced && Math.random() < dt * 14) {
+            const at = L.stemLit.toScreen(sx(fp.x + (Math.random() - 0.5) * fp.half * 1.4), sy(fp.y));
+            sparks.burst(at.x, at.y, { n: 1, colors: [0xffe2a0, YELLOW, WARM], speed: 30, life: 1.3, size: 3.6, spread: 4 });
+        }
+        if (rulito.value) {
+            rulito.value.frame({ head: lit.head, tail: lit.tail, flare: lit.flare, t, fade: Math.min(1, (lit.head - lit.tail) * 14), width: glyph.w });
+            L.rulito.refresh();
+        }
+        L.rulito.rotate = 18 + Math.sin(t * 1.6) * 3 * m;
+        L.rulito.scale = 1 + 0.2 * lit.pop * lit.pop;
+        stageEl?.style.setProperty('--name-glow', lit.named.toFixed(3));
+        stage.bloom = Math.max(lit.named, held ? 0.35 : 0);
+        // The hint: left alone, the foot of the path glimmers and the big one's light breathes
+        idleHint = held ? 0 : idleHint + dt;
+        if (idleHint > HINT && !lit.full && !reduced && ramp >= 1) {
+            idleHint = 0;
+            hint = 1;
+            const at = L.stemLit.toScreen(sx(pathAt(0.06).x), Math.min(screenH - 30, sy(pathAt(0.06).y)));
+            sparks.burst(at.x, at.y, { n: 10, colors: [0xffe2a0, YELLOW], speed: 40, life: 1.4, size: 3.5, spread: 60 * k() });
+        }
+        hint = Math.max(0, hint - dt * 0.8);
+
+        // ---- The warm light behind the horizon breathes (and flares as the light reaches it)
         const breath = Math.sin(t * 0.5);
-        L.horizon.opacity = 0.75 + 0.25 * breath * m;
-        L.horizon.scale = 1 + 0.05 * breath * m;
+        const reached = lit.full ? Math.min(1, (lit.head - lit.tail) * 1.4) : 0.4 * lit.head;
+        L.horizon.opacity = 0.75 + 0.25 * breath * m + 0.6 * reached + 0.4 * rulitoGlow;
+        L.horizon.scale = 1 + 0.05 * breath * m + 0.25 * reached;
         L.domeNode.y = scroll * 8;
         L.waterNode.y = scroll * 4;
 
@@ -299,9 +435,11 @@
         hop = Math.max(0, hop - dt * 1.6);
         peep = Math.max(0, peep - dt * 0.7);
         rock = Math.max(0, rock - dt * 0.5);
-        L.boat.y = (Math.sin(t * 0.7) * 10 * k() - Math.sin(rock * Math.PI) * 6 * k()) * m;
-        L.boat.rotate = (Math.sin(t * 0.45 + 0.6) * 1.1 + Math.sin(t * 3.2) * 1.6 * rock) * m;
-        L.aura.opacity = 0.7 + 0.3 * Math.sin(t * 0.8) * m + 0.5 * hop;
+        steady += ((held ? 1 : 0) - steady) * Math.min(1, dt * 2);
+        L.boat.y = (Math.sin(t * 0.7) * 10 * k() * (1 - 0.6 * steady) - Math.sin(rock * Math.PI) * 6 * k()) * m;
+        L.boat.rotate = (Math.sin(t * 0.45 + 0.6) * 1.1 * (1 - 0.7 * steady) + Math.sin(t * 3.2) * 1.6 * rock) * m;
+        L.aura.opacity = 0.7 + 0.3 * Math.sin(t * 0.8) * m + 0.5 * hop + 1.6 * steady + 1.2 * hint + 1.5 * rulitoGlow;
+        L.aura.scale = 1 + 0.1 * steady + 0.1 * hint;
         // The beings breathe from their feet; the big one hops when touched, the little one peeps up
         const hopUp = Math.sin(Math.min(1, (1 - hop) * 1.25) * Math.PI) * (hop > 0 ? 1 : 0);
         L.big.y = -hopUp * 26 * k();
@@ -313,7 +451,7 @@
         // They blink, and the big one's eyes look down the path now and then
         L.bigEyes.sy = 1 - 0.9 * (reduced ? 0 : blinkOf(t, 'big'));
         L.smallEyes.sy = 1 - 0.9 * (reduced ? 0 : blinkOf(t, 'small'));
-        const look = Math.sin(t * 0.23) > 0.75 ? 1 : 0;
+        const look = Math.sin(t * 0.23) > 0.75 || held ? 1 : 0;
         L.lookX = (L.lookX ?? 0) + ((look ? -5 : 0) * k() - (L.lookX ?? 0)) * Math.min(1, dt * 4);
         L.lookY = (L.lookY ?? 0) + ((look ? 4 : 0) * k() - (L.lookY ?? 0)) * Math.min(1, dt * 4);
         L.bigEyes.x = L.lookX * m;
@@ -323,6 +461,7 @@
 
         // ---- The mushroom: the signs on the path glow in turn, slowly
         L.runes.uniforms.uBright.value = 1 + 0.18 * (0.5 + 0.5 * Math.sin(t * 0.8)) * m;
+        L.bigBody.uniforms.uBright.value = 1 + 0.12 * steady + 0.2 * rulitoGlow;
         L.mushroomNode.y = scroll * 24;
 
         // The particles that belong to a layer follow it
@@ -363,10 +502,13 @@
                     flow: [3, -14], reach: 90, push: 30, edgeFade: 0.2, opacity: 0.8, bloom: true, order: after(L.horizon),
                     spawn: (w, h) => [Math.random() * w, Math.random() * Math.min(h, sy(CAP.y))],
                 },
+                // 3: the sparks of the light on the path, in front of everything
+                { ...sparks.group(), order: 1e6 },
             ],
         });
         if (reduced) dust.reveal();
         parallax = createParallax(root.value, frame);
+        if (import.meta.env.DEV) root.value.__game = { rooting, get lit() { return lit; } };
         enter();
     };
 
@@ -374,6 +516,9 @@
     watch(() => props.active, enter);
     onBeforeUnmount(() => {
         gone = true;
+        stageEl?.style.removeProperty('--name-glow');
+        window.removeEventListener('pointerup', liftBeings);
+        window.removeEventListener('pointercancel', liftBeings);
         parallax?.destroy();
         dust?.destroy();
         stage?.destroy();
@@ -384,8 +529,10 @@
     <div class="scene" ref="root" :style="{ background: `#${art.ground.toString(16).padStart(6, '0')}` }" @click="strum">
         <canvas class="stageCanvas" ref="canvas"></canvas>
         <div ref="beingsHit" class="hit" role="button" tabindex="0"
-            :aria-label="$i18n.locale === 'en' ? 'The two beings in the boat' : 'Los dos seres en el bote'"
-            @click="greet" @keydown="onKey"></div>
+            :aria-label="$i18n.locale === 'en' ? 'The two beings in the boat: hold them to light the path' : 'Los dos seres en el bote: mantenelos para iluminar el camino'"
+            @pointerdown="pressBeings" @click.stop @keydown="onKeyDown" @keyup="onKeyUp"></div>
+        <!-- The rulito is drawn on its own canvas, which the stage shows as a texture in the sky -->
+        <Rulito ref="rulito" class="offstage" color="#ffe22e" />
     </div>
 </template>
 
@@ -414,8 +561,18 @@
         border-radius: 40%;
         cursor: pointer;
         pointer-events: auto;
+        touch-action: none;                    /* held, a finger drifts a little: the phone must not take it for a scroll */
         -webkit-tap-highlight-color: transparent;
         outline: none;
+    }
+
+    .offstage {
+        position: absolute;
+        left: -9999px;
+        top: 0;
+        width: 40px;
+        visibility: hidden;
+        pointer-events: none;
     }
 
     .hit:focus-visible {
