@@ -72,10 +72,10 @@ Se cambia una línea en `src/data/cardChords.js`, por ejemplo `28: 'Em'`. Se esc
 | 8 | Metta | Paramis | Dar y recibir | Famaj7 | Escena propia, verbo jugable |
 | 9 | Upekkha | Paramis | Soltar | Mi menor | Escena propia, verbo jugable |
 | 10 | Tu verdad | Special | sin verbo | Sol mayor | Escena propia, sin juego todavía |
-| 11 | Aceptación | Regular | Fluir | Si menor | Escena propia, sin juego todavía |
+| 11 | Aceptación | Regular | Fluir | Si menor | Escena propia, verbo jugable |
 | 12 | Armonía | Regular | Resonar | Domaj7 | Escena propia, verbo jugable |
 | 13 | Belleza | Regular | Ver | Lamaj7 | Escena propia, sin juego todavía |
-| 14 | Celebración | Regular | Fluir | Mimaj7 | Escena propia, sin juego todavía |
+| 14 | Celebración | Regular | Fluir | Mimaj7 | Escena propia, verbo jugable |
 | 15 | Ciclos | Regular | Soltar | Fa7 | Escena propia, sin juego todavía |
 | 16 | Compromiso | Regular | Arraigar | La mayor | Escena propia, sin juego todavía |
 | 17 | Comunicación | Regular | Resonar | Sol menor | Escena propia, verbo jugable |
@@ -93,7 +93,7 @@ Se cambia una línea en `src/data/cardChords.js`, por ejemplo `28: 'Em'`. Se esc
 | 29 | Sincronicidad | Regular | Resonar | Sol mayor | Escena propia, verbo jugable |
 | 30 | Esperanza | Regular | Ver | Sim7 | Escena propia, sin juego todavía |
 | 31 | Vipassana | Special | Soltar | Simaj7 | Escena propia, verbo jugable |
-| 32 | Transformación | Regular | Fluir | Rem7 | Escena propia, sin juego todavía |
+| 32 | Transformación | Regular | Fluir | Rem7 | Escena propia, verbo jugable |
 <!-- tabla:fin -->
 
 Esta tabla se genera sola desde `cards.json` (nombre, categoría, verbo), `src/data/cardChords.js` (acorde) y `src/data/cardScenes.js` (escena). Después de cambiar alguno de los tres, correr `npm run docs`; `npm run check:docs` falla si quedó desactualizada. Qué verbo ya se juega está en `PLAYABLE`, dentro de `scripts/check-docs.mjs`. Qué hace cada escena al tocarla: `registro-cartas-vivas.md`.

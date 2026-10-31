@@ -4,8 +4,12 @@
     // at his feet, one sits cross-legged with a kitten in his lap and a bowl in his hand, one stands on the right with his
     // staff and a fox beside him; cats, a pink family hugging by a cup, little hairy ones and mushrooms gather round, and
     // behind them a fern holds up five glowing lamp flowers.
-    // Everything is alive and nothing is a game yet (its verb, Fluir, comes later: a spark of the fire that goes round
-    // each of them while the flame grows; every being is its own picture for that). The fire flickers (the pink flame
+    // Its verb is Fluir, with the engine shared by the cards of the verb (useFlow.js): a spark leaves the fire and goes
+    // round the circle, by the feet of each of them, as a finger slides with it, at its own pace (never faster; alone
+    // it does not move), beads of light running on ahead of it. Each one it comes to is a knot: reached accompanied, it
+    // hops, lights up warm and the flame grows a little; and on goes the spark. Back in the fire with everyone lit, the
+    // fire leaps, everyone hops at once and the rulito is born over the flame, the name lights up; then the spark is
+    // born again in the fire. Besides, everything is alive. The fire flickers (the pink flame
     // and its yellow heart sway and stretch each on its own, in the shader's wind, about the logs) and throws embers that
     // rise and fade; its warm light breathes on the ground. The lamps sway on their stems with the fern and breathe their
     // light, their stippled halos are particles that go with them; the little mushrooms on the ground glow (particles
@@ -27,6 +31,9 @@
     import { createLayerStage } from '../../composables/useLayerStage.js';
     import { startStardust } from '../../composables/useStardust.js';
     import { play } from '../../composables/useSound.js';
+    import { createFlow, routeThrough } from '../../composables/useFlow.js';
+    import { sceneMilestone } from '../../analytics.js';
+    import Rulito from '../Rulito.vue';
     import art from '../../composables/celebracionScene.json';
 
     const props = defineProps({
@@ -37,6 +44,9 @@
     const root = ref(null);
     const canvas = ref(null);
     const groundCanvas = ref(null);
+    const headHit = ref(null);              // where the spark is: Enter held on it goes with it
+    const rulito = ref(null);
+    let stageEl = null;                     // the card's stage, where the name is lit from (--name-glow)
     let stage = null;
     let parallax = null;
     let dust = null;
@@ -56,7 +66,7 @@
     const sx = (x) => F.x + x * k();
     const sy = (y) => F.y + y * k();
     const rectOf = ([left, top, w, h]) => ({ left: sx(left), top: sy(top), w: w * k(), h: h * k() });
-    const SPAN = 1750, FOCUS = 1090;        // art px across that must be seen on a phone, and their middle
+    const SPAN = 2100, FOCUS = 1115;        // art px across that must be seen on a phone (everyone round the fire whole, with a little air), and their middle
     const DROP = 0.06;                      // how much of the frame goes under the bottom of a wide screen
     const layout = (w, h) => {
         W = w;
@@ -107,6 +117,55 @@
     };
     const phaseOf = Object.fromEntries(Object.keys(LIFE).map((name, i) => [name, i * 1.7]));
     const hops = {};
+    const litGlow = {};
+
+    // ---- Fluir: the spark's way round the circle, in art px on the ground: out of the fire, by the feet of the cat
+    // behind, behind the fire to the pink family and the trio, the Sama on the right and his fox, the cat in front,
+    // round the front of the fire to the little hairy one, the Sama on the left (and the fox at his feet), the
+    // mushrooms and the one sitting, and back into the fire. The little one at the right edge is left out: on a phone
+    // it is off the screen, and the way keeps a little inside the ones at the edges of a phone. Each [x, y, name]
+    // waypoint with a name is a knot at that one's feet
+    const WAY = [
+        [1079, 1640], [990, 1520], [828, 1384, 'catBack'], [940, 1395], [1080, 1418], [1210, 1432], [1318, 1446, 'pink'],
+        [1440, 1556, 'trio'], [1620, 1574], [1790, 1574, 'samaRight'], [1860, 1630], [1872, 1712, 'foxRight'],
+        [1800, 1770], [1666, 1790, 'catFront'], [1430, 1950], [1080, 1990], [820, 1930], [682, 1846, 'hairy'],
+        [500, 1940], [372, 1934, 'samaLeft'], [440, 1830], [551, 1764, 'mushrooms'], [600, 1680], [626, 1604, 'seated'],
+        [800, 1620], [960, 1680], [1079, 1720],
+    ];
+    const ROUND = routeThrough(WAY.map(([x, y]) => [x, y]), 8);
+    const RX = (i) => ROUND.xs[i], RY = (i) => ROUND.ys[i];
+    const KNOTS = WAY.map((w, i) => [w[2], ROUND.index(i)]).filter(([name]) => name)
+        .map(([name, at]) => ({ name, enter: at - 3, exit: at + 3 }));
+    const LIT = Object.fromEntries(KNOTS.map(({ name }) => [name, 0]));    // how lit each one is (0..1)
+    const PAIRED = { samaLeft: 'foxLeft' };  // the fox at his feet hops and lights with him
+    const cur = { alpha: 1, light: 0 };
+    let keyHold = false;
+    const pointer = { u: 0, v: 0, at: -99, down: false, touch: false };
+    let slid = false;
+    let win = null;
+    let wins = 0;
+    let grown = 0;                          // how much the flame has grown with the ones lit (0..1)
+    const reached = new Set();
+    const flow = createFlow({
+        x: RX, y: RY, n: ROUND.n,
+        stops: KNOTS,
+        pace: 52,                           // about 20 s round the circle with a finger
+        ahead: 50, behind: 12, lead: 6, press: 10, fill: 0.35,
+        reach: 160, touchReach: 240,
+        isOpen: (s) => reached.has(s.name),
+        release: (s) => {
+            if (reached.has(s.name)) return;
+            reached.add(s.name);
+            [s.name, PAIRED[s.name]].filter(Boolean).forEach((name) => { hops[name] = 0; });
+            play('tap');
+            flare = Math.max(flare, 0.4);
+            for (let i = 0; i < 5; i++) spawnEmber(lastT, 0.6);
+        },
+        onPass: (s) => { LIT[s.name] = 1; },
+        onEnd: () => finish(),
+        onNote: (step, level) => play('flow', { step, level }),
+        onFirst: () => sceneMilestone('current_accompanied'),
+    });
 
     // ---- The fire
     const FIRE = art.fire;
@@ -203,6 +262,159 @@
     };
 
     const L = {};
+    // ---- The spark, on a canvas over everything round the fire (art box SPARK_BOX, in the front row's depth): a short
+    // tail of embers behind it, the beads of light ahead of it, the way it goes, and the spark itself, a bright core that
+    // beats while nobody is with it
+    const SPARK_BOX = [180, 1260, 1860, 800];
+    const sparkCanvas = document.createElement('canvas');
+    const TAIL = 30;
+    const drawSpark = (t) => {
+        const res = k() * Math.min(window.devicePixelRatio || 1, 1.5);
+        const pw = Math.max(2, Math.round(SPARK_BOX[2] * res)), ph = Math.max(2, Math.round(SPARK_BOX[3] * res));
+        if (sparkCanvas.width !== pw || sparkCanvas.height !== ph) { sparkCanvas.width = pw; sparkCanvas.height = ph; }
+        const ctx = sparkCanvas.getContext('2d');
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.clearRect(0, 0, pw, ph);
+        if (win || cur.alpha < 0.01) { L.spark?.refresh(); return; }
+        ctx.setTransform(res, 0, 0, res, -SPARK_BOX[0] * res, -SPARK_BOX[1] * res);
+        const head = flow.head;
+        const call = flow.touched ? Math.min(1, Math.max(0, (flow.idle - 3) / 2)) : 1;
+        // its tail: embers left behind, fading and flickering
+        for (let p = Math.max(0, head - TAIL); p < head; p += 1.5) {
+            const i = Math.floor(p), f = 1 - (head - p) / TAIL;
+            const jitter = Math.sin(t * 13 + p * 1.7) * 6;
+            ctx.globalAlpha = cur.alpha * f * f * (0.5 + 0.4 * flow.acc);
+            ctx.fillStyle = f > 0.6 ? '#fff0b8' : '#ffb07a';
+            ctx.beginPath();
+            ctx.arc(RX(i), RY(i) + jitter, 3 + 9 * f, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        // the way it goes
+        const stop = flow.next();
+        const limit = Math.min(ROUND.n - 1, stop && head < stop.enter ? stop.enter + 3 : ROUND.n - 1, head + 50);
+        const show = cur.alpha * (0.45 + 0.3 * flow.acc + 0.25 * call) * (1 - 0.6 * flow.rush);
+        const run = (t * (10 + 14 * flow.acc)) % 12;
+        ctx.fillStyle = '#fff6d6';
+        for (let p = head + 5 + run; p < limit; p += 12) {
+            const i = Math.floor(p), fade = 1 - (p - head) / 50;
+            ctx.globalAlpha = show * fade;
+            ctx.beginPath();
+            ctx.arc(RX(i), RY(i), 6 + 6 * fade, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        // the spark
+        const i = Math.min(ROUND.n - 1, Math.floor(head));
+        const beat = call * (0.5 + 0.5 * Math.sin(t * 3.2)) + flow.rush * (0.5 + 0.5 * Math.sin(t * 11));
+        const r = 58 * (1 + 0.5 * flow.acc + 0.35 * beat) * (1 + 0.08 * Math.sin(t * 17));
+        const g = ctx.createRadialGradient(RX(i), RY(i), 0, RX(i), RY(i), r);
+        g.addColorStop(0, 'rgba(255,255,255,1)');
+        g.addColorStop(0.2, 'rgba(255,240,190,0.95)');
+        g.addColorStop(0.5, 'rgba(255,170,110,0.45)');
+        g.addColorStop(1, 'rgba(255,170,110,0)');
+        ctx.globalAlpha = cur.alpha * (0.8 + 0.2 * Math.max(flow.acc, beat));
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.arc(RX(i), RY(i), r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+        L.spark?.refresh();
+    };
+
+    // ---- Back in the fire with everyone lit: the fire leaps, everyone hops at once, the rulito is born over the flame
+    // and the name lights up; then the ones lit cool down and the spark is born again in the fire
+    const DELAY = 0.5, GROW = 2.2, LINGER = 3.5, EAT = 3.4;
+    const RULITO = [1040, 520, 80, 215];    // art px: the glyph's box, over the tip of the flame
+    let glyph = { left: 0, top: 0, w: 1, h: 1 };
+    const finish = () => {
+        if (win) return;
+        wins += 1;
+        win = { age: 0, head: 0, tail: 0, full: false, fullAt: 0, back: false, pop: 0 };
+        rulito.value?.reshape();
+        play('ignite');
+        flare = 1;
+        for (let i = 0; i < 24; i++) spawnEmber(lastT, 1);
+        sceneMilestone('current_flowed', { times: wins });
+    };
+    const stepWin = (dt, t) => {
+        let named = 0;
+        if (win) {
+            win.age += dt;
+            win.pop = Math.max(0, win.pop - dt * 2.2);
+            win.head = 1 - (1 - Math.min(1, Math.max(0, (win.age - DELAY) / GROW))) ** 1.6;
+            if (win.head >= 1 && !win.full) {
+                win.full = true; win.fullAt = win.age; win.pop = 1;
+                play('rulito');
+                Object.keys(LIFE).forEach((name) => { if (LIFE[name].hop) hops[name] = -Math.random() * 0.3; });
+                flare = 1;
+                LAMPS.forEach((_, i) => dust?.boost(3 + i, 1));
+            }
+            if (win.full && !win.back && win.age - win.fullAt > LINGER) win.back = true;
+            if (win.back) win.tail = Math.min(1, win.tail + dt / EAT);
+            const whole = Math.min(1, Math.max(0, (win.head - win.tail - 0.6) / 0.4));
+            named = Math.max(win.pop, 0.8 * whole * whole * (3 - 2 * whole));
+            const fl = win.full && win.head - win.tail > 0.9 ? Math.max(win.pop, Math.sin(t * 4) * 0.5 + 0.5) : 0;
+            rulito.value?.frame({ head: win.head, tail: win.tail, flare: fl, t, fade: Math.min(1, (win.head - win.tail) * 14), width: glyph.w });
+            L.rulito.refresh();
+            L.rulito.scale = 1 + 0.2 * win.pop * win.pop;
+            if (win.back) cur.alpha = Math.max(0, 1 - win.tail * 1.4);
+            if (win.back && win.tail >= 1) {
+                win = null;
+                flow.reset();
+                reached.clear();
+                Object.keys(LIT).forEach((name) => { LIT[name] = 0; });
+                rulito.value?.frame({ width: glyph.w });
+                L.rulito.refresh();
+            }
+        }
+        if (!win) cur.alpha = Math.min(1, cur.alpha + dt / 1.5);
+        cur.light += ((win && !win.back ? 1 : 0) - cur.light) * Math.min(1, dt * 1.5);
+        const lit = Object.values(LIT).reduce((a, b) => a + b, 0) / KNOTS.length;
+        grown += (Math.max(lit, win && !win.back ? 1 : 0) - grown) * Math.min(1, dt * 1.2);
+        stageEl?.style.setProperty('--name-glow', named.toFixed(3));
+        return named;
+    };
+
+    // ---- The finger, in art px of the front row's depth (which slides with the camera and the scroll)
+    let frontAt = { x: 0, y: 0, s: 1 };
+    const measureFront = () => {
+        const a = L.frontNode.toScreen(sx(0), sy(0)), b = L.frontNode.toScreen(sx(SIZE), sy(0));
+        frontAt = { x: a.x, y: a.y, s: (b.x - a.x) / SIZE || 1 };
+    };
+    const toArt = (event) => {
+        const box = root.value.getBoundingClientRect();
+        return [(event.clientX - box.left - frontAt.x) / frontAt.s, (event.clientY - box.top - frontAt.y) / frontAt.s];
+    };
+    const track = (event) => {
+        if (!root.value) return;
+        [pointer.u, pointer.v] = toArt(event);
+        pointer.touch = event.pointerType === 'touch';
+        pointer.down = pointer.touch ? event.type !== 'pointerup' && event.type !== 'pointercancel' : event.buttons > 0;
+        pointer.at = lastT;
+        if (event.type === 'pointerdown') slid = false;
+    };
+    // On a phone, a finger put down on the spark or on the way ahead of it must not move the page; anywhere else it scrolls
+    const onTouchStart = (event) => {
+        const t0 = event.touches[0];
+        if (!t0 || !event.cancelable || win || !root.value) return;
+        const [u, v] = toArt(t0);
+        if (flow.nearHead(u, v)) event.preventDefault();
+    };
+    const holdHead = (event) => { event.currentTarget.setPointerCapture?.(event.pointerId); track(event); };
+    const onHeadKey = (down) => (event) => {
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+        event.preventDefault();
+        keyHold = down;
+    };
+    const placeHead = () => {
+        const el = headHit.value;
+        if (!el) return;
+        const i = Math.min(ROUND.n - 1, Math.floor(flow.head));
+        const size = Math.max(56, 2 * 120 * frontAt.s);
+        el.style.translate = `${(frontAt.x + RX(i) * frontAt.s - size / 2).toFixed(1)}px ${(frontAt.y + RY(i) * frontAt.s - size / 2).toFixed(1)}px`;
+        el.style.width = el.style.height = `${size.toFixed(1)}px`;
+        el.style.display = win ? 'none' : '';
+    };
+
     const build = (s) => {
         // The land: the ground (code), the trees (and, on a phone, their roof of leaves and crowns over the frame),
         // the marks of the ground, the glow of the fire on it, the fern and the lamps
@@ -287,6 +499,8 @@
                 L.beings[name] = group;
             } else L.beings[name] = front.image(asset(name), life.wind ? { wind: { amp: life.wind, speed: 1.1, root: 'bottom' } } : {});
         });
+        L.spark = front.canvas(sparkCanvas, { bloom: true });
+        L.rulito = fire.canvas(rulito.value.canvas, { bloom: true });
         front.enter({ y: 60, delay: 450, duration: 1900 });
     };
 
@@ -371,6 +585,12 @@
         L.logs.place(rectOf(B.logs));
         L.flame.place(rectOf(B.flame), { x: sx(fx), y: sy(fy) });
         L.heart.place(rectOf(B.heart), { x: sx(fx), y: sy(fy) });
+        L.spark.place(rectOf(SPARK_BOX));
+        glyph = rectOf(RULITO);
+        L.rulito.place({ left: glyph.left - 0.4375 * glyph.w, top: glyph.top - 0.1628 * glyph.h, w: glyph.w * 1.875, h: glyph.h * 1.3256 },
+            { x: glyph.left + glyph.w / 2, y: glyph.top + glyph.h });
+        rulito.value?.frame({ width: glyph.w });
+        L.rulito.refresh();
     };
 
     // ---- A touch: on one of them, it hops; anywhere else, the chord is strummed and the fire flares
@@ -379,6 +599,7 @@
         return { x: event.clientX - area.left, y: event.clientY - area.top };
     };
     const touch = (event) => {
+        if (slid) { slid = false; return; }
         if (!stage || !L.beings) return;
         const p = onCanvas(event);
         const order = [...FRONT].reverse().concat([...BEHIND].reverse());
@@ -424,10 +645,11 @@
 
         // ---- The fire flickers, flares when the chord is strummed, and throws embers
         const f = flicker(t) * ramp, g = flicker(t * 0.8, 2.3) * ramp;
-        L.flame.sy = 1 + 0.035 * f + 0.12 * flare;
-        L.flame.sx = 1 - 0.02 * f + 0.06 * flare;
-        L.heart.sy = 1 + 0.05 * g + 0.14 * flare;
-        L.heart.sx = 1 - 0.03 * g + 0.05 * flare;
+        // (and grows with each one the spark has lit)
+        L.flame.sy = 1 + 0.035 * f + 0.12 * flare + 0.14 * grown;
+        L.flame.sx = 1 - 0.02 * f + 0.06 * flare + 0.06 * grown;
+        L.heart.sy = 1 + 0.05 * g + 0.14 * flare + 0.16 * grown;
+        L.heart.sx = 1 - 0.03 * g + 0.05 * flare + 0.06 * grown;
         L.heart.uniforms.uBright.value = 1 + 0.06 * g + 0.15 * flare;
         L.fireGlow.opacity = 0.75 + 0.15 * f + 0.25 * flare;
         L.fireGlow.scale = 1 + 0.04 * g + 0.15 * flare;
@@ -437,7 +659,14 @@
             if (nextEmber < t - 1) nextEmber = t;
             while (nextEmber <= t) { spawnEmber(nextEmber); nextEmber += 0.12 + Math.random() * 0.22 - flare * 0.08; }
         }
-        stage.bloom = 0.35 * flare;
+        // ---- Fluir: the spark round the circle
+        measureFront();
+        if (!win) flow.step(dt, t, pointer, { key: keyHold });
+        if (pointer.down && flow.acc > 0.3) slid = true;
+        const named = stepWin(dt, t);
+        drawSpark(t);
+        placeHead();
+        stage.bloom = Math.max(0.35 * flare, 0.55 * named);
 
         // ---- The lamps sway on their stems and breathe their light
         LAMPS.forEach((_, i) => {
@@ -460,7 +689,7 @@
             let lift = 0;
             if (hops[name] !== undefined) {
                 hops[name] += dt / 0.55;
-                const p = Math.min(1, hops[name]);
+                const p = Math.min(1, Math.max(0, hops[name]));
                 lift = Math.sin(Math.PI * p) * 22 * Math.max(0.5, k() * 2);
                 node.sy *= 1 + 0.06 * Math.sin(Math.PI * p);
                 if (p >= 1) delete hops[name];
@@ -468,7 +697,10 @@
             node.y = -lift;
             // A little warmth from the fire on them, flickering with it
             const u = node.body ? node.body.uniforms : node.uniforms;
-            if (u) u.uBright.value = 1 + 0.035 * f + 0.08 * flare;
+            // and, once the spark has come by, a warm light of its own
+            const warm = LIT[name] ?? LIT[Object.keys(PAIRED).find((key) => PAIRED[key] === name)] ?? 0;
+            litGlow[name] = (litGlow[name] ?? 0) + (warm - (litGlow[name] ?? 0)) * Math.min(1, dt * 2);
+            if (u) u.uBright.value = 1 + 0.035 * f + 0.08 * flare + 0.06 * litGlow[name];
         });
         L.beings.seated.rotate = Math.sin(t * 1.4) * 1.6 * ramp;
         L.beings.samaRight.rotate = Math.sin(t * 0.35 + 1) * 0.8 * ramp;
@@ -499,6 +731,7 @@
         }
         if (gone) { made.destroy(); return; }
         stage = made;
+        stageEl = root.value.closest('.stage');
         build(stage);
         stage.onResize((w, h) => place(w, h));
         const after = (node) => node.mesh.renderOrder + 0.5;
@@ -533,6 +766,8 @@
             ],
         });
         if (reduced) dust.reveal();
+        ['pointerdown', 'pointermove', 'pointerup', 'pointercancel'].forEach((type) => root.value.addEventListener(type, track, { passive: true }));
+        root.value.addEventListener('touchstart', onTouchStart, { passive: false });
         parallax = createParallax(root.value, frame);
         enter();
     };
@@ -541,6 +776,9 @@
     watch(() => props.active, enter);
     onBeforeUnmount(() => {
         gone = true;
+        ['pointerdown', 'pointermove', 'pointerup', 'pointercancel'].forEach((type) => root.value?.removeEventListener(type, track));
+        root.value?.removeEventListener('touchstart', onTouchStart);
+        stageEl?.style.removeProperty('--name-glow');
         parallax?.destroy();
         dust?.destroy();
         stage?.destroy();
@@ -552,6 +790,12 @@
         <canvas class="stageCanvas" ref="canvas" aria-hidden="true"></canvas>
         <!-- The flat blue of the ground, drawn in code; the stage shows it as a texture under the marks -->
         <canvas class="offstage" ref="groundCanvas" aria-hidden="true"></canvas>
+        <!-- The rulito is drawn on its own canvas, which the stage shows as a texture over the flame -->
+        <Rulito ref="rulito" class="offstage" color="#ffe285" />
+        <!-- The spark: a finger slides from here round the circle with it, or Enter held on it goes with it -->
+        <div ref="headHit" class="hit head" role="button" tabindex="0"
+            :aria-label="$i18n.locale === 'en' ? 'The spark of the fire: slide your finger round the circle with it (or hold Enter)' : 'La chispa del fuego: deslizá el dedo junto a ella alrededor de la ronda (o mantené Enter)'"
+            @pointerdown.prevent="holdHead" @click.stop @keydown="onHeadKey(true)($event)" @keyup="onHeadKey(false)($event)" @blur="keyHold = false"></div>
     </div>
 </template>
 
@@ -570,6 +814,24 @@
         height: 100%;
         display: block;
         pointer-events: none;
+    }
+
+    /* The spark: the finger slides from here with it, so the page must not scroll from here */
+    .hit.head {
+        position: absolute;
+        left: 0;
+        top: 0;
+        border-radius: 50%;
+        cursor: grab;
+        pointer-events: auto;
+        touch-action: none;
+        -webkit-tap-highlight-color: transparent;
+        outline: none;
+    }
+
+    .hit.head:focus-visible {
+        outline: 2px solid rgba(255, 255, 255, 0.85);
+        outline-offset: 2px;
     }
 
     .offstage {
