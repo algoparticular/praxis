@@ -11,6 +11,9 @@
 //   glow                    a dynamic group ({ count, update }) for the soft glow under the threads drawn this frame
 //   count                   how many particles the threads take (the group's count is this plus any extra points)
 //   surge                   0..1, set by the scene: the dots swell while something has just happened
+//   hole                    optional, set by the scene each frame: { x, y, r, opening } (group coordinates, opening 0..1)
+//                           or null. Where a thread crosses that circle its two strands part and go round it like the
+//                           outline of an eye, and the glow under it dims there (Pañña's rulito over Sid's head)
 const TURN = 100;          // px of a thread per turn of the helix
 const DOTS = 72;           // dots in each strand of a thread (the shorter ones use fewer)
 const DUST = 20;
@@ -26,9 +29,26 @@ export const createThreads = ({ slots }) => {
     let flowPhase = 0;
     const drawn = [];
 
+    // Where a thread crosses the hole, `parting(f)` is how far (0..1) it is open at f, and `around(f, side)` how far a
+    // strand going round on that side (+1 or -1) is pushed off the thread's line there; null when it does not cross it
+    const opener = (x0, y0, dx, dy, length, nx, ny) => {
+        const hole = api.hole;
+        if (!hole || !(hole.opening > 0.001)) return null;
+        const along = ((hole.x - x0) * dx + (hole.y - y0) * dy) / length;
+        const off = (hole.x - x0) * nx + (hole.y - y0) * ny;            // the circle's centre, sideways from the line
+        if (Math.abs(off) > hole.r || along < -hole.r || along > length + hole.r) return null;
+        const span = 1.9 * hole.r;
+        const parting = (f) => {
+            const u = (f * length - along) / span;
+            return Math.abs(u) >= 1 ? 0 : hole.opening * (0.5 + 0.5 * Math.cos(Math.PI * u));
+        };
+        return { parting, around: (f, side) => (off + side * hole.r) * parting(f) };
+    };
+
     const api = {
         count: slots * PER,
         surge: 0,
+        hole: null,
         tick(dt, speed = 1) { flowPhase += dt * FLOW * speed; },
         begin() { drawn.length = 0; },
         hide(slot, data) { data.alphas.fill(0, slot * PER, (slot + 1) * PER); },
@@ -47,6 +67,7 @@ export const createThreads = ({ slots }) => {
             const nx = dy / length, ny = -dx / length;          // sideways
             const turns = length / TURN;
             const surge = api.surge;
+            const open = opener(x0, y0, dx, dy, length, nx, ny);
             let i = slot * PER;
             const place = (f, side, size, alpha) => {
                 data.positions[i * 3] = x0 + dx * f + nx * side;
@@ -63,7 +84,10 @@ export const createThreads = ({ slots }) => {
                     const wave = Math.PI * 2 * turns * f + strand * Math.PI - t * 0.4;
                     const near = 0.5 + 0.5 * Math.cos(wave);                  // 1 when the dot passes in front
                     const pulse = Math.max(0, Math.sin(f * 15 - t * 2.1)) ** 3;
-                    place(f, Math.sin(wave) * width * lens, (3.8 + 3 * near + 2.4 * pulse + 2.2 * surge) * unit * (0.4 + 0.6 * lens),
+                    // Round the hole the helix calms into two clean arcs, strand 0 on one side and strand 1 on the other
+                    const side = open ? Math.sin(wave) * width * lens * (1 - 0.8 * open.parting(f)) + open.around(f, strand ? -1 : 1)
+                        : Math.sin(wave) * width * lens;
+                    place(f, side, (3.8 + 3 * near + 2.4 * pulse + 2.2 * surge) * unit * (0.4 + 0.6 * lens),
                         smooth(0, 0.08, f) * smooth(0, 0.08, 1 - f) * strength * (0.7 + 0.3 * near));
                 }
             }
@@ -75,7 +99,8 @@ export const createThreads = ({ slots }) => {
                 const f = wrap(r(1) + dir * flowPhase * (1.6 + r(2) * 1.6));
                 const lens = Math.sin(Math.PI * f) ** 0.7;
                 const wave = Math.PI * 2 * turns * f + r(3) * 6.28;
-                place(f, (r(4) - 0.5) * 2 * width * 1.5 * lens + Math.sin(wave + t) * 4 * lens, (1.4 + r(5) * 1.5) * unit,
+                const spread = (r(4) - 0.5) * 2 * width * 1.5 * lens + Math.sin(wave + t) * 4 * lens;
+                place(f, spread + (open ? open.around(f, r(4) < 0.5 ? -1 : 1) : 0), (1.4 + r(5) * 1.5) * unit,
                     smooth(0, 0.08, f) * smooth(0, 0.08, 1 - f) * strength * (0.35 + 0.5 * r(6)) * (0.6 + 0.4 * Math.sin(t * 2 + d)));
             }
             drawn.push({ slot, from: [x0, y0], to: [x1, y1], colours: [ca, cb], strength, length, unit });
@@ -87,6 +112,8 @@ export const createThreads = ({ slots }) => {
             update(t, data) {
                 data.alphas.fill(0);
                 drawn.forEach(({ slot, from, to, colours: [ca, cb], strength, length, unit }) => {
+                    const dx = to[0] - from[0], dy = to[1] - from[1], len = Math.max(1, Math.hypot(dx, dy));
+                    const open = opener(from[0], from[1], dx, dy, len, dy / len, -dx / len);
                     for (let k = 0; k < GLOW_DOTS; k++) {
                         const f = (k + 0.5) / GLOW_DOTS;
                         const i = slot * GLOW_DOTS + k;
@@ -94,7 +121,8 @@ export const createThreads = ({ slots }) => {
                         data.positions[i * 3] = from[0] + (to[0] - from[0]) * f;
                         data.positions[i * 3 + 1] = from[1] + (to[1] - from[1]) * f;
                         data.sizes[i] = (24 + 8 * Math.sin(t * 1.3 + k * 0.5 + slot)) * unit * (0.25 + 0.75 * lens);
-                        data.alphas[i] = 0.16 * strength * smooth(0, 0.12, f) * smooth(0, 0.12, 1 - f) * Math.min(1, length / GLOW_DOTS / 10);
+                        data.alphas[i] = 0.16 * strength * smooth(0, 0.12, f) * smooth(0, 0.12, 1 - f) * Math.min(1, length / GLOW_DOTS / 10)
+                            * (open ? 1 - 0.9 * open.parting(f) : 1);
                         for (let c = 0; c < 3; c++) data.tints[i * 3 + c] = ca[c] + (cb[c] - ca[c]) * f;
                     }
                 });
