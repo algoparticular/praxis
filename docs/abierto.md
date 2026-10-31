@@ -3,8 +3,8 @@
 Última pestaña de "Anima por dentro": lo que falta decidir, agrupado por tema.
 
 ## Verbos y cartas
-- Los siete verbos se probaron en una escena: Arraigar (Paciencia), Fluir (Khanti), Encender (Evolución Espiritual y Viriya), Dar y recibir (Dana), Resonar (Sincronicidad y Sila, en su forma "a tiempo"; Creatividad, como composición libre, y Sacca, como eco), Ver (Pañña) y Soltar (Vipassana y Nekkhamma). Todos pueden cambiar.
-- Resonar: validar con Belén sus dos formas (a tiempo para Sincronicidad, Armonía y Sila; eco para Comunicación, Honestidad y Sacca). El eco está probado en Sacca y el latido en Sila.
+- Los siete verbos se probaron en una escena: Arraigar (Paciencia, Hogar y Addhitthana), Fluir (Khanti), Encender (Evolución Espiritual y Viriya), Dar y recibir (Dana), Resonar (Sincronicidad y Sila, en su forma "a tiempo"; Creatividad, como composición libre, y Sacca, como eco), Ver (Pañña) y Soltar (Vipassana, Nekkhamma y Upekkha). Todos pueden cambiar.
+- Resonar: validar con Belén sus dos formas (a tiempo para Sincronicidad, Armonía y Sila; eco para Comunicación, Honestidad y Sacca). A tiempo está probado en Sincronicidad y Sila, y el eco en Sacca.
 - Encender en Viriya: cuánto hay que frotar (`RUB`, 1,6 anchos de la escena) y a qué ritmo deja de contar (`STEADY`), la fuerza de la honda y la caída de la llama, y si los cactus y flores chicos se alcanzan bien en un teléfono: probarlos con un teléfono en la mano. En el teléfono el valle queda abajo y arriba hay mucho cielo azul.
 - Resonar en Sila (a tiempo, con el latido): el pulso del corazón (`BEAT`, 1,15 s), cuánto margen tiene un toque a tiempo (`IN_TIME`, 0,24 s), cuántos hongos hacen falta (los seis de la carta), si los destellos del cielo distraen lo justo y si el brillo encendido de los hongos se distingue del tenue: probarlos con un teléfono en la mano.
 - Resonar en Sacca (eco): qué nota lleva cada color de nube (hoy, por el chakra de su color: celeste Sol, salmón Re, verde azulado Fa; el rosa pálido, que no tiene chakra de su color, Si, la corona, por ser el más claro), el largo de la frase (cuatro notas, cada color una vez), el pulso al cantarla (`GAP`, 0,85 s, y más lento tras un error) y si en un teléfono las nubes chicas se tocan bien: probarlos con un teléfono en la mano.
@@ -15,7 +15,7 @@
 - Las fichas de Huit y Sid no tienen texto de historia, solo la tabla.
 
 ## Escenas de juego
-- Más adelante, por accesibilidad: que Pañña, Vipassana, Dana, Evolución, Sincronicidad y Creatividad se puedan jugar con movimiento reducido (hoy quedan estáticas y no se pueden jugar), y Vipassana también con teclado. El ajuste de movimiento reducido lo activan personas a las que las animaciones les dan mareo o malestar, y el teclado lo usa quien no puede tocar la pantalla. El gesto seguiría funcionando, con menos chispas y menos movimiento.
+- Más adelante, por accesibilidad: que Pañña, Vipassana, Dana, Evolución, Sincronicidad, Creatividad, Sila, Viriya y Upekkha se puedan jugar con movimiento reducido (hoy quedan estáticas y no se pueden jugar), y Vipassana también con teclado. El ajuste de movimiento reducido lo activan personas a las que las animaciones les dan mareo o malestar, y el teclado lo usa quien no puede tocar la pantalla. El gesto seguiría funcionando, con menos chispas y menos movimiento.
 - Tiempos de Arraigar (2,6 s dibujándose, 3,4 s yéndose): ajustarlos con un teléfono en la mano.
 - Que las raíces se recuerden entre visitas (hoy se pierden al salir de la carta).
 - El color del rulito de Vipassana: es el rosa de la espiral porque el fondo de la escena ya es el violeta de la carta.
@@ -30,7 +30,7 @@ Lo que queda de `plan-inmersivo.md`. Los pasos 1 a 6 y The Nine en 3D ya están 
 Hipótesis, no decisiones: ninguna está implementada ni validada con Belén. Están en `plan-inmersivo.md`.
 - Qué se puede llevar la persona. De menor a mayor compromiso: la afirmación como imagen para guardar o compartir (ya hay una imagen social por carta), la carta del día guardada en el dispositivo, la invitación como recordatorio o nota propia, y el rulito que le salió a cada persona.
 - Antes de construirlo, mirar en la analítica cuánta gente completa un juego y cuánta llega a la lectura (`pattern_seen`, `all_released`).
-- 22 de las 33 cartas siguen con ilustración plana: llevar un verbo por vez a las cartas de su familia.
+- Las 33 cartas ya tienen escena viva, pero 18 todavía no tienen juego: llevar un verbo por vez a las cartas de su familia.
 - Dos presupuestos de tamaño están justos (otras imágenes y ilustraciones de cartas): cada escena nueva con capas WebP los va a pedir.
 
 ## Música y secuencias

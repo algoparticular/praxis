@@ -118,7 +118,7 @@ Cómo lo vestiría cada carta: Aceptación, una luz que baja por el río entre l
 - Desafío: el fuego que rebota por las paredes del laberinto hasta la luz del centro (la que mejor calza con los rebotes).
 - Coraje: Kätus en el borde del acantilado frota para juntar coraje y se lanza hacia la luna.
 - Viriya: frotar es la diligencia ("sin prisa pero sin pausa"); el lanzamiento enciende las flores del camino.
-Viriya ya tiene su escena (ver más abajo); Desafío y Coraje siguen con ilustración plana.
+Viriya ya tiene su juego (ver más abajo); Desafío y Coraje tienen escena viva, pero todavía sin juego.
 **Cómo funciona hoy en Evolución Espiritual:**
 - *Al principio todo está apagado.* Los ocho bulbos, los cuatro hongos y sus bolitas azules están grises y sin brillo.
 - *Frotar.* Se frota con el dedo dentro de la célula, de un lado a otro: saltan chispas donde pasa el dedo, Sid se va calentando (brilla y le suben brasas) y suena una nota más del acorde de la carta con cada sexto del calor (`kindle`). Si se deja de frotar, se enfría despacio. Con unos 11 radios de la célula frotados, prende: un estallido de chispas (`ignite` y `star`). Dentro de la célula el dedo no mueve la página (`touch-action: none`): antes el teléfono tomaba el frotar o el tirón por un scroll y los cortaba; para bajar a la lectura se arrastra desde la corona o desde abajo.
