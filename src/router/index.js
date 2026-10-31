@@ -7,7 +7,6 @@ import OracleTheNine from '../views/OracleTheNine.vue';
 import Card from '../views/Card.vue';
 import Deck from '../views/Deck.vue';
 import PageNotFound from '../views/PageNotFound.vue';
-import Collaborate from '../views/Collaborate.vue';
 
 // Navigation object
 const router = createRouter({
@@ -46,8 +45,9 @@ const router = createRouter({
       redirect: "/deck",
     },
     {
+      // The Collaborate page is gone
       path: "/collaborate",
-      component: Collaborate,
+      redirect: "/",
     },
     {
       // The intro slides are gone: the landing tells what the oracle is

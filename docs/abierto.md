@@ -19,7 +19,6 @@
 - Tiempos de Arraigar (2,6 s dibujándose, 3,4 s yéndose): ajustarlos con un teléfono en la mano.
 - Que las raíces se recuerden entre visitas (hoy se pierden al salir de la carta).
 - El color del rulito de Vipassana: es el rosa de la espiral porque el fondo de la escena ya es el violeta de la carta.
-- Si el rulito de la página Collaborate también pasa a dibujarse en código (hoy sigue dibujado en la imagen del bote).
 
 ## Del plan inmersivo
 Lo que queda de `plan-inmersivo.md`. Los pasos 1 a 6 y The Nine en 3D ya están hechos; esto es lo que se anotó como pendiente o como primera versión.

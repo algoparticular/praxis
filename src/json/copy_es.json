@@ -22,14 +22,12 @@
             "oracleAction": "Consulta al Oráculo",
             "aboutTitle": "Navega el Universo",
             "aboutDescrip": "Nuestra misión es invitar a las personas tanto a la acción como a la reflexión. Utilizando el arte y la filosofía, buscamos conectar con lo que hace vibrar nuestro interior, esa brújula interna que nos invita a un camino con corazón.",
-            "aboutAction": "¿Quieres ayudar?",
             "uno": "“Todos somos iguales,\ntodos somos uno,\n(no) somos (de) aquí.”"
         },
         "nav": {
             "home": "Inicio",
             "praxis": "El Oráculo",
             "deck": "Las cartas",
-            "collaborate": "¿Quieres ayudar?",
             "back": "Volver",
             "sound": "Sonido",
             "soundOn": "Con sonido",
@@ -45,28 +43,6 @@
             "author": "Juan Yañez",
             "oracleDescrip": "Anima es la versión digital del Oráculo de las Partículas: 33 cartas para quienes estamos atentos a los mensajes que el Universo, en su divino azar, nos trae para guiar nuestros pasos.\n\nCon su luminosa calma, Belén Brito nos invita a buscar las respuestas en nuestro interior, usando cada carta como un espejo de lo que nuestro Ser necesita aquí y ahora.",
             "more": "Sobre las cartas"
-        },
-        "collaborate": {
-            "intro": "Con tu ayuda podemos hacer crecer este universo",
-            "shareTitle":"Comparte",
-            "shareDescrip": "nuestro contenido en redes sociales o a esas personas que crees que están necesitando algo de magia en sus vidas.",
-            "cocreateTitle":"Co-crea",
-            "cocreateDescrip": "este espacio. Algo Particular no podría transmitir su propósito si no fuera por otras partículas que, a lo largo del camino, co-crearon o colaboraron con el desarrollo y expresión de este Universo. A todas ellas les estoy infinitamente agradecido.",
-            "cocreateAction": "Contáctate con nosotros",
-            "donateTitle": "Colabora",
-            "donateDescrip": "Invítanos un té o una comida. Panza llena, corazón contento. Si la propuesta resuena y está en tus posibilidades, colabora con cualquier monto que puedas.",
-            "donateWorld": "Si te encuentras fuera de Argentina, puedes apoyarnos utilizando tu tarjeta o ApplePay.",
-            "whatsNext": "Esto tenemos en mente",
-            "next": [
-                "Reabrir las tiendas de artículos.",
-                "Versión impresa del mazo Oráculo.",
-                "Realizar música original para cada carta.",
-                "Desarrollo de videojuego de mundo abierto.",
-                "Crear un segundo mazo, tipo Tarot, de 78 cartas.",
-                "Versión impresa del mazo Tarot."
-            ],
-            "forKids": "¿Che y para niñxs?",
-            "kids": "Me encantaría! Andaría faltando alguien que escriba cuentos. Si te interesa, contactanos!"
         },
         "oracle": {
             "deckCopy": "Siente y elige tu carta",

@@ -90,7 +90,7 @@
         <div class="navContainer">
             <button v-if="props.hasBack" class="back" :aria-label="$t('nav.back')" @click="handleBack()"></button>
             <button v-if="props.hasDeck" class="deck" :class="{ nine: fromNine }" :aria-label="fromNine ? $t('praxis.theNine') : $t('praxis.fullDeck')" @click="handleGoToDeck()"></button>
-            <!-- The brand mark takes the left corner on the pages with nowhere to go back to (landing, collaborate),
+            <!-- The brand mark takes the left corner on the pages with nowhere to go back to (the landing),
                  so every header has the same shape: the way out on the left, the tools on the right -->
             <div id="logo" v-if="$slots.logo">
                 <a href="/praxis">

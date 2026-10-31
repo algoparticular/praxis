@@ -22,14 +22,12 @@
             "oracleAction": "Consult the Oracle",
             "aboutTitle": "Navigate the Universe",
             "aboutDescrip": "Our mission is to invite people to take action and reflection. Using art and philosophy, we seek to connect with what makes our inner self vibrate. Seek the inner compass that guide us to a heartful path.",
-            "aboutAction": "Do you want to help?",
             "uno": "“We are all the same, \nwe are all one,\nwe are (not from) here.”"
         },
         "nav": {
             "home": "Home",
             "praxis": "The Oracle",
             "deck": "The cards",
-            "collaborate": "Want to help?",
             "back": "Back",
             "sound": "Sound",
             "soundOn": "Sound on",
@@ -45,28 +43,6 @@
             "author": "Juan Yañez",
             "oracleDescrip": "Anima is the digital version of the Oracle of the Particles: 33 cards for those of us who listen to the messages the Universe, in its divine randomness, brings to guide our steps.\n\nWith her luminous calm, Belén Brito invites us to look for the answers within, using each card as a mirror of what our Being needs here and now.",
             "more": "About the cards"
-        },
-        "collaborate": {
-            "intro": "With your help we can grow this universe",
-            "shareTitle": "Share",
-            "shareDescrip": "our content on social media or to those people you think are in need of some magic in their lives.",
-            "cocreateTitle": "Co-create",
-            "cocreateDescrip": "this space. Algo Particular could not convey its purpose if it were not for other particles that, along the way, co-created or collaborated with the development and expression of this Universe. To all of them I am infinitely grateful.",
-            "cocreateAction": "Get in touch with us.",
-            "donateTitle": "Collaborate",
-            "donateDescrip": "Invite us for a tea or a meal. Full belly, happy heart. If the proposal resonates and it's within your means, contribute whatever amount you can.",
-            "donateWorld": "If you are outside Argentina, you can support us using your card or ApplePay.",
-            "whatsNext": "This is what we have in mind.",
-            "next": [
-                "Re-open Merchandise shops",
-                "Printed version of the Oracle deck.",
-                "Perform original music for each card.",
-                "Development of open-world videogame.",
-                "Create a second 78-card Tarot deck.",
-                "Printed version of the Tarot deck."
-            ],
-            "forKids": "Hey and for the kids?",
-            "kids": "I'd love to! We're missing someone to write stories. If you're interested, contact us!"
         },
         "oracle": {
             "deckCopy": "Feel and choose your card",

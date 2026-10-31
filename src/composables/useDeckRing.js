@@ -50,7 +50,7 @@ export const preloadThumbs = (ids, concurrency = 6) => {
     for (let i = 0; i < concurrency; i++) worker();
 };
 
-export async function createDeckRing(canvas, { cards, onFocus, onPick, onSound }) {
+export async function createDeckRing(canvas, { cards, onFocus, onPick, onSound, onLayout }) {
     const THREE = await import('../three.js');
 
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -148,22 +148,46 @@ export async function createDeckRing(canvas, { cards, onFocus, onPick, onSound }
     let pxPerCard = 120;
     let worldHeight = 6;
     let camDist = 9;
-    const resize = () => {
-        width = canvas.clientWidth || window.innerWidth;
-        height = canvas.clientHeight || window.innerHeight;
-        renderer.setSize(width, height, false);
-        camera.aspect = width / height;
+    let clearTop = 0;           // px at the top the page keeps for itself (its title and filters float over the ring)
+    const CLEAR_GAP = 12;       // px between those and the card in front
+    const BELOW = 128;          // px kept under the card in front for its name and the link to what the deck is
+    // Where the top or bottom edge of the card in front lands on screen, in px from the top (it is scaled 1.28 and
+    // brought 0.5 forward in place())
+    const edge = (sign) => ((1 - new THREE.Vector3(0, sign * CARD_H * 1.28 / 2, 0.5).project(camera).y) / 2) * height;
+    const aim = (visibleWidth, shift = 0) => {
         const half = Math.tan(THREE.MathUtils.degToRad(FOV) / 2);
-        // Two and a half cards across on a phone (the front one fills half the screen, its neighbours peek in), five on a wide screen
-        const visibleWidth = camera.aspect < 1 ? 2.4 : 5.6;
         camDist = Math.max(visibleWidth / (2 * half * camera.aspect), 4);
         camera.position.set(0, 0.55, camDist);
         camera.lookAt(lookAt);
+        // A shift moves the whole picture down (the camera's view slides up), so picking and the hand-off still match
+        if (shift) camera.setViewOffset(width, height, 0, -shift, width, height);
+        else camera.clearViewOffset();
         camera.updateProjectionMatrix();
         camera.updateMatrixWorld();
         worldHeight = 2 * camDist * half;
         // One card step on screen, so a drag moves the ring as far as the finger
         pxPerCard = (width / visibleWidth) * (CARD_W + 0.14);
+    };
+    const resize = () => {
+        width = canvas.clientWidth || window.innerWidth;
+        height = canvas.clientHeight || window.innerHeight;
+        renderer.setSize(width, height, false);
+        camera.aspect = width / height;
+        // Two and a half cards across on a phone (the front one fills half the screen, its neighbours peek in), five on a wide screen
+        let visibleWidth = camera.aspect < 1 ? 2.4 : 5.6;
+        aim(visibleWidth);
+        let shift = 0;
+        if (clearTop) {
+            // On a short screen the card in front would sit under the filters: smaller if it does not fit between them
+            // and its name, and lower if it still starts above their bottom
+            const room = height - BELOW - (clearTop + CLEAR_GAP);
+            const tall = edge(-1) - edge(1);
+            if (room > 0 && tall > room) aim(visibleWidth *= tall / room);
+            shift = Math.max(0, clearTop + CLEAR_GAP - edge(1));
+            if (shift) aim(visibleWidth, shift);
+        }
+        // So the card's name can sit right under it whatever the shape of the screen
+        onLayout?.({ cardBottom: edge(-1) });
     };
     const resizeObserver = new ResizeObserver(resize);
     resizeObserver.observe(canvas);
@@ -447,5 +471,12 @@ export async function createDeckRing(canvas, { cards, onFocus, onPick, onSound }
         renderer.dispose();
     }
 
-    return { destroy, setFilter };
+    // The page says how much of the top its title and filters take
+    function setClearTop(px) {
+        if (Math.abs(px - clearTop) < 1) return;
+        clearTop = px;
+        resize();
+    }
+
+    return { destroy, setFilter, setClearTop };
 }
