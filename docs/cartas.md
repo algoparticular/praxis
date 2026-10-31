@@ -1,6 +1,6 @@
 # Cartas
 
-Cuarta pestaña de "Anima por dentro": lo que tenemos hoy de cada una de las 33 cartas, junto. El texto de cada carta (descripción, afirmación e invitación, en español e inglés), sus colores y su ilustración viven en `src/data/cards.json`, que es la fuente de verdad (cómo editarla: `editar-cartas.md`). Acá está el resto: su verbo, su acorde y qué hace en la app.
+Tercera pestaña de "Anima GDD": lo que tenemos hoy de cada una de las 33 cartas, junto. El texto de cada carta (descripción, afirmación e invitación, en español e inglés), sus colores y su ilustración viven en `src/data/cards.json`, que es la fuente de verdad (cómo editarla: `editar-cartas.md`). Acá está el resto: su verbo, su acorde y qué hace en la app.
 
 ## Dónde está cada cosa de una carta
 
@@ -69,9 +69,9 @@ Se cambia una línea en `src/data/cardChords.js`, por ejemplo `28: 'Em'`. Se esc
 | 5 | Khanti | Paramis | Fluir | Remaj7 | Escena propia, verbo jugable |
 | 6 | Sacca | Paramis | Resonar | Sol7 | Escena propia, verbo jugable |
 | 7 | Addhitthana | Paramis | Arraigar | Mi mayor | Escena propia, verbo jugable |
-| 8 | Metta | Paramis | Dar y recibir | Famaj7 | Escena propia, sin juego todavía |
+| 8 | Metta | Paramis | Dar y recibir | Famaj7 | Escena propia, verbo jugable |
 | 9 | Upekkha | Paramis | Soltar | Mi menor | Escena propia, verbo jugable |
-| 10 | Tu verdad | Special | por decidir | Sol mayor | Escena propia, sin juego todavía |
+| 10 | Tu verdad | Special | sin verbo | Sol mayor | Escena propia, sin juego todavía |
 | 11 | Aceptación | Regular | Fluir | Si menor | Escena propia, verbo jugable |
 | 12 | Armonía | Regular | Resonar | Domaj7 | Escena propia, sin juego todavía |
 | 13 | Belleza | Regular | Ver | Lamaj7 | Escena propia, sin juego todavía |
@@ -85,7 +85,7 @@ Se cambia una línea en `src/data/cardChords.js`, por ejemplo `28: 'Em'`. Se esc
 | 21 | Desafío | Regular | Encender | Re7 | Escena propia, sin juego todavía |
 | 22 | Evolución Espiritual | Regular | Encender | Si7 | Escena propia, verbo jugable |
 | 23 | Fe | Regular | Arraigar | Si mayor | Escena propia, sin juego todavía |
-| 24 | Gratitud | Regular | Dar y recibir | Solmaj7 | Escena propia, sin juego todavía |
+| 24 | Gratitud | Regular | Dar y recibir | Solmaj7 | Escena propia, verbo jugable |
 | 25 | Hogar | Regular | Arraigar | Do mayor | Escena propia, verbo jugable |
 | 26 | Honestidad | Regular | Resonar | Solm7 | Escena propia, sin juego todavía |
 | 27 | Paciencia | Regular | Arraigar | Re mayor | Escena propia, verbo jugable |

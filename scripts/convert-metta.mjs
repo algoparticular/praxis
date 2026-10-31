@@ -1,7 +1,7 @@
 // The layers of Metta as exported (originales/metta/Metta-N.png, 2160px) -> public/assets/metta/*.webp, each cropped to
 // its own box, and src/composables/mettaScene.json, all in px of the 2160 square:
 //   boxes      the box of every picture: the six beings round the nest (being0..5, left to right, each its fills, line and
-//              arm), the fox, the squirrel, Sid (his upper body and arms), the nest of mushrooms with his round body in it,
+//              arm), the fox, the kitten, Sid (his upper body and arms), the nest of mushrooms with his round body in it,
 //              the line along the top of the hill, the ground (stones, little mushrooms, tufts) and the six glowing flowers,
 //              each its own picture so it can sway and light up
 //   bits       small pieces cut out into one atlas (bits.webp): the eyes of every being and of Sid (so they can blink and
@@ -37,7 +37,7 @@ const pictures = {
     line: [7],
     being0: [11, 12, 13, 14], being1: [16, 17, 18, 19, 20, 21], being2: [23, 24, 25, 26, 27],
     being3: [29, 30, 31, 32, 33, 34], being4: [36, 37, 38, 39, 40, 41], being5: [43, 44, 45, 46],
-    fox: [48, 49, 50, 51, 52, 53], squirrel: [54, 55, 56, 57, 58],
+    fox: [48, 49, 50, 51, 52, 53], kitten: [54, 55, 56, 57, 58],
     sid: [59, 60, 61, 62, 63], nest: [65, 66, 67, 68, 69, 70],
 };
 const EYES = { being0: 15, being1: 22, being2: 28, being3: 35, being4: 42, being5: 47, sid: 64 };

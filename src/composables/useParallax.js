@@ -3,7 +3,9 @@
 //            (on phones it follows the tilt of the device, where it is allowed: useTilt.js)
 //   scroll   0..1 while the stage scrolls out of view
 //   t, ramp  seconds since the loop began, and a 0..1 factor that eases motion in over two seconds
-// It pauses while the scene is off screen and, with reduced motion, draws a single still frame.
+// It pauses while the scene is off screen and, with reduced motion, draws a single still frame. A scene with a game
+// calls wake(seconds) when it is touched: with reduced motion the frames run again for that long (still, with ramp 0,
+// so only what the game changes is drawn), so it can be played; otherwise it does nothing.
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 
@@ -27,8 +29,20 @@ export function createParallax(root, onFrame) {
     const scrollOf = () => clamp(window.scrollY / Math.max(root.clientHeight, 1), 0, 1);
 
     if (reduced) {
+        const begin = performance.now();
+        let until = 0;
+        const still = (now) => {
+            onFrame({ x: 0, y: 0, scroll: 0, t: (now - begin) / 1000, ramp: 0 });
+            frame = now < until ? requestAnimationFrame(still) : 0;
+        };
         onFrame({ x: 0, y: 0, scroll: 0, t: 0, ramp: 0 });
-        return { destroy() {} };
+        return {
+            wake(seconds) {
+                until = Math.max(until, performance.now() + seconds * 1000);
+                if (!frame) frame = requestAnimationFrame(still);
+            },
+            destroy() { cancelAnimationFrame(frame); until = 0; },
+        };
     }
 
     window.addEventListener('pointermove', onPointer, { passive: true });
@@ -51,6 +65,7 @@ export function createParallax(root, onFrame) {
     frame = requestAnimationFrame(tick);
 
     return {
+        wake() {},
         destroy() {
             cancelAnimationFrame(frame);
             visibility.disconnect();
