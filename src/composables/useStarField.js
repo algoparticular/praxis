@@ -21,6 +21,8 @@ const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 // Constellations: how long a star takes to travel (s), how the departures spread along the line (s, from the first to
 // the last), how far apart the dots of a thread are (px) and how long the threads take to appear or go (s)
 const GATHER = { travel: 1.1, spread: 0.9, dotGap: 7, threads: 0.6 };
+// How long a constellation takes to be whole, from the first star leaving to the last thread drawn (s)
+export const CONSTELLATION_TIME = GATHER.spread + GATHER.travel + 0.25;
 
 // The shooting stars' head: a soft round mote, drawn once and stamped (the falloff of useStardust's 'soft')
 const DOT_COLORS = [CREAM];               // the head, in the cream of the stars of this sky
