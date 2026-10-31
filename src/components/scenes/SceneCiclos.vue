@@ -4,10 +4,15 @@
     // where the night is over it and a red sun, its corona stippled, where the day is (as in the card, the disc split by
     // the edge between them). White clouds drift, and over rolling hills of green and sand, with white rocks, pink fans
     // and tufts of grass, Sid sits meditating on a rock with his red aura round him.
-    // Its verb will be Soltar (closing a cycle: letting go of the old so the new can begin); there is no game yet. Sid,
-    // the moon and the sun are apart (each its own picture or drawn in code), so the game can move them. For now a touch
-    // is only answered: on Sid his aura flares and the chord is strummed (`star`); on the moon it rocks a little and the
-    // corona flares.
+    // Its verb is Soltar (closing a cycle: "you can only move forward if you are able to let go of the old"). The drops
+    // of the card, yellow day caught in the night and teal night caught in the day, are what is left of the old cycle: a
+    // touch on one lets it go (`release`): it shrinks into motes and goes back to its own colour. With every drop let go
+    // the day flows a little further over the round body in the sky (a dent pressed into the edge, the field's uDent), so
+    // the moon gives way to the sun. Holding Sid is a breath, as in Vipassana, Nekkhamma and Upekkha (`inhale`; let go
+    // once gathered, `exhale`, and every drop left goes at once). With the drops gone the sun is whole: F7 resolves to
+    // B flat (`resolve`), the corona flares, the name lights up and the rulito is born over his head (`rulito`); when it
+    // goes the night pours back over the sun and the drops come back: a new cycle. Left alone a while, a drop shines (the
+    // hint). A short touch on Sid flares his aura (`star`); on the moon it rocks a little and the corona flares.
     // The sky is not a picture: day and night are two liquids drawn by the stage (field()), from the night's shape, drops
     // and colour that the converter read from the card (it is in no layer); its stars are particles that live only in
     // the night. Nor is the sun: a disc drawn in code (the biggest circle inside its solid middle, under the moon) with a
@@ -26,7 +31,10 @@
     import { createParallax } from '../../composables/useParallax.js';
     import { createLayerStage, FIELD_RANGE, FIELD_BUBBLES } from '../../composables/useLayerStage.js';
     import { startStardust } from '../../composables/useStardust.js';
+    import { createSparks } from '../../composables/useSparks.js';
     import { play } from '../../composables/useSound.js';
+    import { sceneMilestone } from '../../analytics.js';
+    import Rulito from '../Rulito.vue';
     import art from '../../composables/ciclosScene.json';
 
     const props = defineProps({
@@ -38,6 +46,7 @@
     const canvas = ref(null);
     const sidHit = ref(null);
     const moonHit = ref(null);
+    const rulito = ref(null);
     let stageEl = null;
     let stage = null;
     let parallax = null;
@@ -185,21 +194,226 @@
         }
         ctx.putImageData(image, 0, 0);
     };
-    // The drops of the card, alive: each sways and trembles where the card has it, as a liquid
-    const drops = NIGHT.bubbles.slice(0, FIELD_BUBBLES).map(([x, y, rx, ry, angle, toward], j) => ({ x, y, rx, ry, angle, toward, phase: j * 1.9 + Math.random() }));
+    // The drops of the card, alive: each sways and trembles where the card has it, as a liquid. They are the game: what
+    // is left of the old cycle. `gone` is how far one has been let go (0 here .. 1 gone), `hint` its shine
+    const drops = NIGHT.bubbles.slice(0, FIELD_BUBBLES).map(([x, y, rx, ry, angle, toward], j) => ({
+        x, y, rx, ry, angle, toward, phase: j * 1.9 + Math.random(), state: 'here', gone: 0, hint: 0, need: true, at: { x: 0, y: 0 },
+    }));
+    const ease = (v) => v * v * (3 - 2 * v);
     const moveDrops = (t, ramp) => drops.map((d, j) => {
         const jelly = 0.08 * Math.sin(t * (2.1 + 0.3 * j) + d.phase) * ramp;
         const x = d.x + Math.sin(t * 0.35 + d.phase) * 10 * ramp, y = d.y + Math.sin(t * 0.27 + d.phase * 1.7) * 8 * ramp;
-        return [sx(x), sy(y), d.rx * (1 + jelly) * k(), d.ry * (1 - jelly) * k(), d.angle + 0.12 * Math.sin(t * 0.4 + d.phase) * ramp, d.toward, 0.3, 1];
+        // Let go it shrinks as it rises a little, back into motes; the hint swells it
+        const size = (1 - ease(d.gone)) * (1 + 0.28 * d.hint * (0.6 + 0.4 * Math.sin(t * 9)));
+        d.at = { x: sx(x), y: sy(y - 50 * ease(d.gone)) };
+        if (size <= 0.02) return [0, 0, 0, 0, 0, d.toward, 0.3, 1];
+        return [d.at.x, d.at.y, d.rx * (1 + jelly) * k() * size, d.ry * (1 - jelly) * k() * size, d.angle + 0.12 * Math.sin(t * 0.4 + d.phase) * ramp, d.toward, 0.3, 1];
     });
     const WAVE = { amp: 10, length: 900, speed: 0.25 };
 
-    const touchSid = () => {
+    // ---- The game: let go of the drops, the day flows over the moon and the sun is whole
+    const GLYPH = { x: 1703, top: 728, h: 145 };   // the rulito over his head (art px: the middle, its top, its height)
+    const RULITO_COLOR = '#fc747c';
+    const FULL = 150;                       // px the edge gives way round the disc with every drop gone (more than FIELD_RANGE: all of it)
+    const HINT = 7;                         // s alone before a drop shines
+    const BREATH_AT = 0.35, BREATH = 1.6;   // s held on Sid before it is a breath, and s more to gather it whole
+    const DELAY = 0.7, GROW = 2.2, LINGER = 3, EAT = 3.4;     // the rulito: born, kept, gone
+    const sparks = createSparks(320);
+    let dent = 0;                           // how far the day has flowed over the disc, 0..1 (eases to its goal)
+    let idle = 0;
+    let released = 0;
+    let win = null;
+    let wins = 0;
+    let breathUsed = false;
+    let breath = null;                      // { pointerId, at, breathing }
+    let charge = 0;                         // 0..1 the breath gathered
+    let glyph = { left: 0, top: 0, w: 1, h: 1 };
+    let screenW = 1, screenH = 1;
+    const DROP_RGB = (d) => (d.toward < 0 ? DAY : NIGHT.color);
+    const needed = () => drops.filter((d) => d.need);
+    const left = () => drops.filter((d) => d.state === 'here');
+    const dentGoal = () => {
+        if (win) return 1;
+        const need = needed();
+        return need.length ? need.filter((d) => d.state !== 'here').length / need.length : 0;
+    };
+    // Where a drop is on screen now (the sky slides with the camera)
+    const onScreen = (d) => {
+        const drift = stage.drift(L.skyNode.z);
+        return { x: d.at.x + drift.x, y: d.at.y + drift.y };
+    };
+    const dropAt = (p) => {
+        if (reduced || win || !stage || !L.skyNode) return null;
+        let best = null, bestD = Infinity;
+        left().forEach((d) => {
+            const c = onScreen(d);
+            const dist = Math.hypot(c.x - p.x, c.y - p.y);
+            if (dist < Math.max(34, Math.max(d.rx, d.ry) * k() * 1.4) && dist < bestD) { best = d; bestD = dist; }
+        });
+        return best;
+    };
+    const fromEvent = (event) => {
+        const area = root.value.getBoundingClientRect();
+        return { x: event.clientX - area.left, y: event.clientY - area.top };
+    };
+    // Let a drop go: it bursts into motes of its colour and shrinks back into it
+    const letGo = (d, quiet = false) => {
+        if (d.state !== 'here') return;
+        d.state = 'going';
+        d.hint = 0;
+        idle = 0;
+        if (d.need) released += 1;
+        const c = onScreen(d);
+        sparks.burst(c.x, c.y, { n: 18, colors: [DROP_RGB(d), 0xfff6dc, DROP_RGB(d)], speed: 70, life: 1.8, size: 4, spread: d.rx * k() * 0.7 });
+        if (!quiet) play('release');
+        if (!win && released >= needed().length) setTimeout(() => { if (!gone) closeCycle(); }, DELAY * 1000);
+    };
+    // Every drop let go: the sun is whole, F7 resolves and the rulito is born over Sid
+    const closeCycle = () => {
+        if (win) return;
+        wins += 1;
+        drops.forEach((d) => letGo(d, true));
+        win = { age: 0, head: 0, tail: 0, full: false, fullAt: 0, back: false, pop: 0 };
+        rulito.value?.reshape();
+        play('resolve');
+        flare = 1;
+        glowSid = 1;
+        dust?.boost(0, 1.6);
+        dust?.boost(2, 1.4);
+        sceneMilestone('cycle_closed', { times: wins, breath: breathUsed });
+        breathUsed = false;
+    };
+    // A new cycle: the night pours back over the sun and the drops come back, one after the other
+    const newCycle = () => {
+        released = 0;
+        drops.forEach((d, j) => setTimeout(() => { if (!gone) d.state = 'back'; }, 1500 + j * 450));
+    };
+    // The drops that count are those on the screen (on a phone some of the card's are past its edge; they go with the rest)
+    const markNeeded = () => {
+        const top = titleBottom(screenH);
+        drops.forEach((d) => {
+            const x = sx(d.x), y = sy(d.y);
+            d.need = x > 16 && x < screenW - 16 && y > top && y < screenH - 16;
+        });
+        if (!needed().length) drops.forEach((d) => { d.need = true; });
+    };
+
+    // Pressing Sid: a tap flares his aura and strums the chord; held past BREATH_AT he gathers a breath (`inhale`), and
+    // let go once it is gathered he breathes out (`exhale`) and every drop left goes at once
+    const touchSid = (event) => {
+        if (event?.clientX !== undefined && dropAt(fromEvent(event))) return;
+        idle = 0;
+        if (reduced || win) { flareSid(); return; }
+        if (breath) return;
+        breath = { pointerId: event?.pointerId, at: lastT, breathing: false };
+        window.addEventListener('pointerup', breatheOut);
+        window.addEventListener('pointercancel', breatheOut);
+    };
+    const flareSid = () => {
         play('star');
         glowSid = 1;
         dust?.boost(2, 1);
     };
-    const touchMoon = () => {
+    const breatheOut = (event) => {
+        if (!breath || (event && event.pointerId !== breath.pointerId)) return;
+        window.removeEventListener('pointerup', breatheOut);
+        window.removeEventListener('pointercancel', breatheOut);
+        const { breathing } = breath;
+        breath = null;
+        idle = 0;
+        const rest = left();
+        if (charge >= 1 && !win && rest.length) {
+            play('exhale');
+            breathUsed = true;
+            glowSid = 1;
+            dust?.boost(2, 1.2);
+            rest.forEach((d, j) => setTimeout(() => { if (!gone) letGo(d, true); }, 150 + j * 170));
+            sceneMilestone('breath_released', { drops: rest.length });
+        } else if (!breathing) flareSid();
+        else dust?.boost(2, 0.4 + 0.6 * charge);
+    };
+    // A touch anywhere on the scene: a drop under it is let go
+    const press = (event) => {
+        const d = dropAt(fromEvent(event));
+        if (!d) return;
+        event.preventDefault();
+        letGo(d);
+    };
+    // Enter on Sid lets go of the drop nearest to him
+    const keySid = () => {
+        idle = 0;
+        const rest = left();
+        if (reduced || win || !rest.length) { flareSid(); return; }
+        const s0 = { x: sx(GLYPH.x), y: sy(GLYPH.top) };
+        rest.sort((a, b) => Math.hypot(a.at.x - s0.x, a.at.y - s0.y) - Math.hypot(b.at.x - s0.x, b.at.y - s0.y));
+        letGo(rest[0]);
+    };
+
+    // Every frame: the drops, the dent, the breath, the hint and the rulito
+    const game = (t, dt) => {
+        idle += dt;
+        drops.forEach((d) => {
+            d.hint = Math.max(0, d.hint - dt * 0.9);
+            if (d.state === 'going') { d.gone = Math.min(1, d.gone + dt / 1.1); if (d.gone >= 1) d.state = 'away'; }
+            if (d.state === 'back') { d.gone = Math.max(0, d.gone - dt / 2.4); if (d.gone <= 0) d.state = 'here'; }
+        });
+        dent += (dentGoal() - dent) * Math.min(1, dt * (win || dentGoal() > dent ? 1.3 : 0.45));
+        const sr = MOON.r * k() * 1.05;
+        L.sky.uniforms.uDent.value.set(sx(SUN.x), sy(SUN.y), sr, FULL * ease(Math.min(1, dent)));
+
+        // The breath
+        if (breath && !win) {
+            const holding = t - breath.at;
+            if (holding > BREATH_AT && !breath.breathing) { breath.breathing = true; play('inhale'); }
+            charge = Math.min(1, Math.max(0, (holding - BREATH_AT) / BREATH));
+            if (charge > 0 && Math.random() < dt * 12 * charge) {
+                const body = L.sid.boxOnScreen(rectOf(B.sid));
+                const a = Math.random() * 6.28, r = body.height * (0.9 + Math.random() * 0.5);
+                const cx = body.left + body.width / 2, cy = body.top + body.height * 0.4;
+                sparks.burst(cx + Math.cos(a) * r, cy + Math.sin(a) * r * 0.8, { n: 1, colors: [AURA, 0xfff6dc], speed: 12, life: 1, size: 3, spread: 4 });
+            }
+        } else charge = Math.max(0, charge - dt * 2.5);
+
+        // The hint, without words: alone a while, a drop that counts shines
+        if (!win && !breath && idle > HINT && !reduced) {
+            const rest = left().filter((d) => d.need);
+            if (rest.length) {
+                idle = 0;
+                const d = rest[Math.floor(Math.random() * rest.length)];
+                d.hint = 1;
+                const c = onScreen(d);
+                sparks.burst(c.x, c.y, { n: 6, colors: [0xfff6dc, DROP_RGB(d)], speed: 30, life: 1.1, size: 3, spread: d.rx * k() * 0.6 });
+            }
+        }
+
+        // The rulito: born over his head, kept a while, then its tail catches its head and a new cycle begins
+        let named = 0;
+        if (win && rulito.value) {
+            win.age += dt;
+            win.pop = Math.max(0, win.pop - dt * 2.2);
+            win.head = 1 - (1 - Math.min(1, Math.max(0, (win.age - DELAY) / GROW))) ** 1.6;
+            if (win.head >= 1 && !win.full) { win.full = true; win.fullAt = win.age; win.pop = 1; play('rulito'); flare = 1; }
+            if (win.full && !win.back && win.age - win.fullAt > LINGER) win.back = true;
+            if (win.back) win.tail = Math.min(1, win.tail + dt / EAT);
+            const whole = Math.min(1, Math.max(0, (win.head - win.tail - 0.6) / 0.4));
+            named = Math.max(win.pop, 0.8 * whole * whole * (3 - 2 * whole));
+            const shine = win.full && win.head - win.tail > 0.9 ? Math.max(win.pop, Math.sin(t * 4) * 0.5 + 0.5) : 0;
+            rulito.value.frame({ head: win.head, tail: win.tail, flare: shine, t, fade: Math.min(1, (win.head - win.tail) * 14), width: glyph.w });
+            L.rulito.refresh();
+            L.rulito.scale = 1 + 0.2 * win.pop * win.pop;
+            if (win.back && win.tail >= 1) {
+                win = null;
+                rulito.value.frame({ width: glyph.w });
+                L.rulito.refresh();
+                newCycle();
+            }
+        }
+        stageEl?.style.setProperty('--name-glow', named.toFixed(3));
+        return { named, charge };
+    };
+
+    const touchMoon = (event) => {
+        if (event?.clientX !== undefined && dropAt(fromEvent(event))) return;
         play('star');
         rockV += 26;
         flare = 1;
@@ -269,6 +483,7 @@
                 L.sid = sid.group();
                 L.aura = L.sid.glow({ rect: { left: 0, top: 0, w: 1, h: 1 }, color: AURA, stops: [[0, 0.5], [0.4, 0.2], [0.75, 0]], bloom: true });
                 L.body = L.sid.image('/assets/ciclos/sid.webp');
+                L.rulito = L.sid.canvas(rulito.value.canvas, { bloom: true });
                 sid.enter({ y: 50, delay: 400, duration: 1900 });
             }
             return out;
@@ -338,6 +553,14 @@
         L.sid.pivot = { x: body.left + body.w / 2, y: body.top + body.h };
         const ad = body.h * 1.7;
         L.aura.place({ left: body.left + body.w / 2 - ad / 2, top: body.top + body.h * 0.45 - ad / 2, w: ad, h: ad });
+        // The rulito over his head (its canvas is bigger than the glyph, for the glow)
+        const gh = GLYPH.h * k(), gw = gh * 32 / 86;
+        glyph = { left: sx(GLYPH.x) - gw / 2, top: sy(GLYPH.top), w: gw, h: gh };
+        L.rulito.place({ left: glyph.left - 0.4375 * glyph.w, top: glyph.top - 0.1628 * glyph.h, w: glyph.w * 1.875, h: glyph.h * 1.3256 },
+            { x: glyph.left + glyph.w / 2, y: glyph.top + glyph.h });
+        screenW = w;
+        screenH = h;
+        markNeeded();
     };
 
     // The touch targets: Sid (at least 64px) and the moon
@@ -367,9 +590,10 @@
         lastT = t;
         stage.look(x * SLIDE, y * SLIDE_Y);
 
-        // ---- Day and night: the edge flows, the drops sway
+        // ---- Day and night: the edge flows, the drops sway (and go, and come back)
         L.sky.uniforms.uWave.value.set(WAVE.amp * k() * ramp, WAVE.length * k(), t * WAVE.speed, F.y);
         L.sky.bubbles = moveDrops(t, ramp);
+        const { named, charge: held } = game(t, dt);
 
         // ---- The clouds drift from left to right and wrap round, rising and falling a little
         clouds.forEach((c) => {
@@ -404,12 +628,13 @@
         const inhale = Math.sin(t * 0.9);
         L.body.sy = 1 + 0.014 * inhale * ramp;
         L.body.sx = 1 - 0.005 * inhale * ramp;
-        L.body.uniforms.uBright.value = 1 + 0.12 * glowSid;
-        L.aura.opacity = 0.55 + 0.15 * inhale * ramp + 0.45 * glowSid;
-        L.aura.scale = 1 + 0.05 * inhale * ramp + 0.2 * glowSid;
+        L.body.sy = 1 + 0.014 * inhale * ramp + 0.03 * held;
+        L.body.uniforms.uBright.value = 1 + 0.12 * glowSid + 0.15 * held;
+        L.aura.opacity = 0.55 + 0.15 * inhale * ramp + 0.45 * Math.max(glowSid, held);
+        L.aura.scale = 1 + 0.05 * inhale * ramp + 0.2 * glowSid + 0.35 * held;
         L.sidNode.y = scroll * DEPTH.land[1];
-        dust?.fade(2, 0.8 + 0.2 * inhale * ramp);
-        stage.bloom = Math.max(0.5 * glowSid, 0.4 * flare);
+        dust?.fade(2, 0.8 + 0.2 * inhale * ramp + 0.3 * held);
+        stage.bloom = Math.max(0.5 * glowSid, 0.4 * flare, named, win ? 0.5 : 0, 0.4 * held);
 
         // The particles that belong to a layer follow it
         const sunDrift = stage.drift(L.sunNode.z), moonDrift = stage.drift(L.moonNode.z), sidDrift = stage.drift(L.sidNode.z);
@@ -463,10 +688,14 @@
                 { colors: [AURA], parallax: 0, drift: 1.4, jitter: 0.4, twinkle: 0.4, reach: 0, bloom: true, order: L.body.mesh.renderOrder - 0.5, points: () => fromArt(art.sid.aura, AURA, 1.1) },
                 // 3: the stars, only in the night, just over it (mirrored with it beyond the frame)
                 { colors: [NIGHT.star], parallax: 0, drift: 1.2, jitter: 0, twinkle: 0.6, reach: 90, push: 10, order: after(L.sky), points: starPoints },
+                // 4: the motes of what is let go, in front of everything
+                { ...sparks.group(), order: 1e6 },
             ],
         });
         if (reduced) dust.reveal();
         parallax = createParallax(root.value, frame);
+        root.value.addEventListener('pointerdown', press);
+        if (import.meta.env.DEV) root.value.__game = { get drops() { return drops; }, get released() { return released; }, get win() { return win; }, get dent() { return dent; } };
         enter();
     };
 
@@ -474,6 +703,10 @@
     watch(() => props.active, enter);
     onBeforeUnmount(() => {
         gone = true;
+        stageEl?.style.removeProperty('--name-glow');
+        root.value?.removeEventListener('pointerdown', press);
+        window.removeEventListener('pointerup', breatheOut);
+        window.removeEventListener('pointercancel', breatheOut);
         parallax?.destroy();
         dust?.destroy();
         stage?.destroy();
@@ -486,9 +719,11 @@
         <div ref="moonHit" class="hit" role="button" tabindex="0"
             :aria-label="$i18n.locale === 'en' ? 'The moon in front of the sun' : 'La luna delante del sol'"
             @pointerdown.prevent="touchMoon" @keydown="onKey(touchMoon)($event)"></div>
-        <div ref="sidHit" class="hit" role="button" tabindex="0"
-            :aria-label="$i18n.locale === 'en' ? 'Sid meditating on his rock' : 'Sid meditando sobre su roca'"
-            @pointerdown.prevent="touchSid" @keydown="onKey(touchSid)($event)"></div>
+        <div ref="sidHit" class="hit sid" role="button" tabindex="0"
+            :aria-label="$i18n.locale === 'en' ? 'Sid meditating on his rock: hold him to breathe and let go' : 'Sid meditando sobre su roca: mantenelo para respirar y soltar'"
+            @pointerdown.prevent="touchSid" @keydown="onKey(keySid)($event)"></div>
+        <!-- The rulito is drawn on its own canvas, which the stage shows as a texture over Sid -->
+        <Rulito ref="rulito" class="offstage" :color="RULITO_COLOR" />
     </div>
 </template>
 
@@ -520,6 +755,19 @@
         pointer-events: auto;
         -webkit-tap-highlight-color: transparent;
         outline: none;
+    }
+
+    .hit.sid {
+        touch-action: none;                    /* held, a finger drifts a little: the phone must not take it for a scroll */
+    }
+
+    .offstage {
+        position: absolute;
+        left: -9999px;
+        top: 0;
+        width: 40px;
+        visibility: hidden;
+        pointer-events: none;
     }
 
     .hit:focus-visible {

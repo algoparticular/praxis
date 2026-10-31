@@ -265,6 +265,7 @@ const FIELD_FRAGMENT = `
     uniform float uScale;
     uniform vec4 uWave;            // a long wave travelling along the edge: amplitude px, wavelength px, phase, y px of its origin
     uniform vec4 uRect;            // where the plane is, px: left, top, width, height
+    uniform vec4 uDent;            // a dent pressed into the edge: centre px, radius px (whole inside it, gone at twice), px towards the first colour
     uniform vec4 uBubbles[${FIELD_BUBBLES}];
     uniform vec4 uTurns[${FIELD_BUBBLES}];
     varying vec2 vUv;
@@ -291,6 +292,8 @@ const FIELD_FRAGMENT = `
         d += (wave * 4.0 + swell * 22.0) * uScale * uWobble;
         // and the long wave the scene sets, an S that travels along the whole edge
         if (uWave.y > 0.0) d += uWave.x * sin(6.2832 * (px.y - uWave.w) / uWave.y - uWave.z);
+        // and a dent the scene presses into it (Ciclos: the day flowing over the moon as a cycle closes)
+        if (uDent.z > 0.0) d -= uDent.w * (1.0 - smoothstep(uDent.z, 2.0 * uDent.z, length(px - uDent.xy)));
         // The bubbles, each an ellipse, joined to what is of its colour with a neck
         for (int i = 0; i < ${FIELD_BUBBLES}; i++) {
             vec4 b = uBubbles[i];
@@ -352,6 +355,7 @@ const FIELD_MASK_CHUNK = `
     uniform float fmSide;
     uniform vec4 fmWave;
     uniform vec4 fmRect;
+    uniform vec4 fmDent;
     uniform vec2 fmShift;          // how far the field has moved on screen from where it rests, px
     uniform vec2 fmScreen;         // the canvas's height (px) and its pixel ratio
     float fmHash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
@@ -370,6 +374,7 @@ const FIELD_MASK_CHUNK = `
         float swell = fmNoise(u / 640.0 + vec2(t * 0.04, -t * 0.05)) - 0.5;
         d += (wave * 4.0 + swell * 22.0) * fmScale * fmWobble;
         if (fmWave.y > 0.0) d += fmWave.x * sin(6.2832 * (px.y - fmWave.w) / fmWave.y - fmWave.z);
+        if (fmDent.z > 0.0) d -= fmDent.w * (1.0 - smoothstep(fmDent.z, 2.0 * fmDent.z, length(px - fmDent.xy)));
         float aa = 0.6 / fmScreen.y + 0.35;
         return smoothstep(-aa, aa, d * fmSide);
     }
@@ -704,7 +709,8 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
         // node.bubbles is its list of up to FIELD_BUBBLES bubbles, [x, y, rx, ry, angle, ±1, neck, wax] each (px, in the
         // plane's space; +1 of the second colour; neck and wax as in FIELD_FRAGMENT, optional), read every frame; call node.refresh() after drawing on the canvas, and set
         // uniforms.uScale to the px of a unit of the drawing; uniforms.uWave is a long wave that travels
-        // along the edge (amplitude px, wavelength px, phase, y px of its origin)
+        // along the edge (amplitude px, wavelength px, phase, y px of its origin) and uniforms.uDent a dent pressed into
+        // it (centre x, y px, radius px, how many px the edge gives way towards the first colour; its masks follow it)
         field({ rect, source, colors = [0x000000, 0xffffff], shaped = false, alone = false, flow = 1 } = {}) {
             const node = new Node(this);
             const texture = new THREE.CanvasTexture(source);
@@ -726,6 +732,7 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
                 uScale: { value: 1 },
                 uWave: { value: new THREE.Vector4(0, 0, 0, 0) },
                 uRect: { value: new THREE.Vector4(0, 0, 1, 1) },
+                uDent: { value: new THREE.Vector4(0, 0, 0, 0) },
                 uBubbles: { value: Array.from({ length: FIELD_BUBBLES }, () => new THREE.Vector4(0, 0, 0, 0)) },
                 uTurns: { value: Array.from({ length: FIELD_BUBBLES }, () => new THREE.Vector4(0, 0, 0, 0)) },
             };
@@ -742,7 +749,7 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
                 if (!shared) {
                     shared = {
                         fmMap: uniforms.map, fmTime: uniforms.uTime, fmFlow: uniforms.uFlow, fmWobble: uniforms.uWobble,
-                        fmScale: uniforms.uScale, fmWave: uniforms.uWave, fmRect: uniforms.uRect,
+                        fmScale: uniforms.uScale, fmWave: uniforms.uWave, fmRect: uniforms.uRect, fmDent: uniforms.uDent,
                         fmShift: { value: new THREE.Vector2(0, 0) }, fmScreen: { value: new THREE.Vector2(1, 1) },
                     };
                     maskFields.push({ node, shared });
