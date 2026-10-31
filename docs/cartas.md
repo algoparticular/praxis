@@ -76,20 +76,20 @@ Se cambia una línea en `src/data/cardChords.js`, por ejemplo `28: 'Em'`. Se esc
 | 12 | Armonía | Regular | Resonar | Domaj7 | Escena propia, verbo jugable |
 | 13 | Belleza | Regular | Ver | Lamaj7 | Escena propia, sin juego todavía |
 | 14 | Celebración | Regular | Fluir | Mimaj7 | Escena propia, verbo jugable |
-| 15 | Ciclos | Regular | Soltar | Fa7 | Escena propia, sin juego todavía |
-| 16 | Compromiso | Regular | Arraigar | La mayor | Escena propia, sin juego todavía |
+| 15 | Ciclos | Regular | Soltar | Fa7 | Escena propia, verbo jugable |
+| 16 | Compromiso | Regular | Arraigar | La mayor | Escena propia, verbo jugable |
 | 17 | Comunicación | Regular | Resonar | Sol menor | Escena propia, verbo jugable |
-| 18 | Confianza | Regular | Arraigar | La menor | Escena propia, sin juego todavía |
+| 18 | Confianza | Regular | Arraigar | La menor | Escena propia, verbo jugable |
 | 19 | Coraje | Regular | Encender | Mi7 | Escena propia, sin juego todavía |
 | 20 | Creatividad | Regular | Resonar | Do7 | Escena propia, verbo jugable |
 | 21 | Desafío | Regular | Encender | Re7 | Escena propia, sin juego todavía |
 | 22 | Evolución Espiritual | Regular | Encender | Si7 | Escena propia, verbo jugable |
-| 23 | Fe | Regular | Arraigar | Si mayor | Escena propia, sin juego todavía |
+| 23 | Fe | Regular | Arraigar | Si mayor | Escena propia, verbo jugable |
 | 24 | Gratitud | Regular | Dar y recibir | Solmaj7 | Escena propia, verbo jugable |
 | 25 | Hogar | Regular | Arraigar | Do mayor | Escena propia, verbo jugable |
 | 26 | Honestidad | Regular | Resonar | Solm7 | Escena propia, verbo jugable |
 | 27 | Paciencia | Regular | Arraigar | Re mayor | Escena propia, verbo jugable |
-| 28 | Perdón | Regular | Soltar | Fa menor | Escena propia, sin juego todavía |
+| 28 | Perdón | Regular | Soltar | Fa menor | Escena propia, verbo jugable |
 | 29 | Sincronicidad | Regular | Resonar | Sol mayor | Escena propia, verbo jugable |
 | 30 | Esperanza | Regular | Ver | Sim7 | Escena propia, sin juego todavía |
 | 31 | Vipassana | Special | Soltar | Simaj7 | Escena propia, verbo jugable |
