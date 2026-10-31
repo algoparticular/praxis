@@ -85,7 +85,7 @@ Se cambia una línea en `src/data/cardChords.js`, por ejemplo `28: 'Em'`. Se esc
 | 21 | Desafío | Regular | Encender | Re7 | Escena propia, sin juego todavía |
 | 22 | Evolución Espiritual | Regular | Encender | Si7 | Escena propia, verbo jugable |
 | 23 | Fe | Regular | Arraigar | Si mayor | Ilustración plana |
-| 24 | Gratitud | Regular | Dar y recibir | Solmaj7 | Ilustración plana |
+| 24 | Gratitud | Regular | Dar y recibir | Solmaj7 | Escena propia, sin juego todavía |
 | 25 | Hogar | Regular | Arraigar | Do mayor | Escena propia, verbo jugable |
 | 26 | Honestidad | Regular | Resonar | Solm7 | Ilustración plana |
 | 27 | Paciencia | Regular | Arraigar | Re mayor | Escena propia, verbo jugable |
