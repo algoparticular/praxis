@@ -5,6 +5,9 @@
 // falling on a diagonal. Most are far (small, quick, silent); now and then one passes near (bigger, brighter,
 // a longer tail) and only that one sounds (`onShoot`).
 // Plain 2D canvas; it pauses when the block is off screen and stays still with prefers-reduced-motion.
+// Constellations (`figure`): the sky's own stars travel to the points of a shape, one after the other along its line,
+// and threads of dots join them; let go, they go back to their places. The landing's oracle block draws the icon of a
+// way into the oracle with them.
 
 const YELLOW = '#E6E973';  // the yellow of the original stars
 const CREAM = '#F7F8F1';
@@ -13,6 +16,11 @@ const CREAM = '#F7F8F1';
 const STEPS = [1, 1, 0.7, 0.4, 0.7, 1, 1.25];
 
 const rand = (min, max) => min + Math.random() * (max - min);
+const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+
+// Constellations: how long a star takes to travel (s), how the departures spread along the line (s, from the first to
+// the last), how far apart the dots of a thread are (px) and how long the threads take to appear or go (s)
+const GATHER = { travel: 1.1, spread: 0.9, dotGap: 7, threads: 0.6 };
 
 // The shooting stars' head: a soft round mote, drawn once and stamped (the falloff of useStardust's 'soft')
 const DOT_COLORS = [CREAM];               // the head, in the cream of the stars of this sky
@@ -69,6 +77,9 @@ export function createStarField(canvas, container, { shootingEvery = [3, 7], sho
     let raf = 0;
     let last = 0;
     let onScreen = true;
+    // The constellation being drawn: { strokes: [{ stars: [index...], closed }], color, alpha, goal }
+    let figure = null;
+    const leaving = [];            // figures letting go: their threads fade while the stars go home
 
     const makeStars = () => {
         const count = Math.min(300, Math.round((width * height) / 4200));
@@ -88,8 +99,15 @@ export function createStarField(canvas, container, { shootingEvery = [3, 7], sho
                 wobble: Array.from({ length: 8 }, () => rand(-1, 1)),
                 rate: rand(0.25, 1.1),              // steps per second
                 phase: rand(0, STEPS.length),
+                k: 0, goal: 0, wait: 0, tx: 0, ty: 0,   // in a constellation: how far along to its point (0..1)
             };
         });
+        figure = null;
+        leaving.length = 0;
+    };
+    const starAt = (star) => {
+        const e = ease(star.k);
+        return [star.x + (star.tx - star.x) * e, star.y + (star.ty - star.y) * e];
     };
 
     const resize = () => {
@@ -121,20 +139,53 @@ export function createStarField(canvas, container, { shootingEvery = [3, 7], sho
         });
     };
 
+    // A thread of dots between two stars, drawn as far as `reach` (0..1) from the first
+    const thread = (ax, ay, bx, by, reach) => {
+        const length = Math.hypot(bx - ax, by - ay) * reach;
+        const count = Math.floor(length / GATHER.dotGap);
+        const ux = (bx - ax) / Math.max(1, Math.hypot(bx - ax, by - ay)), uy = (by - ay) / Math.max(1, Math.hypot(bx - ax, by - ay));
+        for (let d = 1; d <= count; d++) {
+            ctx.beginPath();
+            ctx.arc(ax + ux * d * GATHER.dotGap, ay + uy * d * GATHER.dotGap, 1.1, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    };
+    const drawFigure = (fig) => {
+        if (fig.alpha <= 0.01) return;
+        ctx.fillStyle = fig.color;
+        ctx.globalAlpha = fig.alpha * 0.85;
+        for (const { stars: line, closed } of fig.strokes) {
+            const n = line.length;
+            for (let i = 0; i < (closed ? n : n - 1); i++) {
+                const a = stars[line[i]], b = stars[line[(i + 1) % n]];
+                // A thread grows once both its stars are nearly there
+                const reach = Math.min(1, Math.max(0, (Math.min(a.k, b.k) - 0.8) / 0.2));
+                if (reach > 0) thread(...starAt(a), ...starAt(b), reach);
+            }
+        }
+        ctx.globalAlpha = 1;
+    };
+
     const draw = (time) => {
         ctx.clearRect(0, 0, width, height);
 
+        leaving.forEach(drawFigure);
+        if (figure) drawFigure(figure);
+
         for (const star of stars) {
-            // Frame-by-frame twinkle: the size jumps from one step to the next
+            // Frame-by-frame twinkle: the size jumps from one step to the next; a star in a constellation holds still
+            // and a little brighter, in the cream
             const step = STEPS[Math.floor(time * star.rate + star.phase) % STEPS.length];
-            const radius = star.radius * step;
-            ctx.fillStyle = star.color;
+            const held = ease(star.k);
+            const radius = star.radius * (step + (1 - step) * held) + held * Math.max(0, 2.2 - star.radius);
+            const [x, y] = star.k > 0 ? starAt(star) : [star.x, star.y];
+            ctx.fillStyle = held > 0.6 ? CREAM : star.color;
 
             if (star.sparkle) {
-                sparklePath(ctx, star.x, star.y, radius, star.rotation, star.wobble);
+                sparklePath(ctx, x, y, radius, star.rotation, star.wobble);
             } else {
                 ctx.beginPath();
-                ctx.ellipse(star.x, star.y, radius, radius * star.squash, star.tilt, 0, Math.PI * 2);
+                ctx.ellipse(x, y, radius, radius * star.squash, star.tilt, 0, Math.PI * 2);
             }
             ctx.fill();
         }
@@ -185,6 +236,19 @@ export function createStarField(canvas, container, { shootingEvery = [3, 7], sho
             meteor.life += dt;
             if (meteor.life >= meteor.duration) shooting.splice(i, 1);
         }
+        // Constellations: each star waits its turn, then travels; the threads come and go with their figure
+        for (const star of stars) {
+            if (star.k === star.goal) continue;
+            if (star.wait > 0) { star.wait -= dt; continue; }
+            const stepK = dt / GATHER.travel;
+            star.k = star.goal > star.k ? Math.min(star.goal, star.k + stepK) : Math.max(star.goal, star.k - stepK);
+        }
+        if (figure) figure.alpha = Math.min(1, figure.alpha + dt / GATHER.threads);
+        for (let i = leaving.length - 1; i >= 0; i--) {
+            leaving[i].alpha -= dt / (GATHER.threads * 0.6);
+            if (leaving[i].alpha <= 0) leaving.splice(i, 1);
+        }
+
         if (withShooting && time >= nextShot) {
             shoot();
             nextShot = time + rand(shootingEvery[0], shootingEvery[1]);
@@ -218,8 +282,56 @@ export function createStarField(canvas, container, { shootingEvery = [3, 7], sho
         start();
     }
 
+    // Draws a shape with the sky's stars: `strokes` is a list of { points: [[x, y], ...], closed } in px of the
+    // container; null lets the one being drawn go. The nearest free star goes to each point.
+    const constellation = (strokes, { color = YELLOW } = {}) => {
+        if (figure) {
+            figure.strokes.forEach(({ stars: line }) => line.forEach((i, order) => {
+                const star = stars[i];
+                star.goal = 0;
+                star.wait = (order / line.length) * GATHER.spread * 0.4;
+            }));
+            leaving.push(figure);
+            figure = null;
+        }
+        if (strokes?.length && stars.length) {
+            const taken = new Set();
+            const total = strokes.reduce((sum, s) => sum + s.points.length, 0);
+            let order = 0;
+            figure = {
+                color,
+                alpha: 0,
+                strokes: strokes.map(({ points, closed }) => ({
+                    closed,
+                    stars: points.map(([px, py]) => {
+                        let best = -1, bestD = Infinity;
+                        stars.forEach((s, i) => {
+                            if (taken.has(i) || s.k > 0) return;
+                            const d = (s.x - px) ** 2 + (s.y - py) ** 2;
+                            if (d < bestD) { bestD = d; best = i; }
+                        });
+                        if (best < 0) return null;
+                        taken.add(best);
+                        const star = stars[best];
+                        star.tx = px; star.ty = py; star.goal = 1;
+                        star.wait = (order++ / total) * GATHER.spread;
+                        return best;
+                    }).filter((i) => i !== null),
+                })),
+            };
+        }
+        if (reducedMotion) {
+            // Still: the shape is simply there, or not
+            stars.forEach((s) => { s.k = s.goal; s.wait = 0; });
+            if (figure) figure.alpha = 1;
+            leaving.length = 0;
+            draw(0);
+        }
+    };
+
     return {
         shoot,
+        constellation,
         destroy() {
             stop();
             observer.disconnect();

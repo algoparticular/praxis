@@ -1,8 +1,17 @@
 <script setup>
-    import { ref } from 'vue';
+    import { computed, ref } from 'vue';
     import { useRouter } from 'vue-router';
     import { play } from '../composables/useSound.js';
     import { CHAKRA_WHEEL } from '../data/chakraColors.js';
+
+    const props = defineProps({
+        // A mode lit from outside (the landing does it on phones, where there is no hover), in that colour
+        lit: { type: String, default: null },
+        litColor: { type: String, default: '' },
+    });
+
+    // `show` tells which mode is looked at, with its icon (so the sky can draw it) and its colour; null when none
+    const emit = defineEmits(['show']);
 
     const router = useRouter();
 
@@ -10,10 +19,21 @@
     const hoverColors = CHAKRA_WHEEL;
     const hovered = ref(null);
     const hoverColor = ref('');
+    const icons = { deck: ref(null), nine: ref(null) };
+
+    const active = computed(() => hovered.value ?? props.lit);
+    const accent = computed(() => (hovered.value ? hoverColor.value : props.litColor));
 
     const hover = (mode) => {
+        if (hovered.value === mode) return;
         hovered.value = mode;
         hoverColor.value = hoverColors[Math.floor(Math.random() * hoverColors.length)];
+        emit('show', { mode, icon: icons[mode].value, color: hoverColor.value });
+    };
+    const leave = () => {
+        if (!hovered.value) return;
+        hovered.value = null;
+        emit('show', null);
     };
 
     //handle navigation
@@ -28,13 +48,13 @@
     <div class="modes">
         <!-- The full deck: a spiral -->
         <button class="mode"
-            :class="{ active: hovered === 'deck' }"
-            :style="{ '--accent': hoverColor }"
+            :class="{ active: active === 'deck' }"
+            :style="{ '--accent': accent }"
             @click="navigate('/oracle')"
-            @mouseenter="hover('deck')" @mouseleave="hovered = null"
-            @focus="hover('deck')" @blur="hovered = null">
+            @mouseenter="hover('deck')" @mouseleave="leave"
+            @focus="hover('deck')" @blur="leave">
             <span class="frame">
-                <svg viewBox="0 0 100 100" aria-hidden="true">
+                <svg :ref="(el) => { icons.deck.value = el; }" viewBox="0 0 100 100" aria-hidden="true">
                     <path d="M50.0 47.0C50.4 46.9 51.7 46.2 52.6 46.4C53.5 46.6 54.8 47.2 55.5 48.2C56.2 49.2 56.9 50.8 56.8 52.2C56.8 53.7 56.2 55.7 55.1 57.0C53.9 58.3 52.0 59.6 50.0 60.0C48.0 60.4 45.3 60.2 43.3 59.2C41.3 58.2 39.0 56.2 37.8 54.0C36.7 51.7 36.0 48.4 36.5 45.6C37.0 42.8 38.6 39.5 40.8 37.4C43.1 35.3 46.7 33.4 50.0 33.0C53.3 32.6 57.7 33.3 60.8 35.1C64.0 36.9 67.3 40.3 68.8 43.9C70.4 47.5 71.1 52.5 70.2 56.6C69.2 60.6 66.6 65.4 63.3 68.3C59.9 71.2 54.7 73.6 50.0 74.0C45.3 74.4 39.3 73.2 35.1 70.5C30.8 67.9 26.5 63.2 24.5 58.3C22.5 53.4 21.8 46.7 23.2 41.3C24.5 35.9 28.1 29.8 32.6 26.1C37.1 22.3 43.9 19.4 50.0 19.0C56.1 18.6 63.7 20.4 69.0 23.8C74.4 27.2 79.7 33.4 82.1 39.6C84.6 45.7 85.2 54.2 83.5 60.9C81.7 67.6 77.1 75.1 71.5 79.6C65.9 84.1 57.4 87.6 50.0 88.0C42.6 88.4 33.3 86.1 26.8 81.9C20.4 77.6 14.0 70.1 11.2 62.6C8.4 55.1 7.7 44.9 9.9 37.0C12.1 29.0 17.7 20.1 24.4 14.7C31.1 9.4 45.7 6.6 50.0 5.0"/>
                 </svg>
             </span>
@@ -43,13 +63,13 @@
 
         <!-- The nine: a chakana, the stepped Andean cross -->
         <button class="mode"
-            :class="{ active: hovered === 'nine' }"
-            :style="{ '--accent': hoverColor }"
+            :class="{ active: active === 'nine' }"
+            :style="{ '--accent': accent }"
             @click="navigate('/oracleTheNine')"
-            @mouseenter="hover('nine')" @mouseleave="hovered = null"
-            @focus="hover('nine')" @blur="hovered = null">
+            @mouseenter="hover('nine')" @mouseleave="leave"
+            @focus="hover('nine')" @blur="leave">
             <span class="frame">
-                <svg viewBox="0 0 100 100" aria-hidden="true">
+                <svg :ref="(el) => { icons.nine.value = el; }" viewBox="0 0 100 100" aria-hidden="true">
                     <path d="M34.8 4.5 L65.2 4.5 L65.2 19.7 L80.3 19.7 L80.3 34.8 L95.5 34.8 L95.5 65.2 L80.3 65.2 L80.3 80.3 L65.2 80.3 L65.2 95.5 L34.8 95.5 L34.8 80.3 L19.7 80.3 L19.7 65.2 L4.5 65.2 L4.5 34.8 L19.7 34.8 L19.7 19.7 L34.8 19.7Z"/>
                     <circle cx="50" cy="50" r="7"/>
                 </svg>

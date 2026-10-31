@@ -12,6 +12,8 @@
     import { createCharacterLife } from '../composables/useCharacterLife.js';
     import { oracleTop } from '../composables/oracleScroll.js';
     import ModeSelector from '../components/ModeSelector.vue';
+    import { iconConstellation } from '../composables/iconConstellation.js';
+    import { CHAKRA_WHEEL } from '../data/chakraColors.js';
     import { play } from '../composables/useSound.js';
     
     const router = useRouter();
@@ -45,6 +47,35 @@
     let tailField = null;
     let unmounted = false;
 
+    // Constellations: the mode looked at is drawn in the sky with its stars. On a phone (no hover) the sky draws the
+    // two ways in by itself, one after the other, while they are on screen, and lights the one it draws.
+    const modesBox = ref(null);
+    const litMode = ref(null);
+    const litColor = ref('');
+    const drawMode = (shown) => {
+        const oracle = document.getElementById('oracle');
+        const size = Math.min(oracle.clientWidth * 0.74, 340);
+        starField?.constellation(shown ? iconConstellation(shown.icon, oracle, { size }) : null, { color: shown?.color });
+    };
+    let ambientTimer = 0;
+    const AMBIENT = { show: 4.2, rest: 1.6, first: 0.9 };    // s
+    const ambient = (mode) => {
+        const icon = modesBox.value?.querySelector(`.mode:nth-child(${mode === 'deck' ? 1 : 2}) svg`);
+        const color = CHAKRA_WHEEL[Math.floor(Math.random() * CHAKRA_WHEEL.length)];
+        litMode.value = mode;
+        litColor.value = color;
+        drawMode({ icon, color });
+        ambientTimer = setTimeout(() => {
+            litMode.value = null;
+            drawMode(null);
+            ambientTimer = setTimeout(() => ambient(mode === 'deck' ? 'nine' : 'deck'), AMBIENT.rest * 1000);
+        }, AMBIENT.show * 1000);
+    };
+    const stopAmbient = () => {
+        clearTimeout(ambientTimer);
+        if (litMode.value) { litMode.value = null; drawMode(null); }
+    };
+
     const stopCorners = [];
     const stopReveals = [];
     const idleAnimations = [];
@@ -58,6 +89,7 @@
         stopCorners.forEach((stop) => stop());
         stopReveals.forEach((stop) => stop());
         idleAnimations.forEach((animation) => animation.cancel());
+        clearTimeout(ambientTimer);
     });
 
     // //ON MOUNTED
@@ -209,6 +241,14 @@
             });
         }
 
+        //On a phone the constellations come by themselves while the two ways in are on screen
+        if (!reducedMotion && window.matchMedia('(hover: none)').matches) {
+            stopReveals.push(inView(modesBox.value, () => {
+                ambientTimer = setTimeout(() => ambient('deck'), AMBIENT.first * 1000);
+                return stopAmbient;
+            }, { amount: 0.6 }));
+        }
+
         //Text and illustrations of the oracle block arrive one after the other when it comes into view.
         //Independent translate/scale/rotate are used so they do not fight the parallax, which owns transform.
         if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -328,7 +368,9 @@
                     <h3>{{ $t("landing.oracleTitle") }}</h3>
                 </div>
                 <p>{{ $t("praxis.praxisIntro") }}</p>
-                <ModeSelector />
+                <div ref="modesBox">
+                    <ModeSelector :lit="litMode" :lit-color="litColor" @show="drawMode" />
+                </div>
             </div>
         
             <div class="gfx">
