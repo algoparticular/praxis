@@ -127,7 +127,7 @@ Cómo lo vestiría cada carta: Aceptación, una luz que baja por el río entre l
 - Desafío: el fuego que rebota por las paredes del laberinto hasta la luz del centro (la que mejor calza con los rebotes).
 - Coraje: Kätus en el borde del acantilado frota para juntar coraje y se lanza hacia la luna.
 - Viriya: frotar es la diligencia ("sin prisa pero sin pausa"); el lanzamiento enciende las flores del camino.
-Las cuatro tienen su juego (ver más abajo). Coraje y Desafío usan el motor compartido de `useKindle.js` (frotar, la honda y el vuelo de la llama); Evolución y Viriya todavía tienen cada una su copia.
+Las cuatro tienen su juego (ver más abajo). Las cuatro usan el motor compartido de `useKindle.js` (frotar, la honda y el vuelo de la llama). Sus números por defecto son los de Viriya. Evolución le pasa los suyos (todo medido en radios de la célula, frotar cuenta a cualquier velocidad) y `body`: la llama es Sid mismo, que mueve el agua de `useCellWater.js` y rebota en la membrana; la escena dice cuándo se apaga. Con el teclado, Viriya le pasa a `key` una función (`aimAt`), y la llama persigue lo apagado mientras se mueve hasta encenderlo.
 **Cómo funciona hoy en Evolución Espiritual:**
 - *Al principio todo está apagado.* Los ocho bulbos, los cuatro hongos y sus bolitas azules están grises y sin brillo.
 - *Frotar.* Se frota con el dedo dentro de la célula, de un lado a otro: saltan chispas donde pasa el dedo, Sid se va calentando (brilla y le suben brasas) y suena una nota más del acorde de la carta con cada sexto del calor (`kindle`). Si se deja de frotar, se enfría despacio. Con unos 11 radios de la célula frotados, prende: un estallido de chispas (`ignite` y `star`). Dentro de la célula el dedo no mueve la página (`touch-action: none`): antes el teléfono tomaba el frotar o el tirón por un scroll y los cortaba; para bajar a la lectura se arrastra desde la corona o desde abajo.
@@ -139,7 +139,7 @@ Las cuatro tienen su juego (ver más abajo). Coraje y Desafío usan el motor com
 - *Teclado.* Enter frota (cada vez lo calienta un quinto) y, encendido, lo lanza hacia lo apagado más cercano.
 - *Tocar un bulbo o un hongo* hace lo de siempre: echa chispas.
 - *Movimiento reducido.* La escena queda estática y todavía no se puede jugar (como Pañña y Vipassana).
-**Dónde se tocó:** `SceneEvolucion.vue` (`press()`, `move()`, `letGo()`, `ignite()`, `launch()`, `hitWall()`, `catchFire()`, `crown()`, `aimGroup`, `play_()`), `kindle`, `ignite` y `resolve` en `synth.js`, `wall` y `ghost` en `useCellWater.js` y `fade()` en `useStardust.js`.
+**Dónde se tocó:** `SceneEvolucion.vue` (`kindler`, `press()`, `onCellKey()`, `hitWall()`, `catchFire()`, `crown()`, `play_()`), `useKindle.js` (`body`, `aimFrom`, `aimReach`, `rubSparks`, `flightCharge`, `still`), `kindle`, `ignite` y `resolve` en `synth.js`, `wall` y `ghost` en `useCellWater.js` y `fade()` en `useStardust.js`.
 **Cómo funciona hoy en Viriya:** al atardecer, Particular está parado al borde de un acantilado, con su mochila y un báculo con una espiral en la punta, mirando un camino que baja serpenteando entre los cerros hacia el sol.
 - *Al principio está apagado.* Los tres cactus y las tres flores amarillas del valle están grises.
 - *Frotar es la diligencia.* Se frota sobre Particular y su báculo, de un lado a otro: saltan chispas, su aura de puntos se calienta y suena una nota del acorde (Mi mayor) con cada sexto del calor (`kindle`). Frotar más rápido no cuenta más (`STEADY`) y si se para se enfría (`COOL`): *"sin prisa pero sin pausa"*. Con algo más de un ancho y medio de la escena frotado (`RUB`), la espiral prende como una antorcha (`ignite`).
@@ -149,7 +149,7 @@ Las cuatro tienen su juego (ver más abajo). Coraje y Desafío usan el motor com
 - *Teclado.* Enter frota (cada vez un quinto) y, encendida, tira la llama hacia lo apagado más cercano (la llama lo busca sola).
 - *Movimiento reducido.* La escena queda estática, con todo encendido, y no se juega.
 - *El cielo y el sol no son imágenes.* El cielo es un degradé dibujado en código desde los colores de la carta (el azul y el atardecer), y el sol es un disco en código con su borde punteado hecho de partículas que viven.
-**Dónde se tocó:** `SceneViriya.vue` (`press()`, `move()`, `letGo()`, `ignite()`, `launch()`, `catchFire()`, `dawn()`, `game()`, `aimGroup`, `RUB`, `STEADY`).
+**Dónde se tocó:** `SceneViriya.vue` (`kindler`, `press()`, `nearestUnlit()`, `catchFire()`, `dawn()`, `game()`) y `useKindle.js` (`RUB`, `STEADY`, `COOL` y `FUEL` son sus valores por defecto).
 
 **Cómo funciona hoy en Coraje:** Kätus está sentado al borde del acantilado, frente a una luna enorme con la mitad en sombra punteada. *"Inhala coraje. Exhala miedo"*, *"mantente en pie en tu luz"*.
 - *Frotar es juntar coraje.* Se frota sobre Kätus: saltan chispas, su luz crece y suena una nota del acorde (Mi7) con cada sexto del calor (`kindle`); si se para, se enfría. Caliente, su luz prende (`ignite`).

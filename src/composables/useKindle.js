@@ -1,5 +1,5 @@
 // Encender (Kätus): rub a source until it catches fire, then pull it back like a sling and let go: a flame flies, and
-// what it touches catches fire. The engine of Evolución and Viriya (each has its own copy), shared by Coraje and Desafío.
+// what it touches catches fire. The engine of the four cards of the verb: Evolución, Viriya, Coraje and Desafío.
 // createKindle(options) gives the state and the gestures; the scene says where the source is, what the flame bounces off
 // and what it lights (in `collide`), and draws the flame and the source's fire from `mode`, `charge` and `flame`.
 // Options:
@@ -14,11 +14,23 @@
 //   speed         [base, more for a full pull] frame widths a second
 //   onIgnite(), onLaunch(k), onOut(), onKindle(step)   to sound and show them
 //   busy()        true while the scene does not let it play (a rulito)
+//   maxPull, aimMin    the full pull (frame widths) and the least of it that launches anything
+//   aimFrom       'anchor': the sling's band starts where the source was when it was taken; 'source': where it is now
+//                 (Evolución: the being follows the finger a little while it is pulled back)
+//   aimReach      [base, more for a full pull] frame widths the dots of where it will go reach
+//   rubSparks     'either': rubbing throws sparks from the finger or the source; 'finger': only from the finger
+//   flightCharge  how much of the source's fire (`charge`) is left while the flame flies (1: the source is the flame)
+//   still         no sparks while rubbing, at a launch or when it goes out (reduced motion, where the scene plays)
+//   body          the flame is the source itself, moved by the scene (Evolución's being, in its water):
+//                 { launch(dx, dy, pull) } sets it off; while it flies the flame only follows `source()` and calls
+//                 `collide`, which bounces it and says when it goes out (`goOut()`): no gravity, drag, homing, embers
+//                 or limits of its own here
 export const FIRE = [0xffb069, 0xff9a5c, 0xffd29a, 0xfff3d6, 0xf2b036];
 
 export const createKindle = ({
     size, source, canvas, sparks, collide = () => {}, busy = () => false,
     rub = 1.6, steady = 1.6, cool = 0.25, fuel = 4, gravity = 0.55, drag = 0.35, speed = [0.9, 1.7], maxPull = 0.32, aimMin = 0.12,
+    aimFrom = 'anchor', aimReach = [0.25, 0.5], rubSparks = 'either', flightCharge = 0.25, still = false, body = null,
     onIgnite = () => {}, onLaunch = () => {}, onOut = () => {}, onKindle = () => {}, fire = FIRE,
 }) => {
     const k = {
@@ -63,9 +75,8 @@ export const createKindle = ({
             const d = Math.hypot(k.finger.x - prevFinger.x, k.finger.y - prevFinger.y);
             const counted = Math.min(d, steady * size() * Math.max(0.008, (now - prevAt) / 1000));
             k.heat = Math.min(1, k.heat + counted / (size() * rub));
-            if (d > 3 && Math.random() < 0.25 + k.heat) {
-                const s = source();
-                const from = Math.random() < 0.5 ? k.finger : s;
+            if (!still && d > 3 && Math.random() < 0.25 + k.heat) {
+                const from = rubSparks === 'finger' || Math.random() < 0.5 ? k.finger : source();
                 sparks.burst(from.x, from.y, { n: 1 + Math.round(k.heat * 2), colors: fire, speed: 30 + 60 * k.heat, life: 0.8, size: 2.5 + 2 * k.heat, spread: 4 });
             }
             k.idle = 0;
@@ -90,7 +101,8 @@ export const createKindle = ({
         window.removeEventListener('pointercancel', letGo);
     };
 
-    // With the keyboard: each press warms it a fifth; on fire, `aimAt` says where to throw it (a point, it homes in)
+    // With the keyboard: each press warms it a fifth; on fire, `aimAt` says where to throw it: a point it homes in on, or a
+    // function giving that point as it moves (it homes in until the function gives null)
     k.key = (aimAt) => {
         k.idle = 0;
         if (busy()) return;
@@ -100,10 +112,11 @@ export const createKindle = ({
             sparks.burst(s.x, s.y, { n: 6, colors: fire, speed: 60, life: 0.8, size: 3.5, spread: 6 });
             if (k.heat > 0.99) k.ignite();
         } else if (k.mode === 'lit') {
-            const to = aimAt?.();
+            const home = aimAt?.();
+            const to = typeof home === 'function' ? home() : home;
             if (!to) return;
             const d = Math.hypot(to.x - s.x, to.y - s.y) || 1;
-            k.launch((to.x - s.x) / d, (to.y - s.y) / d, 0.6, to);
+            k.launch((to.x - s.x) / d, (to.y - s.y) / d, 0.6, home);
         }
     };
 
@@ -114,20 +127,25 @@ export const createKindle = ({
         sparks.burst(s.x, s.y, { n: 40, colors: fire, speed: 140, life: 1.8, size: 5, spread: 8 });
         onIgnite();
     };
-    // `home`, from the keyboard: a point the flame seeks until `collide` clears it
+    // `home`, from the keyboard: a point the flame seeks until `collide` clears it (or a function, see `key`)
     k.launch = (dx, dy, pull, home = null) => {
         const s = source();
-        const v = size() * (speed[0] + speed[1] * pull);
-        Object.assign(k.flame, { x: s.x, y: s.y, vx: dx * v, vy: dy * v, fuel, age: 0, home });
+        if (body) {
+            Object.assign(k.flame, { x: s.x, y: s.y, fuel, age: 0, home: null });
+            body.launch(dx, dy, pull);
+        } else {
+            const v = size() * (speed[0] + speed[1] * pull);
+            Object.assign(k.flame, { x: s.x, y: s.y, vx: dx * v, vy: dy * v, fuel, age: 0, home });
+        }
         k.mode = 'flying';
-        sparks.burst(s.x, s.y, { n: Math.round(14 + 20 * pull), colors: fire, speed: 120, life: 1.4, size: 4.5, spread: 6 });
+        if (!still) sparks.burst(s.x, s.y, { n: Math.round(14 + 20 * pull), colors: fire, speed: 120, life: 1.4, size: 4.5, spread: 6 });
         onLaunch(pull);
     };
     k.goOut = () => {
         k.mode = 'cold';
         k.heat = 0;
         k.kindled = 0;
-        sparks.burst(k.flame.x, k.flame.y, { n: 12, colors: [0xcfc4d6, 0xe8e0ea, 0xffd29a], speed: 40, life: 1.6, size: 3.5, spread: 8 });
+        if (!still) sparks.burst(k.flame.x, k.flame.y, { n: 12, colors: [0xcfc4d6, 0xe8e0ea, 0xffd29a], speed: 40, life: 1.6, size: 3.5, spread: 8 });
         onOut();
     };
     // A knock: the flame loses a bounce, with a few sparks
@@ -159,15 +177,23 @@ export const createKindle = ({
             if (sixth < k.kindled - 1) k.kindled = sixth;
             if (k.heat >= 1) k.ignite();
         }
-        if (k.mode === 'flying') {
+        if (k.mode === 'flying' && body) {
             const f = k.flame;
             f.age += dt;
-            if (f.home) {
-                const d = Math.hypot(f.home.x - f.x, f.home.y - f.y) || 1;
+            Object.assign(f, source());
+            collide(f, dt);
+        } else if (k.mode === 'flying') {
+            const f = k.flame;
+            f.age += dt;
+            const live = typeof f.home === 'function';
+            const to = live ? f.home() : f.home;
+            if (live && !to) f.home = null;
+            if (to) {
+                const d = Math.hypot(to.x - f.x, to.y - f.y) || 1;
                 const v = size() * 1.4;
-                f.vx += ((f.home.x - f.x) / d * v - f.vx) * Math.min(1, dt * 4);
-                f.vy += ((f.home.y - f.y) / d * v - f.vy) * Math.min(1, dt * 4);
-                if (d < 12) f.home = null;
+                f.vx += ((to.x - f.x) / d * v - f.vx) * Math.min(1, dt * 4);
+                f.vy += ((to.y - f.y) / d * v - f.vy) * Math.min(1, dt * 4);
+                if (!live && d < 12) f.home = null;
             } else {
                 f.vy += size() * gravity * dt;
                 const slow = Math.exp(-drag * dt);
@@ -184,11 +210,12 @@ export const createKindle = ({
             }
             if (k.mode === 'flying' && (f.fuel <= 0 || f.age > 6 || (!f.home && Math.hypot(f.vx, f.vy) < size() * 0.12))) k.goOut();
         }
-        const want = k.mode === 'cold' ? k.heat * 0.6 : k.mode === 'lit' ? 1 : 0.25;
+        const want = k.mode === 'cold' ? k.heat * 0.6 : k.mode === 'lit' ? 1 : flightCharge;
         k.charge += (want - k.charge) * Math.min(1, dt * (want > k.charge ? 6 : 3));
     };
 
-    // The sling, as particles: a band from the source to the finger and, the other way, where the flame will go
+    // The sling, as particles: a band from the source to the finger and, the other way, where the flame will go (from
+    // where it was taken, or from where the source is now: `aimFrom`)
     const AIM_N = 44;
     k.aimGroup = {
         count: AIM_N,
@@ -196,7 +223,8 @@ export const createKindle = ({
             data.alphas.fill(0);
             if (!k.aiming || !k.finger || !k.anchor) return;
             const p = k.pull();
-            const { anchor, finger } = k;
+            const { finger } = k;
+            const anchor = aimFrom === 'source' ? source() : k.anchor;
             for (let i = 0; i < 14; i++) {
                 const u = i / 13;
                 data.positions[i * 3] = anchor.x + (finger.x - anchor.x) * u;
@@ -209,7 +237,7 @@ export const createKindle = ({
             const d = Math.hypot(p.x, p.y) || 1;
             for (let i = 14; i < AIM_N; i++) {
                 const u = (i - 13) / (AIM_N - 14);
-                const go = u * size() * (0.25 + 0.5 * p.k) + ((t * 60) % 8);
+                const go = u * size() * (aimReach[0] + aimReach[1] * p.k) + ((t * 60) % 8);
                 data.positions[i * 3] = anchor.x - p.x / d * go;
                 data.positions[i * 3 + 1] = anchor.y - p.y / d * go;
                 data.sizes[i] = 3.2 * (1 - u * 0.6);
