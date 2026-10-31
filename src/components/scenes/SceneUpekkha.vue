@@ -620,7 +620,11 @@
     const LAG = 0.14;                       // how far behind its cluster each smaller bubble goes
     const between = ([a, b]) => a + Math.random() * (b - a);
 
-    const SPAN_Y = [[-150, 1150], [1420, 2120]];    // where along the edge of each half wanderers bud off (art px)
+    // Up in the sky, clear of Sid (his head starts at art row 612): the card's clusters are lifted (LIFT, art px) and
+    // wanderers bud off, go and come back only within SPAN_Y; in the ground, below where he sits
+    const LIFT = [220, 0];
+    const SPAN_Y = [[-100, 380], [1640, 2120]];     // where along the edge of each half wanderers go (art px)
+    const within = (plane, y) => Math.min(SPAN_Y[plane][1], Math.max(SPAN_Y[plane][0], y));
     const WANDERERS = [3, 3];               // at most at once, in the sky and in the ground
     const wanderers = [];
     let nextWanderer = 2;
@@ -642,9 +646,9 @@
         const rise = (Math.random() - 0.5) * 300;
         wanderers.push({
             plane, toward, members, age: 0,
-            from: y, to: y + rise, back: y + rise + (Math.random() - 0.5) * 320, reach,
+            from: y, to: within(plane, y + rise), back: within(plane, y + rise + (Math.random() - 0.5) * 320), reach,
             out: between([5, 8]), stay: between([3, 9]), home: between([5, 7]),
-            drift: (Math.random() - 0.5) * 14,
+            drift: (Math.random() - 0.5) * 8,
         });
     };
     // Where a wanderer is at a time (art px): out of its own colour, drifting, then back in somewhere else
@@ -692,13 +696,13 @@
     const moveClusters = (dt, t) => {
         clusters.forEach((c) => {
             c.timer -= dt;
-            if (c.state === 'home' && c.timer <= 0) { c.state = 'in'; c.ey = (Math.random() - 0.5) * 300; }
+            if (c.state === 'home' && c.timer <= 0) { c.state = 'in'; c.ey = (Math.random() - (c.plane ? 0.5 : 0.75)) * 300; }
             else if (c.state === 'in') {
                 c.p = Math.max(0, c.p - dt / GO);
                 if (!c.p) { c.state = 'away'; c.timer = between(AWAY); }
             } else if (c.state === 'away' && c.timer <= 0) {
                 c.state = 'out';
-                c.ey = (Math.random() - 0.5) * 300;
+                c.ey = (Math.random() - (c.plane ? 0.5 : 0.75)) * 300;
                 c.dx = (Math.random() - 0.5) * 40;
                 c.dy = (Math.random() - 0.5) * 60;
             } else if (c.state === 'out') {
@@ -732,7 +736,7 @@
                 // They ride the wave (the card's bubbles are the eyes of a yin and yang: each sits in the other's lobe of
                 // the S, as far from the edge as the card has it, and goes with it as it waves), and circle slowly round their place
                 const roam = (b) => {
-                    const y = b.y + c.dy + Math.cos(t * 0.17 + b.phase) * 14;
+                    const y = b.y - LIFT[c.plane] + c.dy + Math.cos(t * 0.17 + b.phase) * 14;
                     return [edgeNow(c.plane, y) + (b.x - cardEdgeAt(c.plane, b.y)) - toward * push + c.dx + Math.sin(t * 0.21 + b.phase) * 10, y];
                 };
                 let [hx, hy] = roam(m);
