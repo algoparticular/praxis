@@ -59,7 +59,7 @@ const scenes = readFileSync(at('src', 'data', 'cardScenes.js'), 'utf8');
 for (const [, id] of scenes.matchAll(/^\s*(\d+):\s*(?:lazy|stage)\(/gm)) {
     if (!seen.has(Number(id))) errors.push(`src/data/cardScenes.js lists a scene for card ${id}, which does not exist`);
 }
-// and sceneNames.js (analytics, the deck page's filter) names exactly those
+// and sceneNames.js (analytics) names exactly those
 const staged = [...scenes.matchAll(/^\s*(\d+):\s*(?:lazy|stage)\(/gm)].map(([, id]) => id).sort().join();
 const namesSource = readFileSync(at('src', 'data', 'sceneNames.js'), 'utf8');
 const named = [...namesSource.match(/const names = \{([^}]*)\}/)[1].matchAll(/(\d+):/g)].map(([, id]) => id).sort().join();

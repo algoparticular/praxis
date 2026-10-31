@@ -21,6 +21,7 @@
     import { createParallax } from '../../composables/useParallax.js';
     import { createLayerStage } from '../../composables/useLayerStage.js';
     import { startStardust } from '../../composables/useStardust.js';
+    import { createThreads, rgbOf, smooth } from '../../composables/useThreads.js';
     import { play } from '../../composables/useSound.js';
     import { sceneMilestone } from '../../analytics.js';
     import Rulito from '../Rulito.vue';
@@ -188,126 +189,46 @@
         return height;
     };
 
-    // ---- The threads: spirals of dots that join one light to another. A thread starts as a point at the light it leaves,
-    // swells into a double helix and closes into a point at the light it reaches, and its dots take the colours of the
-    // two lights as they flow from one to the other (see "Ver" below)
-    const TURN = 100;          // px of a thread per turn of the helix
-    const DOTS = 72;           // dots in each strand of a thread (the shorter ones use fewer)
-    const DUST = 20;
-    const PER = DOTS * 2 + DUST;                   // the particles of one thread
+    // ---- The threads: spirals of dots that join one light to another (useThreads.js, shared with Esperanza). A thread
+    // starts as a point at the light it leaves, swells into a double helix and closes into a point at the light it
+    // reaches, and its dots take the colours of the two lights as they flow from one to the other (see "Ver" below)
     const MAX_LINKS = 6;                           // the most threads a figure has
     const GHOST_SLOT = 1 + MAX_LINKS;              // the ghost of the figure has a slot for each of its threads
     const SLOTS = 1 + 2 * MAX_LINKS;               // slot 0 is the thread that follows the finger
-    const FLOW = 0.05;         // lengths of a thread per second
+    const threads = createThreads({ slots: SLOTS });  // its `surge` is 1 when Sid has just been touched: the threads rush
     let bob = 0;               // Sid floats; the aura and the third eye float with him
-    let surge = 0;             // 1 when Sid has just been touched: the threads rush
-    let flowPhase = 0;
     let lastT = 0;
     let linksFade = 1;         // the threads go out together when the rulito leaves
     let flowBoost = 0;         // 1 while the threads carry their light to the third eye: they flow fast, towards it
     let eyeFlare = 0;          // 1 when the third eye opens
-    let opening = 0;           // 0..1: the threads part around the rulito while it is over Sid's head
-    let hole = null;           // { x, y, r }: the rulito's circle on the threads' canvas, while it is there
-    const drawn = [];          // the threads drawn in the last frame, for the glow under them
-    const smooth = (a, b, x) => { const u = Math.min(1, Math.max(0, (x - a) / (b - a))); return u * u * (3 - 2 * u); };
-    const wrap = (v) => v - Math.floor(v);
-    const rgbOf = (hex) => [(hex >> 16 & 255) / 255, (hex >> 8 & 255) / 255, (hex & 255) / 255];
-
-    // Where a thread crosses the rulito, its two strands part, one to each side, and go round it like the outline of an
-    // eye, so the rulito is framed instead of crossed: `parting(f)` is how far (0..1) the thread is open at f, and
-    // `around(f, side)` how far a strand going round on that side (+1 or -1) is pushed off the thread's line there
-    const opener = (x0, y0, dx, dy, length, nx, ny) => {
-        if (!hole || opening < 0.001) return null;
-        const along = ((hole.x - x0) * dx + (hole.y - y0) * dy) / length;
-        const off = (hole.x - x0) * nx + (hole.y - y0) * ny;            // the circle's centre, sideways from the line
-        if (Math.abs(off) > hole.r || along < -hole.r || along > length + hole.r) return null;
-        const span = 1.9 * hole.r;
-        const parting = (f) => {
-            const u = (f * length - along) / span;
-            return Math.abs(u) >= 1 ? 0 : opening * (0.5 + 0.5 * Math.cos(Math.PI * u));
-        };
-        return { parting, around: (f, side) => (off + side * hole.r) * parting(f) };
-    };
-
-    // One thread from one point to another (group coordinates), written into its slot of the particle buffers: a double
-    // helix of dots flowing from the first point to the second, as wide as it is at the middle (`amp`) and a point at
-    // both ends. `colours` are the tints of the two ends, `strength` its brightness
-    const helix = (slot, data, t, [x0, y0], [x1, y1], [ca, cb], { unit, amp, strength = 1, strands = DOTS, dust = DUST, dir = 1 }) => {
-        const dx = x1 - x0, dy = y1 - y0;
-        const length = Math.max(1, Math.hypot(dx, dy));
-        const nx = dy / length, ny = -dx / length;          // sideways
-        const turns = length / TURN;
-        const open = opener(x0, y0, dx, dy, length, nx, ny);
-        let i = slot * PER;
-        const place = (f, side, size, alpha) => {
-            data.positions[i * 3] = x0 + dx * f + nx * side;
-            data.positions[i * 3 + 1] = y0 + dy * f + ny * side;
-            data.sizes[i] = size;
-            data.alphas[i] = alpha;
-            for (let c = 0; c < 3; c++) data.tints[i * 3 + c] = ca[c] + (cb[c] - ca[c]) * f;
-        };
-        for (let strand = 0; strand < 2; strand++) {
-            for (let d = 0; d < DOTS; d++, i++) {
-                if (d >= strands) { data.alphas[i] = 0; continue; }
-                const f = wrap(d / strands + dir * flowPhase);
-                const lens = Math.sin(Math.PI * f) ** 0.7;                // 0 at both ends: a point
-                const wave = Math.PI * 2 * turns * f + strand * Math.PI - t * 0.4;
-                const near = 0.5 + 0.5 * Math.cos(wave);                  // 1 when the dot passes in front
-                const pulse = Math.max(0, Math.sin(f * 15 - t * 2.1)) ** 3;
-                // Round the rulito the helix calms into two clean arcs, strand 0 on one side and strand 1 on the other
-                const side = open ? Math.sin(wave) * amp * lens * (1 - 0.8 * open.parting(f)) + open.around(f, strand ? -1 : 1)
-                    : Math.sin(wave) * amp * lens;
-                place(f, side, (3.8 + 3 * near + 2.4 * pulse + 2.2 * surge) * unit * (0.4 + 0.6 * lens),
-                    smooth(0, 0.08, f) * smooth(0, 0.08, 1 - f) * strength * (0.7 + 0.3 * near));
-            }
-        }
-        // Dust: tinier and quicker, loosely following the helix
-        for (let d = 0; d < DUST; d++, i++) {
-            if (d >= dust) { data.alphas[i] = 0; continue; }
-            const seed = d * 12.9898;
-            const r = (n) => { const v = Math.sin(seed + n * 78.233) * 43758.5453; return v - Math.floor(v); };
-            const f = wrap(r(1) + dir * flowPhase * (1.6 + r(2) * 1.6));
-            const lens = Math.sin(Math.PI * f) ** 0.7;
-            const wave = Math.PI * 2 * turns * f + r(3) * 6.28;
-            const spread = (r(4) - 0.5) * 2 * amp * 1.5 * lens + Math.sin(wave + t) * 4 * lens;
-            place(f, spread + (open ? open.around(f, r(4) < 0.5 ? -1 : 1) : 0), (1.4 + r(5) * 1.5) * unit,
-                smooth(0, 0.08, f) * smooth(0, 0.08, 1 - f) * strength * (0.35 + 0.5 * r(6)) * (0.6 + 0.4 * Math.sin(t * 2 + d)));
-        }
-    };
-    const hide = (slot, data) => { data.alphas.fill(0, slot * PER, (slot + 1) * PER); };
+    let opening = 0;           // 0..1: the threads part around the rulito while it is over Sid's head (threads.hole)
 
     let threadShift = [0, 0];  // how far the threads are moved by the camera (the lights are not)
     const thread = {
-        count: SLOTS * PER + 1,
+        count: threads.count + 1,
         update(t, data) {
             if (!geo) return;
             const dt = Math.min(0.1, Math.max(0, t - lastT));
             lastT = t;
-            surge = Math.max(0, surge - dt * 0.35);
-            flowPhase += dt * FLOW * (1 + surge * 3 + flowBoost * 5);
+            threads.surge = Math.max(0, threads.surge - dt * 0.35);
+            threads.tick(dt, 1 + threads.surge * 3 + flowBoost * 5);
             eyeFlare = Math.max(0, eyeFlare - dt * 0.7);
             // The threads open as the rulito is born and close again as it goes
             opening += ((win && win.opened && !win.back ? 1 : 0) - opening) * Math.min(1, dt * 2.2);
-            hole = null;
+            threads.hole = null;
             if (opening > 0.001 && N_.rulito) {
                 const r = N_.rulito.boxOnScreen(geo.glyph);
-                if (r.width) hole = { x: r.left + r.width / 2 - threadShift[0], y: r.top + r.height / 2 - threadShift[1], r: 0.62 * Math.max(r.width, r.height) };
+                if (r.width) threads.hole = { x: r.left + r.width / 2 - threadShift[0], y: r.top + r.height / 2 - threadShift[1], r: 0.62 * Math.max(r.width, r.height), opening };
             }
             linksFade += ((linksOut ? 0 : 1) - linksFade) * Math.min(1, dt * 2);
 
             const L = layout();
             const unit = Math.max(1, L.S / 765);
             const spots = lightSpots().map(([x, y]) => [x - threadShift[0], y - threadShift[1]]);
-            drawn.length = 0;
-            const draw = (slot, from, to, colours, strength, grow = 1, dir = 1) => {
-                const length = Math.hypot(to[0] - from[0], to[1] - from[1]) * grow;
-                const end = [from[0] + (to[0] - from[0]) * grow, from[1] + (to[1] - from[1]) * grow];
-                helix(slot, data, t, from, end, colours, {
-                    unit, amp: Math.min(0.028 * L.S, length * 0.1), strength, dir,
-                    strands: Math.min(DOTS, Math.max(8, Math.round(length / 6))), dust: Math.min(DUST, Math.max(3, Math.round(length / 24))),
-                });
-                drawn.push({ slot, from, to: end, colours, strength, length });
-            };
+            threads.begin();
+            // As wide as 2.8% of the card at the middle (a tenth of its length at most)
+            const draw = (slot, from, to, colours, strength, grow = 1, dir = 1) =>
+                threads.draw(slot, data, t, from, to, colours, { unit, widest: 0.028 * L.S / unit, strength, grow, dir });
             // The threads the person has joined, each growing out of the light it left
             links.forEach((link, k) => {
                 const grow = smooth(0, 1, smooth(0, 0.9, t - link.born));
@@ -319,54 +240,27 @@
                 const grow = 1 - smooth(0, CUT_LEN, t - link.at);
                 draw(1 + links.length + k, spots[link.a], spots[link.b], [TINTS[link.a], TINTS[link.b]], (inFigure(link) ? 0.95 : 0.4) * grow, grow, link.dir);
             });
-            for (let k = links.length + Math.min(cut.length, MAX_LINKS - links.length); k < MAX_LINKS; k++) hide(1 + k, data);
+            for (let k = links.length + Math.min(cut.length, MAX_LINKS - links.length); k < MAX_LINKS; k++) threads.hide(1 + k, data);
             // The ghost of the figure: its threads that are not joined yet draw themselves one after another, faint, and go
             const ghosts = ghost ? figure.links.filter(([a, b]) => !joined(a, b)) : [];
             ghosts.forEach(([a, b], k) => {
                 const fade = smooth(0, 0.6, ghost.age) * smooth(0, 0.8, GHOST_LEN - ghost.age);
                 draw(GHOST_SLOT + k, spots[a], spots[b], [TINTS[a], TINTS[b]], 0.5 * fade, smooth(0, 1, smooth(0, 0.9, ghost.age - k * 0.2)));
             });
-            for (let k = ghosts.length; k < MAX_LINKS; k++) hide(GHOST_SLOT + k, data);
+            for (let k = ghosts.length; k < MAX_LINKS; k++) threads.hide(GHOST_SLOT + k, data);
             // The thread that follows the finger, locking on to a light that is near enough
             if (drag && drag.moved) {
                 const snapped = drag.snap >= 0;
                 draw(0, spots[drag.from], snapped ? spots[drag.snap] : [drag.x - threadShift[0], drag.y - threadShift[1]],
                     [TINTS[drag.from], TINTS[snapped ? drag.snap : drag.from]], snapped ? 0.9 : 0.6);
-            } else hide(0, data);
+            } else threads.hide(0, data);
             // The dot on Sid's forehead: his third eye
-            const eye = SLOTS * PER;
+            const eye = threads.count;
             data.positions[eye * 3] = spots[EYE][0];
             data.positions[eye * 3 + 1] = spots[EYE][1];
-            data.sizes[eye] = (4.2 + 3.6 * surge + 30 * eyeFlare * eyeFlare) * unit;
+            data.sizes[eye] = (4.2 + 3.6 * threads.surge + 30 * eyeFlare * eyeFlare) * unit;
             data.alphas[eye] = Math.min(1, 0.6 + 0.35 * Math.sin(t * 1.6) + 0.5 * eyeFlare);
             data.tints.set(TINTS[EYE], eye * 3);
-        },
-    };
-
-    // A soft glow under every thread, so it reads as a line of light: big faint motes along its middle, a little brighter
-    // where it is wide and gone at both ends
-    const GLOW_DOTS = 30;
-    const glow = {
-        count: SLOTS * GLOW_DOTS,
-        update(t, data) {
-            data.alphas.fill(0);
-            if (!geo) return;
-            const unit = Math.max(1, geo.s / 765);
-            drawn.forEach(({ slot, from, to, colours: [ca, cb], strength, length }) => {
-                const dx = to[0] - from[0], dy = to[1] - from[1], len = Math.max(1, Math.hypot(dx, dy));
-                const open = opener(from[0], from[1], dx, dy, len, dy / len, -dx / len);
-                for (let k = 0; k < GLOW_DOTS; k++) {
-                    const f = (k + 0.5) / GLOW_DOTS;
-                    const i = slot * GLOW_DOTS + k;
-                    const lens = Math.sin(Math.PI * f) ** 0.7;
-                    data.positions[i * 3] = from[0] + (to[0] - from[0]) * f;
-                    data.positions[i * 3 + 1] = from[1] + (to[1] - from[1]) * f;
-                    data.sizes[i] = (24 + 8 * Math.sin(t * 1.3 + k * 0.5 + slot)) * unit * (0.25 + 0.75 * lens);
-                    data.alphas[i] = 0.16 * strength * smooth(0, 0.12, f) * smooth(0, 0.12, 1 - f) * Math.min(1, length / GLOW_DOTS / 10)
-                        * (open ? 1 - 0.9 * open.parting(f) : 1);
-                    for (let c = 0; c < 3; c++) data.tints[i * 3 + c] = ca[c] + (cb[c] - ca[c]) * f;
-                }
-            });
         },
     };
 
@@ -483,7 +377,7 @@
     let awake = 0;
     const wake = (quiet = false) => {
         awake = 1;
-        surge = 1;
+        threads.surge = 1;
         back?.boost(G.aura, 1.6);
         back?.boost(G.sun, 1);
         const L = layout();
@@ -616,7 +510,7 @@
         if (links.length >= MAX_LINKS) return;
         links.push({ a, b, born: lastT });
         idle = 0;
-        surge = Math.max(surge, 0.5);
+        threads.surge = Math.max(threads.surge, 0.5);
         flare(a);
         flare(b);
         play('link', { from: LIGHTS[a].pitch, to: LIGHTS[b].pitch, level: inFigure(links[links.length - 1]) ? 1 : 0.45 });
@@ -668,7 +562,7 @@
     const openEye = () => {
         win.opened = true;
         eyeFlare = 1;
-        surge = 1;
+        threads.surge = 1;
         awake = 1;
         back?.boost(G.aura, 2.2);
         back?.boost(G.sun, 1.2);
@@ -688,7 +582,7 @@
             win.full = true;
             win.fullAt = win.age;
             win.pop = 1;
-            surge = 1;
+            threads.surge = 1;
             back?.boost(G.aura, 1.6);
             back?.boost(G.sun, 1.2);
             play('rulito');
@@ -1072,7 +966,7 @@
             stage,
             manual: true,
             groups: [
-                { colors: [0xffe47d], dynamic: glow, parallax: 0, drift: 0, twinkle: 0, reach: 0, look: 'soft', order: 1e6, bloom: true },
+                { colors: [0xffe47d], dynamic: threads.glow, parallax: 0, drift: 0, twinkle: 0, reach: 0, look: 'soft', order: 1e6, bloom: true },
                 { colors: [0xffe47d, 0xffe47d, 0xfff3b8], dynamic: thread, parallax: 0, drift: 0, twinkle: 0, reach: 140, push: 26, look: 'hard', order: 1e6 + 1, bloom: true },
                 { colors: [0xffffff], dynamic: sparkGroup, parallax: 0, drift: 0, twinkle: 0, reach: 0, look: 'hard', order: 1e6 + 2 },
             ],

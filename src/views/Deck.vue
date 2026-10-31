@@ -10,7 +10,6 @@
     import { play } from '../composables/useSound.js';
     import { preloadThumbs } from '../composables/useDeckRing.js';
     import { deck } from '../data/cards.js';
-    import { hasScene } from '../data/sceneNames.js';
 
     // three.js only loads when the deck is opened (see DeckRing). Meanwhile the skeleton holds the ring's place,
     // so the text below it does not come up into the first screen.
@@ -29,14 +28,12 @@
 
     const filters = [
         { key: 'all', label: 'deck.filterAll', category: null },
-        // The cards whose page already has its own scene (and game), right after all of them
-        { key: 'scenes', label: 'deck.filterScenes', only: (card) => hasScene(card.id) },
         { key: 'paramis', label: 'deck.filterParamis', category: 'Paramis' },
         { key: 'regular', label: 'deck.filterRegular', category: 'Regular' },
         { key: 'special', label: 'deck.filterSpecial', category: 'Special' },
     ].map((filter) => ({
         ...filter,
-        cards: filter.only ? cards.filter(filter.only) : filter.category ? cards.filter((card) => card.category === filter.category) : cards,
+        cards: filter.category ? cards.filter((card) => card.category === filter.category) : cards,
     })).filter((filter) => filter.cards.length > 0);
 
     const active = ref('all');
