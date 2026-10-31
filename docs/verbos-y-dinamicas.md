@@ -35,7 +35,7 @@ Los siete verbos, uno por chakra, quedan ordenados entre dos polos:
 - **Arraigar** (raíz) es el polo de la manifestación: de la materia a la manifestación. Está probado en Paciencia y en Hogar.
 - **Soltar** (corona) es el polo de la liberación: del entendimiento a la existencia. Está probado en Vipassana, en Nekkhamma y en Upekkha.
 - **Dar y recibir** (corazón) es donde las dos corrientes se encuentran. Las notas de Belén lo dicen así: "dos triángulos entrelazados, el movimiento descendente del espíritu en la materia y la liberación ascendente de la materia en el espíritu: equilibrio perfecto en el corazón". Está implementado en Dana: compartir la luz de la llamita con todos los de la isla, y que vuelva multiplicada; y con el mismo motor en Metta (empezando por uno mismo) y en Gratitud (agradecer a cada cosa) (ver más abajo, en "Dinámicas").
-- **Fluir, Encender, Resonar y Ver** serían los pasos entre un polo y el otro. Ver está probado en Pañña, Encender en Evolución Espiritual, Fluir en Khanti (y en Aceptación, Transformación y Celebración) y Resonar en Sincronicidad (a tiempo), en Creatividad (composición libre) y en Sacca (eco).
+- **Fluir, Encender, Resonar y Ver** serían los pasos entre un polo y el otro. Ver está probado en Pañña (y en Esperanza y Belleza), Encender en Evolución Espiritual, Fluir en Khanti (y en Aceptación, Transformación y Celebración) y Resonar en Sincronicidad (a tiempo), en Creatividad (composición libre) y en Sacca (eco).
 
 Esto se parece a lo que el rulito premia: en las notas del tercer chakra, "siento las dos corrientes, ascendente de liberación y descendente de manifestación, que se unen en mí para manifestar mi propósito de ser quien soy".
 
@@ -78,7 +78,7 @@ Las palabras del libro para cada chakra, subiendo y bajando:
 
 Cada carta tiene un verbo (`verb` en `src/data/cards.json`, lista en `src/data/verbs.js`). El verbo define la **dinámica**: qué hace la persona con la escena. La ilustración, el sonido y el significado los pone cada carta. Los siete verbos son uno por personaje y chakra (ver arriba).
 
-Los siete verbos se probaron en una escena: **Arraigar en Paciencia** (y, hacia adentro, en **Hogar**, y contra la tormenta, en **Addhitthana**), **Fluir en Khanti**, **Encender en Evolución Espiritual** (frotar y lanzar el fuego), **Dar y recibir en Dana** (compartir la luz; y en **Metta** y **Gratitud**), **Resonar en Sincronicidad** (y, como composición libre, en **Creatividad**, y como eco, en **Sacca**), **Ver en Pañña** y **Soltar en Vipassana** (y en **Nekkhamma** y **Upekkha**). Lo implementado no es fijo: son ideas probadas y pueden cambiar. Lo que se dice de las otras cartas son propuestas, tomando como punto de partida lo que ya hacen las escenas.
+Los siete verbos se probaron en una escena: **Arraigar en Paciencia** (y, hacia adentro, en **Hogar**, y contra la tormenta, en **Addhitthana**), **Fluir en Khanti**, **Encender en Evolución Espiritual** (frotar y lanzar el fuego), **Dar y recibir en Dana** (compartir la luz; y en **Metta** y **Gratitud**), **Resonar en Sincronicidad** (y, como composición libre, en **Creatividad**, y como eco, en **Sacca**), **Ver en Pañña** (y, con ancestros en las estrellas, en **Esperanza**; mirando de cerca, en **Belleza**) y **Soltar en Vipassana** (y en **Nekkhamma** y **Upekkha**). Lo implementado no es fijo: son ideas probadas y pueden cambiar. Lo que se dice de las otras cartas son propuestas, tomando como punto de partida lo que ya hacen las escenas.
 
 Orden de los verbos: Arraigar (raíz) y Soltar (corona) son los dos polos, la corriente de manifestación y la de liberación, y Dar y recibir (corazón) es donde se encuentran. Los dos polos y el centro están probados: el centro, en Dana. Ver arriba, sección "Dos corrientes".
 
@@ -245,7 +245,7 @@ Con movimiento reducido la escena queda estática y no se juega (como Sincronici
 
 **Cartas:** Sincronicidad (hecha), Armonía, Sila (hecha) (a tiempo); Comunicación, Honestidad, Sacca (hecha) (eco); Creatividad (hecha, composición libre).
 
-### 6. Ver (Huit, demonio: ilusión): implementado en Pañña
+### 6. Ver (Huit, demonio: ilusión): implementado en Pañña, Esperanza y Belleza
 **Dinámica:** descubrir lo oculto, unir puntos, reconocer un patrón.
 **Cómo funciona hoy en Pañña:** las nueve luces de la escena (el sol, el tercer ojo de Sid, el hongo rosado grande del medio, las cuatro luciérnagas y los dos hongos azules) se unen arrastrando de una a otra, y hay una **figura** que ver.
 - *Nada viene unido.* La escena arranca limpia, sin la espiral del sol a la frente.
@@ -259,8 +259,25 @@ Con movimiento reducido la escena queda estática y no se juega (como Sincronici
 - *Teclado.* Enter en una luz la elige y Enter en otra las une; Enter otra vez en la misma la suelta.
 - *Movimiento reducido.* La escena queda estática y todavía no se puede jugar (como Vipassana): los toques siguen haciendo lo de siempre.
 **Dónde se tocó:** `ScenePanna.vue` (todos los hilos son un solo grupo de partículas, `helix()`; `LIGHTS`, `join()`, `seen()`). No cubre ni agrega ningún dibujo: son solo partículas.
+**Cómo funciona hoy en Esperanza:** *"la asistencia del universo con sus hilos invisibles de luz"*, *"tus ancestros están detrás tuyo"*. Usa los mismos hilos que Pañña (la hélice de puntos está en `useThreads.js`, compartida) y el mismo gesto, pero lo que se ve es un **ancestro**: una constelación con la forma de un ser como el de la duna.
+- *Las estrellas brillantes.* Entre las estrellas del cielo algunas brillan más, con un halo (en un teléfono, en el cielo abierto sobre la luna; en pantalla ancha, a la derecha de la luna, sobre el ser). Son las del ancestro que toca ver (sus seis o siete, en oro) y dos señuelos (más pálidos).
+- *Unir.* Como en Pañña: se arrastra de una estrella a otra y el hilo se engancha; soltar en el aire lo deshace y unir de nuevo dos ya unidas deshace ese hilo. Los hilos del ancestro quedan firmes y suenan fuerte (`link`, más agudo cuanto más alta la estrella); los demás, tenues. A los 7 s sin tocar, el ancestro se dibuja solo, tenue, y se va. Al último hilo se juzga: si no es la figura, los hilos se apagan (`unravel`, hito `pattern_reset`) y se intenta de nuevo el mismo ancestro.
+- *Los tres ancestros, siempre en el mismo orden:* uno **sentado** como el ser (hocico a la izquierda, dos orejas, la cola enroscada: 7 hilos), uno **caminando** (la cola alzada: 6) y el mayor, **descansando** (echado a lo largo: 6).
+- *Visto.* Sus hilos se encienden y corren (`converge`, hito `pattern_seen` con `figure`); al rato el ancestro se junta, se achica y va a pararse detrás del ser, en el cielo bajo junto a él, y le baja un hilo de luz: el ser mira hacia arriba y su aura crece. Entonces brillan las estrellas del siguiente.
+- *Los tres detrás.* Cuando llega el hilo del tercero, los tres hilos brillan y corren juntos hacia el ser (`converge`), su aura se abre (`open`) y nace el rulito sobre su cabeza (en el amarillo de las estrellas de la carta; la carta lo dibuja en el cielo, arriba a la derecha, que en un teléfono no se ve). Se ilumina el nombre y suena `rulito`; hito `ancestors_gathered`. Cuando el rulito se va, los ancestros vuelven a las estrellas y empieza de nuevo: *"siempre se puede volver a empezar"*.
+- *Tocar.* Un toque corto en una estrella brillante o en el cielo hace lo de siempre (rasguea el acorde, las estrellas destellan); en el ser, mira la luna.
+- *Teclado.* Enter en una estrella brillante la elige y Enter en otra las une. *Movimiento reducido:* la escena queda quieta y no se juega, como Pañña.
+**Dónde se tocó:** `SceneEsperanza.vue` (`FIGURES`, `join()`, `seen()`, `arrived()`, `gather()`, el grupo `sky`) y `useThreads.js`.
+
+**Cómo funciona hoy en Belleza:** *"poder ver lo bello aún en la apariencia más desafiante"*, *"hoy encuentra 3 aspectos bellos en ti"*. No hay luces que unir: lo bello está escondido en cosas comunes del bosque y se ve mirando con atención.
+- *Las cosas comunes.* Diez rincones sin nada especial pueden esconder una belleza: el arbusto lejano, un tronco lejano, unas piedras, un brote, la corteza del árbol grande, la hierba, un montículo, la piedra junto al helecho, la pila de piedras y el helecho (`SPOTS`). En cada ronda tres de los que se ven en la pantalla, separados entre sí, esconden una.
+- *Mirar de cerca.* Mantener el dedo quieto en cualquier lugar junta un anillo de atención de puntos que se cierra sobre él (1,1 s). Si había una belleza escondida ahí, florece: una flor de puntos en los colores del acorde (La, Do, Mi, Sol: tercer ojo, raíz, plexo, garganta) que se abre y gira despacio, con una luz suave alrededor de la cosa común, y suena `resonate` (más alto con cada una). Si no, el anillo se abre y se apaga en silencio: no hay error. Un toque corto sigue siendo una brisa (`star`), y tocar a los dos los abraza.
+- *La pista, sin palabras.* Cada 6 a 9 s una de las escondidas destella un momento, para quien esté mirando; después de 12 s sin encontrar nada, más seguido.
+- *Las tres.* Con la tercera, sus flores vuelan en arco hacia los dos (`converge`), que se abrazan; de ellos sale una luz que recorre todo el bosque como una brisa (los árboles se mecen, las motas destellan): *"tu resonancia se convierte en la de la belleza, y se irradia hacia todo lo que te rodea"*. Nace el rulito sobre ellos (en el amarillo de su polvo; la carta no dibuja uno), se ilumina el nombre y suena `rulito`; hito `beauty_seen`. Cuando se va, otras tres cosas esconden una belleza.
+- *Teclado.* Cada cosa común es un lugar enfocable: Enter la mira de cerca. *Movimiento reducido:* quieta y sin juego.
+**Dónde se tocó:** `SceneBelleza.vue` (`SPOTS`, `hide()`, `look()`, `reveal()`, `gather()`, el grupo `beauty`).
 **Variante posible:** despejar una niebla de partículas para revelar las luces (cubriría el arte de Pañña; encajaría mejor en Honestidad, que tiene burbujas) o primero descubrir y después unir.
-**Cartas:** Pañña (hecha), Belleza, Esperanza. Esperanza es la que mejor toma el motor de Pañña: su texto habla de *"hilos invisibles de luz"* y su ilustración es un cielo lleno de estrellas (unirlas en una constelación). Belleza (*"poder ver lo bello"*) no tiene luces dibujadas: necesita otro gesto, como descubrir lo bello escondido en el bosque.
+**Cartas:** Pañña (hecha), Esperanza (hecha), Belleza (hecha).
 
 ### 7. Soltar (Sid, demonio: apego): implementado en Vipassana
 **Dinámica:** dejar ir. Que las cosas se vayan sin agarrarlas, y que vuelvan.
