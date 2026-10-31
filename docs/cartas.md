@@ -89,7 +89,7 @@ Se cambia una línea en `src/data/cardChords.js`, por ejemplo `28: 'Em'`. Se esc
 | 25 | Hogar | Regular | Arraigar | Do mayor | Escena propia, verbo jugable |
 | 26 | Honestidad | Regular | Resonar | Solm7 | Escena propia, sin juego todavía |
 | 27 | Paciencia | Regular | Arraigar | Re mayor | Escena propia, verbo jugable |
-| 28 | Perdón | Regular | Soltar | Fa menor | Ilustración plana |
+| 28 | Perdón | Regular | Soltar | Fa menor | Escena propia, sin juego todavía |
 | 29 | Sincronicidad | Regular | Resonar | Sol mayor | Escena propia, verbo jugable |
 | 30 | Esperanza | Regular | Ver | Sim7 | Ilustración plana |
 | 31 | Vipassana | Special | Soltar | Simaj7 | Escena propia, verbo jugable |

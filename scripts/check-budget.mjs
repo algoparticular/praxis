@@ -64,13 +64,14 @@ group('Desafío layers', (rel) => rel.startsWith('assets/desafio/'), { each: 160
 group('Gratitud layers', (rel) => rel.startsWith('assets/gratitud/'), { each: 100, total: 300 });
 group('Honestidad layers', (rel) => rel.startsWith('assets/honestidad/'), { each: 100, total: 400 });
 group('Fe layers', (rel) => rel.startsWith('assets/fe/'), { each: 200, total: 500 });
+group('Perdón layers', (rel) => rel.startsWith('assets/perdon/'), { each: 170, total: 300 });
 group('Paciencia layers', (rel) => rel.startsWith('assets/paciencia/'), { each: 320, total: 750 });
 group('Deck thumbnails', (rel) => /^cards\/thumb\/\d+\.webp$/.test(rel), { each: 70, total: 650 });
 group('Card illustrations', (rel) => /^cards\/\d+\.webp$/.test(rel), { each: 900, total: 9500 });
 // What phones and most screens load (pictureUrl in src/data/cards.js; npm run thumbs makes them)
 group('Card illustrations 1440', (rel) => /^cards\/1440\/\d+\.webp$/.test(rel), { each: 450, total: 4600 });
 group('Share pictures', (rel) => /^og\/\d+\.jpg$/.test(rel), { each: 200, total: 2300 });
-group('Other pictures', (rel) => /^assets\/(?!panna\/|khanti\/|creatividad\/|evolucion\/|sila\/|viriya\/|upekkha\/|addhitthana\/|paciencia\/|fe\/|honestidad\/|gratitud\/|desafio\/|coraje\/|compromiso\/|sincronicidad\/|hogar\/|armonia\/|aceptacion\/|belleza\/|celebracion\/|ciclos\/|comunicacion\/|confianza\/)[\w-]+\/.*\.(webp|jpg|png)$/.test(rel), { each: 900, total: 4600 });
+group('Other pictures', (rel) => /^assets\/(?!panna\/|khanti\/|creatividad\/|evolucion\/|sila\/|viriya\/|upekkha\/|addhitthana\/|paciencia\/|perdon\/|fe\/|honestidad\/|gratitud\/|desafio\/|coraje\/|compromiso\/|sincronicidad\/|hogar\/|armonia\/|aceptacion\/|belleza\/|celebracion\/|ciclos\/|comunicacion\/|confianza\/)[\w-]+\/.*\.(webp|jpg|png)$/.test(rel), { each: 900, total: 4600 });
 
 const over = rows.filter((row) => row.value > row.limit);
 // Only what is close to its line (or over it) is worth printing; the rest is fine
