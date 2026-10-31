@@ -38,12 +38,12 @@ export const iconConstellation = (svg, container, { size = 300, gap = 11 } = {})
     const box = svg.getBoundingClientRect();
     const frame = container.getBoundingClientRect();
     const view = svg.viewBox.baseVal;
-    const scale = size / Math.max(view.width, view.height);
-    // Centred on the icon, but kept whole inside the container (on a phone the icons sit near its sides)
-    const margin = 16;
-    const keep = (value, span) => Math.min(Math.max(value, size / 2 + margin), Math.max(size / 2 + margin, span - size / 2 - margin));
-    const cx = keep(box.left + box.width / 2 - frame.left, frame.width);
+    // Always centred on its icon; where the icon sits near a side (a phone), the figure is made smaller so it stays whole
+    const margin = 12;
+    const cx = box.left + box.width / 2 - frame.left;
     const cy = box.top + box.height / 2 - frame.top;
+    size = Math.min(size, 2 * (Math.min(cx, frame.width - cx) - margin));
+    const scale = size / Math.max(view.width, view.height);
     return [...svg.querySelectorAll('path, circle')].map((el) => {
         const { points, closed } = sample(el, { gap });
         return {
