@@ -200,10 +200,16 @@
         near.enter({ y: -25, scale: 0.9, delay: 700, duration: 2200 });
     };
 
-    // The sky, from the card (flat pink, a little lighter low down where the card is)
+    // The sky, from the card (flat pink, a little lighter low down where the card is); under the ground the blue of the
+    // ground, so no pink shows under it when the land slides with the scroll or the screen rounds its edge (a pink line
+    // at the bottom of the stage on an iPhone)
+    const GROUND = '#69b8e2';
+    const UNDER = 1880;                     // art px: well inside the ground's solid blue, below its horizon everywhere
     const paintSky = () => {
-        const stops = art.sky.map(([y, c]) => `#${c.toString(16).padStart(6, '0')} ${Math.max(-50, Math.min(150, sy(y) / Math.max(H, 1) * 100)).toFixed(1)}%`);
-        root.value.style.background = `linear-gradient(to bottom, ${stops.join(', ')})`;
+        const at = (y) => `${Math.max(-50, Math.min(150, sy(y) / Math.max(H, 1) * 100)).toFixed(1)}%`;
+        const stops = art.sky.filter(([y]) => y < UNDER).map(([y, c]) => `#${c.toString(16).padStart(6, '0')} ${at(y)}`);
+        const last = `#${art.sky[art.sky.length - 1][1].toString(16).padStart(6, '0')}`;
+        root.value.style.background = `linear-gradient(to bottom, ${stops.join(', ')}, ${last} ${at(UNDER)}, ${GROUND} ${at(UNDER)}, ${GROUND} 100%)`;
     };
 
     const ellipse = ({ x, y, rx, ry }, grow = 1) => ({ left: sx(x - rx * grow), top: sy(y - ry * grow), w: 2 * rx * grow * k(), h: 2 * ry * grow * k() });
