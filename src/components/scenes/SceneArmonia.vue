@@ -8,7 +8,8 @@
     // from the bell down); every LEAN s they lean towards each other for a moment, and now and then one squeezes its closed
     // eyes, content. The yellow stipple round their bells is particles that tremble and breathe with them. The anemones'
     // crowns lean and stretch on their pots (sway), with their glow as particles; the seaweeds and corals sway (wind); the
-    // light of the water ripples across the sand (water); the currents breathe (their tongues reach down and draw back); the yellow specks
+    // light of the water ripples across the sand (water); the currents are a liquid in the water (field() with alone: the
+    // shape of their pictures, their edge alive and soft, with no line round it); the yellow specks
     // in the water are particles that drift and move out of a finger's way.
     // A touch on a jellyfish makes it pulse and shine, and the other one answers it a moment later (each with a note of the
     // card's chord, `tap`); a touch anywhere else strums the chord (`star`) and the specks and glows flare.
@@ -18,7 +19,7 @@
     // public/assets/armonia (made by scripts/convert-armonia.mjs). The touch targets are DOM elements over the jellyfish.
     import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
     import { createParallax } from '../../composables/useParallax.js';
-    import { createLayerStage } from '../../composables/useLayerStage.js';
+    import { createLayerStage, FIELD_RANGE } from '../../composables/useLayerStage.js';
     import { startStardust } from '../../composables/useStardust.js';
     import { play } from '../../composables/useSound.js';
     import art from '../../composables/armoniaScene.json';
@@ -108,31 +109,105 @@
     const pending = [];
     let lastT = 0;
 
-    const build = (s) => {
-        // The currents of the water: the band along the top (mirrored on both sides, its tongues breathing) and the two
-        // that come in from the sides, each with its mirror past the frame, breathing
-        const band = s.depth(zFor(DEPTH.band));
-        L.bandNode = band;
-        // (no wind in the shader: a picture and its mirror would sway apart at their seam)
-        L.bandGroup = band.group();
-        L.band = [-1, 0, 1].map((side) => {
-            const node = L.bandGroup.image('/assets/armonia/current0.webp');
-            if (side) node.sx = -1;
-            return { node, side };
+    // ---- The currents: where their pictures are (the band along the top, the two from the sides, and the mirror of each
+    // past the frame, as the pictures were laid), drawn into a mask, and the distance of every px to its edge written for
+    // the field (red: 0.5 + px / (2 * FIELD_RANGE), > 0.5 inside), at half the screen's px. The pictures are only read
+    const CURRENT = 0x49aeb1;                     // the teal of the currents' fill
+    const RES = 0.5, CM = 90;               // canvas px per screen px; how far past the screen the field reaches (parallax)
+    const currentField = document.createElement('canvas');
+    const shapes = Object.fromEntries(['current0', 'current1', 'current2'].map((name) => {
+        const img = new Image();
+        img.src = `/assets/armonia/${name}.webp`;
+        return [name, img];
+    }));
+    const shapesReady = Promise.all(Object.values(shapes).map((img) => img.decode().catch(() => {})));
+    const laid = () => {
+        const list = [];
+        const band = rectOf(B.current0);
+        [-1, 0, 1].forEach((side) => list.push({ img: shapes.current0, r: { ...band, left: band.left + side * (band.w - SEAM) }, flip: !!side }));
+        art.currents.slice(1).forEach((C) => {
+            const r = rectOf(B[C.name]), left = !!C.sides[0];
+            list.push({ img: shapes[C.name], r, flip: false });
+            list.push({ img: shapes[C.name], r: { ...r, left: left ? r.left - r.w + SEAM : r.left + r.w - SEAM }, flip: true });
         });
-        band.enter({ y: -24, delay: 100, duration: 2200 });
+        return list;
+    };
+    // Signed distance (screen px) to the edge of a mask, by two passes of a 3-4 chamfer over each side
+    const chamfer = (inside, w, h) => {
+        const far = 1e6, d = new Float32Array(w * h);
+        for (let i = 0; i < w * h; i++) d[i] = inside[i] ? far : 0;
+        const pass = (x, y, c) => (x >= 0 && x < w && y >= 0 && y < h ? d[y * w + x] + c : far);
+        for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+            const i = y * w + x;
+            if (!d[i]) continue;
+            d[i] = Math.min(d[i], pass(x - 1, y, 3), pass(x, y - 1, 3), pass(x - 1, y - 1, 4), pass(x + 1, y - 1, 4));
+        }
+        for (let y = h - 1; y >= 0; y--) for (let x = w - 1; x >= 0; x--) {
+            const i = y * w + x;
+            if (!d[i]) continue;
+            d[i] = Math.min(d[i], pass(x + 1, y, 3), pass(x, y + 1, 3), pass(x + 1, y + 1, 4), pass(x - 1, y + 1, 4));
+        }
+        return d;
+    };
+    let fieldSize = null;
+    const writeCurrents = (w, h) => {
+        fieldSize = [w, h];
+        const area = { left: -CM, top: -CM, w: w + 2 * CM, h: h + 2 * CM };
+        L.currents.place(area);
+        L.currents.uniforms.uScale.value = k();
+        if (!Object.values(shapes).every((img) => img.complete && img.naturalWidth)) return;
+        const cw = Math.round(area.w * RES), ch = Math.round(area.h * RES);
+        if (currentField.width !== cw || currentField.height !== ch) { currentField.width = cw; currentField.height = ch; }
+        const g = currentField.getContext('2d', { willReadFrequently: true });
+        g.setTransform(1, 0, 0, 1, 0, 0);
+        g.clearRect(0, 0, cw, ch);
+        g.setTransform(RES, 0, 0, RES, CM * RES, CM * RES);
+        // over the band (the card's top edge) the water is all current, so no edge shows there
+        const band = rectOf(B.current0);
+        g.fillStyle = '#000';
+        g.fillRect(-CM, -CM, area.w, band.top + CM + band.h * 0.25);
+        laid().forEach(({ img, r, flip }) => {
+            g.save();
+            if (flip) { g.translate(r.left + r.w / 2, 0); g.scale(-1, 1); g.translate(-(r.left + r.w / 2), 0); }
+            g.drawImage(img, r.left, r.top, r.w, r.h);
+            g.restore();
+        });
+        const data = g.getImageData(0, 0, cw, ch);
+        const px = data.data, n = cw * ch;
+        const inside = new Uint8Array(n), outside = new Uint8Array(n);
+        for (let i = 0; i < n; i++) { const on = px[i * 4 + 3] > 127; inside[i] = on ? 1 : 0; outside[i] = on ? 0 : 1; }
+        const din = chamfer(inside, cw, ch), dout = chamfer(outside, cw, ch);
+        // softened (two box blurs), so the edge is smooth where the mask had steps
+        const dist = new Float32Array(n);
+        for (let i = 0; i < n; i++) dist[i] = (inside[i] ? din[i] : -dout[i]) / 3 / RES;   // screen px, > 0 inside
+        const tmp = new Float32Array(n);
+        for (let k2 = 0; k2 < 2; k2++) {
+            for (let y = 0; y < ch; y++) for (let x = 0; x < cw; x++) {
+                const i = y * cw + x;
+                tmp[i] = (dist[i - (x > 0 ? 1 : 0)] + dist[i] + dist[i + (x < cw - 1 ? 1 : 0)]) / 3;
+            }
+            for (let y = 0; y < ch; y++) for (let x = 0; x < cw; x++) {
+                const i = y * cw + x;
+                dist[i] = (tmp[i - (y > 0 ? cw : 0)] + tmp[i] + tmp[i + (y < ch - 1 ? cw : 0)]) / 3;
+            }
+        }
+        for (let i = 0; i < n; i++) {
+            px[i * 4] = Math.round(255 * Math.max(0, Math.min(1, 0.5 + dist[i] / (2 * FIELD_RANGE))));
+            px[i * 4 + 1] = 255; px[i * 4 + 2] = 0; px[i * 4 + 3] = 255;
+        }
+        g.setTransform(1, 0, 0, 1, 0, 0);
+        g.putImageData(data, 0, 0);
+        L.currents.refresh();
+    };
+    shapesReady.then(() => { if (fieldSize && L.currents && !gone) writeCurrents(...fieldSize); });
+
+    const build = (s) => {
+        // The currents of the water, a liquid in it: the band along the top and the two that come in from the sides, each
+        // with its mirror past the frame, drawn as the second colour of a field (alone), from the shape of their pictures
         const currents = s.depth(zFor(DEPTH.currents));
         L.currentsNode = currents;
-        L.currents = art.currents.slice(1).map((C, i) => {
-            const group = currents.group();
-            const pictures = [0, 1].map((mirror) => {
-                const node = group.image(`/assets/armonia/${C.name}.webp`);
-                if (mirror) node.sx = -1;
-                return node;
-            });
-            return { C, group, pictures, left: !!C.sides[0], phase: i * 2.1 };
-        });
-        currents.enter({ y: -16, delay: 250, duration: 2200 });
+        L.currents = currents.field({ source: currentField, colors: [CURRENT, CURRENT], alone: true, flow: 0.7 });
+        currents.enter({ y: -16, delay: 150, duration: 2200 });
         // Behind the sand: a seaweed and a tube coral
         const back = s.depth(zFor(DEPTH.back));
         L.backNode = back;
@@ -189,16 +264,7 @@
     const place = (w, h) => {
         layout(w, h);
         paintWater(h);
-        const band = rectOf(B.current0);
-        L.band.forEach(({ node, side }) => node.place({ ...band, left: band.left + side * (band.w - SEAM) }));
-        L.bandGroup.pivot = { x: w / 2, y: band.top };
-        L.currents.forEach((c) => {
-            const r = rectOf(B[c.C.name]);
-            const edge = c.left ? r.left : r.left + r.w;
-            c.pictures[0].place(r);
-            c.pictures[1].place({ ...r, left: c.left ? r.left - r.w + SEAM : r.left + r.w - SEAM });
-            c.group.pivot = { x: edge, y: r.top + r.h / 2 };
-        });
+        writeCurrents(w, h);
         L.weedR.place(rectOf(B.weedR));
         L.tubeL.place(rectOf(B.tubeL));
         const sand = rectOf(B.sand);
@@ -291,14 +357,6 @@
         stage.look(x * SLIDE, y * SLIDE_Y);
         for (let i = pending.length - 1; i >= 0; i--) if (t >= pending[i].at) pending.splice(i, 1)[0].run();
         const m = reduced ? 0 : ramp;
-        // ---- The currents breathe: the band's tongues reach down and draw back, the two from the sides come in and out
-        L.bandGroup.sy = 1 + 0.025 * Math.sin(t * 0.35) * m;
-        L.currents.forEach((c) => {
-            const b = Math.sin(t * 0.32 + c.phase);
-            c.group.sx = 1 + 0.035 * b * m;
-            c.group.y = Math.sin(t * 0.27 + c.phase) * F.size * 0.006 * m;
-        });
-        L.bandNode.y = scroll * 6;
         L.currentsNode.y = scroll * 10;
         L.backNode.y = scroll * 16;
         L.sandNode.y = scroll * 18;

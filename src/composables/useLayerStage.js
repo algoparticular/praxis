@@ -246,7 +246,9 @@ const DISC_FRAGMENT = `
 // gives, and near their own colour, or each other, they join it with a neck, thin as a drop or thick as wax that buds
 // off a liquid or falls back into it. uScale is how many px a unit of the drawing is, so the
 // wave and the swell keep their size on every screen. Where the two meet there is a membrane: a thin band
-// a little lighter than either side, with a brighter line on each of its faces (uDpr keeps it as thick on every screen)
+// a little lighter than either side, with a brighter line on each of its faces (uDpr keeps it as thick on every screen).
+// With uAlone only the second colour is drawn, with its living edge and the inner face of its membrane, over whatever
+// is behind it (Armonía's currents over the water's gradient)
 export const FIELD_RANGE = 128;
 export const FIELD_BUBBLES = 24;
 const FIELD_FRAGMENT = `
@@ -258,6 +260,7 @@ const FIELD_FRAGMENT = `
     uniform float uWobble;
     uniform float uFlow;
     uniform float uShaped;
+    uniform float uAlone;
     uniform float uDpr;
     uniform float uScale;
     uniform vec4 uWave;            // a long wave travelling along the edge: amplitude px, wavelength px, phase, y px of its origin
@@ -325,6 +328,10 @@ const FIELD_FRAGMENT = `
         if (uShaped > 0.0) {
             float ws = max(fwidth(c.g), 0.0001);
             a = smoothstep(0.5 - ws, 0.5 + ws, c.g);
+        }
+        if (uAlone > 0.0) {
+            a *= smoothstep(-aa, aa, d);
+            col = mix(uB, vec3(1.0), band * 0.08 + faces * (0.12 + 0.2 * glint));
         }
         gl_FragColor = vec4(col, 1.0) * a * uOpacity;
     }`;
@@ -692,12 +699,13 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
         }
 
         // Two colours that meet and never mix, with a membrane between them (FIELD_FRAGMENT): source is a canvas drawn by
-        // the scene (red: the distance to the edge, 0.5 + px / (2 * FIELD_RANGE); green, with shaped, where it is drawn).
+        // the scene (red: the distance to the edge, 0.5 + px / (2 * FIELD_RANGE); green, with shaped, where it is drawn;
+        // with alone only the second colour is drawn, over what is behind).
         // node.bubbles is its list of up to FIELD_BUBBLES bubbles, [x, y, rx, ry, angle, ±1, neck, wax] each (px, in the
         // plane's space; +1 of the second colour; neck and wax as in FIELD_FRAGMENT, optional), read every frame; call node.refresh() after drawing on the canvas, and set
         // uniforms.uScale to the px of a unit of the drawing; uniforms.uWave is a long wave that travels
         // along the edge (amplitude px, wavelength px, phase, y px of its origin)
-        field({ rect, source, colors = [0x000000, 0xffffff], shaped = false, flow = 1 } = {}) {
+        field({ rect, source, colors = [0x000000, 0xffffff], shaped = false, alone = false, flow = 1 } = {}) {
             const node = new Node(this);
             const texture = new THREE.CanvasTexture(source);
             texture.colorSpace = THREE.NoColorSpace;
@@ -713,6 +721,7 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
                 uWobble: { value: 1 },
                 uFlow: { value: flow },
                 uShaped: { value: shaped ? 1 : 0 },
+                uAlone: { value: alone ? 1 : 0 },
                 uDpr: { value: dpr },
                 uScale: { value: 1 },
                 uWave: { value: new THREE.Vector4(0, 0, 0, 0) },
