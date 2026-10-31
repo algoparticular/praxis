@@ -82,7 +82,7 @@ Se cambia una línea en `src/data/cardChords.js`, por ejemplo `28: 'Em'`. Se esc
 | 18 | Confianza | Regular | Arraigar | La menor | Escena propia, sin juego todavía |
 | 19 | Coraje | Regular | Encender | Mi7 | Escena propia, sin juego todavía |
 | 20 | Creatividad | Regular | Resonar | Do7 | Escena propia, verbo jugable |
-| 21 | Desafío | Regular | Encender | Re7 | Ilustración plana |
+| 21 | Desafío | Regular | Encender | Re7 | Escena propia, sin juego todavía |
 | 22 | Evolución Espiritual | Regular | Encender | Si7 | Escena propia, verbo jugable |
 | 23 | Fe | Regular | Arraigar | Si mayor | Ilustración plana |
 | 24 | Gratitud | Regular | Dar y recibir | Solmaj7 | Ilustración plana |
