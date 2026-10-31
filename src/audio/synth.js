@@ -399,6 +399,9 @@ export const heartbeat = (ctx, out, time, harmony, level = 1) => {
     bell(ctx, out, time + 0.01, f * 2, 0.5, 0.008 * level);
 };
 
+// Tu verdad (10, SceneSilencio). The heart alone, as Sid's in Sila: on Fa (the heart) whatever the card's chord, which is the base one
+export const heart = (ctx, out, time, harmony, level = 1) => heartbeat(ctx, out, time, chord('G7'), level);
+
 // A bubble touched on its beat resonates: its note, clear, with the octave below answering and a breath of air
 export const resonate = (ctx, out, time, harmony, { step = 0 } = {}) => {
     const h = harmony ?? PLAIN;
@@ -760,10 +763,17 @@ export const exhale = (ctx, out, time, harmony) => {
 
 /* ---------- Ambience ---------- */
 
-export const createAmbient = (ctx, out, name = BASE_CHORD) => {
+// hushed: it starts quiet (a card that is silence, hush())
+export const createAmbient = (ctx, out, name = BASE_CHORD, { hushed = false } = {}) => {
+    // The silence of a card: a gain of its own after the fade, so going quiet and coming back never touch start and stop
+    const quiet = ctx.createGain();
+    quiet.gain.value = hushed ? 0 : 1;
+    quiet.connect(out);
+    let silent = hushed;
+
     const fade = ctx.createGain();
     fade.gain.value = 0;
-    fade.connect(out);
+    fade.connect(quiet);
 
     const bus = ctx.createGain();
     bus.gain.value = 0.5;
@@ -839,6 +849,11 @@ export const createAmbient = (ctx, out, name = BASE_CHORD) => {
 
     // Schedules chimes and drops up to a point in time (the context's own clock)
     const scheduleUntil = (until) => {
+        // While hushed the chimes and drops keep their time but are not made (nobody would hear them)
+        while (silent && (nextChime < until || nextDrop < until)) {
+            if (nextChime < until) nextChime += rand(5, 10);
+            if (nextDrop < until) nextDrop += rand(3, 8);
+        }
         while (nextChime < until) {
             const chimes = harmony.chimes;
             const index = Math.floor(Math.random() * chimes.length);
@@ -879,6 +894,14 @@ export const createAmbient = (ctx, out, name = BASE_CHORD) => {
             // Whatever happens to the parameter or the clock (a context that was suspended halfway), after the fade
             // nothing of this ambience can reach the speakers: it is cut from the graph
             setTimeout(() => fade.disconnect(), (seconds + 0.3) * 1000);
+        },
+        // The music goes quiet (a card that is silence) or comes back: slowly out, a little quicker back in
+        hush(on, seconds = on ? 8 : 4) {
+            if (silent === on) return;
+            silent = on;
+            const now = ctx.currentTime;
+            quiet.gain.cancelScheduledValues(now);
+            quiet.gain.setTargetAtTime(on ? 0 : 1, now, seconds / 4);
         },
         // Moves the pad and the chimes to another chord: the new pad swells in as the old one fades away
         setChord(next = BASE_CHORD, seconds = 5, time = ctx.currentTime) {

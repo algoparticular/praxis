@@ -50,3 +50,8 @@ const CHORDS = {
 };
 
 export const chordFor = (id) => CHORDS[id] ?? BASE_CHORD;
+
+// The cards that are silence: on their page the music (pad, chimes and drops) fades away and only the heart is heard
+// (Tu verdad, 10: SceneSilencio)
+const SILENT = new Set([10]);
+export const isSilent = (id) => SILENT.has(Number(id));

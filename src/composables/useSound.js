@@ -35,6 +35,8 @@ const ambients = new Set();
 let silentTrack = null;
 // The chord of the card on screen (null outside the cards): the touch sounds play in it and the ambience follows it
 let cardChord = null;
+// On a card that is silence (cardChords.js) the music fades away; the effects (its heartbeat) still sound
+let hushed = false;
 
 const readPreference = () => {
     try { return localStorage.getItem(STORAGE_KEY) === 'on'; } catch { return false; }
@@ -113,7 +115,7 @@ const enable = () => {
     writePreference(true);
     return resumed.then(() => {
         if (!ambient && soundOn.value) {
-            ambient = synth.createAmbient(ctx, musicBus, cardChord?.name);
+            ambient = synth.createAmbient(ctx, musicBus, cardChord?.name, { hushed });
             ambients.add(ambient);
             ambient.start();
         }
@@ -160,6 +162,13 @@ export const setCardChord = (name = null) => {
     if ((cardChord?.name ?? null) === name) return;
     cardChord = name ? synth.chord(name) : null;
     if (ambient && ctx) ambient.setChord(name ?? undefined);
+};
+
+// Called with true when a card that is silence comes on screen, and false when it leaves: the music fades out slowly and
+// comes back. Only the ambience goes quiet; the switch, the sliders and stopping everything work as ever
+export const setHush = (on) => {
+    hushed = !!on;
+    if (ambient && ctx) ambient.hush(hushed);
 };
 
 export const vibrate = (pattern) => {
