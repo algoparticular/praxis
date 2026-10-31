@@ -1,7 +1,7 @@
 // The layers of Aceptación as exported (originales/aceptacion/Aceptación-N.png, 3240px) -> public/assets/aceptacion/*.webp,
 // each cropped to its own box, and src/composables/aceptacionScene.json, all in px of a 2160 square (the originals are
 // scaled down to it first, so sizes match the other scenes):
-//   boxes      the box of every picture
+//   boxes      the box of every picture (the beings: being.webp and eyes.webp are the left one; the right one is it mirrored)
 //   sky        the two skies are not pictures: the cream of the past on the left (not in the export: read from the card,
 //              public/cards/11.webp) and the yellow of the right (1); edge is where they meet, row by row ({ y0, step,
 //              x: [...] }, the card's wavy line), and bubbles are the drops of one in the other ([x, y, rx, ry, angle,
@@ -27,7 +27,7 @@
 // Not converted: 1 (the yellow sky, drawn in code), 5 (the sun, a disc and particles), the specks of 10 and 11
 // (particles), 16 and 17 (the rulitos), and two stray specks of line high in the sky (13). The originals are not kept in the repo once converted.
 // Usage: node scripts/convert-aceptacion.mjs
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, rename, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
@@ -223,7 +223,13 @@ for (const n of [9, 8, 12, 14, 15, 18, 13]) {
     }
     lists.forEach((list, k) => { if (list.length) lay(parts[NAMES[k]], data, list); });
 }
-for (const [name, into] of Object.entries(parts)) await save(name, into);
+// The two beings are the same drawing mirrored: only the left one is shipped (being, eyes), the scene turns it over for
+// the right one; the right one's boxes are kept, for where it stands
+for (const [name, into] of Object.entries(parts)) {
+    await save(name, into);
+    if (name === 'beingL' || name === 'eyesL') await rename(path.join(target, `${name}.webp`), path.join(target, `${name.slice(0, -1)}.webp`));
+    if (name === 'beingR' || name === 'eyesR') await unlink(path.join(target, `${name}.webp`));
+}
 scene.eyes = [scene.boxes.eyesL, scene.boxes.eyesR];
 
 // ---- The planet: its fill and its outline are a picture, the stipple of its shading particles

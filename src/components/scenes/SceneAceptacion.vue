@@ -175,10 +175,15 @@
     const bits = art.bits.map(([x, y, w, h, ax, ay], i) => ({ i, rect: [x, y, w, h], crop: [ax / AW, ay / AH, w / AW, h / AH], phase: i * 2.1 }));
 
     // ---- The two beings: they breathe together, blink, and now and then look at each other across the river
-    const BEINGS = [0, 1].map((i) => {
-        const side = i ? 'R' : 'L';
-        return { side, body: B[`being${side}`], eyes: B[`eyes${side}`], hop: 0, blink: between(2, 5), shut: 0, glance: between(5, 9), look: 0, lookTo: 0 };
-    });
+    // The two are the same drawing mirrored: the right one is the left one's picture turned over (sx -1), in a box of
+    // its size against the right one's outer edge
+    const mirrored = ([x, y, w, h], [lx, , lw, lh]) => [x + w - lw, y, lw, lh];
+    const BEINGS = [0, 1].map((i) => ({
+        side: i ? 'R' : 'L',
+        body: i ? mirrored(B.beingR, B.beingL) : B.beingL,
+        eyes: i ? mirrored(B.eyesR, B.eyesL) : B.eyesL,
+        hop: 0, blink: between(2, 5), shut: 0, glance: between(5, 9), look: 0, lookTo: 0,
+    }));
     const BREATH = 0.55;                    // their breath (rad/s): slow, and the same for both
 
     // ---- The banks past the frame, drawn in code: the bank's colour under the horizon's line, with the little marks
@@ -288,7 +293,9 @@
         L.plants = ['L', 'R'].map((side, i) => land.image(`/assets/aceptacion/plants${side}.webp`, { wind: { amp: 3.2, speed: 0.7 + 0.15 * i, root: 'bottom' } }));
         L.beings = BEINGS.map((b) => {
             const group = land.group();
-            return { group, body: group.image(`/assets/aceptacion/being${b.side}.webp`), eyes: group.image(`/assets/aceptacion/eyes${b.side}.webp`) };
+            const being = { group, body: group.image('/assets/aceptacion/being.webp'), eyes: group.image('/assets/aceptacion/eyes.webp') };
+            if (b.side === 'R') being.body.sx = being.eyes.sx = -1;
+            return being;
         });
         land.enter({ y: 40, delay: 100, duration: 1800 });
     };
