@@ -11,7 +11,7 @@
     // It is drawn in WebGL (useLayerStage), like Hogar: the planet is a group of planes at one depth and the camera
     // slides with the pointer or the tilt; the fern fronds sway a little in the water. The touch targets are DOM
     // elements kept over the bulbs and mushrooms as the crown turns.
-    // Its verb is Encender (ignite). The bulbs and the mushrooms start grey. Rubbing inside the cell (the finger going
+    // Its verb is Encender (ignite), on the engine of the verb (useKindle.js), with the being itself as the flame. The bulbs and the mushrooms start grey. Rubbing inside the cell (the finger going
     // back and forth) warms the being: sparks fly from the finger, it glows, a note of the chord climbs with each sixth of
     // the heat, and it cools slowly if nobody rubs. Hot enough, it catches fire. Then it is a sling: press, pull it back
     // (a band to the finger, and dots for where it will go) and let go: it shoots off on fire and bounces about the water,
@@ -25,6 +25,7 @@
     import { startStardust } from '../../composables/useStardust.js';
     import { createCellWater } from '../../composables/useCellWater.js';
     import { createSparks } from '../../composables/useSparks.js';
+    import { createKindle, FIRE } from '../../composables/useKindle.js';
     import { play } from '../../composables/useSound.js';
     import { sceneMilestone } from '../../analytics.js';
     import Rulito from '../Rulito.vue';
@@ -166,7 +167,7 @@
 
     /* ---------- Encender: rub the being until it catches fire, then sling it against the wall to light the crown ---------- */
 
-    const RUB = 11;                         // px of rubbing, in radii of the cell, for the being to catch fire
+    const RUB = 11;                         // px of rubbing, in radii of the cell, for the being to catch fire (it counts however fast)
     const COOL = 0.22;                      // heat lost per second while nobody rubs (until it has caught)
     const WALL = 0.075;                     // how far the being's centre keeps from the wall: its head never goes through it
     const WALL_CROWNED = 0.14;              // and while the rulito is over its head, so that stays inside too
@@ -174,30 +175,19 @@
     const AIM_MIN = 0.12;                   // a pull shorter than this (of the full pull) launches nothing
     const REACH = 0.5;                      // radians either side of a hit on the wall where a bulb or a mushroom catches
     const DELAY = 1.1, GROW = 2.2, LINGER = 2.4, EAT = 3.4;     // the rulito: after the chord resolves, born, kept, gone
-    const FIRE = [0xffb069, 0xff9a5c, 0xffd29a, 0xfff3d6, 0xf2b036];
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const on = SWAYING.map(() => false);    // lit, until the crown is done
     const lit = SWAYING.map(() => 0);       // the colour and light of each one, eased
     let glyph = null;
-    let mode = 'cold';                      // cold: rub it; lit: it is on fire, sling it; flying: it is bouncing about
-    let heat = 0;                           // 0..1, how close the being is to catching fire
-    let rubbing = false;
-    let aiming = false;
-    let fuel = 0;
     let lastHit = 0;
     let turnNow = 0;                        // how far the crown has turned (degrees)
-    let charge = 0;                         // the being's fire, eased
     let win = null;                         // the crown is lit: { age, head, tail, full, fullAt, back, pop }
     let wins = 0;
     let beacon = 0;
     let stand = 0;                          // the being uncurls a little while the crown is lit
-    let idle = 0;
     let hint = 0;
     let embers = 0;
-    let finger = null;                      // the pointer on the canvas while it is down
-    let prevFinger = null;
-    let kindled = 0;                        // the last sixth of the heat a note sounded for
-    let anchor = null;                      // where the being was when the sling was taken: on the canvas and in the water
+    let anchor = null;                      // where the being was in the water when the sling was taken
     const geo = { cx: 0, cy: 0, R: 1, sx: 0, sy: 0 };   // on the canvas: the cell's centre and radius, the being
 
     // Where each bulb and mushroom stands round the cell now (the crown turns), as an angle from its centre
@@ -216,109 +206,61 @@
         const me = L.being.toScreen(b.x, b.y);
         Object.assign(geo, { cx: c.x, cy: c.y, R: Math.hypot(e.x - c.x, e.y - c.y), sx: me.x, sy: me.y });
     };
-    const onCanvas = (event) => {
-        const area = canvas.value.getBoundingClientRect();
-        return { x: event.clientX - area.left, y: event.clientY - area.top };
-    };
-    // How far it is pulled back, as a vector from the being to the finger and its strength (0..1)
-    const pull = () => {
-        if (!finger || !anchor) return { x: 0, y: 0, k: 0 };
-        let x = finger.x - anchor.x, y = finger.y - anchor.y;
-        const d = Math.hypot(x, y), max = geo.R * 0.9;
-        if (d > max) { x *= max / d; y *= max / d; }
-        return { x, y, k: Math.min(1, d / max) };
-    };
+    // The engine (useKindle.js): the being is both the source and the flame. Its distances are in radii of the cell:
+    // rubbing 11 of them sets it on fire (however fast), and the full pull is 0.9 of one
+    const kindler = createKindle({
+        size: () => geo.R,
+        source: () => ({ x: geo.sx, y: geo.sy }),
+        canvas: () => canvas.value,
+        sparks,
+        busy: () => !!win,
+        rub: RUB, steady: Infinity, cool: COOL, fuel: FUEL, maxPull: 0.9, aimMin: AIM_MIN,
+        aimFrom: 'source', aimReach: [0.5, 1.2], rubSparks: 'finger', flightCharge: 1, still: reduced,
+        // Let go of the sling: the being shoots off, on fire, and bounces about the cell
+        body: {
+            launch: (dx, dy, k) => {
+                const me = water.swimmer;
+                const speed = 0.3 + 0.6 * k;          // frame fractions per second
+                me.vx = dx * speed;
+                me.vy = dy * speed;
+                me.heading = Math.atan2(dy, dx);
+                lastHit = me.hit;
+            },
+        },
+        // Flying (on fire, it goes past the organelles): every new knock on the wall lights what is on that side; slowed
+        // down, its fire goes out
+        collide: () => {
+            const me = water.swimmer;
+            if (me.hit > lastHit + 0.01) hitWall(me.x, me.y);
+            if (Math.hypot(me.vx, me.vy) < 0.05) kindler.goOut();
+        },
+        onKindle: (step) => play('kindle', { step }),
+        onIgnite: () => { play('ignite', 1); play('star'); },
+        onLaunch: (k) => play('ignite', k),
+    });
 
     // Pressing inside the cell: cold, it starts to rub; on fire, it takes the being to sling it
     const press = (event) => {
-        idle = 0;
-        finger = prevFinger = onCanvas(event);
-        window.addEventListener('pointermove', move);
-        window.addEventListener('pointerup', letGo);
-        window.addEventListener('pointercancel', letGo);
-        if (win) { glow?.boost(0, 0.6); return; }
-        if (mode === 'cold') rubbing = true;
-        else if (mode === 'lit') {
-            aiming = true;
-            anchor = { x: geo.sx, y: geo.sy, mx: water.swimmer.x, my: water.swimmer.y };
+        if (!kindler.press(event)) { glow?.boost(0, 0.6); return; }
+        if (kindler.aiming) {
+            anchor = { mx: water.swimmer.x, my: water.swimmer.y };
             play('tap');
         }
-    };
-    const move = (event) => {
-        finger = onCanvas(event);
-        if (rubbing && prevFinger) {
-            const d = Math.hypot(finger.x - prevFinger.x, finger.y - prevFinger.y);
-            heat = Math.min(1, heat + d / (geo.R * RUB));
-            // The friction throws sparks where the finger goes, more the hotter it is
-            if (!reduced && d > 3 && Math.random() < 0.25 + heat) {
-                sparks.burst(finger.x, finger.y, { n: 1 + Math.round(heat * 2), colors: FIRE, speed: 30 + 60 * heat, life: 0.8, size: 2.5 + 2 * heat, spread: 4 });
-            }
-            idle = 0;
-        }
-        prevFinger = finger;
-    };
-    const letGo = () => {
-        window.removeEventListener('pointermove', move);
-        window.removeEventListener('pointerup', letGo);
-        window.removeEventListener('pointercancel', letGo);
-        rubbing = false;
-        if (aiming) {
-            aiming = false;
-            const p = pull();
-            if (p.k >= AIM_MIN) launch(-p.x / Math.hypot(p.x, p.y), -p.y / Math.hypot(p.x, p.y), p.k);
-            anchor = null;
-        }
-        finger = prevFinger = null;
     };
     // With the keyboard: Enter rubs (each press warms it) and, once it is on fire, throws it at the nearest unlit one
     const onCellKey = (event) => {
         if (event.key !== 'Enter' && event.key !== ' ') return;
         event.preventDefault();
-        idle = 0;
-        if (win) return;
-        if (mode === 'cold') {
-            heat = Math.min(1, heat + 0.2);
-            sparks.burst(geo.sx, geo.sy, { n: 6, colors: FIRE, speed: 60, life: 0.8, size: 3.5, spread: 6 });
-            // Lit here: the loop cools it a little every frame before it checks, so a full heat never reaches it
-            if (heat > 0.99) ignite();
-        }
-        else if (mode === 'lit') {
-            const me = water.swimmer;
-            const todo = SWAYING.map((p, i) => i).filter((i) => !on[i]);
-            const i = todo.reduce((best, j) => (apart(angleOf(j), Math.atan2(me.y - CELL.y, me.x - CELL.x)) < apart(angleOf(best), Math.atan2(me.y - CELL.y, me.x - CELL.x)) ? j : best), todo[0]);
-            const tx = CELL.x + Math.cos(angleOf(i)) * CELL.r - me.x, ty = CELL.y + Math.sin(angleOf(i)) * CELL.r - me.y;
-            launch(tx / Math.hypot(tx, ty), ty / Math.hypot(tx, ty), 0.8);
-        }
+        if (kindler.mode !== 'lit' || win) { kindler.key(); return; }
+        kindler.idle = 0;
+        const me = water.swimmer;
+        const todo = SWAYING.map((p, i) => i).filter((i) => !on[i]);
+        if (!todo.length) return;
+        const i = todo.reduce((best, j) => (apart(angleOf(j), Math.atan2(me.y - CELL.y, me.x - CELL.x)) < apart(angleOf(best), Math.atan2(me.y - CELL.y, me.x - CELL.x)) ? j : best), todo[0]);
+        const tx = CELL.x + Math.cos(angleOf(i)) * CELL.r - me.x, ty = CELL.y + Math.sin(angleOf(i)) * CELL.r - me.y;
+        kindler.launch(tx / Math.hypot(tx, ty), ty / Math.hypot(tx, ty), 0.8);
     };
 
-    // The being has caught fire
-    const ignite = () => {
-        mode = 'lit';
-        heat = 1;
-        sparks.burst(geo.sx, geo.sy, { n: 40, colors: FIRE, speed: 140, life: 1.8, size: 5, spread: 8 });
-        play('ignite', 1);
-        play('star');
-    };
-    // Let go of the sling: the being shoots off, on fire, and bounces about the cell
-    const launch = (dx, dy, k) => {
-        const me = water.swimmer;
-        const speed = 0.3 + 0.6 * k;          // frame fractions per second
-        me.vx = dx * speed;
-        me.vy = dy * speed;
-        me.heading = Math.atan2(dy, dx);
-        mode = 'flying';
-        fuel = FUEL;
-        lastHit = me.hit;
-        play('ignite', k);
-        if (!reduced) sparks.burst(geo.sx, geo.sy, { n: Math.round(14 + 20 * k), colors: FIRE, speed: 120, life: 1.4, size: 4.5, spread: 6 });
-    };
-    // Its fire is spent: it goes out and has to be rubbed again
-    const goOut = () => {
-        mode = 'cold';
-        heat = 0;
-        kindled = 0;
-        if (!reduced) sparks.burst(geo.sx, geo.sy, { n: 12, colors: [0xcfc4d6, 0xe8e0ea, 0xffd29a], speed: 40, life: 1.6, size: 3.5, spread: 8 });
-    };
     // It hits the wall of the cell: the bulb or mushroom on that side, if it is still unlit, catches
     const hitWall = (x, y) => {
         const a = Math.atan2(y - CELL.y, x - CELL.x);
@@ -328,8 +270,8 @@
             .sort((i, j) => apart(angleOf(i), a) - apart(angleOf(j), a));
         near.slice(0, 2).forEach((i, k) => setTimeout(() => catchFire(i), 120 + k * 140));
         if (!near.length) play('tap');
-        fuel -= 1;
-        if (fuel <= 0) setTimeout(() => { if (mode === 'flying') goOut(); }, 250);
+        kindler.flame.fuel -= 1;
+        if (kindler.flame.fuel <= 0) setTimeout(() => { if (kindler.mode === 'flying') kindler.goOut(); }, 250);
     };
 
     // A bulb or a mushroom catches the fire: it gets its colour and its light
@@ -351,8 +293,7 @@
         if (win) return;
         wins += 1;
         win = { age: 0, head: 0, tail: 0, full: false, fullAt: 0, back: false, pop: 0 };
-        mode = 'cold';
-        heat = 0;
+        kindler.reset();
         rulito.value?.reshape();
         glow?.boost(0, 1.6);
         glow?.boost(1, 1.6);
@@ -362,55 +303,17 @@
     };
 
     // The sling, as particles: a band from the being to the finger and, the other way, where it will go
-    const AIM_N = 44;
-    const aimGroup = {
-        colors: [0xffffff], parallax: 0, drift: 0, twinkle: 0, reach: 0, look: 'hard',
-        dynamic: {
-            count: AIM_N,
-            update(t, data) {
-                data.alphas.fill(0);
-                if (!aiming) return;
-                const p = pull();
-                if (!finger) return;
-                for (let i = 0; i < 14; i++) {
-                    const u = i / 13;
-                    data.positions[i * 3] = geo.sx + (finger.x - geo.sx) * u;
-                    data.positions[i * 3 + 1] = geo.sy + (finger.y - geo.sy) * u;
-                    data.sizes[i] = 3 + 2 * p.k;
-                    data.alphas[i] = 0.5 + 0.4 * p.k;
-                    data.tints.set([1, 0.75 + 0.2 * u, 0.45 + 0.3 * u], i * 3);
-                }
-                if (p.k < AIM_MIN) return;
-                const d = Math.hypot(p.x, p.y) || 1;
-                for (let i = 14; i < AIM_N; i++) {
-                    const u = (i - 13) / (AIM_N - 14);
-                    const go = u * geo.R * (0.5 + 1.2 * p.k) + ((t * 60) % 8);
-                    data.positions[i * 3] = geo.sx - p.x / d * go;
-                    data.positions[i * 3 + 1] = geo.sy - p.y / d * go;
-                    data.sizes[i] = 3.2 * (1 - u * 0.6);
-                    data.alphas[i] = (1 - u) * 0.8;
-                    data.tints.set([1, 0.82, 0.55], i * 3);
-                }
-            },
-        },
-    };
+    const aimGroup = { colors: [0xffffff], parallax: 0, drift: 0, twinkle: 0, reach: 0, look: 'hard', dynamic: kindler.aimGroup };
 
     // Every frame: the heat, the sling, the flight, the lights, the beacon and the rulito
     const play_ = (t, dt) => {
         measure();
-        idle += dt;
         const me = water.swimmer;
-        if (mode === 'cold') {
-            if (!rubbing) heat = Math.max(0, heat - dt * COOL);
-            // A note of the chord climbs with each sixth of the heat
-            const sixth = Math.floor(heat * 6);
-            if (sixth > kindled) { kindled = sixth; play('kindle', { step: heat }); }
-            if (sixth < kindled - 1) kindled = sixth;
-            if (heat >= 1) ignite();
-        }
+        water.ghost = kindler.mode === 'flying';
+        kindler.update(t, dt);
         // Pulled back, the being follows the finger a little and waits still in the water
-        if (aiming && anchor) {
-            const p = pull();
+        if (kindler.aiming && anchor) {
+            const p = kindler.pull();
             const k = CELL.r / geo.R * 0.25;
             me.vx = me.vy = 0;
             let x = anchor.mx + p.x * k - CELL.x, y = anchor.my + p.y * k - CELL.y;
@@ -419,25 +322,17 @@
             me.x = CELL.x + x;
             me.y = CELL.y + y;
         }
-        // Flying (on fire, it goes past the organelles): every new knock on the wall lights what is on that side; slowed
-        // down, its fire goes out
-        water.ghost = mode === 'flying';
-        if (mode === 'flying') {
-            if (me.hit > lastHit + 0.01) hitWall(me.x, me.y);
-            if (Math.hypot(me.vx, me.vy) < 0.05) goOut();
-        }
         lastHit = me.hit;
+        const { charge, mode } = kindler;
         // Its fire: a glow behind it, embers rising from it (a trail while it flies)
-        const want = mode === 'cold' ? heat * 0.6 : 1;
-        charge += (want - charge) * Math.min(1, dt * (want > charge ? 6 : 3));
         embers += dt;
         if (!reduced && charge > 0.15 && embers > (mode === 'flying' ? 0.025 : 0.14 - 0.08 * charge)) {
             embers = 0;
             sparks.burst(geo.sx, geo.sy, { n: mode === 'flying' ? 3 : 2, colors: FIRE, speed: 20 + 40 * charge, life: mode === 'flying' ? 0.7 : 1.1, size: 2.5 + 2.5 * charge, spread: 10 });
         }
         // The hint, without words: still for a while, a spark crackles on the being (rub it), or on fire it beats (sling it)
-        if (!rubbing && !aiming && !win && mode !== 'flying' && idle > 7) {
-            idle = 0;
+        if (!kindler.rubbing && !kindler.aiming && !win && mode !== 'flying' && kindler.idle > 7) {
+            kindler.idle = 0;
             hint = 1;
             if (!reduced) sparks.burst(geo.sx, geo.sy, { n: 8, colors: FIRE, speed: 50, life: 0.9, size: 3.5, spread: 8 });
         }
@@ -696,9 +591,7 @@
         front?.destroy();
         stage?.destroy();
         stageEl?.style.removeProperty('--name-glow');
-        window.removeEventListener('pointermove', move);
-        window.removeEventListener('pointerup', letGo);
-        window.removeEventListener('pointercancel', letGo);
+        kindler.destroy();
     });
 </script>
 

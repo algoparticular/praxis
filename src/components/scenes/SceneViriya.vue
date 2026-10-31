@@ -2,7 +2,7 @@
     // Viriya: diligence, "I listen to my heart and follow its truth with determination". At dusk Particular stands at the
     // edge of a cliff with his backpack and a staff crowned by a spiral, looking down at a path that winds through the
     // hills towards the setting sun.
-    // Its verb is Encender (the engine of Evolución: rub, then sling). Rubbing the staff warms its spiral: the walker's aura
+    // Its verb is Encender (useKindle.js, the engine of the verb: rub, then sling). Rubbing the staff warms its spiral: the walker's aura
     // brightens, sparks fly, a note of the chord climbs with each sixth of the heat; rubbing faster does not count more
     // and stopping cools it ("slowly but surely": diligence). Hot enough, the spiral catches fire like a torch. Then it is
     // a sling: press, pull back (a band to the finger, dots for where it goes) and let go: a flame flies over the valley,
@@ -20,6 +20,7 @@
     import { createLayerStage } from '../../composables/useLayerStage.js';
     import { startStardust } from '../../composables/useStardust.js';
     import { createSparks } from '../../composables/useSparks.js';
+    import { createKindle, FIRE } from '../../composables/useKindle.js';
     import { play } from '../../composables/useSound.js';
     import { sceneMilestone } from '../../analytics.js';
     import Rulito from '../Rulito.vue';
@@ -74,7 +75,6 @@
     const SUN = art.sun;
     const SUN_YELLOW = SUN.color;
     const AURA = 0xe9edd8;
-    const FIRE = [0xffb069, 0xff9a5c, 0xffd29a, 0xfff3d6, 0xf2b036];
     const ease = (p) => p * p * (3 - 2 * p);
     const SUN_RISE = 180;                   // how far the sun comes up when the way is lit (art px)
     const centreOf = ([x, y, w, h]) => [x + w / 2, y + h / 2];
@@ -98,25 +98,12 @@
     const lit = TARGETS.map(() => (reduced ? 1 : 0));
     const flash = TARGETS.map(() => 0);
 
-    // ---- Encender: rub the staff until its spiral catches, then sling the flame over the valley
-    const RUB = 1.6;                        // frame widths of rubbing for the spiral to catch
-    const STEADY = 1.6;                     // frame widths per second: rubbing faster than this does not count more
-    const COOL = 0.25;                      // heat lost per second while nobody rubs
-    const FUEL = 4;                         // bounces a flame lasts
-    const AIM_MIN = 0.12;                   // a pull shorter than this (of the full pull) launches nothing
+    // ---- Encender (useKindle.js): rub the staff until its spiral catches, then sling the flame over the valley. Its
+    // numbers are the engine's own (they were Viriya's first): RUB 1.6 frame widths of rubbing for the spiral to catch,
+    // STEADY 1.6 a second (rubbing faster does not count more: "sin prisa pero sin pausa"), COOL 0.25 of heat lost a
+    // second while nobody rubs, FUEL 4 bounces, a pull shorter than 0.12 of the full one launches nothing
     const DELAY = 1.4, GROW = 2.2, LINGER = 2.6, EAT = 3.4;    // the rulito: after the sun comes up, born, kept, gone
-    let mode = 'cold';                      // cold: rub it; lit: the spiral is on fire, sling it; flying: a flame is out
-    let heat = 0;
-    let charge = 0;                         // the spiral's fire, eased
-    let kindled = 0;
-    let rubbing = false;
-    let aiming = false;
-    let finger = null, prevFinger = null, prevAt = 0;
-    let anchor = null;
-    let idle = 0;
     let hint = 0;
-    let embers = 0;
-    const flame = { x: 0, y: 0, vx: 0, vy: 0, fuel: 0, age: 0, home: -1 };
     let win = null;
     let wins = 0;
     let sunUp = 0;                          // the sun come up full
@@ -127,111 +114,48 @@
 
     const spiralAt = () => L.walker.toScreen(sx(SPIRAL[0]), sy(SPIRAL[1]));
     const targetAt = (i) => L.valley.toScreen(sx(TARGETS[i].x), sy(TARGETS[i].y));
-    const onCanvas = (event) => {
-        const area = canvas.value.getBoundingClientRect();
-        return { x: event.clientX - area.left, y: event.clientY - area.top };
-    };
-    const pull = () => {
-        if (!finger || !anchor) return { x: 0, y: 0, k: 0 };
-        let x = finger.x - anchor.x, y = finger.y - anchor.y;
-        const d = Math.hypot(x, y), max = F.size * 0.32;
-        if (d > max) { x *= max / d; y *= max / d; }
-        return { x, y, k: Math.min(1, d / max) };
-    };
+    const kindler = createKindle({
+        size: () => F.size,
+        source: spiralAt,
+        canvas: () => canvas.value,
+        sparks,
+        busy: () => !!win || reduced,
+        // The flame flies: it falls a little, slows a little, bounces off the edges of the screen and lights every cactus
+        // and flower it passes
+        collide: (f) => {
+            if (kindler.edges(W, H)) play('tap');
+            TARGETS.forEach((T, i) => {
+                if (on[i]) return;
+                const p = targetAt(i);
+                if (Math.hypot(p.x - f.x, p.y - f.y) < Math.max(34, T.reach * k())) catchFire(i);
+            });
+        },
+        onKindle: (step) => play('kindle', { step }),
+        onIgnite: () => { dust?.boost(1, 1.2); play('ignite', 1); play('star'); },
+        onLaunch: (pull) => play('ignite', pull),
+    });
 
     // Pressing on the walker: cold, it starts to rub the staff; on fire, it takes the sling
     const press = (event) => {
-        idle = 0;
-        finger = prevFinger = onCanvas(event);
-        prevAt = performance.now();
-        window.addEventListener('pointermove', move);
-        window.addEventListener('pointerup', letGo);
-        window.addEventListener('pointercancel', letGo);
-        if (reduced || win) { play('tap'); return; }
-        if (mode === 'cold') rubbing = true;
-        else if (mode === 'lit') {
-            aiming = true;
-            anchor = spiralAt();
-            play('tap');
-        }
+        if (!kindler.press(event)) play('tap');
+        else if (kindler.aiming) play('tap');
     };
-    const move = (event) => {
-        finger = onCanvas(event);
-        const now = performance.now();
-        if (rubbing && prevFinger) {
-            const d = Math.hypot(finger.x - prevFinger.x, finger.y - prevFinger.y);
-            // Sin prisa pero sin pausa: what is rubbed faster than STEADY does not count
-            const counted = Math.min(d, STEADY * F.size * Math.max(0.008, (now - prevAt) / 1000));
-            heat = Math.min(1, heat + counted / (F.size * RUB));
-            if (d > 3 && Math.random() < 0.25 + heat) {
-                const s = spiralAt();
-                const from = Math.random() < 0.5 ? finger : s;
-                sparks.burst(from.x, from.y, { n: 1 + Math.round(heat * 2), colors: FIRE, speed: 30 + 60 * heat, life: 0.8, size: 2.5 + 2 * heat, spread: 4 });
-            }
-            idle = 0;
-        }
-        prevFinger = finger;
-        prevAt = now;
+    // With the keyboard: Enter rubs (each press warms it a fifth) and, on fire, throws the flame at the nearest unlit one,
+    // homing in on it until it is lit
+    const nearestUnlit = () => {
+        const s = spiralAt();
+        const todo = TARGETS.map((_, i) => i).filter((i) => !on[i]);
+        if (!todo.length) return null;
+        const i = todo.reduce((best, j) => (Math.hypot(targetAt(j).x - s.x, targetAt(j).y - s.y) < Math.hypot(targetAt(best).x - s.x, targetAt(best).y - s.y) ? j : best), todo[0]);
+        return () => (on[i] ? null : targetAt(i));
     };
-    const letGo = () => {
-        window.removeEventListener('pointermove', move);
-        window.removeEventListener('pointerup', letGo);
-        window.removeEventListener('pointercancel', letGo);
-        rubbing = false;
-        if (aiming) {
-            aiming = false;
-            const p = pull();
-            if (p.k >= AIM_MIN) launch(-p.x / Math.hypot(p.x, p.y), -p.y / Math.hypot(p.x, p.y), p.k);
-            anchor = null;
-        }
-        finger = prevFinger = null;
-    };
-    // With the keyboard: Enter rubs (each press warms it a fifth) and, on fire, throws the flame at the nearest unlit one
     const onKey = (event) => {
         if (event.key !== 'Enter' && event.key !== ' ') return;
         event.preventDefault();
-        idle = 0;
-        if (reduced || win) { play('tap'); return; }
-        const s = spiralAt();
-        if (mode === 'cold') {
-            heat = Math.min(1, heat + 0.2);
-            sparks.burst(s.x, s.y, { n: 6, colors: FIRE, speed: 60, life: 0.8, size: 3.5, spread: 6 });
-            if (heat > 0.99) ignite();
-        }
-        else if (mode === 'lit') {
-            const todo = TARGETS.map((_, i) => i).filter((i) => !on[i]);
-            const i = todo.reduce((best, j) => (Math.hypot(targetAt(j).x - s.x, targetAt(j).y - s.y) < Math.hypot(targetAt(best).x - s.x, targetAt(best).y - s.y) ? j : best), todo[0]);
-            const to = targetAt(i);
-            const d = Math.hypot(to.x - s.x, to.y - s.y) || 1;
-            launch((to.x - s.x) / d, (to.y - s.y) / d, 0.6, i);
-        }
+        if (reduced || win) { kindler.idle = 0; play('tap'); return; }
+        kindler.key(nearestUnlit);
     };
 
-    // The spiral has caught fire: it is a torch
-    const ignite = () => {
-        mode = 'lit';
-        heat = 1;
-        const s = spiralAt();
-        sparks.burst(s.x, s.y, { n: 40, colors: FIRE, speed: 140, life: 1.8, size: 5, spread: 8 });
-        dust?.boost(1, 1.2);
-        play('ignite', 1);
-        play('star');
-    };
-    // Let go of the sling: the flame leaves the spiral
-    const launch = (dx, dy, k, home = -1) => {
-        const s = spiralAt();
-        const speed = F.size * (0.9 + 1.7 * k);
-        Object.assign(flame, { x: s.x, y: s.y, vx: dx * speed, vy: dy * speed, fuel: FUEL, age: 0, home });
-        mode = 'flying';
-        play('ignite', k);
-        sparks.burst(s.x, s.y, { n: Math.round(14 + 20 * k), colors: FIRE, speed: 120, life: 1.4, size: 4.5, spread: 6 });
-    };
-    const goOut = () => {
-        mode = 'cold';
-        heat = 0;
-        kindled = 0;
-        sparks.burst(flame.x, flame.y, { n: 12, colors: [0xcfc4d6, 0xe8e0ea, 0xffd29a], speed: 40, life: 1.6, size: 3.5, spread: 8 });
-    };
     // A cactus or a flower catches the fire: its colour, its light
     const catchFire = (i) => {
         if (on[i]) return;
@@ -250,43 +174,12 @@
         if (win) return;
         wins += 1;
         win = { age: 0, head: 0, tail: 0, full: false, fullAt: 0, back: false, pop: 0 };
-        mode = 'cold';
-        heat = 0;
+        kindler.reset();
         rulito.value?.reshape();
         play('ignite', 1);
         play('converge');
         dust?.boost(0, 1.6);
         sceneMilestone('path_lit', { times: wins });
-    };
-
-    // The sling, as particles: a band from the spiral to the finger and, the other way, where the flame will go
-    const AIM_N = 44;
-    const aimGroup = {
-        count: AIM_N,
-        update(t, data) {
-            data.alphas.fill(0);
-            if (!aiming || !finger || !anchor) return;
-            const p = pull();
-            for (let i = 0; i < 14; i++) {
-                const u = i / 13;
-                data.positions[i * 3] = anchor.x + (finger.x - anchor.x) * u;
-                data.positions[i * 3 + 1] = anchor.y + (finger.y - anchor.y) * u;
-                data.sizes[i] = 3 + 2 * p.k;
-                data.alphas[i] = 0.5 + 0.4 * p.k;
-                data.tints.set([1, 0.75 + 0.2 * u, 0.45 + 0.3 * u], i * 3);
-            }
-            if (p.k < AIM_MIN) return;
-            const d = Math.hypot(p.x, p.y) || 1;
-            for (let i = 14; i < AIM_N; i++) {
-                const u = (i - 13) / (AIM_N - 14);
-                const go = u * F.size * (0.25 + 0.5 * p.k) + ((t * 60) % 8);
-                data.positions[i * 3] = anchor.x - p.x / d * go;
-                data.positions[i * 3 + 1] = anchor.y - p.y / d * go;
-                data.sizes[i] = 3.2 * (1 - u * 0.6);
-                data.alphas[i] = (1 - u) * 0.8;
-                data.tints.set([1, 0.82, 0.55], i * 3);
-            }
-        },
     };
 
     // Every LOOK s the walker leans out to look down the path for a moment (0..1, eased in and out)
@@ -298,63 +191,16 @@
 
     // Every frame: the heat, the flight, the lights, the sun and the rulito
     const game = (t, dt) => {
-        idle += dt;
-        if (mode === 'cold' && !win) {
-            if (!rubbing) heat = Math.max(0, heat - dt * COOL);
-            const sixth = Math.floor(heat * 6);
-            if (sixth > kindled) { kindled = sixth; play('kindle', { step: heat }); }
-            if (sixth < kindled - 1) kindled = sixth;
-            if (heat >= 1) ignite();
-        }
-        // The flame flies: it falls a little, slows a little, bounces off the edges of the screen
-        if (mode === 'flying') {
-            flame.age += dt;
-            if (flame.home >= 0 && !on[flame.home]) {
-                const to = targetAt(flame.home);
-                const d = Math.hypot(to.x - flame.x, to.y - flame.y) || 1;
-                const speed = F.size * 1.4;
-                flame.vx += ((to.x - flame.x) / d * speed - flame.vx) * Math.min(1, dt * 4);
-                flame.vy += ((to.y - flame.y) / d * speed - flame.vy) * Math.min(1, dt * 4);
-            } else {
-                flame.vy += F.size * 0.55 * dt;
-                const drag = Math.exp(-0.35 * dt);
-                flame.vx *= drag;
-                flame.vy *= drag;
-            }
-            flame.x += flame.vx * dt;
-            flame.y += flame.vy * dt;
-            const bounce = (hit) => {
-                if (!hit) return;
-                flame.fuel -= 1;
-                sparks.burst(flame.x, flame.y, { n: 12, colors: FIRE, speed: 80, life: 1, size: 4, spread: 4 });
-                play('tap');
-            };
-            if (flame.x < 0) { flame.x = 0; flame.vx = Math.abs(flame.vx) * 0.8; bounce(true); }
-            if (flame.x > W) { flame.x = W; flame.vx = -Math.abs(flame.vx) * 0.8; bounce(true); }
-            if (flame.y < 0) { flame.y = 0; flame.vy = Math.abs(flame.vy) * 0.8; bounce(true); }
-            if (flame.y > H) { flame.y = H; flame.vy = -Math.abs(flame.vy) * 0.75; bounce(true); }
-            TARGETS.forEach((T, i) => {
-                if (on[i]) return;
-                const p = targetAt(i);
-                if (Math.hypot(p.x - flame.x, p.y - flame.y) < Math.max(34, T.reach * k())) catchFire(i);
-            });
-            embers += dt;
-            if (embers > 0.022) {
-                embers = 0;
-                sparks.burst(flame.x, flame.y, { n: 3, colors: FIRE, speed: 30, life: 0.7, size: 4, spread: 5 });
-            }
-            if (flame.fuel <= 0 || flame.age > 6 || Math.hypot(flame.vx, flame.vy) < F.size * 0.12) goOut();
-        }
+        kindler.update(t, dt);
+        const charge = kindler.charge;
         // The spiral's fire: embers rising from it, more the hotter
-        const want = mode === 'cold' ? heat * 0.6 : mode === 'lit' ? 1 : 0.25;
-        charge += (want - charge) * Math.min(1, dt * (want > charge ? 6 : 3));
         if (!reduced && charge > 0.15 && Math.random() < dt * (4 + 14 * charge)) {
             const s = spiralAt();
             sparks.burst(s.x, s.y, { n: 1, colors: FIRE, speed: 20 + 40 * charge, life: 1.1, size: 2.5 + 2.5 * charge, spread: 10 });
         }
         // The hint, without words: still a while, sparks crackle on the spiral (rub it), or on fire it beats (sling it)
-        if (!rubbing && !aiming && !win && mode !== 'flying' && idle > 7) {
-            idle = 0;
+        if (!kindler.rubbing && !kindler.aiming && !win && kindler.mode !== 'flying' && kindler.idle > 7) {
+            kindler.idle = 0;
             hint = 1;
             const s = spiralAt();
             sparks.burst(s.x, s.y, { n: 8, colors: FIRE, speed: 50, life: 0.9, size: 3.5, spread: 8 });
@@ -385,7 +231,7 @@
         const up = win && !win.back ? 1 : 0;
         sunUp += (up - sunUp) * Math.min(1, dt * (up ? 1.2 : 0.5));
         stageEl?.style.setProperty('--name-glow', named.toFixed(3));
-        stage.bloom = Math.max(named, 0.35 * charge, 0.45 * sunUp, mode === 'flying' ? 0.4 : 0);
+        stage.bloom = Math.max(named, 0.35 * charge, 0.45 * sunUp, kindler.mode === 'flying' ? 0.4 : 0);
         return named;
     };
 
@@ -591,13 +437,14 @@
         });
         L.valleyNode.y = scroll * 20;
 
+        const charge = kindler.charge;
         // ---- The walker: he breathes; the spiral is a torch; his aura warms as the staff is rubbed
         // and now and then he leans out a little to look down the path, then stands back
         L.walker.y = Math.sin(t * 0.8) * 2 * ramp;
         L.walker.rotate = reduced ? 0 : 2.5 * lookout(t) * (1 - charge);
         L.body.sy = 1 + 0.012 * Math.sin(t * 1.1) * ramp;
         L.body.sx = 1 - 0.004 * Math.sin(t * 1.1) * ramp;
-        L.staff.rotate = Math.sin(t * 0.7) * 0.6 * ramp + (rubbing ? Math.sin(t * 30) * 0.8 : 0);
+        L.staff.rotate = Math.sin(t * 0.7) * 0.6 * ramp + (kindler.rubbing ? Math.sin(t * 30) * 0.8 : 0);
         L.torch.opacity = Math.min(1, 1.2 * charge * (0.85 + 0.15 * Math.sin(t * 7)) + hint * 0.5);
         L.torch.scale = 0.6 + 0.6 * charge + 0.3 * hint;
         L.warmth.opacity = Math.min(1, 0.6 * charge + 0.4 * sunUp);
@@ -607,9 +454,9 @@
         dust?.fade(1, 0.55 + 0.45 * Math.max(charge, sunUp));
 
         // ---- The flame
-        const flying = mode === 'flying';
-        L.flame.x = L.flameCore.x = flame.x;
-        L.flame.y = L.flameCore.y = flame.y;
+        const flying = kindler.mode === 'flying';
+        L.flame.x = L.flameCore.x = kindler.flame.x;
+        L.flame.y = L.flameCore.y = kindler.flame.y;
         L.flame.opacity = flying ? 0.95 : 0;
         L.flameCore.opacity = flying ? 1 : 0;
         L.flame.scale = 1 + 0.15 * Math.sin(t * 17);
@@ -647,7 +494,7 @@
                 // 1: the aura round the walker, warmer as the staff is rubbed
                 { colors: [AURA], parallax: 0, drift: 1.6, jitter: 0.4, twinkle: 0.45, reach: 0, bloom: true, order: after(L.warmth), points: () => fromArt(art.aura, AURA, 1.3) },
                 // 2: the sling
-                { colors: [0xffffff], dynamic: aimGroup, parallax: 0, drift: 0, twinkle: 0, reach: 0, look: 'hard', order: 1e6 - 1 },
+                { colors: [0xffffff], dynamic: kindler.aimGroup, parallax: 0, drift: 0, twinkle: 0, reach: 0, look: 'hard', order: 1e6 - 1 },
                 // 3: sparks
                 { ...sparks.group(), order: 1e6 },
             ],
@@ -665,9 +512,7 @@
         dust?.destroy();
         stage?.destroy();
         stageEl?.style.removeProperty('--name-glow');
-        window.removeEventListener('pointermove', move);
-        window.removeEventListener('pointerup', letGo);
-        window.removeEventListener('pointercancel', letGo);
+        kindler.destroy();
     });
 </script>
 
