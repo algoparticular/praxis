@@ -91,7 +91,7 @@ Pedido de Juan Manuel: los soles y las lunas de este estilo vivo tienen que ser 
 | 32 Transformación | el solcito de la copa: ✅ su punteado de la carta (el disco queda bajo el anillo dibujado) |
 | 6 Sacca | la luna: ✅ disco con el borde disuelto |
 | 19 Coraje | la luna |
-| 18 Confianza | la luz de la chakana |
+| 18 Confianza | la luz de la chakana: ✅ disco con el borde disuelto (Juan Manuel la sumó, 1 de noviembre) |
 | 28 Perdón | el planeta |
 
 - **Sila:** ✅ Hecho (pedido de Juan Manuel, 1 de noviembre). Su luna era una imagen con un borde punteado apretado. Ahora es un disco en código con la banda punteada de la carta encima, como Metta (la imagen se borró).
@@ -101,7 +101,7 @@ Pedido de Juan Manuel: los soles y las lunas de este estilo vivo tienen que ser 
 - **Coraje:** su luna queda como está (Juan Manuel).
 - **Addhitthana y Esperanza:** sus lunas están bien así (Juan Manuel, 1 de noviembre); no se tocan.
 
-**Para decidir con Juan Manuel en cada una:** ¿queda todo de puntos, como Pañña, o el disco con el borde disuelto en el punteado? Perdón (un planeta de mármol con contorno) y Confianza (una luz) quizá no entren. Las 18 cartas del 31/10 que tienen sol o luna lo revisan dentro de su revisión.
+**Decidido (1 de noviembre):** los chicos todos de puntos, como Pañña (Honestidad, Aceptación, Paciencia; Transformación con su punteado alrededor del anillo); los grandes, disco con el borde disuelto en su punteado (Metta, Sila, Viriya, Gratitud con sus dos soles, Sacca, Confianza). Coraje, Addhitthana y Esperanza quedan como están. Ciclos y Perdón van con el paquete B (el sol de Ciclos y el planeta de Perdón se coordinan con esa sesión). Todo sale de `scripts/sun-cloud.mjs` y `src/composables/stippleCloud.js`.
 
 ## Revisión juego por juego de las 18 cartas del 31 de octubre
 
@@ -419,7 +419,7 @@ Gestos de la mano: `drag` entre las dos luces del primer hilo que falta (Pañña
 
 ## Decisiones abiertas (las toma Juan Manuel)
 
-- **Soles y lunas (paquete S):** si Perdón (un planeta con contorno) y Confianza (una luz) entran, y en cada uno si queda todo de puntos o el disco con el borde disuelto.
+- **Soles y lunas (paquete S):** decidido. Confianza entra (hecha); Perdón y Ciclos van con el paquete B.
 
 **Ya decididas** (1 de noviembre):
 - **La mano:** el aspecto está bien. Sobre fondos muy claros se le busca contraste.

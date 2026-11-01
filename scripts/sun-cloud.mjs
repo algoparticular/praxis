@@ -160,6 +160,16 @@ const CARDS = {
         color: 0xf3f4f5,
         behind: (scene, y, card) => card.median(1800, 2140, y),
     },
+    // 18 Confianza: the light round the chakana at the heart of the maze, over the card's aqua, fading just before the
+    // first wall; the arcs are its diagonals, clear of the chakana's arms and of the wall's opening
+    confianza: {
+        card: 18,
+        json: 'src/composables/confianzaScene.json',
+        key: 'heart',
+        color: (scene) => scene.heart.color,
+        behind: (scene) => scene.ground,
+        ring: { centre: (scene) => [scene.heart.x, scene.heart.y], from: () => 92, to: () => 136, arcs: [[-155, -115], [-65, -25], [25, 65], [115, 155]] },
+    },
 };
 
 function nearest(stops, y) {
