@@ -12,9 +12,9 @@ El problema de fondo: casi todas las escenas, dejadas solas, hacen brillar algo.
 
 ## Paquete 0: la mano fantasma (`src/composables/useGhostHand.js`)
 
-**Hecha y en uso** en Paciencia (mantener), Viriya (frotar y, encendido, tirar y soltar) y Pañña (arrastrar). Commit `Ghost hand: …` en `claude/music-chakra-cards-jft7f9`.
+**Hecha y en uso** en Paciencia (mantener), Viriya (frotar y, encendido, tirar y soltar) y Pañña (arrastrar), en la rama `claude/music-chakra-cards-jft7f9`. Una prueba en Ciclos se deshizo: el ejemplo de Soltar es Vipassana (ver Etapa 1).
 
-**Cómo se usa en una escena:**
+**Cómo se usa en una escena** (modelo: `ScenePaciencia.vue`, `SceneViriya.vue`, `ScenePanna.vue`):
 
 ```js
 import { createGhostHand, gesture } from '../../composables/useGhostHand.js';
@@ -33,23 +33,64 @@ if (!held && !won && hand?.due(6)) hand.play(gesture.hold(someHit.value, 2.4));
   - `drag(A, B)`;
   - `slide(path)`, con `path(u)` para u de 0 a 1.
   - También se pueden armar guiones a mano: `go`, `path`, `down`, `up`, `ring`, `wait`.
-- **Tiempo quieto:** la mano lleva su propia cuenta, con reloj real; `due(segundos)` dice si ya pasó. Cualquier toque o tecla la hace irse al instante. Con movimiento reducido no aparece.
+- **Tiempo quieto:** la mano lleva su propia cuenta, con reloj real; `due(segundos)` dice si ya pasó. Si la escena ya tiene su propio temporizador de pista, se puede llamar a `play` desde ahí, como hace Viriya.
+- Cualquier toque o tecla la hace irse al instante. Con movimiento reducido no aparece. `play(…, { loops })` dice cuántas veces repite el gesto (2 por defecto).
 
-**Pendiente, esperando la opinión de Juan Manuel sobre los videos:**
+**Pendiente, esperando la opinión de Juan Manuel sobre los videos y la Etapa 1:**
 - Tamaño, brillo, velocidad y repeticiones (hoy repite 2 veces).
 - Contraste sobre personajes o cielos claros: en el caminante crema de Viriya se pierde un poco. Opciones: un halo oscuro más fuerte (hoy 0.13), o un color por carta (`createGhostHand(stage, { color })`).
 - **Este archivo se toca solo desde un chat a la vez**, para no pisarse. Los demás paquetes solo lo usan.
 
-## Cómo repartir
+## Etapa 1: un ejemplo por verbo, en las primeras cartas de cada verbo
 
-Cada paquete toca sus escenas y, como mucho, el motor de su verbo. Se pueden hacer en paralelo. En cada carta:
+Antes de llevar la mano a todas las cartas, se conecta en la primera carta que se hizo de cada verbo. Juan Manuel las prueba en un teléfono y se cierra el aspecto de la mano (paquete 0). Solo después se pasa a las demás (etapa 2).
+
+| Verbo | Carta de ejemplo | Gesto de la mano | Estado |
+|---|---|---|---|
+| Arraigar | 27 Paciencia | `hold` sobre la piña | ✅ hecho |
+| Soltar | 31 Vipassana | `tap` sobre la célula que hoy brilla (`cellField.hint()`, `startHints`); a veces `hold` sobre Sid (la respiración atrapa un tercio de las células) | falta |
+| Fluir | 5 Khanti | `slide` por el tramo de ruta delante de la cabeza (`flow.point(i)` da los puntos; ver el paquete C, que propone llevarlo a `useFlow.js`) | falta |
+| Encender | 22 Evolución | en frío `rub` dentro de la célula; encendido `sling` del ser hacia lo próximo apagado (modelo: Viriya, que también está hecha) | falta |
+| Dar y recibir | 2 Dana | `tap` sobre el receptor que hoy titila (`flash` de `useGiving.js`) | falta |
+| Resonar | 29 Sincronicidad | `tap` a tiempo sobre la burbuja que brilla en su pulso, lanzado `TAP_LEAD` antes del pulso (hoy no tiene ninguna pista por inactividad) | falta |
+| Ver | 3 Pañña | `drag` entre las dos luces del primer hilo que falta | ✅ hecho |
+
+Viriya (Encender) también está hecha y sirve de modelo para el `sling`.
+
+## Etapa 2: el resto de las cartas, en paralelo (paquetes A a G)
+
+Cada paquete toca sus escenas y, como mucho, el motor de su verbo. En cada carta:
 
 1. Reemplazar o completar la pista con el gesto de la mano.
 2. Mover el rulito según la regla 2.
 3. Arreglar lo marcado.
-4. Poner al día `docs/escenas.md` y `CLAUDE.md` en lo que cambie.
+4. Poner al día `docs/escenas.md` y `CLAUDE.md` en lo que cambie, solo en los párrafos de sus cartas.
 
 Al terminar, `npm run check` y probar en un teléfono.
+
+## Paquete H: documentar en el GDD
+
+El GDD es el artefacto "Anima GDD". Sus pestañas salen de los documentos de `docs/` (ver `docs/README.md`).
+
+1. **`verbos-y-dinamicas.md`**, en "Reglas comunes de las dinámicas":
+   - la pista es la mano fantasma, sin texto, y muestra el gesto;
+   - la regla del rulito (regla 2).
+   - En la sección de cada verbo, qué gesto hace la mano.
+2. **`abierto.md`:** las decisiones que siguen abiertas (al final de este plan).
+3. **`escenas.md`:** un apartado técnico de `useGhostHand.js` (lo de "Cómo se usa" de arriba).
+4. **`CLAUDE.md`:** una línea sobre `useGhostHand.js` junto a los otros motores comunes.
+5. **El artefacto "Anima GDD":** volver a publicarlo con esas pestañas al día. Se busca con la herramienta Artifact (`list`), se lee (`read`) y se actualiza sobre esa misma URL, sin crear uno nuevo. Lo hace un solo chat, al final, cuando los documentos ya estén en `main`.
+
+Los puntos 1 a 4 se pueden hacer ya con lo decidido. Cada paquete agrega después lo suyo.
+
+## Cómo trabajar en paralelo (varios chats o sub-sesiones)
+
+- **Rama base:** la mano fantasma y este plan están solo en `claude/music-chakra-cards-jft7f9`. Lo más simple es mergearla a `main` antes de repartir, y que cada chat arranque desde `main`. Si no, cada chat arranca desde esa rama.
+- **Un chat por paquete, cada uno en su propia rama.** Ningún chat toca escenas de otro paquete, ni `useGhostHand.js` (salvo el del paquete 0).
+- **Conflictos esperables:** en `CLAUDE.md` y `docs/escenas.md`, porque todos los paquetes editan esos archivos (cada uno sus párrafos). Se resuelven al mergear; por eso conviene mergear los paquetes de a uno.
+- **Si se orquesta desde un chat con sub-sesiones:** el chat principal reparte los paquetes, revisa cada resultado (lint, `npm run check`, capturas de pantalla o video de la escena) y mergea de a uno. Las decisiones de la lista de abajo no las toma ninguna sub-sesión: se le preguntan a Juan Manuel.
+- **Indicación para cada chat** (copiar y completar):
+  > Leé `docs/plan-revision-verbos.md` (en `main`, o en la rama `claude/music-chakra-cards-jft7f9`). Hacé el paquete X: para cada carta, la pista con la mano fantasma, el rulito según la regla 2 y lo marcado. No toques `useGhostHand.js` ni escenas de otros paquetes. Lo que figure "a decidir", preguntámelo antes. Al terminar, `npm run check`, un video o capturas de cada escena, y actualizá en el plan el estado de tus cartas.
 
 ## Dónde dibuja el rulito cada carta original
 
@@ -135,7 +176,7 @@ Gestos de la mano: `tap` sobre lo que se suelta. Cada tanto, `hold` sobre el per
   - Pista: `tap` sobre el brote que hoy pulsa (el primero atado, `HINT` 7), y a veces `hold` sobre Sid.
   - Rulito: usa la caja de la carta escrita a mano (`RULITO`, línea 78). Coincide; se puede pasar al JSON.
   - Ojo: dejado solo 15 s le vuelve a crecer un hilo, así que se pierde avance. Revisar si choca con "nada se pierde".
-- **31 Vipassana:**
+- **31 Vipassana** (ejemplo de la etapa 1):
   - Pista: `tap` sobre la célula que hoy brilla (`cellField.hint()`), y a veces `hold` sobre Sid.
   - Rulito sobre Sid, bien.
 - **9 Upekkha:**
@@ -153,7 +194,7 @@ Gestos de la mano: `tap` sobre lo que se suelta. Cada tanto, `hold` sobre el per
 Gesto de la mano: `slide` a lo largo del tramo de ruta que está delante de la cabeza, a su ritmo. Motor común: `useFlow.js`.
 
 - **Común a las cuatro:** la "llamada" (`call = touched ? clamp((idle-3)/2) : 1`) está copiada con números sueltos en las cuatro escenas. Conviene llevarla, junto con la pista, a `useFlow.js`: algo como un `flow.hintPath(len)` que devuelva los próximos puntos de la ruta para `gesture.slide`.
-- **5 Khanti:**
+- **5 Khanti** (ejemplo de la etapa 1):
   - Rulito: hoy en porcentajes fijos a mano sobre el cartel (`SceneKhanti.vue` ≈683-685). La carta no dibuja rulito, así que va sobre un personaje (a decidir).
 - **11 Aceptación:**
   - Rulitos: las cajas de la carta, bien.
@@ -173,7 +214,7 @@ Gesto de la mano: en frío, `rub` sobre la fuente; encendido, `sling` desde la f
   - ✅ pista hecha.
   - Rulito bien (caja de la carta, en `L.walker`).
   - Doc: `docs/escenas.md` cita `RUB`, `STEADY`, `COOL` y `FUEL` como constantes, pero ahora son los valores por defecto de `useKindle`.
-- **22 Evolución:**
+- **22 Evolución** (ejemplo de la etapa 1):
   - Pista: `rub` dentro de la célula y después `sling` del ser.
   - Rulito:
     - Ver la decisión sobre los rulitos tenues.
@@ -200,7 +241,7 @@ Cartas:
 - **1 Sila:**
   - Pista: `tap` a tiempo sobre el corazón del atril. Hoy el corazón de Sid le manda el pulso al atril, que está bien pero no muestra el dedo.
   - Rulito: caja de la carta, bien. Cuelga de `L.figures`, no del corazón, así que no sigue su estirón al hablar (menor).
-- **29 Sincronicidad:**
+- **29 Sincronicidad** (ejemplo de la etapa 1):
   - **No tiene pista por inactividad:** hace falta `tap` a tiempo sobre la burbuja que brilla.
   - Rulito:
     - Ancho = 0.065 del marco.
@@ -228,7 +269,7 @@ Cartas:
 
 Gesto de la mano: `tap` sobre el que hoy titila. Motor común: `useGiving.js`, que hoy pone el `flash` al azar: ahí puede vivir la llamada a la mano.
 
-- **2 Dana:**
+- **2 Dana** (ejemplo de la etapa 1):
   - **Rulito:** la carta dibuja **uno solo**, blanco, sobre el ser de la derecha, en [1416,472,76,233]. La escena pone dos rulitos en porcentajes del marco, colgados de `L.isle`, que no siguen el giro de los amigos (`SceneDana.vue` 123, 145-149, 532-533 y 604). Hay que usar el de la carta, colgado de ese ser.
 - **8 Metta:**
   - **Pista contradictoria:** antes de que Sid se ame, el motor hace titilar a un receptor que todavía no se puede tocar (`useGiving.js`:138), al mismo tiempo que la luz de Sid llama. La primera pista tiene que ser solo `tap` sobre Sid.
@@ -259,14 +300,25 @@ Gestos de la mano: `drag` entre las dos luces del primer hilo que falta (Pañña
 
 ---
 
-## Orden sugerido
+## Orden
 
-1. **Paquete 0:** cerrar el aspecto de la mano con Juan Manuel. Todo lo demás la usa.
-2. **En paralelo, un chat por paquete (A a G).** Empezar por lo más roto:
+1. **Etapa 1:** conectar la mano en Vipassana, Khanti, Evolución, Dana y Sincronicidad. Paciencia y Pañña ya están. Se puede repartir: son escenas distintas que no se pisan.
+2. **Paquete 0:** Juan Manuel prueba las siete en un teléfono y se cierra el aspecto de la mano.
+3. **Paquete H, puntos 1 a 4**, en paralelo con lo anterior: documentar lo ya decidido.
+4. **Etapa 2: paquetes A a G**, un chat por paquete. Empezar por lo más roto:
    - el rulito de Compromiso;
    - el rulito de Upekkha en pantalla ancha;
    - el rulito de Dana;
    - el rulito de Transformación;
    - la pista de Metta;
-   - las cartas sin pista: Creatividad, Sincronicidad y Hogar.
-3. **Esperanza:** las formas de las constelaciones, cuando estén definidas.
+   - las cartas sin pista: Creatividad y Hogar.
+5. **Esperanza:** las formas de las constelaciones, cuando estén definidas.
+6. **Paquete H, punto 5:** volver a publicar el artefacto "Anima GDD" con todo al día.
+
+## Decisiones abiertas (las toma Juan Manuel)
+
+- **La mano fantasma:** tamaño, brillo, velocidad, repeticiones y color sobre fondos claros.
+- **Creatividad, Evolución y Hogar:** ¿se respeta el rulito tenue de la carta, al costado del personaje, o va sobre su cabeza?
+- **Qué personaje lleva el rulito** en las cartas que no lo dibujan y donde hoy cae sobre algo que no es un personaje: Compromiso, Esperanza, Desafío, Khanti, Celebración, Confianza, Armonía, Sincronicidad, Comunicación y Belleza. Las propuestas están en "Dónde dibuja el rulito cada carta original".
+- **Esperanza:** qué formas reconocibles tienen las constelaciones de los ancestros.
+- **Nekkhamma:** si está bien que, dejado solo, le vuelva a crecer un hilo (se pierde avance, y la regla dice que nada se pierde).
