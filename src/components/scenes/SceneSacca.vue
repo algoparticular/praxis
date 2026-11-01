@@ -25,6 +25,7 @@
     import { createParallax } from '../../composables/useParallax.js';
     import { createLayerStage } from '../../composables/useLayerStage.js';
     import { startStardust } from '../../composables/useStardust.js';
+    import { decodeCloud, sampleCloud } from '../../composables/stippleCloud.js';
     import { createSparks } from '../../composables/useSparks.js';
     import { play } from '../../composables/useSound.js';
     import { sceneMilestone } from '../../analytics.js';
@@ -84,18 +85,11 @@
     const HEART = 3;                        // the colour of Fa: Sid's heart glows with it
     const step = (c) => COLOURS[c].note / 4;
     const CREAM = 0xfffbd6;                 // the moon: all the colours become this one
-    // The moon is not a picture: a disc drawn in code (measured on the card: its solid middle) and its ragged rim as live
-    // particles, made here, thinning outwards as the card stipples it
-    const MOON = { x: 1082, y: 1073, r: 506, color: 0xfefbd6 };
-    const MOON_RIM = (() => {
-        const dots = [];
-        for (let d = 0; d < 2600; d++) {
-            const a = Math.random() * Math.PI * 2;
-            const out = 62 * Math.random() ** 2.2;
-            dots.push([MOON.x + Math.cos(a) * (MOON.r - 8 + out), MOON.y + Math.sin(a) * (MOON.r - 8 + out), 4 + Math.random() * 4.5 * (1 - out / 80), MOON.color]);
-        }
-        return dots;
-    })();
+    // The moon is not a picture: a disc drawn in code (measured on the card: its solid middle) and over its edge its
+    // stippled band as live particles, read from the card (`moon.cloud`, scripts/sun-cloud.mjs, as Metta's lights); the
+    // disc is only as big as where the band is still whole, so no circle shows
+    const MOON = art.moon;
+    const MOON_CLOUD = decodeCloud(MOON.cloud);
     const rgb = (c) => [((c >> 16) & 255) / 255, ((c >> 8) & 255) / 255, (c & 255) / 255];
 
     // Every cloud: its colour, where it is drawn (art px) and its part of the atlas; where it rests on screen is worked
@@ -536,7 +530,7 @@
         span = { left: -SLIDE * 2 - widest / 2, width: w + SLIDE * 4 + widest };
 
         const moon = rectOf(B.moon);
-        const mr = MOON.r * k();
+        const mr = MOON.cloud.solid * k();
         L.moon.place({ left: sx(MOON.x) - mr, top: sy(MOON.y) - mr, w: 2 * mr, h: 2 * mr });
         const md = moon.w * 1.5;
         L.moonGlow.place({ left: moon.left + moon.w / 2 - md / 2, top: moon.top + moon.h / 2 - md / 2, w: md, h: md });
@@ -748,15 +742,15 @@
         build(stage);
         stage.onResize((w, h) => place(w, h));
         const after = (node) => node.mesh.renderOrder + 0.5;
-        // [x, y, radius, colour] in art px to the screen; the moon's colours are an index into art.colors, Sid's are colours
-        const fromArt = (list, colour = (c) => art.colors[c]) => list.map(([x, y, r, c]) => [sx(x), sy(y), Math.max(1.2, 2 * r * k()), colour(c)]);
+        // [x, y, radius, colour] in art px to the screen
+        const fromArt = (list, colour) => list.map(([x, y, r, c]) => [sx(x), sy(y), Math.max(1.2, 2 * r * k()), colour(c)]);
         dust = startStardust(null, {
             stage,
             manual: true,
             groups: [
                 // 0: the stipple round the moon and its ragged rim, alive
                 { colors: [CREAM], parallax: 0, drift: 1.8, jitter: 0.45, twinkle: 0.35, reach: 0, order: after(L.moon),
-                    points: () => fromArt(art.dots.moon).concat(fromArt(MOON_RIM, (c) => c)) },
+                    points: () => sampleCloud(MOON_CLOUD, (u, v) => [sx(u), sy(v)], k()).map(([x, y, size]) => [x, y, size, MOON.color]) },
                 // 1: Sid's glow, a stipple round him, made in code
                 { colors: [0xfef3b3], parallax: 0, drift: 2.2, jitter: 0.35, twinkle: 0.45, reach: 0, bloom: true, order: after(L.sidGlow), points: () => fromArt(SID_DOTS, (c) => c) },
                 // 2: the notes in the air and the light that goes to the lookout

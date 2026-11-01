@@ -21,6 +21,7 @@
     import { createParallax } from '../../composables/useParallax.js';
     import { createLayerStage } from '../../composables/useLayerStage.js';
     import { startStardust } from '../../composables/useStardust.js';
+    import { decodeCloud, sampleCloud } from '../../composables/stippleCloud.js';
     import { createThreads, rgbOf, smooth } from '../../composables/useThreads.js';
     import { createGhostHand, gesture, HINT_AFTER } from '../../composables/useGhostHand.js';
     import { play } from '../../composables/useSound.js';
@@ -66,10 +67,8 @@
     const IMG = (name) => `/assets/panna/${name}.webp`;
 
     // ---- The clouds: density maps of the original's stipple, turned back into particles at whatever size we draw them
-    const grids = Object.fromEntries(Object.entries(clouds).map(([name, cloud]) => [name, { ...cloud, bytes: Uint8Array.from(atob(cloud.data), (c) => c.charCodeAt(0)) }]));
+    const grids = Object.fromEntries(Object.entries(clouds).map(([name, cloud]) => [name, decodeCloud(cloud)]));
     const hexOf = ([r, g, b]) => (r << 16) | (g << 8) | b;
-    const DENSITY = 4.8;        // how many dots' worth of area per area where the stipple is solid
-    const DOT = 5.5;            // diameter of a dot of the original, in its 2160px units
 
     // The middle of a cloud and its half size, in the 2160px units
     const centreOf = (name) => {
@@ -80,26 +79,7 @@
     };
 
     // map(u, v) turns a spot of the 2160 square into canvas pixels; k is canvas pixels per unit
-    const sample = (name, map, k, boost = 1) => {
-        const grid = grids[name];
-        const out = [];
-        const base = Math.max(1.5, DOT * k);
-        for (let row = 0; row < grid.rows; row++) {
-            for (let col = 0; col < grid.cols; col++) {
-                const v = grid.bytes[row * grid.cols + col] / 255;
-                if (v < 0.03) continue;
-                const dot = base * (1 + 1.3 * v ** 4);                              // the solid core gets bigger dots
-                const wanted = (grid.cell * k) ** 2 * DENSITY * boost * v ** 1.3 / (Math.PI / 4 * dot * dot);
-                let n = Math.floor(wanted);
-                if (Math.random() < wanted - n) n++;
-                for (let i = 0; i < n; i++) {
-                    const [x, y] = map(grid.x + (col + Math.random()) * grid.cell, grid.y + (row + Math.random()) * grid.cell);
-                    out.push([x, y, dot * (0.8 + Math.random() * 0.4)]);
-                }
-            }
-        }
-        return out;
-    };
+    const sample = (name, map, k, boost = 1) => sampleCloud(grids[name], map, k, boost);
 
     // ---- Where everything is at rest, in px of the screen (the CSS of the DOM version, computed). The centre's square
     // (s) and the bigger one of the surroundings (sn); on a tall screen everything but the sun is lifted off the bottom,

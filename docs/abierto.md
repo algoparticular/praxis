@@ -22,7 +22,7 @@ Séptima pestaña de "Anima GDD": lo que falta decidir, agrupado por tema.
 - Que las raíces se recuerden entre visitas (hoy se pierden al salir de la carta).
 - El color del rulito de Vipassana: es el rosa de la espiral porque el fondo de la escena ya es el violeta de la carta.
 
-- Soles y lunas: los de estilo vivo tienen que ser como el de Pañña, donde no se nota el borde del círculo (todo de puntos, sin un disco debajo). En cada uno falta decidir si queda todo de puntos o el disco con el borde disuelto en el punteado, y si entran Perdón (un planeta de mármol con contorno) y Confianza (una luz). La lista está en `plan-revision-verbos.md`, paquete S.
+- Soles y lunas (paquete S): hechos, salvo el sol de Ciclos y el planeta de Perdón, que van con el paquete B. Falta probarlos en un teléfono. Lo decidido en cada carta está en `plan-revision-verbos.md`, paquete S.
 - Las 18 cartas que se hicieron jugables el 31 de octubre se revisan de a una, probándolas en un teléfono: `plan-revision-verbos.md`.
 
 ## Del plan inmersivo

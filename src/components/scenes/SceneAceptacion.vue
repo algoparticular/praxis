@@ -21,7 +21,8 @@
     // The skies are not pictures: the stage draws them as two liquids that never mix (field() in useLayerStage, as
     // Upekkha's), the edge being the card's wavy line read by the converter, with a long wave travelling down it and
     // the drops of the card as bubbles of one colour in the other that now and then float back to the edge, fall into
-    // their own colour and bud off it again. The sun is a disc drawn in code with its stippled edge as live particles,
+    // their own colour and bud off it again. The sun is all a stipple of live particles over a soft light, sampled from
+    // the card (`sun.cloud`, scripts/sun-cloud.mjs, as Pañña's sun), with no disc under it so no circle's edge shows;
     // and so are the stipple of the planet's shading and the specks of the sky. The banks go on past the frame on wide
     // screens, flat in their colours (drawn in code) with the horizon's line.
     // It is drawn in WebGL (useLayerStage), from aceptacionScene.json and public/assets/aceptacion (made by
@@ -30,6 +31,7 @@
     import { createParallax } from '../../composables/useParallax.js';
     import { createLayerStage, FIELD_RANGE, FIELD_BUBBLES } from '../../composables/useLayerStage.js';
     import { startStardust } from '../../composables/useStardust.js';
+    import { decodeCloud, sampleCloud } from '../../composables/stippleCloud.js';
     import { play } from '../../composables/useSound.js';
     import { createFlow, routeThrough } from '../../composables/useFlow.js';
     import { sceneMilestone } from '../../analytics.js';
@@ -96,6 +98,7 @@
     const DEPTH = { sky: 3, sun: 7, bits: 9, planet: 11, land: 22 };
 
     const SUN = art.sun;
+    const SUN_CLOUD = decodeCloud(SUN.cloud);
     const SKY = art.sky;
     const GROUND = art.ground;
     const TEAL = /^#[0-9a-f]{6}$/i.test(props.card.color ?? '') ? parseInt(props.card.color.slice(1), 16) : 0x40baad;
@@ -501,11 +504,10 @@
         L.skyNode = sky;
         L.sky = sky.field({ source: skyField, colors: [SKY.cream, SKY.yellow], flow: 0.8 });
         L.veil = s.depth(0).glow({ rect: { left: 0, top: 0, w: 1, h: 1 }, color: TEAL, stops: [[0, 0.3], [0.4, 0.16], [0.72, 0]] });
-        // The sun: a soft light round it, its disc (code) and its stippled edge (particles)
+        // The sun: a soft light round it (code) and, among the layers, the sun itself as particles
         const sun = s.depth(zFor(DEPTH.sun));
         L.sunNode = sun;
         L.sunGlow = sun.glow({ rect: { left: 0, top: 0, w: 1, h: 1 }, color: SUN.color, stops: [[0, 0.32], [0.3, 0.12], [0.65, 0]] });
-        L.sun = sun.disc({ rect: { left: 0, top: 0, w: 1, h: 1 }, color: SUN.color });
         sun.enter({ y: 50, delay: 150, duration: 2400 });
         // The little bits of the sky
         const far = s.depth(zFor(DEPTH.bits));
@@ -552,7 +554,6 @@
         placeVeil(h);
 
         const sr = SUN.r * k(), sun = sunAt();
-        L.sun.place({ left: sun.x - sr, top: sun.y - sr, w: 2 * sr, h: 2 * sr });
         const sg = sr * 4;
         L.sunGlow.place({ left: sun.x - sg / 2, top: sun.y - sg / 2, w: sg, h: sg });
         bits.forEach((b, i) => {
@@ -658,7 +659,8 @@
 
         // ---- The sun breathes; the planet floats and turns a little; the bits drift
         const breath = Math.sin(t * 0.5);
-        L.sun.scale = 1 + 0.015 * breath * ramp;
+        const sunNow = sunAt();
+        dust?.grow(0, 0.015 * breath * ramp, sunNow.x, sunNow.y);
         L.sunGlow.opacity = 0.8 + 0.2 * breath;
         L.sunGlow.scale = 1 + 0.05 * breath;
         L.sunNode.y = scroll * 8;
@@ -744,8 +746,11 @@
             stage,
             manual: true,
             groups: [
-                // 0: the stippled edge of the sun, alive
-                { colors: [SUN.color], parallax: 0, drift: 1.8, jitter: 0.4, twinkle: 0.25, reach: 0, look: 'hard', order: after(L.sun), points: () => around(SUN.dots, [SUN.x, SUN.y], sunAt, SUN.color) },
+                // 0: the sun, all of it a stipple (as Pañña's), alive
+                { colors: [SUN.color], parallax: 0, drift: 1.8, jitter: 0.6, twinkle: 0.15, reach: 0, look: 'hard', order: after(L.sunGlow) + 0.2, points: () => {
+                    const c = sunAt();
+                    return sampleCloud(SUN_CLOUD, (u, v) => [c.x + (u - SUN.x) * k(), c.y + (v - SUN.y) * k()], k(), 1.6).map(([x, y, size]) => [x, y, size, SUN.color]);
+                } },
                 // 1: the stipple of the planet's shading
                 { colors: [art.planet.color], parallax: 0, drift: 0.8, jitter: 0.3, twinkle: 0.2, reach: 0, look: 'hard', order: after(L.planet), points: () => around(art.planet.dots, centreOf(B.planet), planetAt, art.planet.color) },
                 // 2: the specks of the sky, pushed by a finger

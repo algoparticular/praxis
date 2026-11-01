@@ -30,6 +30,7 @@
     import { createParallax } from '../../composables/useParallax.js';
     import { createLayerStage } from '../../composables/useLayerStage.js';
     import { startStardust } from '../../composables/useStardust.js';
+    import { decodeCloud, sampleCloud } from '../../composables/stippleCloud.js';
     import { play } from '../../composables/useSound.js';
     import { createFlow, routeThrough } from '../../composables/useFlow.js';
     import { sceneMilestone } from '../../analytics.js';
@@ -82,6 +83,7 @@
     const DEPTH = { stars: 3, streaks: 5, hills: 12, land: 20, beings: 23, signs: 27 };
 
     const SUN = art.sun;
+    const SUN_CLOUD = decodeCloud(SUN.cloud);   // its yellow stipple, from the card (scripts/sun-cloud.mjs, as Pañña's sun)
     const POND = art.pond;
     const SPOT = art.spot;
     const TEAL = 0xa8d8d0;
@@ -626,7 +628,8 @@
                 // 0: the stars, behind everything
                 { colors: [0xf0d0e8], look: 'hard', parallax: 0, drift: 1, twinkle: 0.45, reach: 0, order: -20, points: stars },
                 // 1: the stipple round the little sun, turning with the crown
-                { colors: [SUN.color], parallax: 0, drift: 2, jitter: 0.5, twinkle: 0.3, reach: 0, order: after(L.sun), points: () => fromArt(SUN.dots, SUN.color) },
+                { colors: [SUN.color], parallax: 0, drift: 2, jitter: 0.5, twinkle: 0.2, reach: 0, order: after(L.sun),
+                    points: () => sampleCloud(SUN_CLOUD, (u, v) => [sx(u), sy(v)], k(), 1.6).map(([x, y, size]) => [x, y, size, SUN.color]) },
                 // 2: the seed's aura, behind it
                 { colors: [TEAL], parallax: 0, drift: 1.6, jitter: 0.4, twinkle: 0.4, reach: 40, push: 6, order: after(L.seedGlow), points: () => fromArt(art.aura, TEAL, 1.2) },
                 // 3: the golden dust of the card, rising from the pond along the trunk, stirred by a finger

@@ -24,6 +24,7 @@
     import { createParallax } from '../../composables/useParallax.js';
     import { createLayerStage } from '../../composables/useLayerStage.js';
     import { createStardust } from '../../composables/useStardust.js';
+    import { decodeCloud, sampleCloud } from '../../composables/stippleCloud.js';
     import { createSpores } from '../../composables/useSpores.js';
     import { createGhostHand, gesture, HINT_AFTER } from '../../composables/useGhostHand.js';
     import { createRoots } from '../../composables/useRoots.js';
@@ -126,37 +127,24 @@
         return { W, H, sun, sunGlow, boat, glyph, rulitoCanvas, ground, tiles, coneRect, coneGlow, coneHalo, coneCentre, hit };
     };
 
-    // The sun, measured on its old picture (in fractions of its box): its solid middle and its colour; and its stippled
-    // rim, made here, thinning outwards as the picture had it
+    // The sun, measured on its old picture (in fractions of its box): its solid middle and its colour. All of it is a
+    // stipple of particles, as Pañña's sun: read from the card (`sun.cloud` in pacienciaScene.json, made by
+    // scripts/sun-cloud.mjs with the card's centre and solid radius, `sun.x`, `sun.y`, `sun.r`) and laid onto this sun.
+    // Under it a disc a little smaller than its solid middle keeps that middle whole; the dots cover its edge
     const SUN = { x: 0.516, y: 0.496, r: 0.36, color: 0xf3f4f5 };
-    const SUN_RIM = Array.from({ length: 900 }, () => {
-        const a = Math.random() * Math.PI * 2;
-        const out = Math.random() ** 1.8;
-        return { dx: Math.cos(a) * SUN.r * (0.96 + 0.44 * out), dy: Math.sin(a) * SUN.r * (0.96 + 0.44 * out), size: 1.4 + Math.random() * 1.6 * (1 - 0.5 * out), seed: Math.random() * 6.28 };
-    });
-    const sunRim = {
-        count: SUN_RIM.length,
-        update(t, data) {
-            if (!box || !L.sun) return;
-            const drift = stage.drift(L.back.z);
-            const w = box.sun.w, k = w / 110;
-            const cx = box.sun.left + SUN.x * w + drift.x, cy = box.sun.top + SUN.y * box.sun.h + L.sun.y + drift.y;
-            const sc = L.sun.scale;
-            SUN_RIM.forEach((d, i) => {
-                const j = reduced ? 0 : 0.6 * Math.sin(t * 1.7 + d.seed);
-                data.positions[i * 3] = cx + d.dx * w * sc + j;
-                data.positions[i * 3 + 1] = cy + d.dy * w * sc + j * 0.7;
-                data.sizes[i] = Math.max(1.1, d.size * k);
-                data.alphas[i] = reduced ? 1 : 0.75 + 0.25 * Math.sin(t * 2.3 + d.seed * 3);
-                data.tints[i * 3] = 0.953; data.tints[i * 3 + 1] = 0.957; data.tints[i * 3 + 2] = 0.961;
-            });
-        },
+    const SUN_CARD = boatAt.sun;
+    const SUN_CLOUD = decodeCloud(SUN_CARD.cloud);
+    const sunCentre = () => ({ x: box.sun.left + SUN.x * box.sun.w, y: box.sun.top + SUN.y * box.sun.h });
+    const sunDots = () => {
+        if (!box) return [];
+        const c = sunCentre(), kk = SUN.r * box.sun.w / SUN_CARD.r;       // px of the screen per px of the card
+        return sampleCloud(SUN_CLOUD, (u, v) => [c.x + (u - SUN_CARD.x) * kk, c.y + (v - SUN_CARD.y) * kk], kk, 1.6).map(([x, y, size]) => [x, y, size, SUN.color]);
     };
 
     const build = (s) => {
         const back = s.depth(depthFor(8));
         L.sunGlow = back.glow({ rect: { left: 0, top: 0, w: 1, h: 1 }, color: 0xffffff, stops: [[0, 0.5], [0.3, 0.3], [0.62, 0]] });
-        // The sun is not a picture: a disc in code, its stippled rim live particles (sunRim)
+        // The sun is not a picture: a disc in code under its stipple of live particles (sunDots)
         L.back = back;
         L.sun = back.disc({ rect: { left: 0, top: 0, w: 1, h: 1 }, color: SUN.color });
         const mid = s.depth(depthFor(22));
@@ -212,8 +200,8 @@
 
     const place = (W, H) => {
         box = layout(W, H);
-        const sr = SUN.r * box.sun.w;
-        const sc = { x: box.sun.left + SUN.x * box.sun.w, y: box.sun.top + SUN.y * box.sun.h };
+        const sr = SUN.r * box.sun.w * 0.85;
+        const sc = sunCentre();
         L.sun.place({ left: sc.x - sr, top: sc.y - sr, w: 2 * sr, h: 2 * sr });
         L.sunGlow.place(box.sunGlow, { x: box.sun.left + box.sun.w / 2, y: box.sun.top + box.sun.h / 2 });
         // The boat rocks about a point near its keel (85% down), and carries the rulito
@@ -464,6 +452,9 @@
         L.sun.y = -s * 30;
         L.sun.scale = 1 + 0.05 * pulse * ramp;
         L.sunGlow.y = L.sun.y;
+        const sunDrift = stage.drift(L.back.z), sc = sunCentre();
+        particles?.rim.shift(0, sunDrift.x, sunDrift.y + L.sun.y);
+        particles?.rim.grow(0, L.sun.scale - 1, sc.x, sc.y);
         L.sunGlow.scale = (1 + 0.05 * pulse * ramp) * (0.85 + 0.3 * pulse);
         L.sunGlow.opacity = 0.55 + 0.45 * pulse;
         // The boat bobs and rocks on its own
@@ -557,7 +548,7 @@
         const behindGround = L.grass[0].mesh.renderOrder - 0.5;
         const back = await createStardust(null, { stage, groups: spores.groups.back.map((g, i) => ({ ...g, order: behindGround + i * 0.01 })) });
         const front = await createStardust(null, { stage, groups: spores.groups.front.map((g, i) => ({ ...g, order: 1e6 + i })) });
-        const rim = await createStardust(null, { stage, groups: [{ dynamic: sunRim, look: 'hard', parallax: 0, drift: 0, jitter: 0, twinkle: 0, reach: 0, order: L.sun.mesh.renderOrder + 0.5 }] });
+        const rim = await createStardust(null, { stage, groups: [{ colors: [SUN.color], points: sunDots, look: 'hard', parallax: 0, drift: 1.2, jitter: reduced ? 0 : 0.4, twinkle: reduced ? 0 : 0.2, reach: 0, order: L.sun.mesh.renderOrder + 0.5 }] });
         particles = { back, front, rim };
         if (gone) return;
         hand = createGhostHand(stage, { color: 0x143246, shade: 0xf7f8f1 });   // navy: the cream hand does not read on this light scene
