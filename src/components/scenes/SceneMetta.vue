@@ -19,7 +19,8 @@
     // start, the two arm in arm sway together, the one sitting at the right hums rocking to and fro, the fox sniffs the
     // air, the kitten hops now and then; all of them breathe at their own pace, blink and glance about (at Sid, often).
     // Nothing of the sky is a picture: the navy is a gradient worked out from the card (it is in no layer), the two lights
-    // are discs drawn in code with their stippled edges as live particles, and so are the stars, the lights round the
+    // are discs drawn in code and over their edges their stippled bands as live particles, sampled from the card
+    // (`cloud`, scripts/sun-cloud.mjs, as Pañña's sun), the densest dots over the disc's edge so no circle shows; and so are the stars, the lights round the
     // glowing flowers and the spores over the little mushrooms. The hill is drawn in code too (the flat colour of its
     // top, row by row, from the converter), and on a wide screen it goes on past the frame, sloping down, with the line
     // along its top continued. Reduced motion keeps it still; the game still plays, without flights or sparks.
@@ -29,6 +30,7 @@
     import { createParallax } from '../../composables/useParallax.js';
     import { createLayerStage } from '../../composables/useLayerStage.js';
     import { startStardust } from '../../composables/useStardust.js';
+    import { decodeCloud, sampleCloud } from '../../composables/stippleCloud.js';
     import { createSparks } from '../../composables/useSparks.js';
     import { createGiving, fill, rulitoBox } from '../../composables/useGiving.js';
     import { play } from '../../composables/useSound.js';
@@ -80,6 +82,8 @@
 
     const HALO = art.halo, AURA = art.aura, HILL = art.hill;
     const TURQUOISE = AURA.color;
+    // Each light's stippled band, and the disc under it only as big as where the band is still whole
+    const HALO_CLOUD = decodeCloud(HALO.cloud), AURA_CLOUD = decodeCloud(AURA.cloud);
     // The colours of our skies (Dana's): yellow the most, cream and coral; inside the turquoise light, white and pale
     const SKY = [0xffe699, 0xffe699, 0xf6e27c, 0xffd36b, 0xfaf3d4, 0xee6a82];
     const FAR = [0xfaf3d4, 0xd8f4f2, 0xf6e27c];
@@ -238,11 +242,11 @@
         const stops = art.sky.map(([y, c]) => `${css(c)} ${Math.max(-50, Math.min(150, sy(y) / h * 100)).toFixed(1)}%`);
         root.value.style.background = `linear-gradient(to bottom, ${stops.join(', ')})`;
 
-        const hr = HALO.r * k();
+        const hr = HALO.cloud.solid * k();
         L.halo.place({ left: sx(HALO.x) - hr, top: sy(HALO.y) - hr, w: 2 * hr, h: 2 * hr });
         const hg = hr * 2.9;
         L.haloGlow.place({ left: sx(HALO.x) - hg / 2, top: sy(HALO.y) - hg / 2, w: hg, h: hg });
-        const ar = AURA.r * k();
+        const ar = AURA.cloud.solid * k();
         L.aura.place({ left: sx(AURA.x) - ar, top: sy(AURA.y) - ar, w: 2 * ar, h: 2 * ar });
         const ag = ar * 2.8;
         L.auraGlow.place({ left: sx(AURA.x) - ag / 2, top: sy(AURA.y) - ag / 2, w: ag, h: ag });
@@ -703,6 +707,7 @@
         stage.onResize((w, h) => place(w, h));
         const after = (node) => node.mesh.renderOrder + 0.5;
         const before = (node) => node.mesh.renderOrder - 0.5;
+        const fromCloud = (cloud, colour) => sampleCloud(cloud, (u, v) => [sx(u), sy(v)], k()).map(([x, y, size]) => [x, y, size, colour]);
         const fromArt = (list, colour, scale = 1) => list.map(([x, y, r]) => [sx(x), sy(y), Math.max(1.2, 2 * r * k() * scale), colour]);
         const soft = (dynamic, extra = {}) => ({ colors: [0xffffff], dynamic, parallax: 0, drift: 0, twinkle: 0, reach: 0, look: 'soft', ...extra });
         // The stars of the card, and as many again over the sky the frame does not cover; a little bigger than drawn and
@@ -746,10 +751,10 @@
                 { colors: SKY, parallax: 0, drift: 2, twinkle: 0.6, reach: 120, push: 26, order: -20, points: stars },
                 // shooters: a shooting star now and then
                 soft(shooting({ count: 2, area: () => ({ w: stage.width, h: stage.height }) }), { order: -19.5 }),
-                // halo: the stippled edge of the yellow light
-                { colors: [HALO.color], parallax: 0, drift: 2, jitter: 0.5, twinkle: 0.3, reach: 0, order: after(L.halo), points: () => fromArt(HALO.dots, HALO.color) },
-                // auraEdge: the stippled edge of the turquoise light
-                { colors: [TURQUOISE], parallax: 0, drift: 1.8, jitter: 0.45, twinkle: 0.3, reach: 0, order: after(L.aura), points: () => fromArt(AURA.dots, TURQUOISE) },
+                // halo: the stippled band of the yellow light, over the edge of its disc
+                { colors: [HALO.color], parallax: 0, drift: 2, jitter: 0.5, twinkle: 0.2, reach: 0, order: after(L.halo), points: () => fromCloud(HALO_CLOUD, HALO.color) },
+                // auraEdge: the stippled band of the turquoise light
+                { colors: [TURQUOISE], parallax: 0, drift: 1.8, jitter: 0.45, twinkle: 0.2, reach: 0, order: after(L.aura), points: () => fromCloud(AURA_CLOUD, TURQUOISE) },
                 // innerFar, innerStars: the sky inside it, its own far plane and the card's white stars, twinkling; a
                 // finger stirs them
                 { colors: FAR, parallax: 0, drift: 1, twinkle: 0.85, reach: 0, opacity: 0.55, order: after(L.aura) + 0.05, points: innerFar },

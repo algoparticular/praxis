@@ -18,7 +18,7 @@
     // and rises a little on his breath, Aura floats and her tentacles sway (wind from the top), Vulpes breathes and every
     // `LOOK` s turns towards the centre; the swimmer swims in slow loops. A touch anywhere strums the chord (`star`), the
     // dots and the stipple flare, the centre shines and sends a ring; a touch on a being makes it hop.
-    // The ground is not a picture: the card's aqua in code (read off the card by the converter); the dots and the stipple are particles, the light round the chakana a disc and a glow in code.
+    // The ground is not a picture: the card's aqua in code (read off the card by the converter); the dots and the stipple are particles, the light round the chakana a disc and a glow in code, and over the disc's edge its stippled band as particles, read from the card (`heart.cloud`, scripts/sun-cloud.mjs), so no circle shows.
     // The dots of the card go on past the frame, mirrored, so on a wide screen there is no edge at all (nothing else
     // reaches the frame's sides). Drawn in WebGL (useLayerStage) from confianzaScene.json and public/assets/confianza (made
     // by scripts/convert-confianza.mjs). Reduced motion keeps it still, everything shown.
@@ -26,6 +26,7 @@
     import { createParallax } from '../../composables/useParallax.js';
     import { createLayerStage } from '../../composables/useLayerStage.js';
     import { startStardust } from '../../composables/useStardust.js';
+    import { decodeCloud, sampleCloud } from '../../composables/stippleCloud.js';
     import { createSparks } from '../../composables/useSparks.js';
     import { createRooting } from '../../composables/useRooting.js';
     import { play } from '../../composables/useSound.js';
@@ -85,6 +86,7 @@
     const GROUND = art.ground;
     const INK = art.ink;
     const HEART = art.heart;
+    const HEART_CLOUD = decodeCloud(HEART.cloud);   // the light's stippled band, from the card
     const WARM = 0xffe6b0;
     const LOOK = 9;                                      // every LOOK s Vulpes turns towards the centre
     const RING = 7;                                      // a ring of light leaves the centre every RING s
@@ -358,9 +360,10 @@
         root.value.style.background = `#${GROUND.toString(16).padStart(6, '0')}`;
         const cx = sx(HEART.x), cy = sy(HEART.y);
         L.squiggle.place(rectOf(B.squiggle));
-        const r = HEART.r * k();
+        // The disc only as big as where the light is still whole: the band's densest dots cover its edge
+        const r = HEART.cloud.solid * k();
         L.heart.place({ left: cx - r, top: cy - r, w: 2 * r, h: 2 * r });
-        const gd = r * 4.5;
+        const gd = HEART.r * k() * 4.5;
         L.heartGlow.place({ left: cx - gd / 2, top: cy - gd / 2, w: gd, h: gd });
         L.fill.place(rectOf(B.mazeFill));
         L.flood.place(rectOf(B.mazeFill));
@@ -452,6 +455,7 @@
         L.heartGlow.opacity = 0.75 + 0.15 * breath * ramp + 0.25 * flare;
         L.heartGlow.scale = 1 + 0.06 * breath * ramp + 0.35 * flare;
         L.heart.scale = 1 + 0.015 * breath * ramp;
+        dust?.grow(2, L.heart.scale - 1, sx(HEART.x), sy(HEART.y));
         L.chakana.scale = 1 + 0.02 * Math.sin(t * 0.7 + 0.6) * ramp + 0.08 * flare * flare;
         L.chakana.uniforms.uBright.value = 1 + 0.08 * (breath * 0.5 + 0.5) * ramp + 0.25 * flare;
         if (!reduced && t > nextRing) { nextRing = t + RING; sendRing(); }
@@ -585,9 +589,9 @@
                 // 0, 1: the card's dots, at two depths, over the whole screen
                 { colors: [INK], look: 'hard', parallax: 0, drift: 2.5, twinkle: 0.12, reach: 70, push: 10, order: -1, points: () => tiled(art.far, INK, 0.95) },
                 { colors: [INK], look: 'hard', parallax: 0, drift: 3.5, twinkle: 0.12, reach: 80, push: 14, order: after(L.squiggle), points: () => tiled(art.near, INK) },
-                // 2: the stippled edge of the light at the centre, alive (under the corridors, as in the card)
+                // 2: the stippled band of the light at the centre, alive (under the corridors, as in the card)
                 { colors: [HEART.color], look: 'hard', parallax: 0, drift: 1.2, jitter: 0.5, twinkle: 0.3, reach: 0, order: after(L.heart),
-                    points: () => HEART.dots.map(([x, y, r]) => [sx(x), sy(y), Math.max(1.1, 2 * r * k()), HEART.color]) },
+                    points: () => sampleCloud(HEART_CLOUD, (u, v) => [sx(u), sy(v)], k()).map(([x, y, size]) => [x, y, size, HEART.color]) },
                 // 3: a few motes in the colours of the chord (Am: third eye, root, solar plexus), rising slowly
                 { colors: chord, look: 'soft', count: 26, size: [4, 9], flow: [0, -7], drift: 16, twinkle: 0.7, reach: 100, push: 26, edgeFade: 0.2, opacity: 0.5, parallax: 0, order: 1e6 },
                 // 4: the beings' lights coming home, along the corridors (under the walls), and 5: the sparks, in front

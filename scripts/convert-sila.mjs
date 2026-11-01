@@ -6,6 +6,9 @@
 // (layers 8 and 10) as dots too, each with the mushroom it belongs to ([x, y, radius, mushroom]): the scene makes them
 // live particles that the wind moves, and lights each mushroom on its own. All in px of the 2160 square. The originals
 // are not kept in the repo once converted. Usage: node scripts/convert-sila.mjs
+// The moon is no longer a picture: the scene draws it as a disc with its stippled band from `moon.cloud`, made by
+// scripts/sun-cloud.mjs (`node scripts/sun-cloud.mjs sila`); if this is run again, moon.webp and the moon's dots it
+// writes are not used, and sun-cloud.mjs must be run after it.
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';

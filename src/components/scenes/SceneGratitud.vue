@@ -27,6 +27,7 @@
     import { createParallax } from '../../composables/useParallax.js';
     import { createLayerStage } from '../../composables/useLayerStage.js';
     import { startStardust } from '../../composables/useStardust.js';
+    import { decodeCloud, sampleCloud } from '../../composables/stippleCloud.js';
     import { createSparks } from '../../composables/useSparks.js';
     import { createGiving, fill, rulitoBox } from '../../composables/useGiving.js';
     import { play } from '../../composables/useSound.js';
@@ -148,7 +149,8 @@
     };
 
     const build = (s) => {
-        // The sun: a faint warm light, its peach disc and its pink heart (code); their stipple is particles
+        // The sun: a faint warm light, its peach disc and its pink heart (code); over the edge of each, its stippled band
+        // as particles (read from the card, scripts/sun-cloud.mjs), so neither circle shows
         const sun = s.depth(zFor(DEPTH.sun));
         L.sunNode = sun;
         L.halo = sun.glow({ rect: { left: 0, top: 0, w: 1, h: 1 }, color: 0xffd6a6, stops: [[0, 0.35], [0.35, 0.14], [0.7, 0]] });
@@ -210,8 +212,9 @@
         layout(w, h);
         root.value.style.background = SEA;
 
+        // Each disc only as big as where its band is still whole: the band's densest dots cover its edge
         art.sun.forEach((d, i) => {
-            const r = d.r * k();
+            const r = d.cloud.solid * k();
             L.suns[i].place({ left: sx(d.x) - r, top: sy(d.y) - r, w: 2 * r, h: 2 * r });
         });
         const hg = art.sun[0].r * k() * 4.4;
@@ -294,6 +297,7 @@
     // Those who are thanked, each with where the light lands (art px, on its node), how far its glow of dots reaches (rx,
     // ry, art px), its note in the card's chord, its touch box (art px) and the node that carries it
     const SUN = art.sun[0];
+    const SUN_CLOUDS = art.sun.map((d) => decodeCloud(d.cloud));   // the stippled band of each, from the card
     const THANKED = [
         { id: 'sun', es: 'El sol', en: 'The sun', at: [SUN.x, SUN.y], rx: SUN.r * 1.25, ry: SUN.r * 1.25, pitch: 1,
             box: [SUN.x - SUN.r, SUN.y - SUN.r, 2 * SUN.r, 2 * SUN.r], node: () => L.sunNode },
@@ -487,6 +491,7 @@
         const sunLit = lit('sun');
         L.suns[0].scale = 1 + 0.015 * breath * ramp + 0.04 * touch.flare + 0.05 * sunLit;
         L.suns[1].scale = 1 + 0.025 * Math.sin(t * 0.55 + 0.8) * ramp + 0.06 * touch.flare + 0.08 * sunLit;
+        L.suns.forEach((disc, i) => dust?.grow(i, disc.scale - 1, sx(art.sun[i].x), sy(art.sun[i].y)));   // the bands with them
         L.halo.opacity = Math.min(1, 0.6 + 0.2 * breath * ramp + 0.4 * touch.flare + 0.4 * sunLit);
         L.halo.scale = 1 + 0.05 * breath * ramp + 0.25 * sunLit;
         // ---- What has been thanked glows
@@ -610,14 +615,15 @@
         const after = (node) => node.mesh.renderOrder + 0.5;
         const fromArt = (list, colour, scale = 1) => list.map(([x, y, r]) => [sx(x), sy(y), Math.max(1.2, 2 * r * k() * scale), colour]);
         const [outer, inner] = art.sun;
+        const fromCloud = (cloud, colour) => sampleCloud(cloud, (u, v) => [sx(u), sy(v)], k()).map(([x, y, size]) => [x, y, size, colour]);
         const soft = (dynamic, extra = {}) => ({ colors: [0xffffff], dynamic, parallax: 0, drift: 0, twinkle: 0, reach: 0, look: 'soft', ...extra });
         dust = startStardust(null, {
             stage,
             manual: true,
             groups: [
                 // 0, 1: the stippled edges of the sun's peach light and its pink heart, alive
-                { colors: [outer.color], parallax: 0, drift: 2, jitter: 0.5, twinkle: 0.3, reach: 0, look: 'hard', order: after(L.suns[0]), points: () => fromArt(outer.dots, outer.color) },
-                { colors: [inner.color], parallax: 0, drift: 1.6, jitter: 0.4, twinkle: 0.3, reach: 0, look: 'hard', order: after(L.suns[1]), points: () => fromArt(inner.dots, inner.color) },
+                { colors: [outer.color], parallax: 0, drift: 2, jitter: 0.5, twinkle: 0.2, reach: 0, look: 'hard', order: after(L.suns[0]), points: () => fromCloud(SUN_CLOUDS[0], outer.color) },
+                { colors: [inner.color], parallax: 0, drift: 1.6, jitter: 0.4, twinkle: 0.2, reach: 0, look: 'hard', order: after(L.suns[1]), points: () => fromCloud(SUN_CLOUDS[1], inner.color) },
                 // 2: the stipple of the light over the palm
                 { colors: [art.beacon.color], parallax: 0, drift: 1.4, jitter: 0.5, twinkle: 0.5, reach: 0, look: 'hard', bloom: true, order: after(L.beacon), points: () => fromArt(art.beacon.dots, art.beacon.color) },
                 // 3: the sand's stipple, that a finger can stir
