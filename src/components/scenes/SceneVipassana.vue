@@ -33,6 +33,7 @@
     import { MASK_W, MASK_H, solidAt } from '../../composables/characterMask.js';
     import { play } from '../../composables/useSound.js';
     import { sceneMilestone } from '../../analytics.js';
+    import { createGhostHand, gesture, HINT_AFTER } from '../../composables/useGhostHand.js';
     import Rulito from '../Rulito.vue';
 
     const props = defineProps({
@@ -62,6 +63,8 @@
     let parallax = null;
     let breathTimer = 0;
     let hintTimer = 0;
+    let hand = null;             // the ghost hand: left alone, it touches the cell that glows (and now and then holds him)
+    let hands = 0;               // how many times it has shown, so every third one is the held breath
     let stageEl = null;
     let heldBreath = false;      // the breath in progress was begun by a finger on him: when it goes out it lets go of what it caught
     let sidBreath = false;       // that breath is being held in by a finger on him
@@ -178,14 +181,44 @@
         }
     };
 
-    // With no words: after 7 s with nothing touched, one of the cells that are left glows now and then
+    // With no words: after 7 s with nothing touched, one of the cells that are left glows now and then. While he is held
+    // or the rulito lives the count starts again, so after a win it also waits the whole 7 s
     const startHints = () => {
         hintTimer = setInterval(() => {
-            if (!cellField || win || sidBreath || reducedMotion) return;
-            if ((performance.now() - lastAct) / 1000 > 7) cellField.hint();
+            if (!cellField || reducedMotion) return;
+            if (win || sidBreath) { touched(); return; }
+            if ((performance.now() - lastAct) / 1000 > HINT_AFTER) cellField.hint();
         }, 1400);
     };
     const touched = () => { lastAct = performance.now(); };
+
+    // A point for the ghost hand, in the stage canvas's px, from viewport px
+    const onCanvas = (x, y) => {
+        const c = canvas.value?.getBoundingClientRect() ?? { left: 0, top: 0 };
+        return [x - c.left, y - c.top];
+    };
+    // Where the hand holds him: the middle of his body, where the big ring starts from
+    const sidPoint = () => {
+        const b = character.value.getBoundingClientRect();
+        return onCanvas(b.left + b.width / 2, b.top + b.height * 0.55);
+    };
+    // Left alone 7 s, the ghost hand touches the cell that glows as the hint (the same one, following it as it drifts);
+    // every third time it holds him instead, because nothing else shows that holding him is a breath
+    let lastCell = [0, 0];
+    const showHand = () => {
+        const wanted = entered && !!cellField && !win && !sidBreath && cellField.remaining() > 0;
+        if (!hand?.due(HINT_AFTER, wanted)) return;
+        hands += 1;
+        if (hands % 3 === 0) { hand.play(gesture.hold(sidPoint, 2.6)); return; }
+        if (!cellField.hint()) return;
+        const cellPoint = () => {
+            const p = cellField?.hintPoint();
+            if (p) lastCell = onCanvas(p.x, p.y);
+            return lastCell;
+        };
+        cellPoint();
+        hand.play(gesture.tap(cellPoint));
+    };
 
     const breatheIn = (awayX, awayY) => {
         // The ring jostles him as it goes through, away from where it came from
@@ -339,6 +372,7 @@
         stage = made;
         build(stage);
         stage.onResize((W, H) => place(W, H));
+        hand = createGhostHand(stage);
         createVipassanaField(stage, root.value, { onEvent: onFieldEvent })
             .then((field) => { unmounted ? field.destroy() : (cellField = field); })
             .catch((error) => console.warn('Cell field unavailable', error));
@@ -348,6 +382,7 @@
             stage.look(x * SLIDE, y * SLIDE_Y);
             scrollLift = -scroll * 70;
             tick(performance.now());
+            showHand();
             N_.spiral.refresh();
             stage.render(t);
         });
@@ -371,6 +406,7 @@
     onBeforeUnmount(() => {
         unmounted = true;
         parallax?.destroy();
+        hand?.destroy();
         life?.destroy();
         clearTimeout(breathTimer);
         clearInterval(hintTimer);

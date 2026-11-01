@@ -863,6 +863,7 @@ export async function createVipassanaField(stage, container, { onEvent = null } 
     };
 
     const worldPoint = new THREE.Vector3();
+    let hinted = null;                  // the cell the last hint() made glow (the ghost hand points at it)
 
     return {
         // True when a cell lies under the point (for the cursor)
@@ -976,7 +977,17 @@ export async function createVipassanaField(stage, container, { onEvent = null } 
             if (!left.length) return false;
             const target = left.reduce((best, cell) => (cell.size > best.size ? cell : best), left[0]);
             target.flare = Math.max(target.flare, 0.8);
+            hinted = target;
             return true;
+        },
+        // Where the cell of the last hint() is now, in viewport pixels ({ x, y }), while it is still whole; null otherwise
+        hintPoint() {
+            if (!hinted || hinted.state !== 'whole') return null;
+            const rect = container.getBoundingClientRect();
+            scene.updateMatrixWorld();
+            hinted.sprite.getWorldPosition(worldPoint);
+            worldPoint.project(camera);
+            return { x: rect.left + (worldPoint.x * 0.5 + 0.5) * rect.width, y: rect.top + (-worldPoint.y * 0.5 + 0.5) * rect.height };
         },
         // How formed the mandala is, 0..1 (the character rises into the middle of it)
         orbit: () => orbitW,

@@ -27,6 +27,7 @@
     import { createSparks } from '../../composables/useSparks.js';
     import { play } from '../../composables/useSound.js';
     import { sceneMilestone } from '../../analytics.js';
+    import { createGhostHand, gesture, HINT_AFTER } from '../../composables/useGhostHand.js';
     import Rulito from '../Rulito.vue';
     import art from '../../composables/sincronicidadScene.json';
 
@@ -202,6 +203,27 @@
         play('ignite', 1);
         play('converge');
         sceneMilestone('in_time', { times: wins });
+    };
+    // Left alone a while, the ghost hand shows the gesture: a tap in time on the bubbles still out, the next two or three
+    // the glow reaches. Each tap is launched TAP_LEAD before that bubble's beat (so the first is always reachable), and
+    // the hand waits for the beat by the scene's own clock before it presses, so every press lands on its beat however
+    // the frames go. Its touch is only seen: it lights nothing
+    let hand = null;
+    const hint = (cycle) => {
+        const ahead = STEPS.map((step, i) => {
+            const to = (((step.at - cycle) % PERIOD) + PERIOD) % PERIOD;
+            return { i, to: to < gesture.TAP_LEAD ? to + PERIOD : to };
+        }).filter(({ i }) => !on[i] && hits.value[i]).sort((a, b) => a.to - b.to).slice(0, 3);
+        if (!ahead.length) return;
+        const script = ahead.flatMap(({ i, to }, k) => {
+            const when = lastT + to;
+            return [
+                { go: hits.value[i], dur: k ? 0.55 : 0.7 },
+                { get wait() { return lastT >= when ? 0 : 1e6; } },     // until its beat
+                { down: true }, { wait: 0.18 }, { up: true },
+            ];
+        });
+        hand.play([...script, { wait: 0.45 }], { loops: 1 });
     };
     const onKey = (event, action) => {
         if (event.key !== 'Enter' && event.key !== ' ') return;
@@ -407,6 +429,7 @@
             if (crossed(IGNITE)) { ignite(); flare = Math.max(flare, 0.45); }
         }
         lastCycle = cycle;
+        if (hand?.due(HINT_AFTER, entered && ramp >= 1 && !win && !on.every(Boolean))) hint(cycle);
 
         // The rulito: born after the fire leaps, kept a while, then its tail catches its head and the lights go out
         let named = 0;
@@ -518,6 +541,7 @@
             ],
         });
         if (reduced) dust.reveal();
+        hand = createGhostHand(stage);
         parallax = createParallax(root.value, frame);
         enter();
     };
@@ -527,6 +551,7 @@
     onBeforeUnmount(() => {
         gone = true;
         parallax?.destroy();
+        hand?.destroy();
         dust?.destroy();
         stage?.destroy();
         stageEl?.style.removeProperty('--name-glow');

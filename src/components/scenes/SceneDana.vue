@@ -33,6 +33,7 @@
     import { createFlame } from '../../composables/useFlame.js';
     import { createSparks } from '../../composables/useSparks.js';
     import { createGiving, fill } from '../../composables/useGiving.js';
+    import { createGhostHand, gesture, HINT_AFTER } from '../../composables/useGhostHand.js';
     import { play } from '../../composables/useSound.js';
     import { sceneMilestone } from '../../analytics.js';
     import Rulito from '../Rulito.vue';
@@ -201,6 +202,7 @@
     // The old touch: the little flame leaps, and sparks fly
     const touch = () => {
         parallax?.wake(3);
+        giving.touched();                          // the hint waits again (and a glimmer still to come is cancelled)
         const at = anchor();
         if (!at) return;
         fire.flare(1);
@@ -211,6 +213,10 @@
     // The verb's engine: the flame gives, everyone on the island receives. The lights fly in arcs as high as 5% of the
     // frame over the higher end (and more the further they go); the right one's rulito is born a moment after the left's
     const STAGGER = 0.18;
+    // Left alone 7 s, the ghost hand touches one who has no light yet, twice (its two loops), and he glimmers each time
+    // the finger presses on him (with reduced motion there is no hand: he only glimmers, as before)
+    let hand = null;
+    const TAP = gesture.tap(null), TAP_LONG = TAP.reduce((sum, st) => sum + (st.dur ?? st.wait ?? 0), 0);
     const giving = createGiving({
         count: GIFTS.length,
         source: () => toCanvas(HOME.x, HOME.y),
@@ -221,6 +227,7 @@
         linger: 2.2,
         lag: STAGGER,
         reduced: reducedMotion,
+        hint: reducedMotion ? null : { due: (wanted) => !!hand?.due(HINT_AFTER, wanted), lead: [gesture.TAP_LEAD, gesture.TAP_LEAD + TAP_LONG] },
         on: {
             // A spark leaves the flame
             give: () => {
@@ -264,7 +271,9 @@
                 shineGoal = 0;
             },
             puff: (x, y, colors) => burstPx({ x, y }, 2, colors, 40),
-            // Left alone 7 s, one who has no light yet glimmers, and the flame answers
+            // The hand goes to touch one who has no light yet (on his touch target, which follows him)
+            cue: (i) => hand?.play(gesture.tap(hits.value[i])),
+            // and he glimmers as it presses, and the flame answers
             hint: (i) => {
                 fire.flare(0.35);
                 burstAt(GIFTS[i].x, GIFTS[i].y, 6, EMBERS, 40);
@@ -630,6 +639,7 @@
         }
         if (gone) { made.destroy(); return; }
         stage = made;
+        hand = createGhostHand(stage);
         stageEl = root.value.closest('.stage');
         build(stage);
         stage.onResize((W, H) => place(W, H));
@@ -678,6 +688,7 @@
     onBeforeUnmount(() => {
         gone = true;
         parallax?.destroy();
+        hand?.destroy();
         particles?.back?.destroy();
         particles?.front?.destroy();
         stage?.destroy();
