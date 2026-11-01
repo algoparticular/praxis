@@ -31,6 +31,7 @@
     import { createParallax } from '../../composables/useParallax.js';
     import { createLayerStage, FIELD_RANGE, FIELD_BUBBLES } from '../../composables/useLayerStage.js';
     import { startStardust } from '../../composables/useStardust.js';
+    import { createGhostHand, gesture } from '../../composables/useGhostHand.js';
     import { createSparks } from '../../composables/useSparks.js';
     import { play } from '../../composables/useSound.js';
     import { sceneMilestone } from '../../analytics.js';
@@ -49,6 +50,8 @@
     const rulito = ref(null);
     let stageEl = null;
     let stage = null;
+    let hand = null;                        // the ghost hand, showing the gesture
+    let hints = 0;                          // how many times it has been shown: now and then it shows the breath
     let parallax = null;
     let dust = null;
     let entered = false;
@@ -383,6 +386,11 @@
                 d.hint = 1;
                 const c = onScreen(d);
                 sparks.burst(c.x, c.y, { n: 6, colors: [0xfff6dc, DROP_RGB(d)], speed: 30, life: 1.1, size: 3, spread: d.rx * k() * 0.6 });
+                // and the ghost hand shows the gesture: touching the drop lets it go; every third time, holding Sid (a
+                // breath, which lets every drop go at once)
+                hints += 1;
+                if (hints % 3 === 0) hand?.play(gesture.hold(sidHit.value, BREATH_AT + BREATH + 0.3), { loops: 1 });
+                else hand?.play(gesture.tap(() => { const p = onScreen(d); return [p.x, p.y]; }));
             }
         }
 
@@ -676,6 +684,7 @@
             return out;
         };
         const fromArt = (list, colour, scale = 1) => list.map(([x, y, r]) => [sx(x), sy(y), Math.max(1.5, 2 * r * k() * scale), colour]);
+        hand = createGhostHand(stage);
         dust = startStardust(null, {
             stage,
             manual: true,
@@ -709,6 +718,7 @@
         window.removeEventListener('pointercancel', breatheOut);
         parallax?.destroy();
         dust?.destroy();
+        hand?.destroy();
         stage?.destroy();
     });
 </script>
