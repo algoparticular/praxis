@@ -283,6 +283,7 @@ Gestos de la mano: `tap` sobre lo que se suelta. Cada tanto, `hold` sobre el per
 - **28 Perdón** (del 31/10, en revisión con Juan Manuel):
   - Pista: ✅ `tap` sobre un nudo que se ve (la mano lo sigue mientras gira el anillo), y cada tres veces `hold` sobre Particular. Crema: se lee sobre el salvia y el anillo.
   - Regla 4: ✅ dejado solo 15 s, un nudo soltado se vuelve a juntar, y otro cada 4 s.
+  - **Más vida (Juan Manuel, 1 de noviembre):** ✅ el anillo orbita de verdad (una vuelta en 52 s, lo de adentro más rápido), pasando por delante y por detrás del planeta; los nudos viajan con él y detrás del planeta no se pueden tocar. El planeta como cuerpo (disco, contorno, el mármol que fluye en vez de girar como imagen, volumen, sin aire entre el borde y el disco) es del paquete S, acordado con esa sesión.
   - Rulito: el mejor anclado de todos (caja de la carta, cuelga de Particular).
 
 ## Paquete C: Fluir (deslizar con la corriente)
