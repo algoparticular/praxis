@@ -19,7 +19,7 @@
     import { createParallax } from '../../composables/useParallax.js';
     import { createLayerStage } from '../../composables/useLayerStage.js';
     import { startStardust } from '../../composables/useStardust.js';
-    import { decodeCloud, sampleCloud } from '../../composables/stippleCloud.js';
+    import { decodeCloud, sampleCloud, joinLight } from '../../composables/stippleCloud.js';
     import { createSparks } from '../../composables/useSparks.js';
     import { createKindle, FIRE } from '../../composables/useKindle.js';
     import { createGhostHand, gesture, HINT_AFTER } from '../../composables/useGhostHand.js';
@@ -477,7 +477,8 @@
 
         // The particles that belong to a layer follow it
         const sunDrift = stage.drift(L.sunNode.z), walkerDrift = stage.drift(L.walkerNode.z);
-        dust?.shift(0, sunDrift.x, sunDrift.y + L.sunNode.y);
+        const sunIn = joinLight(dust, 0, L.sunNode, L.sun);     // the sun is one: its band rises with its disc, which waits for it
+        dust?.shift(0, sunDrift.x, sunDrift.y + L.sunNode.y + sunIn.y);
         dust?.shift(1, walkerDrift.x, walkerDrift.y + L.walkerNode.y + L.walker.y);
         stage.render(t);
         if (frames++ % 2 === 0) placeHits();

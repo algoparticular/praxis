@@ -29,3 +29,16 @@ export const sampleCloud = (grid, map, k, boost = 1) => {
     }
     return out;
 };
+
+// A light drawn as a disc with its stippled band as particles is one thing, never a circle on its own: the band appears
+// with the node's entrance and the disc comes just behind its dots, so they always cover its edge. Call it every frame,
+// and add the returned y to the band's shift (and its scale to the band's grow, if the entrance scales) so it rises with
+// the disc. index may be a list of groups; opacity is the light's own
+export const joinLight = (dust, index, node, disc, opacity = 1) => {
+    const e = node.entering();
+    // The disc's own entrance already fades it by e.alpha: with this it is (e.alpha * faded) ** 1.5 in all, a little behind
+    // its dots (so they always cover its edge) but close enough that the two appear as one
+    if (disc) disc.opacity = dust ? opacity * Math.sqrt(e.alpha) * dust.faded ** 1.5 : 0;
+    if (dust) [].concat(index).forEach((i) => dust.fade(i, e.alpha * opacity));
+    return e;
+};

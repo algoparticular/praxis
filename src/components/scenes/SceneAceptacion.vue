@@ -31,7 +31,7 @@
     import { createParallax } from '../../composables/useParallax.js';
     import { createLayerStage, FIELD_RANGE, FIELD_BUBBLES } from '../../composables/useLayerStage.js';
     import { startStardust } from '../../composables/useStardust.js';
-    import { decodeCloud, sampleCloud } from '../../composables/stippleCloud.js';
+    import { decodeCloud, sampleCloud, joinLight } from '../../composables/stippleCloud.js';
     import { play } from '../../composables/useSound.js';
     import { createFlow, routeThrough } from '../../composables/useFlow.js';
     import { sceneMilestone } from '../../analytics.js';
@@ -711,7 +711,8 @@
 
         // The particles that belong to a layer follow it
         const sunDrift = stage.drift(L.sunNode.z), planetDrift = stage.drift(L.planetNode.z), farDrift = stage.drift(L.bitsNode.z);
-        dust?.shift(0, sunDrift.x, sunDrift.y + L.sunNode.y);
+        const sunIn = joinLight(dust, 0, L.sunNode, null);      // the sun's stipple comes with its glow
+        dust?.shift(0, sunDrift.x, sunDrift.y + L.sunNode.y + sunIn.y);
         const planet = planetAt();
         dust?.turn(1, turn, planet.x, planet.y);
         dust?.shift(1, planetDrift.x, planetDrift.y + L.planetNode.y + L.planet.y);

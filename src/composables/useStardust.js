@@ -333,6 +333,8 @@ export async function createStardust(canvas, options = {}) {
         boost(index, amount) { const g = groups[index]; if (g) g.uniforms.uBoost.value = Math.max(g.uniforms.uBoost.value, amount); },
         fade(index, amount) { const g = groups[index]; if (g) g.uniforms.uOpacity.value = g.opacity * amount; },
         reveal() { if (revealAt === null) revealAt = shared.uTime.value; },
+        // How far the particles have faded in (0..1), so a disc under a stippled band can wait for its dots
+        get faded() { return shared.uFade.value; },
         destroy() {
             cancelAnimationFrame(raf);
             observer?.disconnect();
@@ -360,6 +362,7 @@ export function startStardust(canvas, options) {
         turn(index, degrees, x, y) { field?.turn(index, degrees, x, y); },
         fade(index, amount) { field?.fade(index, amount); },
         reveal() { revealed = true; field?.reveal(); },
+        get faded() { return field?.faded ?? 0; },
         destroy() { gone = true; field?.destroy(); },
     };
 }

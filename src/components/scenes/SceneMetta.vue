@@ -30,7 +30,7 @@
     import { createParallax } from '../../composables/useParallax.js';
     import { createLayerStage } from '../../composables/useLayerStage.js';
     import { startStardust } from '../../composables/useStardust.js';
-    import { decodeCloud, sampleCloud } from '../../composables/stippleCloud.js';
+    import { decodeCloud, sampleCloud, joinLight } from '../../composables/stippleCloud.js';
     import { createSparks } from '../../composables/useSparks.js';
     import { createGiving, fill, rulitoBox } from '../../composables/useGiving.js';
     import { play } from '../../composables/useSound.js';
@@ -244,10 +244,12 @@
 
         const hr = HALO.cloud.solid * k();
         L.halo.place({ left: sx(HALO.x) - hr, top: sy(HALO.y) - hr, w: 2 * hr, h: 2 * hr });
+        L.haloNode.pivot = { x: sx(HALO.x), y: sy(HALO.y) };      // each light grows into place round its own middle, with its band
         const hg = hr * 2.9;
         L.haloGlow.place({ left: sx(HALO.x) - hg / 2, top: sy(HALO.y) - hg / 2, w: hg, h: hg });
         const ar = AURA.cloud.solid * k();
         L.aura.place({ left: sx(AURA.x) - ar, top: sy(AURA.y) - ar, w: 2 * ar, h: 2 * ar });
+        L.auraNode.pivot = { x: sx(AURA.x), y: sy(AURA.y) };
         const ag = ar * 2.8;
         L.auraGlow.place({ left: sx(AURA.x) - ag / 2, top: sy(AURA.y) - ag / 2, w: ag, h: ag });
         SQUIGGLES.forEach((q) => L.squiggles[q.name].place(rectOf(BITS[q.name].box)));
@@ -565,12 +567,17 @@
         }
 
         // The particles that belong to a layer follow it
-        const at = (node) => { const d = stage.drift(node.z); return [d.x, d.y + node.y]; };
+        // (each light is one: its stippled band rises and grows with its disc, which waits for its dots)
+        const at = (node, e = { y: 0 }) => { const d = stage.drift(node.z); return [d.x, d.y + node.y + e.y]; };
+        const haloIn = joinLight(dust, G.halo, L.haloNode, L.halo);
+        const auraIn = joinLight(dust, G.auraEdge, L.auraNode, L.aura);
+        dust?.grow(G.halo, haloIn.scale - 1, sx(HALO.x), sy(HALO.y));
+        for (const g of [G.auraEdge, G.innerFar, G.innerStars]) dust?.grow(g, auraIn.scale - 1, sx(AURA.x), sy(AURA.y));
         dust?.shift(G.stars, ...at(L.skyNode));
-        dust?.shift(G.halo, ...at(L.haloNode));
-        dust?.shift(G.auraEdge, ...at(L.auraNode));
-        dust?.shift(G.innerFar, ...at(L.auraNode));
-        dust?.shift(G.innerStars, ...at(L.auraNode));
+        dust?.shift(G.halo, ...at(L.haloNode, haloIn));
+        dust?.shift(G.auraEdge, ...at(L.auraNode, auraIn));
+        dust?.shift(G.innerFar, ...at(L.auraNode, auraIn));
+        dust?.shift(G.innerStars, ...at(L.auraNode, auraIn));
         dust?.shift(G.flowers, ...at(L.hillNode));
         dust?.shift(G.spores, ...at(L.hillNode));
         stage.render(t);

@@ -27,7 +27,7 @@
     import { createParallax } from '../../composables/useParallax.js';
     import { createLayerStage } from '../../composables/useLayerStage.js';
     import { startStardust } from '../../composables/useStardust.js';
-    import { decodeCloud, sampleCloud } from '../../composables/stippleCloud.js';
+    import { decodeCloud, sampleCloud, joinLight } from '../../composables/stippleCloud.js';
     import { createSparks } from '../../composables/useSparks.js';
     import { createGiving, fill, rulitoBox } from '../../composables/useGiving.js';
     import { play } from '../../composables/useSound.js';
@@ -569,8 +569,10 @@
 
         // The particles that belong to a layer follow it
         const sunDrift = stage.drift(L.sunNode.z), islandDrift = stage.drift(L.islandNode.z);
-        dust?.shift(0, sunDrift.x, sunDrift.y + L.sunNode.y);
-        dust?.shift(1, sunDrift.x, sunDrift.y + L.sunNode.y);
+        // (each sun is one: its band rises with its disc, which waits for it)
+        const sunIn = L.suns.map((disc, i) => joinLight(dust, i, L.sunNode, disc))[0];
+        dust?.shift(0, sunDrift.x, sunDrift.y + L.sunNode.y + sunIn.y);
+        dust?.shift(1, sunDrift.x, sunDrift.y + L.sunNode.y + sunIn.y);
         dust?.shift(2, islandDrift.x + sway, islandDrift.y + L.islandNode.y);
         dust?.shift(3, islandDrift.x, islandDrift.y + L.islandNode.y);
         dust?.shift(4, islandDrift.x, islandDrift.y + L.islandNode.y);

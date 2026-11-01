@@ -582,6 +582,16 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
             return this;
         }
 
+        // Where its entrance has it now: the y offset (px), the scale and the opacity it is drawn with on top of its own,
+        // so particles drawn for it (a light's stippled band) can rise and appear with it, as one thing
+        entering() {
+            if (!this.entrance) return { y: 0, scale: 1, alpha: 1 };
+            if (started === null) return { y: this.entrance.y, scale: this.entrance.scale, alpha: 0 };
+            const p = Math.min(1, Math.max(0, (time - started - this.entrance.delay / 1000) / (this.entrance.duration / 1000)));
+            const e = easeOut(p);
+            return { y: this.entrance.y * (1 - e), scale: this.entrance.scale + (1 - this.entrance.scale) * e, alpha: Math.min(1, p * 1.6) };
+        }
+
         group(options = {}) {
             const node = new Node(this);
             if (options.pivot) node.pivot = { ...options.pivot };
