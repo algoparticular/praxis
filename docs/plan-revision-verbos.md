@@ -8,7 +8,8 @@ El problema de fondo: casi todas las escenas, dejadas solas, hacen brillar algo.
 
 1. **Las pistas no tienen texto.** Muestran el gesto, con la **mano fantasma**: un dedo de luz hecho de puntos (opción C), que hace el gesto sobre el lugar real.
 2. **El rulito nace donde lo dibuja la carta original. Si la carta no dibuja uno, nace sobre un personaje.** Nunca sobre un lugar fijo de la pantalla. Las excepciones ya decididas, carta por carta, están en "Dónde nace el rulito: decidido" y mandan sobre esta regla.
-3. Lo de siempre (`docs/verbos-y-dinamicas.md`): nada se pierde, la lectura no se bloquea, se juega con teclado y con movimiento reducido.
+3. Lo de siempre (`docs/verbos-y-dinamicas.md`): la lectura no se bloquea, se juega con teclado y con movimiento reducido.
+4. **En Soltar y Arraigar, dejado solo, se vuelve atrás** (decidido por Juan Manuel): lo logrado se va deshaciendo de a poco si nadie toca, como ya hace Nekkhamma (le vuelve a crecer un hilo) y como hace el rulito de Arraigar al soltar (la cola alcanza a la cabeza). Es una excepción a "nada se pierde" para esos dos verbos.
 
 ## Paquete 0: la mano fantasma (`src/composables/useGhostHand.js`)
 
@@ -36,9 +37,8 @@ if (!held && !won && hand?.due(6)) hand.play(gesture.hold(someHit.value, 2.4));
 - **Tiempo quieto: siempre 7 segundos** (`HINT_AFTER`), decidido por Juan Manuel, que probó la mano. La mano lleva su propia cuenta, con reloj real: `hand.due(HINT_AFTER, wanted)`. `wanted` dice si el juego quiere mostrarse ahora (no mientras se juega, ni mientras vive un rulito). Mientras es falso la cuenta vuelve a cero, así que **después de ganar también espera 7 segundos enteros**, en lugar de aparecer enseguida. Si la escena tiene su propio temporizador de pista, ese también tiene que volver a cero mientras se juega o se gana (así quedó Pañña).
 - Cualquier toque o tecla la hace irse al instante. Con movimiento reducido no aparece. `play(…, { loops })` dice cuántas veces repite el gesto (2 por defecto).
 
-**Pendiente, esperando la opinión de Juan Manuel sobre los videos y la Etapa 1:**
-- Tamaño, brillo, velocidad y repeticiones (hoy repite 2 veces).
-- Contraste sobre personajes o cielos claros: en el caminante crema de Viriya se pierde un poco. Opciones: un halo oscuro más fuerte (hoy 0.13), o un color por carta (`createGhostHand(stage, { color })`).
+**Aspecto: aprobado por Juan Manuel** (tamaño, brillo, velocidad y 2 repeticiones). Queda un pendiente:
+- **Contraste sobre fondos muy claros:** donde el dedo no se vea (el caminante crema de Viriya, cielos claros), buscarle contraste de alguna forma. Opciones: un halo oscuro más fuerte (hoy 0.13), un color por carta (`createGhostHand(stage, { color })`), o que el motor elija solo un color según lo que hay debajo. Se prueba y se le muestra a Juan Manuel.
 - **Este archivo se toca solo desde un chat a la vez**, para no pisarse. Los demás paquetes solo lo usan.
 
 ## Etapa 1: un ejemplo por verbo, en las primeras cartas de cada verbo
@@ -222,7 +222,7 @@ Decidido por Juan Manuel el 1 de noviembre. Manda sobre la regla 2.
 | 13 Belleza | sobre Sid, el que está abrazando al otro | deja de estar a mano, corrido sobre el ser de atrás |
 | 0 Nekkhamma | como está hoy | nada |
 
-**Sigue a decidir:** Creatividad, Evolución y Hogar. ¿Se respeta el rulito tenue que dibuja la carta, al costado del personaje, o va sobre su cabeza?
+**Creatividad, Evolución y Hogar:** el rulito va **sobre la cabeza del personaje** (decidido), no donde la carta dibuja el tenue al costado. Tiene que acompañarlo: colgado de él o copiando su escala y su giro.
 
 **Para que el rulito acompañe:** cuando cuelga de un grupo pero el personaje se estira o gira dentro de ese grupo (`sy`, `rotate`), el rulito no lo sigue. Lo mejor es colgarlo del mismo nodo que el personaje, o copiarle también la escala y el giro.
 
@@ -231,6 +231,8 @@ Decidido por Juan Manuel el 1 de noviembre. Manda sobre la regla 2.
 ## Paquete A: Arraigar (mantener)
 
 Gesto de la mano: `hold` sobre lo que se sostiene. Motor común: `useRooting.js`, para Compromiso, Confianza y Fe.
+
+**Regla 4 en todas:** al soltar, lo crecido se deshace de a poco (la cola del rulito alcanza a la cabeza). `useRooting.js`, Paciencia y Hogar ya lo hacen; revisar Addhitthana y que las seis se sientan iguales.
 
 - **27 Paciencia:** ✅ pista hecha (con la espera de 7 s también después de ganar). El lugar del rulito está bien (fracciones del bote, coincide con la carta).
   - **Cuándo nace el rulito (pedido de Juan Manuel):** tiene que nacer **cuando las raíces están completas**, no mientras se están creando. Hoy nace con las raíces a un 30 % (`rootGrow >= 0.3` en `ScenePaciencia.vue`). Pasa a `rootGrow >= 1`, y revisar que el tiempo total sostenido siga sintiéndose bien.
@@ -256,9 +258,11 @@ Gesto de la mano: `hold` sobre lo que se sostiene. Motor común: `useRooting.js`
 
 Gestos de la mano: `tap` sobre lo que se suelta. Cada tanto, `hold` sobre el personaje, porque hoy nada enseña que se puede respirar.
 
+**Regla 4 en todas:** dejado solo, lo soltado vuelve de a poco, como en Nekkhamma. Revisar Vipassana, Upekkha, Ciclos y Perdón: si hoy no vuelven atrás, sumarlo (con un tiempo parecido al de Nekkhamma: 15 s solo, y después una cosa cada 4 s).
+
 - **0 Nekkhamma:** el rulito está bien (decidido).
   - Pista: `tap` sobre el brote que hoy pulsa (el primero atado, `HINT` 7), y a veces `hold` sobre Sid.
-  - Ojo: dejado solo 15 s le vuelve a crecer un hilo, así que se pierde avance. Revisar si choca con "nada se pierde".
+  - Dejado solo 15 s le vuelve a crecer un hilo: está bien así (decidido), es la regla 4.
 - **31 Vipassana** (ejemplo de la etapa 1):
   - Pista: `tap` sobre la célula que hoy brilla (`cellField.hint()`), y a veces `hold` sobre Sid.
   - Rulito sobre Sid, bien.
@@ -368,7 +372,13 @@ Gestos de la mano: `drag` entre las dos luces del primer hilo que falta (Pañña
   - Los comentarios de las líneas 10-13 y 418-423 hablan de una "estrella de ocho hilos" que ya no existe.
 - **30 Esperanza:**
   - Pista: `drag`, como Pañña.
-  - **Pedido nuevo: que las constelaciones (los ancestros: sentado, caminando, descansando) tengan formas más reconocibles.** Falta definir con Juan Manuel cuáles formas.
+  - **Pedido nuevo: que las constelaciones tengan formas más reconocibles.**
+    - Hoy el juego pide **tres ancestros** antes del rulito, siempre en el mismo orden: sentado (7 hilos), caminando (6) y descansando (6). Cada uno trae 2 estrellas señuelo, así que son 19 hilos como mínimo. Las formas están en `FIGURES` (`SceneEsperanza.vue` ≈118-128) y son polígonos que no se leen como zorros.
+    - **Propuesta, a elegir con Juan Manuel** (zorros como Vulpes, con lo que más los distingue: orejas, hocico y cola):
+      - **A, cabeza de frente** (7 hilos): dos orejas en punta, las mejillas y el hocico. Es la más reconocible.
+      - ~~**B, sentado de perfil**~~: **descartada.** Juan Manuel: "el de sentado no se entiende". El sentado de hoy tampoco se lee.
+      - **C, caminando** (7 hilos): la cabeza con una oreja, el lomo, dos patas y la cola alta.
+    - Falta una tercera forma que se entienda, o bajar a dos ancestros (A y C). Si una forma pasa de 7 hilos, hay que subir `MAX_LINKS`.
   - **Rulito:**
     - Hoy está en `HEAD_AT`, a mano, sobre el ancestro sentado: casi pegado a él, y los hilos de bajada lo cruzan (sin `threads.hole`).
     - La caja del JSON es la "z" del cielo.
@@ -399,7 +409,11 @@ Gestos de la mano: `drag` entre las dos luces del primer hilo que falta (Pañña
 
 ## Decisiones abiertas (las toma Juan Manuel)
 
-- **La mano fantasma:** tamaño, brillo, velocidad, repeticiones y color sobre fondos claros.
-- **Creatividad, Evolución y Hogar:** ¿se respeta el rulito tenue de la carta, al costado del personaje, o va sobre su cabeza?
-- **Esperanza:** qué formas reconocibles tienen las constelaciones de los ancestros.
-- **Nekkhamma:** si está bien que, dejado solo, le vuelva a crecer un hilo (se pierde avance, y la regla dice que nada se pierde).
+- **Esperanza:** si van A (cabeza) y C (caminando), y cuál es la tercera o si quedan dos ancestros. El sentado está descartado.
+- **Soles y lunas (paquete S):** si Perdón (un planeta con contorno) y Confianza (una luz) entran, y en cada uno si queda todo de puntos o el disco con el borde disuelto.
+
+**Ya decididas** (1 de noviembre):
+- **La mano:** el aspecto está bien. Sobre fondos muy claros se le busca contraste.
+- **Creatividad, Evolución y Hogar:** el rulito va sobre la cabeza del personaje.
+- **Nekkhamma, y todas las de Soltar y Arraigar:** dejadas solas, vuelven atrás (regla 4).
+- **Dónde va cada rulito:** la tabla "Dónde nace el rulito: decidido".
