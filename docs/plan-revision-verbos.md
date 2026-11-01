@@ -134,7 +134,7 @@ Khanti es a la vez un ejemplo de la etapa 1 y una de las 18. Su mano se conecta 
 | 32 Transformación | no |
 | 14 Celebración | no |
 | 15 Ciclos | en revisión: lo que se suelta pasó a ser las plantas (falta probar en un teléfono) |
-| 28 Perdón | no |
+| 28 Perdón | en revisión: pista y regla 4 hechas (falta probar en un teléfono) |
 | 16 Compromiso | no |
 | 18 Confianza | no |
 | 23 Fe | no |
@@ -260,7 +260,9 @@ Gesto de la mano: `hold` sobre lo que se sostiene. Motor común: `useRooting.js`
 
 Gestos de la mano: `tap` sobre lo que se suelta. Cada tanto, `hold` sobre el personaje, porque hoy nada enseña que se puede respirar.
 
-**Regla 4 en todas:** dejado solo, lo soltado vuelve de a poco, como en Nekkhamma. Revisar Vipassana, Upekkha, Ciclos y Perdón: si hoy no vuelven atrás, sumarlo (con un tiempo parecido al de Nekkhamma: 15 s solo, y después una cosa cada 4 s).
+**Regla 4 en todas:** dejado solo, lo soltado vuelve de a poco, como en Nekkhamma (15 s solo, y después una cosa cada 4 s). ✅ Sumada en Vipassana, Upekkha, Ciclos y Perdón.
+
+**Paquete B: ✅ cerrado** (1 de noviembre), con la pista y la regla 4 en las cinco cartas. Falta probarlas en un teléfono.
 
 - **0 Nekkhamma:** ✅ hecho (falta probar en un teléfono). El rulito está bien (decidido).
   - Pista: `tap` sobre el brote que pulsa, y cada tres veces `hold` sobre Sid. Se arregló de paso que la pista elegía el primer hilo atado, cuyo brote en el teléfono queda fuera de la pantalla: ahora elige uno que se ve.
@@ -278,8 +280,9 @@ Gestos de la mano: `tap` sobre lo que se suelta. Cada tanto, `hold` sobre el per
   - Pista: ✅ `tap` sobre la planta que brilla y se mece, y cada tres veces `hold` sobre Sid. Navy, sobre el amarillo.
   - Regla 4: ✅ dejada sola 15 s, a una planta le vuelven a crecer las hojas cada 4 s.
   - Rulito sobre Sid, bien.
-- **28 Perdón:**
-  - Pista: `tap` sobre el nudo que late, y a veces `hold` sobre Particular.
+- **28 Perdón** (del 31/10, en revisión con Juan Manuel):
+  - Pista: ✅ `tap` sobre un nudo que se ve (la mano lo sigue mientras gira el anillo), y cada tres veces `hold` sobre Particular. Crema: se lee sobre el salvia y el anillo.
+  - Regla 4: ✅ dejado solo 15 s, un nudo soltado se vuelve a juntar, y otro cada 4 s.
   - Rulito: el mejor anclado de todos (caja de la carta, cuelga de Particular).
 
 ## Paquete C: Fluir (deslizar con la corriente)

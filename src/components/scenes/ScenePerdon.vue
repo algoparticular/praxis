@@ -10,7 +10,7 @@
     // gathered he breathes out forgiveness (`exhale`): a wave of light goes out from him and lets go of every knot it
     // reaches. With the ring clear the planet shines, the balloon leaps, F minor gathers (`converge`) and the rulito the
     // card draws over Particular is born (`rulito`); when it goes the ring darkens slowly and the knots gather again.
-    // Left alone a while, a knot throbs (the hint). The scene is alive: the marble of the planet turns and
+    // Left alone 7 s, a knot throbs and the ghost hand touches it (the hint); left alone 15 s, a knot let go gathers again. The scene is alive: the marble of the planet turns and
     // shimmers, a soft light breathes behind it, its ring of dust flows round it in slow waves (every dot a particle, the
     // part behind the planet drawn under it and the part in front over it); the stars twinkle; the balloon bobs and leans,
     // the Sama hanging from it swings a little later; the cup rocks; the leaf rocks and bobs, Particular breathes, blinks
@@ -30,6 +30,7 @@
     import { startStardust } from '../../composables/useStardust.js';
     import { createSparks } from '../../composables/useSparks.js';
     import { play } from '../../composables/useSound.js';
+    import { createGhostHand, gesture, HINT_AFTER } from '../../composables/useGhostHand.js';
     import { sceneMilestone } from '../../analytics.js';
     import Rulito from '../Rulito.vue';
     import art from '../../composables/perdonScene.json';
@@ -237,12 +238,15 @@
     };
 
     // ---- The game's state
-    const HINT = 7;                         // s alone before a knot throbs
+    const IDLE_BACK = 15, BACK = 4;         // left alone 15 s, a knot let go gathers again, then one every 4 s
+    let alone = 0;                          // s since the last touch
+    let backAt = 0;
+    let hand = null;                        // the ghost hand: left alone 7 s, it touches a knot that throbs
+    let hands = 0;                          // how many times it has shown, so every third one is the held breath
     const BREATH_AT = 0.35, BREATH = 1.6;   // s held on Particular before it is a breath, and s more to gather it whole
     const WAVE_SPEED = 0.9;                 // the wave of forgiveness, in screen heights a second
     const DELAY = 0.8, GROW = 2.2, LINGER = 3, EAT = 3.4;     // the rulito: born, kept, gone
     const sparks = createSparks(360);
-    let idle = 0;
     let win = null;
     let wins = 0;
     let breathUsed = false;
@@ -282,7 +286,7 @@
         kn.state = 'going';
         kn.at = lastT;
         kn.hint = 0;
-        idle = 0;
+        alone = 0;
         const c = knotOnScreen(kn);
         sparks.burst(c.x, c.y, { n: 22, colors: [LIGHT, CREAM, LOVE], speed: 80, life: 2, size: 4.2, spread: 60 * k() });
         if (!quiet) play('release');
@@ -310,7 +314,7 @@
     // Pressing Particular: a tap is a touch like any other (he blinks, the leaf dips); held past BREATH_AT he breathes in
     // love (`inhale`), and let go once it is gathered he breathes out forgiveness (`exhale`): a wave goes out from him
     const touchParticular = (event) => {
-        idle = 0;
+        alone = 0;
         if (reduced || win || breath) return;
         breath = { pointerId: event?.pointerId, at: lastT, breathing: false };
         window.addEventListener('pointerup', breatheOut);
@@ -322,7 +326,7 @@
         window.removeEventListener('pointercancel', breatheOut);
         const { breathing } = breath;
         breath = null;
-        idle = 0;
+        alone = 0;
         if (breathing) skipClick = true;
         if (charge >= 1 && !win && left().length) {
             play('exhale');
@@ -333,6 +337,7 @@
         }
     };
     const pressKnot = (event) => {
+        alone = 0;
         const kn = knotAt(fromEvent(event));
         if (!kn) return;
         event.preventDefault();
@@ -343,7 +348,7 @@
     const keyParticular = (event) => {
         if (event.key !== 'Enter' && event.key !== ' ') return;
         event.preventDefault();
-        idle = 0;
+        alone = 0;
         const rest = left();
         if (reduced || win || !rest.length) { play('star'); kick.leaf = 1; blinkNow = lastT; return; }
         const at = particularAt();
@@ -353,7 +358,6 @@
 
     // Every frame: the knots, the ring's light, the breath, its wave, the hint and the rulito
     const game = (t, dt) => {
-        idle += dt;
         knots.forEach((kn) => {
             kn.hint = Math.max(0, kn.hint - dt * 0.8);
             if (kn.state === 'going' && t - kn.at > 0.9) kn.state = 'gone';
@@ -384,15 +388,35 @@
             });
             if (wave.r > wave.max) wave = null;
         }
-        // The hint, without words: alone a while, a knot throbs
-        if (!win && !breath && !wave && idle > HINT && !reduced) {
-            const rest = knots.filter((kn) => kn.state === 'here');
-            if (rest.length) {
-                idle = 0;
-                const kn = rest[Math.floor(Math.random() * rest.length)];
+        // The hint, without words: left alone 7 s, a knot on the screen throbs and the ghost hand touches it, following
+        // it; every third time the hand holds Particular instead, because nothing else shows that holding him is a
+        // breath. With reduced motion there is no hand (and no game).
+        const W = canvas.value?.clientWidth ?? 0;
+        const seen = knots.filter((kn) => {
+            if (kn.state !== 'here') return false;
+            const c = knotOnScreen(kn);
+            return c.x > 20 && c.x < W - 20 && c.y > 20 && c.y < screenH - 20;
+        });
+        if (hand?.due(HINT_AFTER, !win && !breath && !wave && seen.length > 0)) {
+            hands += 1;
+            if (hands % 3 === 0) hand.play(gesture.hold(partHit.value, 2.4));
+            else {
+                const kn = seen[Math.floor(Math.random() * seen.length)];
                 kn.hint = 1;
                 const c = knotOnScreen(kn);
                 sparks.burst(c.x, c.y, { n: 6, colors: [LIGHT, LOVE], speed: 30, life: 1, size: 3, spread: 30 * k() });
+                hand.play(gesture.tap(() => { const q = knotOnScreen(kn); return [q.x, q.y]; }));
+            }
+        }
+        // Left alone a while, what was let go gathers again: a knot comes back, then another (rule 4 of Soltar)
+        alone += dt;
+        if (!win && !breath && !wave && alone > IDLE_BACK && t - backAt > BACK) {
+            const away = knots.filter((kn) => kn.state === 'gone');
+            if (away.length) {
+                backAt = t;
+                const kn = away[Math.floor(Math.random() * away.length)];
+                kn.state = 'back';
+                kn.form = 0;
             }
         }
         // The rulito over Particular, as the card draws it
@@ -665,6 +689,7 @@
         stage = made;
         stageEl = root.value.closest('.stage');
         build(stage);
+        hand = createGhostHand(stage);
         stage.onResize((w, h) => place(w, h));
         const after = (node) => node.mesh.renderOrder + 0.5;
         dust = startStardust(null, {
@@ -701,6 +726,7 @@
         window.removeEventListener('pointercancel', breatheOut);
         parallax?.destroy();
         dust?.destroy();
+        hand?.destroy();
         stage?.destroy();
     });
 </script>
