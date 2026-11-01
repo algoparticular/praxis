@@ -9,8 +9,8 @@
     // up, the name lights up, the little light rises to the moon and the storm stops: the rain and the wind go, the
     // clouds open a little and the full moon is left (`calm`, 0 the storm .. 1 the storm over). Let go, the tail of the
     // rulito catches up with its head, as in Paciencia (no hold is wasted; held again it comes back); once whole it stays
-    // a while, then goes, the light comes down to the boat and the storm comes back slowly. Left alone, the light calls
-    // him now and then (the hint, with no words).
+    // a while, then goes, the light comes down to the boat and the storm comes back slowly. Left alone 7 s, the light calls
+    // him and the ghost hand holds him (the hint, with no words).
     // It is drawn in WebGL (useLayerStage): the moon, every cloud (a picture each, so the wind moves each one), the boat
     // and what it carries are planes; the storm is drawn in code (`rain` in useLayerStage: the wavy lines of the wind
     // on the sky, rain behind the boat and rain in front of everything, and the lightning); the stipple round the moon,
@@ -21,6 +21,7 @@
     import { createLayerStage } from '../../composables/useLayerStage.js';
     import { startStardust } from '../../composables/useStardust.js';
     import { play } from '../../composables/useSound.js';
+    import { createGhostHand, gesture, HINT_AFTER } from '../../composables/useGhostHand.js';
     import { sceneMilestone } from '../../analytics.js';
     import Rulito from '../Rulito.vue';
     import art from '../../composables/addhitthanaScene.json';
@@ -306,6 +307,7 @@
     let wins = 0;
     let rise = 0;                           // 0..1, the little light on its way to the moon
     let hint = 0, hintAt = 0;
+    let hand = null;                        // left alone 7 s, the ghost hand holds Particular (he rows under the light)
     let lastTouch = 0;
     let glyph = { left: 0, top: 0, w: 1, h: 1 };
     const hold = () => {
@@ -506,6 +508,8 @@
         // The hint: left alone, the light calls him now and then (a pulse of it, and his aura answers)
         if (!held && !full && !reduced && t - lastTouch > HINT && t - hintAt > HINT && ramp >= 1) { hintAt = t; hint = 1; dust?.boost(2, 0.8); }
         hint = Math.max(0, hint - dt * 0.9);
+        // And the ghost hand shows the gesture: holding Particular (not while he is held or a rulito lives)
+        if (hand?.due(HINT_AFTER, !held && head === 0 && ramp >= 1)) hand.play(gesture.hold(sidHit.value, 3));
 
         // His aura breathes, and shines when he is touched, while he rows and under the light
         shine = Math.max(0, shine - dt * 1.2);
@@ -562,6 +566,7 @@
         stage = made;
         stageEl = root.value.closest('.stage');
         build(stage);
+        hand = createGhostHand(stage);
         stage.onResize((w, h) => place(w, h));
         const after = (node) => node.mesh.renderOrder + 0.5;
         // [x, y, radius, colour] in art px to the screen; the colours are an index into art.colors
@@ -591,6 +596,7 @@
         gone = true;
         parallax?.destroy();
         dust?.destroy();
+        hand?.destroy();
         stage?.destroy();
         stageEl?.style.removeProperty('--name-glow');
         window.removeEventListener('pointerup', release);

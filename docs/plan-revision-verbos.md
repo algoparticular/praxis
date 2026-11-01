@@ -86,7 +86,7 @@ Pedido de Juan Manuel: los soles y las lunas de este estilo vivo tienen que ser 
 | 8 Metta | la gran luz amarilla y la luz turquesa |
 | 27 Paciencia | el sol |
 | 11 Aceptación | el sol rosa |
-| 15 Ciclos | el sol rojo |
+| 15 Ciclos | el sol rojo (pedido por Juan Manuel el 1 de noviembre: vivo como el de Pañña, la luna queda igual; una primera prueba fuera del paquete S dejaba aire entre el borde y el disco y se deshizo) |
 | 24 Gratitud | los soles durazno y rosa |
 | 32 Transformación | el solcito de la copa |
 | 6 Sacca | la luna |
@@ -133,8 +133,8 @@ Khanti es a la vez un ejemplo de la etapa 1 y una de las 18. Su mano se conecta 
 | 11 Aceptación | no |
 | 32 Transformación | no |
 | 14 Celebración | no |
-| 15 Ciclos | no |
-| 28 Perdón | no |
+| 15 Ciclos | en revisión: lo que se suelta pasó a ser las plantas (falta probar en un teléfono) |
+| 28 Perdón | en revisión: pista y regla 4 hechas (falta probar en un teléfono) |
 | 16 Compromiso | no |
 | 18 Confianza | no |
 | 23 Fe | no |
@@ -236,15 +236,16 @@ Gesto de la mano: `hold` sobre lo que se sostiene. Motor común: `useRooting.js`
 **Regla 4 en todas:** al soltar, lo crecido se deshace de a poco (la cola del rulito alcanza a la cabeza). `useRooting.js`, Paciencia y Hogar ya lo hacen; revisar Addhitthana y que las seis se sientan iguales.
 
 - **27 Paciencia:** ✅ pista hecha (con la espera de 7 s también después de ganar). El lugar del rulito está bien (fracciones del bote, coincide con la carta).
-  - **Cuándo nace el rulito (pedido de Juan Manuel):** tiene que nacer **cuando las raíces están completas**, no mientras se están creando. Hoy nace con las raíces a un 30 % (`rootGrow >= 0.3` en `ScenePaciencia.vue`). Pasa a `rootGrow >= 1`, y revisar que el tiempo total sostenido siga sintiéndose bien.
-- **25 Hogar:**
-  - Hoy solo hay pista antes del primer toque (el núcleo late). Hace falta `hold` sobre el núcleo, también después.
-  - **Cuándo nace el rulito:** como en Paciencia, tiene que nacer cuando las raíces llegaron todas, no mientras crecen. Hoy nace con las raíces a un cuarto (`BORN = 0.25`).
-  - Rulito: ver la decisión sobre los rulitos tenues. Hoy no sigue el `sy` ni el giro de la larva (`SceneHogar.vue` ≈491-494 y 594-597).
-- **7 Addhitthana:**
-  - Pista: `hold` sobre Particular.
+  - **Cuándo nace el rulito (pedido de Juan Manuel):** ✅ hecho. Nace **cuando las raíces están completas** (`rootGrow >= 1`). Para que el total sostenido no se alargue, las raíces tardan 2 s (antes 2,4) y el rulito 2 s más (antes 2,6): 4 s en total, contra 3,3 s de antes. Falta probar en un teléfono si se siente bien.
+- **25 Hogar:** ✅ hecho (falta probar en un teléfono).
+  - Pista: `hold` sobre el núcleo con la mano, a los 7 s, también después de ganar. La chispa sigue respirando antes del primer toque.
+  - **Cuándo nace el rulito:** cuando llegaron todas las raíces (se sacó `BORN`). Las raíces tardan 2,6 s (antes 3,6) y el rulito 2 s más: 4,6 s en total.
+  - Rulito: sobre la cabeza de la larva, colgado del mismo nodo que ella (`L.larvaNode`), así que nada, gira y se escala con ella, y se corre con su `sy` para quedar sobre la cabeza cuando se estira o se acurruca.
+- **7 Addhitthana:** ✅ hecho (falta probar en un teléfono).
+  - Pista: `hold` sobre Particular con la mano (3 s), a los 7 s; la luz sigue latiendo a la vez.
   - Rulito bien (`art.rulito`, en `L.boat`).
-  - Doc desactualizada en `docs/escenas.md`: dice `HOLD` 4.2, pero el código tiene `CHARGE` 1.6 + `HOLD` 3.4; dice `LINGER` 9, pero es 4; dice un `kindle` "en cada cuarto", pero es en tercios.
+  - Regla 4: ya la cumple (al soltar, la cola alcanza a la cabeza; entero, se queda `LINGER` y se va).
+  - Doc corregida en `docs/escenas.md` y `verbos-y-dinamicas.md` (`CHARGE` 1,6 + `HOLD` 3,4, `LINGER` 4, un `kindle` por tercio).
 - **16 Compromiso:**
   - Pista: `hold` sobre los seres (hoy echa chispas al pie del camino).
   - **El rulito es el peor caso:** usa la "z" del cielo y, en el teléfono, queda pegado al borde derecho bajo el título (`SceneCompromiso.vue` ≈319-325). Va **sobre el Sama grande del bote** (decidido).
@@ -259,22 +260,31 @@ Gesto de la mano: `hold` sobre lo que se sostiene. Motor común: `useRooting.js`
 
 Gestos de la mano: `tap` sobre lo que se suelta. Cada tanto, `hold` sobre el personaje, porque hoy nada enseña que se puede respirar.
 
-**Regla 4 en todas:** dejado solo, lo soltado vuelve de a poco, como en Nekkhamma. Revisar Vipassana, Upekkha, Ciclos y Perdón: si hoy no vuelven atrás, sumarlo (con un tiempo parecido al de Nekkhamma: 15 s solo, y después una cosa cada 4 s).
+**Regla 4 en todas:** dejado solo, lo soltado vuelve de a poco, como en Nekkhamma (15 s solo, y después una cosa cada 4 s). ✅ Sumada en Vipassana, Upekkha, Ciclos y Perdón.
 
-- **0 Nekkhamma:** el rulito está bien (decidido).
-  - Pista: `tap` sobre el brote que hoy pulsa (el primero atado, `HINT` 7), y a veces `hold` sobre Sid.
+**Paquete B: ✅ cerrado** (1 de noviembre), con la pista y la regla 4 en las cinco cartas. Falta probarlas en un teléfono.
+
+- **0 Nekkhamma:** ✅ hecho (falta probar en un teléfono). El rulito está bien (decidido).
+  - Pista: `tap` sobre el brote que pulsa, y cada tres veces `hold` sobre Sid. Se arregló de paso que la pista elegía el primer hilo atado, cuyo brote en el teléfono queda fuera de la pantalla: ahora elige uno que se ve.
   - Dejado solo 15 s le vuelve a crecer un hilo: está bien así (decidido), es la regla 4.
 - **31 Vipassana** (ejemplo de la etapa 1):
-  - Pista: `tap` sobre la célula que hoy brilla (`cellField.hint()`), y a veces `hold` sobre Sid.
+  - Pista: `tap` sobre la célula que hoy brilla (`cellField.hint()`), y a veces `hold` sobre Sid. ✅
   - Rulito sobre Sid, bien.
-- **9 Upekkha:**
-  - Pista: `tap` sobre el pensamiento que hoy brilla, y a veces `hold` sobre Sid.
-  - **Rulito:** el lugar es el de la carta, pero en pantalla ancha probablemente queda cortado arriba o tapa el nombre. El `layout` pone la fila de arte 560 a 130 px del borde y el rulito empieza 200 px de arte más arriba (`SceneUpekkha.vue` 63-79 contra 944-948). Hay que bajar o achicar el encuadre en ancho.
-- **15 Ciclos:**
-  - Pista: `tap` sobre la gota que hoy se hincha, y a veces `hold` sobre Sid.
+  - Regla 4: ✅ sumada. Dejada sola 15 s, vuelve una célula soltada cada 4 s (`cellField.gatherOne()`), y la espiral se alarga.
+- **9 Upekkha:** ✅ hecho (falta probar en un teléfono y en una pantalla ancha).
+  - Pista: `tap` sobre el pensamiento que brilla (la mano lo sigue), y cada tres veces, si ya está pegado, `hold` sobre Sid. Navy con halo crema: la crema no se leía sobre el cielo menta.
+  - **Rulito:** confirmado que en ancho quedaba cortado o sobre el nombre (a 1920×1080 empezaba 46 px por encima de la pantalla). El encuadre ancho ahora deja ver desde la punta del rulito (`RULITO_TOP`) hasta debajo del nombre (`nameClear()`): el dibujo queda un poco más chico y a los costados sigue la tierra espejada.
+  - Regla 4: ✅ sumada. Dejado solo 15 s, vuelve un pensamiento soltado cada 4 s (su aura se apaga un paso y llega otro).
+- **15 Ciclos** (del 31/10, en revisión con Juan Manuel):
+  - **Lo que se suelta cambió** (Juan Manuel, 1 de noviembre: en el teléfono las gotas quedaban fuera de la pantalla). Ahora son las plantas de las lomas (abanicos rosas y matas de pasto): un toque y el viento se lleva sus hojas secas, y la planta queda baja y desteñida. Cuentan las 8 más grandes que se ven. Las gotas quedan vivas en el cielo, sin juego.
+  - Pista: ✅ `tap` sobre la planta que brilla y se mece, y cada tres veces `hold` sobre Sid. Navy, sobre el amarillo.
+  - Regla 4: ✅ dejada sola 15 s, a una planta le vuelven a crecer las hojas cada 4 s.
   - Rulito sobre Sid, bien.
-- **28 Perdón:**
-  - Pista: `tap` sobre el nudo que late, y a veces `hold` sobre Particular.
+- **28 Perdón** (del 31/10, en revisión con Juan Manuel):
+  - Pista: ✅ `tap` sobre un nudo que se ve (la mano lo sigue mientras gira el anillo), y cada tres veces `hold` sobre Particular. Crema: se lee sobre el salvia y el anillo.
+  - Regla 4: ✅ dejado solo 15 s, un nudo soltado se vuelve a juntar, y otro cada 4 s.
+  - **En el teléfono (Juan Manuel, 1 de noviembre):** ✅ el bote de hoja va al centro, bajo el planeta, y ya no baja a la esquina; el planeta sube un poco; el rulito es 1,4 veces el de la carta.
+  - **Más vida (Juan Manuel, 1 de noviembre):** ✅ el anillo orbita de verdad (una vuelta en 52 s, lo de adentro más rápido), pasando por delante y por detrás del planeta; los nudos viajan con él y detrás del planeta no se pueden tocar. El planeta como cuerpo (disco, contorno, el mármol que fluye en vez de girar como imagen, volumen, sin aire entre el borde y el disco) es del paquete S, acordado con esa sesión.
   - Rulito: el mejor anclado de todos (caja de la carta, cuelga de Particular).
 
 ## Paquete C: Fluir (deslizar con la corriente)

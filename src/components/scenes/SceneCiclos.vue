@@ -4,15 +4,17 @@
     // where the night is over it and a red sun, its corona stippled, where the day is (as in the card, the disc split by
     // the edge between them). White clouds drift, and over rolling hills of green and sand, with white rocks, pink fans
     // and tufts of grass, Sid sits meditating on a rock with his red aura round him.
-    // Its verb is Soltar (closing a cycle: "you can only move forward if you are able to let go of the old"). The drops
-    // of the card, yellow day caught in the night and teal night caught in the day, are what is left of the old cycle: a
-    // touch on one lets it go (`release`): it shrinks into motes and goes back to its own colour. With every drop let go
+    // Its verb is Soltar (closing a cycle: "you can only move forward if you are able to let go of the old"). The plants
+    // of the hills, the pink fans and the tufts of grass, hold the old cycle as their dry leaves: a touch on one lets them
+    // go (`release`): it shivers, its leaves fly off with the wind and it is left low and bare. With every plant let go
     // the day flows a little further over the round body in the sky (a dent pressed into the edge, the field's uDent), so
     // the moon gives way to the sun. Holding Sid is a breath, as in Vipassana, Nekkhamma and Upekkha (`inhale`; let go
-    // once gathered, `exhale`, and every drop left goes at once). With the drops gone the sun is whole: F7 resolves to
+    // once gathered, `exhale`, and every plant left lets go at once). With them all bare the sun is whole: F7 resolves to
     // B flat (`resolve`), the corona flares, the name lights up and the rulito is born over his head (`rulito`); when it
-    // goes the night pours back over the sun and the drops come back: a new cycle. Left alone a while, a drop shines (the
-    // hint). A short touch on Sid flares his aura (`star`); on the moon it rocks a little and the corona flares.
+    // goes the night pours back over the sun and the plants grow their leaves again: a new cycle. Left alone 7 s, a plant
+    // shines and the ghost hand touches it (the hint); left alone 15 s, a bare plant grows its leaves back, then another.
+    // A short touch on Sid flares his aura (`star`); on the moon it rocks a little and the corona flares. The card's drops
+    // (day caught in the night, night in the day) live in the sky, swaying as a liquid.
     // The sky is not a picture: day and night are two liquids drawn by the stage (field()), from the night's shape, drops
     // and colour that the converter read from the card (it is in no layer); its stars are particles that live only in
     // the night. Nor is the sun: a disc drawn in code (the biggest circle inside its solid middle, under the moon) with a
@@ -33,6 +35,7 @@
     import { startStardust } from '../../composables/useStardust.js';
     import { createSparks } from '../../composables/useSparks.js';
     import { play } from '../../composables/useSound.js';
+    import { createGhostHand, gesture, HINT_AFTER } from '../../composables/useGhostHand.js';
     import { sceneMilestone } from '../../analytics.js';
     import Rulito from '../Rulito.vue';
     import art from '../../composables/ciclosScene.json';
@@ -194,61 +197,70 @@
         }
         ctx.putImageData(image, 0, 0);
     };
-    // The drops of the card, alive: each sways and trembles where the card has it, as a liquid. They are the game: what
-    // is left of the old cycle. `gone` is how far one has been let go (0 here .. 1 gone), `hint` its shine
+    // The drops of the card, alive: each sways and trembles where the card has it, as a liquid (only the sky's life:
+    // the game is the plants, which a phone always shows; most drops are past its edges or too small for a finger)
     const drops = NIGHT.bubbles.slice(0, FIELD_BUBBLES).map(([x, y, rx, ry, angle, toward], j) => ({
-        x, y, rx, ry, angle, toward, phase: j * 1.9 + Math.random(), state: 'here', gone: 0, hint: 0, need: true, at: { x: 0, y: 0 },
+        x, y, rx, ry, angle, toward, phase: j * 1.9 + Math.random(),
     }));
     const ease = (v) => v * v * (3 - 2 * v);
     const moveDrops = (t, ramp) => drops.map((d, j) => {
         const jelly = 0.08 * Math.sin(t * (2.1 + 0.3 * j) + d.phase) * ramp;
         const x = d.x + Math.sin(t * 0.35 + d.phase) * 10 * ramp, y = d.y + Math.sin(t * 0.27 + d.phase * 1.7) * 8 * ramp;
-        // Let go it shrinks as it rises a little, back into motes; the hint swells it
-        const size = (1 - ease(d.gone)) * (1 + 0.28 * d.hint * (0.6 + 0.4 * Math.sin(t * 9)));
-        d.at = { x: sx(x), y: sy(y - 50 * ease(d.gone)) };
-        if (size <= 0.02) return [0, 0, 0, 0, 0, d.toward, 0.3, 1];
-        return [d.at.x, d.at.y, d.rx * (1 + jelly) * k() * size, d.ry * (1 - jelly) * k() * size, d.angle + 0.12 * Math.sin(t * 0.4 + d.phase) * ramp, d.toward, 0.3, 1];
+        return [sx(x), sy(y), d.rx * (1 + jelly) * k(), d.ry * (1 - jelly) * k(), d.angle + 0.12 * Math.sin(t * 0.4 + d.phase) * ramp, d.toward, 0.3, 1];
     });
     const WAVE = { amp: 10, length: 900, speed: 0.25 };
 
-    // ---- The game: let go of the drops, the day flows over the moon and the sun is whole
+    // ---- The game: the plants of the hills let go of their dry leaves, the day flows over the moon and the sun is whole
     const GLYPH = { x: 1703, top: 728, h: 145 };   // the rulito over his head (art px: the middle, its top, its height)
     const RULITO_COLOR = '#fc747c';
-    const FULL = 150;                       // px the edge gives way round the disc with every drop gone (more than FIELD_RANGE: all of it)
-    const HINT = 7;                         // s alone before a drop shines
+    const FULL = 150;                       // px the edge gives way round the disc with every plant let go (more than FIELD_RANGE: all of it)
+    const MOST = 8;                         // plants that count at most (the biggest on the screen)
     const BREATH_AT = 0.35, BREATH = 1.6;   // s held on Sid before it is a breath, and s more to gather it whole
     const DELAY = 0.7, GROW = 2.2, LINGER = 3, EAT = 3.4;     // the rulito: born, kept, gone
-    const sparks = createSparks(320);
+    const IDLE_BACK = 15, BACK = 4;         // left alone 15 s, a plant that let go grows its leaves again, then one every 4 s
+    const SHED = 1.3, REGROW = 2.4;         // s a plant takes to let go of its leaves, and to grow them again
+    const LEAVES = { fan: [0xeeaa88, 0xdda088, 0xf4c2a4], grass: [0x776633, 0x8a7a40, 0x335544] };
+    const BARE = { sy: 0.38, sx: 0.7, opacity: 0.5 };   // a plant that has let go: low, thin and faded (it grows back)
+    const sparks = createSparks(360);
     let dent = 0;                           // how far the day has flowed over the disc, 0..1 (eases to its goal)
-    let idle = 0;
+    let alone = 0;                          // s since the last touch
+    let backAt = 0;
     let released = 0;
     let win = null;
     let wins = 0;
     let breathUsed = false;
     let breath = null;                      // { pointerId, at, breathing }
     let charge = 0;                         // 0..1 the breath gathered
+    let hand = null;                        // the ghost hand: left alone 7 s, it touches a plant that shines
+    let hands = 0;                          // how many times it has shown, so every third one is the held breath
     let glyph = { left: 0, top: 0, w: 1, h: 1 };
     let screenW = 1, screenH = 1;
-    const DROP_RGB = (d) => (d.toward < 0 ? DAY : NIGHT.color);
-    const needed = () => drops.filter((d) => d.need);
-    const left = () => drops.filter((d) => d.state === 'here');
+    // Each plant's game: `gone` how far it has let go (0 leafy .. 1 bare), `hint` its shine, `shake` its shiver as it
+    // lets go; `copies` are its pictures (it and its mirrors beyond the frame), filled in by build()
+    plants.forEach((pl) => Object.assign(pl, { state: 'here', gone: 0, hint: 0, shake: 0, need: true, copies: [] }));
+    const needed = () => plants.filter((pl) => pl.need);
+    const left = () => plants.filter((pl) => pl.state === 'here');
     const dentGoal = () => {
         if (win) return 1;
         const need = needed();
-        return need.length ? need.filter((d) => d.state !== 'here').length / need.length : 0;
+        return need.length ? need.filter((pl) => pl.state !== 'here' && pl.state !== 'back').length / need.length : 0;
     };
-    // Where a drop is on screen now (the sky slides with the camera)
-    const onScreen = (d) => {
-        const drift = stage.drift(L.skyNode.z);
-        return { x: d.at.x + drift.x, y: d.at.y + drift.y };
+    // Where a plant is on the screen now (its plane slides with the camera), from its own picture
+    const boxOf = (pl) => pl.copies.find((c) => !c.side)?.img.boxOnScreen(rectOf(pl.box));
+    const centreOf = (pl) => {
+        const b = boxOf(pl);
+        return b ? { x: b.left + b.width / 2, y: b.top + b.height * 0.55, w: b.width, h: b.height } : null;
     };
-    const dropAt = (p) => {
-        if (reduced || win || !stage || !L.skyNode) return null;
+    const plantAt = (p) => {
+        if (reduced || win || !stage) return null;
         let best = null, bestD = Infinity;
-        left().forEach((d) => {
-            const c = onScreen(d);
-            const dist = Math.hypot(c.x - p.x, c.y - p.y);
-            if (dist < Math.max(34, Math.max(d.rx, d.ry) * k() * 1.4) && dist < bestD) { best = d; bestD = dist; }
+        left().forEach((pl) => {
+            const b = boxOf(pl);
+            if (!b) return;
+            const padX = Math.max(0, (48 - b.width) / 2), padY = Math.max(0, (48 - b.height) / 2);
+            if (p.x < b.left - padX || p.x > b.left + b.width + padX || p.y < b.top - padY || p.y > b.top + b.height + padY) return;
+            const d = Math.hypot(b.left + b.width / 2 - p.x, b.top + b.height / 2 - p.y);
+            if (d < bestD) { best = pl; bestD = d; }
         });
         return best;
     };
@@ -256,23 +268,28 @@
         const area = root.value.getBoundingClientRect();
         return { x: event.clientX - area.left, y: event.clientY - area.top };
     };
-    // Let a drop go: it bursts into motes of its colour and shrinks back into it
-    const letGo = (d, quiet = false) => {
-        if (d.state !== 'here') return;
-        d.state = 'going';
-        d.hint = 0;
-        idle = 0;
-        if (d.need) released += 1;
-        const c = onScreen(d);
-        sparks.burst(c.x, c.y, { n: 18, colors: [DROP_RGB(d), 0xfff6dc, DROP_RGB(d)], speed: 70, life: 1.8, size: 4, spread: d.rx * k() * 0.7 });
+    // A plant lets go: it shivers and its dry leaves fly off with the wind, and it is left low and bare
+    const letGo = (pl, quiet = false) => {
+        if (pl.state !== 'here') return;
+        pl.state = 'going';
+        pl.hint = 0;
+        pl.shake = 1;
+        if (pl.need) released += 1;
+        const c = centreOf(pl);
+        if (c) {
+            sparks.burst(c.x, c.y - c.h * 0.15, {
+                n: pl.kind === 'fan' ? 26 : 18, colors: LEAVES[pl.kind], speed: 45, life: 2.6, size: pl.kind === 'fan' ? 5 : 4,
+                spread: c.w * 0.35, push: [80, -34],
+            });
+        }
         if (!quiet) play('release');
         if (!win && released >= needed().length) setTimeout(() => { if (!gone) closeCycle(); }, DELAY * 1000);
     };
-    // Every drop let go: the sun is whole, F7 resolves and the rulito is born over Sid
+    // Every plant let go: the sun is whole, F7 resolves and the rulito is born over Sid
     const closeCycle = () => {
         if (win) return;
         wins += 1;
-        drops.forEach((d) => letGo(d, true));
+        plants.forEach((pl) => letGo(pl, true));
         win = { age: 0, head: 0, tail: 0, full: false, fullAt: 0, back: false, pop: 0 };
         rulito.value?.reshape();
         play('resolve');
@@ -283,26 +300,28 @@
         sceneMilestone('cycle_closed', { times: wins, breath: breathUsed });
         breathUsed = false;
     };
-    // A new cycle: the night pours back over the sun and the drops come back, one after the other
+    // A new cycle: the night pours back over the sun and the plants grow their leaves again, one after the other
     const newCycle = () => {
         released = 0;
-        drops.forEach((d, j) => setTimeout(() => { if (!gone) d.state = 'back'; }, 1500 + j * 450));
+        plants.forEach((pl, j) => setTimeout(() => { if (!gone && pl.state !== 'here') pl.state = 'back'; }, 1200 + j * 160));
     };
-    // The drops that count are those on the screen (on a phone some of the card's are past its edge; they go with the rest)
+    // The plants that count are those on the screen, under the card's name (on a phone some are past its edges; they
+    // go with the rest), the biggest MOST of them
     const markNeeded = () => {
         const top = titleBottom(screenH);
-        drops.forEach((d) => {
-            const x = sx(d.x), y = sy(d.y);
-            d.need = x > 16 && x < screenW - 16 && y > top && y < screenH - 16;
-        });
-        if (!needed().length) drops.forEach((d) => { d.need = true; });
+        const seen = plants.filter((pl) => {
+            const r = rectOf(pl.box), x = r.left + r.w / 2, y = r.top + r.h / 2;
+            return x > 16 && x < screenW - 16 && y > top && y < screenH - 16;
+        }).sort((a, b) => b.box[2] * b.box[3] - a.box[2] * a.box[3]).slice(0, MOST);
+        plants.forEach((pl) => { pl.need = seen.includes(pl); });
+        if (!needed().length) plants.forEach((pl) => { pl.need = true; });
     };
 
     // Pressing Sid: a tap flares his aura and strums the chord; held past BREATH_AT he gathers a breath (`inhale`), and
-    // let go once it is gathered he breathes out (`exhale`) and every drop left goes at once
+    // let go once it is gathered he breathes out (`exhale`) and every plant left lets go at once
     const touchSid = (event) => {
-        if (event?.clientX !== undefined && dropAt(fromEvent(event))) return;
-        idle = 0;
+        if (event?.clientX !== undefined && plantAt(fromEvent(event))) return;
+        alone = 0;
         if (reduced || win) { flareSid(); return; }
         if (breath) return;
         breath = { pointerId: event?.pointerId, at: lastT, breathing: false };
@@ -320,42 +339,57 @@
         window.removeEventListener('pointercancel', breatheOut);
         const { breathing } = breath;
         breath = null;
-        idle = 0;
+        alone = 0;
         const rest = left();
         if (charge >= 1 && !win && rest.length) {
             play('exhale');
             breathUsed = true;
             glowSid = 1;
             dust?.boost(2, 1.2);
-            rest.forEach((d, j) => setTimeout(() => { if (!gone) letGo(d, true); }, 150 + j * 170));
-            sceneMilestone('breath_released', { drops: rest.length });
+            rest.forEach((pl, j) => setTimeout(() => { if (!gone) letGo(pl, true); }, 150 + j * 140));
+            sceneMilestone('breath_released', { plants: rest.length });
         } else if (!breathing) flareSid();
         else dust?.boost(2, 0.4 + 0.6 * charge);
     };
-    // A touch anywhere on the scene: a drop under it is let go
+    // A touch anywhere on the scene: a plant under it lets go
     const press = (event) => {
-        const d = dropAt(fromEvent(event));
-        if (!d) return;
+        alone = 0;
+        const pl = plantAt(fromEvent(event));
+        if (!pl) return;
         event.preventDefault();
-        letGo(d);
+        letGo(pl);
     };
-    // Enter on Sid lets go of the drop nearest to him
+    // Enter on Sid lets go of the plant nearest to him that counts
     const keySid = () => {
-        idle = 0;
-        const rest = left();
+        alone = 0;
+        const rest = left().filter((pl) => pl.need);
         if (reduced || win || !rest.length) { flareSid(); return; }
         const s0 = { x: sx(GLYPH.x), y: sy(GLYPH.top) };
-        rest.sort((a, b) => Math.hypot(a.at.x - s0.x, a.at.y - s0.y) - Math.hypot(b.at.x - s0.x, b.at.y - s0.y));
+        const at = (pl) => { const r = rectOf(pl.box); return Math.hypot(r.left + r.w / 2 - s0.x, r.top + r.h / 2 - s0.y); };
+        rest.sort((a, b) => at(a) - at(b));
         letGo(rest[0]);
     };
 
-    // Every frame: the drops, the dent, the breath, the hint and the rulito
-    const game = (t, dt) => {
-        idle += dt;
-        drops.forEach((d) => {
-            d.hint = Math.max(0, d.hint - dt * 0.9);
-            if (d.state === 'going') { d.gone = Math.min(1, d.gone + dt / 1.1); if (d.gone >= 1) d.state = 'away'; }
-            if (d.state === 'back') { d.gone = Math.max(0, d.gone - dt / 2.4); if (d.gone <= 0) d.state = 'here'; }
+    // Every frame: the plants, the dent, the breath, the hint and the rulito
+    const game = (t, dt, ramp) => {
+        alone += dt;
+        plants.forEach((pl) => {
+            pl.hint = Math.max(0, pl.hint - dt * 0.7);
+            pl.shake = Math.max(0, pl.shake - dt * 1.4);
+            if (pl.state === 'going') { pl.gone = Math.min(1, pl.gone + dt / SHED); if (pl.gone >= 1) pl.state = 'away'; }
+            if (pl.state === 'back') { pl.gone = Math.max(0, pl.gone - dt / REGROW); if (pl.gone <= 0) pl.state = 'here'; }
+            // Let go, it is left low, thin and faded; it shivers as it lets go, and the hint makes it sway and shine
+            const e = ease(pl.gone);
+            const shiver = Math.sin(t * 38 + pl.box[0]) * 5 * pl.shake * pl.shake;
+            const swing = Math.sin(t * 5.5 + pl.box[1]) * 4 * pl.hint;
+            pl.copies.forEach(({ img, side, wind }) => {
+                img.sy = 1 - (1 - BARE.sy) * e;
+                img.sx = (side ? -1 : 1) * (1 - (1 - BARE.sx) * e);
+                img.opacity = 1 - (1 - BARE.opacity) * e;
+                img.rotate = (side ? -1 : 1) * (shiver + swing) * ramp;
+                img.uniforms.uBright.value = 1 + 0.35 * pl.hint;
+                img.uniforms.uWind.value.x = wind * (1 + 2.5 * pl.hint + 3 * pl.shake) * (1 - 0.6 * e);
+            });
         });
         dent += (dentGoal() - dent) * Math.min(1, dt * (win || dentGoal() > dent ? 1.3 : 0.45));
         const sr = MOON.r * k() * 1.05;
@@ -374,15 +408,25 @@
             }
         } else charge = Math.max(0, charge - dt * 2.5);
 
-        // The hint, without words: alone a while, a drop that counts shines
-        if (!win && !breath && idle > HINT && !reduced) {
-            const rest = left().filter((d) => d.need);
-            if (rest.length) {
-                idle = 0;
-                const d = rest[Math.floor(Math.random() * rest.length)];
-                d.hint = 1;
-                const c = onScreen(d);
-                sparks.burst(c.x, c.y, { n: 6, colors: [0xfff6dc, DROP_RGB(d)], speed: 30, life: 1.1, size: 3, spread: d.rx * k() * 0.6 });
+        // The hint, without words: left alone 7 s, a plant that counts shines and sways, and the ghost hand touches it;
+        // every third time the hand holds Sid instead, because nothing else shows that holding him is a breath
+        const rest = left().filter((pl) => pl.need && centreOf(pl));
+        if (hand?.due(HINT_AFTER, !win && !breath && rest.length > 0)) {
+            hands += 1;
+            if (hands % 3 === 0) hand.play(gesture.hold(sidHit.value, 2.4));
+            else {
+                const pl = rest[Math.floor(Math.random() * rest.length)];
+                pl.hint = 1;
+                hand.play(gesture.tap(() => { const c = centreOf(pl); return c ? [c.x, c.y] : [0, 0]; }));
+            }
+        }
+        // Left alone a while, what was let go comes back: a plant grows its leaves again, then another (rule 4 of Soltar)
+        if (!win && !breath && released > 0 && alone > IDLE_BACK && t - backAt > BACK) {
+            const away = plants.filter((pl) => pl.need && pl.state === 'away');
+            if (away.length) {
+                backAt = t;
+                away[Math.floor(Math.random() * away.length)].state = 'back';
+                released -= 1;
             }
         }
 
@@ -413,7 +457,8 @@
     };
 
     const touchMoon = (event) => {
-        if (event?.clientX !== undefined && dropAt(fromEvent(event))) return;
+        if (event?.clientX !== undefined && plantAt(fromEvent(event))) return;
+        alone = 0;
         play('star');
         rockV += 26;
         flare = 1;
@@ -472,6 +517,7 @@
                     const img = node.image('/assets/ciclos/plants.webp', { crop: pl.crop, wind });
                     if (side) img.sx = -1;
                     grown.push({ img, side, pl });
+                    pl.copies.push({ img, side, wind: wind.amp });
                 });
             });
             node.enter({ y: 30 + 15 * p, delay: 80 * p, duration: 1700 });
@@ -590,10 +636,10 @@
         lastT = t;
         stage.look(x * SLIDE, y * SLIDE_Y);
 
-        // ---- Day and night: the edge flows, the drops sway (and go, and come back)
+        // ---- Day and night: the edge flows, the drops sway
         L.sky.uniforms.uWave.value.set(WAVE.amp * k() * ramp, WAVE.length * k(), t * WAVE.speed, F.y);
         L.sky.bubbles = moveDrops(t, ramp);
-        const { named, charge: held } = game(t, dt);
+        const { named, charge: held } = game(t, dt, ramp);
 
         // ---- The clouds drift from left to right and wrap round, rising and falling a little
         clouds.forEach((c) => {
@@ -660,6 +706,7 @@
         stage = made;
         stageEl = root.value.closest('.stage');
         build(stage);
+        hand = createGhostHand(stage, { color: 0x143246, shade: 0xf7f8f1 });   // navy: the cream hand does not read on the day's yellow
         stage.onResize((w, h) => place(w, h));
         const after = (node) => node.mesh.renderOrder + 0.5;
         // Every star, and its reflections about the frame's edges that fall on the screen and well inside the night
@@ -695,7 +742,7 @@
         if (reduced) dust.reveal();
         parallax = createParallax(root.value, frame);
         root.value.addEventListener('pointerdown', press);
-        if (import.meta.env.DEV) root.value.__game = { get drops() { return drops; }, get released() { return released; }, get win() { return win; }, get dent() { return dent; } };
+        if (import.meta.env.DEV) root.value.__game = { get plants() { return plants; }, get released() { return released; }, get win() { return win; }, get dent() { return dent; }, centres: () => needed().map(centreOf) };
         enter();
     };
 
@@ -709,6 +756,7 @@
         window.removeEventListener('pointercancel', breatheOut);
         parallax?.destroy();
         dust?.destroy();
+        hand?.destroy();
         stage?.destroy();
     });
 </script>

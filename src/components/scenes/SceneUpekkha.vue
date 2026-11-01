@@ -27,6 +27,7 @@
     import { startStardust } from '../../composables/useStardust.js';
     import { createSparks } from '../../composables/useSparks.js';
     import { play } from '../../composables/useSound.js';
+    import { createGhostHand, gesture, HINT_AFTER } from '../../composables/useGhostHand.js';
     import { sceneMilestone } from '../../analytics.js';
     import Rulito from '../Rulito.vue';
     import art from '../../composables/upekkhaScene.json';
@@ -60,8 +61,9 @@
     const sy = (y) => F.y + y * k();
     const rectOf = ([left, top, w, h]) => ({ left: sx(left), top: sy(top), w: w * k(), h: h * k() });
     const SPAN = 1500, FOCUS = 1075;        // art px across that must be seen on a phone, and their middle
-    const BOTTOM = 1640, SID_TOP = 560;     // wide screens: the art row at the bottom, and the top of Sid's head
-    const TOP = 130;                        // px left over him for the card's name
+    const BOTTOM = 1640;                    // wide screens: the art row at the bottom of the screen
+    const RULITO_TOP = art.rulito[1] - 20;  // and the highest art row that must be seen: the top of the rulito over him
+    const nameClear = (h) => 0.11 * h + 70; // px the card's name takes at the top (it sits at about a tenth of the height)
     const layout = (w, h) => {
         W = w; H = h;
         const phone = w < h;
@@ -73,9 +75,10 @@
             return;
         }
         // On a wide screen the drawing fills the width (its mirrored copies stay out of sight) and goes on under the
-        // bottom of the screen, as far as Sid and a strip of ground in front of him still show; only a screen too wide
-        // for that leaves room at the sides
-        const size = Math.min(w, Math.max(0.4 * w, (h - TOP) * SIZE / (BOTTOM - SID_TOP)));
+        // bottom of the screen, as far as Sid and a strip of ground in front of him still show, and the rulito born over
+        // his head stays under the card's name; a screen too wide for that leaves room at the sides (the land goes on
+        // there, mirrored)
+        const size = Math.min(w, Math.max(0.4 * w, (h - nameClear(h)) * SIZE / (BOTTOM - RULITO_TOP)));
         F = { x: w / 2 - size / 2, y: h - BOTTOM * size / SIZE, size };
     };
 
@@ -111,6 +114,11 @@
     let lean = 0, leanV = 0;                // Sid off the centre (-1 left .. 1 right), and how fast it changes
     let calm = 0;                           // his aura: a step brighter with each thought let go
     let idle = 0;
+    let alone = 0;                          // s since the last touch (idle is also reset by the hint)
+    let backAt = 0;
+    const IDLE_BACK = 15, BACK = 4;         // left alone 15 s, a thought let go comes back, then another every 4 s
+    let hand = null;                        // the ghost hand: left alone 7 s, it touches the thought that shines
+    let hands = 0;                          // how many times it has shown, so every third one is the held breath
     let win = null;
     let wins = 0;
     let started = false;
@@ -158,6 +166,7 @@
         th.pop = 0;
         released += 1;
         idle = 0;
+        alone = 0;
         const c = th.side < 0 ? FUTURE : MINT;
         sparks.burst(th.x, th.y, { n: Math.round(16 + 10 * th.held), colors: [c, AURA, c], speed: 70 + 40 * th.held, life: 1.8, size: 4.2, spread: th.r * 0.8 });
         if (!quiet) play(clung ? 'exhale' : 'release');
@@ -194,6 +203,7 @@
         const th = thoughtAt(onCanvas(event));
         if (!th) return;
         idle = 0;
+        alone = 0;
         held = { thought: th, pointerId: event.pointerId, at: lastT };
         th.state = 'held';
         window.addEventListener('pointerup', release);
@@ -225,6 +235,7 @@
     const touchSid = (event) => {
         if (event?.clientX !== undefined && thoughtAt(onCanvas(event))) return;
         idle = 0;
+        alone = 0;
         if (reduced || breath) return;
         breath = { pointerId: event?.pointerId, at: lastT, breathing: false };
         window.addEventListener('pointerup', breatheOut);
@@ -237,6 +248,7 @@
         const { breathing } = breath;
         breath = null;
         idle = 0;
+        alone = 0;
         const clinging = thoughts.filter((th) => th.state === 'stuck');
         if (charge >= 1 && !win && clinging.length) {
             play('exhale');
@@ -252,6 +264,7 @@
         if (event.key !== 'Enter' && event.key !== ' ') return;
         event.preventDefault();
         idle = 0;
+        alone = 0;
         const h = headAt();
         const list = alive().sort((a, b) => Math.hypot(a.x - h.x, a.y - h.y) - Math.hypot(b.x - h.x, b.y - h.y));
         if (list.length && !reduced && !win) letGoOf(list[0]);
@@ -444,14 +457,33 @@
         lean += leanV * dt;
 
         calm += ((released / TOTAL) - calm) * Math.min(1, dt * 2);
-        // The hint, without words: still a while, the thought nearest to him shines (let it go)
-        if (!held && !win && idle > 7) {
-            const list = alive().sort((a, b) => Math.hypot(a.x - h.x, a.y - h.y) - Math.hypot(b.x - h.x, b.y - h.y));
-            if (list.length) {
-                idle = 0;
-                list[0].hint = 1;
-                sparks.burst(list[0].x, list[0].y, { n: 6, colors: [AURA], speed: 35, life: 1, size: 3, spread: list[0].r });
+        // The hint, without words: still a while, the thought nearest to him shines (let it go), and the ghost hand
+        // touches it, following it; every third time the hand holds Sid instead, because nothing else shows that
+        // holding him is a breath. With reduced motion there is no hand: the thought only shines, as before.
+        const nearest = () => alive().filter((th) => th.state !== 'held')
+            .sort((a, b) => Math.hypot(a.x - h.x, a.y - h.y) - Math.hypot(b.x - h.x, b.y - h.y))[0];
+        const shine = (th) => {
+            th.hint = 1;
+            sparks.burst(th.x, th.y, { n: 6, colors: [AURA], speed: 35, life: 1, size: 3, spread: th.r });
+        };
+        if (hand) {
+            if (hand.due(HINT_AFTER, !held && !breath && !win && !!nearest())) {
+                hands += 1;
+                const th = nearest();
+                if (hands % 3 === 0 && th.state === 'stuck') hand.play(gesture.hold(sidHit.value, 2.4));
+                else { shine(th); hand.play(gesture.tap(() => [th.x, th.y])); }
             }
+        } else if (!held && !win && idle > 7) {
+            const th = nearest();
+            if (th) { idle = 0; shine(th); }
+        }
+        // Left alone a while, what was let go comes back, little by little (a thought is taken back every BACK s and
+        // comes in again): his aura dims with it. Not while he is still, with the rulito.
+        alone += dt;
+        if (!win && !held && !breath && released > 0 && released < TOTAL && alone > IDLE_BACK && t - backAt > BACK) {
+            backAt = t;
+            released -= 1;
+            spawned = Math.max(0, spawned - 1);
         }
 
         // The rulito: born over his head, kept a while, then its tail catches its head and a new round begins
@@ -1072,6 +1104,7 @@
         stage = made;
         stageEl = root.value.closest('.stage');
         build(stage);
+        hand = createGhostHand(stage, { color: 0x143246, shade: 0xf7f8f1 });   // navy: the cream hand does not read on the mint
         stage.onResize((w, h) => place(w, h));
         const after = (node, n = 0) => node.mesh.renderOrder + 0.5 + n * 0.01;
         const fromArt = (list, colour, scale = 1) => list.map(([x, y, r]) => [sx(x), sy(y), Math.max(1.2, 2 * r * k() * scale), colour]);
@@ -1115,6 +1148,7 @@
         gone = true;
         parallax?.destroy();
         dust?.destroy();
+        hand?.destroy();
         stage?.destroy();
         stageEl?.style.removeProperty('--name-glow');
         root.value?.removeEventListener('pointerdown', press);

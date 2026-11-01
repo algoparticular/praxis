@@ -924,6 +924,15 @@ export async function createVipassanaField(stage, container, { onEvent = null } 
             });
             return count;
         },
+        // Left alone, what was let go comes back little by little: one of the cells that are gone gathers itself again
+        // at once. False when there is none gone.
+        gatherOne() {
+            const gone = cells.filter((cell) => cell.state === 'hold');
+            if (!gone.length) return false;
+            const cell = gone[Math.floor(Math.random() * gone.length)];
+            cell.hold = cell.timer;
+            return true;
+        },
         // One slow breath (breathCurve.js): the cells, the matter and the light lean in towards the character and let go.
         // False when one is already going. With hold it waits full at the top until releaseBreath(), and while it waits it
         // catches the cells nearest to the character (CATCH of them, one after the other); a breath that is not held
