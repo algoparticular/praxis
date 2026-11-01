@@ -55,13 +55,17 @@
     // ---- Layout: the illustration is a 2160x2700 portrait. Its drawing goes from the top of the balloon to the bottom
     // of the leaf (TOP..BOTTOM), and it is kept under the card's name. On a phone upright it is as wide as the ring and
     // the leaf allow (SPAN, centred on FOCUS) and the height left over is shared out: what is above the planet goes up,
-    // what is below it goes down (`spread`). On a wide screen the drawing fills the height and the stars go on past it
+    // the doodles below it go down (`spread`), the leaf boat stays (LEAF_SINK). On a wide screen the drawing fills the height and the stars go on past it
     const [SW] = art.size;
     const B = art.boxes;
     const TOP = 170, BOTTOM = 2350;
     const SPAN = 1900, FOCUS = 1110;
     let F = { x: 0, y: 0, size: 1 };
     let spread = 0;
+    // How far the leaf boat goes down with the spare height on a phone: none (Juan Manuel, 1 November: going down with
+    // the doodles it sat in the bottom corner); it stays where the drawing has it, under the ring
+    const LEAF_SINK = 0;
+    let low = 0;
     const k = () => F.size / SW;
     const sx = (x) => F.x + x * k();
     const sy = (y) => F.y + y * k();
@@ -77,6 +81,7 @@
         const x = phone ? w / 2 - FOCUS * kk : w / 2 - 1060 * kk;
         const spare = Math.max(0, room - (BOTTOM - TOP) * kk);
         spread = phone ? Math.min(spare * 0.3, 0.35 * SW * kk) : 0;
+        low = spread * LEAF_SINK;
         F = { x, y: top + spare / 2 - TOP * kk, size };
     };
 
@@ -286,7 +291,7 @@
     const particularAt = () => {
         if (!L.particular) return { x: 0, y: 0 };
         const b = B.particular;
-        return L.particular.toScreen(sx(b[0] + b[2] / 2), sy(b[1] + b[3] * 0.45) + spread);
+        return L.particular.toScreen(sx(b[0] + b[2] / 2), sy(b[1] + b[3] * 0.45) + low);
     };
     const fromEvent = (event) => {
         const area = canvas.value.getBoundingClientRect();
@@ -496,7 +501,7 @@
         let best = null, near = Infinity;
         Object.entries(TOUCH).forEach(([name, [x, y]]) => {
             const node = nodes[name];
-            const dy = name === 'leaf' ? spread : name === 'marble' ? 0 : -spread;
+            const dy = name === 'leaf' ? low : name === 'marble' ? 0 : -spread;
             const p = node.toScreen(sx(x), sy(y) + dy);
             const reach = name === 'marble' ? P.r * k() * 1.1 : Math.max(48, 260 * k());
             const d = Math.hypot(p.x - at.x, p.y - at.y);
@@ -587,20 +592,20 @@
         L.body.place(rectOf(B.balloon, up), knot);
         L.hanger.place(rectOf(B.hanger, up), knot);
 
-        const leaf = rectOf(B.leaf, down);
+        const leaf = rectOf(B.leaf, low);
         L.leafGroup.pivot = { x: leaf.left + leaf.w * 0.45, y: leaf.top + leaf.h * 0.8 };
         L.leaf.place(leaf);
-        const body = rectOf(B.particular, down);
+        const body = rectOf(B.particular, low);
         L.particular.pivot = { x: body.left + body.w / 2, y: body.top + body.h };
         L.sid.place(body, L.particular.pivot);
-        const eyes = rectOf(B.eyes, down);
+        const eyes = rectOf(B.eyes, low);
         L.eyes.place(eyes);
-        const kit = rectOf(B.kitten, down);
+        const kit = rectOf(B.kitten, low);
         L.kitten.place(kit, { x: kit.left + kit.w / 2, y: kit.top + kit.h });
         const ld = body.h * 2.6;
         L.love.place({ left: body.left + body.w / 2 - ld / 2, top: body.top + body.h * 0.45 - ld / 2, w: ld, h: ld });
         // The rulito where the card draws it, over his head (its canvas is bigger than the glyph, for the glow)
-        const r = rectOf(art.rulito.box, down);
+        const r = rectOf(art.rulito.box, low);
         const gw = r.h * 32 / 86;
         glyph = { left: r.left + r.w / 2 - gw / 2, top: r.top, w: gw, h: r.h };
         L.rulito.place({ left: glyph.left - 0.4375 * glyph.w, top: glyph.top - 0.1628 * glyph.h, w: glyph.w * 1.875, h: glyph.h * 1.3256 },
@@ -612,7 +617,7 @@
     const placeHit = () => {
         const el = partHit.value;
         if (!el || !L.particular) return;
-        const b = L.particular.boxOnScreen(rectOf(B.particular, spread));
+        const b = L.particular.boxOnScreen(rectOf(B.particular, low));
         const bw = Math.max(64, b.width * 1.3), bh = Math.max(64, b.height * 1.1);
         el.style.translate = `${(b.left + b.width / 2 - bw / 2).toFixed(1)}px ${(b.top + b.height / 2 - bh / 2).toFixed(1)}px`;
         el.style.width = `${bw.toFixed(1)}px`;
