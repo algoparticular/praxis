@@ -26,6 +26,7 @@
     import { createCellWater } from '../../composables/useCellWater.js';
     import { createSparks } from '../../composables/useSparks.js';
     import { createKindle, FIRE } from '../../composables/useKindle.js';
+    import { createGhostHand, gesture, HINT_AFTER } from '../../composables/useGhostHand.js';
     import { play } from '../../composables/useSound.js';
     import { sceneMilestone } from '../../analytics.js';
     import Rulito from '../Rulito.vue';
@@ -186,6 +187,7 @@
     let beacon = 0;
     let stand = 0;                          // the being uncurls a little while the crown is lit
     let hint = 0;
+    let hand = null;                        // the ghost hand, showing the gesture
     let embers = 0;
     let anchor = null;                      // where the being was in the water when the sling was taken
     const geo = { cx: 0, cy: 0, R: 1, sx: 0, sy: 0 };   // on the canvas: the cell's centre and radius, the being
@@ -261,6 +263,18 @@
         kindler.launch(tx / Math.hypot(tx, ty), ty / Math.hypot(tx, ty), 0.8);
     };
 
+    // The unlit one nearest in angle to where the being is (the one a sling there would light), and a point on the wall
+    const nearestUnlit = () => {
+        const me = water.swimmer;
+        const a = Math.atan2(me.y - CELL.y, me.x - CELL.x);
+        const todo = SWAYING.map((p, i) => i).filter((i) => !on[i]);
+        return todo.length ? todo.reduce((best, j) => (apart(angleOf(j), a) < apart(angleOf(best), a) ? j : best)) : null;
+    };
+    const wallAt = (a) => {
+        const w = L.planet.toScreen(F.x + (CELL.x + Math.cos(a) * CELL.r) * F.size, F.y + (CELL.y + Math.sin(a) * CELL.r) * F.size);
+        return [w.x, w.y];
+    };
+
     // It hits the wall of the cell: the bulb or mushroom on that side, if it is still unlit, catches
     const hitWall = (x, y) => {
         const a = Math.atan2(y - CELL.y, x - CELL.x);
@@ -331,10 +345,19 @@
             sparks.burst(geo.sx, geo.sy, { n: mode === 'flying' ? 3 : 2, colors: FIRE, speed: 20 + 40 * charge, life: mode === 'flying' ? 0.7 : 1.1, size: 2.5 + 2.5 * charge, spread: 10 });
         }
         // The hint, without words: still for a while, a spark crackles on the being (rub it), or on fire it beats (sling it)
-        if (!kindler.rubbing && !kindler.aiming && !win && mode !== 'flying' && kindler.idle > 7) {
+        const quiet = !kindler.rubbing && !kindler.aiming && !win && mode !== 'flying';
+        if (hand ? hand.due(HINT_AFTER, quiet) : quiet && kindler.idle > HINT_AFTER) {
             kindler.idle = 0;
             hint = 1;
             if (!reduced) sparks.burst(geo.sx, geo.sy, { n: 8, colors: FIRE, speed: 50, life: 0.9, size: 3.5, spread: 8 });
+            // and the ghost hand shows the gesture: cold, rubbing on the being (anywhere in the cell rubs); on fire,
+            // pulling it back away from the wall by the nearest unlit one and letting go
+            const being = () => [geo.sx, geo.sy];
+            if (mode === 'cold') hand?.play(gesture.rub(being, Math.min(40, geo.R * 0.3)));
+            else {
+                const to = nearestUnlit();
+                if (to != null) hand?.play(gesture.sling(being, () => wallAt(angleOf(to)), Math.min(90, geo.R * 0.5)));
+            }
         }
         hint = Math.max(0, hint - dt * 1.4);
         // The rulito: born after the chord has resolved, kept a while, then its tail catches its head and everything fades
@@ -577,6 +600,7 @@
                 { ...sparks.group(), order: 1e6 },
             ],
         });
+        hand = createGhostHand(stage);
         parallax = createParallax(root.value, frame);
         enter();
     };
@@ -589,6 +613,7 @@
         sky?.destroy();
         glow?.destroy();
         front?.destroy();
+        hand?.destroy();
         stage?.destroy();
         stageEl?.style.removeProperty('--name-glow');
         kindler.destroy();

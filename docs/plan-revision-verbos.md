@@ -37,8 +37,9 @@ if (!held && !won && hand?.due(6)) hand.play(gesture.hold(someHit.value, 2.4));
 - **Tiempo quieto: siempre 7 segundos** (`HINT_AFTER`), decidido por Juan Manuel, que probó la mano. La mano lleva su propia cuenta, con reloj real: `hand.due(HINT_AFTER, wanted)`. `wanted` dice si el juego quiere mostrarse ahora (no mientras se juega, ni mientras vive un rulito). Mientras es falso la cuenta vuelve a cero, así que **después de ganar también espera 7 segundos enteros**, en lugar de aparecer enseguida. Si la escena tiene su propio temporizador de pista, ese también tiene que volver a cero mientras se juega o se gana (así quedó Pañña).
 - Cualquier toque o tecla la hace irse al instante. Con movimiento reducido no aparece. `play(…, { loops })` dice cuántas veces repite el gesto (2 por defecto).
 
-**Aspecto: aprobado por Juan Manuel** (tamaño, brillo, velocidad y 2 repeticiones). Queda un pendiente:
-- **Contraste sobre fondos muy claros:** donde el dedo no se vea (el caminante crema de Viriya, cielos claros), buscarle contraste de alguna forma. Opciones: un halo oscuro más fuerte (hoy 0.13), un color por carta (`createGhostHand(stage, { color })`), o que el motor elija solo un color según lo que hay debajo. Se prueba y se le muestra a Juan Manuel.
+**Aspecto: cerrado** (Juan Manuel, 1 de noviembre: tamaño, brillo, velocidad y 2 repeticiones).
+- **Contraste:** la mano es crema por defecto. En las cartas claras, o donde hace el gesto sobre algo crema, va navy con un halo crema: `createGhostHand(stage, { color: 0x143246, shade: 0xf7f8f1 })`. Hoy así en Paciencia, Khanti y Viriya. Cada paquete, al conectar la mano en una carta, mira el contraste y le pone ese color si hace falta (decidido: se ajusta el color carta por carta).
+- **Fluir:** `gesture.slide(path, dur, { even: true })` desliza sin suavizado, para un recorrido que ya trae su ritmo: `flow.hintPath(len, map, t0)` da el de la corriente, a su paso desparejo desde `t0` (así en Khanti; las otras de Fluir lo usan igual en su revisión).
 - **Este archivo se toca solo desde un chat a la vez**, para no pisarse. Los demás paquetes solo lo usan.
 
 ## Etapa 1: un ejemplo por verbo, en las primeras cartas de cada verbo
@@ -48,11 +49,11 @@ Antes de llevar la mano a todas las cartas, se conecta en la primera carta que s
 | Verbo | Carta de ejemplo | Gesto de la mano | Estado |
 |---|---|---|---|
 | Arraigar | 27 Paciencia | `hold` sobre la piña | ✅ hecho |
-| Soltar | 31 Vipassana | `tap` sobre la célula que hoy brilla (`cellField.hint()`, `startHints`); a veces `hold` sobre Sid (la respiración atrapa un tercio de las células) | falta |
-| Fluir | 5 Khanti | `slide` por el tramo de ruta delante de la cabeza (`flow.point(i)` da los puntos; ver el paquete C, que propone llevarlo a `useFlow.js`) | falta |
-| Encender | 22 Evolución | en frío `rub` dentro de la célula; encendido `sling` del ser hacia lo próximo apagado (modelo: Viriya, que también está hecha) | falta |
-| Dar y recibir | 2 Dana | `tap` sobre el receptor que hoy titila (`flash` de `useGiving.js`) | falta |
-| Resonar | 29 Sincronicidad | `tap` a tiempo sobre la burbuja que brilla en su pulso, lanzado `TAP_LEAD` antes del pulso (hoy no tiene ninguna pista por inactividad) | falta |
+| Soltar | 31 Vipassana | `tap` sobre la célula que hoy brilla (`cellField.hint()`, `startHints`); a veces `hold` sobre Sid (la respiración atrapa un tercio de las células) | ✅ hecho (falta probar en un teléfono) |
+| Fluir | 5 Khanti | `slide` por el tramo de ruta delante de la cabeza (`flow.point(i)` da los puntos; ver el paquete C, que propone llevarlo a `useFlow.js`) | ✅ hecho (falta probar en un teléfono) |
+| Encender | 22 Evolución | en frío `rub` dentro de la célula; encendido `sling` del ser hacia lo próximo apagado (modelo: Viriya, que también está hecha) | ✅ hecho (falta probar en un teléfono) |
+| Dar y recibir | 2 Dana | `tap` sobre el receptor que hoy titila (`flash` de `useGiving.js`) | ✅ hecho (falta probar en un teléfono) |
+| Resonar | 29 Sincronicidad | `tap` a tiempo sobre la burbuja que brilla en su pulso, lanzado `TAP_LEAD` antes del pulso (hoy no tiene ninguna pista por inactividad) | ✅ hecho (falta probar en un teléfono) |
 | Ver | 3 Pañña | `drag` entre las dos luces del primer hilo que falta | ✅ hecho |
 
 Viriya (Encender) también está hecha y sirve de modelo para el `sling`.
@@ -396,8 +397,8 @@ Gestos de la mano: `drag` entre las dos luces del primer hilo que falta (Pañña
 
 ## Orden
 
-1. **Etapa 1:** conectar la mano en Vipassana, Khanti, Evolución, Dana y Sincronicidad. Paciencia y Pañña ya están. Se puede repartir: son escenas distintas que no se pisan.
-2. **Paquete 0:** Juan Manuel prueba las siete en un teléfono y se cierra el aspecto de la mano.
+1. **Etapa 1:** ✅ la mano está en las siete cartas de ejemplo (Vipassana, Khanti, Evolución, Dana y Sincronicidad, PR #85). Falta probarlas en un teléfono.
+2. **Paquete 0:** ✅ cerrado. El aspecto de la mano está aprobado; el color se ajusta por carta donde falte contraste.
 3. **Paquete H, puntos 1 a 4**, en paralelo con lo anterior: documentar lo ya decidido. ✅ Hecho.
 4. **Después del paquete 0, dos frentes a la vez:**
    - **En paralelo, los paquetes A a G**, solo para las 14 cartas que no son del 31/10. Empezar por:
@@ -416,7 +417,7 @@ Gestos de la mano: `drag` entre las dos luces del primer hilo que falta (Pañña
 - **Soles y lunas (paquete S):** si Perdón (un planeta con contorno) y Confianza (una luz) entran, y en cada uno si queda todo de puntos o el disco con el borde disuelto.
 
 **Ya decididas** (1 de noviembre):
-- **La mano:** el aspecto está bien. Sobre fondos muy claros se le busca contraste.
+- **La mano:** el aspecto está bien. Donde falte contraste, se le ajusta el color en esa carta (navy con halo crema).
 - **Creatividad, Evolución y Hogar:** el rulito va sobre la cabeza del personaje.
 - **Esperanza:** tres ancestros zorros: A (cabeza de frente), C (caminando) y F (la cola enroscada).
 - **Nekkhamma, y todas las de Soltar y Arraigar:** dejadas solas, vuelven atrás (regla 4).
