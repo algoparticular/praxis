@@ -13,7 +13,8 @@ export function createSparks(capacity = 480) {
     let head = 0;
     let lastT = 0;
 
-    const burst = (px, py, { n = 24, colors = [0xffe47d], speed = 110, life: lifetime = 2.4, size: dot = 5, spread = 6 } = {}) => {
+    // push: [vx, vy] px/s added to every spark (a wind that carries them off, as Ciclos's dry leaves)
+    const burst = (px, py, { n = 24, colors = [0xffe47d], speed = 110, life: lifetime = 2.4, size: dot = 5, spread = 6, push = null } = {}) => {
         for (let k = 0; k < n; k++) {
             const i = head;
             head = (head + 1) % capacity;
@@ -22,8 +23,8 @@ export function createSparks(capacity = 480) {
             const c = colors[Math.floor(Math.random() * colors.length)];
             x[i] = px + Math.cos(angle) * spread * Math.random();
             y[i] = py + Math.sin(angle) * spread * Math.random();
-            vx[i] = Math.cos(angle) * v;
-            vy[i] = Math.sin(angle) * v - 18;
+            vx[i] = Math.cos(angle) * v + (push ? push[0] * (0.6 + Math.random() * 0.8) : 0);
+            vy[i] = Math.sin(angle) * v - 18 + (push ? push[1] * (0.6 + Math.random() * 0.8) : 0);
             span[i] = life[i] = lifetime * (0.6 + Math.random() * 0.6);
             size[i] = dot * (0.7 + Math.random() * 0.8);
             rgb.set([(c >> 16 & 255) / 255, (c >> 8 & 255) / 255, (c & 255) / 255], i * 3);

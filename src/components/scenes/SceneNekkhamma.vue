@@ -20,6 +20,7 @@
     import { startStardust } from '../../composables/useStardust.js';
     import { createGalaxy } from '../../composables/useGalaxy.js';
     import { play } from '../../composables/useSound.js';
+    import { createGhostHand, gesture, HINT_AFTER } from '../../composables/useGhostHand.js';
     import { sceneMilestone } from '../../analytics.js';
     import Rulito from '../Rulito.vue';
     import art from '../../composables/nekkhammaScene.json';
@@ -129,6 +130,8 @@
     let win = null;                     // he is the cloud; it gives him back with the rulito
     let invite = 3;                     // when the next motes leave his feet while he is still whole
     let glyph = { left: 0, top: 0, w: 1, h: 1 };
+    let hand = null;                    // the ghost hand: left alone, it touches the bud that glows (and now and then holds him)
+    let hands = 0;                      // how many times it has shown, so every third one is the held breath
     const HOLD = 0.45;                  // s pressed before a press becomes a breath
     const BREATH = 1.8;                 // s more to gather it whole
     const IDLE = 15;                    // s alone before he takes back a part (a thread grows back)
@@ -372,12 +375,14 @@
         el.style.display = win ? 'none' : '';
     };
 
+    const seen = ANCHORS.map(() => false);  // whether each bud is on the screen (on a phone some are past its edges)
     // A circle round what each thread is tied to, for the finger (at least 44px), while its thread is there
     const placeTies = () => {
         ties.value.forEach((el, i) => {
             if (!el || !L.groundNode) return;
             const a = ANCHORS[i];
             const p = L.groundNode.toScreen(sx(a.x), sy(a.y));
+            seen[i] = p.x > 0 && p.x < stage.canvas.clientWidth && p.y < stage.canvas.clientHeight;
             const d = Math.max(44, 150 * k());
             el.style.translate = `${(p.x - d / 2).toFixed(1)}px ${(p.y - d / 2).toFixed(1)}px`;
             el.style.width = el.style.height = `${d.toFixed(1)}px`;
@@ -512,13 +517,22 @@
 
         // The threads grow out of him (at the start, and when one grows back); left alone, one of them glows now and
         // then: that is one to cut
+        // (one whose bud is on the screen: on a phone some are past its edges)
+        const free = threads.findIndex((th, i) => th.on && th.grow >= 1 && seen[i]);
         const hinting = !win && t - lastTouch > HINT && ramp > 0.9;
-        const hinted = hinting ? threads.find((th) => th.on && th.grow >= 1) : null;
+        const hinted = hinting && free >= 0 ? threads[free] : null;
         threads.forEach((th) => {
             if (th.on && ramp > 0.4) th.grow = Math.min(1, th.grow + dt / 1.6);
             const want = th === hinted ? 0.5 + 0.5 * Math.sin((t - lastTouch) * 3.2 - Math.PI / 2) : 0;
             th.pulse += (want - th.pulse) * Math.min(1, dt * 6);
         });
+        // Left alone 7 s, the ghost hand touches that same bud; every third time it holds him instead, because nothing
+        // else shows that holding him is a breath (it waits again while he is pressed or he is the cloud)
+        if (hand?.due(HINT_AFTER, !win && pressAt === null && free >= 0 && ramp > 0.9)) {
+            hands += 1;
+            if (hands % 3 === 0) hand.play(gesture.hold(hit.value, 2.6));
+            else hand.play(gesture.tap(ties.value[free]));
+        }
 
         // While he is whole and nobody has touched him, a few motes leave his feet now and then: he could let go
         if (!win && tied() === ANCHORS.length && level < 0.01 && t - lastTouch > 6 && t > invite && ramp > 0.9 && !reduced) {
@@ -639,6 +653,7 @@
         stage = made;
         stageEl = root.value.closest('.stage');
         build(stage);
+        hand = createGhostHand(stage);
         stage.onResize((w, h) => place(w, h));
         const after = (node) => node.mesh.renderOrder + 0.5;
         dust = startStardust(null, {
@@ -677,6 +692,7 @@
         window.removeEventListener('pointercancel', letGo);
         parallax?.destroy();
         dust?.destroy();
+        hand?.destroy();
         stage?.destroy();
         stageEl?.style.removeProperty('--name-glow');
     });
