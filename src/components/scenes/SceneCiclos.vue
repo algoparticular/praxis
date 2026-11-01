@@ -296,6 +296,7 @@
         flare = 1;
         glowSid = 1;
         dust?.boost(0, 1.6);
+        dust?.boost(5, 1.2);
         dust?.boost(2, 1.4);
         sceneMilestone('cycle_closed', { times: wins, breath: breathUsed });
         breathUsed = false;
@@ -463,6 +464,7 @@
         rockV += 26;
         flare = 1;
         dust?.boost(0, 1);
+        dust?.boost(5, 0.8);
         dust?.boost(1, 0.6);
     };
     const onKey = (fn) => (event) => {
@@ -483,12 +485,12 @@
             clouds.filter((c) => c.depth === d).forEach((c) => { L.clouds[c.i] = node.image('/assets/ciclos/clouds.webp', { crop: c.crop }); });
             node.enter({ y: -20, delay: 200 + 150 * d, duration: 2000 });
         });
-        // The sun: a warm light over the sky round it, its disc (code) and, among the layers, its corona as particles
+        // The sun: a warm light over the sky round it and, among the layers, its body and its corona as particles (it
+        // has no disc: it is all stipple, as Pañña's, so its edge melts into the sky)
         const sun = s.depth(zFor(DEPTH.sun));
         L.sunNode = sun;
         L.warm = sun.glow({ rect: { left: 0, top: 0, w: 1, h: 1 }, color: 0xffa070, stops: [[0, 0.28], [0.3, 0.1], [0.7, 0]] });
         L.sunGlow = sun.glow({ rect: { left: 0, top: 0, w: 1, h: 1 }, color: SUN.color, stops: [[0, 0.7], [0.36, 0.3], [0.62, 0]], bloom: true });
-        L.sun = sun.disc({ rect: { left: 0, top: 0, w: 1, h: 1 }, color: SUN.color });
         // Its lights only over the day (over the night the moon is what is seen; the disc is under it, and bigger)
         L.warm.maskBy(L.sky, -1);
         L.sunGlow.maskBy(L.sky, -1);
@@ -575,9 +577,7 @@
         });
         span = { left: -SLIDE * 2 - widest / 2, width: w + SLIDE * 4 + widest };
 
-        const sr = SUN.r * k();
-        L.sun.place({ left: sx(SUN.x) - sr, top: sy(SUN.y) - sr, w: 2 * sr, h: 2 * sr });
-        const sg = sr * 3.6, wg = sr * 6;
+        const sr = SUN.r * k(), sg = sr * 3.6, wg = sr * 6;
         L.sunGlow.place({ left: sx(SUN.x) - sg / 2, top: sy(SUN.y) - sg / 2, w: sg, h: sg });
         L.warm.place({ left: sx(SUN.x) - wg / 2, top: sy(SUN.y) - wg / 2, w: wg, h: wg });
         L.moon.place(rectOf(B.moon), { x: sx(MOON.x), y: sy(MOON.y) });
@@ -685,6 +685,7 @@
         // The particles that belong to a layer follow it
         const sunDrift = stage.drift(L.sunNode.z), moonDrift = stage.drift(L.moonNode.z), sidDrift = stage.drift(L.sidNode.z);
         dust?.shift(0, sunDrift.x, sunDrift.y + L.sunNode.y);
+        dust?.shift(5, sunDrift.x, sunDrift.y + L.sunNode.y);
         dust?.turn(1, L.moon.rotate, sx(MOON.x), sy(MOON.y));
         dust?.shift(1, moonDrift.x + L.moonNode.x, moonDrift.y + L.moonNode.y);
         dust?.shift(2, sidDrift.x, sidDrift.y + L.sidNode.y);
@@ -722,13 +723,36 @@
             });
             return out;
         };
+        // The sun's body as Pañña's: a stipple, dense and with bigger dots where it is solid, thinning out past its
+        // radius along a ragged edge, so there is no line where it ends (the density Pañña reads from its picture is
+        // worked out here from the disc: solid inside 0.6 of it, gone a little past it)
+        const sunBody = () => {
+            const out = [];
+            const R = SUN.r, cell = 12, base = Math.max(1.5, 5.5 * k());
+            const smooth = (a, b, x) => { const q = Math.min(1, Math.max(0, (x - a) / (b - a))); return q * q * (3 - 2 * q); };
+            for (let v0 = SUN.y - 1.2 * R; v0 < SUN.y + 1.2 * R; v0 += cell) {
+                for (let u0 = SUN.x - 1.2 * R; u0 < SUN.x + 1.2 * R; u0 += cell) {
+                    const du = u0 + cell / 2 - SUN.x, dv = v0 + cell / 2 - SUN.y;
+                    const a = Math.atan2(dv, du);
+                    const ragged = 0.05 * Math.sin(a * 7 + 1.3) + 0.03 * Math.sin(a * 13 + 0.4);
+                    const v = 1 - smooth(0.6, 1.1 + ragged, Math.hypot(du, dv) / R);
+                    if (v < 0.03) continue;
+                    const dot = base * (1 + 1.3 * v ** 4);
+                    const wanted = (cell * k()) ** 2 * 4.8 * 1.6 * v ** 1.3 / (Math.PI / 4 * dot * dot);
+                    let n = Math.floor(wanted);
+                    if (Math.random() < wanted - n) n++;
+                    for (let i = 0; i < n; i++) out.push([sx(u0 + Math.random() * cell), sy(v0 + Math.random() * cell), dot * (0.8 + Math.random() * 0.4), SUN.color]);
+                }
+            }
+            return out;
+        };
         const fromArt = (list, colour, scale = 1) => list.map(([x, y, r]) => [sx(x), sy(y), Math.max(1.5, 2 * r * k() * scale), colour]);
         dust = startStardust(null, {
             stage,
             manual: true,
             groups: [
                 // 0: the sun's stippled corona, alive, only over the day
-                { colors: [SUN.color], parallax: 0, drift: 1.8, jitter: 0.5, twinkle: 0.3, reach: 0, order: after(L.sun), mask: { field: L.sky, side: -1 }, points: () => fromArt(SUN.dots, SUN.color, 1.4) },
+                { colors: [SUN.color], parallax: 0, drift: 1.8, jitter: 0.5, twinkle: 0.3, reach: 0, order: after(L.sunGlow) + 0.1, mask: { field: L.sky, side: -1 }, points: () => fromArt(SUN.dots, SUN.color, 1.4) },
                 // 1: the moon's stippled shade, only over the night
                 { colors: [SHADE], parallax: 0, drift: 0.4, jitter: 0.15, twinkle: 0.05, reach: 0, order: after(L.moon), mask: { field: L.sky, side: 1 }, points: () => fromArt(MOON.dots, SHADE, 1.5) },
                 // 2: Sid's aura, under him
@@ -737,6 +761,8 @@
                 { colors: [NIGHT.star], parallax: 0, drift: 1.2, jitter: 0, twinkle: 0.6, reach: 90, push: 10, order: after(L.sky), points: starPoints },
                 // 4: the motes of what is let go, in front of everything
                 { ...sparks.group(), order: 1e6 },
+                // 5: the sun's body, all stipple as Pañña's (no disc), only over the day, under its corona
+                { colors: [SUN.color], parallax: 0, drift: 2.2, jitter: 0.9, twinkle: 0.12, reach: 0, order: after(L.sunGlow), mask: { field: L.sky, side: -1 }, points: sunBody },
             ],
         });
         if (reduced) dust.reveal();
