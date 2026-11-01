@@ -82,14 +82,14 @@ Pedido de Juan Manuel: los soles y las lunas de este estilo vivo tienen que ser 
 | Escena | Qué es |
 |---|---|
 | 26 Honestidad | la luz de la superficie: ✅ hecha, toda de puntos como Pañña |
-| 4 Viriya | el sol |
+| 4 Viriya | el sol: ✅ disco con el borde disuelto |
 | 8 Metta | la gran luz amarilla y la luz turquesa: ✅ hechas, disco con el borde disuelto en su punteado |
-| 27 Paciencia | el sol |
+| 27 Paciencia | el sol: ✅ todo de puntos |
 | 11 Aceptación | el sol rosa |
 | 15 Ciclos | el sol rojo |
-| 24 Gratitud | los soles durazno y rosa |
-| 32 Transformación | el solcito de la copa |
-| 6 Sacca | la luna |
+| 24 Gratitud | los soles durazno y rosa: ✅ los dos, cada uno con el borde disuelto |
+| 32 Transformación | el solcito de la copa: ✅ su punteado de la carta (el disco queda bajo el anillo dibujado) |
+| 6 Sacca | la luna: ✅ disco con el borde disuelto |
 | 19 Coraje | la luna |
 | 18 Confianza | la luz de la chakana |
 | 28 Perdón | el planeta |

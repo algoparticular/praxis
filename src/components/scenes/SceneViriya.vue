@@ -19,6 +19,7 @@
     import { createParallax } from '../../composables/useParallax.js';
     import { createLayerStage } from '../../composables/useLayerStage.js';
     import { startStardust } from '../../composables/useStardust.js';
+    import { decodeCloud, sampleCloud } from '../../composables/stippleCloud.js';
     import { createSparks } from '../../composables/useSparks.js';
     import { createKindle, FIRE } from '../../composables/useKindle.js';
     import { createGhostHand, gesture, HINT_AFTER } from '../../composables/useGhostHand.js';
@@ -75,6 +76,7 @@
 
     const SUN = art.sun;
     const SUN_YELLOW = SUN.color;
+    const SUN_CLOUD = decodeCloud(SUN.cloud);   // its stippled band, from the card (scripts/sun-cloud.mjs)
     const AURA = 0xe9edd8;
     const ease = (p) => p * p * (3 - 2 * p);
     const SUN_RISE = 180;                   // how far the sun comes up when the way is lit (art px)
@@ -324,7 +326,8 @@
         skyH = h;
         paintSky(skyUp);
 
-        const sr = SUN.r * k();
+        // The disc only as big as where the band is still whole: the band's densest dots cover its edge
+        const sr = SUN.cloud.solid * k();
         L.sun.place({ left: sx(SUN.x) - sr, top: sy(SUN.y) - sr, w: 2 * sr, h: 2 * sr });
         const sg = sr * 4.2, dg = sr * 9;
         L.sunGlow.place({ left: sx(SUN.x) - sg / 2, top: sy(SUN.y) - sg / 2, w: sg, h: sg });
@@ -413,6 +416,7 @@
         // ---- The sun breathes, low; it comes up full and warms the sky when the way is lit
         const breath = Math.sin(t * 0.6);
         L.sun.scale = 1 + 0.012 * breath * ramp + 0.06 * sunUp;
+        dust?.grow(0, L.sun.scale - 1, sx(SUN.x), sy(SUN.y));
         L.sunGlow.opacity = 0.55 + 0.1 * breath + 0.4 * sunUp;
         L.sunGlow.scale = 1 + 0.04 * breath + 0.3 * sunUp;
         L.dusk.opacity = 0.25 + 0.55 * sunUp;
@@ -499,7 +503,8 @@
             manual: true,
             groups: [
                 // 0: the stippled edge of the sun, alive
-                { colors: [SUN_YELLOW], parallax: 0, drift: 2.2, jitter: 0.5, twinkle: 0.3, reach: 0, order: after(L.sun), points: () => fromArt(SUN.dots, SUN_YELLOW) },
+                { colors: [SUN_YELLOW], parallax: 0, drift: 2.2, jitter: 0.5, twinkle: 0.2, reach: 0, order: after(L.sun),
+                    points: () => sampleCloud(SUN_CLOUD, (u, v) => [sx(u), sy(v)], k()).map(([x, y, size]) => [x, y, size, SUN_YELLOW]) },
                 // 1: the aura round the walker, warmer as the staff is rubbed
                 { colors: [AURA], parallax: 0, drift: 1.6, jitter: 0.4, twinkle: 0.45, reach: 0, bloom: true, order: after(L.warmth), points: () => fromArt(art.aura, AURA, 1.3) },
                 // 2: the sling

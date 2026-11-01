@@ -6,6 +6,8 @@
 // shape of Sid's body (the inside of his outline, as a polygon), which the scene fills and makes glow in code (the
 // illustration's fill and glow, layer 10, are not used). All in px of the 2160 square. The originals are not kept in the repo once converted.
 // Usage: node scripts/convert-sacca.mjs
+// The moon's dots and colours it writes are no longer used: the scene draws the moon's band from `moon.cloud`, made by
+// scripts/sun-cloud.mjs (`node scripts/sun-cloud.mjs sacca`), which must be run after this.
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';

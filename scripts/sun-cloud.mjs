@@ -14,6 +14,8 @@
 // distance's, at random, as above); the cells inside `solid` (where the profile is still whole, less a few cells) are
 // left empty, and `solid` is written with the cloud, so the scene draws its disc that big and the densest dots of the
 // band cover its edge.
+// `shift` moves the cloud from the card's px to the scene's, where its frame is not the card's.
+// `index` picks one of several lights in the same entry (Gratitud's two suns, an array).
 // The skipped dots are circles [x, y, r] or boxes [x, y, w, h]; a cell mostly under them does not count in a profile.
 // A light the scene used to have as a picture gets its entry (centre, radius, colour) from `entry`.
 // Each card is a line of CARDS: where its light is, its colour, what is behind it, and which scene JSON it goes into
@@ -88,6 +90,75 @@ const CARDS = {
         color: (scene) => scene.sun.color,
         behind: (scene) => scene.sky.cream,
         skip: (scene) => [...scene.dots.map(([x, y, r]) => [x, y, r + 3]), ...scene.bits.map(([x, y, w, h]) => [x - 6, y - 6, w + 12, h + 12])],
+    },
+    // 4 Viriya: the sun going down behind the hills, over the dusk sky; the arcs keep above the hills
+    viriya: {
+        card: 4,
+        json: 'src/composables/viriyaScene.json',
+        key: 'sun',
+        color: (scene) => scene.sun.color,
+        behind: (scene, y) => nearest(scene.sky, y),
+        ring: { centre: (scene) => [scene.sun.x, scene.sun.y], from: (scene) => scene.sun.r - 60, arcs: [[-155, -35]] },
+    },
+    // 24 Gratitud: two suns, one inside the other, as Metta's lights: the peach one over the sea's teal and the pink
+    // one over the peach. Nothing is drawn over them. The scene's frame is the card's 63 px lower (its originals were
+    // cut otherwise), so the clouds are moved down onto the scene's suns
+    gratitud: {
+        card: 24,
+        json: 'src/composables/gratitudScene.json',
+        key: 'sun',
+        index: 0,
+        shift: [0, 63],
+        color: (scene) => scene.sun[0].color,
+        behind: (scene, y, card) => card.median(20, 300, y, 1860, 2140),
+        ring: { centre: () => [1089, 471], from: () => 140, to: () => 400, arcs: [[-180, 180]] },
+    },
+    'gratitud-pink': {
+        card: 24,
+        json: 'src/composables/gratitudScene.json',
+        key: 'sun',
+        index: 1,
+        shift: [0, 63],
+        color: (scene) => scene.sun[1].color,
+        behind: (scene) => scene.sun[0].color,
+        ring: { centre: () => [1089, 471], from: () => 60, to: () => 220, arcs: [[-180, 180]] },
+    },
+    // 6 Sacca: the great moon over the dusk sky (the sky read off the card on both sides, where the moon is not), the
+    // clouds drawn over it and the rulito left out; the arcs keep above the boat and clear of Sid
+    sacca: {
+        card: 6,
+        json: 'src/composables/saccaScene.json',
+        key: 'moon',
+        entry: () => ({ x: 1082, y: 1073, r: 506, color: 0xfefbd6 }),
+        color: 0xfefbd6,
+        behind: (scene, y, card) => card.median(0, 420, y, 1740, 2160),
+        skip: (scene) => [
+            ...scene.clouds.map(([, x, y, w, h]) => [x - 6, y - 6, w + 12, h + 12]),
+            (([x, y, w, h]) => [x + w / 2, y + h / 2, Math.max(w, h) / 2 + 10])(scene.rulito),
+        ],
+        ring: { centre: () => [1082, 1073], from: () => 420, arcs: [[-180, 5]] },
+    },
+    // 32 Transformación: the little sun in the palm's crown, inside its navy ring (drawn over it); its yellow stipple
+    // round the ring all dots, over the pink sky, its white stars left out
+    transformacion: {
+        card: 32,
+        json: 'src/composables/transformacionScene.json',
+        key: 'sun',
+        box: [600, 160, 320, 320],
+        color: (scene) => scene.sun.color,
+        behind: (scene, y) => nearest(scene.sky, y),
+        skip: (scene) => scene.stars.map(([x, y, r]) => [x, y, r + 3]),
+    },
+    // 27 Paciencia: the white sun over the teal sky; small, so all dots. The scene places it on its own (not in the card's
+    // frame), measuring it from `centre` and `r`, the solid middle, written with the cloud
+    paciencia: {
+        card: 27,
+        json: 'src/composables/pacienciaScene.json',
+        key: 'sun',
+        entry: () => ({ x: 1459, y: 392, r: 188, color: 0xf3f4f5 }),
+        box: [1150, 80, 620, 620],
+        color: 0xf3f4f5,
+        behind: (scene, y, card) => card.median(1800, 2140, y),
     },
 };
 
@@ -188,16 +259,18 @@ const make = async (name) => {
     const file = path.join(root, spec.json);
     const scene = JSON.parse(await readFile(file, 'utf8'));
     if (spec.entry) scene[spec.key] = { ...spec.entry(scene), ...(scene[spec.key] ?? {}) };
+    const entryOf = () => (spec.index === undefined ? scene[spec.key] : scene[spec.key][spec.index]);
     const { data, info } = await sharp(path.join(root, 'public', 'cards', `${spec.card}.webp`)).removeAlpha().raw().toBuffer({ resolveWithObject: true });
     const centre = spec.ring?.centre(scene);
     const reachOut = spec.ring?.to ? spec.ring.to(scene) : 900;
     const [bx, by, bw, bh] = spec.box ?? [Math.max(0, Math.round(centre[0] - reachOut)), Math.max(0, Math.round(centre[1] - reachOut)), Math.round(2 * reachOut), Math.round(2 * reachOut)];
     // The card's own colour in a strip of a row (the median, so its dots do not count), for a sky that is not flat
     const card = {
-        median(x0, x1, y) {
+        median(x0, x1, y, ...more) {
             const row = Math.max(0, Math.min(info.height - 1, Math.round(y)));
             const pixels = [];
-            for (let x = x0; x < x1; x++) { const i = (row * info.width + x) * 3; pixels.push([data[i], data[i + 1], data[i + 2]]); }
+            const strips = [[x0, x1], ...(more.length ? [[more[0], more[1]]] : [])];
+            strips.forEach(([a, b]) => { for (let x = a; x < b; x++) { const i = (row * info.width + x) * 3; pixels.push([data[i], data[i + 1], data[i + 2]]); } });
             const mid = (c) => pixels.map((p) => p[c]).sort((a, b) => a - b)[pixels.length >> 1];
             return (mid(0) << 16) | (mid(1) << 8) | mid(2);
         },
@@ -250,14 +323,28 @@ const make = async (name) => {
         }
         bytes[i] = n ? Math.round(sum / n) : 0;
     });
+    // In a box, the sky's own texture reads as a little light everywhere: the box's border cells (where the light has
+    // ended) give that floor, taken off every cell
+    if (!spec.ring) {
+        const border = [];
+        for (let col = 0; col < cols; col++) border.push(bytes[col], bytes[(rows - 1) * cols + col]);
+        for (let row = 0; row < rows; row++) border.push(bytes[row * cols], bytes[row * cols + cols - 1]);
+        const floor = border.sort((a, b) => a - b)[Math.floor(border.length * 0.75)];
+        if (floor > 0) {
+            for (let i = 0; i < bytes.length; i++) bytes[i] = Math.max(0, Math.round((bytes[i] - floor) * 255 / (255 - floor)));
+            console.log(name, 'floor', floor);
+        }
+    }
     let grid = { x: bx, y: by, cols, rows, bytes };
     if (spec.ring) grid = ringed(grid, scene, spec.ring, new Set(hidden));
     else if (spec.centre && by === 0) grid = complete(grid, spec.centre(scene));
-    scene[spec.key].cloud = { x: grid.x, y: grid.y, cell: CELL, cols: grid.cols, rows: grid.rows, color: light, data: Buffer.from(grid.bytes).toString('base64'), ...(grid.solid ? { solid: grid.solid } : {}) };
+    // A scene whose frame is not quite the card's (Gratitud's) moves the cloud onto its own light
+    const [mx, my] = spec.shift ?? [0, 0];
+    entryOf().cloud = { x: grid.x + mx, y: grid.y + my, cell: CELL, cols: grid.cols, rows: grid.rows, color: light, data: Buffer.from(grid.bytes).toString('base64'), ...(grid.solid ? { solid: grid.solid } : {}) };
     await writeFile(file, JSON.stringify(scene));
     const solid = grid.bytes.filter((b) => b > 200).length, any = grid.bytes.filter((b) => b > 8).length;
     if (grid.floor) console.log(name, 'floor', grid.floor);
-    console.log(name, `${grid.cols}x${grid.rows} cells, ${any} with light, ${solid} solid`, grid.solid ? `disc ${grid.solid} (was ${scene[spec.key].r})` : '');
+    console.log(name, `${grid.cols}x${grid.rows} cells, ${any} with light, ${solid} solid`, grid.solid ? `disc ${grid.solid} (was ${entryOf().r})` : '');
 };
 
 const wanted = process.argv[2] ? [process.argv[2]] : Object.keys(CARDS);
