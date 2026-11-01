@@ -22,6 +22,7 @@
     import { createLayerStage } from '../../composables/useLayerStage.js';
     import { startStardust } from '../../composables/useStardust.js';
     import { createThreads, rgbOf, smooth } from '../../composables/useThreads.js';
+    import { createGhostHand, gesture } from '../../composables/useGhostHand.js';
     import { play } from '../../composables/useSound.js';
     import { sceneMilestone } from '../../analytics.js';
     import Rulito from '../Rulito.vue';
@@ -43,6 +44,7 @@
     const hitTargets = {};                  // the fireflies' and blue mushrooms' touch targets, by key
     const setTarget = (key) => (el) => { hitTargets[key] = el; };
     let stage = null;
+    let hand = null;                               // the ghost hand, showing the gesture
     let parallax = null;
     let back = null;
     let front = null;
@@ -658,6 +660,9 @@
         if (!ghost && idle > 7 && ghostIn <= 0) {
             ghost = { age: 0 };
             ghostIn = GHOST_LEN + 7;
+            // and the ghost hand drags from one light to the other along the first thread that is missing
+            const missing = figure.links.find(([a, b]) => !joined(a, b));
+            if (missing) hand?.play(gesture.drag(() => lightSpots()[missing[0]], () => lightSpots()[missing[1]]), { loops: 1 });
         }
     };
 
@@ -919,6 +924,7 @@
         stageEl = root.value.closest('.stage');
         build(stage);
         stage.onResize((W, H) => place(W, H));
+        hand = createGhostHand(stage);
         const tone = (name) => [hexOf(clouds[name].color)];
         back = startStardust(null, {
             stage,
@@ -982,6 +988,7 @@
         parallax?.destroy();
         back?.destroy();
         front?.destroy();
+        hand?.destroy();
         stage?.destroy();
         timers.forEach(clearTimeout);
         stopDrag();

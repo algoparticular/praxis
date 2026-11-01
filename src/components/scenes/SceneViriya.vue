@@ -21,6 +21,7 @@
     import { startStardust } from '../../composables/useStardust.js';
     import { createSparks } from '../../composables/useSparks.js';
     import { createKindle, FIRE } from '../../composables/useKindle.js';
+    import { createGhostHand, gesture } from '../../composables/useGhostHand.js';
     import { play } from '../../composables/useSound.js';
     import { sceneMilestone } from '../../analytics.js';
     import Rulito from '../Rulito.vue';
@@ -104,6 +105,7 @@
     // second while nobody rubs, FUEL 4 bounces, a pull shorter than 0.12 of the full one launches nothing
     const DELAY = 1.4, GROW = 2.2, LINGER = 2.6, EAT = 3.4;    // the rulito: after the sun comes up, born, kept, gone
     let hint = 0;
+    let hand = null;                        // the ghost hand, showing the gesture
     let win = null;
     let wins = 0;
     let sunUp = 0;                          // the sun come up full
@@ -204,6 +206,12 @@
             hint = 1;
             const s = spiralAt();
             sparks.burst(s.x, s.y, { n: 8, colors: FIRE, speed: 50, life: 0.9, size: 3.5, spread: 8 });
+            // and the ghost hand shows the gesture: cold, rubbing him; on fire, pulling back and letting go
+            if (kindler.mode === 'cold') hand?.play(gesture.rub(walkerHit.value, Math.min(40, walkerHit.value.offsetWidth * 0.3)));
+            else {
+                const to = nearestUnlit();
+                if (to) hand?.play(gesture.sling(walkerHit.value, () => { const p = to() ?? spiralAt(); return [p.x, p.y]; }));
+            }
         }
         hint = Math.max(0, hint - dt * 1.4);
 
@@ -500,6 +508,7 @@
             ],
         });
         if (reduced) dust.reveal();
+        hand = createGhostHand(stage);
         parallax = createParallax(root.value, frame);
         enter();
     };
@@ -510,6 +519,7 @@
         gone = true;
         parallax?.destroy();
         dust?.destroy();
+        hand?.destroy();
         stage?.destroy();
         stageEl?.style.removeProperty('--name-glow');
         kindler.destroy();

@@ -25,6 +25,7 @@
     import { createLayerStage } from '../../composables/useLayerStage.js';
     import { createStardust } from '../../composables/useStardust.js';
     import { createSpores } from '../../composables/useSpores.js';
+    import { createGhostHand, gesture } from '../../composables/useGhostHand.js';
     import { createRoots } from '../../composables/useRoots.js';
     import { play } from '../../composables/useSound.js';
     import { sceneMilestone } from '../../analytics.js';
@@ -289,6 +290,9 @@
     let pop = 0;                            // 1 when it completes, down to 0: a little bump in its size
     let full = false;                       // the flare has gone off for this rulito
     let lastT = null;
+    // Left alone a while, the ghost hand shows the gesture: holding the pine cone
+    const HINT = 6;
+    let hand = null;
     // The light of the pine cone, eased: hovered it notices, held it shines and breathes
     let shine = 0;
     let warmth = 0;
@@ -476,6 +480,7 @@
         moveMushrooms(t, dt, ramp);
         pop = Math.max(0, pop - dt * 2.2);
         if (wave >= 0) { wave += dt / PULSE_TIME; if (wave > 1.4) wave = -1; }
+        if (!held && !full && ramp >= 1 && hand?.due(HINT)) hand.play(gesture.hold(coneHit.value, 2.4));
         if (held) {
             idle = 0;
             // First the roots take hold; once they have (a third of the way), the rulito is born. When the roots
@@ -555,6 +560,7 @@
         const rim = await createStardust(null, { stage, groups: [{ dynamic: sunRim, look: 'hard', parallax: 0, drift: 0, jitter: 0, twinkle: 0, reach: 0, order: L.sun.mesh.renderOrder + 0.5 }] });
         particles = { back, front, rim };
         if (gone) return;
+        hand = createGhostHand(stage);
         parallax = createParallax(root.value, frame);
         enter();
     };
@@ -567,6 +573,7 @@
         particles?.back?.destroy();
         particles?.front?.destroy();
         particles?.rim?.destroy();
+        hand?.destroy();
         stage?.destroy();
         stageEl?.style.removeProperty('--name-glow');
         window.removeEventListener('pointerup', release);
