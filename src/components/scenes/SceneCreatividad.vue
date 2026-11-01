@@ -26,6 +26,7 @@
     import { play } from '../../composables/useSound.js';
     import { sceneMilestone } from '../../analytics.js';
     import Rulito from '../Rulito.vue';
+    import { createGhostHand, gesture, HINT_AFTER } from '../../composables/useGhostHand.js';
     import dustCloud from '../../composables/creatividadDust.json';
     import scene from '../../composables/creatividadScene.json';
 
@@ -217,6 +218,9 @@
     let wins = 0;
     let win = null;                         // the rulito, while it lives
     let glyph = { left: 0, top: 0, w: 1, h: 1 };
+    const BELL_TOP = 0.2;                   // where the top of the bell is across the jellyfish's picture
+    let overBell = 0;                       // px from the jellyfish's middle (where it stretches from) up to the rulito's foot
+    let hand = null;                        // the ghost hand: left alone 7 s, it touches a piece that is not lit yet
     const count = () => on.filter(Boolean).length;
 
     const playNote = (i, level) => play('tine', { step: CROWN[i].height, low: CROWN[i].kind === 'algae', level });
@@ -225,7 +229,8 @@
     const compose = (i) => {
         if (i < 0) return;
         touchedAt = turn;
-        if (win) { play('tap'); return; }
+        // With reduced motion the scene is still and is not played (as the docs say, and as Sincronicidad): a touch only sounds
+        if (win || reduced) { play('tap'); return; }
         if (on[i]) {
             on[i] = false;
             final[i] = false;
@@ -294,6 +299,18 @@
         });
         // The jellyfish swims up under the comb to listen while there is a tune
         water.home = n || win ? HOME : null;
+        // Left alone 7 s (not while a rulito lives), the ghost hand touches a piece that is not lit yet, following it
+        // as the crown turns: one on the visible side of the crown, so the finger never goes off the screen
+        if (hand?.due(HINT_AFTER, !win && n < TUNE && ramp >= 1)) {
+            const W = canvas.value?.clientWidth ?? 0, H = canvas.value?.clientHeight ?? 0;
+            const dark = CROWN.map((p, i) => i).filter((i) => {
+                if (on[i] || !hits.value[i]) return false;
+                const b = hits.value[i].getBoundingClientRect(), c = canvas.value.getBoundingClientRect();
+                const x = b.left + b.width / 2 - c.left, y = b.top + b.height / 2 - c.top;
+                return x > 24 && x < W - 24 && y > 24 && y < H - 24;
+            });
+            if (dark.length) hand.play(gesture.tap(hits.value[dark[Math.floor(Math.random() * dark.length)]]));
+        }
 
         // The rulito: born after the tune is whole, kept while it plays, and its tail catches its head once it has ended
         let named = 0;
@@ -329,8 +346,10 @@
         // The jellyfish's light while it listens, behind it
         L.listen = L.planet.glow({ rect: { left: 0, top: 0, w: 1, h: 1 }, color: 0xffd29a, stops: [[0, 0.5], [0.3, 0.22], [0.62, 0]] });
         L.listen.opacity = 0;
-        L.jelly = L.planet.image('/assets/creatividad/medusa.webp');
-        L.rulito = L.planet.canvas(rulito.value.canvas, { bloom: true });
+        // The jellyfish and the rulito over its head hang from one node, so the rulito swims, leans and pulses with it
+        L.jellyNode = L.planet.group();
+        L.jelly = L.jellyNode.image('/assets/creatividad/medusa.webp');
+        L.rulito = L.jellyNode.canvas(rulito.value.canvas, { bloom: true });
         L.crown = L.planet.group();
         // A light behind every piece, seen while it is lit into the tune (it turns with the crown)
         L.lights = CROWN.map((p) => {
@@ -356,14 +375,19 @@
         L.interior.place({ left: F.x + INTERIOR[0] * F.size, top: F.y + INTERIOR[1] * F.size, w: INTERIOR[2] * F.size, h: INTERIOR[2] * F.size });
         L.nucleus.place({ left: F.x + (NUC.x - NUC.r) * F.size, top: F.y + (NUC.y - NUC.r) * F.size, w: 2 * NUC.r * F.size, h: 2 * NUC.r * F.size });
         FLOAT.forEach((p) => els[p.id].place(inFrame(p.box)));
-        L.jelly.place(inFrame(JELLY.box));
+        const jelly = inFrame(JELLY.box);
+        const middle = { x: jelly.left + jelly.w / 2, y: jelly.top + jelly.h / 2 };
+        L.jellyNode.pivot = middle;
+        L.jelly.place(jelly, middle);
         const square = (cx, cy, d) => ({ left: F.x + (cx - d / 2) * F.size, top: F.y + (cy - d / 2) * F.size, w: d * F.size, h: d * F.size });
         L.listen.place(square(JELLY.x, JELLY.y, 0.13));
-        // The rulito over the jellyfish's bell (its canvas is bigger than the glyph, for the glow, as in Paciencia)
+        // The rulito over the top of the jellyfish's bell, which leans left in its picture (BELL_TOP: a fifth of the way
+        // across); its canvas is bigger than the glyph, for the glow, as in Paciencia
         const rh = 0.05, rw = rh * 32 / 86;
-        glyph = inFrame([(JELLY.box[0] / 100 + 0.33 * JELLY.box[2] / 100 - rw / 2) * 100, (JELLY.box[1] / 100 - 0.004 - rh) * 100, rw * 100, rh * 100]);
+        glyph = inFrame([(JELLY.box[0] / 100 + BELL_TOP * JELLY.box[2] / 100 - rw / 2) * 100, (JELLY.box[1] / 100 - 0.004 - rh) * 100, rw * 100, rh * 100]);
         L.rulito.place({ left: glyph.left - 0.4375 * glyph.w, top: glyph.top - 0.1628 * glyph.h, w: glyph.w * 1.875, h: glyph.h * 1.3256 },
             { x: glyph.left + glyph.w / 2, y: glyph.top + glyph.h });
+        overBell = middle.y - (glyph.top + glyph.h);
         const top = { x: CELL.x + Math.cos(COMB * Math.PI / 180) * 0.213, y: CELL.y + Math.sin(COMB * Math.PI / 180) * 0.213 };
         L.comb.place(square(top.x, top.y, 0.1));
         // The crown turns about the middle of the interior; each piece sways about the point it hangs from
@@ -455,18 +479,17 @@
         const me = water.swimmer;
         tilt += (Math.max(-1, Math.min(1, me.vx / 0.012)) * 14 - tilt) * Math.min(1, dt * 1.5);
         const pulse = Math.sin(t * 2.2);
-        L.jelly.x = (me.x - JELLY.x) * F.size;
-        L.jelly.y = ((me.y - JELLY.y) - pulse * 0.001) * F.size;
-        L.jelly.rotate = tilt + Math.sin(t * 0.6) * 3 * ramp;
+        L.jellyNode.x = (me.x - JELLY.x) * F.size;
+        L.jellyNode.y = ((me.y - JELLY.y) - pulse * 0.001) * F.size;
+        L.jellyNode.rotate = tilt + Math.sin(t * 0.6) * 3 * ramp;
         const squash = 1 + Math.min(me.hit, 0.3) * 0.12;
         L.jelly.sx = (1 - pulse * 0.025 * ramp - 0.06 * listen) * squash;
         L.jelly.sy = (1 + pulse * 0.045 * ramp + 0.08 * listen) / squash;
-        L.listen.x = L.jelly.x;
-        L.listen.y = L.jelly.y;
+        L.listen.x = L.jellyNode.x;
+        L.listen.y = L.jellyNode.y;
         L.listen.opacity = Math.min(1, 0.35 * playing + 0.6 * listen);
-        // The rulito goes with it
-        L.rulito.x = L.jelly.x;
-        L.rulito.y = L.jelly.y;
+        // The rulito goes with it (it hangs from its node) and stays on its bell as it pulses
+        L.rulito.y = -(L.jelly.sy - 1) * overBell;
         L.rulito.rotate = Math.sin(t * 1.6) * 3 * ramp;
         stage.render(t);
         if (frames++ % 2 === 0) placeHits();
@@ -493,6 +516,7 @@
         });
         // The layers and their layout first, so the particles measured on them are made again after them on a resize
         build(stage);
+        hand = createGhostHand(stage);
         stage.onResize((W, H) => place(W, H));
         sky = startStardust(null, {
             stage,
@@ -532,6 +556,7 @@
         sky?.destroy();
         dust?.destroy();
         front?.destroy();
+        hand?.destroy();
         stage?.destroy();
         stageEl?.style.removeProperty('--name-glow');
     });

@@ -345,10 +345,10 @@ Cartas:
   - Pista: `taps` sobre una nube de cada color de la frase, en orden.
   - Rulito: caja de la carta, bien.
   - El comentario de la línea 203 dice que las cuentas están "sobre el vigía"; el código las pone bajo el bote.
-- **20 Creatividad:**
-  - **No tiene ninguna pista:** hace falta `tap` sobre un coral apagado.
-  - Rulito: ver la decisión sobre los rulitos tenues. Hoy está corrido a la derecha de la campana (0.33 contra ≈0.2 de la caja) y no sigue su `sy` ni su giro.
-  - Doc: dice que con movimiento reducido "no se juega", pero `compose()` no lo revisa.
+- **20 Creatividad:** ✅ hecho (falta probar en un teléfono).
+  - Pista: `tap` sobre una pieza apagada, del lado de la corona que se ve; la mano la sigue mientras gira.
+  - Rulito: sobre la punta de la campana (`BELL_TOP` 0.2 de la caja, medido en la imagen), colgado del mismo nodo que la medusa: nada, se inclina y late con ella.
+  - Movimiento reducido: `compose()` ahora lo revisa (un toque solo suena), como dice la doc; antes contaba y sonaba sin mostrar nada.
 - **12 Armonía:**
   - Pista: `tap` a tiempo sobre la medusa derecha, en los pulsos (no en el silencio).
   - Rulito: hoy hay uno entre las medusas. Va **un rulito sobre cada medusa** (decidido), cada uno colgado de la suya. Cuidar que no se acerquen al nombre en pantallas altas.
