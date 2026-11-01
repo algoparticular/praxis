@@ -28,6 +28,7 @@
     import { decodeCloud, sampleCloud } from '../../composables/stippleCloud.js';
     import { createSparks } from '../../composables/useSparks.js';
     import { play } from '../../composables/useSound.js';
+    import { createGhostHand, gesture, HINT_AFTER } from '../../composables/useGhostHand.js';
     import { sceneMilestone } from '../../analytics.js';
     import Rulito from '../Rulito.vue';
     import art from '../../composables/saccaScene.json';
@@ -190,7 +191,9 @@
     let answerSince = 0;
     let lastT = 0;
     let lastTouch = -Infinity;
-    let lastHint = -1;                      // the colour last breathing, kept while its breath fades out
+    let lastHint = -1;
+    let hand = null;                        // the ghost hand: left alone on the person's turn, it touches the phrase
+    let handShown = false;                  // it has shown it in this wait (a touch starts a new wait)                      // the colour last breathing, kept while its breath fades out
     const shine = COLOURS.map(() => 0);     // a colour being sung (or answered), 1 on the note, fading
     const arrive = COLOURS.map(() => null); // when the note sung of a colour reaches its clouds (scene time)
     let next = 0;                           // how much the clouds of the colour that comes next breathe (the hint)
@@ -377,6 +380,7 @@
         const cl = clouds[i];
         const c = cl.c;
         lastTouch = lastT;
+        handShown = false;
         cl.ring = 1;
         if (reduced || mode === 'win') { play('tap'); return; }
         if (mode === 'sing') {
@@ -430,6 +434,20 @@
         if (event.key !== 'Enter' && event.key !== ' ') return;
         event.preventDefault();
         action();
+    };
+    // For the ghost hand, the biggest cloud of a colour well inside the screen and under the card's name (a cloud up by
+    // the name or the buttons of the header would send the finger there); if none, the keyboard's
+    const handCloud = (c) => {
+        const area = root.value.getBoundingClientRect();
+        const top = (stageEl?.querySelector('h1')?.getBoundingClientRect().bottom ?? area.top + 0.16 * area.height) - area.top + 16;
+        let best = null;
+        clouds.forEach((cl) => {
+            if (cl.c !== c || cl.hidden) return;
+            const p = cloudCentre(cl);
+            if (p.x < 30 || p.x > area.width - 30 || p.y < top || p.y > area.height - 30) return;
+            if (!best || cl.art.w > best.art.w) best = cl;
+        });
+        return best ?? keyCloud(c);
     };
     // With the keyboard, each colour is one button: the biggest cloud of that colour in sight
     const keyCloud = (c) => {
@@ -613,8 +631,18 @@
                 answerSince = t;
             }
         }
-        // Left alone, he sings it again (half repeated, it starts again)
-        if (mode === 'answer' && t - Math.max(lastTouch, answerSince) > AGAIN) { singAt = t + PREP; mode = 'sing'; }
+        // Left alone 7 s on the person's turn, the ghost hand touches, in the phrase's order, the biggest cloud in sight of
+        // each colour still to repeat (following them as they drift); only once it has shown does he sing it again
+        // (half repeated, it starts again). With reduced motion there is no hand: he sings it again at once
+        if (hand?.due(HINT_AFTER, mode === 'answer' && !singing && !win && !handShown)) {
+            const rest = phrase.slice(got).map(handCloud).filter(Boolean);
+            if (rest.length) {
+                handShown = true;
+                hand.play(gesture.taps(rest.map((cl) => () => { const p = cloudCentre(cl); return [p.x, p.y]; })), { loops: 1 });
+            }
+        }
+        const waited = !hand || (handShown && !hand.playing);
+        if (mode === 'answer' && t - Math.max(lastTouch, answerSince) > AGAIN && waited) { singAt = t + PREP; mode = 'sing'; handShown = false; }
 
         // ---- The win: the colours become one, the rulito is born over him, kept, gone; then another phrase
         let named = 0;
@@ -740,6 +768,7 @@
         stage = made;
         stageEl = root.value.closest('.stage');
         build(stage);
+        hand = createGhostHand(stage);
         stage.onResize((w, h) => place(w, h));
         const after = (node) => node.mesh.renderOrder + 0.5;
         // [x, y, radius, colour] in art px to the screen
@@ -774,6 +803,7 @@
         gone = true;
         parallax?.destroy();
         dust?.destroy();
+        hand?.destroy();
         stage?.destroy();
         stageEl?.style.removeProperty('--name-glow');
     });

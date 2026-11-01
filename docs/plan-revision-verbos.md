@@ -335,20 +335,22 @@ Gesto de la mano: en frío, `rub` sobre la fuente; encendido, `sling` desde la f
 
 ## Paquete E: Resonar (a tiempo, en eco o libre)
 
+**Paquete E: ✅ cerrado para las cartas que no son del 31/10** (Sila, Sacca y Creatividad; Sincronicidad en la etapa 1). Armonía, Comunicación y Honestidad van en su revisión. Falta probarlas en un teléfono.
+
 Gestos de la mano:
 - **A tiempo:** `tap` lanzado con `TAP_LEAD` antes del pulso, para que apoye justo en el tiempo, dos o tres pulsos seguidos.
 - **En eco:** `taps` en el orden de la frase.
 - **Libre:** `tap` sobre una pieza apagada.
 
 Cartas:
-- **1 Sila:**
-  - Pista: `tap` a tiempo sobre el corazón del atril. Hoy el corazón de Sid le manda el pulso al atril, que está bien pero no muestra el dedo.
+- **1 Sila:** ✅ hecho (falta probar en un teléfono).
+  - Pista: la mano toca el corazón del atril tres veces a tiempo, cada una en un latido (como Sincronicidad), mientras el corazón de Sid le manda el pulso. Navy: el atril está delante de la luna crema.
   - Rulito: caja de la carta, bien. Cuelga de `L.figures`, no del corazón, así que no sigue su estirón al hablar (menor).
 - **29 Sincronicidad** (ejemplo de la etapa 1):
   - **No tiene pista por inactividad:** hace falta `tap` a tiempo sobre la burbuja que brilla.
   - Rulito: **está bien como está** (decidido).
-- **6 Sacca:**
-  - Pista: `taps` sobre una nube de cada color de la frase, en orden.
+- **6 Sacca:** ✅ hecho (falta probar en un teléfono).
+  - Pista: `taps` sobre la nube más grande a la vista de cada color que falta, en el orden de la frase, debajo del nombre; recién después el vigía vuelve a cantarla.
   - Rulito: caja de la carta, bien.
   - El comentario de la línea 203 dice que las cuentas están "sobre el vigía"; el código las pone bajo el bote.
 - **20 Creatividad:** ✅ hecho (falta probar en un teléfono).
