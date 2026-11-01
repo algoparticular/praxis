@@ -155,7 +155,7 @@ El GDD es el artefacto "Anima GDD". Sus pestañas salen de los documentos de `do
 4. **`CLAUDE.md`:** una línea sobre `useGhostHand.js` junto a los otros motores comunes.
 5. **El artefacto "Anima GDD":** volver a publicarlo con esas pestañas al día. Se busca con la herramienta Artifact (`list`), se lee (`read`) y se actualiza sobre esa misma URL, sin crear uno nuevo. Lo hace un solo chat, al final, cuando los documentos ya estén en `main`.
 
-Los puntos 1 a 4 se pueden hacer ya con lo decidido. Cada paquete agrega después lo suyo.
+**Puntos 1 a 4: ✅ hechos** (1 de noviembre, en la rama `claude/music-chakra-cards-jft7f9`), con lo decidido hasta ese día. Cada paquete agrega después lo suyo: cuando una carta recibe la mano, se suma a la lista de "Hoy está en…" de `verbos-y-dinamicas.md` (Reglas comunes), de `CLAUDE.md` y de `escenas.md` (The ghost hand). Falta el punto 5.
 
 ## Cómo trabajar en paralelo (varios chats o sub-sesiones)
 
@@ -398,7 +398,7 @@ Gestos de la mano: `drag` entre las dos luces del primer hilo que falta (Pañña
 
 1. **Etapa 1:** conectar la mano en Vipassana, Khanti, Evolución, Dana y Sincronicidad. Paciencia y Pañña ya están. Se puede repartir: son escenas distintas que no se pisan.
 2. **Paquete 0:** Juan Manuel prueba las siete en un teléfono y se cierra el aspecto de la mano.
-3. **Paquete H, puntos 1 a 4**, en paralelo con lo anterior: documentar lo ya decidido.
+3. **Paquete H, puntos 1 a 4**, en paralelo con lo anterior: documentar lo ya decidido. ✅ Hecho.
 4. **Después del paquete 0, dos frentes a la vez:**
    - **En paralelo, los paquetes A a G**, solo para las 14 cartas que no son del 31/10. Empezar por:
      - el rulito de Upekkha en pantalla ancha;
