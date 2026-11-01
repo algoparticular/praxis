@@ -85,16 +85,12 @@
         <header class="deckHead" ref="head">
             <h1>{{ $t("nav.deck") }}</h1>
             <nav class="filters">
-                <template v-for="(filter, i) in filters" :key="filter.key">
-                    <button
-                        class="chip" :class="{ active: filter.key === active }"
-                        :aria-pressed="filter.key === active"
-                        @click="choose(filter.key)">
-                        {{ $t(filter.label) }} <span>{{ filter.cards.length }}</span>
-                    </button>
-                    <!-- On phones the chips go in two rows: three, then the last two -->
-                    <i v-if="i === 2" class="break" aria-hidden="true"></i>
-                </template>
+                <button v-for="filter in filters" :key="filter.key"
+                    class="chip" :class="{ active: filter.key === active }"
+                    :aria-pressed="filter.key === active"
+                    @click="choose(filter.key)">
+                    {{ $t(filter.label) }} <span>{{ filter.cards.length }}</span>
+                </button>
             </nav>
         </header>
 
@@ -158,6 +154,7 @@
         align-items: center;
         gap: 8px;
         padding: 88px 16px 0;
+        width: auto;                    /* not the 96vw the global `header` rule of Header.vue gives every header */
         pointer-events: none;
     }
 
@@ -178,6 +175,7 @@
     .filters {
         display: flex;
         flex-wrap: wrap;
+        max-width: 100%;
         justify-content: center;
         gap: 8px;
         pointer-events: auto;
@@ -296,18 +294,8 @@
         color: #F7F8F1;
     }
 
-    .break {
-        display: none;
-    }
-
-    /* On phones the chips go without the counts, in two rows: three, then two */
+    /* On phones the chips go without the counts, all in one row (two only if the screen is too narrow for them) */
     @media screen and (max-width: 480px) {
-        .break {
-            display: block;
-            flex-basis: 100%;
-            height: 0;
-        }
-
         .chip span {
             display: none;
         }
@@ -319,6 +307,24 @@
 
         .filters {
             gap: 6px;
+        }
+    }
+
+    /* Narrow phones: a little smaller, so the four still fit in one row inside the gutters */
+    @media screen and (max-width: 380px) {
+        .chip {
+            padding: 0 8px;
+            font-size: 13px;
+        }
+
+        .filters {
+            gap: 4px;
+        }
+    }
+
+    @media screen and (max-width: 340px) {
+        .chip {
+            padding: 0 6px;
         }
     }
 

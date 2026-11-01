@@ -25,7 +25,7 @@
     import { createLayerStage } from '../../composables/useLayerStage.js';
     import { createStardust } from '../../composables/useStardust.js';
     import { createSpores } from '../../composables/useSpores.js';
-    import { createGhostHand, gesture } from '../../composables/useGhostHand.js';
+    import { createGhostHand, gesture, HINT_AFTER } from '../../composables/useGhostHand.js';
     import { createRoots } from '../../composables/useRoots.js';
     import { play } from '../../composables/useSound.js';
     import { sceneMilestone } from '../../analytics.js';
@@ -291,7 +291,6 @@
     let full = false;                       // the flare has gone off for this rulito
     let lastT = null;
     // Left alone a while, the ghost hand shows the gesture: holding the pine cone
-    const HINT = 6;
     let hand = null;
     // The light of the pine cone, eased: hovered it notices, held it shines and breathes
     let shine = 0;
@@ -480,7 +479,8 @@
         moveMushrooms(t, dt, ramp);
         pop = Math.max(0, pop - dt * 2.2);
         if (wave >= 0) { wave += dt / PULSE_TIME; if (wave > 1.4) wave = -1; }
-        if (!held && !full && ramp >= 1 && hand?.due(HINT)) hand.play(gesture.hold(coneHit.value, 2.4));
+        // (only while there is nothing to see: not held, and no rulito alive; it waits again once the rulito has gone)
+        if (hand?.due(HINT_AFTER, !held && head === 0 && ramp >= 1)) hand.play(gesture.hold(coneHit.value, 2.4));
         if (held) {
             idle = 0;
             // First the roots take hold; once they have (a third of the way), the rulito is born. When the roots
