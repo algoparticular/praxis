@@ -155,7 +155,7 @@ El GDD es el artefacto "Anima GDD". Sus pestañas salen de los documentos de `do
 4. **`CLAUDE.md`:** una línea sobre `useGhostHand.js` junto a los otros motores comunes.
 5. **El artefacto "Anima GDD":** volver a publicarlo con esas pestañas al día. Se busca con la herramienta Artifact (`list`), se lee (`read`) y se actualiza sobre esa misma URL, sin crear uno nuevo. Lo hace un solo chat, al final, cuando los documentos ya estén en `main`.
 
-Los puntos 1 a 4 se pueden hacer ya con lo decidido. Cada paquete agrega después lo suyo.
+**Puntos 1 a 4: ✅ hechos** (1 de noviembre, en la rama `claude/music-chakra-cards-jft7f9`), con lo decidido hasta ese día. Cada paquete agrega después lo suyo: cuando una carta recibe la mano, se suma a la lista de "Hoy está en…" de `verbos-y-dinamicas.md` (Reglas comunes), de `CLAUDE.md` y de `escenas.md` (The ghost hand). Falta el punto 5.
 
 ## Cómo trabajar en paralelo (varios chats o sub-sesiones)
 
@@ -377,11 +377,11 @@ Gestos de la mano: `drag` entre las dos luces del primer hilo que falta (Pañña
     - **Decidido por Juan Manuel:** zorros como Vulpes, con lo que más los distingue (orejas, hocico, cola). Siguen siendo tres ancestros, en este orden:
       1. **A, cabeza de frente** (7 estrellas, 7 hilos): dos orejas en punta, las mejillas y el hocico. Reemplaza al sentado, que no se entendía.
       2. **C, caminando** (7 estrellas, 6 hilos): la cabeza con una oreja, el lomo, dos patas y la cola alta. Reemplaza al caminando de hoy.
-      3. **D, durmiendo enroscado** (7 estrellas, 7 hilos): un ovillo con las dos orejas arriba. Es el más viejo y reemplaza al descansando de hoy. La eligió Claude entre tres opciones; Juan Manuel la puede cambiar.
+      3. **F, la cola enroscada** (6 estrellas, 5 hilos): solo la cola del zorro, en espiral. Reemplaza al descansando de hoy. La eligió Juan Manuel.
     - **Coordenadas para `FIGURES`** (x, y de 0 a 1 en la caja de la figura; `aspect` = alto/ancho):
       - A: `aspect: 1`, `stars: [[0.05,0],[0.35,0.3],[0.65,0.3],[0.95,0],[0.85,0.55],[0.5,1],[0.15,0.55]]`, `links: loop(7)`.
       - C: `aspect: 0.6`, `stars: [[0,0.25],[0.12,0],[0.2,0.3],[0.62,0.32],[0.92,0],[0.6,1],[0.25,1]]`, `links: [[0,1],[1,2],[2,3],[3,4],[3,5],[2,6]]`.
-      - D: `aspect: 1`, `stars: [[0.12,0],[0.24,0.2],[0.36,0.02],[0.95,0.35],[0.85,0.9],[0.3,1],[0,0.55]]`, `links: loop(7)`.
+      - F: `aspect: 1`, `stars: [[0.1,1],[0,0.45],[0.35,0],[0.9,0.15],[0.8,0.6],[0.45,0.5]]`, `links: [[0,1],[1,2],[2,3],[3,4],[4,5]]`.
       - Los señuelos (2 por figura) y el `rest` (dónde se para detrás de Vulpes) se ajustan al probarlas en pantalla. Ninguna pasa de 7 hilos, así que `MAX_LINKS` queda igual.
   - **Rulito:**
     - Hoy está en `HEAD_AT`, a mano, sobre el ancestro sentado: casi pegado a él, y los hilos de bajada lo cruzan (sin `threads.hole`).
@@ -398,7 +398,7 @@ Gestos de la mano: `drag` entre las dos luces del primer hilo que falta (Pañña
 
 1. **Etapa 1:** conectar la mano en Vipassana, Khanti, Evolución, Dana y Sincronicidad. Paciencia y Pañña ya están. Se puede repartir: son escenas distintas que no se pisan.
 2. **Paquete 0:** Juan Manuel prueba las siete en un teléfono y se cierra el aspecto de la mano.
-3. **Paquete H, puntos 1 a 4**, en paralelo con lo anterior: documentar lo ya decidido.
+3. **Paquete H, puntos 1 a 4**, en paralelo con lo anterior: documentar lo ya decidido. ✅ Hecho.
 4. **Después del paquete 0, dos frentes a la vez:**
    - **En paralelo, los paquetes A a G**, solo para las 14 cartas que no son del 31/10. Empezar por:
      - el rulito de Upekkha en pantalla ancha;
@@ -418,6 +418,6 @@ Gestos de la mano: `drag` entre las dos luces del primer hilo que falta (Pañña
 **Ya decididas** (1 de noviembre):
 - **La mano:** el aspecto está bien. Sobre fondos muy claros se le busca contraste.
 - **Creatividad, Evolución y Hogar:** el rulito va sobre la cabeza del personaje.
-- **Esperanza:** tres ancestros zorros: A (cabeza de frente), C (caminando) y D (durmiendo enroscado).
+- **Esperanza:** tres ancestros zorros: A (cabeza de frente), C (caminando) y F (la cola enroscada).
 - **Nekkhamma, y todas las de Soltar y Arraigar:** dejadas solas, vuelven atrás (regla 4).
 - **Dónde va cada rulito:** la tabla "Dónde nace el rulito: decidido".
