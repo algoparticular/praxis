@@ -68,6 +68,10 @@
     let low = 0;
     // and on a phone it goes to the middle of the screen (it was at the left edge), under the planet
     let lowX = 0;
+    // and the planet with its ring goes up a little from the middle of the spare height (Juan Manuel, 1 November)
+    const PLANET_LIFT = 0.45;
+    const RULITO_SCALE = 1.4;               // the rulito over Particular, bigger than the card draws it
+    let mid = 0;
     const k = () => F.size / SW;
     const sx = (x) => F.x + x * k();
     const sy = (y) => F.y + y * k();
@@ -85,6 +89,7 @@
         spread = phone ? Math.min(spare * 0.3, 0.35 * SW * kk) : 0;
         low = spread * LEAF_SINK;
         lowX = phone ? (FOCUS - (B.leaf[0] + B.leaf[2] / 2)) * kk : 0;
+        mid = -spread * PLANET_LIFT;
         F = { x, y: top + spare / 2 - TOP * kk, size };
     };
 
@@ -155,7 +160,7 @@
                 const u = Math.cos(a) * d.out * E.a, v = Math.sin(a) * d.out * E.b;
                 const [ox, oy] = driftAt(a);
                 data.positions[i * 3] = F.x + (E.x + u * ct - v * st) * kk + ox;
-                data.positions[i * 3 + 1] = F.y + (E.y + u * st + v * ct) * kk + oy;
+                data.positions[i * 3 + 1] = F.y + mid + (E.y + u * st + v * ct) * kk + oy;
                 data.sizes[i] = Math.max(1.2, 2 * d.r * kk * DOT) * (1 + 0.25 * d.lit);
                 data.alphas[i] = near(a) === front ? 1 : 0;
                 for (let c = 0; c < 3; c++) data.tints[i * 3 + c] = DUST_RGB[c] + (LIGHT_RGB[c] - DUST_RGB[c]) * d.lit;
@@ -183,7 +188,7 @@
     // A point of the ring, on the stage at rest (the front half's plane)
     const ringPoint = (a, out = 1) => {
         const u = Math.cos(a) * out * E.a, v = Math.sin(a) * out * E.b;
-        return { x: F.x + (E.x + u * ct - v * st) * k(), y: F.y + (E.y + u * st + v * ct) * k() };
+        return { x: F.x + (E.x + u * ct - v * st) * k(), y: F.y + mid + (E.y + u * st + v * ct) * k() };
     };
     // The knots ride the ring at its middle's pace; like the dust, the near half is drawn over the planet, the far half under
     const knotGroup = (front) => ({
@@ -288,7 +293,7 @@
     const hidden = (kn) => {
         if (near(kn.a)) return false;
         const p = ringPoint(kn.a);
-        return Math.hypot(p.x - sx(P.x), p.y - sy(P.y)) < P.r * k() * 1.02;
+        return Math.hypot(p.x - sx(P.x), p.y - sy(P.y) - mid) < P.r * k() * 1.02;
     };
     const reachable = () => left().filter((kn) => !hidden(kn));
     const particularAt = () => {
@@ -504,7 +509,7 @@
         let best = null, near = Infinity;
         Object.entries(TOUCH).forEach(([name, [x, y]]) => {
             const node = nodes[name];
-            const dy = name === 'leaf' ? low : name === 'marble' ? 0 : -spread;
+            const dy = name === 'leaf' ? low : name === 'marble' ? mid : -spread;
             const p = node.toScreen(sx(x) + (name === 'leaf' ? lowX : 0), sy(y) + dy);
             const reach = name === 'marble' ? P.r * k() * 1.1 : Math.max(48, 260 * k());
             const d = Math.hypot(p.x - at.x, p.y - at.y);
@@ -580,12 +585,13 @@
         doodles.forEach((d, i) => L.doodles[i].place(rectOf(d.box, d.upper ? up : down)));
 
         const pr = P.r * k();
-        L.disc.place({ left: sx(P.x) - pr, top: sy(P.y) - pr, w: 2 * pr, h: 2 * pr });
+        const cy = sy(P.y) + mid;
+        L.disc.place({ left: sx(P.x) - pr, top: cy - pr, w: 2 * pr, h: 2 * pr });
         const hr = pr * 2.5;
-        L.halo.place({ left: sx(P.x) - hr / 2, top: sy(P.y) - hr / 2, w: hr, h: hr });
-        L.marble.place(rectOf(B.marble), { x: sx(P.x), y: sy(P.y) });
+        L.halo.place({ left: sx(P.x) - hr / 2, top: cy - hr / 2, w: hr, h: hr });
+        L.marble.place(rectOf(B.marble, mid), { x: sx(P.x), y: cy });
         const lr = (P.line.r + P.line.width) * k();
-        L.line.place({ left: sx(P.x) - lr, top: sy(P.y) - lr, w: 2 * lr, h: 2 * lr });
+        L.line.place({ left: sx(P.x) - lr, top: cy - lr, w: 2 * lr, h: 2 * lr });
 
         const cup = rectOf(B.cup, up);
         L.cup.place(cup, { x: cup.left + cup.w / 2, y: cup.top + cup.h * 0.8 });
@@ -608,9 +614,10 @@
         const ld = body.h * 2.6;
         L.love.place({ left: body.left + body.w / 2 - ld / 2, top: body.top + body.h * 0.45 - ld / 2, w: ld, h: ld });
         // The rulito where the card draws it, over his head (its canvas is bigger than the glyph, for the glow)
+        // 1.4 times the card's, its foot where the card has it (Juan Manuel, 1 November: it read too small)
         const r = rectOf(art.rulito.box, low, lowX);
-        const gw = r.h * 32 / 86;
-        glyph = { left: r.left + r.w / 2 - gw / 2, top: r.top, w: gw, h: r.h };
+        const gh = r.h * RULITO_SCALE, gw = gh * 32 / 86;
+        glyph = { left: r.left + r.w / 2 - gw / 2, top: r.top + r.h - gh, w: gw, h: gh };
         L.rulito.place({ left: glyph.left - 0.4375 * glyph.w, top: glyph.top - 0.1628 * glyph.h, w: glyph.w * 1.875, h: glyph.h * 1.3256 },
             { x: glyph.left + glyph.w / 2, y: glyph.top + glyph.h });
         screenH = h;
