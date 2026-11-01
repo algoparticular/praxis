@@ -87,13 +87,13 @@ Pedido de Juan Manuel: los soles y las lunas de este estilo vivo tienen que ser 
 | 8 Metta | la gran luz amarilla y la luz turquesa: ✅ hechas, disco con el borde disuelto en su punteado |
 | 27 Paciencia | el sol: ✅ todo de puntos |
 | 11 Aceptación | el sol rosa |
-| 15 Ciclos | el sol rojo (pedido por Juan Manuel el 1 de noviembre: vivo como el de Pañña, la luna queda igual; una primera prueba fuera del paquete S dejaba aire entre el borde y el disco y se deshizo) |
+| 15 Ciclos | el sol rojo: ✅ disco con el borde disuelto, sin aire (pedido por Juan Manuel el 1 de noviembre; la luna queda igual) |
 | 24 Gratitud | los soles durazno y rosa: ✅ los dos, cada uno con el borde disuelto |
 | 32 Transformación | el solcito de la copa: ✅ su punteado de la carta (el disco queda bajo el anillo dibujado) |
 | 6 Sacca | la luna: ✅ disco con el borde disuelto |
 | 19 Coraje | la luna |
 | 18 Confianza | la luz de la chakana: ✅ disco con el borde disuelto (Juan Manuel la sumó, 1 de noviembre) |
-| 28 Perdón | el planeta |
+| 28 Perdón | el planeta: ✅ el mármol fluye como un líquido hasta el contorno (sin aire), con volumen; el anillo es del paquete B |
 
 - **Sila:** ✅ Hecho (pedido de Juan Manuel, 1 de noviembre). Su luna era una imagen con un borde punteado apretado. Ahora es un disco en código con la banda punteada de la carta encima, como Metta (la imagen se borró).
 
@@ -425,7 +425,7 @@ Gestos de la mano: `drag` entre las dos luces del primer hilo que falta (Pañña
      - la pista de Metta;
      - los rulitos nuevos de Celebración y Armonía, uno por personaje.
      - Esperanza incluye las formas de las constelaciones.
-5. **Paquete S, soles y lunas:** ✅ hecho (falta probarlo en un teléfono), salvo Ciclos y Perdón, que van con el paquete B.
+5. **Paquete S, soles y lunas:** ✅ hecho, también el sol de Ciclos y el planeta de Perdón (falta probarlo en un teléfono).
 6. **Paquete H, punto 5:** volver a publicar el artefacto "Anima GDD" con todo al día.
 
 ## Decisiones abiertas (las toma Juan Manuel)

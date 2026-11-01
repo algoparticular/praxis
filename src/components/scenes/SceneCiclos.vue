@@ -17,8 +17,9 @@
     // (day caught in the night, night in the day) live in the sky, swaying as a liquid.
     // The sky is not a picture: day and night are two liquids drawn by the stage (field()), from the night's shape, drops
     // and colour that the converter read from the card (it is in no layer); its stars are particles that live only in
-    // the night. Nor is the sun: a disc drawn in code (the biggest circle inside its solid middle, under the moon) with a
-    // warm light round it and its stippled corona as live particles; the moon's stippled shade and Sid's aura are
+    // the night. Nor is the sun: a disc drawn in code (under the moon) with a warm light round it and, over its edge, its
+    // stippled corona as live particles read from the card (`sun.cloud`, scripts/sun-cloud.mjs, as Metta's lights): the
+    // disc is only as big as where the sun is still whole, so no circle shows; the moon's stippled shade and Sid's aura are
     // particles too. Moon and sun follow the edge as it flows: the moon's picture and its shade are masked by the night
     // side of the same field the sky is drawn with, the corona and the sun's lights by its day side (maskBy(), a
     // group's `mask`), so where the day flows across the moon it gives way to the sun, and back.
@@ -33,6 +34,7 @@
     import { createParallax } from '../../composables/useParallax.js';
     import { createLayerStage, FIELD_RANGE, FIELD_BUBBLES } from '../../composables/useLayerStage.js';
     import { startStardust } from '../../composables/useStardust.js';
+    import { decodeCloud, sampleCloud } from '../../composables/stippleCloud.js';
     import { createSparks } from '../../composables/useSparks.js';
     import { play } from '../../composables/useSound.js';
     import { createGhostHand, gesture, HINT_AFTER } from '../../composables/useGhostHand.js';
@@ -84,6 +86,7 @@
     const DEPTH = { sky: 2, clouds: [3, 4, 5], sun: 6, moon: 8, land: [12, 17, 23, 31] };
 
     const SUN = art.sun;
+    const SUN_CLOUD = decodeCloud(SUN.cloud);   // its stippled corona, read from the card (scripts/sun-cloud.mjs)
     const MOON = art.moon;
     const AURA = 0xfc747c;
     const SHADE = 0x342c0c;
@@ -576,7 +579,8 @@
         span = { left: -SLIDE * 2 - widest / 2, width: w + SLIDE * 4 + widest };
 
         const sr = SUN.r * k();
-        L.sun.place({ left: sx(SUN.x) - sr, top: sy(SUN.y) - sr, w: 2 * sr, h: 2 * sr });
+        const sd = SUN.cloud.solid * k();       // the disc only as big as where the sun is still whole: the corona covers its edge
+        L.sun.place({ left: sx(SUN.x) - sd, top: sy(SUN.y) - sd, w: 2 * sd, h: 2 * sd });
         const sg = sr * 3.6, wg = sr * 6;
         L.sunGlow.place({ left: sx(SUN.x) - sg / 2, top: sy(SUN.y) - sg / 2, w: sg, h: sg });
         L.warm.place({ left: sx(SUN.x) - wg / 2, top: sy(SUN.y) - wg / 2, w: wg, h: wg });
@@ -728,7 +732,7 @@
             manual: true,
             groups: [
                 // 0: the sun's stippled corona, alive, only over the day
-                { colors: [SUN.color], parallax: 0, drift: 1.8, jitter: 0.5, twinkle: 0.3, reach: 0, order: after(L.sun), mask: { field: L.sky, side: -1 }, points: () => fromArt(SUN.dots, SUN.color, 1.4) },
+                { colors: [SUN.color], parallax: 0, drift: 1.8, jitter: 0.5, twinkle: 0.3, reach: 0, order: after(L.sun), mask: { field: L.sky, side: -1 }, points: () => sampleCloud(SUN_CLOUD, (u, v) => [sx(u), sy(v)], k()).map(([x, y, size]) => [x, y, size, SUN.color]) },
                 // 1: the moon's stippled shade, only over the night
                 { colors: [SHADE], parallax: 0, drift: 0.4, jitter: 0.15, twinkle: 0.05, reach: 0, order: after(L.moon), mask: { field: L.sky, side: 1 }, points: () => fromArt(MOON.dots, SHADE, 1.5) },
                 // 2: Sid's aura, under him

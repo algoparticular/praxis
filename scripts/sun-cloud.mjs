@@ -170,6 +170,18 @@ const CARDS = {
         behind: (scene) => scene.ground,
         ring: { centre: (scene) => [scene.heart.x, scene.heart.y], from: () => 92, to: () => 136, arcs: [[-155, -115], [-65, -25], [25, 65], [115, 155]] },
     },
+    // 15 Ciclos: the red sun under the moon, over the day's yellow; only its left is seen on the card (the moon covers the
+    // rest), so its band is read there and drawn all round (the scene masks it to the day side). The night's teal lies
+    // on the way from the yellow to the red, so only colours near that way count (`strict`)
+    ciclos: {
+        card: 15,
+        json: 'src/composables/ciclosScene.json',
+        key: 'sun',
+        color: (scene) => scene.sun.color,
+        behind: (scene, y) => nearest(scene.sky, y),
+        strict: 60,
+        ring: { centre: (scene) => [scene.sun.x, scene.sun.y], from: () => 200, to: () => 420, arcs: [[140, 180], [-180, -140]] },
+    },
 };
 
 function nearest(stops, y) {
@@ -316,6 +328,8 @@ const make = async (name) => {
                     const i = (y * info.width + x) * 3;
                     // How far along the way from the sky to the light this pixel is
                     const along = axis.reduce((s, a, c) => s + a * (data[i + c] - back[c]), 0) / len2;
+                    // `strict`: a colour far off the way from the sky to the light (another sky, as Ciclos's night) is not light
+                    if (spec.strict && Math.hypot(...axis.map((a, c) => data[i + c] - back[c] - a * along)) > spec.strict) continue;
                     sum += Math.min(1, Math.max(0, along));
                 }
             }
