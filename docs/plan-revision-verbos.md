@@ -133,7 +133,7 @@ Khanti es a la vez un ejemplo de la etapa 1 y una de las 18. Su mano se conecta 
 | 11 Aceptación | no |
 | 32 Transformación | no |
 | 14 Celebración | no |
-| 15 Ciclos | no |
+| 15 Ciclos | en revisión: lo que se suelta pasó a ser las plantas (falta probar en un teléfono) |
 | 28 Perdón | no |
 | 16 Compromiso | no |
 | 18 Confianza | no |
@@ -273,8 +273,10 @@ Gestos de la mano: `tap` sobre lo que se suelta. Cada tanto, `hold` sobre el per
   - Pista: `tap` sobre el pensamiento que brilla (la mano lo sigue), y cada tres veces, si ya está pegado, `hold` sobre Sid. Navy con halo crema: la crema no se leía sobre el cielo menta.
   - **Rulito:** confirmado que en ancho quedaba cortado o sobre el nombre (a 1920×1080 empezaba 46 px por encima de la pantalla). El encuadre ancho ahora deja ver desde la punta del rulito (`RULITO_TOP`) hasta debajo del nombre (`nameClear()`): el dibujo queda un poco más chico y a los costados sigue la tierra espejada.
   - Regla 4: ✅ sumada. Dejado solo 15 s, vuelve un pensamiento soltado cada 4 s (su aura se apaga un paso y llega otro).
-- **15 Ciclos** (del 31/10, va en su revisión):
-  - Pista: `tap` sobre la gota que hoy se hincha, y a veces `hold` sobre Sid.
+- **15 Ciclos** (del 31/10, en revisión con Juan Manuel):
+  - **Lo que se suelta cambió** (Juan Manuel, 1 de noviembre: en el teléfono las gotas quedaban fuera de la pantalla). Ahora son las plantas de las lomas (abanicos rosas y matas de pasto): un toque y el viento se lleva sus hojas secas, y la planta queda baja y desteñida. Cuentan las 8 más grandes que se ven. Las gotas quedan vivas en el cielo, sin juego.
+  - Pista: ✅ `tap` sobre la planta que brilla y se mece, y cada tres veces `hold` sobre Sid. Navy, sobre el amarillo.
+  - Regla 4: ✅ dejada sola 15 s, a una planta le vuelven a crecer las hojas cada 4 s.
   - Rulito sobre Sid, bien.
 - **28 Perdón:**
   - Pista: `tap` sobre el nudo que late, y a veces `hold` sobre Particular.
