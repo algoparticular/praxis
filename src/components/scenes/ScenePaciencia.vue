@@ -271,9 +271,9 @@
         stage.ready().then(() => { if (!gone) stage.start(); });
     };
 
-    const ROOT_TIME = 2.4;                  // seconds of holding for the roots to spread all the way
+    const ROOT_TIME = 2.0;                  // seconds of holding for the roots to spread all the way
     const PULSE_TIME = 1.8;                 // seconds the wave of light takes to run along them
-    const GROW = 2.6;                       // seconds of holding to draw it whole
+    const GROW = 2.0;                       // seconds of holding to draw it whole, once the roots are whole
     const LINGER = 0.9;                     // seconds a whole rulito stays before its tail starts to go
     const EAT = 3.4;                        // seconds for the tail to go all the way along it
     const ROOTS_LINGER = 0.6, ROOTS_FADE = 2.4; // once the rulito is gone, the roots wait a moment and fade away
@@ -483,10 +483,10 @@
         if (hand?.due(HINT_AFTER, !held && head === 0 && ramp >= 1)) hand.play(gesture.hold(coneHit.value, 2.4));
         if (held) {
             idle = 0;
-            // First the roots take hold; once they have (a third of the way), the rulito is born. When the roots
-            // are already there, from an earlier time, it is born at once.
+            // First the roots take hold; once they are whole, the rulito is born. When the roots are already
+            // there, from an earlier time, it is born at once.
             rootGrow = Math.min(1, rootGrow + dt / ROOT_TIME);
-            if (rootGrow >= 0.3) {
+            if (rootGrow >= 1) {
                 // It starts quickly and eases in as it gets there: the dot is out at once, the stroke runs, the loop is a flick
                 grown = Math.min(1, grown + dt / GROW);
                 head = Math.max(head, 1 - (1 - grown) ** 1.6);

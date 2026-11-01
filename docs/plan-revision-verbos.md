@@ -236,15 +236,16 @@ Gesto de la mano: `hold` sobre lo que se sostiene. Motor común: `useRooting.js`
 **Regla 4 en todas:** al soltar, lo crecido se deshace de a poco (la cola del rulito alcanza a la cabeza). `useRooting.js`, Paciencia y Hogar ya lo hacen; revisar Addhitthana y que las seis se sientan iguales.
 
 - **27 Paciencia:** ✅ pista hecha (con la espera de 7 s también después de ganar). El lugar del rulito está bien (fracciones del bote, coincide con la carta).
-  - **Cuándo nace el rulito (pedido de Juan Manuel):** tiene que nacer **cuando las raíces están completas**, no mientras se están creando. Hoy nace con las raíces a un 30 % (`rootGrow >= 0.3` en `ScenePaciencia.vue`). Pasa a `rootGrow >= 1`, y revisar que el tiempo total sostenido siga sintiéndose bien.
-- **25 Hogar:**
-  - Hoy solo hay pista antes del primer toque (el núcleo late). Hace falta `hold` sobre el núcleo, también después.
-  - **Cuándo nace el rulito:** como en Paciencia, tiene que nacer cuando las raíces llegaron todas, no mientras crecen. Hoy nace con las raíces a un cuarto (`BORN = 0.25`).
-  - Rulito: ver la decisión sobre los rulitos tenues. Hoy no sigue el `sy` ni el giro de la larva (`SceneHogar.vue` ≈491-494 y 594-597).
-- **7 Addhitthana:**
-  - Pista: `hold` sobre Particular.
+  - **Cuándo nace el rulito (pedido de Juan Manuel):** ✅ hecho. Nace **cuando las raíces están completas** (`rootGrow >= 1`). Para que el total sostenido no se alargue, las raíces tardan 2 s (antes 2,4) y el rulito 2 s más (antes 2,6): 4 s en total, contra 3,3 s de antes. Falta probar en un teléfono si se siente bien.
+- **25 Hogar:** ✅ hecho (falta probar en un teléfono).
+  - Pista: `hold` sobre el núcleo con la mano, a los 7 s, también después de ganar. La chispa sigue respirando antes del primer toque.
+  - **Cuándo nace el rulito:** cuando llegaron todas las raíces (se sacó `BORN`). Las raíces tardan 2,6 s (antes 3,6) y el rulito 2 s más: 4,6 s en total.
+  - Rulito: sobre la cabeza de la larva, colgado del mismo nodo que ella (`L.larvaNode`), así que nada, gira y se escala con ella, y se corre con su `sy` para quedar sobre la cabeza cuando se estira o se acurruca.
+- **7 Addhitthana:** ✅ hecho (falta probar en un teléfono).
+  - Pista: `hold` sobre Particular con la mano (3 s), a los 7 s; la luz sigue latiendo a la vez.
   - Rulito bien (`art.rulito`, en `L.boat`).
-  - Doc desactualizada en `docs/escenas.md`: dice `HOLD` 4.2, pero el código tiene `CHARGE` 1.6 + `HOLD` 3.4; dice `LINGER` 9, pero es 4; dice un `kindle` "en cada cuarto", pero es en tercios.
+  - Regla 4: ya la cumple (al soltar, la cola alcanza a la cabeza; entero, se queda `LINGER` y se va).
+  - Doc corregida en `docs/escenas.md` y `verbos-y-dinamicas.md` (`CHARGE` 1,6 + `HOLD` 3,4, `LINGER` 4, un `kindle` por tercio).
 - **16 Compromiso:**
   - Pista: `hold` sobre los seres (hoy echa chispas al pie del camino).
   - **El rulito es el peor caso:** usa la "z" del cielo y, en el teléfono, queda pegado al borde derecho bajo el título (`SceneCompromiso.vue` ≈319-325). Va **sobre el Sama grande del bote** (decidido).

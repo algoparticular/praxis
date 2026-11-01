@@ -21,8 +21,8 @@
     // the nucleus. Holding the nucleus stops time: the crown and its antennae stop, the water calms and the organelles
     // stay where they are, and the larva swims home and curls up against it. From the foot of every mushroom a root of
     // light grows across the water to the nucleus (useCellRoots), one by one; when a root gets there, a bead of light
-    // runs back up it and that mushroom's cap lights with the spark's warmth, and the spark grows. Meanwhile the rulito
-    // is born over the larva's head; it is whole when the last mushroom is lit: it flares, a wave of light runs out of
+    // runs back up it and that mushroom's cap lights with the spark's warmth, and the spark grows. When the last mushroom
+    // is lit the rulito is born over the larva's head (it hangs from her); whole, it flares, a wave of light runs out of
     // the nucleus along every root and each mushroom throws its spores as it gets there. Let go and time runs again: the
     // crown turns, the larva wanders off and the rulito's tail catches up with its head. Once the rulito is gone the roots
     // and the lit caps fade away, and the next hold grows them again (brighter each time it is completed, up to three).
@@ -35,6 +35,7 @@
     import { createSparks } from '../../composables/useSparks.js';
     import { createCellRoots } from '../../composables/useCellRoots.js';
     import { play } from '../../composables/useSound.js';
+    import { createGhostHand, gesture, HINT_AFTER } from '../../composables/useGhostHand.js';
     import { sceneMilestone } from '../../analytics.js';
     import Rulito from '../Rulito.vue';
     import art from '../../composables/hogarScene.json';
@@ -234,9 +235,8 @@
 
     /* ---------- Arraigar: hold the nucleus, time stops, the roots reach it and every mushroom lights ---------- */
 
-    const HOLD = 3.6;                       // seconds of holding for the roots to reach the nucleus from every mushroom
-    const BORN = 0.25;                      // how far the roots have to have grown for the rulito to be born
-    const GROW = 2.8;                       // seconds of holding to draw the rulito whole (it waits for the last mushroom)
+    const HOLD = 2.6;                       // seconds of holding for the roots to reach the nucleus from every mushroom
+    const GROW = 2.0;                       // then, seconds of holding to draw the rulito whole
     const LINGER = 0.9, EAT = 3.4;          // a whole rulito stays, then its tail goes all the way along it
     const BEAD = 0.45;                      // seconds the light takes to run back up a root to its mushroom
     const PULSE_TIME = 1.4;                 // and the wave out of the nucleus, along all of them
@@ -271,6 +271,8 @@
     let lastNote = -1;
     let swayTime = 0;                       // the antennae's own clock, which stops with time
     let glyph = null;
+    let hand = null;                        // left alone 7 s, the ghost hand holds the nucleus
+    let overHead = 0;                       // px from the larva's feet (where she squashes from) up to the rulito's foot
 
     // Pressing the nucleus: time stops while it is held
     const hold = () => {
@@ -339,14 +341,16 @@
             if (was < 1 && wave >= 1) sporesAll();
             if (wave > 1.4) wave = -1;
         }
-        // Held, the roots grow; once they are a quarter of the way, the rulito is born, and it is whole only when the
-        // last mushroom is lit. Let go, after a moment its tail catches up with its head; the roots stay.
+        // Left alone (not held, no rulito alive), the ghost hand shows the gesture: holding the nucleus
+        if (hand?.due(HINT_AFTER, !held && head === 0 && ramp >= 1)) hand.play(gesture.hold(coreHit.value, 2.4));
+        // Held, the roots grow; once every one has reached the nucleus (the last mushroom is lit), the rulito is born.
+        // Let go, after a moment its tail catches up with its head; the roots stay.
         if (held) {
             idle = 0;
             grow = Math.min(1, grow + dt / HOLD);
-            if (grow >= BORN) {
+            if (grow >= 1) {
                 grown = Math.min(1, grown + dt / GROW);
-                head = Math.max(head, Math.min(grow >= 1 ? 1 : 0.94, 1 - (1 - grown) ** 1.6));
+                head = Math.max(head, 1 - (1 - grown) ** 1.6);
             }
             tail = Math.max(0, tail - dt / 0.8);
         } else if (head > 0) {
@@ -447,8 +451,10 @@
         });
         // The roots, over the organelles and under the larva
         L.roots = L.planet.canvas(rootsCanvas, { blending: 'add', bloom: true });
-        L.larva = L.planet.image('/assets/hogar/larva.webp');
-        L.rulito = L.planet.canvas(rulito.value.canvas, { bloom: true });
+        // The larva and the rulito over its head hang from one node, so the rulito swims, turns and squashes with her
+        L.larvaNode = L.planet.group();
+        L.larva = L.larvaNode.image('/assets/hogar/larva.webp');
+        L.rulito = L.larvaNode.canvas(rulito.value.canvas, { bloom: true });
         L.crown = L.planet.group();
         // The antennae, under the mushrooms (as drawn), each swaying from its foot with its blue tip
         L.antennae = ANTENNAE.map((a) => {
@@ -486,12 +492,15 @@
         });
         // The larva walks about on its feet
         const larva = inFrame(LARVA);
-        L.larva.place(larva, { x: larva.left + larva.w / 2, y: larva.top + larva.h * 0.8 });
+        const feet = { x: larva.left + larva.w / 2, y: larva.top + larva.h * 0.8 };
+        L.larvaNode.pivot = feet;
+        L.larva.place(larva, feet);
         // The rulito over its head (its canvas is bigger than the glyph, for the glow, as in Paciencia), going with it
         const rh = LARVA.h * 0.7, rw = rh * 32 / 86;
         glyph = inFrame({ left: LARVA.left + LARVA.w / 2 - rw / 2, top: LARVA.top - 0.006 - rh, w: rw, h: rh });
         L.rulito.place({ left: glyph.left - 0.4375 * glyph.w, top: glyph.top - 0.1628 * glyph.h, w: glyph.w * 1.875, h: glyph.h * 1.3256 },
             { x: glyph.left + glyph.w / 2, y: glyph.top + glyph.h });
+        overHead = feet.y - (glyph.top + glyph.h);
         // The crown turns about the middle of the inside of the cell
         L.crown.pivot = centre;
         L.crownPic.place(inFrame(CROWN));
@@ -582,18 +591,17 @@
         // The larva floats, leaning into its way and bobbing; a knock makes it squash a little
         const me = water.swimmer;
         tilt += (Math.max(-1, Math.min(1, me.vx / 0.012)) * 16 - tilt) * Math.min(1, dt * 1.5);
-        L.larva.x = (me.x - LARVA_AT.x) * F.size;
-        L.larva.y = ((me.y - LARVA_AT.y) + Math.sin(t * 0.9) * 0.0025) * F.size;
-        L.larva.rotate = (tilt + Math.sin(t * 0.6) * 4 * ramp) * (1 - 0.6 * nest) + 6 * nest;
-        L.larva.scale = 1 + Math.min(me.hit, 0.3) * 0.12;
+        L.larvaNode.x = (me.x - LARVA_AT.x) * F.size;
+        L.larvaNode.y = ((me.y - LARVA_AT.y) + Math.sin(t * 0.9) * 0.0025) * F.size;
+        L.larvaNode.rotate = (tilt + Math.sin(t * 0.6) * 4 * ramp) * (1 - 0.6 * nest) + 6 * nest;
+        L.larvaNode.scale = 1 + Math.min(me.hit, 0.3) * 0.12;
         // It breathes as it swims; at home it curls up against the nucleus, breathing slowly
         const breath = reduced ? 0 : Math.sin(t * 1.2) * ramp;
         L.larva.sx = 1 + nest * 0.05 + (0.01 + 0.005 * nest) * breath;
         L.larva.sy = 1 - nest * 0.08 + (0.018 + 0.002 * nest) * breath;
-        // The rulito goes with it
-        L.rulito.x = L.larva.x;
-        L.rulito.y = L.larva.y;
-        L.rulito.rotate = L.larva.rotate * 0.5 + Math.sin(t * 1.8) * 3 * ramp;
+        // The rulito goes with her (it hangs from her node) and stays on her head as she stretches and curls up
+        L.rulito.y = (1 - L.larva.sy) * overHead;
+        L.rulito.rotate = Math.sin(t * 1.8) * 3 * ramp;
         L.rulito.scale = 1 + 0.2 * pop * pop;
         stage.render(t);
         if (frames++ % 2 === 0) placeHits();
@@ -620,6 +628,7 @@
         });
         // The layers and their layout first, so the particles measured on them are made again after them on a resize
         build(stage);
+        hand = createGhostHand(stage);
         stage.onResize((W, H) => place(W, H));
         // The sky's dots, far behind
         sky = startStardust(null, {
@@ -676,6 +685,7 @@
         sky?.destroy();
         dust?.destroy();
         front?.destroy();
+        hand?.destroy();
         stage?.destroy();
         stageEl?.style.removeProperty('--name-glow');
         window.removeEventListener('pointerup', release);
