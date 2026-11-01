@@ -86,7 +86,7 @@ Pedido de Juan Manuel: los soles y las lunas de este estilo vivo tienen que ser 
 | 8 Metta | la gran luz amarilla y la luz turquesa |
 | 27 Paciencia | el sol |
 | 11 Aceptación | el sol rosa |
-| 15 Ciclos | el sol rojo: ✅ todo de puntos, como Pañña (decidido por Juan Manuel; la luna queda igual) |
+| 15 Ciclos | el sol rojo |
 | 24 Gratitud | los soles durazno y rosa |
 | 32 Transformación | el solcito de la copa |
 | 6 Sacca | la luna |
