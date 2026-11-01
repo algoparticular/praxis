@@ -75,6 +75,7 @@ Pedido de Juan Manuel: los soles y las lunas de este estilo vivo tienen que ser 
 - **Cómo está hecho el de Pañña** (`ScenePanna.vue`, grupo 2 de `back`): el sol entero es un punteado denso de partículas, muestreado de la imagen del sol (`sample('sun', …)`), sin un disco sólido debajo. Por eso se funde con el cielo.
 - **Cómo están hechos los otros:** un disco sólido en código (`disc()`) y el punteado solo en el borde. El borde del disco se ve.
 - **Honestidad:** completar el sol tal como lo tiene Pañña. ✅ Hecho: la luz entera es un punteado de partículas, sin disco. El mapa de densidad sale de la carta terminada con `scripts/sun-cloud.mjs` (como la carta corta la luz arriba, la completa con el borde de sus costados) y `src/composables/stippleCloud.js` lo vuelve puntos, con el mismo muestreo de Pañña. Para las demás cartas alcanza con agregar su línea al script.
+- **Metta:** ✅ Hecho (pedido de Juan Manuel, 1 de noviembre). Las dos luces son demasiado grandes para ser todas de puntos (serían cientos de miles), así que quedan como disco con el borde disuelto: el script lee de la carta la banda punteada de cada una (en los arcos donde no hay nada dibujado encima) y la dibuja alrededor; el disco llega solo hasta donde la banda es todavía entera, y sus puntos más densos tapan el borde.
 
 **Soles, lunas y luces redondas hechos con `disc()`, para revisar uno por uno:**
 
@@ -82,7 +83,7 @@ Pedido de Juan Manuel: los soles y las lunas de este estilo vivo tienen que ser 
 |---|---|
 | 26 Honestidad | la luz de la superficie: ✅ hecha, toda de puntos como Pañña |
 | 4 Viriya | el sol |
-| 8 Metta | la gran luz amarilla y la luz turquesa |
+| 8 Metta | la gran luz amarilla y la luz turquesa: ✅ hechas, disco con el borde disuelto en su punteado |
 | 27 Paciencia | el sol |
 | 11 Aceptación | el sol rosa |
 | 15 Ciclos | el sol rojo |
