@@ -7,7 +7,7 @@ El problema de fondo: casi todas las escenas, dejadas solas, hacen brillar algo.
 ## Reglas decididas
 
 1. **Las pistas no tienen texto.** Muestran el gesto, con la **mano fantasma**: un dedo de luz hecho de puntos (opción C), que hace el gesto sobre el lugar real.
-2. **El rulito nace donde lo dibuja la carta original. Si la carta no dibuja uno, nace sobre un personaje.** Nunca sobre un lugar fijo de la pantalla ni sobre un objeto que no es un personaje.
+2. **El rulito nace donde lo dibuja la carta original. Si la carta no dibuja uno, nace sobre un personaje.** Nunca sobre un lugar fijo de la pantalla. Las excepciones ya decididas, carta por carta, están en "Dónde nace el rulito: decidido" y mandan sobre esta regla.
 3. Lo de siempre (`docs/verbos-y-dinamicas.md`): nada se pierde, la lectura no se bloquea, se juega con teclado y con movimiento reducido.
 
 ## Paquete 0: la mano fantasma (`src/composables/useGhostHand.js`)
@@ -68,6 +68,51 @@ Cada paquete toca sus escenas y, como mucho, el motor de su verbo. En cada carta
 
 Al terminar, `npm run check` y probar en un teléfono.
 
+## Revisión juego por juego de las 18 cartas del 31 de octubre
+
+Las 18 cartas que se hicieron jugables el 31 de octubre tienen muchos detalles para revisar. Se revisan **una por una, con Juan Manuel**, como se hizo con las 15 anteriores: él la prueba en el teléfono, cuenta lo que ve y el chat lo arregla. No se reparten a ciegas.
+
+| PR del 31/10 | Cartas |
+|---|---|
+| #74 Dar y recibir | 8 Metta, 24 Gratitud |
+| #77 Resonar | 12 Armonía, 17 Comunicación, 26 Honestidad |
+| #76 Fluir | 5 Khanti (rehecha ese día con el motor común), 11 Aceptación, 32 Transformación, 14 Celebración |
+| #78 Soltar y Arraigar | 15 Ciclos, 28 Perdón, 16 Compromiso, 18 Confianza, 23 Fe |
+| #79 Ver y Encender | 30 Esperanza, 13 Belleza, 19 Coraje, 21 Desafío |
+
+**Para no tocar dos veces la misma escena:** en estas 18 cartas, lo que el plan pide en los paquetes A a G (la pista con la mano, el rulito decidido y lo marcado) se hace **dentro de su revisión**, junto con lo que Juan Manuel encuentre. Los paquetes A a G se reparten en paralelo solo para las otras 14 cartas con juego: Paciencia, Vipassana, Nekkhamma, Sila, Dana, Pañña, Viriya, Sacca, Addhitthana, Upekkha, Evolución, Hogar, Sincronicidad y Creatividad.
+
+Khanti es a la vez un ejemplo de la etapa 1 y una de las 18. Su mano se conecta en la etapa 1, y el resto de Khanti va en su revisión.
+
+**Cómo es cada revisión (un chat por carta, de a una):**
+1. El chat lee esta carta en el plan (su paquete) y en `docs/escenas.md`.
+2. Juan Manuel la prueba en el teléfono y lista lo que ve.
+3. El chat arregla lo que listó, más la pista, el rulito y lo marcado en el plan. Antes de inventar algo, pregunta.
+4. Muestra el resultado (video o capturas), corre `npm run check`, actualiza `docs/escenas.md` y `CLAUDE.md` en lo de esa carta, y marca la carta como revisada en esta tabla.
+
+**Estado:**
+
+| Carta | Revisada |
+|---|---|
+| 8 Metta | no |
+| 24 Gratitud | no |
+| 12 Armonía | no |
+| 17 Comunicación | no |
+| 26 Honestidad | no |
+| 5 Khanti | no |
+| 11 Aceptación | no |
+| 32 Transformación | no |
+| 14 Celebración | no |
+| 15 Ciclos | no |
+| 28 Perdón | no |
+| 16 Compromiso | no |
+| 18 Confianza | no |
+| 23 Fe | no |
+| 30 Esperanza (con las formas de las constelaciones) | no |
+| 13 Belleza | no |
+| 19 Coraje | no |
+| 21 Desafío | no |
+
 ## Paquete H: documentar en el GDD
 
 El GDD es el artefacto "Anima GDD". Sus pestañas salen de los documentos de `docs/` (ver `docs/README.md`).
@@ -90,7 +135,7 @@ Los puntos 1 a 4 se pueden hacer ya con lo decidido. Cada paquete agrega despué
 - **Conflictos esperables:** en `CLAUDE.md` y `docs/escenas.md`, porque todos los paquetes editan esos archivos (cada uno sus párrafos). Se resuelven al mergear; por eso conviene mergear los paquetes de a uno.
 - **Si se orquesta desde un chat con sub-sesiones:** el chat principal reparte los paquetes, revisa cada resultado (lint, `npm run check`, capturas de pantalla o video de la escena) y mergea de a uno. Las decisiones de la lista de abajo no las toma ninguna sub-sesión: se le preguntan a Juan Manuel.
 - **Indicación para cada chat** (copiar y completar):
-  > Leé `docs/plan-revision-verbos.md` (en `main`, o en la rama `claude/music-chakra-cards-jft7f9`). Hacé el paquete X: para cada carta, la pista con la mano fantasma, el rulito según la regla 2 y lo marcado. No toques `useGhostHand.js` ni escenas de otros paquetes. Lo que figure "a decidir", preguntámelo antes. Al terminar, `npm run check`, un video o capturas de cada escena, y actualizá en el plan el estado de tus cartas.
+  > Leé `docs/plan-revision-verbos.md` en `main`. Hacé el paquete X, solo para las cartas que no son del 31/10 (esas se revisan de a una, con Juan Manuel): para cada carta, la pista con la mano fantasma, el rulito según la regla 2 y lo marcado. No toques `useGhostHand.js` ni escenas de otros paquetes. Lo que figure "a decidir", preguntámelo antes. Al terminar, `npm run check`, un video o capturas de cada escena, y actualizá en el plan el estado de tus cartas.
 
 ## Dónde dibuja el rulito cada carta original
 
@@ -117,10 +162,10 @@ Cajas en px de la carta de 2160, como `[x, y, ancho, alto]`. Están medidas sobr
 | 3, 5, 12, 13, 14, 15, 16, 17, 18, 21, 23, 24, 26, 29, 30 | no | | va sobre un personaje |
 | 31 Vipassana | probablemente no | | va sobre Sid |
 
-**Cajas guardadas que no son rulitos (hay que corregirlas):**
-- **Compromiso**, `compromisoScene.json` `rulito`: es la "z" amarilla del cielo.
-- **Esperanza**, `esperanzaScene.json` `rulito`: también es una "z" del cielo.
-- **Transformación**, `transformacionScene.json`: marca la espiral de la semilla.
+**Cajas guardadas que no marcan el rulito de la carta:**
+- **Compromiso**, `compromisoScene.json` `rulito`: es la "z" amarilla del cielo. Hay que dejar de usarla: el rulito va sobre el Sama grande.
+- **Esperanza**, `esperanzaScene.json` `rulito`: también es una "z" del cielo. Hay que dejar de usarla: el rulito va sobre Vulpes.
+- **Transformación**, `transformacionScene.json`: marca la espiral de la semilla. Está bien así, porque el rulito va sobre la semilla (decidido).
 
 **Sistemas de coordenadas de los JSON:**
 - La mayoría usa el cuadrado de 2160.
@@ -128,19 +173,26 @@ Cajas en px de la carta de 2160, como `[x, y, ancho, alto]`. Están medidas sobr
 - Perdón usa un retrato de 2160×2700: carta = 0.8·json + (216, 0).
 - Paciencia guarda fracciones de la caja del bote.
 
-**A decidir con Juan Manuel:**
-- **Creatividad, Evolución y Hogar:** ¿se respeta el rulito tenue de la carta, al costado del personaje, o va sobre su cabeza?
-- **El personaje elegido** en las cartas sin rulito donde hoy cae sobre algo que no es un personaje. Propuestas:
-  - Compromiso: el ser grande del bote.
-  - Esperanza: el ser del aura rosa.
-  - Desafío: Vulpes.
-  - Khanti: por definir; hoy está sobre el cartel.
-  - Celebración: por definir; hoy está sobre la llama.
-  - Confianza: por definir; hoy está sobre la chakana.
-  - Armonía: por definir; hoy está entre las medusas.
-  - Sincronicidad: por definir; hoy está sobre la burbuja de la pareja.
-  - Comunicación: por definir; hoy está en la luz.
-  - Belleza: por definir; hoy está sobre la pareja, corrido.
+### Dónde nace el rulito: decidido
+
+Decidido por Juan Manuel el 1 de noviembre. Manda sobre la regla 2.
+
+| Carta | Dónde va el rulito | Qué cambia |
+|---|---|---|
+| 2 Dana | como está hoy | nada: se descarta el arreglo que proponía este plan |
+| 32 Transformación | sobre la semilla (del mundo Sporá), como está hoy | nada; solo cuidar que la semilla, al hincharse, no se meta en el rulito. La caja del JSON que marca la espiral de la semilla es la que se usa; el rulito amarillo de la carta junto a la copa no se usa |
+| 29 Sincronicidad | como está hoy | nada |
+| 16 Compromiso | sobre el Sama grande del bote | deja de usar la "z" del cielo y el tope contra el borde de la pantalla |
+| 30 Esperanza | sobre Vulpes | deja de estar sobre el ancestro sentado; los hilos lo esquivan con `hole` |
+| 21 Desafío | sobre Vulpes | deja de estar sobre la luz del laberinto, donde podía tapar el nombre |
+| 5 Khanti | arriba de todo el sistema de tubos, para que se vea | deja de estar sobre el cartel del centro |
+| 14 Celebración | **un rulito sobre cada personaje** de la ronda | deja de haber uno solo sobre la llama |
+| 18 Confianza | sobre todo el laberinto | deja de estar sobre la chakana |
+| 12 Armonía | **un rulito sobre cada medusa** (dos) | deja de haber uno solo entre las dos |
+| 17 Comunicación | sobre la medusa del medio | deja de estar en la luz |
+| 13 Belleza | sobre Sid, el que está abrazando al otro | deja de estar a mano, corrido sobre el ser de atrás |
+
+**Sigue a decidir:** Creatividad, Evolución y Hogar. ¿Se respeta el rulito tenue que dibuja la carta, al costado del personaje, o va sobre su cabeza?
 
 **Para que el rulito acompañe:** cuando cuelga de un grupo pero el personaje se estira o gira dentro de ese grupo (`sy`, `rotate`), el rulito no lo sigue. Lo mejor es colgarlo del mismo nodo que el personaje, o copiarle también la escala y el giro.
 
@@ -160,10 +212,10 @@ Gesto de la mano: `hold` sobre lo que se sostiene. Motor común: `useRooting.js`
   - Doc desactualizada en `docs/escenas.md`: dice `HOLD` 4.2, pero el código tiene `CHARGE` 1.6 + `HOLD` 3.4; dice `LINGER` 9, pero es 4; dice un `kindle` "en cada cuarto", pero es en tercios.
 - **16 Compromiso:**
   - Pista: `hold` sobre los seres (hoy echa chispas al pie del camino).
-  - **El rulito es el peor caso:** usa la "z" del cielo y, en el teléfono, queda pegado al borde derecho bajo el título (`SceneCompromiso.vue` ≈319-325). La carta no dibuja rulito, así que va sobre un personaje (a decidir).
+  - **El rulito es el peor caso:** usa la "z" del cielo y, en el teléfono, queda pegado al borde derecho bajo el título (`SceneCompromiso.vue` ≈319-325). Va **sobre el Sama grande del bote** (decidido).
 - **18 Confianza:**
   - La pista actual (destello y un anillo) es igual al anillo que el fondo manda cada 7 s (`RING`), así que no se distingue. Hace falta `hold` sobre el centro.
-  - Rulito sobre la chakana: a decidir si va sobre un ser.
+  - Rulito: va **sobre todo el laberinto** (decidido); hoy está sobre la chakana.
 - **23 Fe:**
   - Pista: `hold` sobre Sid.
   - Rulito sobre Sid, bien (x = 1090; la cabeza está en ≈1123, se puede afinar).
@@ -195,15 +247,14 @@ Gesto de la mano: `slide` a lo largo del tramo de ruta que está delante de la c
 
 - **Común a las cuatro:** la "llamada" (`call = touched ? clamp((idle-3)/2) : 1`) está copiada con números sueltos en las cuatro escenas. Conviene llevarla, junto con la pista, a `useFlow.js`: algo como un `flow.hintPath(len)` que devuelva los próximos puntos de la ruta para `gesture.slide`.
 - **5 Khanti** (ejemplo de la etapa 1):
-  - Rulito: hoy en porcentajes fijos a mano sobre el cartel (`SceneKhanti.vue` ≈683-685). La carta no dibuja rulito, así que va sobre un personaje (a decidir).
+  - Rulito: hoy en porcentajes fijos a mano sobre el cartel (`SceneKhanti.vue` ≈683-685). Va **arriba de todo el sistema de tubos, para que se vea** (decidido), calculado desde la caja de los tubos y no en porcentajes a mano.
 - **11 Aceptación:**
   - Rulitos: las cajas de la carta, bien.
   - Al ganar, los seres se estiran (`hop`) y la cabeza entra en el rulito: o se cuelgan de cada ser, o se acota el estirón.
 - **14 Celebración:**
-  - Rulito sobre la llama: al crecer (`grown`), la llama atraviesa la mitad de abajo del rulito (`SceneCelebracion.vue` ≈649). Va sobre un personaje (a decidir) o, como mínimo, más arriba.
+  - Rulito: hoy hay uno solo sobre la llama, y al crecer (`grown`) la llama lo atraviesa (`SceneCelebracion.vue` ≈649). Va **un rulito sobre cada personaje** de la ronda (decidido), cada uno colgado de su personaje.
 - **32 Transformación:**
-  - Rulito: hoy está fijo sobre la semilla, y la semilla al hincharse lo toca.
-  - **El de la carta** está en [1178,391,62,179], a la derecha de la copa: hay que moverlo ahí y corregir la caja del JSON y el comentario (línea 21).
+  - Rulito: va **sobre la semilla, como está hoy** (decidido). Solo cuidar que la semilla, al hincharse (escala ≈1.13), no se meta en el pie del rulito.
 
 ## Paquete D: Encender (frotar, después tirar y soltar)
 
@@ -226,7 +277,7 @@ Gesto de la mano: en frío, `rub` sobre la fuente; encendido, `sling` desde la f
   - Doc: `docs/escenas.md`:116 todavía dice "not played yet".
 - **21 Desafío:**
   - Pista: `rub` sobre Vulpes y después `sling` hacia la puerta.
-  - Rulito: sobre la luz del laberinto; puede tocar el nombre (sube por encima de `TOP` = 330) y las motas lo atraviesan. Va sobre Vulpes (propuesta).
+  - Rulito: sobre la luz del laberinto; puede tocar el nombre (sube por encima de `TOP` = 330) y las motas lo atraviesan. Va **sobre Vulpes** (decidido).
   - Doc: dice que un toque en Vulpes toca el acorde, pero hoy frota.
 - **Sonido:** en `CLAUDE.md`, sección Sound, faltan los `resolve` de Coraje (E7 → A) y de Desafío (D7 → G).
 
@@ -243,10 +294,7 @@ Cartas:
   - Rulito: caja de la carta, bien. Cuelga de `L.figures`, no del corazón, así que no sigue su estirón al hablar (menor).
 - **29 Sincronicidad** (ejemplo de la etapa 1):
   - **No tiene pista por inactividad:** hace falta `tap` a tiempo sobre la burbuja que brilla.
-  - Rulito:
-    - Ancho = 0.065 del marco.
-    - Solo copia la `y` del grupo de la burbuja, no su escala ni su giro, así que puede hundirse en la burbuja al nacer.
-    - Va sobre un personaje (a decidir).
+  - Rulito: **está bien como está** (decidido).
 - **6 Sacca:**
   - Pista: `taps` sobre una nube de cada color de la frase, en orden.
   - Rulito: caja de la carta, bien.
@@ -257,10 +305,10 @@ Cartas:
   - Doc: dice que con movimiento reducido "no se juega", pero `compose()` no lo revisa.
 - **12 Armonía:**
   - Pista: `tap` a tiempo sobre la medusa derecha, en los pulsos (no en el silencio).
-  - Rulito: entre las medusas, coherente, pero a decidir si va sobre una. Con el marco abajo en pantallas altas puede acercarse al nombre.
+  - Rulito: hoy hay uno entre las medusas. Va **un rulito sobre cada medusa** (decidido), cada uno colgado de la suya. Cuidar que no se acerquen al nombre en pantallas altas.
 - **17 Comunicación:**
   - Pista: `taps` sobre los seres en el orden cantado.
-  - Rulito: en la luz, a la profundidad de los seres, así que se desliza con la paralaje (`DEPTH.beings` contra `DEPTH.light`). A decidir si va sobre un ser.
+  - Rulito: en la luz, a la profundidad de los seres, así que se desliza con la paralaje (`DEPTH.beings` contra `DEPTH.light`). Va **sobre la medusa del medio** (decidido).
 - **26 Honestidad:**
   - Pista: primero `tap` sobre una burbuja despierta; con todas calladas, `tap` a tiempo sobre la medusa, en el ritmo de la frase.
   - Rulito sobre la medusa, bien.
@@ -270,7 +318,8 @@ Cartas:
 Gesto de la mano: `tap` sobre el que hoy titila. Motor común: `useGiving.js`, que hoy pone el `flash` al azar: ahí puede vivir la llamada a la mano.
 
 - **2 Dana** (ejemplo de la etapa 1):
-  - **Rulito:** la carta dibuja **uno solo**, blanco, sobre el ser de la derecha, en [1416,472,76,233]. La escena pone dos rulitos en porcentajes del marco, colgados de `L.isle`, que no siguen el giro de los amigos (`SceneDana.vue` 123, 145-149, 532-533 y 604). Hay que usar el de la carta, colgado de ese ser.
+  - Pista: `tap` sobre el receptor que hoy titila.
+  - Rulito: **está bien como está** (decidido). No se cambia.
 - **8 Metta:**
   - **Pista contradictoria:** antes de que Sid se ame, el motor hace titilar a un receptor que todavía no se puede tocar (`useGiving.js`:138), al mismo tiempo que la luz de Sid llama. La primera pista tiene que ser solo `tap` sobre Sid.
   - Rulito bien.
@@ -292,10 +341,10 @@ Gestos de la mano: `drag` entre las dos luces del primer hilo que falta (Pañña
   - **Rulito:**
     - Hoy está en `HEAD_AT`, a mano, sobre el ancestro sentado: casi pegado a él, y los hilos de bajada lo cruzan (sin `threads.hole`).
     - La caja del JSON es la "z" del cielo.
-    - Va sobre el ser del aura rosa (propuesta), con `hole` para que los hilos lo esquiven.
+    - Va **sobre Vulpes** (decidido), con `hole` para que los hilos lo esquiven.
 - **13 Belleza:**
   - Pista: hoy destella el escondido (solo *dónde*). Hace falta `hold` quieto sobre él, que es el gesto, con el anillo llenándose.
-  - Rulito: `RULITO_AT` a mano, corrido hacia el borde derecho del ser de atrás, colgado de `L.pair`, que no se mueve. Va centrado sobre un personaje (a decidir).
+  - Rulito: `RULITO_AT` a mano, corrido hacia el borde derecho del ser de atrás, colgado de `L.pair`, que no se mueve. Va **sobre Sid, el que está abrazando al otro** (decidido), colgado de él.
   - Doc: dice "en cualquier parte", pero sobre los dos personajes no cuenta como mirar.
 
 ---
@@ -305,20 +354,20 @@ Gestos de la mano: `drag` entre las dos luces del primer hilo que falta (Pañña
 1. **Etapa 1:** conectar la mano en Vipassana, Khanti, Evolución, Dana y Sincronicidad. Paciencia y Pañña ya están. Se puede repartir: son escenas distintas que no se pisan.
 2. **Paquete 0:** Juan Manuel prueba las siete en un teléfono y se cierra el aspecto de la mano.
 3. **Paquete H, puntos 1 a 4**, en paralelo con lo anterior: documentar lo ya decidido.
-4. **Etapa 2: paquetes A a G**, un chat por paquete. Empezar por lo más roto:
-   - el rulito de Compromiso;
-   - el rulito de Upekkha en pantalla ancha;
-   - el rulito de Dana;
-   - el rulito de Transformación;
-   - la pista de Metta;
-   - las cartas sin pista: Creatividad y Hogar.
-5. **Esperanza:** las formas de las constelaciones, cuando estén definidas.
-6. **Paquete H, punto 5:** volver a publicar el artefacto "Anima GDD" con todo al día.
+4. **Después del paquete 0, dos frentes a la vez:**
+   - **En paralelo, los paquetes A a G**, solo para las 14 cartas que no son del 31/10. Empezar por:
+     - el rulito de Upekkha en pantalla ancha;
+     - las cartas sin pista: Creatividad y Hogar.
+   - **De a una, con Juan Manuel, la revisión de las 18 cartas del 31/10.** Cada una lleva adentro sus arreglos de los paquetes. Conviene empezar por lo más roto:
+     - el rulito de Compromiso;
+     - la pista de Metta;
+     - los rulitos nuevos de Celebración y Armonía, uno por personaje.
+     - Esperanza incluye las formas de las constelaciones.
+5. **Paquete H, punto 5:** volver a publicar el artefacto "Anima GDD" con todo al día.
 
 ## Decisiones abiertas (las toma Juan Manuel)
 
 - **La mano fantasma:** tamaño, brillo, velocidad, repeticiones y color sobre fondos claros.
 - **Creatividad, Evolución y Hogar:** ¿se respeta el rulito tenue de la carta, al costado del personaje, o va sobre su cabeza?
-- **Qué personaje lleva el rulito** en las cartas que no lo dibujan y donde hoy cae sobre algo que no es un personaje: Compromiso, Esperanza, Desafío, Khanti, Celebración, Confianza, Armonía, Sincronicidad, Comunicación y Belleza. Las propuestas están en "Dónde dibuja el rulito cada carta original".
 - **Esperanza:** qué formas reconocibles tienen las constelaciones de los ancestros.
 - **Nekkhamma:** si está bien que, dejado solo, le vuelva a crecer un hilo (se pierde avance, y la regla dice que nada se pierde).
