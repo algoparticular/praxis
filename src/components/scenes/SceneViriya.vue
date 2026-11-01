@@ -509,7 +509,7 @@
             ],
         });
         if (reduced) dust.reveal();
-        hand = createGhostHand(stage);
+        hand = createGhostHand(stage, { color: 0x143246, shade: 0xf7f8f1 });   // navy: the cream hand does not read on this light scene
         parallax = createParallax(root.value, frame);
         enter();
     };

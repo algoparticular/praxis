@@ -779,7 +779,7 @@
         build(stage);
         stage.onResize((W, H) => place(W, H));
         front = startStardust(null, { stage, groups: [{ ...sparks.group(), order: 1e6 }] });
-        hand = createGhostHand(stage);
+        hand = createGhostHand(stage, { color: 0x143246, shade: 0xf7f8f1 });   // navy: the cream hand does not read on this light scene
         root.value.addEventListener('pointermove', track, { passive: true });
         root.value.addEventListener('pointerdown', track, { passive: true });
         root.value.addEventListener('pointerup', release, { passive: true });
