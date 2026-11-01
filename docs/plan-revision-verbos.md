@@ -262,16 +262,18 @@ Gestos de la mano: `tap` sobre lo que se suelta. Cada tanto, `hold` sobre el per
 
 **Regla 4 en todas:** dejado solo, lo soltado vuelve de a poco, como en Nekkhamma. Revisar Vipassana, Upekkha, Ciclos y Perdón: si hoy no vuelven atrás, sumarlo (con un tiempo parecido al de Nekkhamma: 15 s solo, y después una cosa cada 4 s).
 
-- **0 Nekkhamma:** el rulito está bien (decidido).
-  - Pista: `tap` sobre el brote que hoy pulsa (el primero atado, `HINT` 7), y a veces `hold` sobre Sid.
+- **0 Nekkhamma:** ✅ hecho (falta probar en un teléfono). El rulito está bien (decidido).
+  - Pista: `tap` sobre el brote que pulsa, y cada tres veces `hold` sobre Sid. Se arregló de paso que la pista elegía el primer hilo atado, cuyo brote en el teléfono queda fuera de la pantalla: ahora elige uno que se ve.
   - Dejado solo 15 s le vuelve a crecer un hilo: está bien así (decidido), es la regla 4.
 - **31 Vipassana** (ejemplo de la etapa 1):
-  - Pista: `tap` sobre la célula que hoy brilla (`cellField.hint()`), y a veces `hold` sobre Sid.
+  - Pista: `tap` sobre la célula que hoy brilla (`cellField.hint()`), y a veces `hold` sobre Sid. ✅
   - Rulito sobre Sid, bien.
-- **9 Upekkha:**
-  - Pista: `tap` sobre el pensamiento que hoy brilla, y a veces `hold` sobre Sid.
-  - **Rulito:** el lugar es el de la carta, pero en pantalla ancha probablemente queda cortado arriba o tapa el nombre. El `layout` pone la fila de arte 560 a 130 px del borde y el rulito empieza 200 px de arte más arriba (`SceneUpekkha.vue` 63-79 contra 944-948). Hay que bajar o achicar el encuadre en ancho.
-- **15 Ciclos:**
+  - Regla 4: ✅ sumada. Dejada sola 15 s, vuelve una célula soltada cada 4 s (`cellField.gatherOne()`), y la espiral se alarga.
+- **9 Upekkha:** ✅ hecho (falta probar en un teléfono y en una pantalla ancha).
+  - Pista: `tap` sobre el pensamiento que brilla (la mano lo sigue), y cada tres veces, si ya está pegado, `hold` sobre Sid. Navy con halo crema: la crema no se leía sobre el cielo menta.
+  - **Rulito:** confirmado que en ancho quedaba cortado o sobre el nombre (a 1920×1080 empezaba 46 px por encima de la pantalla). El encuadre ancho ahora deja ver desde la punta del rulito (`RULITO_TOP`) hasta debajo del nombre (`nameClear()`): el dibujo queda un poco más chico y a los costados sigue la tierra espejada.
+  - Regla 4: ✅ sumada. Dejado solo 15 s, vuelve un pensamiento soltado cada 4 s (su aura se apaga un paso y llega otro).
+- **15 Ciclos** (del 31/10, va en su revisión):
   - Pista: `tap` sobre la gota que hoy se hincha, y a veces `hold` sobre Sid.
   - Rulito sobre Sid, bien.
 - **28 Perdón:**

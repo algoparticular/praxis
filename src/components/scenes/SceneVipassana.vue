@@ -69,6 +69,8 @@
     let heldBreath = false;      // the breath in progress was begun by a finger on him: when it goes out it lets go of what it caught
     let sidBreath = false;       // that breath is being held in by a finger on him
     let lastAct = performance.now();   // when the player last did something, for the hint
+    const IDLE_BACK = 15, BACK = 4;    // left alone 15 s, a cell let go comes back, then another every 4 s
+    let backAt = 0;
     let win = null;              // the rulito: { age, head, tail, full, fullAt, back }, from the last cell let go until it is gone
     let wins = 0;
     let sidReleasedAt = -Infinity;
@@ -104,7 +106,12 @@
     const onFieldEvent = (type) => {
         // The easter egg: held this long, everything that is left joins the orbits. He and his spiral flare to tell.
         if (type === 'power') { life?.flare(); spiral?.flare(); play('star'); return; }
-        if (type !== 'dissolve') { play('bloom'); return; }
+        if (type !== 'dissolve') {
+            play('bloom');
+            // A cell that came back on its own (left alone a while) lengthens the spiral again
+            if (type === 'form' && !win && cellField) spiral?.progress(cellField.remaining() / cellField.total);
+            return;
+        }
         play('release');
         if (!cellField) return;
         const left = cellField.remaining();
@@ -187,7 +194,10 @@
         hintTimer = setInterval(() => {
             if (!cellField || reducedMotion) return;
             if (win || sidBreath) { touched(); return; }
-            if ((performance.now() - lastAct) / 1000 > HINT_AFTER) cellField.hint();
+            const alone = (performance.now() - lastAct) / 1000;
+            if (alone > HINT_AFTER) cellField.hint();
+            // Left alone a while, what was let go comes back, one cell every BACK s (rule 4 of Soltar, as in Nekkhamma)
+            if (alone > IDLE_BACK && performance.now() - backAt > BACK * 1000 && cellField.gatherOne()) backAt = performance.now();
         }, 1400);
     };
     const touched = () => { lastAct = performance.now(); };
