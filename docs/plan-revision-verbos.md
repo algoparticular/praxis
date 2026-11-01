@@ -335,26 +335,28 @@ Gesto de la mano: en frío, `rub` sobre la fuente; encendido, `sling` desde la f
 
 ## Paquete E: Resonar (a tiempo, en eco o libre)
 
+**Paquete E: ✅ cerrado para las cartas que no son del 31/10** (Sila, Sacca y Creatividad; Sincronicidad en la etapa 1). Armonía, Comunicación y Honestidad van en su revisión. Falta probarlas en un teléfono.
+
 Gestos de la mano:
 - **A tiempo:** `tap` lanzado con `TAP_LEAD` antes del pulso, para que apoye justo en el tiempo, dos o tres pulsos seguidos.
 - **En eco:** `taps` en el orden de la frase.
 - **Libre:** `tap` sobre una pieza apagada.
 
 Cartas:
-- **1 Sila:**
-  - Pista: `tap` a tiempo sobre el corazón del atril. Hoy el corazón de Sid le manda el pulso al atril, que está bien pero no muestra el dedo.
+- **1 Sila:** ✅ hecho (falta probar en un teléfono).
+  - Pista: la mano toca el corazón del atril tres veces a tiempo, cada una en un latido (como Sincronicidad), mientras el corazón de Sid le manda el pulso. Navy: el atril está delante de la luna crema.
   - Rulito: caja de la carta, bien. Cuelga de `L.figures`, no del corazón, así que no sigue su estirón al hablar (menor).
 - **29 Sincronicidad** (ejemplo de la etapa 1):
   - **No tiene pista por inactividad:** hace falta `tap` a tiempo sobre la burbuja que brilla.
   - Rulito: **está bien como está** (decidido).
-- **6 Sacca:**
-  - Pista: `taps` sobre una nube de cada color de la frase, en orden.
+- **6 Sacca:** ✅ hecho (falta probar en un teléfono).
+  - Pista: `taps` sobre la nube más grande a la vista de cada color que falta, en el orden de la frase, debajo del nombre; recién después el vigía vuelve a cantarla.
   - Rulito: caja de la carta, bien.
   - El comentario de la línea 203 dice que las cuentas están "sobre el vigía"; el código las pone bajo el bote.
-- **20 Creatividad:**
-  - **No tiene ninguna pista:** hace falta `tap` sobre un coral apagado.
-  - Rulito: ver la decisión sobre los rulitos tenues. Hoy está corrido a la derecha de la campana (0.33 contra ≈0.2 de la caja) y no sigue su `sy` ni su giro.
-  - Doc: dice que con movimiento reducido "no se juega", pero `compose()` no lo revisa.
+- **20 Creatividad:** ✅ hecho (falta probar en un teléfono).
+  - Pista: `tap` sobre una pieza apagada, del lado de la corona que se ve; la mano la sigue mientras gira.
+  - Rulito: sobre la punta de la campana (`BELL_TOP` 0.2 de la caja, medido en la imagen), colgado del mismo nodo que la medusa: nada, se inclina y late con ella.
+  - Movimiento reducido: `compose()` ahora lo revisa (un toque solo suena), como dice la doc; antes contaba y sonaba sin mostrar nada.
 - **12 Armonía:**
   - Pista: `tap` a tiempo sobre la medusa derecha, en los pulsos (no en el silencio).
   - Rulito: hoy hay uno entre las medusas. Va **un rulito sobre cada medusa** (decidido), cada uno colgado de la suya. Cuidar que no se acerquen al nombre en pantallas altas.

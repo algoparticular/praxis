@@ -14,7 +14,7 @@
     // With the six mushrooms lit the card's G7 resolves to C major (as in Sacca: the root, the good done takes root),
     // their light gathers over the heart and the rulito is born there, where the card draws it, in its pink.
     // Before the first touch the heart beats in light only; from then on it is heard while someone plays. Left alone 7 s,
-    // Sid's heart sends its beat to the lectern a few times (the hint, with no words). Sid is not played: a touch on him
+    // Sid's heart sends its beat to the lectern a few times and the ghost hand taps the heart three times in time (the hint, with no words). Sid is not played: a touch on him
     // only makes his heart glow a little, silent, so it does not compete with the lectern.
     // While it waits the scene is alive: the heart at the lectern breathes, sways on its feet and now and then turns to
     // Sid; Sid breathes and leans towards it when it speaks; four tufts of grass sway with the wind of the glow.
@@ -30,6 +30,7 @@
     import { decodeCloud, sampleCloud } from '../../composables/stippleCloud.js';
     import { createSparks } from '../../composables/useSparks.js';
     import { play } from '../../composables/useSound.js';
+    import { createGhostHand, gesture, HINT_AFTER } from '../../composables/useGhostHand.js';
     import { sceneMilestone } from '../../analytics.js';
     import Rulito from '../Rulito.vue';
     import art from '../../composables/silaScene.json';
@@ -145,6 +146,20 @@
     let lastTouch = -Infinity;
     let hintUntil = -Infinity;
     let hintAt = AGAIN + 3;
+    // The ghost hand: left alone 7 s, it taps the heart three times in time, as Sincronicidad's: it goes there first and
+    // waits for each heartbeat by the scene's own clock before it presses, so every press lands on its beat however
+    // the frames go. Its touch is only seen: it plays nothing
+    let hand = null;
+    const showBeat = (t) => {
+        if (!speakerHit.value) return;
+        const first = (Math.floor((t + gesture.TAP_LEAD) / BEAT) + 1) * BEAT;
+        const script = [{ go: speakerHit.value, dur: 0.7 }];
+        for (let k = 0; k < 3; k++) {
+            const when = first + k * BEAT;
+            script.push({ get wait() { return lastT >= when ? 0 : 1e6; } }, { down: true }, { wait: 0.16 }, { up: true });
+        }
+        hand.play([...script, { wait: 0.45 }], { loops: 1 });
+    };
     let missed = null;                      // the heartbeat a touch out of time used up
     let spoken = null;                      // the heartbeat a touch in time already answered
     let said = 0;                           // notes said in time: they climb the chord
@@ -514,6 +529,8 @@
             }
         }
         if (!win && !reduced && ramp > 0.9 && t > hintAt) { hintUntil = t + 3 * BEAT; hintAt = t + AGAIN + 3 * BEAT; }
+        // And the ghost hand shows the gesture: three taps on the heart at the lectern, each pressing on a heartbeat
+        if (hand?.due(HINT_AFTER, !win && ramp > 0.9)) showBeat(t);
         // The lectern answers on the beat while the hint lasts (just as the light sent the beat before arrives)
         const hinting = t < hintUntil + BEAT;
         L.lecternGlow.opacity = Math.max(hinting ? 0.8 * lub : 0, ease(voice));
@@ -644,6 +661,7 @@
         stage = made;
         stageEl = root.value.closest('.stage');
         build(stage);
+        hand = createGhostHand(stage, { color: 0x143246, shade: 0xf7f8f1 });   // navy: the lectern is over the cream moon
         stage.onResize((w, h) => place(w, h));
         const after = (node) => node.mesh.renderOrder + 0.5;
         const fromArt = (list) => list.map(([x, y, r, c]) => [sx(x), sy(y), Math.max(1.2, 2 * r * k()), art.colors[c]]);
@@ -691,6 +709,7 @@
         gone = true;
         parallax?.destroy();
         dust?.destroy();
+        hand?.destroy();
         stage?.destroy();
         root.value?.removeEventListener('touchstart', onTouchStart);
         stageEl?.style.removeProperty('--name-glow');
