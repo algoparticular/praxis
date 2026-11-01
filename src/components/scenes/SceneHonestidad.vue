@@ -26,8 +26,9 @@
     // of a finger's way. A touch on the water strums the chord (`star`, silent on the person's turn) and the stipple
     // flares.
     // The water is not a picture: its colour read from the card by the converter, with the light of the water (caustics)
-    // drifting across it; nor is the light at the surface, a disc drawn in code with a glow, its stippled edge live
-    // particles. The thread, the aura, the specks of the water and the stipple round the seaweeds and anemones are
+    // drifting across it; nor is the light at the surface: a glow in code and, over it, the whole light as a dense
+    // stipple of live particles, sampled from the card (its `cloud`, scripts/sun-cloud.mjs) as Pañña's sun is, with no
+    // solid disc under it, so the edge of a circle never shows. The thread, the aura, the specks of the water and the stipple round the seaweeds and anemones are
     // particles too. Drawn in WebGL (useLayerStage): the bubbles (one atlas), the jellyfish and the floor are planes at
     // their depths; on a wide screen the floor goes on past the frame with more seaweed and coral, smaller and farther
     // back. From honestidadScene.json and public/assets/honestidad (made by scripts/convert-honestidad.mjs).
@@ -35,6 +36,7 @@
     import { createParallax } from '../../composables/useParallax.js';
     import { createLayerStage } from '../../composables/useLayerStage.js';
     import { startStardust } from '../../composables/useStardust.js';
+    import { decodeCloud, sampleCloud } from '../../composables/stippleCloud.js';
     import { createSparks } from '../../composables/useSparks.js';
     import { play } from '../../composables/useSound.js';
     import { sceneMilestone } from '../../analytics.js';
@@ -66,6 +68,7 @@
     const SIZE = art.size;
     const B = art.boxes;
     const SUN = art.sun;
+    const SUN_CLOUD = decodeCloud(SUN.cloud);
     const EYE = art.eye;
     let F = { x: 0, y: 0, size: 1 };
     const k = () => F.size / SIZE;
@@ -427,12 +430,11 @@
         g.fillStyle = `#${WATER.toString(16).padStart(6, '0')}`;
         g.fillRect(0, 0, 4, 4);
         L.water = water.canvas(paint, { water: 0.9 });
-        // The light at the surface: a soft light, its disc (code) and, among the layers, its stippled edge as particles
+        // The light at the surface: a soft light (code) and, among the layers, the light itself as particles
         const sun = s.depth(zFor(DEPTH.sun));
         L.sunNode = sun;
         L.shaft = sun.glow({ rect: { left: 0, top: 0, w: 1, h: 1 }, color: 0xfff0a8, stops: [[0, 0.16], [0.4, 0.06], [0.7, 0]] });
         L.sunGlow = sun.glow({ rect: { left: 0, top: 0, w: 1, h: 1 }, color: 0xffe47c, stops: [[0, 0.5], [0.3, 0.2], [0.62, 0]], bloom: true });
-        L.sun = sun.disc({ rect: { left: 0, top: 0, w: 1, h: 1 }, color: SUN_YELLOW, bloom: true });
         sun.enter({ y: -40, delay: 150, duration: 2400 });
         // The bubbles, at three depths
         L.bubbles = [];
@@ -500,7 +502,6 @@
         L.water.place({ left: w / 2 - side / 2, top: h / 2 - side / 2, w: side, h: side });
 
         const sr = SUN.r * k();
-        L.sun.place({ left: sx(SUN.x) - sr, top: sy(SUN.y) - sr, w: 2 * sr, h: 2 * sr });
         const sg = sr * 4.4;
         L.sunGlow.place({ left: sx(SUN.x) - sg / 2, top: sy(SUN.y) - sg / 2, w: sg, h: sg });
         const sh = sr * 9;
@@ -622,8 +623,8 @@
 
         // ---- The light at the surface breathes
         const breath = Math.sin(t * 0.5);
-        L.sun.scale = 1 + 0.015 * breath * ramp;
         L.sunGlow.opacity = 0.75 + 0.15 * breath;
+        dust?.grow(0, 0.015 * breath * ramp, sx(SUN.x), sy(SUN.y));
         L.sunGlow.scale = 1 + 0.05 * breath * ramp;
         L.shaft.opacity = 0.8 + 0.2 * Math.sin(t * 0.31);
         L.sunNode.y = scroll * 8;
@@ -785,8 +786,9 @@
             stage,
             manual: true,
             groups: [
-                // 0: the stippled edge of the light at the surface, alive
-                { colors: [SUN_YELLOW], parallax: 0, drift: 2.4, jitter: 0.5, twinkle: 0.3, reach: 0, order: after(L.sun), points: () => fromArt(SUN.dots, SUN_YELLOW) },
+                // 0: the light at the surface, all of it a stipple (as Pañña's sun), alive
+                { colors: [SUN_YELLOW], parallax: 0, drift: 2.2, jitter: 0.9, twinkle: 0.12, reach: 0, bloom: true, order: after(L.sunGlow) + 0.2,
+                    points: () => sampleCloud(SUN_CLOUD, (u, v) => [sx(u), sy(v)], k()).map(([x, y, size]) => [x, y, size, SUN_YELLOW]) },
                 // 1: the jellyfish's aura, breathing with it
                 { colors: [AURA], parallax: 0, drift: 1.8, jitter: 0.4, twinkle: 0.4, reach: 0, bloom: true, order: after(L.halo), points: () => fromArt(art.aura, AURA, 1.15) },
                 // 2: the thread of light from the surface to its third eye
