@@ -87,7 +87,7 @@ Pedido de Juan Manuel: los soles y las lunas de este estilo vivo tienen que ser 
 | 8 Metta | la gran luz amarilla y la luz turquesa: ✅ hechas, disco con el borde disuelto en su punteado |
 | 27 Paciencia | el sol: ✅ todo de puntos |
 | 11 Aceptación | el sol rosa |
-| 15 Ciclos | el sol rojo (pedido por Juan Manuel el 1 de noviembre: vivo como el de Pañña, la luna queda igual; una primera prueba fuera del paquete S dejaba aire entre el borde y el disco y se deshizo) |
+| 15 Ciclos | el sol rojo: ✅ disco con el borde disuelto, sin aire (pedido por Juan Manuel el 1 de noviembre; la luna queda igual) |
 | 24 Gratitud | los soles durazno y rosa: ✅ los dos, cada uno con el borde disuelto |
 | 32 Transformación | el solcito de la copa: ✅ su punteado de la carta (el disco queda bajo el anillo dibujado) |
 | 6 Sacca | la luna: ✅ disco con el borde disuelto |
