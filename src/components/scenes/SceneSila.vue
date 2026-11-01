@@ -18,14 +18,16 @@
     // only makes his heart glow a little, silent, so it does not compete with the lectern.
     // While it waits the scene is alive: the heart at the lectern breathes, sways on its feet and now and then turns to
     // Sid; Sid breathes and leans towards it when it speaks; four tufts of grass sway with the wind of the glow.
-    // It is drawn in WebGL (useLayerStage): the clouds (cut out of the illustration into one atlas, drifting), the moon,
-    // the grass and the figures are planes; the stipple of the moon, the stars and the orange glow of the mushrooms are
-    // particles (useStardust), from silaScene.json (made by scripts/convert-sila.mjs): the glow is alive, every mote of
+    // It is drawn in WebGL (useLayerStage): the clouds (cut out of the illustration into one atlas, drifting), the grass
+    // and the figures are planes; the moon is a disc in code and its stippled band live particles over the disc's edge,
+    // sampled from the card (`moon.cloud`, scripts/sun-cloud.mjs, as Pañña's sun), so no circle's edge shows; the stars
+    // and the orange glow of the mushrooms are particles (useStardust), from silaScene.json (made by scripts/convert-sila.mjs): the glow is alive, every mote of
     // it moved by the wind and stirred by a finger. The touch targets are DOM elements kept over the lectern and Sid.
     import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
     import { createParallax } from '../../composables/useParallax.js';
     import { createLayerStage } from '../../composables/useLayerStage.js';
     import { startStardust } from '../../composables/useStardust.js';
+    import { decodeCloud, sampleCloud } from '../../composables/stippleCloud.js';
     import { createSparks } from '../../composables/useSparks.js';
     import { play } from '../../composables/useSound.js';
     import { sceneMilestone } from '../../analytics.js';
@@ -72,7 +74,9 @@
     const zFor = (amp) => amp / (SLIDE + amp);
     const DEPTH = { stars: 6, moon: 9, clouds: [13, 11], ground: 24, figures: 27 };
 
-    const CREAM = 0xfff4c8;                 // the moon
+    const CREAM = 0xfff4c8;                 // the moon's light
+    const MOON = art.moon;                  // the moon: its centre, colour and stippled band (`cloud`)
+    const MOON_CLOUD = decodeCloud(MOON.cloud);
     const ORANGE = 0xffd39c;                // the glow of the mushrooms
     const PINK = 0xf38baa;                  // the lectern and the rulito
     const HEART = 0x62c37a;                 // the heart chakra (Fa): Sid's heart
@@ -315,7 +319,7 @@
         const moon = s.depth(zFor(DEPTH.moon));
         L.moonNode = moon;
         L.moonGlow = moon.glow({ rect: { left: 0, top: 0, w: 1, h: 1 }, color: CREAM, stops: [[0, 0.45], [0.32, 0.2], [0.62, 0]] });
-        L.moon = moon.image('/assets/sila/moon.webp');
+        L.moon = moon.disc({ rect: { left: 0, top: 0, w: 1, h: 1 }, color: MOON.color });
         moon.enter({ y: 30, delay: 200, duration: 2200 });
         // The clouds pass in front of the moon, as in the card
         L.clouds = [];
@@ -391,9 +395,11 @@
         });
         span = { left: -SLIDE * 2 - widest / 2, width: w + SLIDE * 4 + widest };
 
-        const moon = rectOf(B.moon);
+        // The disc only as big as where the band is still whole: the band's densest dots cover its edge
+        const mr = MOON.cloud.solid * k();
+        const moon = { left: sx(MOON.x) - mr, top: sy(MOON.y) - mr, w: 2 * mr, h: 2 * mr };
         L.moon.place(moon);
-        const md = moon.w * 1.45;
+        const md = 2 * MOON.r * k() * 1.49;   // as wide as when the moon was a picture (its rim and all)
         L.moonGlow.place({ left: moon.left + moon.w / 2 - md / 2, top: moon.top + moon.h / 2 - md / 2, w: md, h: md });
 
         const ground = rectOf(B.ground);
@@ -661,7 +667,8 @@
                 // 0: the stars, behind the clouds and the moon
                 { colors: [ORANGE], parallax: 0, drift: 1, twinkle: 0.45, reach: 0, order: -20, points: stars },
                 // 1: the stipple round the moon
-                { colors: [CREAM], parallax: 0, drift: 1.6, jitter: 0.2, twinkle: 0.3, reach: 0, order: after(L.moon), points: () => fromArt(art.dots.moon) },
+                { colors: [MOON.color], parallax: 0, drift: 1.6, jitter: 0.3, twinkle: 0.2, reach: 0, order: after(L.moon),
+                    points: () => sampleCloud(MOON_CLOUD, (u, v) => [sx(u), sy(v)], k()).map(([x, y, size]) => [x, y, size, MOON.color]) },
                 // 2: the glow of the mushrooms, over the rocks and under the line work, alive: the wind moves it and a finger stirs it
                 { dynamic: glowGroup, parallax: 0, drift: 1.2, jitter: 0.35, twinkle: 0.2, reach: 80, push: 18, bloom: true, order: after(L.rocks) },
                 // 3: the glints in the sky (the chatter)
