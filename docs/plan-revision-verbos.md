@@ -33,7 +33,7 @@ if (!held && !won && hand?.due(6)) hand.play(gesture.hold(someHit.value, 2.4));
   - `drag(A, B)`;
   - `slide(path)`, con `path(u)` para u de 0 a 1.
   - También se pueden armar guiones a mano: `go`, `path`, `down`, `up`, `ring`, `wait`.
-- **Tiempo quieto:** la mano lleva su propia cuenta, con reloj real; `due(segundos)` dice si ya pasó. Si la escena ya tiene su propio temporizador de pista, se puede llamar a `play` desde ahí, como hace Viriya.
+- **Tiempo quieto: siempre 7 segundos** (`HINT_AFTER`), decidido por Juan Manuel, que probó la mano. La mano lleva su propia cuenta, con reloj real: `hand.due(HINT_AFTER, wanted)`. `wanted` dice si el juego quiere mostrarse ahora (no mientras se juega, ni mientras vive un rulito). Mientras es falso la cuenta vuelve a cero, así que **después de ganar también espera 7 segundos enteros**, en lugar de aparecer enseguida. Si la escena tiene su propio temporizador de pista, ese también tiene que volver a cero mientras se juega o se gana (así quedó Pañña).
 - Cualquier toque o tecla la hace irse al instante. Con movimiento reducido no aparece. `play(…, { loops })` dice cuántas veces repite el gesto (2 por defecto).
 
 **Pendiente, esperando la opinión de Juan Manuel sobre los videos y la Etapa 1:**
@@ -67,6 +67,35 @@ Cada paquete toca sus escenas y, como mucho, el motor de su verbo. En cada carta
 4. Poner al día `docs/escenas.md` y `CLAUDE.md` en lo que cambie, solo en los párrafos de sus cartas.
 
 Al terminar, `npm run check` y probar en un teléfono.
+
+## Paquete S: soles y lunas vivos como el de Pañña
+
+Pedido de Juan Manuel: los soles y las lunas de este estilo vivo tienen que ser como el de Pañña, donde **no se nota el borde del círculo**.
+
+- **Cómo está hecho el de Pañña** (`ScenePanna.vue`, grupo 2 de `back`): el sol entero es un punteado denso de partículas, muestreado de la imagen del sol (`sample('sun', …)`), sin un disco sólido debajo. Por eso se funde con el cielo.
+- **Cómo están hechos los otros:** un disco sólido en código (`disc()`) y el punteado solo en el borde. El borde del disco se ve.
+- **Honestidad:** completar el sol tal como lo tiene Pañña.
+
+**Soles, lunas y luces redondas hechos con `disc()`, para revisar uno por uno:**
+
+| Escena | Qué es |
+|---|---|
+| 26 Honestidad | la luz de la superficie |
+| 4 Viriya | el sol |
+| 8 Metta | la gran luz amarilla y la luz turquesa |
+| 27 Paciencia | el sol |
+| 11 Aceptación | el sol rosa |
+| 15 Ciclos | el sol rojo |
+| 24 Gratitud | los soles durazno y rosa |
+| 32 Transformación | el solcito de la copa |
+| 6 Sacca | la luna |
+| 19 Coraje | la luna |
+| 18 Confianza | la luz de la chakana |
+| 28 Perdón | el planeta |
+
+Falta ver cómo están hechas las lunas de Sila, Addhitthana y Esperanza.
+
+**Para decidir con Juan Manuel en cada una:** ¿queda todo de puntos, como Pañña, o el disco con el borde disuelto en el punteado? Perdón (un planeta de mármol con contorno) y Confianza (una luz) quizá no entren. Las 18 cartas del 31/10 que tienen sol o luna lo revisan dentro de su revisión.
 
 ## Revisión juego por juego de las 18 cartas del 31 de octubre
 
@@ -191,6 +220,7 @@ Decidido por Juan Manuel el 1 de noviembre. Manda sobre la regla 2.
 | 12 Armonía | **un rulito sobre cada medusa** (dos) | deja de haber uno solo entre las dos |
 | 17 Comunicación | sobre la medusa del medio | deja de estar en la luz |
 | 13 Belleza | sobre Sid, el que está abrazando al otro | deja de estar a mano, corrido sobre el ser de atrás |
+| 0 Nekkhamma | como está hoy | nada |
 
 **Sigue a decidir:** Creatividad, Evolución y Hogar. ¿Se respeta el rulito tenue que dibuja la carta, al costado del personaje, o va sobre su cabeza?
 
@@ -202,9 +232,11 @@ Decidido por Juan Manuel el 1 de noviembre. Manda sobre la regla 2.
 
 Gesto de la mano: `hold` sobre lo que se sostiene. Motor común: `useRooting.js`, para Compromiso, Confianza y Fe.
 
-- **27 Paciencia:** ✅ pista hecha. El rulito está bien (fracciones del bote, coincide con la carta).
+- **27 Paciencia:** ✅ pista hecha (con la espera de 7 s también después de ganar). El lugar del rulito está bien (fracciones del bote, coincide con la carta).
+  - **Cuándo nace el rulito (pedido de Juan Manuel):** tiene que nacer **cuando las raíces están completas**, no mientras se están creando. Hoy nace con las raíces a un 30 % (`rootGrow >= 0.3` en `ScenePaciencia.vue`). Pasa a `rootGrow >= 1`, y revisar que el tiempo total sostenido siga sintiéndose bien.
 - **25 Hogar:**
   - Hoy solo hay pista antes del primer toque (el núcleo late). Hace falta `hold` sobre el núcleo, también después.
+  - **Cuándo nace el rulito:** como en Paciencia, tiene que nacer cuando las raíces llegaron todas, no mientras crecen. Hoy nace con las raíces a un cuarto (`BORN = 0.25`).
   - Rulito: ver la decisión sobre los rulitos tenues. Hoy no sigue el `sy` ni el giro de la larva (`SceneHogar.vue` ≈491-494 y 594-597).
 - **7 Addhitthana:**
   - Pista: `hold` sobre Particular.
@@ -224,9 +256,8 @@ Gesto de la mano: `hold` sobre lo que se sostiene. Motor común: `useRooting.js`
 
 Gestos de la mano: `tap` sobre lo que se suelta. Cada tanto, `hold` sobre el personaje, porque hoy nada enseña que se puede respirar.
 
-- **0 Nekkhamma:**
+- **0 Nekkhamma:** el rulito está bien (decidido).
   - Pista: `tap` sobre el brote que hoy pulsa (el primero atado, `HINT` 7), y a veces `hold` sobre Sid.
-  - Rulito: usa la caja de la carta escrita a mano (`RULITO`, línea 78). Coincide; se puede pasar al JSON.
   - Ojo: dejado solo 15 s le vuelve a crecer un hilo, así que se pierde avance. Revisar si choca con "nada se pierde".
 - **31 Vipassana** (ejemplo de la etapa 1):
   - Pista: `tap` sobre la célula que hoy brilla (`cellField.hint()`), y a veces `hold` sobre Sid.
@@ -363,7 +394,8 @@ Gestos de la mano: `drag` entre las dos luces del primer hilo que falta (Pañña
      - la pista de Metta;
      - los rulitos nuevos de Celebración y Armonía, uno por personaje.
      - Esperanza incluye las formas de las constelaciones.
-5. **Paquete H, punto 5:** volver a publicar el artefacto "Anima GDD" con todo al día.
+5. **Paquete S, soles y lunas:** en paralelo, para las escenas que no son del 31/10. Honestidad primero, porque fue el pedido.
+6. **Paquete H, punto 5:** volver a publicar el artefacto "Anima GDD" con todo al día.
 
 ## Decisiones abiertas (las toma Juan Manuel)
 

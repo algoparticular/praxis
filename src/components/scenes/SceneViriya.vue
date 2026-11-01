@@ -21,7 +21,7 @@
     import { startStardust } from '../../composables/useStardust.js';
     import { createSparks } from '../../composables/useSparks.js';
     import { createKindle, FIRE } from '../../composables/useKindle.js';
-    import { createGhostHand, gesture } from '../../composables/useGhostHand.js';
+    import { createGhostHand, gesture, HINT_AFTER } from '../../composables/useGhostHand.js';
     import { play } from '../../composables/useSound.js';
     import { sceneMilestone } from '../../analytics.js';
     import Rulito from '../Rulito.vue';
@@ -201,7 +201,8 @@
             sparks.burst(s.x, s.y, { n: 1, colors: FIRE, speed: 20 + 40 * charge, life: 1.1, size: 2.5 + 2.5 * charge, spread: 10 });
         }
         // The hint, without words: still a while, sparks crackle on the spiral (rub it), or on fire it beats (sling it)
-        if (!kindler.rubbing && !kindler.aiming && !win && kindler.mode !== 'flying' && kindler.idle > 7) {
+        const quiet = !kindler.rubbing && !kindler.aiming && !win && kindler.mode !== 'flying';
+        if (hand ? hand.due(HINT_AFTER, quiet) : quiet && kindler.idle > HINT_AFTER) {
             kindler.idle = 0;
             hint = 1;
             const s = spiralAt();

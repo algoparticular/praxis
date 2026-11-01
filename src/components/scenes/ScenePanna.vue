@@ -22,7 +22,7 @@
     import { createLayerStage } from '../../composables/useLayerStage.js';
     import { startStardust } from '../../composables/useStardust.js';
     import { createThreads, rgbOf, smooth } from '../../composables/useThreads.js';
-    import { createGhostHand, gesture } from '../../composables/useGhostHand.js';
+    import { createGhostHand, gesture, HINT_AFTER } from '../../composables/useGhostHand.js';
     import { play } from '../../composables/useSound.js';
     import { sceneMilestone } from '../../analytics.js';
     import Rulito from '../Rulito.vue';
@@ -653,11 +653,12 @@
             ghost.age += dt;
             if (ghost.age > GHOST_LEN) ghost = null;
         }
-        if (win || parting || drag || reducedMotion || !entered) return;
+        // While it is played or won the count starts again: the hint waits its whole 7 s after
+        if (win || parting || drag || reducedMotion || !entered) { idle = 0; return; }
         idle += dt;
         ghostIn -= dt;
         // After 7 s alone, and again 7 s after it has gone
-        if (!ghost && idle > 7 && ghostIn <= 0) {
+        if (!ghost && idle > HINT_AFTER && ghostIn <= 0) {
             ghost = { age: 0 };
             ghostIn = GHOST_LEN + 7;
             // and the ghost hand drags from one light to the other along the first thread that is missing

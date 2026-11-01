@@ -12,8 +12,8 @@
 // P is a point in the stage canvas's CSS px ([x, y]), a function returning one (so it follows what moves) or a DOM
 // element (its centre: the scenes keep their touch targets over what they belong to).
 // The helpers in `gesture` write the scripts for the verbs: tap, hold, rub, sling, drag, slide, taps.
-// The hand keeps the count of how long the scene has been left alone: a scene asks `due(seconds)` each frame and, when
-// it is (and the game wants showing), calls play().
+// The hand keeps the count of how long the scene has been left alone: a scene asks `due(HINT_AFTER, wanted)` each frame
+// and, when it is, calls play().
 import { createStardust } from './useStardust.js';
 
 const TAU = Math.PI * 2;
@@ -26,6 +26,9 @@ const TRAIL = 56;       // dots left behind while it moves pressed
 const RIPPLE = 28;      // dots of the ripple when it presses
 const SHADE = 12;       // a faint dark halo under the tip, so it reads on light skies too
 const CORE = 7;         // the soft light of the tip
+
+// Seconds left alone before the hand shows the gesture, in every scene (and again after a game is won)
+export const HINT_AFTER = 7;
 
 const hex = (v) => [(v >> 16) & 255, (v >> 8) & 255, v & 255].map((c) => c / 255);
 
@@ -278,8 +281,13 @@ export function createGhostHand(stage, { color = 0xf7f8f1, shade = 0x143246, ord
             idle = 0;
             startStep();
         },
-        // Whether it is time to show the gesture: left alone `after` seconds and not already showing it
-        due(after = 6) { return !reduced && !script && idle > after; },
+        // Whether it is time to show the gesture: left alone `after` seconds (7 in every scene) and not already showing
+        // it. `wanted` says whether the game wants showing now (not while it is played, nor while a rulito lives): while
+        // it does not, the count starts again, so after a game is won it also waits the whole 7 s
+        due(after = HINT_AFTER, wanted = true) {
+            if (!wanted) { idle = 0; return false; }
+            return !reduced && !script && idle > after;
+        },
         // Counts as a touch (for touches the scene takes by keyboard, or to wait again)
         wait() { idle = 0; },
         stop: away,
