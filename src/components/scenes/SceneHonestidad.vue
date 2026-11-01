@@ -788,7 +788,7 @@
             groups: [
                 // 0: the light at the surface, all of it a stipple (as Pañña's sun), alive
                 { colors: [SUN_YELLOW], parallax: 0, drift: 2.2, jitter: 0.9, twinkle: 0.12, reach: 0, bloom: true, order: after(L.sunGlow) + 0.2,
-                    points: () => sampleCloud(SUN_CLOUD, (u, v) => [sx(u), sy(v)], k()).map(([x, y, size]) => [x, y, size, SUN_YELLOW]) },
+                    points: () => sampleCloud(SUN_CLOUD, (u, v) => [sx(u), sy(v)], k(), 1.6).map(([x, y, size]) => [x, y, size, SUN_YELLOW]) },
                 // 1: the jellyfish's aura, breathing with it
                 { colors: [AURA], parallax: 0, drift: 1.8, jitter: 0.4, twinkle: 0.4, reach: 0, bloom: true, order: after(L.halo), points: () => fromArt(art.aura, AURA, 1.15) },
                 // 2: the thread of light from the surface to its third eye

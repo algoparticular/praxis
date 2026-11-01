@@ -78,6 +78,17 @@ const CARDS = {
         ],
         ring: { centre: () => [929, 1163], from: () => 650, arcs: [[-180, 10], [160, 180]] },
     },
+    // 11 Aceptación: the pink sun of the past, whole on the card, over the cream sky; small, so all of it dots (as
+    // Honestidad's); the pink specks and bits of the sky round it are left out
+    aceptacion: {
+        card: 11,
+        json: 'src/composables/aceptacionScene.json',
+        key: 'sun',
+        box: [150, 265, 520, 520],
+        color: (scene) => scene.sun.color,
+        behind: (scene) => scene.sky.cream,
+        skip: (scene) => [...scene.dots.map(([x, y, r]) => [x, y, r + 3]), ...scene.bits.map(([x, y, w, h]) => [x - 6, y - 6, w + 12, h + 12])],
+    },
 };
 
 function nearest(stops, y) {

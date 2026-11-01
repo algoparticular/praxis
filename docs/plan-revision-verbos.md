@@ -96,6 +96,9 @@ Pedido de Juan Manuel: los soles y las lunas de este estilo vivo tienen que ser 
 
 - **Sila:** ✅ Hecho (pedido de Juan Manuel, 1 de noviembre). Su luna era una imagen con un borde punteado apretado. Ahora es un disco en código con la banda punteada de la carta encima, como Metta (la imagen se borró).
 
+- **Aceptación:** ✅ Hecho (pedido de Juan Manuel, 1 de noviembre): el sol rosa de la mitad izquierda es todo de puntos, como Honestidad. Honestidad y Aceptación llevan el mismo espesor que el sol de Pañña (`boost` 1.6), así el centro queda lleno como en la carta.
+- **Ciclos y Perdón:** van con el paquete B (Juan Manuel lo pidió en otro chat).
+- **Coraje:** su luna queda como está (Juan Manuel).
 - **Addhitthana y Esperanza:** sus lunas están bien así (Juan Manuel, 1 de noviembre); no se tocan.
 
 **Para decidir con Juan Manuel en cada una:** ¿queda todo de puntos, como Pañña, o el disco con el borde disuelto en el punteado? Perdón (un planeta de mármol con contorno) y Confianza (una luz) quizá no entren. Las 18 cartas del 31/10 que tienen sol o luna lo revisan dentro de su revisión.
