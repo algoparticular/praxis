@@ -39,6 +39,7 @@ if (!held && !won && hand?.due(6)) hand.play(gesture.hold(someHit.value, 2.4));
 
 **Aspecto: cerrado** (Juan Manuel, 1 de noviembre: tamaño, brillo, velocidad y 2 repeticiones).
 - **Contraste:** la mano es crema por defecto. En las cartas claras, o donde hace el gesto sobre algo crema, va navy con un halo crema: `createGhostHand(stage, { color: 0x143246, shade: 0xf7f8f1 })`. Hoy así en Paciencia, Khanti y Viriya. Cada paquete, al conectar la mano en una carta, mira el contraste y le pone ese color si hace falta (decidido: se ajusta el color carta por carta).
+- **Fluir:** `gesture.slide(path, dur, { even: true })` desliza sin suavizado, para un recorrido que ya trae su ritmo: `flow.hintPath(len, map, t0)` da el de la corriente, a su paso desparejo desde `t0` (así en Khanti; las otras de Fluir lo usan igual en su revisión).
 - **Este archivo se toca solo desde un chat a la vez**, para no pisarse. Los demás paquetes solo lo usan.
 
 ## Etapa 1: un ejemplo por verbo, en las primeras cartas de cada verbo

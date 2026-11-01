@@ -431,12 +431,16 @@
     // ghost hand slides along the stretch of tube ahead of the head, at the current's pace. The call of the head (its
     // beat, from flow.idle) starts again too while the rulito lives, so after a win both wait from the start
     const HINT_LEN = 64;                    // samples of route the hand slides along (as far as the beads ahead go)
-    const hintFlow = () => {
+    const hintFlow = (t) => {
         if (win) flow.idle = 0;
         const wanted = !win && !flow.done && !keyHold && !pointer.down && flow.idle > 0.5 && cur.alpha > 0.9;
         if (!hand?.due(HINT_AFTER, wanted)) return;
-        const path = flow.hintPath(HINT_LEN, routeOnCanvas);
-        if (path) hand.play(gesture.slide(path, path.dur));
+        // at the current's own pace from when it starts sliding, so the hand goes as the current would; twice, the
+        // second time at the pace the current will have then (it is never even)
+        const first = flow.hintPath(HINT_LEN, routeOnCanvas, t + gesture.SLIDE_LEAD);
+        if (!first) return;
+        const again = flow.hintPath(HINT_LEN, routeOnCanvas, t + gesture.SLIDE_LEAD + first.dur + gesture.SLIDE_AGAIN);
+        hand.play([...gesture.slide(first, first.dur, { even: true }), ...gesture.slide(again, again.dur, { even: true })], { loops: 1 });
     };
 
     // Everything is live: the rulito is born over the central sign; then the current fades, and everything is corked again
@@ -744,7 +748,7 @@
         nowT = t;
         moveStrokes(dt);
         stepFlow(dt, t);
-        hintFlow();
+        hintFlow(t);
         live(t, ramp);
         stepFlasks(dt);
         wakeCreatures(dt);

@@ -56,21 +56,38 @@ export const createFlow = ({
     // The hint, for the ghost hand (gesture.slide): the stretch of route just ahead of the head, `len` samples long, as
     // path(u) for u 0..1 -> map(x, y) (the scene turns its units into the stage canvas's px; read at every call, so it
     // follows what moves). It ends at the entrance of the next knot, unless that is nearer than a third of `len` (then it
-    // goes on through it, as a finger would). path.dur: the seconds the current takes over it at its average pace.
-    // null when there is nothing ahead. Only reads the state: the hand does not move the current.
-    f.hintPath = (len = ahead, map = (u, v) => [u, v]) => {
+    // goes on through it, as a finger would). With `t0` (the scene's clock when the hand will start sliding) u is time:
+    // the path goes along it at the current's own uneven pace from then (paceAt), so the hand slides as the current
+    // would, and path.dur is how long that takes (play it with { even: true }); without it, u is distance and path.dur
+    // the seconds at its average pace. null when there is nothing ahead. Only reads the state: the hand does not move it.
+    f.hintPath = (len = ahead, map = (u, v) => [u, v], t0 = null) => {
         if (f.done) return null;
         const from = f.head, stop = next();
         let limit = stop && from < stop.enter ? stop.enter : end;
         if (limit - from < len / 3) limit = end;
         const to = Math.min(limit, from + len);
         if (to - from < 2) return null;
-        const path = (u) => {
-            const s = from + (to - from) * Math.min(1, Math.max(0, u));
+        const along = (s) => {
             const i = at(s), j = at(s + 1), k = Math.min(1, s - i);
             return map(x(i) + (x(j) - x(i)) * k, y(i) + (y(j) - y(i)) * k);
         };
-        path.dur = (to - from) / (pace * (slow[0] + slow[1]) / 2);
+        if (t0 === null) {
+            const path = (u) => along(from + (to - from) * Math.min(1, Math.max(0, u)));
+            path.dur = (to - from) / (pace * (slow[0] + slow[1]) / 2);
+            return path;
+        }
+        // Where the current would be, every 1/60 s, going at its pace from t0
+        const H = 1 / 60, table = [from];
+        for (let s = from, t = t0; s < to && table.length < 3600; t += H) {
+            s = Math.min(to, s + pace * paceAt(t) * H);
+            table.push(s);
+        }
+        const last = table.length - 1;
+        const path = (u) => {
+            const q = Math.min(1, Math.max(0, u)) * last, i = Math.floor(q), k = q - i;
+            return along(table[i] + ((table[Math.min(last, i + 1)] ?? table[i]) - table[i]) * k);
+        };
+        path.dur = last * H;
         return path;
     };
     // Where along the route, near the head, a point (u, v) is: the nearest sample and how far it is from it (squared)

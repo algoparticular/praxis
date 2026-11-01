@@ -5,7 +5,8 @@
 //
 // A gesture is a script of steps, played in order:
 //   { go: P, dur }        move to P (eased); while down it leaves a trail
-//   { path: (u) => P, dur }  follow a path from u = 0 to 1
+//   { path: (u) => P, dur }  follow a path from u = 0 to 1 (eased; `even: true` keeps u to the clock, for a path that
+//                         carries its own timing, as Fluir's current)
 //   { down: true }        press (a ripple goes out)       { up: true }  lift
 //   { ring: dur }         while pressed, a ring of dots fills round the tip (holding)
 //   { wait: dur }
@@ -59,8 +60,12 @@ export const gesture = {
     },
     // Pressing A, dragging to B, letting go
     drag: (A, B, dur = 1.1) => [{ go: A, dur: 0.7 }, { wait: 0.12 }, { down: true }, { wait: 0.15 }, { go: B, dur }, { wait: 0.12 }, { up: true }, { wait: 0.45 }],
-    // Pressing at the start of a path and sliding along it
-    slide: (path, dur = 2.4) => [{ go: () => path(0), dur: 0.7 }, { down: true }, { path, dur }, { up: true }, { wait: 0.4 }],
+    // Pressing at the start of a path and sliding along it (even: without easing, when path(u) already carries its pace)
+    slide: (path, dur = 2.4, { even = false } = {}) => [{ go: () => path(0), dur: 0.7 }, { down: true }, { path, dur, even }, { up: true }, { wait: 0.4 }],
+    // Seconds from the start of slide() to the moment it starts sliding, and from the end of one slide to the start of
+    // the next slide played after it
+    SLIDE_LEAD: 0.7,
+    SLIDE_AGAIN: 0.4 + 0.7,
 };
 
 // A point: [x, y], a function returning one, or an element (its centre, in the canvas's px)
@@ -145,7 +150,7 @@ export function createGhostHand(stage, { color = 0xf7f8f1, shade = 0x143246, ord
                 const e = step.slow ? 1 - (1 - u) ** 3 : ease(u);
                 pos = [from[0] + (to[0] - from[0]) * e, from[1] + (to[1] - from[1]) * e];
             } else if (step.path) {
-                const e = ease(u);
+                const e = step.even ? u : ease(u);
                 pos = step.from ? step.path(e, at(step.from)) : step.path(e);
             }
             if (step.ring) ring = u;
