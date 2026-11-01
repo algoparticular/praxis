@@ -1,6 +1,6 @@
 <script setup>
     // Perdón: "I forgive myself and others". In a quiet sage sky full of little stars, a great planet of teal and cream
-    // marble turns slowly inside its outline, with a ring of dark red dust round it; above, a balloon rises with a Sama in
+    // marble flows slowly inside its outline, with a ring of dark red dust round it; above, a balloon rises with a Sama in
     // it, carrying another Sama that hangs from its string, and a third little Sama floats by in its cup; below, Particular
     // sits in a leaf boat with a kitten, drifting.
     // Its verb is Soltar ("I inhale love. I exhale forgiveness."): six knots of the ring's dark red dust, denser and
@@ -10,8 +10,8 @@
     // gathered he breathes out forgiveness (`exhale`): a wave of light goes out from him and lets go of every knot it
     // reaches. With the ring clear the planet shines, the balloon leaps, F minor gathers (`converge`) and the rulito the
     // card draws over Particular is born (`rulito`); when it goes the ring darkens slowly and the knots gather again.
-    // Left alone 7 s, a knot throbs and the ghost hand touches it (the hint); left alone 15 s, a knot let go gathers again. The scene is alive: the marble of the planet turns and
-    // shimmers, a soft light breathes behind it, its ring of dust flows round it in slow waves (every dot a particle, the
+    // Left alone 7 s, a knot throbs and the ghost hand touches it (the hint); left alone 15 s, a knot let go gathers again. The scene is alive: the marble of the planet flows and
+    // swirls as a liquid would, never turning whole (with a dark edge and a soft light on it for volume), a soft light breathes behind it, its ring of dust flows round it in slow waves (every dot a particle, the
     // part behind the planet drawn under it and the part in front over it); the stars twinkle; the balloon bobs and leans,
     // the Sama hanging from it swings a little later; the cup rocks; the leaf rocks and bobs, Particular breathes, blinks
     // and now and then looks up at the balloon, the kitten breathes and its tail sways; the little ringed planet and the
@@ -106,6 +106,8 @@
     const DEPTH = { far: 4, near: 8, doodles: 11, back: 15, planet: 17, front: 19, cup: 20, balloon: 23, leaf: 30 };
 
     const P = art.planet;
+    // The part of the marble's picture that is the planet's square (fractions of the picture, from its top left)
+    const MARBLE_CROP = [(P.x - P.r - B.marble[0]) / B.marble[2], (P.y - P.r - B.marble[1]) / B.marble[3], 2 * P.r / B.marble[2], 2 * P.r / B.marble[3]];
     const E = art.ring.ellipse;
     const DUST = P.line.color;
     const CREAM = 0xf7f8f1;
@@ -489,7 +491,7 @@
     let blinkAt = 2.5;
     let blinkNow = -1;
     let lastT = 0;
-    let turned = 0;
+    let marbleT = 0;                        // the marble's own clock (it flows; faster for a moment when touched)
     const L = {};
     const TOUCH = {
         balloon: [1350, 420], cup: [812, 642], leaf: [560, 2120], marble: [P.x, P.y], tiny: centreOf(art.doodles[0].at.slice(0, 4)),
@@ -534,7 +536,12 @@
         L.planetNode = planet;
         L.halo = planet.glow({ rect: { left: 0, top: 0, w: 1, h: 1 }, color: CREAM, stops: [[0, 0.5], [0.42, 0.2], [0.72, 0]] });
         L.disc = planet.disc({ rect: { left: 0, top: 0, w: 1, h: 1 }, color: P.color });
-        L.marble = planet.image('/assets/perdon/marble.webp', { shimmer: 0.25 });
+        // The marble is a liquid: cut to the planet's circle, a little zoomed in so its ragged edge never shows (no air
+        // between the outline and the marble), flowing instead of turning whole (`flow` in useLayerStage)
+        L.marble = planet.image('/assets/perdon/marble.webp', { crop: MARBLE_CROP, flow: { amount: 0.07, zoom: 0.86 } });
+        // Volume: the round darkens towards its edge and a soft light lies on its upper left
+        L.shade = planet.glow({ rect: { left: 0, top: 0, w: 1, h: 1 }, color: 0x173a3a, stops: [[0, 0], [0.45, 0.05], [0.685, 0.4], [0.708, 0]] });   // ends at the circle, under the outline
+        L.shine = planet.glow({ rect: { left: 0, top: 0, w: 1, h: 1 }, color: 0xfff6dc, stops: [[0, 0.22], [0.3, 0.1], [0.62, 0]] });
         // The outline: a ring drawn once on a canvas
         const ringCanvas = document.createElement('canvas');
         ringCanvas.width = ringCanvas.height = 1024;
@@ -589,7 +596,10 @@
         L.disc.place({ left: sx(P.x) - pr, top: cy - pr, w: 2 * pr, h: 2 * pr });
         const hr = pr * 2.5;
         L.halo.place({ left: sx(P.x) - hr / 2, top: cy - hr / 2, w: hr, h: hr });
-        L.marble.place(rectOf(B.marble, mid), { x: sx(P.x), y: cy });
+        L.marble.place({ left: sx(P.x) - pr, top: cy - pr, w: 2 * pr, h: 2 * pr }, { x: sx(P.x), y: cy });
+        L.shade.place({ left: sx(P.x) - pr, top: cy - pr, w: 2 * pr, h: 2 * pr });
+        const shr = pr * 1.2;
+        L.shine.place({ left: sx(P.x) - pr * 0.38 - shr / 2, top: cy - pr * 0.4 - shr / 2, w: shr, h: shr });
         const lr = (P.line.r + P.line.width) * k();
         L.line.place({ left: sx(P.x) - lr, top: cy - lr, w: 2 * lr, h: 2 * lr });
 
@@ -655,8 +665,8 @@
 
         // ---- The planet: its marble turns slowly (faster for a moment when touched), a light breathes behind it
         flowT += dt * (1 + 2.5 * kick.marble);
-        if (!reduced) turned += dt * (1.1 + 30 * kick.marble);
-        L.marble.rotate = -turned;
+        if (!reduced) marbleT += dt * (1 + 6 * kick.marble);
+        L.marble.uniforms.uFlow.value.w = marbleT;
         const breath = Math.sin(t * 0.5);
         L.halo.opacity = (0.55 + 0.25 * breath * ramp) + 0.3 * kick.marble;
         L.halo.scale = 1 + 0.05 * breath * ramp;

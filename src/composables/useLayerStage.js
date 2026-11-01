@@ -21,6 +21,9 @@
 // Shader effects per layer:
 //   wind     { amp (px), speed, root: 'bottom' | 'top' }  the picture sways, more the farther from its root
 //   shimmer  0..1  the air trembles over it (a sun's heat)
+//   flow     { amount, zoom }  a liquid: the picture is seen cut to the circle of its rect, zoomed in (zoom < 1 keeps
+//            off its edge) and flowing (a slow warp, and a swirl in the middle that comes and goes); uniforms.uFlow.value.w
+//            is its clock, which the scene runs (faster for a moment when touched): Perdón's marble
 //   water    0..1  the light of the water ripples across it (caustics)
 //   sheen    0..1  a band of light sweeps across it now and then, as over glass
 //   sink     true  a liquid that can sink: uniforms.uSink.value.y is its level (0 full .. 1 empty), with a soft edge
@@ -103,6 +106,7 @@ const LAYER_FRAGMENT = `
     uniform vec3 uTint;
     uniform float uTintAmount;
     uniform float uShimmer;
+    uniform vec4 uFlow;            // amount, zoom, on (0/1), clock
     uniform float uWater;
     uniform float uSheen;
     ${CAUSTIC}
@@ -133,6 +137,20 @@ const LAYER_FRAGMENT = `
             if (clipA <= 0.0) discard;
         }
         vec2 uv = vUv;
+        float roundA = 1.0;
+        if (uFlow.z > 0.0) {
+            // A liquid in a round: cut to the circle, zoomed in, and flowing
+            vec2 p = uv - 0.5;
+            float rr = length(p) * 2.0;
+            if (rr > 1.0) discard;
+            roundA = 1.0 - smoothstep(0.985, 1.0, rr);
+            float t = uFlow.w;
+            float ang = 0.45 * sin(t * 0.23) * (1.0 - rr * rr) + 0.25 * sin(t * 0.11 + 1.7) * (1.0 - rr);
+            p = vec2(p.x * cos(ang) - p.y * sin(ang), p.x * sin(ang) + p.y * cos(ang)) * uFlow.y;
+            vec2 q = p * 3.0;
+            p += uFlow.x * vec2(noise(q + vec2(t * 0.21, -t * 0.17)) - 0.5, noise(q * 1.3 + vec2(5.2 - t * 0.19, 1.3 + t * 0.23)) - 0.5);
+            uv = p + 0.5;
+        }
         if (uShimmer > 0.0) {
             uv += vec2(sin(uv.y * 38.0 + uTime * 2.1), cos(uv.x * 31.0 + uTime * 1.7)) * 0.004 * uShimmer;
         }
@@ -199,7 +217,7 @@ const LAYER_FRAGMENT = `
             vec2 e = min(vUv, 1.0 - vUv);
             c *= smoothstep(0.0, uVignette, e.x) * smoothstep(0.0, uVignette, e.y);
         }
-        gl_FragColor = vec4(c.rgb, c.a) * uOpacity * clipA;
+        gl_FragColor = vec4(c.rgb, c.a) * uOpacity * clipA * roundA;
     }`;
 
 const GLOW_VERTEX = `
@@ -631,7 +649,7 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
         }
 
         // crop: [left, top, width, height] of the part of the texture shown, as fractions of it (from its top left)
-        plane(texture, { rect = { left: 0, top: 0, w: 1, h: 1 }, pivot = null, crop = null, wind = null, shimmer = 0, water = 0, sheen = 0, sink = false, dissolve = null, blur = 0, bloom = false,
+        plane(texture, { rect = { left: 0, top: 0, w: 1, h: 1 }, pivot = null, crop = null, wind = null, shimmer = 0, flow = null, water = 0, sheen = 0, sink = false, dissolve = null, blur = 0, bloom = false,
             blending = 'normal', segments = null, under = false, vignette = 0, sway = false } = {}) {
             const node = new Node(this);
             const segs = segments ?? (wind ? [24, 10] : [1, 1]);
@@ -645,6 +663,7 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
                 uTint: { value: new THREE.Color(1, 1, 1) },
                 uTintAmount: { value: 0 },
                 uShimmer: { value: shimmer },
+                uFlow: { value: new THREE.Vector4(flow?.amount ?? 0, flow?.zoom ?? 1, flow ? 1 : 0, 0) },
                 uWater: { value: water },
                 uSheen: { value: sheen },
                 uSink: { value: new THREE.Vector2(sink ? 1 : 0, 0) },
