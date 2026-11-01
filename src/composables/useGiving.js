@@ -15,14 +15,20 @@
 //   on.fade()         the rulito starts to go and the lights fade      on.puff(x, y, colors)  a trail of sparks
 //   on.hint(i)        left alone HINT s, i (who has no light yet) glimmers
 //   on.returned(i)    i's light is back at the source
+//   on.cue(i)         only with `hint` (below): i is picked to glimmer, `hint.lead` s from now (the scene shows the hand)
 // Options: `lift()` how high an arc goes over the higher of its ends (px, plus 0.3 of its length); `linger` s the whole
 // rulito stays; `lag` s a second rulito is born after the first (Dana's two friends): the rulito is whole when that
 // one is too, and win.grown(lag) says how far it has grown.
+// `hint` (opt-in, Dana's ghost hand): { due(wanted), lead: [s, ...] }. When given it replaces the HINT s count: each
+// frame due(wanted) is asked, wanted being whether the game wants showing (no rulito, nothing given back, no light in
+// the air, someone still without his light); when it says yes one is picked, on.cue(i) is called, and he glimmers
+// (flash and on.hint(i)) at each `lead` s after it, so the hand's touches land on him as he glimmers. Any touch on one
+// (give, touched) cancels the glimmers still to come.
 const GROW = 2.6, EAT = 3.4, DELAY = 0.5;
 const HINT = 7;
 
 export function createGiving({ count, source, target, can = () => true, reduced = false, colors = [0xffffff], back = colors,
-    lift = () => 20, linger = 2.4, lag = 0, on = {} }) {
+    lift = () => 20, linger = 2.4, lag = 0, hint = null, on = {} }) {
     const state = Array.from({ length: count }, () => ({ lit: 0, goal: 0, coming: false, given: false, flash: 0 }));
     const lights = [];                       // { from(), to(), age, T, colors, arrive, x, y }
     let returning = false;
@@ -30,6 +36,7 @@ export function createGiving({ count, source, target, can = () => true, reduced 
     let wins = 0;
     let idle = 0;
     let trail = 0;
+    let cue = null;                          // with `hint`: { i, age, next } the glimmers still to come
 
     // A light flying in an arc between two points that may move while it flies: higher the further it goes
     const send = (from, to, { T, delay = 0, colors: tint = colors, arrive }) => {
@@ -40,6 +47,7 @@ export function createGiving({ count, source, target, can = () => true, reduced 
 
     const give = (i) => {
         idle = 0;
+        cue = null;
         const s = state[i];
         if (s.given || s.coming || win || returning) {
             s.flash = 1;
@@ -130,7 +138,26 @@ export function createGiving({ count, source, target, can = () => true, reduced 
                 l.arrive?.();
             }
         }
-        if (!win && !returning && idle > HINT) {
+        if (hint) {
+            const waiting = state.map((s, i) => (s.given || s.coming ? -1 : i)).filter((i) => i >= 0);
+            if (hint.due(!win && !returning && !lights.length && waiting.length > 0) && waiting.length) {
+                const i = waiting[Math.floor(Math.random() * waiting.length)];
+                cue = { i, age: 0, next: 0 };
+                on.cue?.(i);
+            }
+            if (cue) {
+                cue.age += dt;
+                const leads = hint.lead ?? [0];
+                const s = state[cue.i];
+                if (win || returning || s.given || s.coming) cue = null;
+                else if (cue.age >= leads[cue.next]) {
+                    s.flash = 0.6;
+                    on.hint?.(cue.i);
+                    cue.next += 1;
+                    if (cue.next >= leads.length) cue = null;
+                }
+            }
+        } else if (!win && !returning && idle > HINT) {
             idle = 0;
             const waiting = state.map((s, i) => (s.given || s.coming ? -1 : i)).filter((i) => i >= 0);
             if (waiting.length) {
@@ -170,7 +197,7 @@ export function createGiving({ count, source, target, can = () => true, reduced 
         get busy() { return !!win || returning; },
         // Nothing is moving: no rulito, no lights in the air, every glow at rest (a still scene can stop drawing)
         get settled() { return !win && !returning && !lights.length && state.every((s) => Math.abs(s.goal - s.lit) < 0.01 && s.flash < 0.01); },
-        touched() { idle = 0; },
+        touched() { idle = 0; cue = null; },
     };
 }
 

@@ -37,6 +37,7 @@
     import { startStardust } from '../../composables/useStardust.js';
     import { createSparks } from '../../composables/useSparks.js';
     import { createFlow } from '../../composables/useFlow.js';
+    import { createGhostHand, gesture, HINT_AFTER } from '../../composables/useGhostHand.js';
     import { play } from '../../composables/useSound.js';
     import { sceneMilestone } from '../../analytics.js';
     import Rulito from '../Rulito.vue';
@@ -60,6 +61,7 @@
     const setCatcher = (n) => (el) => { catchers[n] = el; };
     const N_ = {};                          // the layers (stage nodes), by layer number or flask id
     let stage = null;
+    let hand = null;                        // the ghost hand, showing the gesture
     let net = null;                         // the network's group
     let parallax = null;
     let sky = null;
@@ -420,6 +422,22 @@
         if (win) return;
         flow.step(dt, t, pointer, { key: keyHold });
     };
+    // A point of the route (2160 units of the square) on the stage canvas now, as the network floats
+    const routeOnCanvas = (u, v) => {
+        const p = net.toScreen(F.x + u / 2160 * F.size, F.y + v / 2160 * F.size);
+        return [p.x, p.y];
+    };
+    // The hint, without words: left alone HINT_AFTER s (not while it is accompanied, nor while the rulito lives), the
+    // ghost hand slides along the stretch of tube ahead of the head, at the current's pace. The call of the head (its
+    // beat, from flow.idle) starts again too while the rulito lives, so after a win both wait from the start
+    const HINT_LEN = 64;                    // samples of route the hand slides along (as far as the beads ahead go)
+    const hintFlow = () => {
+        if (win) flow.idle = 0;
+        const wanted = !win && !flow.done && !keyHold && !pointer.down && flow.idle > 0.5 && cur.alpha > 0.9;
+        if (!hand?.due(HINT_AFTER, wanted)) return;
+        const path = flow.hintPath(HINT_LEN, routeOnCanvas);
+        if (path) hand.play(gesture.slide(path, path.dur));
+    };
 
     // Everything is live: the rulito is born over the central sign; then the current fades, and everything is corked again
     let win = null;
@@ -726,6 +744,7 @@
         nowT = t;
         moveStrokes(dt);
         stepFlow(dt, t);
+        hintFlow();
         live(t, ramp);
         stepFlasks(dt);
         wakeCreatures(dt);
@@ -760,6 +779,7 @@
         build(stage);
         stage.onResize((W, H) => place(W, H));
         front = startStardust(null, { stage, groups: [{ ...sparks.group(), order: 1e6 }] });
+        hand = createGhostHand(stage);
         root.value.addEventListener('pointermove', track, { passive: true });
         root.value.addEventListener('pointerdown', track, { passive: true });
         root.value.addEventListener('pointerup', release, { passive: true });
@@ -782,6 +802,7 @@
         parallax?.destroy();
         sky?.destroy();
         front?.destroy();
+        hand?.destroy();
         stage?.destroy();
     });
 </script>

@@ -53,6 +53,26 @@ export const createFlow = ({
     const at = (i) => Math.min(end, Math.max(start, Math.floor(i)));
     f.point = (i = f.head) => { const k = at(i); return { x: x(k), y: y(k) }; };
     f.paceAt = paceAt;
+    // The hint, for the ghost hand (gesture.slide): the stretch of route just ahead of the head, `len` samples long, as
+    // path(u) for u 0..1 -> map(x, y) (the scene turns its units into the stage canvas's px; read at every call, so it
+    // follows what moves). It ends at the entrance of the next knot, unless that is nearer than a third of `len` (then it
+    // goes on through it, as a finger would). path.dur: the seconds the current takes over it at its average pace.
+    // null when there is nothing ahead. Only reads the state: the hand does not move the current.
+    f.hintPath = (len = ahead, map = (u, v) => [u, v]) => {
+        if (f.done) return null;
+        const from = f.head, stop = next();
+        let limit = stop && from < stop.enter ? stop.enter : end;
+        if (limit - from < len / 3) limit = end;
+        const to = Math.min(limit, from + len);
+        if (to - from < 2) return null;
+        const path = (u) => {
+            const s = from + (to - from) * Math.min(1, Math.max(0, u));
+            const i = at(s), j = at(s + 1), k = Math.min(1, s - i);
+            return map(x(i) + (x(j) - x(i)) * k, y(i) + (y(j) - y(i)) * k);
+        };
+        path.dur = (to - from) / (pace * (slow[0] + slow[1]) / 2);
+        return path;
+    };
     // Where along the route, near the head, a point (u, v) is: the nearest sample and how far it is from it (squared)
     const project = (u, v) => {
         const lo = at(f.head - behind), hi = at(f.head + ahead * 2.5);

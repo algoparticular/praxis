@@ -48,11 +48,11 @@ Antes de llevar la mano a todas las cartas, se conecta en la primera carta que s
 | Verbo | Carta de ejemplo | Gesto de la mano | Estado |
 |---|---|---|---|
 | Arraigar | 27 Paciencia | `hold` sobre la piña | ✅ hecho |
-| Soltar | 31 Vipassana | `tap` sobre la célula que hoy brilla (`cellField.hint()`, `startHints`); a veces `hold` sobre Sid (la respiración atrapa un tercio de las células) | falta |
-| Fluir | 5 Khanti | `slide` por el tramo de ruta delante de la cabeza (`flow.point(i)` da los puntos; ver el paquete C, que propone llevarlo a `useFlow.js`) | falta |
-| Encender | 22 Evolución | en frío `rub` dentro de la célula; encendido `sling` del ser hacia lo próximo apagado (modelo: Viriya, que también está hecha) | falta |
-| Dar y recibir | 2 Dana | `tap` sobre el receptor que hoy titila (`flash` de `useGiving.js`) | falta |
-| Resonar | 29 Sincronicidad | `tap` a tiempo sobre la burbuja que brilla en su pulso, lanzado `TAP_LEAD` antes del pulso (hoy no tiene ninguna pista por inactividad) | falta |
+| Soltar | 31 Vipassana | `tap` sobre la célula que hoy brilla (`cellField.hint()`, `startHints`); a veces `hold` sobre Sid (la respiración atrapa un tercio de las células) | ✅ hecho (falta probar en un teléfono) |
+| Fluir | 5 Khanti | `slide` por el tramo de ruta delante de la cabeza (`flow.point(i)` da los puntos; ver el paquete C, que propone llevarlo a `useFlow.js`) | ✅ hecho (falta probar en un teléfono) |
+| Encender | 22 Evolución | en frío `rub` dentro de la célula; encendido `sling` del ser hacia lo próximo apagado (modelo: Viriya, que también está hecha) | ✅ hecho (falta probar en un teléfono) |
+| Dar y recibir | 2 Dana | `tap` sobre el receptor que hoy titila (`flash` de `useGiving.js`) | ✅ hecho (falta probar en un teléfono) |
+| Resonar | 29 Sincronicidad | `tap` a tiempo sobre la burbuja que brilla en su pulso, lanzado `TAP_LEAD` antes del pulso (hoy no tiene ninguna pista por inactividad) | ✅ hecho (falta probar en un teléfono) |
 | Ver | 3 Pañña | `drag` entre las dos luces del primer hilo que falta | ✅ hecho |
 
 Viriya (Encender) también está hecha y sirve de modelo para el `sling`.
@@ -396,7 +396,7 @@ Gestos de la mano: `drag` entre las dos luces del primer hilo que falta (Pañña
 
 ## Orden
 
-1. **Etapa 1:** conectar la mano en Vipassana, Khanti, Evolución, Dana y Sincronicidad. Paciencia y Pañña ya están. Se puede repartir: son escenas distintas que no se pisan.
+1. **Etapa 1:** ✅ la mano está en las siete cartas de ejemplo (Vipassana, Khanti, Evolución, Dana y Sincronicidad, en la rama `claude/etapa1-mano-fantasma`). Falta que Juan Manuel las pruebe en un teléfono (paso 2).
 2. **Paquete 0:** Juan Manuel prueba las siete en un teléfono y se cierra el aspecto de la mano.
 3. **Paquete H, puntos 1 a 4**, en paralelo con lo anterior: documentar lo ya decidido.
 4. **Después del paquete 0, dos frentes a la vez:**
