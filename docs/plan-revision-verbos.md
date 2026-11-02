@@ -146,7 +146,7 @@ Khanti es a la vez un ejemplo de la etapa 1 y una de las 18. Su mano se conecta 
 | 16 Compromiso | en revisión: pista con la mano (`hold` sobre los seres), rulito sobre la cabeza del Sama grande el Sama grande ya no salta y estrellas fugaces reales en vez de las dibujadas (falta probar en un teléfono) |
 | 18 Confianza | no |
 | 23 Fe | no |
-| 30 Esperanza (con las formas de las constelaciones) | no |
+| 30 Esperanza (con las formas de las constelaciones) | en revisión: las constelaciones A, C y F ya están en la escena (falta probar en un teléfono); falta el rulito sobre Vulpes y la pista |
 | 13 Belleza | no |
 | 19 Coraje | no |
 | 21 Desafío | no |
@@ -406,7 +406,8 @@ Gestos de la mano: `drag` entre las dos luces del primer hilo que falta (Pañña
       - A: `aspect: 1`, `stars: [[0.05,0],[0.35,0.3],[0.65,0.3],[0.95,0],[0.85,0.55],[0.5,1],[0.15,0.55]]`, `links: loop(7)`.
       - C: `aspect: 0.6`, `stars: [[0,0.25],[0.12,0],[0.2,0.3],[0.62,0.32],[0.92,0],[0.6,1],[0.25,1]]`, `links: [[0,1],[1,2],[2,3],[3,4],[3,5],[2,6]]`.
       - F: `aspect: 1`, `stars: [[0.1,1],[0,0.45],[0.35,0],[0.9,0.15],[0.8,0.6],[0.45,0.5]]`, `links: [[0,1],[1,2],[2,3],[3,4],[4,5]]`.
-      - Los señuelos (2 por figura) y el `rest` (dónde se para detrás de Vulpes) se ajustan al probarlas en pantalla. Ninguna pasa de 7 hilos, así que `MAX_LINKS` queda igual.
+      - Los señuelos (2 por figura) y el `rest` (dónde se para detrás de Vulpes) se ajustan al probarlas en pantalla.
+    - ✅ **Hechas** (2 de noviembre): estaban decididas pero la escena seguía con las viejas. `FIGURES` tiene A (`head`), C (`walking`) y F (`tail`), con dos señuelos cada una lejos de sus hilos; cada ancestro se para detrás donde lo hacía el de antes. Falta probarlas en un teléfono. Ninguna pasa de 7 hilos, así que `MAX_LINKS` queda igual.
   - **Rulito:**
     - Hoy está en `HEAD_AT`, a mano, sobre el ancestro sentado: casi pegado a él, y los hilos de bajada lo cruzan (sin `threads.hole`).
     - La caja del JSON es la "z" del cielo.
