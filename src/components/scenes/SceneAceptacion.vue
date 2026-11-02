@@ -34,6 +34,7 @@
     import { decodeCloud, sampleCloud, joinLight } from '../../composables/stippleCloud.js';
     import { play } from '../../composables/useSound.js';
     import { createFlow, routeThrough } from '../../composables/useFlow.js';
+    import { createGhostHand, gesture, HINT_AFTER } from '../../composables/useGhostHand.js';
     import { sceneMilestone } from '../../analytics.js';
     import Rulito from '../Rulito.vue';
     import art from '../../composables/aceptacionScene.json';
@@ -233,6 +234,7 @@
     let slid = false;                       // this press went with the light (so its click does not strum)
     let win = null;
     let wins = 0;
+    let hand = null;                        // the ghost hand, showing the gesture
     const flow = createFlow({
         x: RX, y: RY, n: ROUTE.n,
         stops: ROUTE.stops,
@@ -442,6 +444,18 @@
     const measureLand = () => {
         const a = L.landNode.toScreen(sx(0), sy(0)), b = L.landNode.toScreen(sx(SIZE), sy(0));
         landAt = { x: a.x, y: a.y, s: (b.x - a.x) / SIZE || 1 };
+    };
+    // The hint, without words: left alone HINT_AFTER s (not while it is accompanied, nor while the rulito lives), the
+    // ghost hand slides along the stretch of the way ahead of the light's head, at its pace (as Khanti's)
+    const routeOnCanvas = (u, v) => [landAt.x + u * landAt.s, landAt.y + v * landAt.s];
+    const hintFlow = (t) => {
+        if (win) flow.idle = 0;
+        const wanted = !win && !flow.done && !keyHold && !pointer.down && flow.idle > 0.5 && cur.alpha > 0.9;
+        if (!hand?.due(HINT_AFTER, wanted)) return;
+        const first = flow.hintPath(undefined, routeOnCanvas, t + gesture.SLIDE_LEAD);
+        if (!first) return;
+        const again = flow.hintPath(undefined, routeOnCanvas, t + gesture.SLIDE_LEAD + first.dur + gesture.SLIDE_AGAIN);
+        hand.play([...gesture.slide(first, first.dur, { even: true }), ...(again ? gesture.slide(again, again.dur, { even: true }) : [])], { loops: 1 });
     };
     const toArt = (event) => {
         const box = root.value.getBoundingClientRect();
@@ -702,6 +716,7 @@
         // ---- Fluir: the light, the cairns and, at the end, the rulitos
         measureLand();
         if (!win) flow.step(dt, t, pointer, { key: keyHold });
+        hintFlow(t);
         if (pointer.down && flow.acc > 0.3) slid = true;
         runPhase += dt * 22 * (1.4 + 1.2 * Math.max(flow.acc, cur.light));
         stepCairns(dt, t, ramp);
@@ -761,6 +776,7 @@
         if (reduced) dust.reveal();
         ['pointerdown', 'pointermove', 'pointerup', 'pointercancel'].forEach((type) => root.value.addEventListener(type, track, { passive: true }));
         root.value.addEventListener('touchstart', onTouchStart, { passive: false });
+        hand = createGhostHand(stage, { color: 0x143246, shade: 0xf7f8f1 });   // navy: the cream hand does not read on the cream and yellow skies
         parallax = createParallax(root.value, frame);
         enter();
     };
@@ -773,6 +789,7 @@
         root.value?.removeEventListener('touchstart', onTouchStart);
         stageEl?.style.removeProperty('--name-glow');
         parallax?.destroy();
+        hand?.destroy();
         dust?.destroy();
         stage?.destroy();
     });

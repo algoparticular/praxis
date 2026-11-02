@@ -28,6 +28,7 @@
     import { createLayerStage } from '../../composables/useLayerStage.js';
     import { startStardust } from '../../composables/useStardust.js';
     import { createThreads, rgbOf, smooth } from '../../composables/useThreads.js';
+    import { createGhostHand, gesture, HINT_AFTER } from '../../composables/useGhostHand.js';
     import { play } from '../../composables/useSound.js';
     import { sceneMilestone } from '../../analytics.js';
     import Rulito from '../Rulito.vue';
@@ -46,6 +47,7 @@
     const setStarHit = (i) => (el) => { starHits[i] = el; };
     let stage = null;
     let stageEl = null;
+    let hand = null;                        // the ghost hand: left alone 7 s, it drags along a missing thread
     const NAME_GLOW = '0.8';
     let parallax = null;
     let dust = null;
@@ -352,9 +354,15 @@
         if (!playing() || drag) return;
         idle += dt;
         ghostIn -= dt;
-        if (!ghost && idle > 7 && ghostIn <= 0) {
+        if (!ghost && idle > HINT_AFTER && ghostIn <= 0) {
             ghost = { age: 0 };
             ghostIn = GHOST_LEN + 7;
+            // and the ghost hand drags from one bright star to the other along the first thread still missing (the
+            // guides are on the threads' canvas: the camera moves the sky by skyShift)
+            const fig = FIGURES[current];
+            const missing = fig.links.find(([a, b]) => !joined(a, b));
+            const onStage = (i) => () => { const p = guideSpots()[i]; return [p[0] + skyShift[0], p[1] + skyShift[1]]; };
+            if (missing && !reduced) hand?.play(gesture.drag(onStage(missing[0]), onStage(missing[1])), { loops: 1 });
         }
     };
 
@@ -773,6 +781,7 @@
                 { colors: [STAR], dynamic: halos, parallax: 0, drift: 0, twinkle: 0, reach: 0, look: 'soft', order: after(L.moon) + 0.1 },
             ],
         });
+        hand = createGhostHand(stage);
         parallax = createParallax(root.value, frame);
         if (import.meta.env.DEV) root.value.__game = { FIGURES, join, get current() { return current; } };
         enter();
@@ -783,6 +792,7 @@
     onBeforeUnmount(() => {
         gone = true;
         parallax?.destroy();
+        hand?.destroy();
         dust?.destroy();
         game?.destroy();
         stage?.destroy();

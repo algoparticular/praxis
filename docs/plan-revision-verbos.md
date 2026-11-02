@@ -130,6 +130,8 @@ Khanti es a la vez un ejemplo de la etapa 1 y una de las 18. Su mano se conecta 
 
 **Estado:**
 
+**La mano en todas (2 de noviembre, pedido de Juan Manuel):** antes de seguir con las revisiones, la pista con la mano fantasma se puso de una vez en las 14 cartas del 31/10 que no la tenían (Metta, Gratitud, Armonía, Comunicación, Honestidad, Aceptación, Transformación, Celebración, Confianza, Fe, Esperanza, Belleza, Coraje y Desafío), con el gesto de su verbo que pide cada paquete. Lo que dice cada paquete sobre la pista de esas cartas ya está hecho; el resto (rulitos, lo marcado y lo que Juan Manuel encuentre) sigue en la revisión de cada una. Falta probar las manos en un teléfono; a mirar con cuidado: la de Coraje, en parte sobre la luna clara, y la de Comunicación, chica sobre las cabezas claras de los seres.
+
 | Carta | Revisada |
 |---|---|
 | 8 Metta | no |
@@ -146,7 +148,7 @@ Khanti es a la vez un ejemplo de la etapa 1 y una de las 18. Su mano se conecta 
 | 16 Compromiso | en revisión: pista con la mano (`hold` sobre los seres), rulito sobre la cabeza del Sama grande el Sama grande ya no salta y estrellas fugaces reales en vez de las dibujadas (falta probar en un teléfono) |
 | 18 Confianza | no |
 | 23 Fe | no |
-| 30 Esperanza (con las formas de las constelaciones) | en revisión: las constelaciones A, C y F ya están en la escena (falta probar en un teléfono); falta el rulito sobre Vulpes y la pista |
+| 30 Esperanza (con las formas de las constelaciones) | en revisión: las constelaciones A, C y F ya están en la escena (falta probar en un teléfono); falta el rulito sobre Vulpes |
 | 13 Belleza | no |
 | 19 Coraje | no |
 | 21 Desafío | no |
