@@ -34,7 +34,7 @@
     import { createParallax } from '../../composables/useParallax.js';
     import { createLayerStage, FIELD_RANGE, FIELD_BUBBLES } from '../../composables/useLayerStage.js';
     import { startStardust } from '../../composables/useStardust.js';
-    import { decodeCloud, sampleCloud } from '../../composables/stippleCloud.js';
+    import { decodeCloud, sampleCloud, joinLight } from '../../composables/stippleCloud.js';
     import { createSparks } from '../../composables/useSparks.js';
     import { play } from '../../composables/useSound.js';
     import { createGhostHand, gesture, HINT_AFTER } from '../../composables/useGhostHand.js';
@@ -688,9 +688,10 @@
 
         // The particles that belong to a layer follow it
         const sunDrift = stage.drift(L.sunNode.z), moonDrift = stage.drift(L.moonNode.z), sidDrift = stage.drift(L.sidNode.z);
-        dust?.shift(0, sunDrift.x, sunDrift.y + L.sunNode.y);
+        const sunIn = joinLight(dust, 0, L.sunNode, L.sun);     // the sun is one: its corona comes with its disc, which waits for it
+        dust?.shift(0, sunDrift.x, sunDrift.y + L.sunNode.y + sunIn.y);
         dust?.turn(1, L.moon.rotate, sx(MOON.x), sy(MOON.y));
-        dust?.shift(1, moonDrift.x + L.moonNode.x, moonDrift.y + L.moonNode.y);
+        dust?.shift(1, moonDrift.x + L.moonNode.x, moonDrift.y + L.moonNode.y + L.moonNode.entering().y);
         dust?.shift(2, sidDrift.x, sidDrift.y + L.sidNode.y);
         const skyDrift = stage.drift(L.skyNode.z);
         dust?.shift(3, skyDrift.x, skyDrift.y);

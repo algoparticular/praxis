@@ -24,7 +24,7 @@
     import { createParallax } from '../../composables/useParallax.js';
     import { createLayerStage } from '../../composables/useLayerStage.js';
     import { createStardust } from '../../composables/useStardust.js';
-    import { decodeCloud, sampleCloud } from '../../composables/stippleCloud.js';
+    import { decodeCloud, sampleCloud, joinLight } from '../../composables/stippleCloud.js';
     import { createSpores } from '../../composables/useSpores.js';
     import { createGhostHand, gesture, HINT_AFTER } from '../../composables/useGhostHand.js';
     import { createRoots } from '../../composables/useRoots.js';
@@ -453,8 +453,9 @@
         L.sun.scale = 1 + 0.05 * pulse * ramp;
         L.sunGlow.y = L.sun.y;
         const sunDrift = stage.drift(L.back.z), sc = sunCentre();
-        particles?.rim.shift(0, sunDrift.x, sunDrift.y + L.sun.y);
-        particles?.rim.grow(0, L.sun.scale - 1, sc.x, sc.y);
+        const sunIn = joinLight(particles?.rim, 0, L.sun, L.sun);     // the sun is one: its stipple rises and grows with its disc
+        particles?.rim.shift(0, sunDrift.x, sunDrift.y + L.sun.y + sunIn.y);
+        particles?.rim.grow(0, L.sun.scale * sunIn.scale - 1, sc.x, sc.y);
         L.sunGlow.scale = (1 + 0.05 * pulse * ramp) * (0.85 + 0.3 * pulse);
         L.sunGlow.opacity = 0.55 + 0.45 * pulse;
         // The boat bobs and rocks on its own

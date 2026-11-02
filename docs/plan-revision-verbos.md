@@ -102,6 +102,8 @@ Pedido de Juan Manuel: los soles y las lunas de este estilo vivo tienen que ser 
 - **Coraje:** su luna queda como está (Juan Manuel).
 - **Addhitthana y Esperanza:** sus lunas están bien así (Juan Manuel, 1 de noviembre); no se tocan.
 
+- **Que sea uno al entrar** (Juan Manuel, 1 de noviembre: "el aro ya está y entra el círculo; es todo uno y no se debe ver el círculo solo nunca"): ✅ hecho. Antes el disco subía con la entrada de su capa y se encendía en 1,8 s, mientras su punteado quedaba quieto en su lugar y aparecía en 2,5 s, así que se veía el círculo entrar por debajo del aro. Ahora `joinLight()` (`stippleCloud.js`) hace que el punteado suba y crezca con su disco (`node.entering()` en `useLayerStage.js`) y que el disco llegue apenas detrás de sus puntos (`faded` en `useStardust.js`), así los puntos siempre le tapan el borde. Está en Viriya, Metta, Sacca, Sila, Gratitud, Confianza, Transformación, Ciclos y Paciencia, y en Honestidad y Aceptación (todas de puntos, su punteado entra con su resplandor). Falta probarlo en un teléfono.
+
 **Decidido (1 de noviembre):** los chicos todos de puntos, como Pañña (Honestidad, Aceptación, Paciencia; Transformación con su punteado alrededor del anillo); los grandes, disco con el borde disuelto en su punteado (Metta, Sila, Viriya, Gratitud con sus dos soles, Sacca, Confianza). Coraje, Addhitthana y Esperanza quedan como están. Ciclos y Perdón van con el paquete B (el sol de Ciclos y el planeta de Perdón se coordinan con esa sesión). Todo sale de `scripts/sun-cloud.mjs` y `src/composables/stippleCloud.js`.
 
 ## Revisión juego por juego de las 18 cartas del 31 de octubre

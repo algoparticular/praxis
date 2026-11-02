@@ -26,7 +26,7 @@
     import { createParallax } from '../../composables/useParallax.js';
     import { createLayerStage } from '../../composables/useLayerStage.js';
     import { startStardust } from '../../composables/useStardust.js';
-    import { decodeCloud, sampleCloud } from '../../composables/stippleCloud.js';
+    import { decodeCloud, sampleCloud, joinLight } from '../../composables/stippleCloud.js';
     import { createSparks } from '../../composables/useSparks.js';
     import { createRooting } from '../../composables/useRooting.js';
     import { play } from '../../composables/useSound.js';
@@ -363,6 +363,7 @@
         // The disc only as big as where the light is still whole: the band's densest dots cover its edge
         const r = HEART.cloud.solid * k();
         L.heart.place({ left: cx - r, top: cy - r, w: 2 * r, h: 2 * r });
+        L.mazeNode.pivot = { x: cx, y: cy };        // the labyrinth grows into place round its light, with the light's band
         const gd = HEART.r * k() * 4.5;
         L.heartGlow.place({ left: cx - gd / 2, top: cy - gd / 2, w: gd, h: gd });
         L.fill.place(rectOf(B.mazeFill));
@@ -455,7 +456,8 @@
         L.heartGlow.opacity = 0.75 + 0.15 * breath * ramp + 0.25 * flare;
         L.heartGlow.scale = 1 + 0.06 * breath * ramp + 0.35 * flare;
         L.heart.scale = 1 + 0.015 * breath * ramp;
-        dust?.grow(2, L.heart.scale - 1, sx(HEART.x), sy(HEART.y));
+        const heartIn = joinLight(dust, 2, L.mazeNode, L.heart);    // the light is one: its band comes with its disc, which waits for it
+        dust?.grow(2, L.heart.scale * heartIn.scale - 1, sx(HEART.x), sy(HEART.y));
         L.chakana.scale = 1 + 0.02 * Math.sin(t * 0.7 + 0.6) * ramp + 0.08 * flare * flare;
         L.chakana.uniforms.uBright.value = 1 + 0.08 * (breath * 0.5 + 0.5) * ramp + 0.25 * flare;
         if (!reduced && t > nextRing) { nextRing = t + RING; sendRing(); }
@@ -560,7 +562,7 @@
         const farDrift = stage.drift(L.farNode.z), nearDrift = stage.drift(L.nearNode.z), mazeDrift = stage.drift(L.mazeNode.z);
         dust?.shift(0, farDrift.x, farDrift.y + L.farNode.y);
         dust?.shift(1, nearDrift.x, nearDrift.y + L.nearNode.y);
-        dust?.shift(2, mazeDrift.x, mazeDrift.y + L.mazeNode.y);
+        dust?.shift(2, mazeDrift.x, mazeDrift.y + L.mazeNode.y + heartIn.y);
         dust?.shift(3, nearDrift.x, nearDrift.y + L.nearNode.y);
         dust?.shift(4, mazeDrift.x, mazeDrift.y + L.mazeNode.y);
         stage.render(t);

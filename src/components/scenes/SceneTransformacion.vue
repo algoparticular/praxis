@@ -30,7 +30,7 @@
     import { createParallax } from '../../composables/useParallax.js';
     import { createLayerStage } from '../../composables/useLayerStage.js';
     import { startStardust } from '../../composables/useStardust.js';
-    import { decodeCloud, sampleCloud } from '../../composables/stippleCloud.js';
+    import { decodeCloud, sampleCloud, joinLight } from '../../composables/stippleCloud.js';
     import { play } from '../../composables/useSound.js';
     import { createFlow, routeThrough } from '../../composables/useFlow.js';
     import { sceneMilestone } from '../../analytics.js';
@@ -579,7 +579,10 @@
         // The particles that belong to a layer follow it
         const skyDrift = stage.drift(zFor(DEPTH.stars)), landDrift = stage.drift(L.landNode.z);
         dust?.shift(0, skyDrift.x, skyDrift.y);
-        for (const i of [1, 2, 3, 4]) dust?.shift(i, landDrift.x, landDrift.y + L.landNode.y);
+        // (the little sun is one: its stipple comes and grows with its disc, which waits for it)
+        const landIn = joinLight(dust, 1, L.landNode, L.sun);
+        dust?.grow(1, L.sun.scale - 1, sx(SUN.x), sy(SUN.y));
+        for (const i of [1, 2, 3, 4]) dust?.shift(i, landDrift.x, landDrift.y + L.landNode.y + landIn.y);
         dust?.turn(1, L.crown.rotate, sx(CROWN.x), sy(CROWN.y));
         stage.render(t);
         if (frames++ % 2 === 0) placeHits();
