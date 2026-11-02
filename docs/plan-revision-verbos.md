@@ -143,7 +143,7 @@ Khanti es a la vez un ejemplo de la etapa 1 y una de las 18. Su mano se conecta 
 | 14 Celebración | no |
 | 15 Ciclos | en revisión: lo que se suelta pasó a ser las plantas (falta probar en un teléfono) |
 | 28 Perdón | en revisión: pista y regla 4 hechas (falta probar en un teléfono) |
-| 16 Compromiso | no |
+| 16 Compromiso | en revisión: pista con la mano (`hold` sobre los seres), rulito sobre la cabeza del Sama grande el Sama grande ya no salta y estrellas fugaces reales en vez de las dibujadas (falta probar en un teléfono) |
 | 18 Confianza | no |
 | 23 Fe | no |
 | 30 Esperanza (con las formas de las constelaciones) | no |
@@ -254,8 +254,11 @@ Gesto de la mano: `hold` sobre lo que se sostiene. Motor común: `useRooting.js`
   - Rulito bien (`art.rulito`, en `L.boat`).
   - Regla 4: ya la cumple (al soltar, la cola alcanza a la cabeza; entero, se queda `LINGER` y se va).
   - Doc corregida en `docs/escenas.md` y `verbos-y-dinamicas.md` (`CHARGE` 1,6 + `HOLD` 3,4, `LINGER` 4, un `kindle` por tercio).
-- **16 Compromiso:**
-  - Pista: `hold` sobre los seres (hoy echa chispas al pie del camino).
+- **16 Compromiso:** (en revisión con Juan Manuel, 2 de noviembre)
+  - Pista: ✅ `hold` sobre los seres con la mano, a los 7 s, también después de ganar (antes echaba chispas al pie del camino y no se entendía qué hacer).
+  - Rulito: ✅ justo sobre la cabeza del Sama grande, entre los mechones (decidido: no arriba de las puntas del pelo), colgado de su grupo. Ya no usa la "z" del cielo ni el tope contra el borde.
+  - ✅ El Sama grande ya no salta con un toque (se veía el dibujo cortado bajo el casco): brilla y parpadea.
+  - ✅ Las tres líneas amarillas junto al bote (estrellas fugaces dibujadas) se sacaron; ahora cruzan la cúpula estrellas fugaces de verdad, en partículas, como en nuestros cielos.
   - **El rulito es el peor caso:** usa la "z" del cielo y, en el teléfono, queda pegado al borde derecho bajo el título (`SceneCompromiso.vue` ≈319-325). Va **sobre el Sama grande del bote** (decidido).
 - **18 Confianza:**
   - La pista actual (destello y un anillo) es igual al anillo que el fondo manda cada 7 s (`RING`), así que no se distingue. Hace falta `hold` sobre el centro.

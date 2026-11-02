@@ -7,18 +7,18 @@
     // (finger, mouse or key) lights the path, from the viewer's feet up the stem to the horizon of the cap, at its own
     // steady pace; the signs on it light up as the light passes them, a note of the chord at each third of the way
     // (`kindle`), the big one glows and looks down the path and the boat steadies. The light is the rulito's stroke
-    // (useRooting.js): when it reaches the horizon the rulito the card draws in the sky is born (`rulito`, A major, and
-    // `converge`), the horizon flares and the name lights up; let go before, the light's tail climbs after its head and
-    // fades at the horizon (holding again picks it up). Left alone a while, the foot of the path glimmers and the big
-    // one's light breathes (the hint). A touch anywhere else strums the card's chord and the stars and the motes flare;
-    // a quick touch on the beings makes the big one hop and blink and the little one peep.
+    // (useRooting.js): when it reaches the horizon the rulito is born over the big one's head, hanging from him (`rulito`,
+    // A major, and `converge`), the horizon flares and the name lights up; let go before, the light's tail climbs after
+    // its head and fades at the horizon (holding again picks it up). Left alone 7 s, the ghost hand holds the beings (the
+    // hint). A touch anywhere else strums the card's chord and the stars and the motes flare; a quick touch on the beings
+    // makes the big one glow and blink (it does not hop: its picture ends at the hull) and the little one peep.
     // Nothing of the sky is a picture: the dome (a circle with its outline, cut where the cap hides it) and the cap (an
     // ellipse with its outline) are drawn in code from the card's colours, worked out by the converter; the stars are
     // particles (the drawn ones, and more for the dome past the frame), and so are the motes that rise from the horizon
     // into the night; a warm light breathes behind the horizon. It is drawn in WebGL (useLayerStage): the water, the
     // dome, the boat and the mushroom are planes at their depths. The water shimmers and is mirrored past the frame on a
     // wide screen, where the dome and the cap simply go on (they are code); the boat bobs and rocks, the beings breathe
-    // and blink, their hair and the plant sway, the glints by the boat twinkle and the signs on the path glow in turn.
+    // and blink, their hair and the plant sway, silent shooting stars cross the dome now and then and the signs on the path glow in turn.
     // From compromisoScene.json and public/assets/compromiso (made by scripts/convert-compromiso.mjs). The touch target
     // over the beings is a DOM element.
     import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
@@ -27,6 +27,7 @@
     import { startStardust } from '../../composables/useStardust.js';
     import { createSparks } from '../../composables/useSparks.js';
     import { createRooting } from '../../composables/useRooting.js';
+    import { createGhostHand, gesture, HINT_AFTER } from '../../composables/useGhostHand.js';
     import { play } from '../../composables/useSound.js';
     import { sceneMilestone } from '../../analytics.js';
     import Rulito from '../Rulito.vue';
@@ -64,6 +65,8 @@
     const FOCUS = 1072;                     // the middle of the boat (art px)
     const BOAT_SPAN = 1150;                 // art px across that must be seen on a phone (the boat with its curls)
     const TOP = 370;                        // the tips of the big being's hair: kept under the card's name
+    const CROWN = [1099, 762];              // the top of the big one's head (art px): where the rulito stands
+    const RULITO_H = 190;                   // the rulito's height (art px)
     const VIEW = 2050;                      // art px from the top that a wide screen shows (the cap and the path's top)
     const layout = (w, h) => {
         const phone = w < h;
@@ -140,12 +143,11 @@
     const PATH = [2700, 1262];              // art y of the path's foot (the bottom of the card) and of its end, at the horizon
     const PATH_X = [1100, 1052];            // its middle there
     const PATH_HALF = [980, 150];           // half its width there
-    const HINT = 7;
     const sparks = createSparks(260);
     let screenH = 1;
     let glyph = { left: 0, top: 0, w: 1, h: 1 };
     let pressAt = -1;                       // when the beings were pressed (a quick touch is a greeting)
-    let idleHint = 0, hint = 0;
+    let hand = null;                        // left alone 7 s, the ghost hand holds the beings
     let lit = { head: 0, tail: 0, full: false, pop: 0, named: 0, flare: 0 };
     const rooting = createRooting({
         grow: 4.6, linger: 3.2, eat: 3,
@@ -170,11 +172,9 @@
     const hold = () => {
         if (reduced) return;
         rooting.hold();
-        idleHint = 0;
     };
     const letGo = () => {
         rooting.release();
-        idleHint = 0;
     };
     const pressBeings = (event) => {
         event?.preventDefault?.();
@@ -192,9 +192,52 @@
         pressAt = -1;
     };
 
+    // ---- Shooting stars, silent, as in our skies: a soft cream head and a yellow tail that narrows and fades. They cross
+    // the visible part of the dome, under the card's name and over the boat, and fade before its edge and the cap
+    const TAIL = 22, SHOOTERS = 2;
+    const shooters = Array.from({ length: SHOOTERS }, (_, j) => ({ at: 3 + j * 5 + Math.random() * 3, x: 0, y: 0, dx: 0, dy: 0, T: 1 }));
+    const shooting = {
+        count: SHOOTERS * TAIL,
+        update(t, data) {
+            if (!stage) return;
+            const w = stage.width, h = stage.height;
+            const cx = sx(DOME.x), cy = sy(DOME.y), r = DOME.r * k(), floor = sy(CAP.y - CAP.b);
+            shooters.forEach((f, j) => {
+                if (t > f.at + f.T) {
+                    const side = Math.random() < 0.5 ? -1 : 1;
+                    const top = Math.max(titleBottom(h) + 10, cy - r * 0.85), bottom = Math.min(floor, sy(art.boxes.boatLine[1]));
+                    const left = Math.max(cx - r * 0.75, 0.08 * w), right = Math.min(cx + r * 0.75, 0.92 * w);
+                    const speed = (0.3 + Math.random() * 0.25) * Math.min(Math.max(w, h), 2 * r);
+                    f.at = t + 4 + Math.random() * 8;
+                    f.T = 0.6 + Math.random() * 0.5;
+                    f.x = left + Math.random() * Math.max(0, right - left);
+                    f.y = top + Math.random() * Math.max(0, bottom - top) * 0.6;
+                    f.dx = side * speed;
+                    f.dy = speed * (0.3 + Math.random() * 0.3);
+                }
+                const u = (t - f.at) / f.T;
+                for (let q = 0; q < TAIL; q++) {
+                    const i = j * TAIL + q;
+                    if (u < 0 || u > 1 || reduced) { data.alphas[i] = 0; continue; }
+                    const life = Math.max(0, u - q * 0.006);
+                    const px = f.x + f.dx * life * f.T, py = f.y + f.dy * life * f.T;
+                    const edge = Math.max(0, Math.min(1, (r * 0.95 - Math.hypot(px - cx, py - cy)) / (r * 0.08), (floor - py) / (40 * k() + 8)));
+                    const c = q < 3 ? 0xfffbe6 : (q % 2 ? 0xf6e27c : 0xffe699);
+                    data.positions[i * 3] = px;
+                    data.positions[i * 3 + 1] = py;
+                    data.sizes[i] = Math.max(1.5, (q ? 7 - q * 0.22 : 11) * Math.min(1, 0.5 + 0.5 * F.size / 1000));
+                    data.alphas[i] = edge * Math.min(1, Math.sin(u * Math.PI) * 1.4) * (1 - q / TAIL) ** 0.7;
+                    data.tints[i * 3] = (c >> 16 & 255) / 255;
+                    data.tints[i * 3 + 1] = (c >> 8 & 255) / 255;
+                    data.tints[i * 3 + 2] = (c & 255) / 255;
+                }
+            });
+        },
+    };
+
     // ---- The beings: they breathe, blink now and then (each at its own pace) and react to a touch
     const blinkAt = { big: 2.5, small: 4.2 };
-    let hop = 0;                            // 0..1, the big being's hop (a touch), decaying
+    let hop = 0;                            // 0..1, the big being's light flaring at a touch, decaying
     let peep = 0;                           // the little one peeping up
     let rock = 0;                           // the boat rocked by a touch
     let steady = 0;                         // the boat steadied while the path is held, eased
@@ -229,7 +272,7 @@
         L.dome = dome.canvas(domeCanvas);
         L.horizon = dome.glow({ rect: { left: 0, top: 0, w: 1, h: 1 }, color: WARM, stops: [[0, 0.42], [0.3, 0.18], [0.7, 0]] });
         dome.enter({ y: 40, delay: 100, duration: 2000 });
-        // The boat: the hull, the beings, the plant, the line with its curls, the glints
+        // The boat: the hull, the beings, the plant, the line with its curls
         const boat = s.depth(zFor(DEPTH.boat));
         L.boatNode = boat;
         L.boat = boat.group();
@@ -242,8 +285,9 @@
         L.big = L.boat.group();
         L.bigBody = L.big.image(A('big'), { wind: { amp: 5, speed: 0.7, root: 'bottom' } });
         L.bigEyes = L.big.image(A('eyes'));
+        // The rulito is born over the big one's head: it hangs from him, so it bobs and breathes with him
+        L.rulito = L.big.canvas(rulito.value.canvas, { bloom: true });
         L.boatLine = L.boat.image(A('boatLine'));
-        L.glints = L.boat.image(A('glints'));
         boat.enter({ y: 70, delay: 450, duration: 2000 });
         // The mushroom: its cap (code), the gills, the path, its signs and the line work
         const mushroom = s.depth(zFor(DEPTH.mushroom));
@@ -263,8 +307,6 @@
         L.runesLit.uniforms.uBright.value = 1.3;
         L.front = mushroom.glow({ rect: { left: 0, top: 0, w: 1, h: 1 }, color: 0xffe2a0, stops: [[0, 0.75], [0.35, 0.3], [0.7, 0]], bloom: true });
         L.lines = mushroom.image(A('lines'));
-        // The rulito the card draws in the sky, in its yellow
-        L.rulito = dome.canvas(rulito.value.canvas, { bloom: true });
         mushroom.enter({ y: 60, delay: 200, duration: 1800 });
     };
 
@@ -306,7 +348,6 @@
         L.bigBody.place(rectOf(B.big));
         L.bigEyes.place(rectOf(B.eyes));
         L.boatLine.place(rectOf(B.boatLine));
-        L.glints.place(rectOf(B.glints));
         const ad = 1100 * k();
         L.aura.place({ left: sx(1110) - ad / 2, top: sy(880) - ad / 2, w: ad, h: ad });
 
@@ -316,11 +357,9 @@
         L.stemLit.place(rectOf(B.stem));
         L.runesLit.place(rectOf(B.runes));
         L.lines.place(rectOf(B.lines));
-        // The rulito where the card draws it, in the sky (on a phone that cuts it off, as far right as it is seen)
-        const [rx, ry] = art.rulito;
-        const gh = Math.max(56, 250 * k()), gw = gh * 32 / 86;
-        const gx = Math.min(sx(rx + 40), w - gw * 2.6);
-        glyph = { left: gx - gw / 2, top: Math.max(titleBottom(h) + 18, sy(ry - 60)), w: gw, h: gh };
+        // The rulito over the big one's head, among the tufts of its hair (its foot on the crown)
+        const gh = Math.max(40, RULITO_H * k()), gw = gh * 32 / 86;
+        glyph = { left: sx(CROWN[0]) - gw / 2, top: sy(CROWN[1]) - gh, w: gw, h: gh };
         L.rulito.place({ left: glyph.left - 0.4375 * glyph.w, top: glyph.top - 0.1628 * glyph.h, w: glyph.w * 1.875, h: glyph.h * 1.3256 },
             { x: glyph.left + glyph.w / 2, y: glyph.top + glyph.h });
         screenH = h;
@@ -409,19 +448,12 @@
             rulito.value.frame({ head: lit.head, tail: lit.tail, flare: lit.flare, t, fade: Math.min(1, (lit.head - lit.tail) * 14), width: glyph.w });
             L.rulito.refresh();
         }
-        L.rulito.rotate = 18 + Math.sin(t * 1.6) * 3 * m;
+        L.rulito.rotate = Math.sin(t * 1.6) * 3 * m;
         L.rulito.scale = 1 + 0.2 * lit.pop * lit.pop;
         stageEl?.style.setProperty('--name-glow', lit.named.toFixed(3));
         stage.bloom = Math.max(lit.named, held ? 0.35 : 0);
-        // The hint: left alone, the foot of the path glimmers and the big one's light breathes
-        idleHint = held ? 0 : idleHint + dt;
-        if (idleHint > HINT && !lit.full && !reduced && ramp >= 1) {
-            idleHint = 0;
-            hint = 1;
-            const at = L.stemLit.toScreen(sx(pathAt(0.06).x), Math.min(screenH - 30, sy(pathAt(0.06).y)));
-            sparks.burst(at.x, at.y, { n: 10, colors: [0xffe2a0, YELLOW], speed: 40, life: 1.4, size: 3.5, spread: 60 * k() });
-        }
-        hint = Math.max(0, hint - dt * 0.8);
+        // The hint: left alone (not held, no light on the path), the ghost hand holds the beings
+        if (hand?.due(HINT_AFTER, !held && lit.head === 0 && !reduced && ramp >= 1)) hand.play(gesture.hold(beingsHit.value, 2.4));
 
         // ---- The warm light behind the horizon breathes (and flares as the light reaches it)
         const breath = Math.sin(t * 0.5);
@@ -438,13 +470,12 @@
         steady += ((held ? 1 : 0) - steady) * Math.min(1, dt * 2);
         L.boat.y = (Math.sin(t * 0.7) * 10 * k() * (1 - 0.6 * steady) - Math.sin(rock * Math.PI) * 6 * k()) * m;
         L.boat.rotate = (Math.sin(t * 0.45 + 0.6) * 1.1 * (1 - 0.7 * steady) + Math.sin(t * 3.2) * 1.6 * rock) * m;
-        L.aura.opacity = 0.7 + 0.3 * Math.sin(t * 0.8) * m + 0.5 * hop + 1.6 * steady + 1.2 * hint + 1.5 * rulitoGlow;
-        L.aura.scale = 1 + 0.1 * steady + 0.1 * hint;
-        // The beings breathe from their feet; the big one hops when touched, the little one peeps up
-        const hopUp = Math.sin(Math.min(1, (1 - hop) * 1.25) * Math.PI) * (hop > 0 ? 1 : 0);
-        L.big.y = -hopUp * 26 * k();
-        L.big.sy = 1 + (0.014 * Math.sin(t * 1.05)) * m + 0.04 * hopUp;
-        L.big.sx = 1 - (0.006 * Math.sin(t * 1.05)) * m - 0.02 * hopUp;
+        L.aura.opacity = 0.7 + 0.3 * Math.sin(t * 0.8) * m + 0.5 * hop + 1.6 * steady + 1.5 * rulitoGlow;
+        L.aura.scale = 1 + 0.1 * steady;
+        // The beings breathe from their feet; the little one peeps up when touched (the big one does not leave the boat:
+        // its picture ends at the hull, so lifting it would show it cut)
+        L.big.sy = 1 + (0.014 * Math.sin(t * 1.05)) * m;
+        L.big.sx = 1 - (0.006 * Math.sin(t * 1.05)) * m;
         L.small.y = -Math.sin(Math.min(1, peep * 1.2) * Math.PI) * 16 * k();
         L.small.sy = 1 + 0.02 * Math.sin(t * 1.4 + 1) * m;
         L.small.sx = 1 - 0.008 * Math.sin(t * 1.4 + 1) * m;
@@ -456,7 +487,6 @@
         L.lookY = (L.lookY ?? 0) + ((look ? 4 : 0) * k() - (L.lookY ?? 0)) * Math.min(1, dt * 4);
         L.bigEyes.x = L.lookX * m;
         L.bigEyes.y = L.lookY * m;
-        L.glints.uniforms.uBright.value = 1.15 + 0.15 * Math.sin(t * 2.3) * m;
         L.boatNode.y = scroll * 16;
 
         // ---- The mushroom: the signs on the path glow in turn, slowly
@@ -469,6 +499,7 @@
         dust?.shift(0, domeDrift.x, domeDrift.y + L.domeNode.y);
         dust?.shift(1, domeDrift.x, domeDrift.y + L.domeNode.y);
         dust?.shift(2, boatDrift.x, boatDrift.y + L.boatNode.y);
+        dust?.shift(4, domeDrift.x, domeDrift.y + L.domeNode.y);
         stage.render(t);
         if (frames++ % 2 === 0) placeHits();
     };
@@ -504,11 +535,14 @@
                 },
                 // 3: the sparks of the light on the path, in front of everything
                 { ...sparks.group(), order: 1e6 },
+                // 4: a shooting star now and then, in the dome (behind the boat)
+                { colors: [0xffffff], dynamic: shooting, parallax: 0, drift: 0, twinkle: 0, reach: 0, look: 'soft', bloom: true, order: after(L.dome) + 0.2 },
             ],
         });
         if (reduced) dust.reveal();
+        hand = createGhostHand(stage);
         parallax = createParallax(root.value, frame);
-        if (import.meta.env.DEV) root.value.__game = { rooting, get lit() { return lit; } };
+        if (import.meta.env.DEV) root.value.__game = { rooting, shooters, get t() { return lastT; }, get lit() { return lit; } };
         enter();
     };
 
@@ -520,6 +554,7 @@
         window.removeEventListener('pointerup', liftBeings);
         window.removeEventListener('pointercancel', liftBeings);
         parallax?.destroy();
+        hand?.destroy();
         dust?.destroy();
         stage?.destroy();
     });
@@ -531,7 +566,7 @@
         <div ref="beingsHit" class="hit" role="button" tabindex="0"
             :aria-label="$i18n.locale === 'en' ? 'The two beings in the boat: hold them to light the path' : 'Los dos seres en el bote: mantenelos para iluminar el camino'"
             @pointerdown="pressBeings" @click.stop @keydown="onKeyDown" @keyup="onKeyUp"></div>
-        <!-- The rulito is drawn on its own canvas, which the stage shows as a texture in the sky -->
+        <!-- The rulito is drawn on its own canvas, which the stage shows as a texture over the big being's head -->
         <Rulito ref="rulito" class="offstage" color="#ffe22e" />
     </div>
 </template>
