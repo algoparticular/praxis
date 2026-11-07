@@ -1,12 +1,8 @@
-// Sid in pieces, for the puppet lab (/lab/sid, only in development): cut out of the whole Sid of Nekkhamma
-// (public/assets/nekkhamma/sid.webp, standing, walking) into
-//   body.webp   his body alone (outline, flat fill, the hatching on his side), without his eyes, his arm or his legs
-//   leg0.webp, leg1.webp  each leg as it is drawn, for the "drawn pieces" mode (they turn stiff at the hip)
-//   arm.webp    the arm drawn over his belly, the same
-//   sid.json    the size, his colours and line width, where his eyes, hips, shoulders and feet are (px of the source)
-// in src/lab/sid/. A test only: the eyes and the arm are painted over with his fill, the legs are what lies farther
-// than a line's width from the fill. When the illustrator delivers Sid in pieces (docs/sid-en-piezas.md) this script
-// is replaced by one that reads her layers.
+// Sid for the puppet lab (/lab/sid, only in development), read off the whole Sid of Nekkhamma
+// (public/assets/nekkhamma/sid.webp, standing, walking) into src/lab/sid/sid.json: the size, his colours, where his eyes
+// are, his silhouette (his body alone, without his eyes, his arm or his legs: the eyes and the arm painted over with his
+// fill, the legs what lies farther than a line's width from it, the cuts closed and smoothed, then traced to a fraction
+// of a pixel with a round crown and base) and his hatching marks, so the lab draws all of him in code.
 // Usage: node scripts/make-sid-lab.mjs
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
@@ -84,24 +80,22 @@ const marks = parts(inner);
 const eyes = marks.list.filter((p) => p.n > 150 && p.n < 600 && p.cy < H * 0.4 && (p.x1 - p.x0) < 30 && (p.y1 - p.y0) < 30)
     .sort((a, b) => a.cx - b.cx);
 if (eyes.length !== 2) throw new Error(`expected two eyes, found ${eyes.length}`);
-const erase = new Uint8Array(N), arm = new Uint8Array(N);
+const erase = new Uint8Array(N);
 for (let i = 0; i < N; i++) {
     const id = marks.label[i];
     if (id < 0) continue;
     const p = marks.list[id], x = i % W, y = (i / W) | 0;
     const eye = eyes.includes(p) || (p.n > 30 && p.n < 80 && p.cy < H * 0.4);   // and the little shine beside one
     if (eye || (p.n > 1000 && ARM(x, y))) erase[i] = 1;
-    if (!eye && p.n > 1000 && ARM(x, y)) arm[i] = 1;
 }
-const nearErase = distance(erase), nearArm = distance(arm);
+const nearErase = distance(erase);
 
 // The legs start below his body: under the lowest row of his fill (above it, all is body, its outline as thick as it is)
 let bottom = 0;
 for (let i = 0; i < N; i++) if (fill[i]) bottom = Math.max(bottom, (i / W) | 0);
-const body = Buffer.from(data), legs = Buffer.alloc(N * 4), armPicture = Buffer.alloc(N * 4);
+const body = Buffer.from(data);
 for (let i = 0; i < N; i++) {
     if (fromFill[i] > LINE + 8 && ((i / W) | 0) > bottom - 6) {   // below him and farther than a line from the fill: the legs
-        data.copy(legs, i * 4, i * 4, i * 4 + 4);
         body[i * 4 + 3] = 0;
         continue;
     }
@@ -109,7 +103,6 @@ for (let i = 0; i < N; i++) {
     if ((fill[i] || nearErase[i] <= 5) && fromOutside[i] > DEEP - 1) {
         body[i * 4] = FILL[0]; body[i * 4 + 1] = FILL[1]; body[i * 4 + 2] = FILL[2]; body[i * 4 + 3] = 255;
     }
-    if (nearArm[i] <= 1.5 && dark[i]) data.copy(armPicture, i * 4, i * 4, i * 4 + 4);
 }
 
 // His outline whole again: a ring of his ink all round the inside of his edge, as thick as his thinnest line, so what
@@ -202,57 +195,8 @@ for (let i = 0; i < N; i++) {
     }
 }
 
-// The two legs: the two biggest parts of what is left below the body
-const legMask = new Uint8Array(N);
-for (let i = 0; i < N; i++) legMask[i] = legs[i * 4 + 3] > 100;
-const legParts = parts(legMask);
-const two = [...legParts.list].sort((a, b) => b.n - a.n).slice(0, 2).sort((a, b) => a.cx - b.cx);
-// Where a leg starts (the middle of its top row) and ends (its lowest point, the toe further along)
-const ends = (p) => {
-    const id = legParts.list.indexOf(p);
-    let top = [], bottom = [0, 0];
-    for (let y = p.y0; y <= p.y1; y++) for (let x = p.x0; x <= p.x1; x++) {
-        if (legParts.label[y * W + x] !== id) continue;
-        if (y < p.y0 + 4) top.push(x);
-        if (y >= bottom[1]) bottom = [x, y];
-    }
-    return { hip: [Math.round(top.reduce((s, x) => s + x, 0) / top.length), p.y0], foot: bottom };
-};
-
 await mkdir(target, { recursive: true });
-const save = async (name, raw, box) => {
-    let picture = sharp(raw, { raw: { width: W, height: H, channels: 4 } });
-    if (box) picture = sharp(await picture.png().toBuffer()).extract({ left: box[0], top: box[1], width: box[2], height: box[3] });
-    await picture.webp({ quality: 92, alphaQuality: 100 }).toFile(path.join(target, `${name}.webp`));
-};
-const boxOf = (p, pad = 3) => {
-    const x = Math.max(0, p.x0 - pad), y = Math.max(0, p.y0 - pad);
-    return [x, y, Math.min(W, p.x1 + pad + 1) - x, Math.min(H, p.y1 + pad + 1) - y];
-};
-
-const scene = { size: [W, H], fill: FILL, ink: INK, line: LINE - 4, eyes: eyes.map((p) => [Math.round(p.cx), Math.round(p.cy), Math.round(Math.sqrt(p.n / Math.PI))]), legs: [], arm: null };
-await save('body', body);
-for (const [n, p] of two.entries()) {
-    const only = Buffer.alloc(N * 4), id = legParts.list.indexOf(p);
-    for (let i = 0; i < N; i++) if (legParts.label[i] === id || (legs[i * 4 + 3] && legs[i * 4 + 3] <= 100 && nearTo(i, id))) legs.copy(only, i * 4, i * 4, i * 4 + 4);
-    const box = boxOf(p);
-    await save(`leg${n}`, only, box);
-    scene.legs.push({ box, ...ends(p) });
-}
-const armPart = parts(arm).list.sort((a, b) => b.n - a.n)[0];
-const armBox = boxOf(armPart);
-await save('arm', armPicture, armBox);
-scene.arm = { box: armBox, shoulder: [Math.round((armPart.x0 + armPart.x1) / 2) - 10, armPart.y0], hand: [armPart.x1 - 6, armPart.y1] };
-
-// The soft edge of a leg: a faint pixel next to one of that leg's
-function nearTo(i, id) {
-    const x = i % W, y = (i / W) | 0;
-    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
-        const X = x + dx, Y = y + dy;
-        if (X >= 0 && Y >= 0 && X < W && Y < H && legParts.label[Y * W + X] === id) return true;
-    }
-    return false;
-}
+const scene = { size: [W, H], fill: FILL, ink: INK, line: LINE - 4, eyes: eyes.map((p) => [Math.round(p.cx), Math.round(p.cy), Math.round(Math.sqrt(p.n / Math.PI))]) };
 
 // His silhouette traced, for drawing his body in code (clean at any size): the cut-out is blurred a little (so no
 // pixel step or bump of the cut is traced), and his left and right edge are found to a fraction of a pixel every ROWS

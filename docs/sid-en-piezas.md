@@ -6,15 +6,10 @@ Sid (que también es Particular) hoy llega a cada escena como un dibujo entero: 
 
 `/lab/sid` (solo con `npm run dev`; no existe en la versión publicada) es una página de pruebas con Sid hecho títere:
 
-- **El cuerpo** es su dibujo (contorno, relleno y rayitas), que el código dobla, aplasta y estira como un cuerpo blando, y que respira.
-- **El cuerpo** se puede ver de dos maneras (botones *Cuerpo en código* y *Cuerpo dibujo*): en código es su silueta calcada del dibujo una vez (`silhouette` en `sid.json`), rellena, con su contorno por dentro del borde y una rayita en cada una de sus marcas de sombra: limpio a cualquier tamaño y deformado punto por punto; el dibujo es la imagen recortada.
-- **Los ojos** están dibujados en código: miran el dedo, parpadean, se cierran al meditar o al estirarse (el arco de Upekkha).
-- **Brazos y piernas** se pueden ver de dos maneras, con los botones de abajo:
-  - *Trazos en código*: una línea con su tinta y su grosor, que se dobla libre (rodillas, codos). Sirve para cualquier carta sin pedir nada más.
-  - *Piezas dibujadas*: los brazos y piernas tal como están dibujados, que giran rígidos en la cadera o el hombro.
-- Camina libremente por el suelo, a los lados y hacia el fondo (más lejos se ve más chico, en perspectiva): con las flechas o WASD, y en el celular con la cruz de flechas de abajo a la izquierda (mantenerla apretada). La barra espaciadora (o el botón Loto en el celular) lo sienta en loto y lo levanta. Toca el suelo y camina hasta ahí, también en profundidad (sus pies no resbalan). Toca el aire y lo alcanza con la mano. Los botones: caminar, saludar, saltar (se agacha, se estira en el aire, se aplasta al caer), estirarse, meditar (se sienta con las piernas cruzadas). "Esqueleto" muestra los huesos y "Lento" lo pasa a un cuarto de velocidad.
-
-Las piezas de la prueba salieron del Sid de Nekkhamma, recortado por `scripts/make-sid-lab.mjs` (los ojos y el brazo tapados con su relleno). El script cierra el contorno donde se cortó (un anillo de su tinta por dentro del borde, el borde interior suavizado y los muñones de las piernas quitados), pero las piernas dibujadas siguen en pose de caminar: eso se resuelve con piezas dibujadas para esto.
+- **Todo él está en código**, con su tinta y su línea. El cuerpo es su silueta calcada una vez del Sid de Nekkhamma (`silhouette` en `sid.json`, por `scripts/make-sid-lab.mjs`): rellena, con su contorno por dentro del borde y una pincelada en cada una de sus marcas de sombra. Queda limpio a cualquier tamaño, se dobla, se aplasta y se estira como un cuerpo blando, y respira.
+- **Los ojos** miran el dedo, parpadean y se cierran al meditar o al estirarse (el arco de Upekkha).
+- **Brazos y piernas** son trazos que se doblan libres, con curvas en codos y rodillas. De perfil salen del medio del cuerpo; quieto, gira de frente, cada uno a su lado.
+- Camina libremente por el suelo, a los lados y hacia el fondo (más lejos se ve más chico, en perspectiva): con las flechas o WASD, y en el celular con la cruz de flechas de abajo a la izquierda (mantenerla apretada). La barra espaciadora (o el botón Loto en el celular) lo sienta en loto y lo levanta. Toca el suelo y camina hasta ahí, también en profundidad (sus pies no resbalan). Toca el aire y lo alcanza con la mano. Los botones: caminar, saludar, saltar (se agacha, se estira en el aire, se aplasta al caer), estirarse, loto. "Esqueleto" muestra los huesos y "Lento" lo pasa a un cuarto de velocidad.
 
 ## El mundo alrededor de Sid
 

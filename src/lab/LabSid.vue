@@ -1,19 +1,14 @@
 <script setup>
 // The puppet lab: Sid (who is also Particular) as a puppet, to try how much more he can move than breathe. Only in
-// development (/lab/sid, see the router), never in the build. His body is his drawing (cut out of Nekkhamma's Sid by
-// scripts/make-sid-lab.mjs) bent, squashed and stretched in code as a soft body; his eyes are drawn in code (they look,
-// blink and close); his arms and legs are either strokes drawn in code with his ink and line (they bend freely) or
-// the pieces as drawn (they turn stiff at the joint), to compare the two. Canvas 2D on purpose: it shows the movement;
+// development (/lab/sid, see the router), never in the build. He is all drawn in code: his body from his silhouette
+// traced off Nekkhamma's Sid (scripts/make-sid-lab.mjs -> sid.json), bent, squashed and stretched as a soft body; his
+// eyes (they look, blink and close); his arms and legs, strokes with his ink and line that bend freely. Canvas 2D on purpose: it shows the movement;
 // if it is what we want, the same rig goes into the WebGL stage (useLayerStage.js). Plan: docs/sid-en-piezas.md.
 import { onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import rig from './sid/sid.json';
-import bodyUrl from './sid/body.webp';
-import leg0Url from './sid/leg0.webp';
-import leg1Url from './sid/leg1.webp';
-import armUrl from './sid/arm.webp';
 import { createWorld } from './sidWorld.js';
 
-const ui = reactive({ body: 'code', limbs: 'code', bones: false, slow: false, sitting: false, touch: false, menu: false });
+const ui = reactive({ bones: false, slow: false, sitting: false, touch: false, menu: false });
 const canvas = ref(null);
 
 // --- The rig, in px of the source drawing (258 x 686): he faces +x (his eyes are on that side) ---
@@ -53,7 +48,6 @@ const DEPTH = 600;
 const FAR = 0.55;                             // his size at the back
 const scaleAt = (d) => 1 - (1 - FAR) * d / DEPTH;
 
-const load = (url) => new Promise((resolve) => { const i = new Image(); i.onload = () => resolve(i); i.src = url; });
 
 // --- Springs: a value that follows its target with some give (soft, it overshoots a little) ---
 function spring(x, stiff = 120, damp = 14) { return { x, v: 0, to: x, stiff, damp }; }
@@ -95,8 +89,7 @@ const state = {
 // --- His body as he is now: a point of the drawing (u, v) -> the world ---
 function frame() {
     const breath = state.breath;
-    // turned to us only with his body in code (the drawing is in profile)
-    const front = ui.body === 'code' ? Math.max(0, Math.min(1, springs.front.x)) : 0;
+    const front = Math.max(0, Math.min(1, springs.front.x));
     const turn = Math.abs(springs.face.x);
     return {
         front,
@@ -147,7 +140,6 @@ function toSid(p, d = state.d) {
 }
 
 const view = { w: 1, h: 1, k: 1, dpr: 1, floor: 1 };
-const images = {};
 let raf = 0, last = 0;
 
 function resize() {
@@ -382,27 +374,6 @@ function update(dt, now) {
     });
 }
 
-// The canvas his body is deformed on: room round the drawing for him to bend and stretch; his pivot at BODY
-const BODY = { x: 0, y: 0 };
-let bodyCanvasEl = null;
-function bodyCanvas(f) {
-    const img = images.body;
-    if (!bodyCanvasEl) {
-        bodyCanvasEl = document.createElement('canvas');
-        bodyCanvasEl.width = img.width * 3; bodyCanvasEl.height = Math.ceil(PIVOT.y * 1.4) + 30;
-        BODY.x = img.width * 1.5; BODY.y = Math.ceil(PIVOT.y * 1.4);
-    }
-    const b = bodyCanvasEl.getContext('2d');
-    b.clearRect(0, 0, bodyCanvasEl.width, bodyCanvasEl.height);
-    for (let v = 0; v < PIVOT.y + 12; v++) {
-        const t = Math.max(0, (PIVOT.y - v) / TALL), wx = widthAt(f, t);
-        const y0 = Math.round(BODY.y - (PIVOT.y - v) * f.sy), y1 = Math.round(BODY.y - (PIVOT.y - v - 1) * f.sy);
-        if (y1 <= y0) continue;
-        b.drawImage(img, 0, v, img.width, 1, BODY.x - PIVOT.x * wx + bendAt(f, t), y0, img.width * wx, y1 - y0);
-    }
-    return bodyCanvasEl;
-}
-
 // His body drawn in code from his traced silhouette: the fill, his outline inside its edge (clean at any size and
 // bent with him point by point), and a little stroke at each of her hatching marks
 const LINE_W = 19, FILL = `rgb(${rig.fill.join(',')})`;
@@ -482,12 +453,6 @@ function draw() {
         if (toe) c.quadraticCurveTo(end.x, toe.y, toe.x, toe.y);       // a rounded heel
         c.stroke();
     };
-    // A drawn piece turned stiff about its joint (and, for the legs, drawn longer: stretched down, not thickened)
-    const piece = (img, anchor, from, restVec, nowVec, long = 1) => {
-        const angle = Math.atan2(nowVec.y, nowVec.x * face) - Math.atan2(restVec.y * long, restVec.x);
-        c.save(); c.translate(anchor.x, anchor.y); c.scale(face, 1); c.rotate(angle); c.scale(1, long);
-        c.drawImage(img, from.x, from.y); c.restore();
-    };
 
     // Legs
     const legs = hipsOf(f).map((hip, i) => {
@@ -515,7 +480,6 @@ function draw() {
         const r = springs.reach.x;
         if (side === 'near' && state.reached && r > 0.001) hand = { x: hand.x + (state.reached.x - hand.x) * r, y: hand.y + (state.reached.y - hand.y) * r };
         const raised = hand.y < s.y;
-        // each elbow to its own side (out from his body), or down when the hand is up
         // elbows back in profile, out to their own side turned to us; down when the hand is up
         const out = (i ? -1 : 1) * face, back = mix(-face * 0.7, out, f.front);
         const toward = raised ? { x: out * 0.5, y: 1 } : { x: back, y: 0.15 };
@@ -523,22 +487,15 @@ function draw() {
     });
 
     const drawArm = (a) => limb([a.s, a.joint, a.end], ARM.width);
-    if (ui.limbs === 'code') drawArm(arms[0]);
+    drawArm(arms[0]);
     // Legs: behind his body, or in front of it when he sits with them crossed (as in Upekkha)
-    const drawLegs = () => ui.limbs === 'code' ? legs.forEach((l) => limb([l.h, l.joint, l.end, l.toe], LEG.width)) : rig.legs.forEach((g, i) => {
-        const l = legs[i];
-        piece(images[`leg${i}`], l.h, { x: g.box[0] - g.hip[0], y: g.box[1] - g.hip[1] },
-            { x: g.foot[0] - g.hip[0], y: g.foot[1] - g.hip[1] }, { x: l.end.x - l.h.x, y: l.end.y - l.h.y },
-            STAND / (g.foot[1] - g.hip[1]));
-    });
+    const drawLegs = () => legs.forEach((l) => limb([l.h, l.joint, l.end, l.toe], LEG.width));
     if (!ui.sitting) drawLegs();
 
-    // His body: bent, squashed or stretched and breathing row by row, first on a canvas of its own at the drawing's
-    // size, each row on whole pixels (no seams, no overlaps), then laid on the scene in one piece
+    // His body
     c.save();
     c.translate(f.root.x, f.root.y); c.rotate(f.rot); c.scale(f.face, 1);
-    if (ui.body === 'code') codeBody(c, f);
-    else c.drawImage(bodyCanvas(f), -BODY.x, -BODY.y);
+    codeBody(c, f);
     // His eyes: looking, blinking, closed
     const closed = Math.max(springs.closed.x, state.blink > 0 ? 1 : 0);
     EYES.forEach(([pu, pv, r], e) => {
@@ -557,12 +514,7 @@ function draw() {
     c.restore();
 
     if (ui.sitting) drawLegs();
-    if (ui.limbs === 'code') drawArm(arms[1]);
-    else {
-        const a = arms[1], g = rig.arm, anchor = map(f, g.shoulder[0], g.shoulder[1]);
-        piece(images.arm, anchor, { x: g.box[0] - g.shoulder[0], y: g.box[1] - g.shoulder[1] },
-            { x: g.hand[0] - g.shoulder[0], y: g.hand[1] - g.shoulder[1] }, { x: a.end.x - anchor.x, y: a.end.y - anchor.y });
-    }
+    drawArm(arms[1]);
 
     if (ui.bones) {
         c.lineWidth = 2; c.strokeStyle = '#FF6F61'; c.fillStyle = '#FF6F61';
@@ -589,13 +541,11 @@ function loop(now) {
 // (for trying him out from the browser's console)
 if (typeof window !== 'undefined') window.__sid = { state, springs, ui };
 
-onMounted(async () => {
+onMounted(() => {
     ui.touch = window.matchMedia?.('(pointer: coarse)').matches ?? false;
     window.addEventListener('keydown', onKey);
     window.addEventListener('keyup', onKey);
     window.addEventListener('blur', release);
-    const [body, leg0, leg1, arm] = await Promise.all([bodyUrl, leg0Url, leg1Url, armUrl].map(load));
-    Object.assign(images, { body, leg0, leg1, arm });
     resize();
     window.addEventListener('resize', resize);
     raf = requestAnimationFrame(loop);
@@ -621,12 +571,7 @@ onBeforeUnmount(() => {
             <button @click="jump">Saltar</button>
             <button @click="stretch">Estirarse</button>
             <button :class="{ on: ui.sitting }" @click="sit()">Loto</button>
-            <span class="sep"></span>
-            <button :class="{ on: ui.body === 'code' }" @click="ui.body = 'code'">Cuerpo en código</button>
-            <button :class="{ on: ui.body === 'drawing' }" @click="ui.body = 'drawing'">Cuerpo dibujo</button>
-            <span class="sep"></span>
-            <button :class="{ on: ui.limbs === 'code' }" @click="ui.limbs = 'code'">Trazos en código</button>
-            <button :class="{ on: ui.limbs === 'pieces' }" @click="ui.limbs = 'pieces'">Piezas dibujadas</button>
+
             <span class="sep"></span>
             <button :class="{ on: ui.bones }" @click="ui.bones = !ui.bones">Esqueleto</button>
             <button :class="{ on: ui.slow }" @click="ui.slow = !ui.slow">Lento</button>
