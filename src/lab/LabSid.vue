@@ -249,10 +249,11 @@ function update(dt, now) {
     // over it, and swaying from side to side with his weight
     let lean = w * 0.03 * face, sy = 1 - w * 0.022 * Math.cos(p * Math.PI * 4), rot = w * 0.012 * Math.sin(p * Math.PI * 2), drop = 0, closed = 0;
     let near = { ...REST_HAND.near }, far = { ...REST_HAND.far };
-    // the arms swing against the legs, a little behind them, rising a touch as they go forward
+    // the arms swing against the legs (each arm forward as the other leg goes forward), a little behind them, rising a
+    // touch as they go forward
     const swing = Math.sin(p * Math.PI * 2 - 0.5) * 34 * w;
-    near.u += swing; far.u -= swing;
-    near.v -= Math.max(0, swing) * 0.35; far.v -= Math.max(0, -swing) * 0.35;
+    near.u -= swing; far.u += swing;
+    near.v -= Math.max(0, -swing) * 0.35; far.v -= Math.max(0, swing) * 0.35;
     drop += w * (5 + 5 * Math.cos(p * Math.PI * 4));                   // the bob of each step
     // turned to us, his hands hang at each side of him
     const fr = frame().front;

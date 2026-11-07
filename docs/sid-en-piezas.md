@@ -24,6 +24,17 @@ Las piezas de la prueba salieron del Sid de Nekkhamma, recortado por `scripts/ma
 - **Tinta que se colorea:** todo empieza en tinta y toma su color (uno de los siete de los chakras) cuando Sid pasa cerca; sentado en loto, sale de él una onda que colorea todo alrededor. Lo coloreado queda así. El color va como una acuarela bajo el dibujo, y la línea se tiñe.
 - **Vivo:** el pasto se aparta a su paso, los helechos y los brotes se mecen con el viento.
 
+### Las piezas del mundo, dibujadas
+
+Las plantas en código no alcanzan la mano del dibujo: el mundo va a usar piezas dibujadas, que el código reparte, anima y colorea. Para que eso funcione, cada pieza:
+
+1. **Sola, en su archivo**, con fondo transparente (PNG o capas separadas), al tamaño de exportación habitual.
+2. **La línea y el color en capas aparte**: la tinta en una, el relleno plano en otra. Así puede empezar en tinta y colorearse (el código pone el relleno con su color cuando Sid pasa).
+3. **Apoyada en su base**: lo que toca el suelo, abajo y al medio de la imagen, para plantarla en el suelo en perspectiva.
+4. **Lo que se mueve, separado**: los tallos o las hojas que se mecen, las caras de las piedras (los ojos en su capa, para parpadear y mirar).
+5. **Varias versiones** de lo que se repite (tres o cuatro rayitas de pasto, piedras, brotes, helechos), para que el suelo no se vea repetido.
+6. **Las piezas únicas** (el árbol, el zorro, la célula) también por partes: copa, tronco y ramas; cabeza, cuerpo y cola.
+
 ## Qué pedirle a la ilustradora
 
 **Proporción de Sid de pie** (la de Nekkhamma): cabeza 1, torso 0,6, piernas 0,6. La cabeza va de la coronilla al angostamiento de la cintura, el torso de ahí a la base y las piernas de la base al suelo: tan largas como el torso (en Viriya son algo más largas, 0,8). Brazos y piernas tan gruesos como su contorno.
