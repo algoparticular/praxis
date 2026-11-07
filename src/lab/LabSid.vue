@@ -82,6 +82,7 @@ const state = {
     pointer: null, pointerAt: 0,   // the pointer on the screen (px / k)
     glance: null, nextGlance: 3,
     feet: [null, null], steps: [null, null], toes: [0, 0], legTuck: [0, 0],
+    legSit: [0, 0], sitT: 9, rising: false, settled: true,      // sitting down in lotus and getting up, leg by leg
     reach: null,                   // a world point his near hand goes to
     reached: null,                 // the last one (his hand comes back from it)
 };
@@ -129,7 +130,12 @@ function walkTo(x, d = state.d) { state.target = { x, d }; state.reach = null; i
 function wave() { if (!ui.sitting) act('wave', 2.6, { arm: 'near' }); }
 function jump() { if (!ui.sitting && !state.air) { state.jumped = false; act('jump', 1.7); } }
 function stretch() { if (!ui.sitting) act('stretch', 2.6); }
-function sit(on = !ui.sitting) { ui.sitting = on; state.target = null; state.action = null; }
+function sit(on = !ui.sitting) {
+    if (on === ui.sitting) return;
+    // getting up is its own little movement while his legs are still crossed
+    state.rising = !on && Math.max(...state.legSit) > 0.1;
+    ui.sitting = on; state.sitT = 0; state.settled = false; state.target = null; state.action = null;
+}
 function walkAcross() { walkTo(state.x + (Math.sign(springs.face.to) || 1) * 520); }
 
 // Where a point of the screen is in his own world, at his depth (his world is scaled about the vanishing point)
@@ -266,9 +272,26 @@ function update(dt, now) {
     far = { u: mix(far.u, FRONT_HAND.far.u, fr), v: mix(far.v, FRONT_HAND.far.v, fr) };
 
     const restNear = near, restFar = far;                                    // (the poses below put new targets)
+    // Sitting down in lotus: he leans in a little, lowers himself softly, crosses one leg and then the other, settles
+    // with a small give, puts his hands on his knees and only then closes his eyes. Getting up: eyes open, he leans in
+    // and gathers himself, uncrosses his legs (the last one crossed first) and rises, stretching a touch
+    state.sitT += dt;
+    const ease = (x) => { const c = Math.max(0, Math.min(1, x)); return c * c * (3 - 2 * c); }, T = state.sitT, DEEP = STAND - SIT;
     if (ui.sitting) {
-        drop = STAND - SIT; closed = 1; lean = 0;
-        near = { u: 248, v: 506 }; far = { u: 12, v: 506 };                // his hands on his knees
+        const down = ease((T - 0.25) / 0.95);
+        drop = DEEP * down; lean = 0.035 * face * (T < 0.25 ? T / 0.25 : Math.max(0, 1 - (T - 0.25) / 0.7));
+        if (down >= 1 && !state.settled) { state.settled = true; S.sy.v -= 1.3; }      // the little give as he lands
+        closed = T > 1.45 ? 1 : 0;
+        if ((state.legSit[0] + state.legSit[1]) / 2 > 0.6) { near = { u: 248, v: 506 }; far = { u: 12, v: 506 }; }   // hands on his knees
+        state.legSit[0] += ((down > 0.15 ? 1 : 0) - state.legSit[0]) * Math.min(1, dt * 4);
+        state.legSit[1] += ((state.legSit[0] > 0.45 ? 1 : 0) - state.legSit[1]) * Math.min(1, dt * 4);
+    } else if (state.rising) {
+        const up = ease((T - 0.3) / 0.75);
+        drop = DEEP * (1 - up); lean = 0.045 * face * (T < 0.3 ? T / 0.3 : Math.max(0, 1 - (T - 0.3) / 0.6));
+        sy = T < 0.3 ? 1 - 0.04 * (T / 0.3) : 1 + 0.03 * Math.sin(Math.PI * up);
+        state.legSit[1] += (0 - state.legSit[1]) * Math.min(1, dt * 5);
+        state.legSit[0] += ((state.legSit[1] < 0.55 ? 0 : 1) - state.legSit[0]) * Math.min(1, dt * 5);
+        if (T > 1.15) { state.rising = false; state.legSit = [0, 0]; }
     }
     if (name === 'wave') {
         // with the arm he started with, even if he has turned round since (then it is his far one)
@@ -286,9 +309,9 @@ function update(dt, now) {
     // up stretching with his arms swinging up, is round at the top with his legs drawn up, reaches his legs down and
     // opens his arms a little to land, and his knees take the landing softly (the springs give it its give)
     if (name === 'jump' && !state.air && !state.jumped) {
-        const e = Math.min(1, t / JUMP.crouch), ease = e * e * (3 - 2 * e);
-        drop = 48 * ease; sy = 1 - 0.09 * ease; lean = 0.035 * face * ease;
-        near = { u: mix(near.u, 60, ease), v: mix(near.v, 480, ease) }; far = { u: mix(far.u, 40, ease), v: mix(far.v, 470, ease) };
+        const e = Math.min(1, t / JUMP.crouch), ease_ = e * e * (3 - 2 * e);
+        drop = 48 * ease_; sy = 1 - 0.09 * ease_; lean = 0.035 * face * ease_; rot = 0.022 * face * ease_;   // (one knee bends a little before the other)
+        near = { u: mix(near.u, 60, ease_), v: mix(near.v, 480, ease_) }; far = { u: mix(far.u, 40, ease_), v: mix(far.v, 470, ease_) };
         if (t >= JUMP.crouch) { state.air = true; state.jumped = true; state.vy = JUMP.speed; S.sy.v += 2.5; S.drop.v -= 260; }
     }
     if (state.air) {
@@ -354,7 +377,6 @@ function update(dt, now) {
         // where this foot is under him, from his hip at rest (not from his body as it sways, or a planted foot slides)
         const under = f.root.x + (hip.u - PIVOT.x) * face;
         let rest = { x: under + face * (i ? 4 : -4), y: state.ground };
-        if (ui.sitting) rest = { x: f.root.x + face * (i ? -38 : 38), y: state.ground - 8 };   // crossed
         const q = (p + i * 0.5) % 1;
         // (going back or forth, his steps are in place: only the sideways part of his walk carries his feet along)
         // On the ground (q < 0.5) the foot goes back at exactly his speed, so it stays put; in the air it swings forward
@@ -370,7 +392,8 @@ function update(dt, now) {
         // in the air his legs hang, drawn up at the top of the jump and reaching down again to land, each in its own
         // time: one goes and comes back first, the other a moment after it (not one stiff piece)
         state.legTuck[i] += ((state.air ? state.tuck ?? 0 : 0) - state.legTuck[i]) * Math.min(1, dt * (i ? 6 : 13));
-        if (state.air) foot = { x: h.x + face * (8 + 22 * state.legTuck[i]), y: h.y + STAND * (0.97 - 0.32 * state.legTuck[i]) };
+        if (state.air && i === 1 && state.lift < 24 && state.vy > 0) foot = { x: foot.x, y: state.ground };   // the last to leave the ground
+        else if (state.air) foot = { x: h.x + face * (8 + 22 * state.legTuck[i]), y: h.y + STAND * (0.97 - 0.32 * state.legTuck[i]) };
         else if (walking) {
             foot = { x: foot.x + (gait.x - foot.x) * Math.min(1, w * 1.2), y: foot.y + (gait.y - foot.y) * Math.min(1, w * 1.2) };
             state.steps[i] = null;
@@ -474,19 +497,21 @@ function draw() {
         const h = map(f, hip.u, hip.v), foot = state.feet[i] ?? { x: h.x, y: state.ground };
         // knees forward in profile; turned to us, a little out to their own side
         const outward = (i ? -1 : 1) * face;                          // (turned to us, the near leg is on the far side)
-        const toward = ui.sitting ? { x: outward, y: -0.5 } : { x: mix(face, outward * 0.3, f.front), y: 0 };
+        const crossed = state.legSit[i];
+        const toward = crossed > 0.5 ? { x: outward, y: -0.5 } : { x: mix(face, outward * 0.3, f.front), y: 0 };
         const ankle = { x: foot.x, y: foot.y - 6 };
         let { joint, end } = bend(h, ankle, LEG.thigh, LEG.shin, toward);
-        if (ui.sitting) {
-            // Crossed in front of him, as she draws them: each knee well out to its side, its foot under the other
-            const side = Math.sign(h.x - f.root.x) || (i ? face : -face), m = Math.min(1, springs.drop.x / (STAND - SIT));
-            const knee = { x: f.root.x + side * 118, y: state.ground - 58 }, under = { x: f.root.x - side * 38, y: state.ground - 7 };
+        if (crossed > 0.001) {
+            // Crossed in front of him, as she draws them: each knee well out to its side, its foot under the other; each
+            // leg crosses on its own (lifting its foot a little over the way), the second after the first
+            const side = Math.sign(h.x - f.root.x) || (i ? face : -face), m = crossed;
+            const knee = { x: f.root.x + side * 118, y: state.ground - 58 }, under = { x: f.root.x - side * 38, y: state.ground - 7 - Math.sin(Math.PI * m) * 34 };
             joint = { x: joint.x + (knee.x - joint.x) * m, y: joint.y + (knee.y - joint.y) * m };
             end = { x: end.x + (under.x - end.x) * m, y: end.y + (under.y - end.y) * m };
         }
-        // his toes: ahead in profile; turned to us, each a little out to its own side
-        const toes = ui.sitting ? Math.sign(end.x - joint.x) : mix(face, outward * 0.75, f.front);
-        return { h, joint, end, toe: { x: end.x + toes * LEG.foot, y: end.y + 2 + (ui.sitting ? 0 : state.toes[i]) } };
+        // his toes: ahead in profile; turned to us, each a little out to its own side (crossed, along the leg)
+        const toes = crossed > 0.5 ? Math.sign(end.x - joint.x) : mix(face, outward * 0.75, f.front);
+        return { h, joint, end, toe: { x: end.x + toes * LEG.foot, y: end.y + 2 + (crossed > 0.5 ? 0 : state.toes[i]) } };
     });
     // Arms (in the world: shoulders on his body, hands where they are going, or reaching)
     const arms = ['far', 'near'].map((side, i) => {
@@ -505,7 +530,8 @@ function draw() {
     drawArm(arms[0]);
     // Legs: behind his body, or in front of it when he sits with them crossed (as in Upekkha)
     const drawLegs = () => legs.forEach((l) => limb([l.h, l.joint, l.end, l.toe], LEG.width));
-    if (!ui.sitting) drawLegs();
+    const inFront = Math.max(...state.legSit) > 0.3;                  // crossed, his legs are in front of him
+    if (!inFront) drawLegs();
 
     // His body
     c.save();
@@ -528,7 +554,7 @@ function draw() {
     });
     c.restore();
 
-    if (ui.sitting) drawLegs();
+    if (inFront) drawLegs();
     drawArm(arms[1]);
 
     if (ui.bones) {
