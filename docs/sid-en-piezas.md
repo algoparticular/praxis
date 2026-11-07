@@ -7,6 +7,7 @@ Sid (que también es Particular) hoy llega a cada escena como un dibujo entero: 
 `/lab/sid` (solo con `npm run dev`; no existe en la versión publicada) es una página de pruebas con Sid hecho títere:
 
 - **El cuerpo** es su dibujo (contorno, relleno y rayitas), que el código dobla, aplasta y estira como un cuerpo blando, y que respira.
+- **El cuerpo** se puede ver de dos maneras (botones *Cuerpo en código* y *Cuerpo dibujo*): en código es su silueta calcada del dibujo una vez (`silhouette` en `sid.json`), rellena, con su contorno por dentro del borde y una rayita en cada una de sus marcas de sombra: limpio a cualquier tamaño y deformado punto por punto; el dibujo es la imagen recortada.
 - **Los ojos** están dibujados en código: miran el dedo, parpadean, se cierran al meditar o al estirarse (el arco de Upekkha).
 - **Brazos y piernas** se pueden ver de dos maneras, con los botones de abajo:
   - *Trazos en código*: una línea con su tinta y su grosor, que se dobla libre (rodillas, codos). Sirve para cualquier carta sin pedir nada más.

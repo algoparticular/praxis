@@ -165,6 +165,43 @@ for (let i = 0; i < N; i++) {
     }
 }
 
+// His belly redrawn clean: what the cuts left there (steps on the inside of the outline, little bumps under it)
+// cannot be patched, so below ZONE his silhouette is smoothed and his outline is a band of his ink of even
+// width inside it, with the hatching she drew kept; just above it the two are joined (ink where either has it)
+{
+    const ZONE = bottom - 150, JOIN = 16, BAND = 18, R = 5;     // from just under the pinch of his waist down
+    const shape = new Float32Array(N);
+    for (let i = 0; i < N; i++) shape[i] = body[i * 4 + 3] > 127 ? 1 : 0;
+    const blur = (src) => {                                   // a box blur of radius R, across and then down
+        const a = new Float32Array(N), b = new Float32Array(N);
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+            let sum = 0, n = 0;
+            for (let d = -R; d <= R; d++) { const X = x + d; if (X >= 0 && X < W) { sum += src[y * W + X]; n++; } }
+            a[y * W + x] = sum / n;
+        }
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+            let sum = 0, n = 0;
+            for (let d = -R; d <= R; d++) { const Y = y + d; if (Y >= 0 && Y < H) { sum += a[Y * W + x]; n++; } }
+            b[y * W + x] = sum / n;
+        }
+        return b;
+    };
+    const smooth = blur(blur(shape));
+    for (let i = ZONE * W; i < N; i++) body[i * 4 + 3] = Math.round(255 * Math.max(0, Math.min(1, (smooth[i] - 0.5) * 6 + 0.5)));
+    const out = new Uint8Array(N);
+    for (let i = 0; i < N; i++) out[i] = body[i * 4 + 3] <= 127;
+    const edge = distance(out);
+    for (let y = ZONE - JOIN; y < H; y++) for (let x = 0; x < W; x++) {
+        const i = y * W + x;
+        if (body[i * 4 + 3] === 0) continue;
+        const wasInk = (body[i * 4] + body[i * 4 + 1] + body[i * 4 + 2]) / 3 < 110;
+        const hatching = wasInk && x < W * 0.4 && y < bottom - 8 && edge[i] > BAND && edge[i] < BAND + 22;   // her little strokes
+        const ink = out[i] || edge[i] <= BAND || hatching || (y < ZONE && wasInk);
+        const c = ink ? INK : FILL;
+        body[i * 4] = c[0]; body[i * 4 + 1] = c[1]; body[i * 4 + 2] = c[2];
+    }
+}
+
 // The two legs: the two biggest parts of what is left below the body
 const legMask = new Uint8Array(N);
 for (let i = 0; i < N; i++) legMask[i] = legs[i * 4 + 3] > 100;
@@ -215,6 +252,46 @@ function nearTo(i, id) {
         if (X >= 0 && Y >= 0 && X < W && Y < H && legParts.label[Y * W + X] === id) return true;
     }
     return false;
+}
+
+// His silhouette traced, for drawing his body in code (clean at any size): his left and right edge every ROWS px of
+// height, smoothed, from the top of his head to his bottom; and his hatching, a stroke at each of her little marks
+{
+    const ROWS = 2, left = [], right = [];
+    let top = -1, end = -1;
+    for (let y = 0; y < H; y++) {
+        let any = false;
+        for (let x = 0; x < W && !any; x++) any = body[(y * W + x) * 4 + 3] > 127;
+        if (any) { if (top < 0) top = y; end = y; }
+    }
+    for (let y = top; y <= end; y += ROWS) {
+        let a = -1, b = -1;
+        for (let x = 0; x < W; x++) if (body[(y * W + x) * 4 + 3] > 127) { if (a < 0) a = x; b = x; }
+        left.push(a); right.push(b + 1);
+    }
+    const soften = (list) => list.map((_, i) => {
+        let sum = 0, n = 0;
+        for (let d = -3; d <= 3; d++) { const j = i + d; if (j >= 0 && j < list.length) { sum += list[j]; n++; } }
+        return Math.round(sum / n * 10) / 10;
+    });
+    scene.silhouette = { top, step: ROWS, left: soften(left), right: soften(right) };
+    // Her marks: the rows where a mark of ink reaches deeper in from his left edge than the outline does
+    const marks = [];
+    let inMark = false, from = 0;
+    for (let y = top; y <= bottom; y++) {
+        let a = -1;
+        for (let x = 0; x < W; x++) if (body[(y * W + x) * 4 + 3] > 127) { a = x; break; }
+        let depth = 0;
+        for (let x = a; x < W * 0.45; x++) {
+            const i = (y * W + x) * 4;
+            if ((body[i] + body[i + 1] + body[i + 2]) / 3 < 110) depth = x - a; else if (x - a > LINE) break;
+        }
+        const mark = depth > LINE + 3;
+        if (mark && !inMark) from = y;
+        if (!mark && inMark && y - from >= 2) marks.push(Math.round((from + y) / 2));
+        inMark = mark;
+    }
+    scene.hatching = marks.filter((y) => y > top + (bottom - top) * 0.55);        // on his belly only (not his head's thick line)
 }
 
 await writeFile(path.join(target, 'sid.json'), JSON.stringify(scene, null, 1) + '\n');

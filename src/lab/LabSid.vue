@@ -12,7 +12,7 @@ import leg0Url from './sid/leg0.webp';
 import leg1Url from './sid/leg1.webp';
 import armUrl from './sid/arm.webp';
 
-const ui = reactive({ limbs: 'code', bones: false, slow: false, sitting: false, touch: false, menu: false });
+const ui = reactive({ body: 'code', limbs: 'code', bones: false, slow: false, sitting: false, touch: false, menu: false });
 const canvas = ref(null);
 
 // --- The rig, in px of the source drawing (258 x 686): he faces +x (his eyes are on that side) ---
@@ -27,9 +27,10 @@ const ARM = { upper: 108, fore: 102, width: 18 };        // long, as in Upekkha 
 const STAND = 196;                            // his hips over the ground, standing: his legs all but straight
 const SIT = 52;                               // his hips over the ground, sitting with his legs crossed
 const HIP = { far: { u: 103, v: 516 }, near: { u: 157, v: 514 } };
-const SHOULDER = { far: { u: 70, v: 318 }, near: { u: 160, v: 318 } };   // at the pinch of his waist
-// At rest his arms hang down each side of his belly, like brackets ( ), almost straight
-const REST_HAND = { far: { u: 26, v: 522 }, near: { u: 216, v: 522 } };
+// at the pinch of his waist; the far one a little in, so that arm hangs hidden behind him
+const SHOULDER = { far: { u: 92, v: 322 }, near: { u: 160, v: 318 } };
+// At rest his near arm hangs down the side of his belly, almost straight, and the far one behind him (unseen)
+const REST_HAND = { far: { u: 100, v: 500 }, near: { u: 216, v: 522 } };
 const EYES = rig.eyes;
 // The floor goes back into the distance: his depth d (0 in front .. DEPTH at the back) lifts his feet towards the
 // horizon and makes him smaller, towards the middle of the screen (a vanishing point)
@@ -68,7 +69,7 @@ const state = {
     breath: 0, blink: 0, nextBlink: 2,
     pointer: null, pointerAt: 0,   // the pointer on the screen (px / k)
     glance: null, nextGlance: 3,
-    feet: [null, null], steps: [null, null],
+    feet: [null, null], steps: [null, null], toes: [0, 0],
     reach: null,                   // a world point his near hand goes to
     reached: null,                 // the last one (his hand comes back from it)
     queue: null,
@@ -202,7 +203,7 @@ function update(dt, now) {
         if (Math.abs(mx) > 0.15) S.face.to = Math.sign(mx);
         if (Math.abs(mx) <= 0.15 || Math.abs(S.face.x - Math.sign(mx)) < 0.3) {
             walking = 1;
-            state.speed = Math.min(state.speed + 340 * dt, 160, left * 3 + 20);
+            state.speed = Math.min(state.speed + 300 * dt, 165, left * 3 + 20);
             state.x += mx * state.speed * dt;
             state.d = Math.max(0, Math.min(DEPTH, state.d + mz * state.speed * dt));
         }
@@ -213,7 +214,7 @@ function update(dt, now) {
     const half = (view.w / view.k / 2 - 60) / scaleAt(state.d), x0 = view.w / view.k / 2;
     state.x = Math.max(x0 - half, Math.min(x0 + half, state.x));
     S.walk.to = walking;
-    const STRIDE = 88;
+    const STRIDE = 116;                       // a relaxed step: about 1.4 steps a second at full speed
     if (state.speed > 0) state.phase = (state.phase + state.speed * dt / (2 * STRIDE)) % 1;
     const w = Math.max(0, Math.min(1, S.walk.x)), p = state.phase, face = Math.sign(S.face.to) || 1;
 
@@ -225,10 +226,14 @@ function update(dt, now) {
     state.blink = Math.max(0, state.blink - dt);
 
     // Targets, by what he is doing
-    let lean = w * 0.045 * face, sy = 1, rot = w * 0.03 * Math.sin(p * Math.PI * 4) * 0.5, drop = 0, closed = 0;
+    // walking: leaning a little into it, his soft body squashing a touch as each foot lands and stretching as he passes
+    // over it, and swaying from side to side with his weight
+    let lean = w * 0.03 * face, sy = 1 - w * 0.022 * Math.cos(p * Math.PI * 4), rot = w * 0.012 * Math.sin(p * Math.PI * 2), drop = 0, closed = 0;
     let near = { ...REST_HAND.near }, far = { ...REST_HAND.far };
-    const swing = Math.sin(p * Math.PI * 2) * 30 * w;
+    // the arms swing against the legs, a little behind them, rising a touch as they go forward
+    const swing = Math.sin(p * Math.PI * 2 - 0.5) * 34 * w;
     near.u += swing; far.u -= swing;
+    near.v -= Math.max(0, swing) * 0.35; far.v -= Math.max(0, -swing) * 0.35;
     drop += w * (5 + 5 * Math.cos(p * Math.PI * 4));                   // the bob of each step
 
     if (ui.sitting) {
@@ -289,12 +294,21 @@ function update(dt, now) {
     const f = frame();
     [HIP.far, HIP.near].forEach((hip, i) => {
         const h = map(f, hip.u, hip.v);
-        let rest = { x: h.x + face * (i ? 4 : -4), y: state.ground };
+        // where this foot is under him, from his hip at rest (not from his body as it sways, or a planted foot slides)
+        const under = f.root.x + (hip.u - PIVOT.x) * face;
+        let rest = { x: under + face * (i ? 4 : -4), y: state.ground };
         if (ui.sitting) rest = { x: f.root.x + face * (i ? -38 : 38), y: state.ground - 8 };   // crossed
         const q = (p + i * 0.5) % 1;
         // (going back or forth, his steps are in place: only the sideways part of his walk carries his feet along)
-        const along = (q < 0.5 ? STRIDE / 2 - STRIDE * (q / 0.5) : -STRIDE / 2 + STRIDE * ((q - 0.5) / 0.5)) * (state.side ?? 1);
-        const gait = { x: f.root.x + (h.x - f.root.x) + face * along, y: state.ground - (q >= 0.5 ? Math.sin((q - 0.5) / 0.5 * Math.PI) * 28 : 0) };
+        // On the ground (q < 0.5) the foot goes back at exactly his speed, so it stays put; in the air it swings forward
+        // speeding up and slowing down, lifted most early in the swing
+        const e = (q - 0.5) / 0.5, ease = e * e * (3 - 2 * e);
+        const along = (q < 0.5 ? STRIDE / 2 - STRIDE * (q / 0.5) : -STRIDE / 2 + STRIDE * ease) * (state.side ?? 1);
+        const lift = q >= 0.5 ? Math.sin(Math.PI * Math.pow(e, 0.8)) * 24 : 0;
+        const gait = { x: under + face * along, y: state.ground - lift };
+        // his toes: up as the heel lands, down as the foot leaves the ground and through the swing
+        const toe = q < 0.12 ? -9 * (1 - q / 0.12) : q > 0.4 && q < 0.5 ? 6 * (q - 0.4) / 0.1 : q >= 0.5 ? 6 * (1 - ease) + lift * 0.25 : 0;
+        state.toes[i] = (state.toes[i] ?? 0) + (toe * w - (state.toes[i] ?? 0)) * Math.min(1, dt * 20);
         let foot = state.feet[i] ?? rest;
         if (state.air) foot = { x: h.x + face * 14, y: h.y + STAND * 0.8 };
         else if (w > 0.02) {
@@ -334,6 +348,40 @@ function bodyCanvas(f) {
         b.drawImage(img, 0, v, img.width, 1, BODY.x - PIVOT.x * wx + bendAt(f, t), y0, img.width * wx, y1 - y0);
     }
     return bodyCanvasEl;
+}
+
+// His body drawn in code from his traced silhouette: the fill, his outline inside its edge (clean at any size and
+// bent with him point by point), and a little stroke at each of her hatching marks
+const LINE_W = 19, FILL = `rgb(${rig.fill.join(',')})`;
+function codeBody(c, f) {
+    const S = rig.silhouette, at = (u, v) => local(f, u, v);
+    const vOf = (i) => S.top + i * S.step;
+    // (round at the crown and at the bottom: the path goes through a point just past each, not along a flat row)
+    const last = S.left.length - 1;
+    const crown = at((S.left[0] + S.right[0]) / 2, S.top - 3), base = at((S.left[last] + S.right[last]) / 2, vOf(last) + 3);
+    const ring = [crown];
+    for (let i = 0; i <= last; i++) ring.push(at(S.right[i], vOf(i)));
+    ring.push(base);
+    for (let i = last; i >= 0; i--) ring.push(at(S.left[i], vOf(i)));
+    // a smooth closed curve through the middles of its segments (each point a control point): no corners anywhere
+    c.beginPath();
+    const midOf = (a, b) => ({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
+    let m = midOf(ring[ring.length - 1], ring[0]);
+    c.moveTo(m.x, m.y);
+    ring.forEach((p, i) => { m = midOf(p, ring[(i + 1) % ring.length]); c.quadraticCurveTo(p.x, p.y, m.x, m.y); });
+    c.closePath();
+    c.fillStyle = FILL; c.fill();
+    c.save();
+    c.clip();
+    c.strokeStyle = INK; c.lineWidth = LINE_W * 2; c.lineJoin = 'round'; c.stroke();
+    // the hatching: from inside his outline, a short stroke in towards his middle
+    c.lineCap = 'round'; c.lineWidth = 6.5;
+    for (const v of rig.hatching) {
+        const i = Math.max(0, Math.min(S.left.length - 1, Math.round((v - S.top) / S.step))), u = S.left[i];
+        const a = at(u + LINE_W - 4, v - 1), b = at(u + LINE_W + 13, v + 1);
+        c.beginPath(); c.moveTo(a.x, a.y); c.lineTo(b.x, b.y); c.stroke();
+    }
+    c.restore();
 }
 
 function draw() {
@@ -385,7 +433,7 @@ function draw() {
             end = { x: end.x + (under.x - end.x) * m, y: end.y + (under.y - end.y) * m };
         }
         const toes = ui.sitting ? Math.sign(end.x - joint.x) : face;
-        return { h, joint, end, toe: { x: end.x + toes * LEG.foot, y: end.y + 2 } };
+        return { h, joint, end, toe: { x: end.x + toes * LEG.foot, y: end.y + 2 + (ui.sitting ? 0 : state.toes[i]) } };
     });
     // Arms (in the world: shoulders on his body, hands where they are going, or reaching)
     const arms = ['far', 'near'].map((side, i) => {
@@ -413,18 +461,20 @@ function draw() {
 
     // His body: bent, squashed or stretched and breathing row by row, first on a canvas of its own at the drawing's
     // size, each row on whole pixels (no seams, no overlaps), then laid on the scene in one piece
-    const body = bodyCanvas(f);
     c.save();
     c.translate(f.root.x, f.root.y); c.rotate(f.rot); c.scale(f.face, 1);
-    c.drawImage(body, -BODY.x, -BODY.y);
+    if (ui.body === 'code') codeBody(c, f);
+    else c.drawImage(bodyCanvas(f), -BODY.x, -BODY.y);
     // His eyes: looking, blinking, closed
     const closed = Math.max(springs.closed.x, state.blink > 0 ? 1 : 0);
     for (const [u, v, r] of EYES) {
         const at = local(f, u + springs.lookX.x * 7, v + springs.lookY.x * 6);
         c.fillStyle = INK; c.strokeStyle = INK;
         if (closed > 0.6 && springs.closed.x > 0.5) {         // closed, as she draws them: a little arc
-            c.lineWidth = 5; c.lineCap = 'round';
-            c.beginPath(); c.arc(at.x, at.y - 4, r * 1.1, Math.PI * 0.15, Math.PI * 0.85); c.stroke();
+            // wide, shallow arcs, a little apart, as she draws them (Upekkha)
+            const R = r * 2.6, apart = (u - (EYES[0][0] + EYES[1][0]) / 2) * 0.45;
+            c.lineWidth = 6.5; c.lineCap = 'round';
+            c.beginPath(); c.arc(at.x + apart, at.y - R * 0.86, R, Math.PI * 0.3, Math.PI * 0.7); c.stroke();
         } else {
             c.beginPath(); c.ellipse(at.x, at.y, r * 0.95, r * (closed > 0.6 ? 0.18 : 0.95), 0, 0, Math.PI * 2); c.fill();
         }
@@ -491,6 +541,9 @@ onBeforeUnmount(() => {
             <button @click="jump">Saltar</button>
             <button @click="stretch">Estirarse</button>
             <button :class="{ on: ui.sitting }" @click="sit()">Loto</button>
+            <span class="sep"></span>
+            <button :class="{ on: ui.body === 'code' }" @click="ui.body = 'code'">Cuerpo en código</button>
+            <button :class="{ on: ui.body === 'drawing' }" @click="ui.body = 'drawing'">Cuerpo dibujo</button>
             <span class="sep"></span>
             <button :class="{ on: ui.limbs === 'code' }" @click="ui.limbs = 'code'">Trazos en código</button>
             <button :class="{ on: ui.limbs === 'pieces' }" @click="ui.limbs = 'pieces'">Piezas dibujadas</button>
