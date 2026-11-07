@@ -8,7 +8,8 @@
     // of the hills, the pink fans and the tufts of grass, hold the old cycle as their dry leaves: a touch on one lets them
     // go (`release`): it shivers, its leaves fly off with the wind and it is left low and bare. A cycle begins with the
     // night over almost all the sky, and with every plant let go the day pours a little further over it as a liquid (the
-    // tide, pour()) until it is almost all day, and the dry hills turn green from left to right with it; and over the round body in the sky (a dent pressed into the edge, the
+    // tide, pour()) until it is almost all day; the dry hills turn into the drawing's green and yellow from left to right with it, and
+    // the name from cream to its colour; and over the round body in the sky (a dent pressed into the edge, the
     // field's uDent), so the moon gives way to the sun. Holding Sid is a breath, as in Vipassana, Nekkhamma and Upekkha (`inhale`; let go
     // once gathered, `exhale`, and every plant left lets go at once). With them all bare the sun is whole: F7 resolves to
     // B flat (`resolve`), the corona flares, the name lights up and the rulito is born over his head (`rulito`); when it
@@ -180,9 +181,10 @@
     const NIGHT_START = 0.9, NIGHT_END = 0.06;
     const TIDE_SLOPE = [0.25, 0.6];
     const SKY_BOTTOM = 1150;                // art y under which the hills hide the sky
-    // The ground goes with it: the hills, dry (tan and yellow) when the cycle begins, turn green (and yellow) as the day
-    // pours, along a front that flows from left to right (the land's `turn` in useLayerStage)
-    const DRY = 0xc4a872, GREEN = 0x63a679;
+    // The ground goes with it: the hills, dry when the cycle begins (all yellow above and tan below), turn into the drawing
+    // by day (green and yellow) as the day pours, along a front that flows from left to right (each land picture's `turn`
+    // in useLayerStage: landN.webp dry and landN-day.webp, both made by scripts/swap-ciclos-hills.mjs). And the card's
+    // name: cream in the night, its own colour by day (--name-night on the stage, CardTemplate)
     const GROUND_SOFT = 3, GROUND_LOBES = 60;   // px of the front's softness and of its lobes                // art y under which the hills hide the sky
     // and a few slow lobes, so its front is not a straight line as it moves (px)
     const lobes = (x, y) => 55 * Math.sin(x / 210 + 1.3) * Math.sin(y / 170 + 0.4) + 30 * Math.sin((x - 0.6 * y) / 120 + 2.1);
@@ -507,6 +509,8 @@
             }
         }
         stageEl?.style.setProperty('--name-glow', named.toFixed(3));
+        const night = Math.min(1, Math.max(0, (flowed - 0.1) / 0.4));
+        stageEl?.style.setProperty('--name-night', (1 - night * night * (3 - 2 * night)).toFixed(3));
         return { named, charge };
     };
 
@@ -559,7 +563,7 @@
             const node = s.depth(zFor(DEPTH.land[p]));
             const sides = P.sides ? [-1, 0, 1] : [0];
             const land = sides.map((side) => {
-                const img = node.image(`/assets/ciclos/${P.name}.webp`, { turn: [DRY, GREEN] });
+                const img = node.image(`/assets/ciclos/${P.name}.webp`, { turn: `/assets/ciclos/${P.name}-day.webp` });
                 if (side) img.sx = -1;
                 return { img, side };
             });
@@ -766,6 +770,7 @@
         if (gone) { made.destroy(); return; }
         stage = made;
         stageEl = root.value.closest('.stage');
+        stageEl?.style.setProperty('--name-night', '1');
         build(stage);
         hand = createGhostHand(stage, { color: 0x143246, shade: 0xf7f8f1 });   // navy: the cream hand does not read on the day's yellow
         stage.onResize((w, h) => place(w, h));
@@ -822,6 +827,7 @@
     onBeforeUnmount(() => {
         gone = true;
         stageEl?.style.removeProperty('--name-glow');
+        stageEl?.style.removeProperty('--name-night');
         root.value?.removeEventListener('pointerdown', press);
         window.removeEventListener('pointerup', breatheOut);
         window.removeEventListener('pointercancel', breatheOut);
