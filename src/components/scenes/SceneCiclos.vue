@@ -6,9 +6,10 @@
     // and tufts of grass, Sid sits meditating on a rock with his red aura round him.
     // Its verb is Soltar (closing a cycle: "you can only move forward if you are able to let go of the old"). The plants
     // of the hills, the pink fans and the tufts of grass, hold the old cycle as their dry leaves: a touch on one lets them
-    // go (`release`): it shivers, its leaves fly off with the wind and it is left low and bare. With every plant let go
-    // the day flows a little further over the round body in the sky (a dent pressed into the edge, the field's uDent), so
-    // the moon gives way to the sun. Holding Sid is a breath, as in Vipassana, Nekkhamma and Upekkha (`inhale`; let go
+    // go (`release`): it shivers, its leaves fly off with the wind and it is left low and bare. A cycle begins with the
+    // night over almost all the sky, and with every plant let go the day pours a little further over it as a liquid (the
+    // tide, pour()) until it is almost all day; and over the round body in the sky (a dent pressed into the edge, the
+    // field's uDent), so the moon gives way to the sun. Holding Sid is a breath, as in Vipassana, Nekkhamma and Upekkha (`inhale`; let go
     // once gathered, `exhale`, and every plant left lets go at once). With them all bare the sun is whole: F7 resolves to
     // B flat (`resolve`), the corona flares, the name lights up and the rulito is born over his head (`rulito`); when it
     // goes the night pours back over the sun and the plants grow their leaves again: a new cycle. Left alone 7 s, a plant
@@ -97,7 +98,7 @@
     const CLOUD_Y = [Math.min(...art.clouds.map(([, y, , h]) => y + h / 2)), 1100];
     const clouds = art.clouds.map(([x, y, w, h, ax, ay], i) => ({
         i, art: { x: x + w / 2, y: Math.min(CLOUD_Y[1], y + h / 2), w, h }, crop: [ax / CW, ay / CH, w / CW, h / CH],
-        rest: { left: 0, top: 0, w: 1, h: 1 }, x0: 0, phase: Math.random() * 6.28, speed: 4 + (i % 3) * 2.5, depth: i % 3,
+        rest: { left: 0, top: 0, w: 1, h: 1 }, x0: 0, phase: Math.random() * 6.28, speed: 9 + (i % 3) * 5, depth: i % 3,
     }));
     let span = { left: 0, width: 1 };
 
@@ -170,6 +171,18 @@
             for (let x = 0; x < w; x++) grid[y * w + x] = d[x];
         }
     };
+    // The tide: over a cycle the night does not stay as the card has it. A cycle begins with the night over almost all
+    // the sky (NIGHT_START of what is seen of it) and every plant let go pours the day a little further, until it is
+    // almost all day (NIGHT_END). It is the card's edge, moved: each px keeps how far it is from that edge (px, more
+    // into the night), plus a slope (TIDE_SLOPE: px for each px to the right and for each px down), so the day stays
+    // over the name at first and the last of the night goes off to the right, low behind Sid; the field is written again from it as the tide
+    // moves (pour), the edge at its level, so it flows with its waves as before
+    const NIGHT_START = 0.9, NIGHT_END = 0.06;
+    const TIDE_SLOPE = [0.25, 0.6];
+    const SKY_BOTTOM = 1150;                // art y under which the hills hide the sky
+    // and a few slow lobes, so its front is not a straight line as it moves (px)
+    const lobes = (x, y) => 55 * Math.sin(x / 210 + 1.3) * Math.sin(y / 170 + 0.4) + 30 * Math.sin((x - 0.6 * y) / 120 + 2.1);
+    const tide = { phi: null, width: 0, height: 0, at: [0, 0], level: NaN, image: null };
     const writeField = (area) => {
         const width = Math.ceil(area.w * FIELD), height = Math.ceil(area.h * FIELD);
         const inNight = new Uint8Array(width * height);
@@ -186,19 +199,48 @@
         }
         distances(toNight, width, height);
         distances(toDay, width, height);
+        // How far each px is into the night (px on screen; < 0 in the day), with the slope
+        const phi = new Float32Array(width * height);
+        const seen = [];
+        const skyBottom = sy(SKY_BOTTOM);
+        const screenR = area.w - 2 * MARGIN;
+        for (let fy = 0; fy < height; fy++) {
+            const y = area.top + (fy + 0.5) / FIELD;
+            for (let fx = 0; fx < width; fx++) {
+                const x = area.left + (fx + 0.5) / FIELD;
+                const i = fy * width + fx;
+                // (half a px each way, so the edge falls between the two)
+                const d = (inNight[i] ? Math.sqrt(toDay[i]) - 0.5 : 0.5 - Math.sqrt(toNight[i])) / FIELD;
+                phi[i] = d + TIDE_SLOPE[0] * (x - screenR / 2) + TIDE_SLOPE[1] * y + lobes(x, y);
+                if (x >= 0 && x <= screenR && y >= 0 && y <= skyBottom && (fx + fy) % 2 === 0) seen.push(phi[i]);
+            }
+        }
+        // The levels where NIGHT_START and NIGHT_END of the sky that is seen are night
+        seen.sort((a, b) => a - b);
+        const at = (q) => seen.length ? seen[Math.min(seen.length - 1, Math.floor(q * seen.length))] : 0;
+        Object.assign(tide, { phi, width, height, at: [at(1 - NIGHT_START), at(1 - NIGHT_END)], level: NaN });
         skyField.width = width;
         skyField.height = height;
-        const ctx = skyField.getContext('2d');
-        const image = ctx.createImageData(width, height);
-        const norm = 1 / FIELD / (2 * FIELD_RANGE);
-        for (let i = 0; i < width * height; i++) {
-            // (half a px each way, so the edge falls between the two)
-            const d = inNight[i] ? Math.sqrt(toDay[i]) - 0.5 : 0.5 - Math.sqrt(toNight[i]);
-            image.data[i * 4] = Math.round(Math.min(1, Math.max(0, 0.5 + d * norm)) * 255);
-            image.data[i * 4 + 1] = 255;
-            image.data[i * 4 + 3] = 255;
+        tide.image = skyField.getContext('2d').createImageData(width, height);
+        pour(true);
+    };
+    // The field at the tide's level now (only when it has moved half a px)
+    const pour = (force = false) => {
+        if (!tide.phi) return;
+        const level = tide.at[0] + (tide.at[1] - tide.at[0]) * ease(Math.min(1, Math.max(0, flowed)));
+        if (!force && Math.abs(level - tide.level) < 0.5) return false;
+        tide.level = level;
+        const { phi, image } = tide;
+        const norm = 1 / (2 * FIELD_RANGE);
+        const data = image.data;
+        for (let i = 0, n = phi.length; i < n; i++) {
+            const v = 0.5 + (phi[i] - level) * norm;
+            data[i * 4] = v <= 0 ? 0 : v >= 1 ? 255 : (v * 255 + 0.5) | 0;
+            data[i * 4 + 1] = 255;
+            data[i * 4 + 3] = 255;
         }
-        ctx.putImageData(image, 0, 0);
+        skyField.getContext('2d').putImageData(image, 0, 0);
+        return true;
     };
     // The drops of the card, alive: each sways and trembles where the card has it, as a liquid (only the sky's life:
     // the game is the plants, which a phone always shows; most drops are past its edges or too small for a finger)
@@ -226,6 +268,7 @@
     const BARE = { sy: 0.38, sx: 0.7, opacity: 0.5 };   // a plant that has let go: low, thin and faded (it grows back)
     const sparks = createSparks(360);
     let dent = 0;                           // how far the day has flowed over the disc, 0..1 (eases to its goal)
+    let flowed = 0;                         // how far the day has poured over the sky, 0..1 (the tide; slower than the dent)
     let alone = 0;                          // s since the last touch
     let backAt = 0;
     let released = 0;
@@ -395,6 +438,10 @@
             });
         });
         dent += (dentGoal() - dent) * Math.min(1, dt * (win || dentGoal() > dent ? 1.3 : 0.45));
+        // The day pours over the sky as a liquid, a little with every plant; the night pours back slower
+        const goal = dentGoal();
+        flowed += Math.sign(goal - flowed) * Math.min(Math.abs(goal - flowed), dt * (goal > flowed ? 0.05 : 0.03) + Math.abs(goal - flowed) * dt * (goal > flowed ? 0.6 : 0.3));
+        if (pour()) L.sky.refresh();
         const sr = MOON.r * k() * 1.05;
         L.sky.uniforms.uDent.value.set(sx(SUN.x), sy(SUN.y), sr, FULL * ease(Math.min(1, dent)));
 
@@ -714,16 +761,26 @@
         hand = createGhostHand(stage, { color: 0x143246, shade: 0xf7f8f1 });   // navy: the cream hand does not read on the day's yellow
         stage.onResize((w, h) => place(w, h));
         const after = (node) => node.mesh.renderOrder + 0.5;
-        // Every star, and its reflections about the frame's edges that fall on the screen and well inside the night
-        const deep = (ax, ay) => [[0, 0], [24, 0], [-24, 0], [0, 24], [0, -24]].every(([dx, dy]) => nightAt(ax + dx, ay + dy));
+        // The stars: the card's own, and as many again over the rest of the sky (the night pours over all of it), always
+        // the same ones; only seen where the night is (the field's mask), so they come and go with the tide
+        const STAR_R = NIGHT.stars.map(([, , r]) => r);
+        const extraStars = (() => {
+            let seed = 7;
+            const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+            const out = [];
+            for (let n = 0; n < NIGHT.stars.length * 6; n++) {
+                const ax = -SIZE * 0.5 + rnd() * SIZE * 2, ay = -SIZE * 0.6 + rnd() * SIZE * 1.4, r = STAR_R[Math.floor(rnd() * STAR_R.length)];
+                const inCard = ax >= 0 && ax < SIZE && ay >= 0;
+                if (!inCard || !nightAt(ax, ay)) out.push([ax, ay, r]);
+            }
+            return out;
+        })();
         const starPoints = (w, h) => {
             const out = [];
-            NIGHT.stars.forEach(([x, y, r]) => {
-                [[x, y], [2 * SIZE - x, y], [x, -y], [2 * SIZE - x, -y]].forEach(([ax, ay], j) => {
-                    const px = sx(ax), py = sy(ay);
-                    if (px < -40 || px > w + 40 || py < -40 || py > h + 40 || (j && !deep(ax, ay))) return;
-                    out.push([px, py, Math.max(2.2, 2 * r * k() * 1.6), NIGHT.star]);
-                });
+            [...NIGHT.stars, ...extraStars].forEach(([ax, ay, r]) => {
+                const px = sx(ax), py = sy(ay);
+                if (px < -40 || px > w + 40 || py < -40 || py > h + 40) return;
+                out.push([px, py, Math.max(2.2, 2 * r * k() * 1.6), NIGHT.star]);
             });
             return out;
         };
@@ -738,8 +795,8 @@
                 { colors: [SHADE], parallax: 0, drift: 0.4, jitter: 0.15, twinkle: 0.05, reach: 0, order: after(L.moon), mask: { field: L.sky, side: 1 }, points: () => fromArt(MOON.dots, SHADE, 1.5) },
                 // 2: Sid's aura, under him
                 { colors: [AURA], parallax: 0, drift: 1.4, jitter: 0.4, twinkle: 0.4, reach: 0, bloom: true, order: L.body.mesh.renderOrder - 0.5, points: () => fromArt(art.sid.aura, AURA, 1.1) },
-                // 3: the stars, only in the night, just over it (mirrored with it beyond the frame)
-                { colors: [NIGHT.star], parallax: 0, drift: 1.2, jitter: 0, twinkle: 0.6, reach: 90, push: 10, order: after(L.sky), points: starPoints },
+                // 3: the stars, only in the night, just over it
+                { colors: [NIGHT.star], parallax: 0, drift: 1.2, jitter: 0, twinkle: 0.6, reach: 90, push: 10, order: after(L.sky), mask: { field: L.sky, side: 1 }, points: starPoints },
                 // 4: the motes of what is let go, in front of everything
                 { ...sparks.group(), order: 1e6 },
             ],
@@ -747,7 +804,7 @@
         if (reduced) dust.reveal();
         parallax = createParallax(root.value, frame);
         root.value.addEventListener('pointerdown', press);
-        if (import.meta.env.DEV) root.value.__game = { get plants() { return plants; }, get released() { return released; }, get win() { return win; }, get dent() { return dent; }, centres: () => needed().map(centreOf) };
+        if (import.meta.env.DEV) root.value.__game = { get plants() { return plants; }, get released() { return released; }, get win() { return win; }, get dent() { return dent; }, get flowed() { return flowed; }, set flowed(v) { flowed = v; }, centres: () => needed().map(centreOf) };
         enter();
     };
 
