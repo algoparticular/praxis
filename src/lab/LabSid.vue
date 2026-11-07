@@ -83,7 +83,6 @@ const state = {
     feet: [null, null], steps: [null, null], toes: [0, 0],
     reach: null,                   // a world point his near hand goes to
     reached: null,                 // the last one (his hand comes back from it)
-    queue: null,
 };
 
 // --- His body as he is now: a point of the drawing (u, v) -> the world ---
@@ -170,18 +169,18 @@ function onDown(e) {
         walkTo(toSid(screen, d).x, d);
         return;
     }
-    // In the air: he reaches for it (walking near it first if it is far)
-    if (ui.sitting) sit(false);
-    const p = toSid(screen), dx = p.x - state.x;
-    if (Math.abs(dx) > 150) { state.target = { x: p.x - Math.sign(dx) * 105, d: state.d }; state.queue = p; }
-    else reachFor(p);
+    // In the air: he walks that way, where he is in depth; only a touch close to him, as high as his head or higher,
+    // is something he reaches for with his hand
+    const p = toSid(screen), head = map(frame(), PIVOT.x, 260);
+    if (Math.abs(p.x - state.x) < 170 && p.y < head.y) { if (ui.sitting) sit(false); state.target = null; reachFor(p); }
+    else walkTo(p.x);
 }
 
 // The keys: arrows or WASD walk him over the floor, the space bar sits him in lotus (and stands him up)
 const KEYS = { ArrowLeft: 'left', a: 'left', ArrowRight: 'right', d: 'right', ArrowUp: 'up', w: 'up', ArrowDown: 'down', s: 'down' };
 function press(key, on) {
     state.keys[key] = on;
-    if (on) { state.target = null; state.queue = null; if (ui.sitting) sit(false); }
+    if (on) { state.target = null; if (ui.sitting) sit(false); }
 }
 function onKey(e) {
     if (e.target?.closest?.('button') && e.key === ' ') e.target.blur();
@@ -216,7 +215,6 @@ function update(dt, now) {
         left = Math.hypot(dx, dd);
         if (left < 4) {
             state.target = null;
-            if (state.queue) { reachFor(state.queue); state.queue = null; }
         } else { mx = dx / left; mz = dd / left; }
     }
     const length = Math.hypot(mx, mz);
