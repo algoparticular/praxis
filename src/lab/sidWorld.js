@@ -272,8 +272,9 @@ export function createWorld({ ink, cream, depth }) {
     }
 
     // What is on the screen, back to front, filtered (to draw what is behind him and what is in front of him apart);
-    // view: { x0, cam, groundAt(d), scaleAt(d), width }
-    function draw(c, view, keep) {
+    // view: { x0, cam, groundAt(d), scaleAt(d), width }. What stands just in front of him (`him`: { x, d }) is drawn
+    // faint, so it never hides him
+    function draw(c, view, keep, him = null) {
         const far = view.scaleAt(depth), half = view.width / 2 / far + 400;
         const first = Math.floor((view.cam - half) / STRETCH), last = Math.floor((view.cam + half) / STRETCH);
         const shown = [];
@@ -283,6 +284,7 @@ export function createWorld({ ink, cream, depth }) {
             const s = view.scaleAt(item.d), x = view.x0 + (item.x - view.cam) * s;
             if (x < -300 * s || x > view.width + 300 * s) continue;
             c.save(); c.translate(x, view.groundAt(item.d)); c.scale(s, s);
+            if (him && item.d < him.d && him.d - item.d < 220 && Math.abs(item.x - him.x) < 150) c.globalAlpha = 0.22;
             drawItem(c, item);
             c.restore();
         }

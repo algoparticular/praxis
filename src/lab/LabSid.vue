@@ -27,11 +27,14 @@ const LEG = { thigh: 97, shin: 97, foot: 40, width: 22 };
 const ARM = { upper: 108, fore: 102, width: 18 };        // long, as in Upekkha (they reach his crossed legs)
 const STAND = 196;                            // his hips over the ground, standing: his legs all but straight
 const SIT = 52;                               // his hips over the ground, sitting with his legs crossed
-const HIP = { far: { u: 103, v: 516 }, near: { u: 157, v: 514 } };
-// at the pinch of his waist; the far one a little in, so that arm hangs hidden behind him
-const SHOULDER = { far: { u: 92, v: 322 }, near: { u: 160, v: 318 } };
-// At rest his near arm hangs down the side of his belly, almost straight, and the far one behind him (unseen)
-const REST_HAND = { far: { u: 100, v: 500 }, near: { u: 216, v: 522 } };
+// In profile his hips are together in his middle (one leg behind the other), his arms come from the middle of him
+// too, the near one hanging over his belly and the far one behind him (unseen until it swings out); turned to us, his
+// hips, shoulders and hands are at each side of him (FRONT_ below)
+const HIP = { far: { u: 124, v: 516 }, near: { u: 136, v: 515 } };
+const FRONT_HIP = { far: { u: 103, v: 516 }, near: { u: 157, v: 514 } };
+const SHOULDER = { far: { u: 122, v: 334 }, near: { u: 138, v: 334 } };
+const REST_HAND = { far: { u: 116, v: 524 }, near: { u: 146, v: 524 } };
+const hipsOf = (f) => ['far', 'near'].map((side) => ({ u: mix(HIP[side].u, FRONT_HIP[side].u, f.front), v: mix(HIP[side].v, FRONT_HIP[side].v, f.front) }));
 const EYES = rig.eyes;
 // Turned to us: his eyes in the middle of his face, a shoulder at each side of the pinch of his waist and his hands
 // hanging at each side of his belly
@@ -251,7 +254,7 @@ function update(dt, now) {
     let near = { ...REST_HAND.near }, far = { ...REST_HAND.far };
     // the arms swing against the legs (each arm forward as the other leg goes forward), a little behind them, rising a
     // touch as they go forward
-    const swing = Math.sin(p * Math.PI * 2 - 0.5) * 34 * w;
+    const swing = Math.sin(p * Math.PI * 2 - 0.5) * 48 * w;
     near.u -= swing; far.u += swing;
     near.v -= Math.max(0, -swing) * 0.35; far.v -= Math.max(0, swing) * 0.35;
     drop += w * (5 + 5 * Math.cos(p * Math.PI * 4));                   // the bob of each step
@@ -316,7 +319,7 @@ function update(dt, now) {
 
     // His feet: planted while he walks (they never slide), stepping back under him when he stops
     const f = frame();
-    [HIP.far, HIP.near].forEach((hip, i) => {
+    hipsOf(f).forEach((hip, i) => {
         const h = map(f, hip.u, hip.v);
         // where this foot is under him, from his hip at rest (not from his body as it sways, or a planted foot slides)
         const under = f.root.x + (hip.u - PIVOT.x) * face;
@@ -461,10 +464,10 @@ function draw() {
     };
 
     // Legs
-    const legs = [HIP.far, HIP.near].map((hip, i) => {
+    const legs = hipsOf(f).map((hip, i) => {
         const h = map(f, hip.u, hip.v), foot = state.feet[i] ?? { x: h.x, y: state.ground };
         // knees forward in profile; turned to us, a little out to their own side
-        const outward = Math.sign(hip.u - PIVOT.x) * face;
+        const outward = (i ? 1 : -1) * face;
         const toward = ui.sitting ? { x: (i ? 1 : -1) * face, y: -0.5 } : { x: mix(face, outward * 0.3, f.front), y: 0 };
         const ankle = { x: foot.x, y: foot.y - 6 };
         let { joint, end } = bend(h, ankle, LEG.thigh, LEG.shin, toward);
@@ -487,8 +490,9 @@ function draw() {
         if (side === 'near' && state.reached && r > 0.001) hand = { x: hand.x + (state.reached.x - hand.x) * r, y: hand.y + (state.reached.y - hand.y) * r };
         const raised = hand.y < s.y;
         // each elbow to its own side (out from his body), or down when the hand is up
-        const out = (i ? 1 : -1) * face;
-        const toward = raised ? { x: out * 0.5, y: 1 } : { x: out, y: 0.15 };
+        // elbows back in profile, out to their own side turned to us; down when the hand is up
+        const out = (i ? 1 : -1) * face, back = mix(-face * 0.7, out, f.front);
+        const toward = raised ? { x: out * 0.5, y: 1 } : { x: back, y: 0.15 };
         return { s, ...bend(s, hand, ARM.upper, ARM.fore, toward) };
     });
 
@@ -545,7 +549,7 @@ function draw() {
         c.stroke();
     }
     c.restore();
-    world.draw(c, place, (d) => d <= state.d);                        // and what is in front of him
+    world.draw(c, place, (d) => d <= state.d, { x: state.x, d: state.d });   // and what is in front of him (faint close to him)
 }
 
 function loop(now) {

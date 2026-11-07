@@ -293,18 +293,41 @@ function nearTo(i, id) {
     const baseY = last + (rowMax(last)[0] - 0.5) / (rowMax(last)[0] - rowMax(last + 1)[0]);
     const top = first + 1, left = [], right = [];
     for (let y = top; y <= last - 1; y += ROWS) { const e = edges(y); left.push(e[0]); right.push(e[1]); }
+    // His crown and his base are round: the rows near each are set on an oval through the crown (or the base) and
+    // the widest row of his head (or of his belly), blending into the traced edges further along
+    const capOn = (from, to, apexY, wideAt) => {
+        const i0 = Math.round((wideAt - top) / ROWS), cx = (left[i0] + right[i0]) / 2, a = (right[i0] - left[i0]) / 2;
+        const b = Math.abs(wideAt - apexY);
+        for (let i = from; i !== to; i += Math.sign(to - from)) {
+            const y = top + i * ROWS, t = Math.min(1, Math.abs(wideAt - y) / b);
+            const half = a * Math.sqrt(Math.max(0, 1 - t * t)), weight = Math.min(1, Math.max(0, (t - 0.35) / 0.4));
+            left[i] = left[i] + (cx - half - left[i]) * weight;
+            right[i] = right[i] + (cx + half - right[i]) * weight;
+        }
+    };
+    const widest = (y0, y1) => {
+        let best = y0, wide = 0;
+        for (let y = y0; y <= y1; y += ROWS) { const i = Math.round((y - top) / ROWS); if (right[i] - left[i] > wide) { wide = right[i] - left[i]; best = top + i * ROWS; } }
+        return best;
+    };
+    const span = last - top, headWide = widest(top, top + span * 0.45), bellyWide = widest(top + span * 0.6, last - 4);
     const smooth = (list) => list.map((_, i) => {
         let sum = 0, n = 0;
-        for (let d = -4; d <= 4; d++) {
+        for (let d = -8; d <= 8; d++) {
             const j = i + d;
             if (j < 0 || j >= list.length) continue;
-            const g = Math.exp(-(d * d) / 8);
+            const g = Math.exp(-(d * d) / 18);
             sum += list[j] * g; n += g;
         }
-        return Math.round(sum / n * 10) / 10;
+        return sum / n;
     });
+    // smoothed first (no step of the cut left), then the oval caps (so nothing flattens them again)
+    left.splice(0, left.length, ...smooth(left)); right.splice(0, right.length, ...smooth(right));
+    capOn(0, Math.round((headWide - top) / ROWS), crownY, headWide);
+    capOn(left.length - 1, Math.round((bellyWide - top) / ROWS), baseY, bellyWide);
+    const tenth = (list) => list.map((v) => Math.round(v * 10) / 10);
     const mid = (y) => { const e = edges(Math.round(y)); return e ? (e[0] + e[1]) / 2 : W / 2; };
-    scene.silhouette = { top, step: ROWS, left: smooth(left), right: smooth(right),
+    scene.silhouette = { top, step: ROWS, left: tenth(left), right: tenth(right),
         crown: [Math.round(mid(first + 2) * 10) / 10, Math.round(crownY * 10) / 10],
         base: [Math.round(mid(last - 2) * 10) / 10, Math.round(baseY * 10) / 10] };
     // Her marks: the rows where a mark of ink reaches deeper in from his left edge than the outline does; for each,
