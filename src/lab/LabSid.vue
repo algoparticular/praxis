@@ -11,6 +11,7 @@ import bodyUrl from './sid/body.webp';
 import leg0Url from './sid/leg0.webp';
 import leg1Url from './sid/leg1.webp';
 import armUrl from './sid/arm.webp';
+import { createWorld } from './sidWorld.js';
 
 const ui = reactive({ body: 'code', limbs: 'code', bones: false, slow: false, sitting: false, touch: false, menu: false });
 const canvas = ref(null);
@@ -38,6 +39,9 @@ const FRONT_EYES = [[PIVOT.x - 17, 211, rig.eyes[0][2]], [PIVOT.x + 17, 211, rig
 const FRONT_SHOULDER = { far: { u: PIVOT.x - 44, v: 320 }, near: { u: PIVOT.x + 44, v: 320 } };
 const FRONT_HAND = { far: { u: PIVOT.x - 98, v: 522 }, near: { u: PIVOT.x + 98, v: 522 } };
 const mix = (a, b, t) => a + (b - a) * t;
+
+// The world round him (sidWorld.js): endless, in ink, taking its colour as he goes
+const world = createWorld({ ink: '#' + rig.ink.map((v) => v.toString(16).padStart(2, '0')).join(''), cream: '#F7F8F1', depth: DEPTH });
 // The floor goes back into the distance: his depth d (0 in front .. DEPTH at the back) lifts his feet towards the
 // horizon and makes him smaller, towards the middle of the screen (a vanishing point)
 const DEPTH = 600;
@@ -69,6 +73,7 @@ const hands = {                    // where his hands go, in his own px (they fo
 const state = {
     x: 0, ground: 0,               // his hips over the ground, in world px (= px of the source, scaled k to the screen)
     d: 0,                          // how far back on the floor he is (0..DEPTH)
+    cam: 0,                        // where the camera looks (it follows him, the world has no end)
     keys: { left: false, right: false, up: false, down: false },
     lift: 0, vy: 0, air: false,    // a jump
     target: null, speed: 0, phase: 0,
@@ -127,13 +132,13 @@ function wave() { if (!ui.sitting) act('wave', 2.6); }
 function jump() { if (!ui.sitting && !state.air) act('jump', 1.4); }
 function stretch() { if (!ui.sitting) act('stretch', 2.6); }
 function sit(on = !ui.sitting) { ui.sitting = on; state.target = null; state.action = null; }
-function walkAcross() { const w = view.w / view.k; walkTo(state.x < w / 2 ? w * 0.78 : w * 0.22); }
+function walkAcross() { walkTo(state.x + (Math.sign(springs.face.to) || 1) * 520); }
 
 // Where a point of the screen is in his own world, at his depth (his world is scaled about the vanishing point)
 const groundAt = (d) => state.ground - d / DEPTH * view.floor;
 function toSid(p, d = state.d) {
     const s = scaleAt(d), x0 = view.w / view.k / 2;
-    return { x: x0 + (p.x - x0) / s, y: state.ground + (p.y - groundAt(d)) / s };
+    return { x: state.cam + (p.x - x0) / s, y: state.ground + (p.y - groundAt(d)) / s };
 }
 
 const view = { w: 1, h: 1, k: 1, dpr: 1, floor: 1 };
@@ -151,7 +156,7 @@ function resize() {
     const was = state.ground;
     state.ground = (view.h * (ui.touch ? 0.68 : 0.8)) / view.k;
     view.floor = (view.h * (ui.touch ? 0.2 : 0.26)) / view.k;     // from the front of the floor to the horizon
-    if (!was) state.x = view.w / view.k / 2;
+    if (!was) { state.x = view.w / view.k / 2; state.cam = state.x; }
 }
 
 function pointerTo(e) {
@@ -224,9 +229,9 @@ function update(dt, now) {
     }
     if (!walking) state.speed = 0;
     state.side = Math.abs(mx);                                            // how much of his walk is sideways
-    // He stays on the screen
-    const half = (view.w / view.k / 2 - 60) / scaleAt(state.d), x0 = view.w / view.k / 2;
-    state.x = Math.max(x0 - half, Math.min(x0 + half, state.x));
+    // The camera follows him (softly, so he moves a little on the screen as he sets off and stops)
+    state.cam += (state.x - state.cam) * Math.min(1, dt * 1.6);
+    world.update(dt, { x: state.x, d: state.d, sitting: ui.sitting && springs.drop.x > (STAND - SIT) * 0.8 });
     S.walk.to = walking;
     const STRIDE = 116;                       // a relaxed step: about 1.4 steps a second at full speed
     if (state.speed > 0) state.phase = (state.phase + state.speed * dt / (2 * STRIDE)) % 1;
@@ -426,8 +431,12 @@ function draw() {
     // The floor, back to the horizon, and him on it at his depth (smaller and nearer the middle the farther back)
     c.fillStyle = '#E9EDD8';
     c.fillRect(0, groundAt(DEPTH) - 4, W, view.h / view.k);
-    const depth = scaleAt(state.d), x0 = W / 2;
-    c.translate(x0, groundAt(state.d)); c.scale(depth, depth); c.translate(-x0, -state.ground);
+    const x0 = W / 2, place = { x0, cam: state.cam, groundAt, scaleAt, width: W };
+    world.drawSky(c, place, 0, groundAt(DEPTH) - 20);
+    world.draw(c, place, (d) => d > state.d);                         // what is behind him
+    const depth = scaleAt(state.d);
+    c.save();
+    c.translate(x0, groundAt(state.d)); c.scale(depth, depth); c.translate(-state.cam, -state.ground);
     c.fillStyle = 'rgba(20, 50, 70, 0.10)';
     c.beginPath();
     c.ellipse(f.root.x, state.ground + 4, 70 * (1 - Math.min(0.5, state.lift / 400)), 9, 0, 0, Math.PI * 2);
@@ -534,6 +543,8 @@ function draw() {
         for (let i = 0; i <= 10; i++) { const q = map(f, PIVOT.x, PIVOT.y - TALL * i / 10); i ? c.lineTo(q.x, q.y) : c.moveTo(q.x, q.y); }
         c.stroke();
     }
+    c.restore();
+    world.draw(c, place, (d) => d <= state.d);                        // and what is in front of him
 }
 
 function loop(now) {
@@ -570,8 +581,8 @@ onBeforeUnmount(() => {
 <template>
     <div class="lab">
         <canvas ref="canvas" @pointermove="onMove" @pointerdown="onDown"></canvas>
-        <p v-if="ui.touch" class="hint">Muévelo con las flechas (o toca el suelo). Loto lo sienta. Toca el aire y lo alcanza con la mano.</p>
-        <p v-else class="hint">Flechas o WASD: camina por el espacio. Barra espaciadora: se sienta en loto. Toca el suelo o el aire.</p>
+        <p v-if="ui.touch" class="hint">Camínalo con las flechas: el mundo se colorea a su paso. Loto: todo alrededor.</p>
+        <p v-else class="hint">Flechas o WASD: camina y el mundo se colorea a su paso. Barra espaciadora: loto, y se colorea todo alrededor.</p>
         <button v-if="ui.touch" class="more" :class="{ on: ui.menu }" @click="ui.menu = !ui.menu">Pruebas</button>
         <div v-if="!ui.touch || ui.menu" class="panel">
             <button @click="walkAcross">Caminar</button>

@@ -16,6 +16,14 @@ Sid (que también es Particular) hoy llega a cada escena como un dibujo entero: 
 
 Las piezas de la prueba salieron del Sid de Nekkhamma, recortado por `scripts/make-sid-lab.mjs` (los ojos y el brazo tapados con su relleno). El script cierra el contorno donde se cortó (un anillo de su tinta por dentro del borde, el borde interior suavizado y los muñones de las piernas quitados), pero las piernas dibujadas siguen en pose de caminar: eso se resuelve con piezas dibujadas para esto.
 
+## El mundo alrededor de Sid
+
+`src/lab/sidWorld.js` dibuja en código el mundo por donde camina, con las marcas de los bocetos: rayitas de pasto, piedras (algunas con cara de dos o tres puntos: seres que lo miran, parpadean y saltan cuando llega), pilas de piedritas, brotes que se enrulan en una bolita, helechos, punteado en el suelo y marcas de viento en el cielo. Todo con una pluma de tinta en código (trazos más anchos al medio y finos en las puntas, marcas que nacen anchas y terminan en punta).
+
+- **Infinito:** se hace por tramos según dónde está (el mismo lugar es siempre igual) y la cámara lo sigue. Los lugares especiales compuestos a mano (el árbol grande, la célula, el zorro) vienen después.
+- **Tinta que se colorea:** todo empieza en tinta y toma su color (uno de los siete de los chakras) cuando Sid pasa cerca; sentado en loto, sale de él una onda que colorea todo alrededor. Lo coloreado queda así. El color va como una acuarela bajo el dibujo, y la línea se tiñe.
+- **Vivo:** el pasto se aparta a su paso, los helechos y los brotes se mecen con el viento.
+
 ## Qué pedirle a la ilustradora
 
 **Proporción de Sid de pie** (la de Nekkhamma): cabeza 1, torso 0,6, piernas 0,6. La cabeza va de la coronilla al angostamiento de la cintura, el torso de ahí a la base y las piernas de la base al suelo: tan largas como el torso (en Viriya son algo más largas, 0,8). Brazos y piernas tan gruesos como su contorno.
