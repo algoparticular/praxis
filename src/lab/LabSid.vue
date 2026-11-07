@@ -131,7 +131,7 @@ function bend(a, target, l1, l2, toward) {
 // --- What he does ---
 const act = (name, dur, extra = {}) => { state.action = { name, t: 0, dur, ...extra }; };
 function walkTo(x, d = state.d) { state.target = { x, d }; state.reach = null; if (ui.sitting) sit(false); }
-function wave() { if (!ui.sitting) act('wave', 2.6); }
+function wave() { if (!ui.sitting) act('wave', 2.6, { arm: 'near' }); }
 function jump() { if (!ui.sitting && !state.air) act('jump', 1.4); }
 function stretch() { if (!ui.sitting) act('stretch', 2.6); }
 function sit(on = !ui.sitting) { ui.sitting = on; state.target = null; state.action = null; }
@@ -197,6 +197,15 @@ function onKey(e) {
 }
 function release() { for (const key of Object.keys(state.keys)) state.keys[key] = false; }
 function reachFor(p) { springs.face.to = Math.sign(p.x - state.x) || springs.face.to; state.reach = p; state.reached = p; act('reach', 2.6); }
+
+function turnedRound() {
+    const n = hands.near, f = hands.far;
+    for (const k of ['u', 'v']) { [n[k].x, f[k].x] = [f[k].x, n[k].x]; [n[k].v, f[k].v] = [f[k].v, n[k].v]; }
+    for (const h of [n, f]) { h.u.x = 2 * PIVOT.x - h.u.x; h.u.v = -h.u.v; }
+    state.feet.reverse(); state.steps.reverse(); state.toes.reverse();
+    state.phase = (state.phase + 0.5) % 1;                  // each foot keeps its step
+    if (state.action?.arm) state.action.arm = state.action.arm === 'near' ? 'far' : 'near';
+}
 
 // --- The loop ---
 function update(dt, now) {
@@ -268,8 +277,10 @@ function update(dt, now) {
         near = { u: 248, v: 506 }; far = { u: 12, v: 506 };                // his hands on his knees
     }
     if (name === 'wave') {
-        near = { u: 250 + Math.sin(t * 12) * 34, v: 215 + Math.cos(t * 12) * 10 };
-        lean = -0.035 * Math.min(1, t * 3); sy = 1.03;
+        // with the arm he started with, even if he has turned round since (then it is his far one)
+        const hand = { u: 250 + Math.sin(t * 12) * 34, v: 215 + Math.cos(t * 12) * 10 }, far_ = state.action.arm === 'far';
+        if (far_) far = { u: 2 * PIVOT.x - hand.u, v: hand.v }; else near = hand;
+        lean = (far_ ? 0.035 : -0.035) * Math.min(1, t * 3); sy = 1.03;
     }
     if (name === 'stretch') {
         const up = Math.min(1, t / 0.6) * Math.min(1, (state.action.dur - t) / 0.5);
@@ -311,10 +322,14 @@ function update(dt, now) {
         if (!state.reach && !ui.sitting) S.lean.to += (dx / d) * m * 0.02;
     } else { S.lookX.to = 0.35; S.lookY.to = 0; }
 
+    const before = Math.sign(S.face.x);
     for (const s of Object.values(S)) step(s, dt);
     for (const h of Object.values(hands)) {
         step(h.u, dt); step(h.v, dt);
     }
+    // As he turns round his drawing is mirrored, so what was his near side is now his far one: each arm and each leg
+    // keeps where it is (the arm on the right of the screen stays on the right, the one waving keeps waving)
+    if (before && Math.sign(S.face.x) && Math.sign(S.face.x) !== before) turnedRound();
     hands.near.u.to = near.u; hands.near.v.to = near.v; hands.far.u.to = far.u; hands.far.v.to = far.v;
 
     // His feet: planted while he walks (they never slide), stepping back under him when he stops
