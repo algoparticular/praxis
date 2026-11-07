@@ -81,7 +81,7 @@ const state = {
     breath: 0, blink: 0, nextBlink: 2,
     pointer: null, pointerAt: 0,   // the pointer on the screen (px / k)
     glance: null, nextGlance: 3,
-    feet: [null, null], steps: [null, null], toes: [0, 0],
+    feet: [null, null], steps: [null, null], toes: [0, 0], legTuck: [0, 0],
     reach: null,                   // a world point his near hand goes to
     reached: null,                 // the last one (his hand comes back from it)
 };
@@ -196,7 +196,7 @@ function turnedRound() {
     const n = hands.near, f = hands.far;
     for (const k of ['u', 'v']) { [n[k].x, f[k].x] = [f[k].x, n[k].x]; [n[k].v, f[k].v] = [f[k].v, n[k].v]; }
     for (const h of [n, f]) { h.u.x = 2 * PIVOT.x - h.u.x; h.u.v = -h.u.v; }
-    state.feet.reverse(); state.steps.reverse(); state.toes.reverse();
+    state.feet.reverse(); state.steps.reverse(); state.toes.reverse(); state.legTuck.reverse();
     state.phase = (state.phase + 0.5) % 1;                  // each foot keeps its step
     if (state.action?.arm) state.action.arm = state.action.arm === 'near' ? 'far' : 'near';
 }
@@ -367,8 +367,10 @@ function update(dt, now) {
         const toe = q < 0.12 ? -9 * (1 - q / 0.12) : q > 0.4 && q < 0.5 ? 6 * (q - 0.4) / 0.1 : q >= 0.5 ? 6 * (1 - ease) + lift * 0.25 : 0;
         state.toes[i] = (state.toes[i] ?? 0) + (toe * w - (state.toes[i] ?? 0)) * Math.min(1, dt * 20);
         let foot = state.feet[i] ?? rest;
-        // in the air his legs hang, drawn up at the top of the jump and reaching down again to land
-        if (state.air) foot = { x: h.x + face * (8 + 22 * (state.tuck ?? 0)), y: h.y + STAND * (0.97 - 0.32 * (state.tuck ?? 0)) };
+        // in the air his legs hang, drawn up at the top of the jump and reaching down again to land, each in its own
+        // time: one goes and comes back first, the other a moment after it (not one stiff piece)
+        state.legTuck[i] += ((state.air ? state.tuck ?? 0 : 0) - state.legTuck[i]) * Math.min(1, dt * (i ? 6 : 13));
+        if (state.air) foot = { x: h.x + face * (8 + 22 * state.legTuck[i]), y: h.y + STAND * (0.97 - 0.32 * state.legTuck[i]) };
         else if (walking) {
             foot = { x: foot.x + (gait.x - foot.x) * Math.min(1, w * 1.2), y: foot.y + (gait.y - foot.y) * Math.min(1, w * 1.2) };
             state.steps[i] = null;
