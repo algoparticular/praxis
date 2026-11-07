@@ -32,8 +32,8 @@ const SIT = 52;                               // his hips over the ground, sitti
 // hips, shoulders and hands are at each side of him (FRONT_ below)
 const HIP = { far: { u: 124, v: 516 }, near: { u: 136, v: 515 } };
 const FRONT_HIP = { far: { u: 103, v: 516 }, near: { u: 157, v: 514 } };
-const SHOULDER = { far: { u: 122, v: 334 }, near: { u: 138, v: 334 } };
-const REST_HAND = { far: { u: 116, v: 524 }, near: { u: 146, v: 524 } };
+const SHOULDER = { far: { u: 100, v: 334 }, near: { u: 110, v: 334 } };   // towards his back, by the hatching
+const REST_HAND = { far: { u: 92, v: 524 }, near: { u: 116, v: 524 } };
 const hipsOf = (f) => ['far', 'near'].map((side) => ({ u: mix(HIP[side].u, FRONT_HIP[side].u, f.front), v: mix(HIP[side].v, FRONT_HIP[side].v, f.front) }));
 const EYES = rig.eyes;
 // Turned to us: his eyes in the middle of his face, a shoulder at each side of the pinch of his waist and his hands
@@ -405,22 +405,22 @@ function codeBody(c, f) {
     c.save();
     c.clip();
     c.strokeStyle = INK; c.lineWidth = LINE_W * 2; c.lineJoin = 'round'; c.stroke();
-    // the hatching: each of her marks as a stroke of a pen, wide where it leaves his outline and running to a fine
-    // point towards his middle, bending a little downwards, as long as she drew it
-    c.fillStyle = INK;
-    for (const [v, long] of rig.hatching) {
+    // the hatching: each of her marks as a brush stroke, round and full where it leaves his outline, thinning softly
+    // as it bends a little downwards towards his middle and ending round, not sharp; each a touch different
+    c.strokeStyle = INK; c.lineCap = 'round';
+    rig.hatching.forEach(([v, long], k) => {
         const i = Math.max(0, Math.min(S.left.length - 1, Math.round((v - S.top) / S.step))), u = S.left[i];
-        const base = u + LINE_W - 6, tip = u + LINE_W + long + 2, half = 3.6;
-        const p0 = at(base, v - half), p1 = at(base, v + half);
-        const c0 = at(base + (tip - base) * 0.55, v - half * 0.55), c1 = at(base + (tip - base) * 0.55, v + half * 0.9);
-        const end = at(tip, v + 2.2);
-        c.beginPath();
-        c.moveTo(p0.x, p0.y);
-        c.quadraticCurveTo(c0.x, c0.y, end.x, end.y);
-        c.quadraticCurveTo(c1.x, c1.y, p1.x, p1.y);
-        c.closePath();
-        c.fill();
-    }
+        const vary = Math.sin(k * 2.39), base = u + LINE_W - 7, reach = long + 4 + vary * 2;
+        const SEG = 7;
+        let prev = at(base, v);
+        for (let j = 1; j <= SEG; j++) {
+            const t = j / SEG, sag = (2.2 + vary) * t * t;                  // the stroke bends down as it goes
+            const next = at(base + reach * t, v + sag);
+            c.lineWidth = mix(7.6 + vary * 0.6, 2.2, Math.pow((j - 0.5) / SEG, 0.8));
+            c.beginPath(); c.moveTo(prev.x, prev.y); c.lineTo(next.x, next.y); c.stroke();
+            prev = next;
+        }
+    });
     c.restore();
 }
 
