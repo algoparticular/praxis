@@ -39,8 +39,8 @@ const EYES = rig.eyes;
 // Turned to us: his eyes in the middle of his face, a shoulder at each side of the pinch of his waist and his hands
 // hanging at each side of his belly
 const FRONT_EYES = [[PIVOT.x - 17, 211, rig.eyes[0][2]], [PIVOT.x + 17, 211, rig.eyes[1][2]]];
-const FRONT_SHOULDER = { far: { u: PIVOT.x - 44, v: 320 }, near: { u: PIVOT.x + 44, v: 320 } };
-const FRONT_HAND = { far: { u: PIVOT.x - 98, v: 522 }, near: { u: PIVOT.x + 98, v: 522 } };
+const FRONT_SHOULDER = { far: { u: PIVOT.x - 48, v: 322 }, near: { u: PIVOT.x + 48, v: 322 } };
+const FRONT_HAND = { far: { u: PIVOT.x - 132, v: 508 }, near: { u: PIVOT.x + 132, v: 508 } };   // a little away from his sides
 const mix = (a, b, t) => a + (b - a) * t;
 
 // The world round him (sidWorld.js): endless, in ink, taking its colour as he goes
