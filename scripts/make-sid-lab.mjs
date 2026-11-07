@@ -112,6 +112,59 @@ for (let i = 0; i < N; i++) {
     if (nearArm[i] <= 1.5 && dark[i]) data.copy(armPicture, i * 4, i * 4, i * 4 + 4);
 }
 
+// His outline whole again: a ring of his ink all round the inside of his edge, as thick as his thinnest line, so what
+// was cut out where the arm and the legs touched it leaves no notch (where she drew it thicker, it stays so)
+const RING = 15;
+// First the stubs where the legs joined his outline go (the legs drawn in code start under his body): at his bottom,
+// what is narrower than a line sticking out of him is taken away (an opening: in and out again by STUB px)
+const STUB = 14;
+{
+    const out = new Uint8Array(N);
+    for (let i = 0; i < N; i++) out[i] = body[i * 4 + 3] <= 100;
+    const core = new Uint8Array(N), fromOut = distance(out);
+    for (let i = 0; i < N; i++) core[i] = fromOut[i] > STUB;
+    const fromCore = distance(core);
+    for (let i = 0; i < N; i++) if (((i / W) | 0) > bottom - 40 && fromCore[i] > STUB + 1.5) body[i * 4 + 3] = 0;
+}
+// and what is left hanging under the curve of his bottom (the last rows, where a stub met it, a few px wide)
+{
+    let last = 0;
+    for (let y = 0; y < H; y++) {
+        let run = 0;
+        for (let x = 0; x < W; x++) if (body[(y * W + x) * 4 + 3] > 100) run++;
+        if (run >= 40) last = y;
+    }
+    for (let i = (last + 2) * W; i < N; i++) body[i * 4 + 3] = 0;
+}
+const outsideBody = new Uint8Array(N);
+for (let i = 0; i < N; i++) outsideBody[i] = body[i * 4 + 3] <= 100;
+const fromEdge = distance(outsideBody);
+for (let i = 0; i < N; i++) {
+    if (!outsideBody[i] && fromEdge[i] <= RING) { body[i * 4] = INK[0]; body[i * 4 + 1] = INK[1]; body[i * 4 + 2] = INK[2]; }
+    // and its soft outer edge in the same ink (no pale fringe)
+    else if (outsideBody[i] && body[i * 4 + 3] > 0) { body[i * 4] = INK[0]; body[i * 4 + 1] = INK[1]; body[i * 4 + 2] = INK[2]; }
+}
+
+// The inner edge of his outline smooth where it was cut into (his bottom and the side where the arm was): ink or
+// fill by the majority of a small neighbourhood, so it is one clean curve and not a ragged one
+{
+    const SMOOTH = 3, ink = new Uint8Array(N);
+    for (let i = 0; i < N; i++) ink[i] = body[i * 4 + 3] > 100 && (body[i * 4] + body[i * 4 + 1] + body[i * 4 + 2]) / 3 < 110;
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+        const i = y * W + x;
+        if (outsideBody[i] || fromEdge[i] < RING - 1 || fromEdge[i] > 34) continue;
+        if (!(y > bottom - 34 || x > W * 0.56)) continue;          // not where the hatching is
+        let n = 0, k = 0;
+        for (let dy = -SMOOTH; dy <= SMOOTH; dy++) for (let dx = -SMOOTH; dx <= SMOOTH; dx++) {
+            const X = x + dx, Y = y + dy;
+            if (X < 0 || Y < 0 || X >= W || Y >= H || outsideBody[Y * W + X]) continue;
+            n++; k += ink[Y * W + X];
+        }
+        const c = k * 2 > n ? INK : FILL;
+        body[i * 4] = c[0]; body[i * 4 + 1] = c[1]; body[i * 4 + 2] = c[2];
+    }
+}
+
 // The two legs: the two biggest parts of what is left below the body
 const legMask = new Uint8Array(N);
 for (let i = 0; i < N; i++) legMask[i] = legs[i * 4 + 3] > 100;

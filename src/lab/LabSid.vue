@@ -22,13 +22,14 @@ const INK = `rgb(${rig.ink.join(',')})`;
 // His proportions as Nekkhamma's Sid standing (the drawing he is cut from): head 306 px of the source (to the pinch of
 // his waist), torso 181, legs 187 from his body to the floor: his legs as long as his torso, about 0.6 of his head
 // (Viriya's walker has them a little longer, 0.8). Limbs as thick as his outline.
-const LEG = { thigh: 97, shin: 97, foot: 30, width: 22 };
+const LEG = { thigh: 97, shin: 97, foot: 40, width: 22 };
 const ARM = { upper: 108, fore: 102, width: 18 };        // long, as in Upekkha (they reach his crossed legs)
-const STAND = 186;                       // his hips over the ground, standing (the legs a little bent, alive)
+const STAND = 196;                            // his hips over the ground, standing: his legs all but straight
 const SIT = 52;                               // his hips over the ground, sitting with his legs crossed
 const HIP = { far: { u: 103, v: 516 }, near: { u: 157, v: 514 } };
-const SHOULDER = { far: { u: 76, v: 322 }, near: { u: 152, v: 322 } };
-const REST_HAND = { far: { u: 62, v: 486 }, near: { u: 176, v: 486 } };
+const SHOULDER = { far: { u: 70, v: 318 }, near: { u: 160, v: 318 } };   // at the pinch of his waist
+// At rest his arms hang down each side of his belly, like brackets ( ), almost straight
+const REST_HAND = { far: { u: 26, v: 522 }, near: { u: 216, v: 522 } };
 const EYES = rig.eyes;
 // The floor goes back into the distance: his depth d (0 in front .. DEPTH at the back) lifts his feet towards the
 // horizon and makes him smaller, towards the middle of the screen (a vanishing point)
@@ -314,6 +315,27 @@ function update(dt, now) {
     });
 }
 
+// The canvas his body is deformed on: room round the drawing for him to bend and stretch; his pivot at BODY
+const BODY = { x: 0, y: 0 };
+let bodyCanvasEl = null;
+function bodyCanvas(f) {
+    const img = images.body;
+    if (!bodyCanvasEl) {
+        bodyCanvasEl = document.createElement('canvas');
+        bodyCanvasEl.width = img.width * 3; bodyCanvasEl.height = Math.ceil(PIVOT.y * 1.4) + 30;
+        BODY.x = img.width * 1.5; BODY.y = Math.ceil(PIVOT.y * 1.4);
+    }
+    const b = bodyCanvasEl.getContext('2d');
+    b.clearRect(0, 0, bodyCanvasEl.width, bodyCanvasEl.height);
+    for (let v = 0; v < PIVOT.y + 12; v++) {
+        const t = Math.max(0, (PIVOT.y - v) / TALL), wx = widthAt(f, t);
+        const y0 = Math.round(BODY.y - (PIVOT.y - v) * f.sy), y1 = Math.round(BODY.y - (PIVOT.y - v - 1) * f.sy);
+        if (y1 <= y0) continue;
+        b.drawImage(img, 0, v, img.width, 1, BODY.x - PIVOT.x * wx + bendAt(f, t), y0, img.width * wx, y1 - y0);
+    }
+    return bodyCanvasEl;
+}
+
 function draw() {
     const el = canvas.value, c = el.getContext('2d'), k = view.k * view.dpr;
     c.setTransform(1, 0, 0, 1, 0, 0);
@@ -332,10 +354,14 @@ function draw() {
     c.ellipse(f.root.x, state.ground + 4, 70 * (1 - Math.min(0.5, state.lift / 400)), 9, 0, 0, Math.PI * 2);
     c.fill();
 
-    const limb = (points, width) => {
+    // An arm or a leg as one soft curve through its elbow or knee (never a sharp corner), and the foot after it
+    const limb = ([a, joint, end, toe], width) => {
         c.strokeStyle = INK; c.lineWidth = width; c.lineCap = 'round'; c.lineJoin = 'round';
-        c.beginPath(); c.moveTo(points[0].x, points[0].y);
-        for (const q of points.slice(1)) c.lineTo(q.x, q.y);
+        const mid = { x: (a.x + end.x) / 2, y: (a.y + end.y) / 2 };
+        const pull = { x: joint.x + (joint.x - mid.x) * 0.35, y: joint.y + (joint.y - mid.y) * 0.35 };
+        c.beginPath(); c.moveTo(a.x, a.y);
+        c.quadraticCurveTo(pull.x, pull.y, end.x, end.y);
+        if (toe) c.quadraticCurveTo(end.x, toe.y, toe.x, toe.y);       // a rounded heel
         c.stroke();
     };
     // A drawn piece turned stiff about its joint (and, for the legs, drawn longer: stretched down, not thickened)
@@ -362,13 +388,15 @@ function draw() {
         return { h, joint, end, toe: { x: end.x + toes * LEG.foot, y: end.y + 2 } };
     });
     // Arms (in the world: shoulders on his body, hands where they are going, or reaching)
-    const arms = ['far', 'near'].map((side) => {
+    const arms = ['far', 'near'].map((side, i) => {
         const s = map(f, SHOULDER[side].u, SHOULDER[side].v);
         let hand = map(f, hands[side].u.x, hands[side].v.x);
         const r = springs.reach.x;
         if (side === 'near' && state.reached && r > 0.001) hand = { x: hand.x + (state.reached.x - hand.x) * r, y: hand.y + (state.reached.y - hand.y) * r };
         const raised = hand.y < s.y;
-        const toward = raised ? { x: face * 0.4, y: 1 } : { x: -face, y: 0.3 };
+        // each elbow to its own side (out from his body), or down when the hand is up
+        const out = (i ? 1 : -1) * face;
+        const toward = raised ? { x: out * 0.5, y: 1 } : { x: out, y: 0.15 };
         return { s, ...bend(s, hand, ARM.upper, ARM.fore, toward) };
     });
 
@@ -383,14 +411,12 @@ function draw() {
     });
     if (!ui.sitting) drawLegs();
 
-    // His body, row by row: bent, squashed or stretched, breathing
+    // His body: bent, squashed or stretched and breathing row by row, first on a canvas of its own at the drawing's
+    // size, each row on whole pixels (no seams, no overlaps), then laid on the scene in one piece
+    const body = bodyCanvas(f);
     c.save();
     c.translate(f.root.x, f.root.y); c.rotate(f.rot); c.scale(f.face, 1);
-    const img = images.body, ROW = 2;
-    for (let v = 0; v < PIVOT.y + 12; v += ROW) {
-        const t = Math.max(0, (PIVOT.y - v) / TALL), wx = widthAt(f, t);
-        c.drawImage(img, 0, v, img.width, ROW, -PIVOT.x * wx + bendAt(f, t), -(PIVOT.y - v) * f.sy, img.width * wx, ROW * f.sy + 0.8);
-    }
+    c.drawImage(body, -BODY.x, -BODY.y);
     // His eyes: looking, blinking, closed
     const closed = Math.max(springs.closed.x, state.blink > 0 ? 1 : 0);
     for (const [u, v, r] of EYES) {
