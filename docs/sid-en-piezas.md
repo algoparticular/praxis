@@ -17,7 +17,7 @@ Las piezas de la prueba salieron del Sid de Nekkhamma, recortado por `scripts/ma
 
 ## Qué pedirle a la ilustradora
 
-**Proporción de Sid de pie:** cabeza 1, torso 0,8, piernas 1 (la cabeza va de la coronilla al angostamiento de la cintura; el torso, de ahí a la base; las piernas, de la base al suelo, tan largas como la cabeza). Brazos y piernas tan gruesos como su contorno.
+**Proporción de Sid de pie** (la de Nekkhamma): cabeza 1, torso 0,6, piernas 0,6. La cabeza va de la coronilla al angostamiento de la cintura, el torso de ahí a la base y las piernas de la base al suelo: tan largas como el torso (en Viriya son algo más largas, 0,8). Brazos y piernas tan gruesos como su contorno.
 
 Un Sid de pie, de perfil a tres cuartos (mirando a la derecha, como en Nekkhamma), al tamaño de exportación habitual (2160 px o más), con **cada parte en su propia capa**:
 
