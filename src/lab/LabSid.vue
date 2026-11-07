@@ -228,7 +228,7 @@ function update(dt, now) {
         if (Math.abs(mx) > 0.15) S.face.to = Math.sign(mx);
         if ((Math.abs(mx) <= 0.15 || Math.abs(S.face.x - Math.sign(mx)) < 0.3) && frame().front < 0.3) {
             walking = 1;
-            state.speed = Math.min(state.speed + 300 * dt, 165, left * 3 + 20);
+            state.speed = Math.min(state.speed + 240 * dt, 135, left * 3 + 20);   // an easy, unhurried pace
             state.x += mx * state.speed * dt;
             state.d = Math.max(0, Math.min(DEPTH, state.d + mz * state.speed * dt));
         }
@@ -239,7 +239,7 @@ function update(dt, now) {
     state.cam += (state.x - state.cam) * Math.min(1, dt * 1.6);
     world.update(dt, { x: state.x, d: state.d, sitting: ui.sitting && springs.drop.x > (STAND - SIT) * 0.8 });
     S.walk.to = walking;
-    const STRIDE = 116;                       // a relaxed step: about 1.4 steps a second at full speed
+    const STRIDE = 100;                       // a relaxed step: about 1.35 steps a second at full speed
     if (state.speed > 0) state.phase = (state.phase + state.speed * dt / (2 * STRIDE)) % 1;
     const w = Math.max(0, Math.min(1, S.walk.x)), p = state.phase, face = Math.sign(S.face.to) || 1;
 
@@ -253,14 +253,14 @@ function update(dt, now) {
     // Targets, by what he is doing
     // walking: leaning a little into it, his soft body squashing a touch as each foot lands and stretching as he passes
     // over it, and swaying from side to side with his weight
-    let lean = w * 0.03 * face, sy = 1 - w * 0.022 * Math.cos(p * Math.PI * 4), rot = w * 0.012 * Math.sin(p * Math.PI * 2), drop = 0, closed = 0;
+    let lean = w * 0.02 * face, sy = 1 - w * 0.007 * Math.cos(p * Math.PI * 4), rot = w * 0.006 * Math.sin(p * Math.PI * 2), drop = 0, closed = 0;
     let near = { ...REST_HAND.near }, far = { ...REST_HAND.far };
     // the arms swing against the legs (each arm forward as the other leg goes forward), a little behind them, rising a
     // touch as they go forward
-    const swing = Math.sin(p * Math.PI * 2 - 0.5) * 48 * w;
+    const swing = Math.sin(p * Math.PI * 2 - 0.5) * 34 * w;
     near.u -= swing; far.u += swing;
     near.v -= Math.max(0, -swing) * 0.35; far.v -= Math.max(0, swing) * 0.35;
-    drop += w * (5 + 5 * Math.cos(p * Math.PI * 4));                   // the bob of each step
+    drop += w * (1.6 + 1.6 * Math.cos(p * Math.PI * 4));               // the bob of each step: barely, a calm walk
     // turned to us, his hands hang at each side of him
     const fr = frame().front;
     near = { u: mix(near.u, FRONT_HAND.near.u, fr), v: mix(near.v, FRONT_HAND.near.v, fr) };
@@ -349,7 +349,7 @@ function update(dt, now) {
         // speeding up and slowing down, lifted most early in the swing
         const e = (q - 0.5) / 0.5, ease = e * e * (3 - 2 * e);
         const along = (q < 0.5 ? STRIDE / 2 - STRIDE * (q / 0.5) : -STRIDE / 2 + STRIDE * ease) * (state.side ?? 1);
-        const lift = q >= 0.5 ? Math.sin(Math.PI * Math.pow(e, 0.8)) * 24 : 0;
+        const lift = q >= 0.5 ? Math.sin(Math.PI * Math.pow(e, 0.8)) * 16 : 0;
         const gait = { x: under + face * along, y: state.ground - lift };
         // his toes: up as the heel lands, down as the foot leaves the ground and through the swing
         const toe = q < 0.12 ? -9 * (1 - q / 0.12) : q > 0.4 && q < 0.5 ? 6 * (q - 0.4) / 0.1 : q >= 0.5 ? 6 * (1 - ease) + lift * 0.25 : 0;
