@@ -27,6 +27,7 @@
     import { createLayerStage } from '../../composables/useLayerStage.js';
     import { startStardust } from '../../composables/useStardust.js';
     import { play } from '../../composables/useSound.js';
+    import { createGhostHand, gesture, HINT_AFTER } from '../../composables/useGhostHand.js';
     import { sceneMilestone } from '../../analytics.js';
     import { chordFor } from '../../data/cardChords.js';
     import { chordColors } from '../../data/chordColors.js';
@@ -46,6 +47,7 @@
     const setSpotHit = (i) => (el) => { spotHits[i] = el; };
     let stageEl = null;
     let stage = null;
+    let hand = null;                        // the ghost hand: left alone 7 s, it holds still over a hidden one
     let parallax = null;
     let dust = null;
     let game = null;
@@ -302,6 +304,16 @@
         const left = hidden.filter((h) => !found.some((f) => f.spot === h));
         if (left.length) glint = { spot: left[Math.floor(Math.random() * left.length)], at: time };
         glintIn = idle > 12 ? 3.5 + Math.random() * 1.5 : 6 + Math.random() * 3;
+    };
+    // The ghost hand: left alone 7 s (and again 7 s after a win), it holds still over a hidden one, which glints, while
+    // the ring of attention fills round the fingertip: looking closely, there
+    const handHint = () => {
+        if (!hand?.due(HINT_AFTER, playing() && !hold)) return;
+        const left = hidden.filter((h) => !found.some((f) => f.spot === h));
+        if (!left.length) return;
+        const spot = left[Math.floor(Math.random() * left.length)];
+        glint = { spot, at: time };
+        hand.play(gesture.hold(() => spotOnScreen(spot), HOLD_FOR + 0.4));
     };
 
     // The particles of the game, all in px of the screen: the ring of attention, the glint, the flowers of light (and
@@ -636,6 +648,7 @@
         });
         winTick(t, dt);
         hint(dt);
+        handHint();
 
         // The particles that belong to a layer follow it
         const mid = stage.drift(L.planes[1].node.z), pair = stage.drift(L.pairNode.z), near = stage.drift(L.planes[2].node.z);
@@ -679,6 +692,7 @@
             stage,
             groups: [{ colors: [GLOW], dynamic: beauty, parallax: 0, drift: 0, twinkle: 0, reach: 0, look: 'hard', order: 2e6, bloom: true }],
         });
+        hand = createGhostHand(stage, { color: 0x143246, shade: 0xf7f8f1 });
         parallax = createParallax(root.value, frame);
         enter();
     };
@@ -688,6 +702,7 @@
     onBeforeUnmount(() => {
         gone = true;
         parallax?.destroy();
+        hand?.destroy();
         dust?.destroy();
         game?.destroy();
         stage?.destroy();

@@ -12,7 +12,7 @@
     // door the rulito is born over the chakana (`rulito`, `converge`) and the three come home: each turns into a light of
     // its colour that runs back along the lit way to the centre. The light is the rulito's stroke (useRooting.js): let go
     // before, its tail runs out after its head and the corridors go dark from the centre outwards; when the rulito is
-    // gone the three are back at their doors. Left alone a while, the centre calls (a ring and a glow: the hint).
+    // gone the three are back at their doors. Left alone 7 s, the ghost hand holds the centre (the hint).
     // What is alive: the light round the chakana breathes and its stippled edge trembles (particles), and now and then a
     // ring of light goes out from it through the labyrinth, as a call; the dots drift at two depths; Particular breathes
     // and rises a little on his breath, Aura floats and her tentacles sway (wind from the top), Vulpes breathes and every
@@ -29,6 +29,7 @@
     import { decodeCloud, sampleCloud, joinLight } from '../../composables/stippleCloud.js';
     import { createSparks } from '../../composables/useSparks.js';
     import { createRooting } from '../../composables/useRooting.js';
+    import { createGhostHand, gesture, HINT_AFTER } from '../../composables/useGhostHand.js';
     import { play } from '../../composables/useSound.js';
     import { sceneMilestone } from '../../analytics.js';
     import { CHAKRA_COLORS } from '../../data/chakraColors.js';
@@ -206,12 +207,11 @@
     const hexNum = (c) => parseInt(c.slice(1), 16);
     const COLOR_OF = { particular: hexNum(CHAKRA_COLORS[6].light), aura: hexNum(CHAKRA_COLORS[4].light), vulpes: hexNum(CHAKRA_COLORS[3].light) };
     const HOME = 2.2;                                    // s a being's light takes to come home
-    const HINT = 7;
     const sparks = createSparks(320);
     let glyph = { left: 0, top: 0, w: 1, h: 1 };
     let lit = { head: 0, tail: 0, full: false, pop: 0, named: 0, flare: 0 };
     let pressAt = -1;
-    let idleHint = 0;
+    let hand = null;                        // left alone 7 s, the ghost hand holds the centre
     const rooting = createRooting({
         grow: 5.5, linger: 3.6, eat: 3.2, notes: [],
         onComplete: (times) => {
@@ -260,9 +260,8 @@
     const hold = () => {
         if (reduced || !maze.cells) return;
         rooting.hold();
-        idleHint = 0;
     };
-    const letGo = () => { rooting.release(); idleHint = 0; };
+    const letGo = () => { rooting.release(); };
     const pressCentre = (event) => {
         event?.preventDefault?.();
         pressAt = lastT;
@@ -496,9 +495,8 @@
         }
         L.rulito.scale = 1 + 0.2 * lit.pop * lit.pop;
         stageEl?.style.setProperty('--name-glow', lit.named.toFixed(3));
-        // The hint: left alone, the centre calls
-        idleHint = rooting.held ? 0 : idleHint + dt;
-        if (idleHint > HINT && !lit.full && !reduced && ramp >= 1) { idleHint = 0; flare = Math.max(flare, 0.6); sendRing(); }
+        // The hint: left alone (not held, no light in the corridors), the ghost hand holds the centre
+        if (hand?.due(HINT_AFTER, !rooting.held && lit.head === 0 && !reduced && ramp >= 1)) hand.play(gesture.hold(centreHit.value, 2.4));
         for (let i = rings.length - 1; i >= 0; i--) {
             const ring = rings[i];
             ring.age += dt / 4.2;
@@ -602,6 +600,7 @@
             ],
         });
         if (reduced) dust.reveal();
+        hand = createGhostHand(stage, { color: 0x143246, shade: 0xf7f8f1 });   // navy: the cream hand does not read on the aqua and the light centre
         parallax = createParallax(root.value, frame);
         readMaze().catch((e) => console.warn('The labyrinth could not be read', e));
         if (import.meta.env.DEV) root.value.__game = { rooting, maze, BEINGS, get lit() { return lit; } };
@@ -616,6 +615,7 @@
         window.removeEventListener('pointerup', liftCentre);
         window.removeEventListener('pointercancel', liftCentre);
         parallax?.destroy();
+        hand?.destroy();
         dust?.destroy();
         stage?.destroy();
     });

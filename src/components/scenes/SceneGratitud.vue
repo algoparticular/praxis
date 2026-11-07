@@ -30,6 +30,7 @@
     import { decodeCloud, sampleCloud, joinLight } from '../../composables/stippleCloud.js';
     import { createSparks } from '../../composables/useSparks.js';
     import { createGiving, fill, rulitoBox } from '../../composables/useGiving.js';
+    import { createGhostHand, gesture, HINT_AFTER } from '../../composables/useGhostHand.js';
     import { play } from '../../composables/useSound.js';
     import { sceneMilestone } from '../../analytics.js';
     import Rulito from '../Rulito.vue';
@@ -324,12 +325,16 @@
     const sidChest = () => L.sid.toScreen(sx(B.sid[0] + B.sid[2] / 2), sy(B.sid[1] + B.sid[3] * 0.4));
     const spot = (g) => g.node().toScreen(sx(g.at[0]) + (g.sways ? palmSway(lastT) : 0), sy(g.at[1]));
     let shine = 0, shineGoal = 0, boost = 0, boatKick = 0;
+    // Left alone 7 s, the ghost hand (navy: the sky and the sea are light) touches one thing still to thank, and only
+    // that one glimmers as the finger presses on it (with reduced motion there is no hand: it only glimmers)
+    let hand = null;
     const giving = createGiving({
         count: THANKED.length,
         source: sidChest,
         target: (i) => spot(THANKED[i]),
         reduced,
         colors: THANKS,
+        hint: reduced ? null : { due: (wanted) => !!hand?.due(HINT_AFTER, wanted), lead: [gesture.TAP_LEAD] },
         on: {
             give: () => { touch.sid = Math.max(touch.sid, 0.5); play('give', { from: SID_PITCH }); },
             again: (i) => { burst(spot(THANKED[i]), 12, THANKS, 70); play('tap'); },
@@ -356,7 +361,10 @@
             full: () => { boost = 1; play('rulito'); },
             fade: () => { shineGoal = 0; },
             puff: (x, y, colors) => burst({ x, y }, 2, colors, 40),
-            hint: () => { touch.flare = Math.max(touch.flare, 0.3); },
+            // The hand goes to touch one thing still to thank (on its touch target, which follows it)
+            cue: (i) => hand?.play(gesture.tap(hits.value[i])),
+            // and only that one glimmers as it presses
+            hint: (i) => burst(spot(THANKED[i]), 8, THANKS, 50),
         },
     });
     const thank = (i, event) => {
@@ -641,6 +649,7 @@
             ],
         });
         if (reduced) dust.reveal();
+        hand = createGhostHand(stage, { color: 0x143246, shade: 0xf7f8f1 });
         parallax = createParallax(root.value, frame);
         enter();
     };
@@ -650,6 +659,7 @@
     onBeforeUnmount(() => {
         gone = true;
         parallax?.destroy();
+        hand?.destroy();
         dust?.destroy();
         stage?.destroy();
         stageEl?.style.removeProperty('--name-glow');

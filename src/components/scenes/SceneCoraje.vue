@@ -29,6 +29,7 @@
     import { startStardust } from '../../composables/useStardust.js';
     import { createSparks } from '../../composables/useSparks.js';
     import { createKindle, FIRE } from '../../composables/useKindle.js';
+    import { createGhostHand, gesture, HINT_AFTER } from '../../composables/useGhostHand.js';
     import { play } from '../../composables/useSound.js';
     import { sceneMilestone } from '../../analytics.js';
     import Rulito from '../Rulito.vue';
@@ -140,6 +141,7 @@
     let glyph = { left: 0, top: 0, w: 1, h: 1 };
     let W = 1, H = 1;
     let hint = 0;
+    let hand = null;                        // the ghost hand, showing the gesture
     let standing = 0;                       // 0..1: Kätus standing tall in his light while the moon is whole
     const sparks = createSparks(420);
 
@@ -238,11 +240,15 @@
             sparks.burst(s.x, s.y, { n: 1, colors: FIRE, speed: 20 + 40 * charge, life: 1.1, size: 2.5 + 2.5 * charge, spread: 10 });
         }
         // The hint, without words: still a while, sparks crackle on Kätus (rub him), or on fire his light beats (sling it)
-        if (!kindler.rubbing && !kindler.aiming && !win && kindler.mode !== 'flying' && kindler.idle > 7) {
+        const quiet = !kindler.rubbing && !kindler.aiming && !win && kindler.mode !== 'flying';
+        if (hand ? hand.due(HINT_AFTER, quiet) : quiet && kindler.idle > HINT_AFTER) {
             kindler.idle = 0;
             hint = 1;
             const s = headAt();
             sparks.burst(s.x, s.y, { n: 8, colors: FIRE, speed: 50, life: 0.9, size: 3.5, spread: 8 });
+            // and the ghost hand shows the gesture: cold, rubbing him; on fire, pulling back and letting go at the moon
+            if (kindler.mode === 'cold') hand?.play(gesture.rub(katusHit.value, Math.min(40, katusHit.value.offsetWidth * 0.3)));
+            else if (nearestShadow()) hand?.play(gesture.sling(katusHit.value, () => { const p = nearestShadow() ?? headAt(); return [p.x, p.y]; }));
         }
         hint = Math.max(0, hint - dt * 1.4);
         const flying = kindler.mode === 'flying';
@@ -564,6 +570,7 @@
             ],
         });
         if (reduced) dust.reveal();
+        hand = createGhostHand(stage);
         parallax = createParallax(root.value, frame);
         enter();
     };
@@ -573,6 +580,7 @@
     onBeforeUnmount(() => {
         gone = true;
         parallax?.destroy();
+        hand?.destroy();
         dust?.destroy();
         stage?.destroy();
         kindler.destroy();

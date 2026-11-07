@@ -12,7 +12,7 @@
     // major, and `converge`), the bud of the lotus and the little mushrooms flare and the name lights up; let go before,
     // the tail catches up and the blue closes in again (holding again picks it up). Only the sky opens: the blue the
     // card lays over the land is worked into its pictures (see below), so the land is lit by the warm light instead.
-    // Left alone a while, his heart beats strongly once (the hint). A quick touch on Sid flares his heart and strums the
+    // Left alone 7 s, the ghost hand holds Sid (the hint). A quick touch on Sid flares his heart and strums the
     // chord (`star`); on the lotus its bud flares and it rocks a little (`tap`).
     // The sky is not a picture: the card's yellow (the root's background) and the blue shapes, drawn in code from their
     // outlines (feScene.json `sky`), which the converter traced from layers 15 and 16. Those shapes are in Colour mode in
@@ -32,6 +32,7 @@
     import { createLayerStage } from '../../composables/useLayerStage.js';
     import { startStardust } from '../../composables/useStardust.js';
     import { createRooting } from '../../composables/useRooting.js';
+    import { createGhostHand, gesture, HINT_AFTER } from '../../composables/useGhostHand.js';
     import { play } from '../../composables/useSound.js';
     import { sceneMilestone } from '../../analytics.js';
     import Rulito from '../Rulito.vue';
@@ -165,13 +166,12 @@
 
     // ---- The game: held, his light grows and the sky opens round him
     const OPEN = 2300;                      // art px the clearing reaches, whole: past every corner of the card
-    const HINT = 7;
     let glyph = { left: 0, top: 0, w: 1, h: 1 };
     let lit = { head: 0, tail: 0, full: false, pop: 0, named: 0, flare: 0 };
     let level = 0;                          // how far the light has grown, 0..1 (the rulito's stroke, head - tail)
     const LOBES = 7;                        // the clearing's edge: discs round its rim, turning slowly, so it is a living blob
     let pressAt = -1;
-    let idleHint = 0;
+    let hand = null;                        // left alone 7 s, the ghost hand holds Sid
     const rooting = createRooting({
         grow: 4.4, linger: 3.4, eat: 3,
         onNote: (step) => play('kindle', { step }),
@@ -190,9 +190,8 @@
     const hold = () => {
         if (reduced) return;
         rooting.hold();
-        idleHint = 0;
     };
-    const letGo = () => { rooting.release(); idleHint = 0; };
+    const letGo = () => { rooting.release(); };
     const pressSid = (event) => {
         event?.preventDefault?.();
         pressAt = lastT;
@@ -507,8 +506,8 @@
         L.rulito.scale = 1 + 0.2 * lit.pop * lit.pop;
         stageEl?.style.setProperty('--name-glow', lit.named.toFixed(3));
         const held = rooting.held ? 1 : 0;
-        idleHint = held ? 0 : idleHint + dt;
-        if (idleHint > HINT && !lit.full && !reduced && ramp >= 1) { idleHint = 0; flare = Math.max(flare, 0.6); dust?.boost(4, 0.8); }
+        // The hint: left alone (not held, no light grown), the ghost hand holds Sid
+        if (hand?.due(HINT_AFTER, !held && lit.head === 0 && !reduced && ramp >= 1)) hand.play(gesture.hold(sidHit.value, 2.4));
 
         // ---- The lotus and its bud, the little mushrooms' lights
         budFlare = Math.max(0, budFlare - dt * 0.8);
@@ -622,6 +621,7 @@
             ],
         });
         if (reduced) dust.reveal();
+        hand = createGhostHand(stage, { color: 0x143246, shade: 0xf7f8f1 });   // navy: the cream hand does not read on the yellow sky
         parallax = createParallax(root.value, frame);
         if (import.meta.env.DEV) root.value.__game = { rooting, get lit() { return lit; } };
         enter();
@@ -635,6 +635,7 @@
         window.removeEventListener('pointerup', liftSid);
         window.removeEventListener('pointercancel', liftSid);
         parallax?.destroy();
+        hand?.destroy();
         dust?.destroy();
         stage?.destroy();
     });

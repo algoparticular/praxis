@@ -33,6 +33,7 @@
     import { decodeCloud, sampleCloud, joinLight } from '../../composables/stippleCloud.js';
     import { play } from '../../composables/useSound.js';
     import { createFlow, routeThrough } from '../../composables/useFlow.js';
+    import { createGhostHand, gesture, HINT_AFTER } from '../../composables/useGhostHand.js';
     import { sceneMilestone } from '../../analytics.js';
     import Rulito from '../Rulito.vue';
     import art from '../../composables/transformacionScene.json';
@@ -134,6 +135,7 @@
     let slid = false;
     let win = null;
     let wins = 0;
+    let hand = null;                        // the ghost hand, showing the gesture
     let swell = 0;                          // the sap swells where it has just taken in a sign
     const flow = createFlow({
         x: RX, y: RY, n: SAP.n,
@@ -328,6 +330,18 @@
     const measureTree = () => {
         const a = L.tree.toScreen(sx(0), sy(0)), b = L.tree.toScreen(sx(SIZE), sy(0));
         treeAt = { x: a.x, y: a.y, s: (b.x - a.x) / SIZE || 1 };
+    };
+    // The hint, without words: left alone HINT_AFTER s (not while it is accompanied, nor while the rulito lives), the
+    // ghost hand slides along the stretch of the way ahead of the sap's head, at its pace (as Khanti's)
+    const routeOnCanvas = (u, v) => [treeAt.x + u * treeAt.s, treeAt.y + v * treeAt.s];
+    const hintFlow = (t) => {
+        if (win) flow.idle = 0;
+        const wanted = !win && !flow.done && !keyHold && !pointer.down && flow.idle > 0.5 && cur.alpha > 0.9;
+        if (!hand?.due(HINT_AFTER, wanted)) return;
+        const first = flow.hintPath(undefined, routeOnCanvas, t + gesture.SLIDE_LEAD);
+        if (!first) return;
+        const again = flow.hintPath(undefined, routeOnCanvas, t + gesture.SLIDE_LEAD + first.dur + gesture.SLIDE_AGAIN);
+        hand.play([...gesture.slide(first, first.dur, { even: true }), ...(again ? gesture.slide(again, again.dur, { even: true }) : [])], { loops: 1 });
     };
     const toArt = (event) => {
         const box = root.value.getBoundingClientRect();
@@ -549,6 +563,7 @@
         // ---- Fluir: the sap, and the signs it takes in
         measureTree();
         if (!win) flow.step(dt, t, pointer, { key: keyHold });
+        hintFlow(t);
         if (pointer.down && flow.acc > 0.3) slid = true;
         runPhase += dt * 30 * (1.4 + 1.2 * Math.max(flow.acc, cur.light));
         const named = stepWin(dt, t);
@@ -644,6 +659,7 @@
         if (reduced) dust.reveal();
         ['pointerdown', 'pointermove', 'pointerup', 'pointercancel'].forEach((type) => root.value.addEventListener(type, track, { passive: true }));
         root.value.addEventListener('touchstart', onTouchStart, { passive: false });
+        hand = createGhostHand(stage, { color: 0x143246, shade: 0xf7f8f1 });   // navy: the cream hand does not read on the pink sky
         parallax = createParallax(root.value, frame);
         enter();
     };
@@ -656,6 +672,7 @@
         root.value?.removeEventListener('touchstart', onTouchStart);
         stageEl?.style.removeProperty('--name-glow');
         parallax?.destroy();
+        hand?.destroy();
         dust?.destroy();
         stage?.destroy();
     });

@@ -14,8 +14,9 @@
     // gone, and the leader beats bright on the next one, to show where it is. With the six lit the two beat as one, the
     // card's major seventh rings open (`converge`: it is a stable chord, nothing to resolve), their light gathers over them
     // and the rulito is born there, the card's name glowing; then it goes, the crowns go back to waiting and the follower
-    // drifts slowly back to its own breathing. Left alone AGAIN s, the leader sends each beat of one bar to the follower,
-    // which answers it, and nothing on the rest (the hint, with no words). The leader is not played: a touch on it only
+    // drifts slowly back to its own breathing. Left alone 7 s, the leader sends each beat of one bar to the follower,
+    // which answers it, and nothing on the rest, while the ghost hand taps the follower on those beats (the hint, with no
+    // words; navy, the sea is light). The leader is not played: a touch on it only
     // makes it shine, silent.
     // The scene is alive around it: the jellyfish rise a little with each stroke; their tentacles trail in the water (wind
     // in the shader, from the bell down); every LEAN s they lean towards each other for a moment, and now and then one
@@ -36,6 +37,7 @@
     import { startStardust } from '../../composables/useStardust.js';
     import { createSparks } from '../../composables/useSparks.js';
     import { play } from '../../composables/useSound.js';
+    import { createGhostHand, gesture, HINT_AFTER } from '../../composables/useGhostHand.js';
     import { sceneMilestone } from '../../analytics.js';
     import Rulito from '../Rulito.vue';
     import art from '../../composables/armoniaScene.json';
@@ -157,6 +159,22 @@
     let lastTouch = -Infinity;
     let hintAt = AGAIN + 3;
     let hintFrom = Infinity, hintUntil = -Infinity;
+    // The ghost hand: in the hint's bar it taps the follower on each beat (never on the rest), as Sila's: it goes there
+    // first and waits for each beat by the scene's own clock before it presses, so every press lands on its beat. Its
+    // touch is only seen: it plays nothing
+    let hand = null;
+    const showBeat = () => {
+        const target = hits.value[FOLLOWER];
+        if (!hand || !target) return;
+        const n0 = Math.round((hintFrom + 0.05) / BEAT);
+        const script = [{ go: target, dur: 0.7 }];
+        for (let n = n0; n < n0 + BAR.length; n++) {
+            if (!isBeat(n)) continue;
+            const when = n * BEAT;
+            script.push({ get wait() { return lastT >= when ? 0 : 1e6; } }, { down: true }, { wait: 0.16 }, { up: true });
+        }
+        hand.play([...script, { wait: 0.45 }], { loops: 1 });
+    };
     let missed = null;                      // the beat a touch out of time used up
     let spoken = null;                      // the beat a touch in time already answered
     let said = 0;                           // notes said in time: they climb the chord
@@ -607,12 +625,14 @@
                 }
             }
         }
-        // The hint starts at the top of a bar and lasts one bar
-        if (!win && !reduced && ramp > 0.9 && t > hintAt) {
+        // The hint starts at the top of a bar (far enough for the hand to get there first) and lasts one bar; with the
+        // hand, it comes when the hand is due (left alone 7 s, and again 7 s after a win)
+        if (!win && !reduced && ramp > 0.9 && (hand ? hand.due(HINT_AFTER, true) : t > hintAt)) {
             const bar = BAR.length * BEAT;
-            hintFrom = Math.ceil(t / bar) * bar - 0.05;
+            hintFrom = Math.ceil((t + gesture.TAP_LEAD) / bar) * bar - 0.05;
             hintUntil = hintFrom + bar;
             hintAt = hintUntil + AGAIN;
+            showBeat();
         }
         missed = missed !== null && missed < beatOf(t) - 1 ? null : missed;
         // After a touch out of time, the leader beats bright on its next beat: there is the beat
@@ -772,6 +792,7 @@
             ],
         });
         if (reduced) dust.reveal();
+        hand = createGhostHand(stage, { color: 0x143246, shade: 0xf7f8f1 });   // navy: the sea is a light green
         parallax = createParallax(root.value, frame);
         enter();
     };
@@ -779,6 +800,7 @@
     watch(() => props.active, enter);
     onBeforeUnmount(() => {
         gone = true;
+        hand?.destroy();
         parallax?.destroy();
         dust?.destroy();
         stage?.destroy();

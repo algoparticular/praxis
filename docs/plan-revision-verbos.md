@@ -130,6 +130,8 @@ Khanti es a la vez un ejemplo de la etapa 1 y una de las 18. Su mano se conecta 
 
 **Estado:**
 
+**La mano en todas (2 de noviembre, pedido de Juan Manuel):** antes de seguir con las revisiones, la pista con la mano fantasma se puso de una vez en las 14 cartas del 31/10 que no la tenían (Metta, Gratitud, Armonía, Comunicación, Honestidad, Aceptación, Transformación, Celebración, Confianza, Fe, Esperanza, Belleza, Coraje y Desafío), con el gesto de su verbo que pide cada paquete. Lo que dice cada paquete sobre la pista de esas cartas ya está hecho; el resto (rulitos, lo marcado y lo que Juan Manuel encuentre) sigue en la revisión de cada una. Falta probar las manos en un teléfono; a mirar con cuidado: la de Coraje, en parte sobre la luna clara, y la de Comunicación, chica sobre las cabezas claras de los seres.
+
 | Carta | Revisada |
 |---|---|
 | 8 Metta | no |
@@ -143,10 +145,10 @@ Khanti es a la vez un ejemplo de la etapa 1 y una de las 18. Su mano se conecta 
 | 14 Celebración | no |
 | 15 Ciclos | en revisión: lo que se suelta pasó a ser las plantas (falta probar en un teléfono) |
 | 28 Perdón | en revisión: pista y regla 4 hechas (falta probar en un teléfono) |
-| 16 Compromiso | no |
+| 16 Compromiso | en revisión: pista con la mano (`hold` sobre los seres), rulito sobre la cabeza del Sama grande el Sama grande ya no salta y estrellas fugaces reales en vez de las dibujadas (falta probar en un teléfono) |
 | 18 Confianza | no |
 | 23 Fe | no |
-| 30 Esperanza (con las formas de las constelaciones) | no |
+| 30 Esperanza (con las formas de las constelaciones) | en revisión: las constelaciones A, C y F ya están en la escena (falta probar en un teléfono); falta el rulito sobre Vulpes |
 | 13 Belleza | no |
 | 19 Coraje | no |
 | 21 Desafío | no |
@@ -254,8 +256,11 @@ Gesto de la mano: `hold` sobre lo que se sostiene. Motor común: `useRooting.js`
   - Rulito bien (`art.rulito`, en `L.boat`).
   - Regla 4: ya la cumple (al soltar, la cola alcanza a la cabeza; entero, se queda `LINGER` y se va).
   - Doc corregida en `docs/escenas.md` y `verbos-y-dinamicas.md` (`CHARGE` 1,6 + `HOLD` 3,4, `LINGER` 4, un `kindle` por tercio).
-- **16 Compromiso:**
-  - Pista: `hold` sobre los seres (hoy echa chispas al pie del camino).
+- **16 Compromiso:** (en revisión con Juan Manuel, 2 de noviembre)
+  - Pista: ✅ `hold` sobre los seres con la mano, a los 7 s, también después de ganar (antes echaba chispas al pie del camino y no se entendía qué hacer).
+  - Rulito: ✅ justo sobre la cabeza del Sama grande, entre los mechones (decidido: no arriba de las puntas del pelo), colgado de su grupo. Ya no usa la "z" del cielo ni el tope contra el borde.
+  - ✅ El Sama grande ya no salta con un toque (se veía el dibujo cortado bajo el casco): brilla y parpadea.
+  - ✅ Las tres líneas amarillas junto al bote (estrellas fugaces dibujadas) se sacaron; ahora cruzan la cúpula estrellas fugaces de verdad, en partículas, como en nuestros cielos.
   - **El rulito es el peor caso:** usa la "z" del cielo y, en el teléfono, queda pegado al borde derecho bajo el título (`SceneCompromiso.vue` ≈319-325). Va **sobre el Sama grande del bote** (decidido).
 - **18 Confianza:**
   - La pista actual (destello y un anillo) es igual al anillo que el fondo manda cada 7 s (`RING`), así que no se distingue. Hace falta `hold` sobre el centro.
@@ -403,7 +408,8 @@ Gestos de la mano: `drag` entre las dos luces del primer hilo que falta (Pañña
       - A: `aspect: 1`, `stars: [[0.05,0],[0.35,0.3],[0.65,0.3],[0.95,0],[0.85,0.55],[0.5,1],[0.15,0.55]]`, `links: loop(7)`.
       - C: `aspect: 0.6`, `stars: [[0,0.25],[0.12,0],[0.2,0.3],[0.62,0.32],[0.92,0],[0.6,1],[0.25,1]]`, `links: [[0,1],[1,2],[2,3],[3,4],[3,5],[2,6]]`.
       - F: `aspect: 1`, `stars: [[0.1,1],[0,0.45],[0.35,0],[0.9,0.15],[0.8,0.6],[0.45,0.5]]`, `links: [[0,1],[1,2],[2,3],[3,4],[4,5]]`.
-      - Los señuelos (2 por figura) y el `rest` (dónde se para detrás de Vulpes) se ajustan al probarlas en pantalla. Ninguna pasa de 7 hilos, así que `MAX_LINKS` queda igual.
+      - Los señuelos (2 por figura) y el `rest` (dónde se para detrás de Vulpes) se ajustan al probarlas en pantalla.
+    - ✅ **Hechas** (2 de noviembre): estaban decididas pero la escena seguía con las viejas. `FIGURES` tiene A (`head`), C (`walking`) y F (`tail`), con dos señuelos cada una lejos de sus hilos; cada ancestro se para detrás donde lo hacía el de antes. Falta probarlas en un teléfono. Ninguna pasa de 7 hilos, así que `MAX_LINKS` queda igual.
   - **Rulito:**
     - Hoy está en `HEAD_AT`, a mano, sobre el ancestro sentado: casi pegado a él, y los hilos de bajada lo cruzan (sin `threads.hole`).
     - La caja del JSON es la "z" del cielo.

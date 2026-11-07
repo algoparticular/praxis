@@ -18,8 +18,8 @@
     // phrase comes down. Left alone a long time (`WAKE`), a quiet bubble wakes again by itself.
     // Without words: on its own it sings with lights only, in silence (as every scene), the phrase drowned by the bubbles'
     // flashes; touching the jellyfish while voices are awake makes them all crowd in at once; left alone, an awake bubble
-    // swells and breathes (quiet me), and on the person's turn the eye and its glow breathe (touch here), and after `AGAIN`
-    // s the phrase comes down again.
+    // swells and breathes (quiet me) and the ghost hand taps it; on the person's turn the eye and its glow breathe (touch
+    // here), at 7 s the ghost hand taps the jellyfish in the phrase's rhythm, and then the phrase comes down again.
     // It is alive: the jellyfish swims in place, its bell squeezing now and then and its tentacles trailing and swaying
     // (wind, from the top), rising a little with each stroke and sinking back; its aura breathes with it. The bubbles bob
     // and wobble, the seaweeds, corals and anemones sway in the current, the specks of the water rise slowly and move out
@@ -39,6 +39,7 @@
     import { decodeCloud, sampleCloud, joinLight } from '../../composables/stippleCloud.js';
     import { createSparks } from '../../composables/useSparks.js';
     import { play } from '../../composables/useSound.js';
+    import { createGhostHand, gesture, HINT_AFTER } from '../../composables/useGhostHand.js';
     import { sceneMilestone } from '../../analytics.js';
     import Rulito from '../Rulito.vue';
     import art from '../../composables/honestidadScene.json';
@@ -184,6 +185,20 @@
     let squeeze = 0;                        // the bell squeezing on a touch in time
     let lost = 0;                           // the jellyfish dimmed for a moment after a touch out of time
     let beckon = 0;                         // the eye breathing on the person's turn (the hint)
+    // The ghost hand: left alone 7 s while voices are awake, it touches the one that swells (quiet me); on the person's
+    // turn, it touches the jellyfish in the phrase's rhythm (each tap after the one before by the phrase's own gap), and
+    // only once it has shown it does the phrase come down again. Its touches are only seen: they play nothing
+    let hand = null;
+    let handShown = false;
+    const showRhythm = () => {
+        if (!jellyHit.value) return;
+        const script = [{ go: jellyHit.value, dur: 0.7 }, { wait: 0.15 }];
+        phrase.beats.forEach((b, j) => {
+            if (j) script.push({ wait: Math.max(0, gapOf(j) - 0.16) });
+            script.push({ down: true }, { wait: 0.16 }, { up: true });
+        });
+        hand.play([...script, { wait: 0.6 }], { loops: 1 });
+    };
     let crowd = 0;                          // how much the voices cover the thread now
     let whole = 0;                          // the thread shining whole (the win)
     let beads = 0;                          // how much the beads show
@@ -605,12 +620,24 @@
             if (singing.next >= n && t >= singing.arrivals[n - 1] + 0.05) {
                 const clean = singing.clean;
                 singing = null;
-                if (clean && mode === 'sing') { mode = 'answer'; answerSince = t; got = 0; }
+                if (clean && mode === 'sing') { mode = 'answer'; answerSince = t; got = 0; handShown = false; }
             }
         }
         // The person's turn: too long for the next note is out of time too; left alone, the phrase comes down again
         if (mode === 'answer' && got > 0 && got < phrase.beats.length && clock() - prevTouch > gapOf(got) + tolOf(got)) miss();
-        if (mode === 'answer' && got === 0 && t - Math.max(lastTouch, answerSince) > AGAIN) { mode = 'sing'; singAt = t + 0.4; }
+        const waited = !hand || (handShown && !hand.playing);
+        if (mode === 'answer' && got === 0 && t - Math.max(lastTouch, answerSince) > AGAIN && waited) { mode = 'sing'; singAt = t + 0.4; }
+        // The ghost hand, left alone 7 s: a tap on the awake voice that swells, or on the person's turn the rhythm
+        // (one call to due(): asked twice in a frame, the one not wanted would reset the other's count)
+        const noisy = mode === 'noise' && !singing && awake().length > 0;
+        const turn = mode === 'answer' && got === 0 && !singing && !handShown;
+        if (hand?.due(HINT_AFTER, noisy || turn)) {
+            if (turn) { handShown = true; showRhythm(); }
+            else {
+                const el = bubbleHits.value[awake()[0].i];
+                if (el) hand.play(gesture.tap(el), { loops: 1 });
+            }
+        }
     };
 
     let frames = 0;
@@ -807,6 +834,7 @@
             ],
         });
         if (reduced) dust.reveal();
+        hand = createGhostHand(stage);
         parallax = createParallax(root.value, frame);
         enter();
     };
@@ -815,6 +843,7 @@
     watch(() => props.active, enter);
     onBeforeUnmount(() => {
         gone = true;
+        hand?.destroy();
         parallax?.destroy();
         dust?.destroy();
         stage?.destroy();
