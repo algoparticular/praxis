@@ -29,9 +29,11 @@ const STAND = 196;                            // his hips over the ground, stand
 const SIT = 52;                               // his hips over the ground, sitting with his legs crossed
 // In profile his hips are together in his middle (one leg behind the other), his arms come from the middle of him
 // too, the near one hanging over his belly and the far one behind him (unseen until it swings out); turned to us, his
-// hips, shoulders and hands are at each side of him (FRONT_ below)
-const HIP = { far: { u: 124, v: 516 }, near: { u: 136, v: 515 } };
-const FRONT_HIP = { far: { u: 103, v: 516 }, near: { u: 157, v: 514 } };
+// hips, shoulders and hands are at each side of him (FRONT_ below). Which is near and which far is as when one really
+// turns: facing us, to walk the way his face is (+u), he turns so that the side away from it comes to the front, so
+// turned to us his near arm and leg are on the side away from the way he faces
+const HIP = { far: { u: 134, v: 516 }, near: { u: 126, v: 515 } };
+const FRONT_HIP = { far: { u: 157, v: 514 }, near: { u: 103, v: 516 } };
 const SHOULDER = { far: { u: 100, v: 334 }, near: { u: 110, v: 334 } };   // towards his back, by the hatching
 const REST_HAND = { far: { u: 92, v: 524 }, near: { u: 116, v: 524 } };
 const hipsOf = (f) => ['far', 'near'].map((side) => ({ u: mix(HIP[side].u, FRONT_HIP[side].u, f.front), v: mix(HIP[side].v, FRONT_HIP[side].v, f.front) }));
@@ -39,8 +41,8 @@ const EYES = rig.eyes;
 // Turned to us: his eyes in the middle of his face, a shoulder at each side of the pinch of his waist and his hands
 // hanging at each side of his belly
 const FRONT_EYES = [[PIVOT.x - 17, 211, rig.eyes[0][2]], [PIVOT.x + 17, 211, rig.eyes[1][2]]];
-const FRONT_SHOULDER = { far: { u: PIVOT.x - 48, v: 322 }, near: { u: PIVOT.x + 48, v: 322 } };
-const FRONT_HAND = { far: { u: PIVOT.x - 132, v: 508 }, near: { u: PIVOT.x + 132, v: 508 } };   // a little away from his sides
+const FRONT_SHOULDER = { far: { u: PIVOT.x + 48, v: 322 }, near: { u: PIVOT.x - 48, v: 322 } };
+const FRONT_HAND = { far: { u: PIVOT.x + 132, v: 508 }, near: { u: PIVOT.x - 132, v: 508 } };   // a little away from his sides
 const mix = (a, b, t) => a + (b - a) * t;
 
 // The world round him (sidWorld.js): endless, in ink, taking its colour as he goes
@@ -272,6 +274,7 @@ function update(dt, now) {
     near = { u: mix(near.u, FRONT_HAND.near.u, fr), v: mix(near.v, FRONT_HAND.near.v, fr) };
     far = { u: mix(far.u, FRONT_HAND.far.u, fr), v: mix(far.v, FRONT_HAND.far.v, fr) };
 
+    const restNear = near, restFar = far;                                    // (the poses below put new targets)
     if (ui.sitting) {
         drop = STAND - SIT; closed = 1; lean = 0;
         near = { u: 248, v: 506 }; far = { u: 12, v: 506 };                // his hands on his knees
@@ -279,7 +282,8 @@ function update(dt, now) {
     if (name === 'wave') {
         // with the arm he started with, even if he has turned round since (then it is his far one)
         const hand = { u: 250 + Math.sin(t * 12) * 34, v: 215 + Math.cos(t * 12) * 10 }, far_ = state.action.arm === 'far';
-        if (far_) far = { u: 2 * PIVOT.x - hand.u, v: hand.v }; else near = hand;
+        // (the far arm waves ahead of him in profile, and on its own side turned to us, after the mirroring below)
+        if (far_) far = { u: fr > 0.5 ? 2 * PIVOT.x - hand.u : hand.u, v: hand.v }; else near = hand;
         lean = (far_ ? 0.035 : -0.035) * Math.min(1, t * 3); sy = 1.03;
     }
     if (name === 'stretch') {
@@ -304,6 +308,13 @@ function update(dt, now) {
     if (state.reach && name !== 'reach') state.reach = null;
     S.reach.to = state.reach ? 1 : 0;
 
+    // The poses above are written as in profile (his near hand on the side he faces); turned to us his near arm is
+    // on the other side, so they are mirrored (each hand to its own side)
+    if (fr > 0.5) {
+        if (near !== restNear) near = { u: 2 * PIVOT.x - near.u, v: near.v };
+        if (far !== restFar) far = { u: 2 * PIVOT.x - far.u, v: far.v };
+        if (name === 'wave') lean = -lean;
+    }
     S.lean.to = lean; S.sy.to = sy; S.rot.to = rot; S.drop.to = drop; S.closed.to = closed;
 
     // Where he looks: the finger if it moved lately, else a glance now and then, else ahead
@@ -482,8 +493,8 @@ function draw() {
     const legs = hipsOf(f).map((hip, i) => {
         const h = map(f, hip.u, hip.v), foot = state.feet[i] ?? { x: h.x, y: state.ground };
         // knees forward in profile; turned to us, a little out to their own side
-        const outward = (i ? 1 : -1) * face;
-        const toward = ui.sitting ? { x: (i ? 1 : -1) * face, y: -0.5 } : { x: mix(face, outward * 0.3, f.front), y: 0 };
+        const outward = (i ? -1 : 1) * face;                          // (turned to us, the near leg is on the far side)
+        const toward = ui.sitting ? { x: outward, y: -0.5 } : { x: mix(face, outward * 0.3, f.front), y: 0 };
         const ankle = { x: foot.x, y: foot.y - 6 };
         let { joint, end } = bend(h, ankle, LEG.thigh, LEG.shin, toward);
         if (ui.sitting) {
@@ -506,7 +517,7 @@ function draw() {
         const raised = hand.y < s.y;
         // each elbow to its own side (out from his body), or down when the hand is up
         // elbows back in profile, out to their own side turned to us; down when the hand is up
-        const out = (i ? 1 : -1) * face, back = mix(-face * 0.7, out, f.front);
+        const out = (i ? -1 : 1) * face, back = mix(-face * 0.7, out, f.front);
         const toward = raised ? { x: out * 0.5, y: 1 } : { x: back, y: 0.15 };
         return { s, ...bend(s, hand, ARM.upper, ARM.fore, toward) };
     });
