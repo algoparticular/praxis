@@ -254,30 +254,63 @@ function nearTo(i, id) {
     return false;
 }
 
-// His silhouette traced, for drawing his body in code (clean at any size): his left and right edge every ROWS px of
-// height, smoothed, from the top of his head to his bottom; and his hatching, a stroke at each of her little marks
+// His silhouette traced, for drawing his body in code (clean at any size): the cut-out is blurred a little (so no
+// pixel step or bump of the cut is traced), and his left and right edge are found to a fraction of a pixel every ROWS
+// px of height, then smoothed; his crown and his base are found the same way, so his head and his bottom are round.
+// And his hatching: each of her little marks, where it is and how long it is
 {
-    const ROWS = 2, left = [], right = [];
-    let top = -1, end = -1;
-    for (let y = 0; y < H; y++) {
-        let any = false;
-        for (let x = 0; x < W && !any; x++) any = body[(y * W + x) * 4 + 3] > 127;
-        if (any) { if (top < 0) top = y; end = y; }
+    const ROWS = 2, SIGMA = 3;
+    const mask = new Float32Array(N);
+    for (let i = 0; i < N; i++) mask[i] = body[i * 4 + 3] / 255;
+    const kernel = [];
+    for (let d = -3 * SIGMA; d <= 3 * SIGMA; d++) kernel.push(Math.exp(-(d * d) / (2 * SIGMA * SIGMA)));
+    const total = kernel.reduce((a, b) => a + b, 0), K = 3 * SIGMA;
+    const across = new Float32Array(N), soft = new Float32Array(N);
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+        let sum = 0;
+        for (let d = -K; d <= K; d++) { const X = Math.max(0, Math.min(W - 1, x + d)); sum += mask[y * W + X] * kernel[d + K]; }
+        across[y * W + x] = sum / total;
     }
-    for (let y = top; y <= end; y += ROWS) {
-        let a = -1, b = -1;
-        for (let x = 0; x < W; x++) if (body[(y * W + x) * 4 + 3] > 127) { if (a < 0) a = x; b = x; }
-        left.push(a); right.push(b + 1);
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+        let sum = 0;
+        for (let d = -K; d <= K; d++) { const Y = Math.max(0, Math.min(H - 1, y + d)); sum += across[Y * W + x] * kernel[d + K]; }
+        soft[y * W + x] = sum / total;
     }
-    const soften = (list) => list.map((_, i) => {
+    const at = (x, y) => soft[y * W + x];
+    // where a row crosses the edge (one half), to a fraction of a pixel, from the left and from the right
+    const edges = (y) => {
+        let a = null, b = null;
+        for (let x = 1; x < W; x++) if (at(x - 1, y) < 0.5 && at(x, y) >= 0.5) { a = x - 1 + (0.5 - at(x - 1, y)) / (at(x, y) - at(x - 1, y)); break; }
+        for (let x = W - 2; x >= 0; x--) if (at(x + 1, y) < 0.5 && at(x, y) >= 0.5) { b = x + (at(x, y) - 0.5) / (at(x, y) - at(x + 1, y)); break; }
+        return a == null || b == null ? null : [a, b];
+    };
+    // his crown and his base: the first and last rows inside him, to a fraction of a pixel, and their middle
+    const rowMax = (y) => { let m = 0, mx = 0; for (let x = 0; x < W; x++) if (at(x, y) > m) { m = at(x, y); mx = x; } return [m, mx]; };
+    let first = 0, last = H - 1;
+    while (rowMax(first)[0] < 0.5) first++;
+    while (rowMax(last)[0] < 0.5) last--;
+    const crownY = first - 1 + (0.5 - rowMax(first - 1)[0]) / (rowMax(first)[0] - rowMax(first - 1)[0]);
+    const baseY = last + (rowMax(last)[0] - 0.5) / (rowMax(last)[0] - rowMax(last + 1)[0]);
+    const top = first + 1, left = [], right = [];
+    for (let y = top; y <= last - 1; y += ROWS) { const e = edges(y); left.push(e[0]); right.push(e[1]); }
+    const smooth = (list) => list.map((_, i) => {
         let sum = 0, n = 0;
-        for (let d = -3; d <= 3; d++) { const j = i + d; if (j >= 0 && j < list.length) { sum += list[j]; n++; } }
+        for (let d = -4; d <= 4; d++) {
+            const j = i + d;
+            if (j < 0 || j >= list.length) continue;
+            const g = Math.exp(-(d * d) / 8);
+            sum += list[j] * g; n += g;
+        }
         return Math.round(sum / n * 10) / 10;
     });
-    scene.silhouette = { top, step: ROWS, left: soften(left), right: soften(right) };
-    // Her marks: the rows where a mark of ink reaches deeper in from his left edge than the outline does
+    const mid = (y) => { const e = edges(Math.round(y)); return e ? (e[0] + e[1]) / 2 : W / 2; };
+    scene.silhouette = { top, step: ROWS, left: smooth(left), right: smooth(right),
+        crown: [Math.round(mid(first + 2) * 10) / 10, Math.round(crownY * 10) / 10],
+        base: [Math.round(mid(last - 2) * 10) / 10, Math.round(baseY * 10) / 10] };
+    // Her marks: the rows where a mark of ink reaches deeper in from his left edge than the outline does; for each,
+    // its middle row and how far it reaches past the outline
     const marks = [];
-    let inMark = false, from = 0;
+    let inMark = false, from = 0, reach = 0;
     for (let y = top; y <= bottom; y++) {
         let a = -1;
         for (let x = 0; x < W; x++) if (body[(y * W + x) * 4 + 3] > 127) { a = x; break; }
@@ -287,11 +320,12 @@ function nearTo(i, id) {
             if ((body[i] + body[i + 1] + body[i + 2]) / 3 < 110) depth = x - a; else if (x - a > LINE) break;
         }
         const mark = depth > LINE + 3;
-        if (mark && !inMark) from = y;
-        if (!mark && inMark && y - from >= 2) marks.push(Math.round((from + y) / 2));
+        if (mark && !inMark) { from = y; reach = 0; }
+        if (mark) reach = Math.max(reach, depth - LINE);
+        if (!mark && inMark && y - from >= 2) marks.push([Math.round((from + y) / 2), reach]);
         inMark = mark;
     }
-    scene.hatching = marks.filter((y) => y > top + (bottom - top) * 0.55);        // on his belly only (not his head's thick line)
+    scene.hatching = marks.filter(([y]) => y > first + (bottom - first) * 0.55);  // on his belly only (not his head's thick line)
 }
 
 await writeFile(path.join(target, 'sid.json'), JSON.stringify(scene, null, 1) + '\n');

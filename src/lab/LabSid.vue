@@ -32,6 +32,12 @@ const SHOULDER = { far: { u: 92, v: 322 }, near: { u: 160, v: 318 } };
 // At rest his near arm hangs down the side of his belly, almost straight, and the far one behind him (unseen)
 const REST_HAND = { far: { u: 100, v: 500 }, near: { u: 216, v: 522 } };
 const EYES = rig.eyes;
+// Turned to us: his eyes in the middle of his face, a shoulder at each side of the pinch of his waist and his hands
+// hanging at each side of his belly
+const FRONT_EYES = [[PIVOT.x - 17, 211, rig.eyes[0][2]], [PIVOT.x + 17, 211, rig.eyes[1][2]]];
+const FRONT_SHOULDER = { far: { u: PIVOT.x - 44, v: 320 }, near: { u: PIVOT.x + 44, v: 320 } };
+const FRONT_HAND = { far: { u: PIVOT.x - 98, v: 522 }, near: { u: PIVOT.x + 98, v: 522 } };
+const mix = (a, b, t) => a + (b - a) * t;
 // The floor goes back into the distance: his depth d (0 in front .. DEPTH at the back) lifts his feet towards the
 // horizon and makes him smaller, towards the middle of the screen (a vanishing point)
 const DEPTH = 600;
@@ -53,6 +59,7 @@ const springs = {
     lookX: spring(0, 60, 12), lookY: spring(0, 60, 12),
     walk: spring(0, 18, 9),        // how much he is walking (0..1)
     reach: spring(0, 40, 11),      // how much his near hand goes to what he reaches for
+    front: spring(1, 45, 12),      // turned to us (still, or sitting) 1, or in profile (walking) 0
 };
 const hands = {                    // where his hands go, in his own px (they follow his body), or in the world
     far: { u: spring(REST_HAND.far.u, 70, 12), v: spring(REST_HAND.far.v, 70, 12) },
@@ -78,9 +85,13 @@ const state = {
 // --- His body as he is now: a point of the drawing (u, v) -> the world ---
 function frame() {
     const breath = state.breath;
+    // turned to us only with his body in code (the drawing is in profile)
+    const front = ui.body === 'code' ? Math.max(0, Math.min(1, springs.front.x)) : 0;
+    const turn = Math.abs(springs.face.x);
     return {
+        front,
         root: { x: state.x, y: state.ground - STAND + springs.drop.x - state.lift },
-        rot: springs.rot.x, face: Math.sign(springs.face.x || 1) * Math.max(0.12, Math.abs(springs.face.x)),
+        rot: springs.rot.x, face: Math.sign(springs.face.x || 1) * Math.max(0.12, turn + (1 - turn) * front),
         sy: springs.sy.x, sx: 1 / Math.sqrt(Math.max(0.5, springs.sy.x)), lean: springs.lean.x, breath,
     };
 }
@@ -198,10 +209,13 @@ function update(dt, now) {
         } else { mx = dx / left; mz = dd / left; }
     }
     const length = Math.hypot(mx, mz);
+    // still a moment, he turns to us; to walk he turns back to his profile first
+    state.still = length > 0 || state.reach ? 0 : (state.still ?? 0) + dt;
+    S.front.to = ui.sitting || state.still > 0.45 ? 1 : 0;
     if (length > 0 && !state.air) {
         mx /= length; mz /= length;
         if (Math.abs(mx) > 0.15) S.face.to = Math.sign(mx);
-        if (Math.abs(mx) <= 0.15 || Math.abs(S.face.x - Math.sign(mx)) < 0.3) {
+        if ((Math.abs(mx) <= 0.15 || Math.abs(S.face.x - Math.sign(mx)) < 0.3) && frame().front < 0.3) {
             walking = 1;
             state.speed = Math.min(state.speed + 300 * dt, 165, left * 3 + 20);
             state.x += mx * state.speed * dt;
@@ -235,6 +249,10 @@ function update(dt, now) {
     near.u += swing; far.u -= swing;
     near.v -= Math.max(0, swing) * 0.35; far.v -= Math.max(0, -swing) * 0.35;
     drop += w * (5 + 5 * Math.cos(p * Math.PI * 4));                   // the bob of each step
+    // turned to us, his hands hang at each side of him
+    const fr = frame().front;
+    near = { u: mix(near.u, FRONT_HAND.near.u, fr), v: mix(near.v, FRONT_HAND.near.v, fr) };
+    far = { u: mix(far.u, FRONT_HAND.far.u, fr), v: mix(far.v, FRONT_HAND.far.v, fr) };
 
     if (ui.sitting) {
         drop = STAND - SIT; closed = 1; lean = 0;
@@ -311,7 +329,7 @@ function update(dt, now) {
         state.toes[i] = (state.toes[i] ?? 0) + (toe * w - (state.toes[i] ?? 0)) * Math.min(1, dt * 20);
         let foot = state.feet[i] ?? rest;
         if (state.air) foot = { x: h.x + face * 14, y: h.y + STAND * 0.8 };
-        else if (w > 0.02) {
+        else if (walking) {
             foot = { x: foot.x + (gait.x - foot.x) * Math.min(1, w * 1.2), y: foot.y + (gait.y - foot.y) * Math.min(1, w * 1.2) };
             state.steps[i] = null;
         } else {
@@ -354,11 +372,15 @@ function bodyCanvas(f) {
 // bent with him point by point), and a little stroke at each of her hatching marks
 const LINE_W = 19, FILL = `rgb(${rig.fill.join(',')})`;
 function codeBody(c, f) {
-    const S = rig.silhouette, at = (u, v) => local(f, u, v);
+    // turned to us his silhouette is the same widths, row by row, set straight about his middle
+    const S0 = rig.silhouette, fr = f.front;
+    const S = { ...S0, left: S0.left.map((l, i) => mix(l, PIVOT.x - (S0.right[i] - l) / 2, fr)),
+        right: S0.right.map((r, i) => mix(r, PIVOT.x + (r - S0.left[i]) / 2, fr)) };
+    const at = (u, v) => local(f, u, v);
     const vOf = (i) => S.top + i * S.step;
     // (round at the crown and at the bottom: the path goes through a point just past each, not along a flat row)
     const last = S.left.length - 1;
-    const crown = at((S.left[0] + S.right[0]) / 2, S.top - 3), base = at((S.left[last] + S.right[last]) / 2, vOf(last) + 3);
+    const crown = at(mix(S.crown[0], PIVOT.x, fr), S.crown[1]), base = at(mix(S.base[0], PIVOT.x, fr), S.base[1]);
     const ring = [crown];
     for (let i = 0; i <= last; i++) ring.push(at(S.right[i], vOf(i)));
     ring.push(base);
@@ -374,12 +396,21 @@ function codeBody(c, f) {
     c.save();
     c.clip();
     c.strokeStyle = INK; c.lineWidth = LINE_W * 2; c.lineJoin = 'round'; c.stroke();
-    // the hatching: from inside his outline, a short stroke in towards his middle
-    c.lineCap = 'round'; c.lineWidth = 6.5;
-    for (const v of rig.hatching) {
+    // the hatching: each of her marks as a stroke of a pen, wide where it leaves his outline and running to a fine
+    // point towards his middle, bending a little downwards, as long as she drew it
+    c.fillStyle = INK;
+    for (const [v, long] of rig.hatching) {
         const i = Math.max(0, Math.min(S.left.length - 1, Math.round((v - S.top) / S.step))), u = S.left[i];
-        const a = at(u + LINE_W - 4, v - 1), b = at(u + LINE_W + 13, v + 1);
-        c.beginPath(); c.moveTo(a.x, a.y); c.lineTo(b.x, b.y); c.stroke();
+        const base = u + LINE_W - 6, tip = u + LINE_W + long + 2, half = 3.6;
+        const p0 = at(base, v - half), p1 = at(base, v + half);
+        const c0 = at(base + (tip - base) * 0.55, v - half * 0.55), c1 = at(base + (tip - base) * 0.55, v + half * 0.9);
+        const end = at(tip, v + 2.2);
+        c.beginPath();
+        c.moveTo(p0.x, p0.y);
+        c.quadraticCurveTo(c0.x, c0.y, end.x, end.y);
+        c.quadraticCurveTo(c1.x, c1.y, p1.x, p1.y);
+        c.closePath();
+        c.fill();
     }
     c.restore();
 }
@@ -422,7 +453,9 @@ function draw() {
     // Legs
     const legs = [HIP.far, HIP.near].map((hip, i) => {
         const h = map(f, hip.u, hip.v), foot = state.feet[i] ?? { x: h.x, y: state.ground };
-        const toward = ui.sitting ? { x: (i ? 1 : -1) * face, y: -0.5 } : { x: face, y: 0 };      // sitting: knees out
+        // knees forward in profile; turned to us, a little out to their own side
+        const outward = Math.sign(hip.u - PIVOT.x) * face;
+        const toward = ui.sitting ? { x: (i ? 1 : -1) * face, y: -0.5 } : { x: mix(face, outward * 0.3, f.front), y: 0 };
         const ankle = { x: foot.x, y: foot.y - 6 };
         let { joint, end } = bend(h, ankle, LEG.thigh, LEG.shin, toward);
         if (ui.sitting) {
@@ -432,12 +465,13 @@ function draw() {
             joint = { x: joint.x + (knee.x - joint.x) * m, y: joint.y + (knee.y - joint.y) * m };
             end = { x: end.x + (under.x - end.x) * m, y: end.y + (under.y - end.y) * m };
         }
-        const toes = ui.sitting ? Math.sign(end.x - joint.x) : face;
+        // his toes: ahead in profile; turned to us, each a little out to its own side
+        const toes = ui.sitting ? Math.sign(end.x - joint.x) : mix(face, outward * 0.75, f.front);
         return { h, joint, end, toe: { x: end.x + toes * LEG.foot, y: end.y + 2 + (ui.sitting ? 0 : state.toes[i]) } };
     });
     // Arms (in the world: shoulders on his body, hands where they are going, or reaching)
     const arms = ['far', 'near'].map((side, i) => {
-        const s = map(f, SHOULDER[side].u, SHOULDER[side].v);
+        const s = map(f, mix(SHOULDER[side].u, FRONT_SHOULDER[side].u, f.front), mix(SHOULDER[side].v, FRONT_SHOULDER[side].v, f.front));
         let hand = map(f, hands[side].u.x, hands[side].v.x);
         const r = springs.reach.x;
         if (side === 'near' && state.reached && r > 0.001) hand = { x: hand.x + (state.reached.x - hand.x) * r, y: hand.y + (state.reached.y - hand.y) * r };
@@ -467,18 +501,19 @@ function draw() {
     else c.drawImage(bodyCanvas(f), -BODY.x, -BODY.y);
     // His eyes: looking, blinking, closed
     const closed = Math.max(springs.closed.x, state.blink > 0 ? 1 : 0);
-    for (const [u, v, r] of EYES) {
+    EYES.forEach(([pu, pv, r], e) => {
+        const u = mix(pu, FRONT_EYES[e][0], f.front), v = mix(pv, FRONT_EYES[e][1], f.front);
         const at = local(f, u + springs.lookX.x * 7, v + springs.lookY.x * 6);
         c.fillStyle = INK; c.strokeStyle = INK;
         if (closed > 0.6 && springs.closed.x > 0.5) {         // closed, as she draws them: a little arc
             // wide, shallow arcs, a little apart, as she draws them (Upekkha)
-            const R = r * 2.6, apart = (u - (EYES[0][0] + EYES[1][0]) / 2) * 0.45;
+            const R = r * 2.6, apart = (e ? 1 : -1) * 7.5;
             c.lineWidth = 6.5; c.lineCap = 'round';
             c.beginPath(); c.arc(at.x + apart, at.y - R * 0.86, R, Math.PI * 0.3, Math.PI * 0.7); c.stroke();
         } else {
             c.beginPath(); c.ellipse(at.x, at.y, r * 0.95, r * (closed > 0.6 ? 0.18 : 0.95), 0, 0, Math.PI * 2); c.fill();
         }
-    }
+    });
     c.restore();
 
     if (ui.sitting) drawLegs();
@@ -508,6 +543,9 @@ function loop(now) {
     update(dt, now);
     draw();
 }
+
+// (for trying him out from the browser's console)
+if (typeof window !== 'undefined') window.__sid = { state, springs, ui };
 
 onMounted(async () => {
     ui.touch = window.matchMedia?.('(pointer: coarse)').matches ?? false;
