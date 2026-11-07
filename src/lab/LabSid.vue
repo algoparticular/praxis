@@ -12,7 +12,7 @@ import leg0Url from './sid/leg0.webp';
 import leg1Url from './sid/leg1.webp';
 import armUrl from './sid/arm.webp';
 
-const ui = reactive({ limbs: 'code', bones: false, slow: false, sitting: false });
+const ui = reactive({ limbs: 'code', bones: false, slow: false, sitting: false, touch: false, menu: false });
 const canvas = ref(null);
 
 // --- The rig, in px of the source drawing (258 x 686): he faces +x (his eyes are on that side) ---
@@ -30,6 +30,11 @@ const HIP = { far: { u: 103, v: 516 }, near: { u: 157, v: 514 } };
 const SHOULDER = { far: { u: 76, v: 322 }, near: { u: 152, v: 322 } };
 const REST_HAND = { far: { u: 62, v: 486 }, near: { u: 176, v: 486 } };
 const EYES = rig.eyes;
+// The floor goes back into the distance: his depth d (0 in front .. DEPTH at the back) lifts his feet towards the
+// horizon and makes him smaller, towards the middle of the screen (a vanishing point)
+const DEPTH = 600;
+const FAR = 0.55;                             // his size at the back
+const scaleAt = (d) => 1 - (1 - FAR) * d / DEPTH;
 
 const load = (url) => new Promise((resolve) => { const i = new Image(); i.onload = () => resolve(i); i.src = url; });
 
@@ -54,11 +59,14 @@ const hands = {                    // where his hands go, in his own px (they fo
 
 const state = {
     x: 0, ground: 0,               // his hips over the ground, in world px (= px of the source, scaled k to the screen)
+    d: 0,                          // how far back on the floor he is (0..DEPTH)
+    keys: { left: false, right: false, up: false, down: false },
     lift: 0, vy: 0, air: false,    // a jump
     target: null, speed: 0, phase: 0,
     action: null,                  // { name, t, dur, ... }
     breath: 0, blink: 0, nextBlink: 2,
-    pointer: null, pointerAt: 0, glance: null, nextGlance: 3,
+    pointer: null, pointerAt: 0,   // the pointer on the screen (px / k)
+    glance: null, nextGlance: 3,
     feet: [null, null], steps: [null, null],
     reach: null,                   // a world point his near hand goes to
     reached: null,                 // the last one (his hand comes back from it)
@@ -101,14 +109,21 @@ function bend(a, target, l1, l2, toward) {
 
 // --- What he does ---
 const act = (name, dur, extra = {}) => { state.action = { name, t: 0, dur, ...extra }; };
-function walkTo(x) { state.target = x; state.reach = null; if (ui.sitting) sit(false); }
+function walkTo(x, d = state.d) { state.target = { x, d }; state.reach = null; if (ui.sitting) sit(false); }
 function wave() { if (!ui.sitting) act('wave', 2.6); }
 function jump() { if (!ui.sitting && !state.air) act('jump', 1.4); }
 function stretch() { if (!ui.sitting) act('stretch', 2.6); }
 function sit(on = !ui.sitting) { ui.sitting = on; state.target = null; state.action = null; }
 function walkAcross() { const w = view.w / view.k; walkTo(state.x < w / 2 ? w * 0.78 : w * 0.22); }
 
-const view = { w: 1, h: 1, k: 1, dpr: 1 };
+// Where a point of the screen is in his own world, at his depth (his world is scaled about the vanishing point)
+const groundAt = (d) => state.ground - d / DEPTH * view.floor;
+function toSid(p, d = state.d) {
+    const s = scaleAt(d), x0 = view.w / view.k / 2;
+    return { x: x0 + (p.x - x0) / s, y: state.ground + (p.y - groundAt(d)) / s };
+}
+
+const view = { w: 1, h: 1, k: 1, dpr: 1, floor: 1 };
 const images = {};
 let raf = 0, last = 0;
 
@@ -118,9 +133,11 @@ function resize() {
     view.w = el.clientWidth; view.h = el.clientHeight;
     el.width = view.w * view.dpr; el.height = view.h * view.dpr;
     // He is about half the height of the screen
-    view.k = Math.min(view.h * 0.62 / (TALL + STAND), view.w * 0.9 / 420);
+    // (on a phone the floor ends higher, so his feet are never under the pad)
+    view.k = Math.min(view.h * (ui.touch ? 0.5 : 0.62) / (TALL + STAND), view.w * 0.9 / 420);
     const was = state.ground;
-    state.ground = (view.h * 0.8) / view.k;
+    state.ground = (view.h * (ui.touch ? 0.68 : 0.8)) / view.k;
+    view.floor = (view.h * (ui.touch ? 0.2 : 0.26)) / view.k;     // from the front of the floor to the horizon
     if (!was) state.x = view.w / view.k / 2;
 }
 
@@ -130,15 +147,34 @@ function pointerTo(e) {
 }
 function onMove(e) { state.pointer = pointerTo(e); state.pointerAt = performance.now(); }
 function onDown(e) {
-    const p = pointerTo(e);
-    state.pointer = p; state.pointerAt = performance.now();
-    if (p.y > state.ground - 60) { walkTo(p.x); return; }
+    const screen = pointerTo(e);
+    state.pointer = screen; state.pointerAt = performance.now();
+    // On the floor: he walks there, to that depth too
+    if (screen.y > groundAt(DEPTH) + 10) {
+        const d = Math.max(0, Math.min(DEPTH, (state.ground - screen.y) / view.floor * DEPTH));
+        walkTo(toSid(screen, d).x, d);
+        return;
+    }
     // In the air: he reaches for it (walking near it first if it is far)
     if (ui.sitting) sit(false);
-    const dx = p.x - state.x;
-    if (Math.abs(dx) > 150) { state.target = p.x - Math.sign(dx) * 105; state.queue = p; }
+    const p = toSid(screen), dx = p.x - state.x;
+    if (Math.abs(dx) > 150) { state.target = { x: p.x - Math.sign(dx) * 105, d: state.d }; state.queue = p; }
     else reachFor(p);
 }
+
+// The keys: arrows or WASD walk him over the floor, the space bar sits him in lotus (and stands him up)
+const KEYS = { ArrowLeft: 'left', a: 'left', ArrowRight: 'right', d: 'right', ArrowUp: 'up', w: 'up', ArrowDown: 'down', s: 'down' };
+function press(key, on) {
+    state.keys[key] = on;
+    if (on) { state.target = null; state.queue = null; if (ui.sitting) sit(false); }
+}
+function onKey(e) {
+    if (e.target?.closest?.('button') && e.key === ' ') e.target.blur();
+    const key = KEYS[e.key.length === 1 ? e.key.toLowerCase() : e.key];
+    if (key) { e.preventDefault(); if (e.type === 'keydown' && !e.repeat) press(key, true); if (e.type === 'keyup') press(key, false); return; }
+    if (e.key === ' ' || e.code === 'Space') { e.preventDefault(); if (e.type === 'keydown' && !e.repeat) sit(); }
+}
+function release() { for (const key of Object.keys(state.keys)) state.keys[key] = false; }
 function reachFor(p) { springs.face.to = Math.sign(p.x - state.x) || springs.face.to; state.reach = p; state.reached = p; act('reach', 2.6); }
 
 // --- The loop ---
@@ -147,23 +183,34 @@ function update(dt, now) {
     if (a) { a.t += dt; if (a.t >= a.dur) state.action = null; }
     const name = state.action?.name, t = state.action?.t ?? 0;
 
-    // Walking: towards the target, turning first
-    let walking = 0;
-    if (state.target != null && !state.air) {
-        const dx = state.target - state.x, dir = Math.sign(dx);
-        if (Math.abs(dx) < 4) {
+    // Walking over the floor: with the keys (or the pad), or towards a target; turning first when he goes sideways
+    let walking = 0, mx = 0, mz = 0, left = Infinity;
+    const k = state.keys;
+    if (k.left || k.right || k.up || k.down) { mx = (k.right ? 1 : 0) - (k.left ? 1 : 0); mz = (k.up ? 1 : 0) - (k.down ? 1 : 0); }
+    else if (state.target) {
+        const dx = state.target.x - state.x, dd = state.target.d - state.d;
+        left = Math.hypot(dx, dd);
+        if (left < 4) {
             state.target = null;
             if (state.queue) { reachFor(state.queue); state.queue = null; }
-        } else {
-            S.face.to = dir;
-            if (Math.abs(S.face.x - dir) < 0.3) {
-                walking = 1;
-                state.speed = Math.min(state.speed + 380 * dt, 185, Math.abs(dx) * 3 + 20);
-                state.x += dir * state.speed * dt;
-            }
+        } else { mx = dx / left; mz = dd / left; }
+    }
+    const length = Math.hypot(mx, mz);
+    if (length > 0 && !state.air) {
+        mx /= length; mz /= length;
+        if (Math.abs(mx) > 0.15) S.face.to = Math.sign(mx);
+        if (Math.abs(mx) <= 0.15 || Math.abs(S.face.x - Math.sign(mx)) < 0.3) {
+            walking = 1;
+            state.speed = Math.min(state.speed + 380 * dt, 185, left * 3 + 20);
+            state.x += mx * state.speed * dt;
+            state.d = Math.max(0, Math.min(DEPTH, state.d + mz * state.speed * dt));
         }
     }
     if (!walking) state.speed = 0;
+    state.side = Math.abs(mx);                                            // how much of his walk is sideways
+    // He stays on the screen
+    const half = (view.w / view.k / 2 - 60) / scaleAt(state.d), x0 = view.w / view.k / 2;
+    state.x = Math.max(x0 - half, Math.min(x0 + half, state.x));
     S.walk.to = walking;
     const STRIDE = 118;
     if (state.speed > 0) state.phase = (state.phase + state.speed * dt / (2 * STRIDE)) % 1;
@@ -219,7 +266,7 @@ function update(dt, now) {
     const f0 = frame(), head = map(f0, 150, 200);
     let look = null;
     if (state.reach) look = state.reach;
-    else if (state.pointer && now - state.pointerAt < 2500) look = state.pointer;
+    else if (state.pointer && now - state.pointerAt < 2500) look = toSid(state.pointer);
     else {
         state.nextGlance -= dt;
         if (state.nextGlance <= 0) { state.glance = Math.random() < 0.4 ? null : { x: head.x + (Math.random() - 0.5) * 600, y: head.y + (Math.random() - 0.6) * 300 }; state.nextGlance = 1.5 + Math.random() * 3; }
@@ -244,7 +291,8 @@ function update(dt, now) {
         let rest = { x: h.x + face * (i ? 4 : -4), y: state.ground };
         if (ui.sitting) rest = { x: f.root.x + face * (i ? -46 : 46), y: state.ground - 8 };   // crossed
         const q = (p + i * 0.5) % 1;
-        const along = q < 0.5 ? STRIDE / 2 - STRIDE * (q / 0.5) : -STRIDE / 2 + STRIDE * ((q - 0.5) / 0.5);
+        // (going back or forth, his steps are in place: only the sideways part of his walk carries his feet along)
+        const along = (q < 0.5 ? STRIDE / 2 - STRIDE * (q / 0.5) : -STRIDE / 2 + STRIDE * ((q - 0.5) / 0.5)) * (state.side ?? 1);
         const gait = { x: f.root.x + (h.x - f.root.x) + face * along, y: state.ground - (q >= 0.5 ? Math.sin((q - 0.5) / 0.5 * Math.PI) * 38 : 0) };
         let foot = state.feet[i] ?? rest;
         if (state.air) foot = { x: h.x + face * 14, y: h.y + STAND * 0.8 };
@@ -274,9 +322,11 @@ function draw() {
     const f = frame(), face = Math.sign(f.face);
     const W = view.w / view.k;
 
-    // The ground and his shadow
+    // The floor, back to the horizon, and him on it at his depth (smaller and nearer the middle the farther back)
     c.fillStyle = '#E9EDD8';
-    c.fillRect(0, state.ground - 4, W, view.h / view.k);
+    c.fillRect(0, groundAt(DEPTH) - 4, W, view.h / view.k);
+    const depth = scaleAt(state.d), x0 = W / 2;
+    c.translate(x0, groundAt(state.d)); c.scale(depth, depth); c.translate(-x0, -state.ground);
     c.fillStyle = 'rgba(20, 50, 70, 0.10)';
     c.beginPath();
     c.ellipse(f.root.x, state.ground + 4, 70 * (1 - Math.min(0.5, state.lift / 400)), 9, 0, 0, Math.PI * 2);
@@ -384,25 +434,37 @@ function loop(now) {
 }
 
 onMounted(async () => {
+    ui.touch = window.matchMedia?.('(pointer: coarse)').matches ?? false;
+    window.addEventListener('keydown', onKey);
+    window.addEventListener('keyup', onKey);
+    window.addEventListener('blur', release);
     const [body, leg0, leg1, arm] = await Promise.all([bodyUrl, leg0Url, leg1Url, armUrl].map(load));
     Object.assign(images, { body, leg0, leg1, arm });
     resize();
     window.addEventListener('resize', resize);
     raf = requestAnimationFrame(loop);
 });
-onBeforeUnmount(() => { cancelAnimationFrame(raf); window.removeEventListener('resize', resize); });
+onBeforeUnmount(() => {
+    cancelAnimationFrame(raf);
+    window.removeEventListener('resize', resize);
+    window.removeEventListener('keydown', onKey);
+    window.removeEventListener('keyup', onKey);
+    window.removeEventListener('blur', release);
+});
 </script>
 
 <template>
     <div class="lab">
         <canvas ref="canvas" @pointermove="onMove" @pointerdown="onDown"></canvas>
-        <p class="hint">Toca el suelo y camina hasta ahí. Toca el aire y lo alcanza con la mano. Te sigue con la mirada.</p>
-        <div class="panel">
+        <p v-if="ui.touch" class="hint">Muévelo con las flechas (o toca el suelo). Loto lo sienta. Toca el aire y lo alcanza con la mano.</p>
+        <p v-else class="hint">Flechas o WASD: camina por el espacio. Barra espaciadora: se sienta en loto. Toca el suelo o el aire.</p>
+        <button v-if="ui.touch" class="more" :class="{ on: ui.menu }" @click="ui.menu = !ui.menu">Pruebas</button>
+        <div v-if="!ui.touch || ui.menu" class="panel">
             <button @click="walkAcross">Caminar</button>
             <button @click="wave">Saludar</button>
             <button @click="jump">Saltar</button>
             <button @click="stretch">Estirarse</button>
-            <button :class="{ on: ui.sitting }" @click="sit()">Meditar</button>
+            <button :class="{ on: ui.sitting }" @click="sit()">Loto</button>
             <span class="sep"></span>
             <button :class="{ on: ui.limbs === 'code' }" @click="ui.limbs = 'code'">Trazos en código</button>
             <button :class="{ on: ui.limbs === 'pieces' }" @click="ui.limbs = 'pieces'">Piezas dibujadas</button>
@@ -410,6 +472,13 @@ onBeforeUnmount(() => { cancelAnimationFrame(raf); window.removeEventListener('r
             <button :class="{ on: ui.bones }" @click="ui.bones = !ui.bones">Esqueleto</button>
             <button :class="{ on: ui.slow }" @click="ui.slow = !ui.slow">Lento</button>
         </div>
+        <!-- On a phone: a pad to walk him (held down) and a button for the lotus -->
+        <div v-if="ui.touch" class="pad">
+            <button v-for="[key, arrow] in [['up', '▲'], ['left', '◀'], ['right', '▶'], ['down', '▼']]" :key="key" :class="key"
+                @pointerdown.prevent="press(key, true)" @pointerup="press(key, false)" @pointercancel="press(key, false)"
+                @pointerleave="press(key, false)" @contextmenu.prevent>{{ arrow }}</button>
+        </div>
+        <button v-if="ui.touch" class="lotus" :class="{ on: ui.sitting }" @click="sit()">Loto</button>
     </div>
 </template>
 
@@ -434,6 +503,7 @@ canvas {
     right: 16px;
     margin: 0;
     font-size: 15px;
+    color: #143246;
     opacity: 0.7;
     pointer-events: none;
 }
@@ -441,7 +511,7 @@ canvas {
     position: absolute;
     left: 16px;
     right: 16px;
-    bottom: 16px;
+    top: 44px;
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
@@ -463,5 +533,64 @@ canvas {
 }
 .sep {
     width: 12px;
+}
+.more {
+    position: absolute;
+    right: 16px;
+    top: 44px;
+    font: inherit;
+    font-size: 12px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1.5px solid #143246;
+    background: #F7F8F1;
+    color: #143246;
+}
+.more.on { background: #143246; color: #F7F8F1; }
+.pad {
+    position: absolute;
+    left: 16px;
+    bottom: 16px;
+    display: grid;
+    grid-template-columns: repeat(3, 52px);
+    grid-template-rows: repeat(3, 52px);
+    gap: 4px;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: none;
+}
+.pad button, .lotus {
+    font: inherit;
+    border: 1.5px solid #143246;
+    background: rgba(247, 248, 241, 0.85);
+    color: #143246;
+    border-radius: 14px;
+    font-size: 18px;
+    padding: 0;
+    touch-action: none;
+    -webkit-tap-highlight-color: transparent;
+}
+.pad button:active, .lotus.on {
+    background: #143246;
+    color: #F7F8F1;
+}
+.pad .up { grid-area: 1 / 2; }
+.pad .left { grid-area: 2 / 1; }
+.pad .right { grid-area: 2 / 3; }
+.pad .down { grid-area: 3 / 2; }
+.lotus {
+    position: absolute;
+    right: 16px;
+    bottom: 40px;
+    width: 84px;
+    height: 84px;
+    border-radius: 50%;
+    font-size: 16px;
+}
+@media (max-width: 600px) {
+    .hint { font-size: 13px; right: 110px; }
+    .panel { gap: 6px; top: 80px; }
+    .panel button { font-size: 12px; padding: 6px 10px; }
+    .sep { display: none; }
 }
 </style>

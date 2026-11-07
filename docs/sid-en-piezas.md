@@ -11,7 +11,7 @@ Sid (que también es Particular) hoy llega a cada escena como un dibujo entero: 
 - **Brazos y piernas** se pueden ver de dos maneras, con los botones de abajo:
   - *Trazos en código*: una línea con su tinta y su grosor, que se dobla libre (rodillas, codos). Sirve para cualquier carta sin pedir nada más.
   - *Piezas dibujadas*: los brazos y piernas tal como están dibujados, que giran rígidos en la cadera o el hombro.
-- Toca el suelo y camina hasta ahí (sus pies no resbalan). Toca el aire y lo alcanza con la mano. Los botones: caminar, saludar, saltar (se agacha, se estira en el aire, se aplasta al caer), estirarse, meditar (se sienta con las piernas cruzadas). "Esqueleto" muestra los huesos y "Lento" lo pasa a un cuarto de velocidad.
+- Camina libremente por el suelo, a los lados y hacia el fondo (más lejos se ve más chico, en perspectiva): con las flechas o WASD, y en el celular con la cruz de flechas de abajo a la izquierda (mantenerla apretada). La barra espaciadora (o el botón Loto en el celular) lo sienta en loto y lo levanta. Toca el suelo y camina hasta ahí, también en profundidad (sus pies no resbalan). Toca el aire y lo alcanza con la mano. Los botones: caminar, saludar, saltar (se agacha, se estira en el aire, se aplasta al caer), estirarse, meditar (se sienta con las piernas cruzadas). "Esqueleto" muestra los huesos y "Lento" lo pasa a un cuarto de velocidad.
 
 Las piezas de la prueba salieron del Sid de Nekkhamma, recortado por `scripts/make-sid-lab.mjs` (los ojos y el brazo tapados con su relleno). Por eso quedan pequeñas marcas en la cintura y las piernas dibujadas siguen en pose de caminar: eso se resuelve con piezas dibujadas para esto.
 
