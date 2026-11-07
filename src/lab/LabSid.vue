@@ -311,7 +311,12 @@ function update(dt, now) {
     if (name === 'jump' && !state.air && !state.jumped) {
         const e = Math.min(1, t / JUMP.crouch), ease_ = e * e * (3 - 2 * e);
         drop = 48 * ease_; sy = 1 - 0.09 * ease_; lean = 0.035 * face * ease_; rot = 0.022 * face * ease_;   // (one knee bends a little before the other)
-        near = { u: mix(near.u, 60, ease_), v: mix(near.v, 480, ease_) }; far = { u: mix(far.u, 40, ease_), v: mix(far.v, 470, ease_) };
+        // arms going back to gather the spring: in profile behind him; turned to us, down and out, each on its own side
+        // (`final`: already where they go, not to be mirrored below)
+        if (fr > 0.5) {
+            near = { u: mix(near.u, PIVOT.x - 150, ease_), v: mix(near.v, 470, ease_), final: true };
+            far = { u: mix(far.u, PIVOT.x + 150, ease_), v: mix(far.v, 470, ease_), final: true };
+        } else { near = { u: mix(near.u, 60, ease_), v: mix(near.v, 480, ease_) }; far = { u: mix(far.u, 40, ease_), v: mix(far.v, 470, ease_) }; }
         if (t >= JUMP.crouch) { state.air = true; state.jumped = true; state.vy = JUMP.speed; S.sy.v += 2.5; S.drop.v -= 260; }
     }
     if (state.air) {
@@ -319,8 +324,14 @@ function update(dt, now) {
         const up = Math.max(-1, Math.min(1, state.vy / JUMP.speed));          // 1 springing up, 0 at the top, -1 coming down
         state.tuck = 1 - Math.abs(up);
         sy = 1 + 0.07 * Math.abs(up); lean = 0.015 * face * up;
-        near = up > 0 ? { u: 190, v: mix(330, 170, up) } : { u: mix(190, 236, -up), v: mix(330, 400, -up) };
-        far = up > 0 ? { u: 70, v: mix(330, 180, up) } : { u: mix(70, 20, -up), v: mix(330, 400, -up) };
+        if (fr > 0.5) {
+            // turned to us: up at his sides as he springs, out to each side for balance as he comes down
+            const out = up > 0 ? 118 : mix(118, 180, -up), v = up > 0 ? mix(330, 170, up) : mix(330, 400, -up);
+            near = { u: PIVOT.x - out, v, final: true }; far = { u: PIVOT.x + out, v, final: true };
+        } else {
+            near = up > 0 ? { u: 190, v: mix(330, 170, up) } : { u: mix(190, 236, -up), v: mix(330, 400, -up) };
+            far = up > 0 ? { u: 70, v: mix(330, 180, up) } : { u: mix(70, 20, -up), v: mix(330, 400, -up) };
+        }
         if (state.lift <= 0) {
             state.lift = 0; state.air = false; state.tuck = 0;
             S.sy.v -= 3.6; S.drop.v += 380;                                    // the landing, taken in the knees
@@ -338,8 +349,8 @@ function update(dt, now) {
     // The poses above are written as in profile (his near hand on the side he faces); turned to us his near arm is
     // on the other side, so they are mirrored (each hand to its own side)
     if (fr > 0.5) {
-        if (near !== restNear) near = { u: 2 * PIVOT.x - near.u, v: near.v };
-        if (far !== restFar) far = { u: 2 * PIVOT.x - far.u, v: far.v };
+        if (near !== restNear && !near.final) near = { u: 2 * PIVOT.x - near.u, v: near.v };
+        if (far !== restFar && !far.final) far = { u: 2 * PIVOT.x - far.u, v: far.v };
         if (name === 'wave') lean = -lean;
     }
     S.lean.to = lean; S.sy.to = sy; S.rot.to = rot; S.drop.to = drop; S.closed.to = closed;
