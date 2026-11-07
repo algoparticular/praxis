@@ -29,7 +29,7 @@ Las piezas de la prueba salieron del Sid de Nekkhamma, recortado por `scripts/ma
 Las plantas en código no alcanzan la mano del dibujo: el mundo va a usar piezas dibujadas, que el código reparte, anima y colorea. Para que eso funcione, cada pieza:
 
 1. **Sola, en su archivo**, con fondo transparente (PNG o capas separadas), al tamaño de exportación habitual.
-2. **La línea y el color en capas aparte**: la tinta en una, el relleno plano en otra. Así puede empezar en tinta y colorearse (el código pone el relleno con su color cuando Sid pasa).
+2. **Solo la tinta alcanza**: el color lo pone el código. Encuentra las formas cerradas del dibujo (como encuentra los pasillos del laberinto de Confianza) y las rellena con uno de los siete colores, plano o como acuarela, cuando Sid pasa. Para eso los contornos que deben llevar color tienen que estar **cerrados**. Si alguna pieza quiere un color pensado por ella, el relleno va en otra capa.
 3. **Apoyada en su base**: lo que toca el suelo, abajo y al medio de la imagen, para plantarla en el suelo en perspectiva.
 4. **Lo que se mueve, separado**: los tallos o las hojas que se mecen, las caras de las piedras (los ojos en su capa, para parpadear y mirar).
 5. **Varias versiones** de lo que se repite (tres o cuatro rayitas de pasto, piedras, brotes, helechos), para que el suelo no se vea repetido.
