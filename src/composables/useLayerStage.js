@@ -30,6 +30,11 @@
 //   dissolve 0xRRGGBB  it can come undone from the bottom up: uniforms.uDissolve.value.y is how far (0 whole .. 1 gone),
 //            along a ragged edge (noise) that glows in that colour as it eats in (Nekkhamma's Sid)
 //   bright, saturate, tint + tintAmount  for lighting a layer up (the pine cone held)
+//   turn     [0xRRGGBB, 0xRRGGBB]  the px of either colour take one of the two, by where they are on the screen, along a
+//            front with slow lobes that flow:
+//            the second on the left of the front, the first on its right (uniforms.uTurn.value: x the front, device px
+//            from the left; y its softness and z its lobes, device px); the line work and any other colour are left as
+//            they are (Ciclos's hills, going from dry to green)
 //   sway     true  parts of the picture lean and stretch on their own about a point, the picture bending softly round
 //            them (Paciencia's mushrooms): node.sways is a list of up to SWAYS [u, v, w, angle (deg), stretch], u, v the
 //            point (fractions of the picture, from its top left), w the part's width (a fraction of the picture's),
@@ -113,6 +118,9 @@ const LAYER_FRAGMENT = `
     uniform vec2 uSink;            // on (0/1), level (0 full .. 1 empty)
     uniform vec2 uDissolve;        // on (0/1), how far it has come undone (0 whole .. 1 gone)
     uniform vec3 uDissolveGlow;
+    uniform vec4 uTurn;            // on (w), the front (x, device px from the left), its softness (y) and lobes (z), device px
+    uniform vec3 uTurnA;
+    uniform vec3 uTurnB;
     uniform vec2 uSize;
     uniform vec4 uCrop;            // the part of the texture shown: u, v of its corner and its size (0, 0, 1, 1: all of it)
     uniform float uSways;          // how many parts sway (-1: it does not sway at all)
@@ -188,6 +196,17 @@ const LAYER_FRAGMENT = `
         float grey = dot(c.rgb, vec3(0.299, 0.587, 0.114));
         c.rgb = mix(vec3(grey), c.rgb, uSaturate);
         c.rgb = mix(c.rgb, uTint * c.a, uTintAmount);
+        if (uTurn.w > 0.0 && c.a > 0.004) {
+            // The px of either colour take the second left of the front and the first right of it; the front flows
+            vec3 rgb = c.rgb / c.a;
+            float w = 1.0 - smoothstep(0.03, 0.1, min(distance(rgb, uTurnA), distance(rgb, uTurnB)));
+            if (w > 0.0) {
+                vec2 f = gl_FragCoord.xy;
+                float lobe = (noise(vec2(f.y / (0.9 * uTurn.z + 1.0), uTime * 0.15)) - 0.5) * 2.0 + 0.45 * sin(f.y / (0.5 * uTurn.z + 1.0) - uTime * 0.6);
+                float green = 1.0 - smoothstep(-uTurn.y, uTurn.y, f.x + lobe * uTurn.z - uTurn.x);
+                c.rgb = mix(c.rgb, mix(uTurnA, uTurnB, green) * c.a, w);
+            }
+        }
         if (uWater > 0.0) {
             c.rgb += vec3(caustic(vUv, uTime)) * 0.1 * uWater * c.a;
         }
@@ -660,7 +679,7 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
 
         // crop: [left, top, width, height] of the part of the texture shown, as fractions of it (from its top left)
         plane(texture, { rect = { left: 0, top: 0, w: 1, h: 1 }, pivot = null, crop = null, wind = null, shimmer = 0, flow = null, water = 0, sheen = 0, sink = false, dissolve = null, blur = 0, bloom = false,
-            blending = 'normal', segments = null, under = false, vignette = 0, sway = false } = {}) {
+            blending = 'normal', segments = null, under = false, vignette = 0, sway = false, turn = null } = {}) {
             const node = new Node(this);
             const segs = segments ?? (wind ? [24, 10] : [1, 1]);
             const uniforms = {
@@ -681,6 +700,9 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
                 uDissolveGlow: { value: new THREE.Color(...parseColor(dissolve ?? 0xffffff)) },
                 uClip: { value: new THREE.Vector4(1, 0, 0, 0) },
                 uClipSoft: { value: 0 },
+                uTurn: { value: new THREE.Vector4(0, 1, 0, turn ? 1 : 0) },
+                uTurnA: { value: new THREE.Color(...parseColor(turn?.[0] ?? 0)) },
+                uTurnB: { value: new THREE.Color(...parseColor(turn?.[1] ?? 0)) },
                 uVignette: { value: vignette },
                 uSize: { value: new THREE.Vector2(1, 1) },
                 // (the texture's v runs from its bottom up)
