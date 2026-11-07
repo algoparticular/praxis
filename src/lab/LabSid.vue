@@ -39,6 +39,7 @@ const FRONT_EYES = [[PIVOT.x - 17, 211, rig.eyes[0][2]], [PIVOT.x + 17, 211, rig
 const FRONT_SHOULDER = { far: { u: PIVOT.x + 48, v: 322 }, near: { u: PIVOT.x - 48, v: 322 } };
 const FRONT_HAND = { far: { u: PIVOT.x + 132, v: 508 }, near: { u: PIVOT.x - 132, v: 508 } };   // a little away from his sides
 const mix = (a, b, t) => a + (b - a) * t;
+const JUMP = { crouch: 0.34, speed: 560, gravity: 1700 };   // the gathering (s), the spring up and the fall (px/s, px/s²)
 
 // The world round him (sidWorld.js): endless, in ink, taking its colour as he goes
 const world = createWorld({ ink: '#' + rig.ink.map((v) => v.toString(16).padStart(2, '0')).join(''), cream: '#F7F8F1', depth: DEPTH });
@@ -126,7 +127,7 @@ function bend(a, target, l1, l2, toward) {
 const act = (name, dur, extra = {}) => { state.action = { name, t: 0, dur, ...extra }; };
 function walkTo(x, d = state.d) { state.target = { x, d }; state.reach = null; if (ui.sitting) sit(false); }
 function wave() { if (!ui.sitting) act('wave', 2.6, { arm: 'near' }); }
-function jump() { if (!ui.sitting && !state.air) act('jump', 1.4); }
+function jump() { if (!ui.sitting && !state.air) { state.jumped = false; act('jump', 1.7); } }
 function stretch() { if (!ui.sitting) act('stretch', 2.6); }
 function sit(on = !ui.sitting) { ui.sitting = on; state.target = null; state.action = null; }
 function walkAcross() { walkTo(state.x + (Math.sign(springs.face.to) || 1) * 520); }
@@ -281,14 +282,27 @@ function update(dt, now) {
         near = { u: 176 + 130 * up, v: 486 - up * 480 }; far = { u: 62 - 130 * up, v: 486 - up * 480 };   // beside his head
         sy = 1 + 0.13 * up; closed = up; rot = -0.04 * up; drop = -6 * up;
     }
-    if (name === 'jump') {
-        if (t < 0.24) { sy = 0.86; drop = 46; near = { u: 200, v: 470 }; far = { u: 40, v: 470 }; lean = 0.05 * face; }
-        else if (!state.air && t < 0.3) { state.air = true; state.vy = 560; S.sy.v += 4; }
+    // A jump, as one really jumps: he gathers himself (crouching little by little, leaning in, arms going back), springs
+    // up stretching with his arms swinging up, is round at the top with his legs drawn up, reaches his legs down and
+    // opens his arms a little to land, and his knees take the landing softly (the springs give it its give)
+    if (name === 'jump' && !state.air && !state.jumped) {
+        const e = Math.min(1, t / JUMP.crouch), ease = e * e * (3 - 2 * e);
+        drop = 48 * ease; sy = 1 - 0.09 * ease; lean = 0.035 * face * ease;
+        near = { u: mix(near.u, 60, ease), v: mix(near.v, 480, ease) }; far = { u: mix(far.u, 40, ease), v: mix(far.v, 470, ease) };
+        if (t >= JUMP.crouch) { state.air = true; state.jumped = true; state.vy = JUMP.speed; S.sy.v += 2.5; S.drop.v -= 260; }
     }
     if (state.air) {
-        state.lift += state.vy * dt; state.vy -= 1700 * dt;
-        sy = state.vy > 0 ? 1.13 : 1.04; near = { u: 205, v: 170 }; far = { u: 55, v: 170 };
-        if (state.lift <= 0) { state.lift = 0; state.air = false; S.sy.x = 0.76; S.drop.x = 42; S.sy.v = 0; }
+        state.lift += state.vy * dt; state.vy -= JUMP.gravity * dt;
+        const up = Math.max(-1, Math.min(1, state.vy / JUMP.speed));          // 1 springing up, 0 at the top, -1 coming down
+        state.tuck = 1 - Math.abs(up);
+        sy = 1 + 0.07 * Math.abs(up); lean = 0.015 * face * up;
+        near = up > 0 ? { u: 190, v: mix(330, 170, up) } : { u: mix(190, 236, -up), v: mix(330, 400, -up) };
+        far = up > 0 ? { u: 70, v: mix(330, 180, up) } : { u: mix(70, 20, -up), v: mix(330, 400, -up) };
+        if (state.lift <= 0) {
+            state.lift = 0; state.air = false; state.tuck = 0;
+            S.sy.v -= 3.6; S.drop.v += 380;                                    // the landing, taken in the knees
+            state.feet.forEach((foot) => { if (foot) foot.y = state.ground; });
+        }
     }
     if (name === 'reach' && state.reach) {
         const f = frame(), head = map(f, 150, 120), dx = state.reach.x - head.x, dy = state.reach.y - head.y;
@@ -353,7 +367,8 @@ function update(dt, now) {
         const toe = q < 0.12 ? -9 * (1 - q / 0.12) : q > 0.4 && q < 0.5 ? 6 * (q - 0.4) / 0.1 : q >= 0.5 ? 6 * (1 - ease) + lift * 0.25 : 0;
         state.toes[i] = (state.toes[i] ?? 0) + (toe * w - (state.toes[i] ?? 0)) * Math.min(1, dt * 20);
         let foot = state.feet[i] ?? rest;
-        if (state.air) foot = { x: h.x + face * 14, y: h.y + STAND * 0.8 };
+        // in the air his legs hang, drawn up at the top of the jump and reaching down again to land
+        if (state.air) foot = { x: h.x + face * (8 + 22 * (state.tuck ?? 0)), y: h.y + STAND * (0.97 - 0.32 * (state.tuck ?? 0)) };
         else if (walking) {
             foot = { x: foot.x + (gait.x - foot.x) * Math.min(1, w * 1.2), y: foot.y + (gait.y - foot.y) * Math.min(1, w * 1.2) };
             state.steps[i] = null;
