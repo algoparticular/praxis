@@ -21,7 +21,8 @@
 //              two liquids that never mix (field() in useLayerStage)
 // Not converted: 1 (the stars) only as particles, inside the night; 6 is the little cross of the Algo Particular logo (a
 // signature, never part of a scene); 7 is taken apart (its sky drawn in code, its sun in code and particles, its clouds into the atlas). There is no rulito
-// layer. The originals are not kept in the repo once converted. Usage: node scripts/convert-ciclos.mjs
+// layer. The originals are not kept in the repo once converted. Usage: node scripts/convert-ciclos.mjs, then
+// node scripts/swap-ciclos-hills.mjs (every hill yellow above and tan below, as the scene wants them)
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
