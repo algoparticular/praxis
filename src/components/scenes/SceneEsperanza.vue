@@ -5,8 +5,8 @@
     // looking up at the sky with its eyes closed.
     // Its verb is Ver: "the assistance of the universe with its invisible threads of light", "your ancestors are behind
     // you". Among the stars of the open sky some shine brighter: joining them with threads (dragging from one to another,
-    // as in Pañña, with the threads of useThreads.js) shows an ancestor, a constellation in the shape of a being like the
-    // little one on the dune (sitting, walking, resting). Not every bright star is in it: two are decoys. Seen, it
+    // as in Pañña, with the threads of useThreads.js) shows an ancestor, a constellation of a fox like the little one
+    // on the dune (its head from the front, walking, and the eldest only its curled tail). Not every bright star is in it: two are decoys. Seen, it
     // gathers itself, goes to stand behind the little one, smaller, and lets down a thread of light to it: the little one
     // looks up and its aura grows. With the three ancestors behind it, their threads shine together, its aura opens and
     // the rulito is born over its head; then they go back into the stars and it starts again (see
@@ -28,6 +28,7 @@
     import { createLayerStage } from '../../composables/useLayerStage.js';
     import { startStardust } from '../../composables/useStardust.js';
     import { createThreads, rgbOf, smooth } from '../../composables/useThreads.js';
+    import { createGhostHand, gesture, HINT_AFTER } from '../../composables/useGhostHand.js';
     import { play } from '../../composables/useSound.js';
     import { sceneMilestone } from '../../analytics.js';
     import Rulito from '../Rulito.vue';
@@ -46,6 +47,7 @@
     const setStarHit = (i) => (el) => { starHits[i] = el; };
     let stage = null;
     let stageEl = null;
+    let hand = null;                        // the ghost hand: left alone 7 s, it drags along a missing thread
     const NAME_GLOW = '0.8';
     let parallax = null;
     let dust = null;
@@ -111,20 +113,20 @@
     };
 
     // ---- Ver: the ancestors in the stars
-    // Each ancestor is a constellation in the shape of a being like the little one: its stars (in a box of its own, x
+    // Each ancestor is a constellation of a fox like Vulpes, by what sets it apart (ears, snout, tail): its stars (in a box of its own, x
     // across and y down, 0..1 of its width), the threads that draw it, and two decoys, bright stars that are not in it.
     // Where it goes to stand once seen is a spot behind the little one (art px, and its width there).
     const loop = (n) => Array.from({ length: n }, (_, i) => [i, (i + 1) % n]);
     const FIGURES = [
-        // sitting as the little one does: snout to the left, two pointed ears, its tail curled under it
-        { name: 'sitting', aspect: 1, stars: [[0, 0.3], [0.3, 0], [0.43, 0.2], [0.6, 0.02], [0.6, 0.56], [1, 0.84], [0.32, 1]],
-            links: loop(7), decoys: [[0.92, 0.22], [0.08, 0.74]], rest: [1180, 1110, 170] },
-        // walking: snout to the right, an ear up, its tail raised behind it
-        { name: 'walking', aspect: 0.8, stars: [[0, 0], [0.26, 0.5], [0.5, 1], [0.78, 0.62], [1, 0.38], [0.84, 0]],
-            links: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 1]], decoys: [[0.44, 0.08], [0.98, 0.96]], rest: [1630, 1110, 170] },
-        // resting, the eldest: lying long, its head raised on the left and its tail along its back
-        { name: 'resting', aspect: 0.62, stars: [[0, 0.42], [0.16, 0.02], [0.34, 0.3], [0.72, 0.36], [1, 0.08], [0.6, 0.94]],
-            links: loop(6), decoys: [[0.52, 0], [0.16, 0.95]], rest: [1430, 910, 210] },
+        // A, a fox's head seen from the front: two pointed ears, the cheeks and the snout
+        { name: 'head', aspect: 1, stars: [[0.05, 0], [0.35, 0.3], [0.65, 0.3], [0.95, 0], [0.85, 0.55], [0.5, 1], [0.15, 0.55]],
+            links: loop(7), decoys: [[0.5, 0.04], [0.98, 0.92]], rest: [1180, 1110, 170] },
+        // C, walking: the head with one ear, the back, two legs and the tail held high
+        { name: 'walking', aspect: 0.6, stars: [[0, 0.25], [0.12, 0], [0.2, 0.3], [0.62, 0.32], [0.92, 0], [0.6, 1], [0.25, 1]],
+            links: [[0, 1], [1, 2], [2, 3], [3, 4], [3, 5], [2, 6]], decoys: [[0.44, 0.74], [1, 0.78]], rest: [1630, 1110, 190] },
+        // F, the eldest: only the fox's tail, curled in a spiral
+        { name: 'tail', aspect: 1, stars: [[0.1, 1], [0, 0.45], [0.35, 0], [0.9, 0.15], [0.8, 0.6], [0.45, 0.5]],
+            links: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5]], decoys: [[0.95, 0.95], [0.5, 0.86]], rest: [1430, 910, 190] },
     ];
     const MAX_LINKS = 7;                    // the most threads (and stars) a figure has
     const GUIDES = 9;                       // the bright stars of a figure: its own and its decoys
@@ -352,9 +354,15 @@
         if (!playing() || drag) return;
         idle += dt;
         ghostIn -= dt;
-        if (!ghost && idle > 7 && ghostIn <= 0) {
+        if (!ghost && idle > HINT_AFTER && ghostIn <= 0) {
             ghost = { age: 0 };
             ghostIn = GHOST_LEN + 7;
+            // and the ghost hand drags from one bright star to the other along the first thread still missing (the
+            // guides are on the threads' canvas: the camera moves the sky by skyShift)
+            const fig = FIGURES[current];
+            const missing = fig.links.find(([a, b]) => !joined(a, b));
+            const onStage = (i) => () => { const p = guideSpots()[i]; return [p[0] + skyShift[0], p[1] + skyShift[1]]; };
+            if (missing && !reduced) hand?.play(gesture.drag(onStage(missing[0]), onStage(missing[1])), { loops: 1 });
         }
     };
 
@@ -773,7 +781,9 @@
                 { colors: [STAR], dynamic: halos, parallax: 0, drift: 0, twinkle: 0, reach: 0, look: 'soft', order: after(L.moon) + 0.1 },
             ],
         });
+        hand = createGhostHand(stage);
         parallax = createParallax(root.value, frame);
+        if (import.meta.env.DEV) root.value.__game = { FIGURES, join, get current() { return current; } };
         enter();
     };
 
@@ -782,6 +792,7 @@
     onBeforeUnmount(() => {
         gone = true;
         parallax?.destroy();
+        hand?.destroy();
         dust?.destroy();
         game?.destroy();
         stage?.destroy();

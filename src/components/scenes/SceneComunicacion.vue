@@ -16,7 +16,8 @@
     // phrase is sung again, slower. The phrase grows, as a Simon: two notes, then the same phrase with a third, then a
     // fourth. Repeated whole with four, the pollen flies to the beings like bees to pollen, the rulito is born among
     // them, in the light, and the name glows; then a new phrase starts again from two notes. On the person's turn, left
-    // alone a while, the being that comes next breathes (a hint), and later the light gathers and sings it again. A touch
+    // alone a while, the being that comes next breathes, and at 7 s the ghost hand touches the beings still to repeat,
+    // in order (the hint); once it has, the light gathers and sings it again. A touch
     // on the light itself does not cut it: it asks to listen (on the person's turn, it sings again after the stillness
     // instead of waiting longer).
     // Alive besides: the beings float, each at its own pace, breathe like jellyfish (they swell and draw in from the top
@@ -39,6 +40,7 @@
     import { startStardust } from '../../composables/useStardust.js';
     import { createSparks } from '../../composables/useSparks.js';
     import { play } from '../../composables/useSound.js';
+    import { createGhostHand, gesture, HINT_AFTER } from '../../composables/useGhostHand.js';
     import { sceneMilestone } from '../../analytics.js';
     import Rulito from '../Rulito.vue';
     import art from '../../composables/comunicacionScene.json';
@@ -153,6 +155,8 @@
     let yes = 0;                            // a phrase repeated right: the light flares
     let next = 0;                           // how much the being that comes next breathes (the hint)
     let lastHint = -1;
+    let hand = null;                        // the ghost hand: left alone 7 s on the person's turn, it touches the phrase
+    let handShown = false;                  // it has shown this turn's phrase (only then is it sung again)
     let pollen = 0;                         // the pollen gone to the beings (0..1)
     let wins = 0;
     let win = null;
@@ -203,6 +207,7 @@
 
     // ---- Singing: one note after another, each flying from the light to its being, which rings with it
     const singNow = () => {
+        handShown = false;
         mode = 'listen';
         got = 0;
         arrive.fill(null);
@@ -490,7 +495,17 @@
         // ---- The light sings when the person is still: in the stillness it gathers, and then it sings
         const quiet = t - Math.max(lastTouch, since);
         if (!reduced && !win && ramp > 0.9 && !singing) {
-            if ((mode === 'listen' && quiet >= STILL) || (mode === 'answer' && quiet >= AGAIN)) singNow();
+            // On the person's turn the light sings it again only once the ghost hand has shown it (with no hand, at once)
+            const waited = !hand || (handShown && !hand.playing);
+            if ((mode === 'listen' && quiet >= STILL) || (mode === 'answer' && quiet >= AGAIN && waited)) singNow();
+        }
+        // Left alone 7 s on the person's turn, the ghost hand touches the beings still to repeat, in the phrase's order
+        if (hand?.due(HINT_AFTER, mode === 'answer' && !singing && !win && !handShown)) {
+            const rest = phrase.slice(got).map((i) => keyHits.value[i]).filter(Boolean);
+            if (rest.length) {
+                handShown = true;
+                hand.play(gesture.taps(rest), { loops: 1 });
+            }
         }
         if (singing) {
             while (singing.played < len() && t >= singing.at + singing.played * gap) singNote(phrase[singing.played++]);
@@ -679,6 +694,7 @@
             ],
         });
         if (reduced) dust.reveal();
+        hand = createGhostHand(stage);
         parallax = createParallax(root.value, frame);
         enter();
     };
@@ -687,6 +703,7 @@
     watch(() => props.active, enter);
     onBeforeUnmount(() => {
         gone = true;
+        hand?.destroy();
         parallax?.destroy();
         dust?.destroy();
         stage?.destroy();
