@@ -19,9 +19,13 @@ const canvas = ref(null);
 const PIVOT = { x: 130, y: 518 };             // the middle of his bottom, where his hips are: the body bends about it
 const TALL = 512;                             // from his bottom to the top of his head
 const INK = `rgb(${rig.ink.join(',')})`;
-const LEG = { thigh: 82, shin: 84, foot: 24, width: 15 };
-const ARM = { upper: 96, fore: 92, width: 12 };          // long, as in Upekkha (they reach his crossed legs)
-const STAND = 158;                            // his hips over the ground, standing (the legs a little bent, alive)
+// His proportions: head 1, torso 0.8, legs 1. His head (to the pinch of his waist, v 300) is about 294 px of the
+// source and his torso (to his bottom) 218, so his legs are as long as his head. Limbs as thick as his outline.
+const HEAD = PIVOT.y - 218 - 6;
+const LEG = { thigh: HEAD / 2 + 4, shin: HEAD / 2 + 4, foot: 32, width: 22 };
+const ARM = { upper: 108, fore: 102, width: 18 };        // long, as in Upekkha (they reach his crossed legs)
+const STAND = HEAD - 6;                       // his hips over the ground, standing (the legs a little bent, alive)
+const SIT = 64;                               // his hips over the ground, sitting with his legs crossed
 const HIP = { far: { u: 103, v: 516 }, near: { u: 157, v: 514 } };
 const SHOULDER = { far: { u: 76, v: 322 }, near: { u: 152, v: 322 } };
 const REST_HAND = { far: { u: 62, v: 486 }, near: { u: 176, v: 486 } };
@@ -114,7 +118,7 @@ function resize() {
     view.w = el.clientWidth; view.h = el.clientHeight;
     el.width = view.w * view.dpr; el.height = view.h * view.dpr;
     // He is about half the height of the screen
-    view.k = Math.min(view.h * 0.52 / rig.size[1], view.w * 0.9 / 300);
+    view.k = Math.min(view.h * 0.62 / (TALL + STAND), view.w * 0.9 / 420);
     const was = state.ground;
     state.ground = (view.h * 0.8) / view.k;
     if (!was) state.x = view.w / view.k / 2;
@@ -154,14 +158,14 @@ function update(dt, now) {
             S.face.to = dir;
             if (Math.abs(S.face.x - dir) < 0.3) {
                 walking = 1;
-                state.speed = Math.min(state.speed + 260 * dt, 125, Math.abs(dx) * 3 + 20);
+                state.speed = Math.min(state.speed + 380 * dt, 185, Math.abs(dx) * 3 + 20);
                 state.x += dir * state.speed * dt;
             }
         }
     }
     if (!walking) state.speed = 0;
     S.walk.to = walking;
-    const STRIDE = 64;
+    const STRIDE = 118;
     if (state.speed > 0) state.phase = (state.phase + state.speed * dt / (2 * STRIDE)) % 1;
     const w = Math.max(0, Math.min(1, S.walk.x)), p = state.phase, face = Math.sign(S.face.to) || 1;
 
@@ -177,11 +181,11 @@ function update(dt, now) {
     let near = { ...REST_HAND.near }, far = { ...REST_HAND.far };
     const swing = Math.sin(p * Math.PI * 2) * 30 * w;
     near.u += swing; far.u -= swing;
-    drop += w * (4 + 4 * Math.cos(p * Math.PI * 4));                   // the bob of each step
+    drop += w * (7 + 7 * Math.cos(p * Math.PI * 4));                   // the bob of each step
 
     if (ui.sitting) {
-        drop = STAND - 40; closed = 1; lean = 0;
-        near = { u: 226, v: 512 }; far = { u: 34, v: 512 };                // his hands on his knees
+        drop = STAND - SIT; closed = 1; lean = 0;
+        near = { u: 280, v: 500 }; far = { u: -20, v: 500 };                // his hands on his knees
     }
     if (name === 'wave') {
         near = { u: 250 + Math.sin(t * 12) * 34, v: 215 + Math.cos(t * 12) * 10 };
@@ -193,13 +197,13 @@ function update(dt, now) {
         sy = 1 + 0.13 * up; closed = up; rot = -0.04 * up; drop = -6 * up;
     }
     if (name === 'jump') {
-        if (t < 0.24) { sy = 0.86; drop = 34; near = { u: 200, v: 470 }; far = { u: 40, v: 470 }; lean = 0.05 * face; }
-        else if (!state.air && t < 0.3) { state.air = true; state.vy = 560; S.sy.v += 4; }
+        if (t < 0.24) { sy = 0.86; drop = 64; near = { u: 200, v: 470 }; far = { u: 40, v: 470 }; lean = 0.05 * face; }
+        else if (!state.air && t < 0.3) { state.air = true; state.vy = 600; S.sy.v += 4; }
     }
     if (state.air) {
         state.lift += state.vy * dt; state.vy -= 1700 * dt;
         sy = state.vy > 0 ? 1.13 : 1.04; near = { u: 205, v: 170 }; far = { u: 55, v: 170 };
-        if (state.lift <= 0) { state.lift = 0; state.air = false; S.sy.x = 0.76; S.drop.x = 30; S.sy.v = 0; }
+        if (state.lift <= 0) { state.lift = 0; state.air = false; S.sy.x = 0.76; S.drop.x = 58; S.sy.v = 0; }
     }
     if (name === 'reach' && state.reach) {
         const f = frame(), head = map(f, 150, 120), dx = state.reach.x - head.x, dy = state.reach.y - head.y;
@@ -238,12 +242,12 @@ function update(dt, now) {
     [HIP.far, HIP.near].forEach((hip, i) => {
         const h = map(f, hip.u, hip.v);
         let rest = { x: h.x + face * (i ? 4 : -4), y: state.ground };
-        if (ui.sitting) rest = { x: f.root.x + face * (i ? -38 : 38), y: state.ground - 6 };   // crossed
+        if (ui.sitting) rest = { x: f.root.x + face * (i ? -46 : 46), y: state.ground - 8 };   // crossed
         const q = (p + i * 0.5) % 1;
         const along = q < 0.5 ? STRIDE / 2 - STRIDE * (q / 0.5) : -STRIDE / 2 + STRIDE * ((q - 0.5) / 0.5);
-        const gait = { x: f.root.x + (h.x - f.root.x) + face * along, y: state.ground - (q >= 0.5 ? Math.sin((q - 0.5) / 0.5 * Math.PI) * 22 : 0) };
+        const gait = { x: f.root.x + (h.x - f.root.x) + face * along, y: state.ground - (q >= 0.5 ? Math.sin((q - 0.5) / 0.5 * Math.PI) * 38 : 0) };
         let foot = state.feet[i] ?? rest;
-        if (state.air) foot = { x: h.x + face * 8, y: h.y + 138 };
+        if (state.air) foot = { x: h.x + face * 14, y: h.y + STAND * 0.8 };
         else if (w > 0.02) {
             foot = { x: foot.x + (gait.x - foot.x) * Math.min(1, w * 1.2), y: foot.y + (gait.y - foot.y) * Math.min(1, w * 1.2) };
             state.steps[i] = null;
@@ -253,7 +257,7 @@ function update(dt, now) {
             if (st) {
                 st.t += dt / 0.24;
                 const e = Math.min(1, st.t), s = e * e * (3 - 2 * e);
-                foot = { x: st.from.x + (rest.x - st.from.x) * s, y: st.from.y + (rest.y - st.from.y) * s - Math.sin(e * Math.PI) * 16 };
+                foot = { x: st.from.x + (rest.x - st.from.x) * s, y: st.from.y + (rest.y - st.from.y) * s - Math.sin(e * Math.PI) * 28 };
                 if (e >= 1) state.steps[i] = null;
             } else if (Math.hypot(rest.x - foot.x, rest.y - foot.y) > 6 && !state.steps[1 - i]) state.steps[i] = { from: foot, t: 0 };
             else if (!state.steps[i]) foot = { x: foot.x + (rest.x - foot.x) * Math.min(1, dt * 6), y: rest.y };
@@ -284,9 +288,10 @@ function draw() {
         for (const q of points.slice(1)) c.lineTo(q.x, q.y);
         c.stroke();
     };
-    const piece = (img, anchor, from, restVec, nowVec) => {
-        const angle = Math.atan2(nowVec.y, nowVec.x * face) - Math.atan2(restVec.y, restVec.x);
-        c.save(); c.translate(anchor.x, anchor.y); c.scale(face, 1); c.rotate(angle);
+    // A drawn piece turned stiff about its joint (and, for the legs, drawn longer: stretched down, not thickened)
+    const piece = (img, anchor, from, restVec, nowVec, long = 1) => {
+        const angle = Math.atan2(nowVec.y, nowVec.x * face) - Math.atan2(restVec.y * long, restVec.x);
+        c.save(); c.translate(anchor.x, anchor.y); c.scale(face, 1); c.rotate(angle); c.scale(1, long);
         c.drawImage(img, from.x, from.y); c.restore();
     };
 
@@ -298,8 +303,8 @@ function draw() {
         let { joint, end } = bend(h, ankle, LEG.thigh, LEG.shin, toward);
         if (ui.sitting) {
             // Crossed in front of him, as she draws them: each knee well out to its side, its foot under the other
-            const side = Math.sign(h.x - f.root.x) || (i ? face : -face), m = Math.min(1, springs.drop.x / (STAND - 40));
-            const knee = { x: f.root.x + side * 94, y: state.ground - 44 }, under = { x: f.root.x - side * 30, y: state.ground - 5 };
+            const side = Math.sign(h.x - f.root.x) || (i ? face : -face), m = Math.min(1, springs.drop.x / (STAND - SIT));
+            const knee = { x: f.root.x + side * 150, y: state.ground - 76 }, under = { x: f.root.x - side * 46, y: state.ground - 8 };
             joint = { x: joint.x + (knee.x - joint.x) * m, y: joint.y + (knee.y - joint.y) * m };
             end = { x: end.x + (under.x - end.x) * m, y: end.y + (under.y - end.y) * m };
         }
@@ -323,7 +328,8 @@ function draw() {
     const drawLegs = () => ui.limbs === 'code' ? legs.forEach((l) => limb([l.h, l.joint, l.end, l.toe], LEG.width)) : rig.legs.forEach((g, i) => {
         const l = legs[i];
         piece(images[`leg${i}`], l.h, { x: g.box[0] - g.hip[0], y: g.box[1] - g.hip[1] },
-            { x: g.foot[0] - g.hip[0], y: g.foot[1] - g.hip[1] }, { x: l.end.x - l.h.x, y: l.end.y - l.h.y });
+            { x: g.foot[0] - g.hip[0], y: g.foot[1] - g.hip[1] }, { x: l.end.x - l.h.x, y: l.end.y - l.h.y },
+            STAND / (g.foot[1] - g.hip[1]));
     });
     if (!ui.sitting) drawLegs();
 
