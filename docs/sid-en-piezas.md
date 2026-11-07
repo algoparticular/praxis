@@ -4,7 +4,7 @@ Sid (que también es Particular) hoy llega a cada escena como un dibujo entero: 
 
 ## El laboratorio
 
-`/lab/sid` (solo con `npm run dev`; no existe en la versión publicada) es una página de pruebas con Sid hecho títere:
+`/lab/sid` (con `npm run dev` y en los previews de Netlify de cada PR; no existe en la versión publicada) es una página de pruebas con Sid hecho títere:
 
 - **Todo él está en código**, con su tinta y su línea. El cuerpo es su silueta calcada una vez del Sid de Nekkhamma (`silhouette` en `sid.json`, por `scripts/make-sid-lab.mjs`): rellena, con su contorno por dentro del borde y una pincelada en cada una de sus marcas de sombra. Queda limpio a cualquier tamaño, se dobla, se aplasta y se estira como un cuerpo blando, y respira.
 - **Los ojos** miran el dedo, parpadean y se cierran al meditar o al estirarse (el arco de Upekkha).
