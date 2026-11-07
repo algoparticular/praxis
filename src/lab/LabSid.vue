@@ -8,7 +8,7 @@ import { onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import rig from './sid/sid.json';
 import { createWorld } from './sidWorld.js';
 
-const ui = reactive({ bones: false, slow: false, sitting: false, touch: false, menu: false });
+const ui = reactive({ bones: false, slow: false, sitting: false, touch: false });
 const canvas = ref(null);
 
 // --- The rig, in px of the source drawing (258 x 686): he faces +x (his eyes are on that side) ---
@@ -148,11 +148,11 @@ function resize() {
     view.w = el.clientWidth; view.h = el.clientHeight;
     el.width = view.w * view.dpr; el.height = view.h * view.dpr;
     // He is about half the height of the screen
-    // (on a phone the floor ends higher, so his feet are never under the pad)
-    view.k = Math.min(view.h * (ui.touch ? 0.5 : 0.62) / (TALL + STAND), view.w * 0.9 / 420);
+    // (on a phone the floor ends higher, so his feet are never under the buttons, the pad and the lotus)
+    view.k = Math.min((ui.touch ? Math.min(view.h * 0.47, view.h - 330) : view.h * 0.62) / (TALL + STAND), view.w * 0.9 / 420);
     const was = state.ground;
-    state.ground = (view.h * (ui.touch ? 0.68 : 0.8)) / view.k;
-    view.floor = (view.h * (ui.touch ? 0.2 : 0.26)) / view.k;     // from the front of the floor to the horizon
+    state.ground = (ui.touch ? Math.min(view.h * 0.63, view.h - 252) : view.h * 0.8) / view.k;   // (252: the row of buttons, the pad)
+    view.floor = (view.h * (ui.touch ? 0.18 : 0.26)) / view.k;     // from the front of the floor to the horizon
     if (!was) { state.x = view.w / view.k / 2; state.cam = state.x; }
 }
 
@@ -564,13 +564,13 @@ onBeforeUnmount(() => {
         <canvas ref="canvas" @pointermove="onMove" @pointerdown="onDown"></canvas>
         <p v-if="ui.touch" class="hint">Camínalo con las flechas: el mundo se colorea a su paso. Loto: todo alrededor.</p>
         <p v-else class="hint">Flechas o WASD: camina y el mundo se colorea a su paso. Barra espaciadora: loto, y se colorea todo alrededor.</p>
-        <button v-if="ui.touch" class="more" :class="{ on: ui.menu }" @click="ui.menu = !ui.menu">Pruebas</button>
-        <div v-if="!ui.touch || ui.menu" class="panel">
+        <!-- the buttons: on top on a computer; on a phone at the bottom, in one row over the pad and the lotus -->
+        <div class="panel" :class="{ bottom: ui.touch }">
             <button @click="walkAcross">Caminar</button>
             <button @click="wave">Saludar</button>
             <button @click="jump">Saltar</button>
             <button @click="stretch">Estirarse</button>
-            <button :class="{ on: ui.sitting }" @click="sit()">Loto</button>
+            <button v-if="!ui.touch" :class="{ on: ui.sitting }" @click="sit()">Loto</button>
 
             <span class="sep"></span>
             <button :class="{ on: ui.bones }" @click="ui.bones = !ui.bones">Esqueleto</button>
@@ -638,19 +638,17 @@ canvas {
 .sep {
     width: 12px;
 }
-.more {
-    position: absolute;
-    right: 16px;
-    top: 44px;
-    font: inherit;
-    font-size: 12px;
-    padding: 6px 12px;
-    border-radius: 999px;
-    border: 1.5px solid #143246;
-    background: #F7F8F1;
-    color: #143246;
+.panel.bottom {
+    top: auto;
+    bottom: calc(196px + env(safe-area-inset-bottom, 0px));
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-bottom: 2px;
 }
-.more.on { background: #143246; color: #F7F8F1; }
+.panel.bottom .sep { display: none; }
+.panel.bottom button { flex: none; }
 .pad {
     position: absolute;
     left: 16px;
@@ -692,8 +690,8 @@ canvas {
     font-size: 16px;
 }
 @media (max-width: 600px) {
-    .hint { font-size: 13px; right: 110px; }
-    .panel { gap: 6px; top: 80px; }
+    .hint { font-size: 13px; }
+    .panel { gap: 6px; }
     .panel button { font-size: 12px; padding: 6px 10px; }
     .sep { display: none; }
 }
