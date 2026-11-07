@@ -76,6 +76,8 @@ const router = createRouter({
       path: "/deck",
       component: Deck,
     },
+    // The puppet lab (Sid moving more than breathing): only while developing, never in the build
+    ...(import.meta.env.DEV ? [{ path: "/lab/sid", component: () => import('../lab/LabSid.vue') }] : []),
     {
       path: "/:pathMatch(.*)",
       component: PageNotFound,
