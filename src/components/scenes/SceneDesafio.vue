@@ -27,6 +27,7 @@
     import { startStardust } from '../../composables/useStardust.js';
     import { createSparks } from '../../composables/useSparks.js';
     import { createKindle, FIRE } from '../../composables/useKindle.js';
+    import { createGhostHand, gesture, HINT_AFTER } from '../../composables/useGhostHand.js';
     import { play } from '../../composables/useSound.js';
     import { sceneMilestone } from '../../analytics.js';
     import Rulito from '../Rulito.vue';
@@ -138,6 +139,7 @@
     let wins = 0;
     let run = null;                         // the flame inside the maze: { steps, i, at, power }
     let hint = 0;
+    let hand = null;                        // the ghost hand, showing the gesture
     let glyph = { left: 0, top: 0, w: 1, h: 1 };
     let last = null;                        // where the flame was a step ago
     const sparks = createSparks(420);
@@ -353,11 +355,15 @@
             const s = tailAt();
             sparks.burst(s.x, s.y, { n: 1, colors: FIRE, speed: 20 + 40 * charge, life: 1.1, size: 2.5 + 2.5 * charge, spread: 10 });
         }
-        if (!kindler.rubbing && !kindler.aiming && !win && kindler.mode !== 'flying' && !run && kindler.idle > 7) {
+        const quiet = !kindler.rubbing && !kindler.aiming && !win && kindler.mode !== 'flying' && !run;
+        if (hand ? hand.due(HINT_AFTER, quiet) : quiet && kindler.idle > HINT_AFTER) {
             kindler.idle = 0;
             hint = 1;
             const s = tailAt();
             sparks.burst(s.x, s.y, { n: 8, colors: FIRE, speed: 50, life: 0.9, size: 3.5, spread: 8 });
+            // and the ghost hand shows the gesture: cold, rubbing him; on fire, pulling back and letting go at the door
+            if (kindler.mode === 'cold') hand?.play(gesture.rub(foxHit.value, Math.min(40, foxHit.value.offsetWidth * 0.3)));
+            else hand?.play(gesture.sling(foxHit.value, () => { const p = onMaze((DOOR.left + DOOR.right) / 2, DOOR.top - 40); return [p.x, p.y]; }));
         }
         hint = Math.max(0, hint - dt * 1.4);
         const out = kindler.mode === 'flying' || kindler.mode === 'maze';
@@ -635,6 +641,7 @@
             ],
         });
         if (reduced) dust.reveal();
+        hand = createGhostHand(stage, { color: 0x143246, shade: 0xf7f8f1 });   // navy: the cream hand does not read on the mint
         parallax = createParallax(root.value, frame);
         enter();
     };
@@ -644,6 +651,7 @@
     onBeforeUnmount(() => {
         gone = true;
         parallax?.destroy();
+        hand?.destroy();
         dust?.destroy();
         stage?.destroy();
         kindler.destroy();

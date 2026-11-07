@@ -10,7 +10,7 @@
 //              in degrees), with its colour; its outline (in 10) is drawn in code round it
 //   stars      every dot of the starry sky (9) as [x, y, radius, 0 teal | 1 yellow], for particles
 //   farStars   stars for the part of the dome past the frame (made here, as dense and as mixed as the drawn ones)
-//   glints     the three yellow strokes by the boat (in 9): a small picture, glints.webp
+//              (the three yellow strokes by the boat in 9 are drawn shooting stars: dropped, the scene has real ones)
 //   water      the four marbled pieces of the water (1), one picture each (water0..3: top left, top right, bottom left,
 //              bottom right), and which side of the frame each touches, to be mirrored past it
 //   beings     where each being stands (its feet: it breathes and hops from there)
@@ -270,8 +270,8 @@ await save('runes', await load(5), { flat: true });
     }
 }
 
-// The stars: every dot as a particle; the three yellow strokes by the boat stay a picture and the yellow loop in the sky
-// is the rulito
+// The stars: every dot as a particle; the three yellow strokes by the boat (drawn shooting stars) are dropped, as the
+// scene has real ones, and the yellow loop in the sky is the card's rulito
 {
     const data = await load(9);
     const blobs = blobsOf(data).filter((b) => b.area >= 2);
@@ -279,7 +279,6 @@ await save('runes', await load(5), { flat: true });
     const rulito = blobs.find((b) => b.area > 1500 && yellow(b));
     scene.rulito = [rulito.box[0] - PAD, rulito.box[1] - PAD, rulito.box[2] - rulito.box[0] + 1 + 2 * PAD, rulito.box[3] - rulito.box[1] + 1 + 2 * PAD];
     const glints = blobs.filter((b) => b !== rulito && b.area > 300 && yellow(b) && (b.box[2] - b.box[0]) > 1.6 * (b.box[3] - b.box[1]));
-    await save('glints', only(data, maskOf(glints, 3)), { flat: true });
     for (const b of blobs) {
         if (b === rulito || glints.includes(b)) continue;
         scene.stars.push([Math.round(b.x), Math.round(b.y), +Math.sqrt(b.area / Math.PI).toFixed(1), yellow(b) ? 1 : 0]);

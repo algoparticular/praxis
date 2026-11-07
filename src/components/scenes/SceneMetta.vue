@@ -33,6 +33,7 @@
     import { decodeCloud, sampleCloud, joinLight } from '../../composables/stippleCloud.js';
     import { createSparks } from '../../composables/useSparks.js';
     import { createGiving, fill, rulitoBox } from '../../composables/useGiving.js';
+    import { createGhostHand, gesture, HINT_AFTER } from '../../composables/useGhostHand.js';
     import { play } from '../../composables/useSound.js';
     import { sceneMilestone } from '../../analytics.js';
     import Rulito from '../Rulito.vue';
@@ -305,12 +306,29 @@
         c.glanceAt = lastT + hold;
     };
 
+    // Left alone 7 s, the ghost hand shows where it starts: before Sid has loved himself it touches only Sid (and his
+    // light calls as it presses); afterwards it touches one still without his light, who glimmers. With reduced motion
+    // there is no hand
+    let hand = null;
+    const hitOf = (c) => hits.value[CHARACTERS.indexOf(c)];
+    const hintDue = (wanted) => {
+        if (!hand) return false;
+        if (!selfGoal) {
+            if (hand.due(HINT_AFTER, wanted)) {
+                hand.play(gesture.tap(hitOf(SID)));
+                setTimeout(() => { if (!gone && !selfGoal) call(); }, gesture.TAP_LEAD * 1000);
+            }
+            return false;
+        }
+        return hand.due(HINT_AFTER, wanted);
+    };
     const giving = createGiving({
         count: OTHERS.length,
         source: heart,
         target: (i) => chest(OTHERS[i]),
         can: () => selfGoal > 0,
         reduced,
+        hint: reduced ? null : { due: hintDue, lead: [gesture.TAP_LEAD] },
         colors: GIVEN,
         on: {
             give: () => { swell = Math.max(swell, 0.5); play('give', { from: SID_PITCH }); },
@@ -337,7 +355,9 @@
             // The lights fade, and he is back to the start: to give again, he loves himself first
             fade: () => { selfGoal = 0; },
             puff: (x, y, colors) => burst({ x, y }, 2, colors, 40),
-            hint: () => { if (!selfGoal) call(); },
+            // The hand goes to touch one still without his light (only once Sid has loved himself), and he glimmers
+            cue: (i) => hand?.play(gesture.tap(hitOf(OTHERS[i]))),
+            hint: (i) => { if (!selfGoal) call(); else burst(chest(OTHERS[i]), 8, GIVEN, 50); },
         },
     });
 
@@ -788,6 +808,7 @@
             ],
         });
         if (reduced) dust.reveal();
+        hand = createGhostHand(stage, { color: 0x143246, shade: 0xf7f8f1 });   // navy: its first touch is on Sid's white body
         parallax = createParallax(root.value, frame);
         enter();
     };
@@ -797,6 +818,7 @@
     onBeforeUnmount(() => {
         gone = true;
         parallax?.destroy();
+        hand?.destroy();
         dust?.destroy();
         stage?.destroy();
         stageEl?.style.removeProperty('--name-glow');
