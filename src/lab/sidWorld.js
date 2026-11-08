@@ -43,7 +43,7 @@ function tint(name, colour) {
 }
 // Her tree: where it stands in his world (x, depth), how big, and where its foot is in her drawing (scaled): the foot of
 // the little mushrooms in the middle, between its roots, which sit on the ground (its roots spread over it, towards us)
-const TREE = { x: 1900, d: 320, scale: 0.7, foot: { x: 640, y: 1358 } };
+const TREE = { x: 2000, d: 470, scale: 0.9, foot: { x: 640, y: 1358 } };   // (big, and further back so its crown fits)
 // The pieces spread over the world, how often each comes, what colour it takes, and whether it sways
 const SCATTER = [
     { name: 'fern', weight: 3, sway: 0.5, colour: 'green' }, { name: 'fernSmall', weight: 3, sway: 0.6, colour: 'green' },
@@ -173,7 +173,7 @@ export function createWorld({ depth, clouds = null, moon = null }) {
                 const dx = item.x - sid.x, dd = (item.d - sid.d) * 1.6, dist = Math.hypot(dx, dd);
                 // colour: as he walks by, and inside the wave while he sits
                 let c = colour.get(item.id) ?? 0;
-                const near = item.kind === 'tree' ? 620 : 170;
+                const near = item.kind === 'tree' ? 950 : 170;
                 if (dist < near) c = Math.min(1, c + dt * 0.9 * (1 - dist / near) * 2);
                 if (ripple && Math.hypot(item.x - ripple.x, (item.d - ripple.d) * 1.6) < ripple.r) c = Math.min(1, c + dt * 1.4);
                 if (c > 0) colour.set(item.id, c);

@@ -10,7 +10,7 @@
 // between its outermost lines. Bits of white too small to be a shape (between the strokes of a fern) stay empty.
 // The originals are not kept in the repo once converted (they are in its history, commit 520b737: git checkout 520b737
 // -- originales/arbol).
-// Usage: node scripts/convert-lab-arbol.mjs
+// Usage: git checkout 520b737 -- originales/arbol && node scripts/convert-lab-arbol.mjs
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -20,6 +20,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const source = path.join(root, 'originales', 'arbol');
 const target = path.join(root, 'src', 'lab', 'arbol');
 const SCALE = 0.4;            // the drawing at 1296 x 1620 (the tree is about 1560 px tall, a little over two Sids)
+const THICKER = 1.3;          // px (scaled) her line is thickened by
 const GAP = 2;                // px (scaled) the line is thickened by before finding what is inside
 const SMALLEST = 40;          // px (scaled) of white inside, below which it is not a shape (a gap between strokes)
 
@@ -47,11 +48,24 @@ for (const piece of PIECES) {
     const { data, info } = await sharp(file).resize(Math.round(3240 * SCALE)).removeAlpha().raw().toBuffer({ resolveWithObject: true });
     const W = info.width, H = info.height, N = W * H;
     // the ink: how dark each pixel is
-    const ink = new Float32Array(N);
+    const raw = new Float32Array(N);
+    for (let i = 0; i < N; i++) raw[i] = Math.max(0, Math.min(1, (235 - (data[i * 3] + data[i * 3 + 1] + data[i * 3 + 2]) / 3) / 200));
+    // her line thickened by THICKER px all round (softly at its edge), so beside Sid's outline it does not look thin
+    const ink = new Float32Array(N), reach = Math.ceil(THICKER + 1);
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+        let v = raw[y * W + x];
+        if (v < 0.99) {
+            for (let dy = -reach; dy <= reach; dy++) for (let dx = -reach; dx <= reach; dx++) {
+                const X = x + dx, Y = y + dy;
+                if (X < 0 || Y < 0 || X >= W || Y >= H) continue;
+                const k = Math.max(0, Math.min(1, THICKER + 0.5 - Math.hypot(dx, dy)));
+                if (k > 0) v = Math.max(v, raw[Y * W + X] * k);
+            }
+        }
+        ink[y * W + x] = v;
+    }
     let x0 = W, y0 = H, x1 = -1, y1 = -1;
     for (let i = 0; i < N; i++) {
-        const l = (data[i * 3] + data[i * 3 + 1] + data[i * 3 + 2]) / 3;
-        ink[i] = Math.max(0, Math.min(1, (235 - l) / 200));
         if (ink[i] > 0.05) { const x = i % W, y = (i / W) | 0; x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
     }
     const PAD = 4;
