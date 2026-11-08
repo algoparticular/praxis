@@ -57,6 +57,13 @@ const SCATTER = [
     { name: 'pebbleFlat', weight: 2 }, { name: 'cairn', weight: 1 },
 ];
 
+// The big stones stand in his way (he walks round them; the small ones he steps over), and the tall plants are drawn
+// faint when they are just in front of him (the low ones, and the grass, hide his feet as he walks through them)
+const BLOCKS = new Set(['pebbleGrass', 'pebbleFlat', 'cairn']);
+const TALL = new Set(['fern', 'fernSmall', 'sprout', 'cairn']);
+// her tree's trunk on the floor: it stands a little behind its foot (its roots come forward), as wide as it looks
+const TRUNK = { behind: 220, r: 130 };
+
 const STRETCH = 520;            // the width of the stretch of world made at a time (px of his world)
 const LINE = 7;                 // the pen: thinner than his own outline, so he stays the one you look at
 
@@ -308,7 +315,8 @@ export function createWorld({ depth, clouds = null, moon = null }) {
             const reach = (item.reach ?? 300) * s;
             if (x < -reach || x > view.width + reach) continue;
             c.save(); c.translate(x, view.groundAt(item.d)); c.scale(s, s);
-            if (him && item.kind !== 'tree' && item.d < him.d && him.d - item.d < 220 && Math.abs(item.x - him.x) < 150) c.globalAlpha = 0.22;
+            const tall = item.kind === 'piece' && TALL.has(item.name);
+            if (him && tall && item.d < him.d && him.d - item.d < 220 && Math.abs(item.x - him.x) < 150) c.globalAlpha = 0.22;
             drawItem(c, item);
             c.restore();
         }
@@ -397,6 +405,18 @@ export function createWorld({ depth, clouds = null, moon = null }) {
         return Math.abs(x - middle) < crown[2] * TREE.scale * 0.42 && Math.abs(d - TREE.d) < 260;
     };
 
+    // What stands in his way near x (within `range`): circles on the floor { x, d, r }
+    function obstacles(x, range) {
+        const out = [];
+        for (let i = Math.floor((x - range - 400) / STRETCH); i <= Math.floor((x + range + 400) / STRETCH); i++) {
+            for (const item of stretch(i)) {
+                if (item.kind === 'tree') out.push({ x: item.x, d: item.d + TRUNK.behind, r: TRUNK.r });
+                else if (item.kind === 'piece' && BLOCKS.has(item.name)) out.push({ x: item.x, d: item.d, r: boxOf(item.name)[2] * item.scale * 0.36 });
+            }
+        }
+        return out.filter((o) => Math.abs(o.x - x) < range + o.r);
+    }
+
     // (setClock: to look at a given hour from the console, 0 sunrise .. 0.75 midnight)
-    return { update, draw, drawSky, drawGround, ground, night, underCrown, setClock: (v) => { clock = ((v % 1) + 1) % 1; } };
+    return { update, draw, drawSky, drawGround, ground, night, underCrown, obstacles, setClock: (v) => { clock = ((v % 1) + 1) % 1; } };
 }

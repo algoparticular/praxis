@@ -11,7 +11,7 @@ import { createStarField } from '../composables/useStarField.js';
 import Rulito from '../components/Rulito.vue';
 import { play } from '../composables/useSound.js';
 
-const ui = reactive({ bones: false, slow: false, sitting: false, touch: false });
+const ui = reactive({ bones: false, sitting: false, touch: false });
 const canvas = ref(null);
 const nightSky = ref(null), starCanvas = ref(null);   // the cards' starry night, behind the drawing (useStarField.js)
 let stars = null;
@@ -49,7 +49,9 @@ const FRONT_EYES = [[PIVOT.x - 17, 211, rig.eyes[0][2]], [PIVOT.x + 17, 211, rig
 const FRONT_SHOULDER = { far: { u: PIVOT.x + 48, v: 322 }, near: { u: PIVOT.x - 48, v: 322 } };
 const FRONT_HAND = { far: { u: PIVOT.x + 132, v: 508 }, near: { u: PIVOT.x - 132, v: 508 } };   // a little away from his sides
 const mix = (a, b, t) => a + (b - a) * t;
-const JUMP = { crouch: 0.34, speed: 560, gravity: 1700 };   // the gathering (s), the spring up and the fall (px/s, px/s²)
+const JUMP = { crouch: 0.34, speed: 560, gravity: 1700 };
+const PACE = 135, TROT = 235;                 // his easy pace and a trot (world px a second)
+const ZOOM = 0.22;                            // how much closer the camera comes when he is at the back   // the gathering (s), the spring up and the fall (px/s, px/s²)
 
 // The world round him (sidWorld.js): endless, in ink, taking its colour as he goes
 const picture = (src) => (typeof Image !== 'undefined' ? Object.assign(new Image(), { src }) : null);
@@ -68,14 +70,14 @@ const springs = {
     lean: spring(0, 90, 9),        // the bend of his body, a fraction of his height at the top of his head
     sy: spring(1, 160, 9),         // squash and stretch (his width goes the other way, his volume stays)
     rot: spring(0, 120, 14),       // a turn of all of him about his hips
-    face: spring(1, 260, 26),      // 1 facing right, -1 left (he goes thin through 0 as he turns)
+    face: spring(1, 260, 26),      // 1 facing right, -1 left (set from his heading, below)
     drop: spring(0, 140, 16),      // how far his hips are lowered (crouch, sit)
     closed: spring(0, 60, 14),     // his eyes closed (meditating, stretching)
     lookX: spring(0, 60, 12), lookY: spring(0, 60, 12),
     walk: spring(0, 18, 9),        // how much he is walking (0..1)
     reach: spring(0, 40, 11),      // how much his near hand goes to what he reaches for
-    front: spring(1, 45, 12),      // turned to us (still, sitting, walking towards us or away) 1, or in profile (walking) 0
-    back: spring(0, 40, 12),       // his back to us (walking away into the distance) 1
+    front: spring(1, 45, 12),      // turned to us or away 1, in profile 0, three quarters between (from his heading)
+    back: spring(0, 40, 12),       // his back to us (walking away into the distance) 1 (from his heading)
 };
 const hands = {                    // where his hands go, in his own px (they follow his body), or in the world
     far: { u: spring(REST_HAND.far.u, 70, 12), v: spring(REST_HAND.far.v, 70, 12) },
@@ -85,15 +87,21 @@ const hands = {                    // where his hands go, in his own px (they fo
 const state = {
     x: 0, ground: 0,               // his hips over the ground, in world px (= px of the source, scaled k to the screen)
     d: 0,                          // how far back on the floor he is (0..DEPTH)
-    cam: 0,                        // where the camera looks (it follows him, the world has no end)
+    // where he faces on the floor, an angle: 0 to the right, PI to the left, -PI/2 towards us, PI/2 into the distance.
+    // It turns smoothly (never jumps), and how he is drawn follows it: in profile, three quarters, from the front or
+    // from behind
+    heading: -Math.PI / 2,
+    held: 0,                       // how long the keys have been held (held a while, he breaks into a trot)
+    cam: 0, zoom: 1,               // where the camera looks (it follows him, the world has no end) and how close
     keys: { left: false, right: false, up: false, down: false },
     lift: 0, vy: 0, air: false,    // a jump
-    target: null, speed: 0, phase: 0,
+    target: null, speed: 0, phase: 0, run: 0,
     action: null,                  // { name, t, dur, ... }
     breath: 0, blink: 0, nextBlink: 2,
     pointer: null, pointerAt: 0,   // the pointer on the screen (px / k)
     glance: null, nextGlance: 3,
-    feet: [null, null], steps: [null, null], toes: [0, 0], legTuck: [0, 0],
+    feet: [null, null],            // his feet on the floor: { x, d, y } (y: lifted), each at its own depth
+    steps: [null, null], toes: [0, 0], legTuck: [0, 0],
     legSit: [0, 0], sitT: 9, rising: false, settled: true,
     underTree: 0, rul: null,                                 // seconds sitting under the tree, the rulito born there      // sitting down in lotus and getting up, leg by leg
     reach: null,                   // a world point his near hand goes to
@@ -104,11 +112,10 @@ const state = {
 function frame() {
     const breath = state.breath;
     const front = Math.max(0, Math.min(1, springs.front.x));
-    const turn = Math.abs(springs.face.x);
     return {
         front,
         root: { x: state.x, y: state.ground - STAND + springs.drop.x - state.lift },
-        rot: springs.rot.x, face: Math.sign(springs.face.x || 1) * Math.max(0.12, turn + (1 - turn) * front),
+        rot: springs.rot.x, face: Math.sign(springs.face.x || 1),     // (he turns through the front: never thin)
         sy: springs.sy.x, sx: 1 / Math.sqrt(Math.max(0.5, springs.sy.x)), lean: springs.lean.x, breath,
     };
 }
@@ -137,9 +144,52 @@ function bend(a, target, l1, l2, toward) {
     return { joint: score(joints[0]) >= score(joints[1]) ? joints[0] : joints[1], end };
 }
 
+// --- Turning, and the way round what stands in his way ---
+const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
+// Turns his heading towards an angle, by at most `most`; turning right round he turns through facing us (as one does,
+// and his face shows on the way)
+function turnTo(aim, most) {
+    let diff = wrap(aim - state.heading);
+    if (Math.abs(diff) > Math.PI * 0.85) {
+        const other = diff - Math.sign(diff) * Math.PI * 2, toUs = wrap(-Math.PI / 2 - state.heading);
+        const through = (dk) => Math.sign(toUs) === Math.sign(dk) && Math.abs(toUs) <= Math.abs(dk);
+        if (!through(diff) && through(other)) diff = other;
+    }
+    state.heading = wrap(state.heading + Math.max(-most, Math.min(most, diff)));
+}
+// What stands in the way (her tree's trunk, the big stones): circles on the floor
+const blocking = () => world.obstacles(state.x, 900);
+// Going towards (mx, mz), he bends his way round what is ahead of him, by the side nearer where he is going
+function steer(mx, mz) {
+    for (const o of blocking()) {
+        const rx = state.x - o.x, rz = state.d - o.d, dist = Math.hypot(rx, rz) || 1, R = o.r + 26;
+        if (dist > R + 130) continue;
+        if (-(mx * rx + mz * rz) / dist <= 0) continue;                  // (moving away from it)
+        const a = { x: -rz / dist, z: rx / dist }, b = { x: rz / dist, z: -rx / dist };
+        const t = a.x * mx + a.z * mz >= b.x * mx + b.z * mz ? a : b;
+        const kk = Math.max(0, Math.min(1, 1 - (dist - R) / 130));
+        mx = mx * (1 - kk) + t.x * kk; mz = mz * (1 - kk) + t.z * kk;
+        const l = Math.hypot(mx, mz) || 1; mx /= l; mz /= l;
+    }
+    return [mx, mz];
+}
+// and never walks into it (with the keys he slides along it)
+function collide() {
+    for (const o of blocking()) {
+        const rx = state.x - o.x, rz = state.d - o.d, dist = Math.hypot(rx, rz) || 1;
+        if (dist < o.r) { state.x = o.x + rx / dist * o.r; state.d = Math.max(0, Math.min(DEPTH, o.d + rz / dist * o.r)); }
+    }
+}
+
 // --- What he does ---
 const act = (name, dur, extra = {}) => { state.action = { name, t: 0, dur, ...extra }; };
-function walkTo(x, d = state.d) { state.target = { x, d }; state.reach = null; if (ui.sitting) sit(false); }
+function walkTo(x, d = state.d) {
+    for (const o of world.obstacles(x, 0)) {
+        const rx = state.x - o.x, rz = state.d - o.d, dist = Math.hypot(rx, rz) || 1;
+        if (Math.hypot(x - o.x, d - o.d) < o.r + 10) { x = o.x + rx / dist * (o.r + 12); d = Math.max(0, Math.min(DEPTH, o.d + rz / dist * (o.r + 12))); }
+    }
+    state.target = { x, d }; state.reach = null; if (ui.sitting) sit(false);
+}
 function wave() { if (!ui.sitting) act('wave', 2.6, { arm: 'near' }); }
 function jump() { if (!ui.sitting && !state.air) { state.jumped = false; act('jump', 1.7); } }
 function stretch() { if (!ui.sitting) act('stretch', 2.6); }
@@ -149,7 +199,7 @@ function sit(on = !ui.sitting) {
     state.rising = !on && Math.max(...state.legSit) > 0.1;
     ui.sitting = on; state.sitT = 0; state.settled = false; state.target = null; state.action = null;
 }
-function walkAcross() { walkTo(state.x + (Math.sign(springs.face.to) || 1) * 520); }
+function walkAcross() { walkTo(state.x + (Math.sign(Math.cos(state.heading)) || Math.sign(springs.face.x) || 1) * 520); }
 
 // Where a point of the screen is in his own world, at his depth (his world is scaled about the vanishing point)
 const groundAt = (d) => state.ground - d / DEPTH * view.floor;
@@ -175,12 +225,20 @@ function resize() {
     view.floor = (view.h * (ui.touch ? 0.18 : 0.26)) / view.k;     // from the front of the floor to the horizon
     if (!was) { state.x = view.w / view.k / 2; state.cam = state.x; }
     // the starry night fills the sky, down to the horizon
-    if (nightSky.value) nightSky.value.style.height = `${Math.ceil(groundAt(DEPTH) * view.k)}px`;
+    skyHeight();
+}
+// The camera comes a little closer when he is at the back (state.zoom), about his feet: the starry night behind the
+// drawing ends where the horizon is now
+const focus = () => ({ x: view.w / view.k / 2, y: groundAt(state.d) });
+function skyHeight() {
+    const F = focus(), horizon = F.y + (groundAt(DEPTH) - F.y) * state.zoom;
+    if (nightSky.value) nightSky.value.style.height = `${Math.ceil(horizon * view.k)}px`;
 }
 
 function pointerTo(e) {
-    const r = canvas.value.getBoundingClientRect();
-    return { x: (e.clientX - r.left) / view.k, y: (e.clientY - r.top) / view.k };
+    const r = canvas.value.getBoundingClientRect(), F = focus();
+    const x = (e.clientX - r.left) / view.k, y = (e.clientY - r.top) / view.k;
+    return { x: F.x + (x - F.x) / state.zoom, y: F.y + (y - F.y) / state.zoom };
 }
 function onMove(e) { state.pointer = pointerTo(e); state.pointerAt = performance.now(); }
 function onDown(e) {
@@ -212,7 +270,7 @@ function onKey(e) {
     if (e.key === ' ' || e.code === 'Space') { e.preventDefault(); if (e.type === 'keydown' && !e.repeat) sit(); }
 }
 function release() { for (const key of Object.keys(state.keys)) state.keys[key] = false; }
-function reachFor(p) { springs.face.to = Math.sign(p.x - state.x) || springs.face.to; state.reach = p; state.reached = p; act('reach', 2.6); }
+function reachFor(p) { state.reach = p; state.reached = p; act('reach', 2.6); }
 
 function turnedRound() {
     const n = hands.near, f = hands.far;
@@ -229,39 +287,49 @@ function update(dt, now) {
     if (a) { a.t += dt; if (a.t >= a.dur) state.action = null; }
     const name = state.action?.name, t = state.action?.t ?? 0;
 
-    // Walking over the floor: with the keys (or the pad), or towards a target; turning first when he goes sideways
-    let walking = 0, mx = 0, mz = 0, left = Infinity;
-    const k = state.keys;
-    if (k.left || k.right || k.up || k.down) { mx = (k.right ? 1 : 0) - (k.left ? 1 : 0); mz = (k.up ? 1 : 0) - (k.down ? 1 : 0); }
+    // Walking over the floor: with the keys (or the pad), or towards a target (going round what stands in the way). He
+    // walks the way he faces and turns as he goes, in a curve, his eyes first: he only stops to turn when the way is
+    // well behind him. Still a moment, or sitting, he turns to us; reaching, to that side
+    let mx = 0, mz = 0, left = Infinity;
+    const k = state.keys, keyed = k.left || k.right || k.up || k.down;
+    state.held = keyed ? state.held + dt : 0;
+    if (keyed) { mx = (k.right ? 1 : 0) - (k.left ? 1 : 0); mz = (k.up ? 1 : 0) - (k.down ? 1 : 0); }
     else if (state.target) {
         const dx = state.target.x - state.x, dd = state.target.d - state.d;
         left = Math.hypot(dx, dd);
-        if (left < 4) {
-            state.target = null;
-        } else { mx = dx / left; mz = dd / left; }
+        if (left < 4) state.target = null;
+        else { mx = dx / left; mz = dd / left; }
     }
-    const length = Math.hypot(mx, mz);
-    // still a moment, he turns to us; to walk sideways he turns to his profile first; walking into the distance he
-    // turns his back to us, and walking towards us he faces us
+    let length = Math.hypot(mx, mz);
+    if (length > 0) { mx /= length; mz /= length; [mx, mz] = steer(mx, mz); length = 1; }
     state.still = length > 0 || state.reach ? 0 : (state.still ?? 0) + dt;
-    const depthWalk = length > 0 && Math.abs(mz) > Math.abs(mx) * 1.2;
-    S.front.to = ui.sitting || state.still > 0.45 || depthWalk ? 1 : 0;
-    S.back.to = depthWalk && mz > 0 ? 1 : 0;
-    if (length > 0 && !state.air) {
-        mx /= length; mz /= length;
-        if (Math.abs(mx) > 0.15 && !depthWalk) S.face.to = Math.sign(mx);
-        const turned = depthWalk ? frame().front > 0.6 : (Math.abs(mx) <= 0.15 || Math.abs(S.face.x - Math.sign(mx)) < 0.3) && frame().front < 0.3;
-        if (turned) {
-            walking = 1;
-            state.speed = Math.min(state.speed + 240 * dt, 135, left * 3 + 20);   // an easy, unhurried pace
-            state.x += mx * state.speed * dt;
-            state.d = Math.max(0, Math.min(DEPTH, state.d + mz * state.speed * dt));
-        }
+    let aim = null;
+    if (length > 0) aim = Math.atan2(mz, mx);
+    else if (state.reach) aim = state.reach.x >= state.x ? 0 : Math.PI;
+    else if (ui.sitting || state.still > 0.45) aim = -Math.PI / 2;
+    if (aim !== null && !state.air) turnTo(aim, dt * (length > 0 ? 4.6 + 2 * state.run : 3.2));
+    const off = aim === null ? 0 : Math.abs(wrap(aim - state.heading));
+    // his pace: easy; held a while (or far to go), a trot. Setting off he gathers speed (the first steps are shorter),
+    // and stopping he slows down over a step or two
+    const trot = (keyed && state.held > 1.2) || (!keyed && left > 520);
+    const top = trot ? TROT : PACE;
+    const want = length > 0 && !state.air && !ui.sitting ? Math.min(top, left * 3 + 20) * Math.max(0, Math.cos(Math.min(Math.PI / 2, off * 1.15))) : 0;
+    const was = state.speed;
+    state.speed = want > state.speed ? Math.min(want, state.speed + (trot ? 260 : 220) * dt) : Math.max(want, state.speed - 380 * dt);
+    if (state.speed > 0.5 && !state.air) {
+        state.x += Math.cos(state.heading) * state.speed * dt;
+        state.d = Math.max(0, Math.min(DEPTH, state.d + Math.sin(state.heading) * state.speed * dt));
+        collide();
     }
-    if (!walking) state.speed = 0;
-    state.side = Math.abs(mx);                                            // how much of his walk is sideways
-    // The camera follows him (softly, so he moves a little on the screen as he sets off and stops)
-    state.cam += (state.x - state.cam) * Math.min(1, dt * 1.6);
+    state.run = Math.max(0, Math.min(1, (state.speed - PACE) / (TROT - PACE)));
+    const walking = state.speed > 3 ? 1 : 0;
+    // when he stops, his body goes on a little and settles back (the weight he was carrying)
+    if (was > 40 && state.speed <= 40 && want === 0) { springs.lean.v += 0.22 * (Math.sign(springs.face.x) || 1) * (1 - frame().front) * (was / PACE); springs.sy.v -= 0.7; }
+    // The camera follows him with a little weight (late as he sets off), a little ahead of where he goes, and closer
+    // as he goes into the distance (so he never gets tiny)
+    const lead = Math.cos(state.heading) * state.speed * 0.9;
+    state.cam += (state.x + lead - state.cam) * Math.min(1, dt * 1.3);
+    state.zoom += (1 + ZOOM * state.d / DEPTH - state.zoom) * Math.min(1, dt * 1.2);
     world.update(dt, { x: state.x, d: state.d, sitting: ui.sitting && springs.drop.x > (STAND - SIT) * 0.8 });
     // the rulito under the tree: born after a moment of sitting there, kept while he sits, gone when he gets up
     const seated = ui.sitting && Math.min(...state.legSit) > 0.9;
@@ -276,9 +344,10 @@ function update(dt, now) {
         if (r.tail >= 1) { state.rul = null; rulito.value?.frame({ width: 40 }); }
     }
     S.walk.to = walking;
-    const STRIDE = 100;                       // a relaxed step: about 1.35 steps a second at full speed
+    // a relaxed step (about 1.35 steps a second at his pace), shorter as he sets off, longer at a trot
+    const STRIDE = mix(64, 100, Math.min(1, state.speed / PACE)) + 46 * state.run, run = state.run;
     if (state.speed > 0) state.phase = (state.phase + state.speed * dt / (2 * STRIDE)) % 1;
-    const w = Math.max(0, Math.min(1, S.walk.x)), p = state.phase, face = Math.sign(S.face.to) || 1;
+    const w = Math.max(0, Math.min(1, S.walk.x)), p = state.phase, face = Math.sign(S.face.x) || 1;
 
     // Breathing (slower and deeper sitting), blinking, looking
     const rate = ui.sitting ? 0.16 : 0.26;
@@ -291,14 +360,16 @@ function update(dt, now) {
     // walking: leaning a little into it, his soft body squashing a touch as each foot lands and stretching as he passes
     // over it, and swaying from side to side with his weight
     const fr = frame().front;
-    let lean = w * 0.02 * face * (1 - fr), sy = 1 - w * 0.007 * Math.cos(p * Math.PI * 4), rot = w * 0.006 * Math.sin(p * Math.PI * 2), drop = 0, closed = 0;
+    // (at a trot: leaning in more, a bigger swing and a springier bob)
+    let lean = w * (0.02 + 0.03 * run) * face * (1 - fr), sy = 1 - w * (0.007 + 0.022 * run) * Math.cos(p * Math.PI * 4), rot = w * 0.006 * Math.sin(p * Math.PI * 2), drop = 0, closed = 0;
     let near = { ...REST_HAND.near }, far = { ...REST_HAND.far };
     // the arms swing against the legs (each arm forward as the other leg goes forward), a little behind them, rising a
     // touch as they go forward
-    const swing = Math.sin(p * Math.PI * 2 - 0.5) * 34 * w;
+    const swing = Math.sin(p * Math.PI * 2 - 0.5) * (34 + 26 * run) * w;
     near.u -= swing; far.u += swing;
-    near.v -= Math.max(0, -swing) * 0.35; far.v -= Math.max(0, swing) * 0.35;
-    drop += w * (1.6 + 1.6 * Math.cos(p * Math.PI * 4));               // the bob of each step: barely, a calm walk
+    near.v -= Math.max(0, -swing) * (0.35 + 0.4 * run); far.v -= Math.max(0, swing) * (0.35 + 0.4 * run);
+    if (run > 0) { near.v -= 60 * run; far.v -= 60 * run; }             // trotting, his arms bent up a little
+    drop += w * (1.6 + 1.6 * Math.cos(p * Math.PI * 4)) + run * (5 + 5 * Math.cos(p * Math.PI * 4));   // the bob of each step: barely, a calm walk
     // turned to us, his hands hang at each side of him (walking towards us or away, an arm swinging forward shows as
     // that hand rising a little and coming in)
     near = { u: mix(near.u, FRONT_HAND.near.u, fr), v: mix(near.v, FRONT_HAND.near.v, fr) };
@@ -370,7 +441,7 @@ function update(dt, now) {
         if (state.lift <= 0) {
             state.lift = 0; state.air = false; state.tuck = 0;
             S.sy.v -= 3.6; S.drop.v += 380;                                    // the landing, taken in the knees
-            state.feet.forEach((foot) => { if (foot) foot.y = state.ground; });
+            state.feet.forEach((foot) => { if (foot) { foot.y = 0; foot.d = state.d; } });
         }
     }
     if (name === 'reach' && state.reach) {
@@ -395,6 +466,7 @@ function update(dt, now) {
     let look = null;
     if (state.reach) look = state.reach;
     else if (state.pointer && now - state.pointerAt < 2500) look = toSid(state.pointer);
+    else if (aim !== null && off > 0.25 && !ui.sitting) look = { x: head.x + Math.cos(aim) * 500, y: head.y + 40 };   // his eyes first, where he turns
     else {
         state.nextGlance -= dt;
         if (state.nextGlance <= 0) { state.glance = Math.random() < 0.4 ? null : { x: head.x + (Math.random() - 0.5) * 600, y: head.y + (Math.random() - 0.6) * 300 }; state.nextGlance = 1.5 + Math.random() * 3; }
@@ -408,6 +480,14 @@ function update(dt, now) {
 
     const before = Math.sign(S.face.x);
     for (const s of Object.values(S)) step(s, dt);
+    // how he is drawn, from his heading: the side he faces, how much he is turned to us (or away), his back
+    {
+        const hx = Math.cos(state.heading), hz = Math.sin(state.heading);
+        S.face.x = S.face.to = Math.abs(hx) > 1e-3 ? hx : (before || 1) * 1e-3; S.face.v = 0;
+        S.front.x = S.front.to = Math.acos(Math.min(1, Math.abs(hx))) / (Math.PI / 2); S.front.v = 0;
+        const b = Math.max(0, Math.min(1, (hz - 0.15) / 0.45));
+        S.back.x = S.back.to = b * b * (3 - 2 * b); S.back.v = 0;
+    }
     for (const h of Object.values(hands)) {
         step(h.u, dt); step(h.v, dt);
     }
@@ -416,21 +496,22 @@ function update(dt, now) {
     if (before && Math.sign(S.face.x) && Math.sign(S.face.x) !== before) turnedRound();
     hands.near.u.to = near.u; hands.near.v.to = near.v; hands.far.u.to = far.u; hands.far.v.to = far.v;
 
-    // His feet: planted while he walks (they never slide), stepping back under him when he stops
-    const f = frame();
+    // His feet, on the floor (x, d) and lifted y: planted while he walks (they never slide, also going into the distance
+    // or towards us: the foot on the ground stays where it is while he goes on), stepping back under him when he stops
+    const f = frame(), hd = { x: Math.cos(state.heading), z: Math.sin(state.heading) };
     hipsOf(f).forEach((hip, i) => {
         const h = map(f, hip.u, hip.v);
-        // where this foot is under him, from his hip at rest (not from his body as it sways, or a planted foot slides)
+        // where this foot is under him, from his hip at rest (not from his body as it sways, or a planted foot slides);
+        // seen side on, his far foot is a little further back on the floor than his near one
         const under = f.root.x + (hip.u - PIVOT.x) * face;
-        let rest = { x: under + face * (i ? 4 : -4), y: state.ground };
+        const rest = { x: under + face * (i ? 4 : -4), d: state.d + (i ? -1 : 1) * 9 * (1 - f.front), y: 0 };
         const q = (p + i * 0.5) % 1;
-        // (going back or forth, his steps are in place: only the sideways part of his walk carries his feet along)
         // On the ground (q < 0.5) the foot goes back at exactly his speed, so it stays put; in the air it swings forward
-        // speeding up and slowing down, lifted most early in the swing
+        // speeding up and slowing down, lifted most early in the swing (higher at a trot): all along the way he goes
         const e = (q - 0.5) / 0.5, ease = e * e * (3 - 2 * e);
-        const along = (q < 0.5 ? STRIDE / 2 - STRIDE * (q / 0.5) : -STRIDE / 2 + STRIDE * ease) * (state.side ?? 1);
-        const lift = q >= 0.5 ? Math.sin(Math.PI * Math.pow(e, 0.8)) * 16 : 0;
-        const gait = { x: under + face * along, y: state.ground - lift };
+        const along = q < 0.5 ? STRIDE / 2 - STRIDE * (q / 0.5) : -STRIDE / 2 + STRIDE * ease;
+        const lift = q >= 0.5 ? Math.sin(Math.PI * Math.pow(e, 0.8)) * (16 + 18 * run) : 0;
+        const gait = { x: rest.x + hd.x * along, d: rest.d + hd.z * along, y: lift };
         // his toes: up as the heel lands, down as the foot leaves the ground and through the swing
         const toe = q < 0.12 ? -9 * (1 - q / 0.12) : q > 0.4 && q < 0.5 ? 6 * (q - 0.4) / 0.1 : q >= 0.5 ? 6 * (1 - ease) + lift * 0.25 : 0;
         state.toes[i] = (state.toes[i] ?? 0) + (toe * w - (state.toes[i] ?? 0)) * Math.min(1, dt * 20);
@@ -438,10 +519,11 @@ function update(dt, now) {
         // in the air his legs hang, drawn up at the top of the jump and reaching down again to land, each in its own
         // time: one goes and comes back first, the other a moment after it (not one stiff piece)
         state.legTuck[i] += ((state.air ? state.tuck ?? 0 : 0) - state.legTuck[i]) * Math.min(1, dt * (i ? 6 : 13));
-        if (state.air && i === 1 && state.lift < 24 && state.vy > 0) foot = { x: foot.x, y: state.ground };   // the last to leave the ground
-        else if (state.air) foot = { x: h.x + face * (8 + 22 * state.legTuck[i]), y: h.y + STAND * (0.97 - 0.32 * state.legTuck[i]) };
+        if (state.air && i === 1 && state.lift < 24 && state.vy > 0) foot = { ...foot, y: 0 };      // the last to leave the ground
+        else if (state.air) foot = { x: h.x + face * (8 + 22 * state.legTuck[i]), d: state.d, y: state.ground - (h.y + STAND * (0.97 - 0.32 * state.legTuck[i])) };
         else if (walking) {
-            foot = { x: foot.x + (gait.x - foot.x) * Math.min(1, w * 1.2), y: foot.y + (gait.y - foot.y) * Math.min(1, w * 1.2) };
+            const m = Math.min(1, w * 1.2);
+            foot = { x: foot.x + (gait.x - foot.x) * m, d: foot.d + (gait.d - foot.d) * m, y: foot.y + (gait.y - foot.y) * m };
             state.steps[i] = null;
         } else {
             // a step of its own when it is far from where it rests (one foot at a time)
@@ -449,13 +531,20 @@ function update(dt, now) {
             if (st) {
                 st.t += dt / 0.24;
                 const e = Math.min(1, st.t), s = e * e * (3 - 2 * e);
-                foot = { x: st.from.x + (rest.x - st.from.x) * s, y: st.from.y + (rest.y - st.from.y) * s - Math.sin(e * Math.PI) * 20 };
+                foot = { x: st.from.x + (rest.x - st.from.x) * s, d: st.from.d + (rest.d - st.from.d) * s, y: st.from.y * (1 - s) + Math.sin(e * Math.PI) * 20 };
                 if (e >= 1) state.steps[i] = null;
-            } else if (Math.hypot(rest.x - foot.x, rest.y - foot.y) > 6 && !state.steps[1 - i]) state.steps[i] = { from: foot, t: 0 };
-            else if (!state.steps[i]) foot = { x: foot.x + (rest.x - foot.x) * Math.min(1, dt * 6), y: rest.y };
+            } else if (Math.hypot(rest.x - foot.x, rest.d - foot.d) > 6 && !state.steps[1 - i]) state.steps[i] = { from: foot, t: 0 };
+            else if (!state.steps[i]) { const m = Math.min(1, dt * 6); foot = { x: foot.x + (rest.x - foot.x) * m, d: foot.d + (rest.d - foot.d) * m, y: 0 }; }
         }
         state.feet[i] = foot;
     });
+}
+
+// A point on the floor (x, d), lifted y, in his own drawing (which is drawn at his depth): a foot at another depth is
+// higher or lower on the screen and a little smaller or bigger, as the floor goes back
+function onFloor(p) {
+    const s0 = scaleAt(state.d), s1 = scaleAt(p.d);
+    return { x: state.cam + (p.x - state.cam) * s1 / s0, y: state.ground + (groundAt(p.d) - groundAt(state.d) - (p.y ?? 0) * s1) / s0 };
 }
 
 // His body drawn in code from his traced silhouette: the fill, his outline inside its edge (clean at any size and
@@ -511,6 +600,9 @@ function draw() {
     c.setTransform(1, 0, 0, 1, 0, 0);
     c.clearRect(0, 0, el.width, el.height);
     c.setTransform(k, 0, 0, k, 0, 0);
+    const F = focus();
+    c.translate(F.x, F.y); c.scale(state.zoom, state.zoom); c.translate(-F.x, -F.y);
+    skyHeight();
     const f = frame(), face = Math.sign(f.face);
     const W = view.w / view.k;
 
@@ -543,13 +635,17 @@ function draw() {
 
     // Legs
     const legs = hipsOf(f).map((hip, i) => {
-        const h = map(f, hip.u, hip.v), foot = state.feet[i] ?? { x: h.x, y: state.ground };
+        const h = map(f, hip.u, hip.v), floor = state.feet[i], foot = floor ? onFloor(floor) : { x: h.x, y: state.ground };
         // knees forward in profile; turned to us, a little out to their own side
         const outward = (i ? -1 : 1) * face;                          // (turned to us, the near leg is on the far side)
         const crossed = state.legSit[i];
         const toward = crossed > 0.5 ? { x: outward, y: -0.5 } : { x: mix(face, outward * 0.3, f.front), y: 0 };
         const ankle = { x: foot.x, y: foot.y - 6 };
-        let { joint, end } = bend(h, ankle, LEG.thigh, LEG.shin, toward);
+        // a foot nearer us or further back on the floor is lower or higher on the screen than under him: the leg going
+        // that way looks longer or shorter than it is (it is foreshortened), so it may reach a little further
+        const lean3d = floor ? Math.abs(groundAt(floor.d) - groundAt(state.d)) / scaleAt(state.d) : 0;
+        const longer = Math.hypot(LEG.thigh + LEG.shin, lean3d * 1.1) / (LEG.thigh + LEG.shin);
+        let { joint, end } = bend(h, ankle, LEG.thigh * longer, LEG.shin * longer, toward);
         if (crossed > 0.001) {
             // Crossed in front of him, as she draws them: each knee well out to its side, its foot under the other; each
             // leg crosses on its own (lifting its foot a little over the way), the second after the first
@@ -559,8 +655,11 @@ function draw() {
             end = { x: end.x + (under.x - end.x) * m, y: end.y + (under.y - end.y) * m };
         }
         // his toes: ahead in profile; turned to us, each a little out to its own side (crossed, along the leg)
-        const toes = crossed > 0.5 ? Math.sign(end.x - joint.x) : mix(face, outward * 0.75, f.front);
-        return { h, joint, end, toe: { x: end.x + toes * LEG.foot, y: end.y + 2 + (crossed > 0.5 ? 0 : state.toes[i]) } };
+        // (along the way he faces: pointing into the distance a foot shows a little up, towards us a little down)
+        const hx = Math.cos(state.heading), hz = Math.sin(state.heading);
+        const toes = crossed > 0.5 ? Math.sign(end.x - joint.x) : hx * (1 - f.front) + outward * 0.75 * f.front;
+        const tilt = crossed > 0.5 ? 0 : -hz * LEG.foot * 0.3;
+        return { h, joint, end, toe: { x: end.x + toes * LEG.foot, y: end.y + 2 + tilt + (crossed > 0.5 ? 0 : state.toes[i]) } };
     });
     // Arms (in the world: shoulders on his body, hands where they are going, or reaching)
     const arms = ['far', 'near'].map((side, i) => {
@@ -639,7 +738,7 @@ function draw() {
 
 function loop(now) {
     raf = requestAnimationFrame(loop);
-    const dt = Math.min(0.05, (now - (last || now)) / 1000) * (ui.slow ? 0.25 : 1);
+    const dt = Math.min(0.05, (now - (last || now)) / 1000);
     last = now;
     update(dt, now);
     draw();
@@ -674,9 +773,7 @@ onBeforeUnmount(() => {
         <!-- the rulito draws itself on its own canvas, which this scene lays over his head -->
         <Rulito ref="rulito" class="offstage" color="#fc747c" />
         <canvas ref="canvas" @pointermove="onMove" @pointerdown="onDown"></canvas>
-        <p v-if="ui.touch" class="hint">Camínalo con las flechas: el mundo se colorea a su paso. Loto: todo alrededor.</p>
-        <p v-else class="hint">Flechas o WASD: camina y el mundo se colorea a su paso. Barra espaciadora: loto, y se colorea todo alrededor.</p>
-        <!-- the buttons: on top on a computer; on a phone at the bottom, in one row over the pad and the lotus -->
+        <!-- the buttons, at the bottom; on a phone in one row over the pad and the lotus -->
         <div class="panel" :class="{ bottom: ui.touch }">
             <button @click="walkAcross">Caminar</button>
             <button @click="wave">Saludar</button>
@@ -686,7 +783,6 @@ onBeforeUnmount(() => {
 
             <span class="sep"></span>
             <button :class="{ on: ui.bones }" @click="ui.bones = !ui.bones">Esqueleto</button>
-            <button :class="{ on: ui.slow }" @click="ui.slow = !ui.slow">Lento</button>
         </div>
         <!-- On a phone: a pad to walk him (held down) and a button for the lotus -->
         <div v-if="ui.touch" class="pad">
@@ -734,22 +830,11 @@ canvas {
     position: absolute;
     inset: 0;
 }
-.hint {
-    position: absolute;
-    top: 16px;
-    left: 16px;
-    right: 16px;
-    margin: 0;
-    font-size: 15px;
-    color: #143246;
-    opacity: 0.7;
-    pointer-events: none;
-}
 .panel {
     position: absolute;
     left: 16px;
     right: 16px;
-    top: 44px;
+    bottom: calc(16px + env(safe-area-inset-bottom, 0px));
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
@@ -773,7 +858,6 @@ canvas {
     width: 12px;
 }
 .panel.bottom {
-    top: auto;
     bottom: calc(196px + env(safe-area-inset-bottom, 0px));
     flex-wrap: nowrap;
     justify-content: flex-start;
@@ -824,8 +908,7 @@ canvas {
     font-size: 16px;
 }
 @media (max-width: 600px) {
-    .hint { font-size: 13px; }
-    .panel { gap: 6px; }
+        .panel { gap: 6px; }
     .panel button { font-size: 12px; padding: 6px 10px; }
     .sep { display: none; }
 }
