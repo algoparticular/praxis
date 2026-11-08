@@ -326,7 +326,7 @@ export function createWorld({ depth, clouds = null, moon = null }) {
 
     // The sky: Ciclos's yellow by day, clearing as night comes so the cards' starry night behind it shows (the page draws
     // it, useStarField.js); the sun by day and the moon by night, each rising from under the horizon, crossing the sky
-    // and setting under it (the ground, drawn after, hides them); and its clouds, a little dimmer at night
+    // and setting under it (the ground, drawn after, hides them); and its clouds, solid white as in the card
     function drawSky(c, view, top, bottom) {
         const L = light(), H = bottom - top;
         c.clearRect(0, top, view.width, H + 2);
@@ -344,12 +344,10 @@ export function createWorld({ depth, clouds = null, moon = null }) {
         }
         if (!clouds?.complete || !clouds.naturalWidth) return;
         const cs = H / 1300, span = Math.max(view.width * 1.6, 2160 * cs * 1.25);
-        c.globalAlpha = 0.55 + 0.45 * L;
-        for (const m of sky) {
+        for (const m of sky) {                                                // solid, as the card's, day and night
             const x = ((((m.x * span + time * m.speed - view.cam * 0.15) % span) + span) % span) - m.w * cs;
             c.drawImage(clouds, m.ax, m.ay, m.w, m.h, x, top + m.y * H * 0.92, m.w * cs, m.h * cs);
         }
-        c.globalAlpha = 1;
     }
     // The card's living sun, as SceneCiclos draws it: a warm light round it and its own light, breathing, the disc only as
     // big as where the sun is still whole, and over its edge its stippled corona read from the card (scripts/sun-cloud.mjs)
