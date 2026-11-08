@@ -23,7 +23,8 @@
    ],
    "fill": true,
    "parts": [
-    "mushroom"
+    "cap",
+    "stem"
    ]
   },
   "bark": {

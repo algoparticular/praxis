@@ -568,6 +568,13 @@ function draw() {
         let hand = map(f, hands[side].u.x, hands[side].v.x);
         const r = springs.reach.x;
         if (side === 'near' && state.reached && r > 0.001) hand = { x: hand.x + (state.reached.x - hand.x) * r, y: hand.y + (state.reached.y - hand.y) * r };
+        // in lotus, each hand rests on the knee at its side (on top of it), as the legs cross
+        const knees = Math.min(...state.legSit);
+        if (knees > 0.001) {
+            const knee = legs.map((l) => l.joint).sort((a, b) => Math.abs(a.x - s.x) - Math.abs(b.x - s.x))[0];
+            const k = knees * knees * (3 - 2 * knees), on = { x: knee.x + Math.sign(f.root.x - knee.x) * 10, y: knee.y - LEG.width * 0.6 };   // (just in from its tip, touching it)
+            hand = { x: hand.x + (on.x - hand.x) * k, y: hand.y + (on.y - hand.y) * k };
+        }
         const raised = hand.y < s.y;
         // elbows back in profile, out to their own side turned to us; down when the hand is up
         const out = (i ? -1 : 1) * face, back = mix(-face * 0.7, out, f.front);
@@ -595,7 +602,7 @@ function draw() {
         c.fillStyle = INK; c.strokeStyle = INK;
         if (closed > 0.6 && springs.closed.x > 0.5) {         // closed, as she draws them: a little arc
             // wide, shallow arcs, a little apart, as she draws them (Upekkha)
-            const R = r * 3, apart = (e ? 1 : -1) * 11;
+            const R = r * 3, apart = (e ? 1 : -1) * 15;
             c.lineWidth = 11; c.lineCap = 'round';
             c.beginPath(); c.arc(at.x + apart, at.y - R * 0.8, R, Math.PI * 0.27, Math.PI * 0.73); c.stroke();
         } else {

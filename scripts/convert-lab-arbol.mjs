@@ -2,7 +2,7 @@
 // 4050, black line on an opaque white ground, each piece on its own layer) -> src/lab/arbol/NAME.webp (the line: the
 // ink as transparency, so the lab can tint it) and NAME-fill.webp (what is inside the line, white over transparent, so
 // the lab can paint it in code: a cream at first, a colour of Ciclos once it is coloured), NAME-PART-fill.webp (a part
-// of what is inside with a colour of its own: the mushrooms at the foot of the trunk), and src/lab/arbol/arbol.json:
+// of what is inside with a colour of its own: the caps and the stems of the mushrooms at the foot of the trunk), and src/lab/arbol/arbol.json:
 // the box of every piece in the 3240 x 4050 drawing (scaled by SCALE), so the lab can set the tree down as she drew it,
 // and spread the small plants and stones over the world.
 // What is inside: the white that cannot be reached from outside the piece without crossing its line (the line a little
@@ -29,9 +29,13 @@ const SMALLEST = 160;         // px (scaled) of white inside, below which it is 
 // Each layer, what it is and how its inside is found
 const PIECES = [
     { n: 5, name: 'crown', inside: 'rows' },
-    // the mushrooms at the foot of the trunk: what is inside their own lines (the caps) goes to trunk-mushroom-fill.webp,
-    // so the lab can give them their own colour (the box in the 3240 x 4050 drawing)
-    { n: 6, name: 'trunk', inside: 'open-top', parts: { mushroom: [1375, 2968, 1814, 3393] } },
+    // the mushrooms at the foot of the trunk (in the 3240 x 4050 drawing): their caps (a seed in each: the big one and
+    // the two small ones under it) go to trunk-cap-fill.webp and their stem and the underside of the big cap to
+    // trunk-stem-fill.webp, so the lab can give them colours of their own
+    { n: 6, name: 'trunk', inside: 'open-top', parts: {
+        cap: { box: [1375, 2968, 1814, 3393], seeds: [[1570, 3105], [1720, 3300], [1476, 3305]] },
+        stem: { box: [1375, 2968, 1814, 3393], rows: [[1429, 3224, 1761, 3270], [1554, 3271, 1658, 3380]] },
+    } },
     { n: 7, name: 'bark', inside: 'none' },
     { n: 2, name: 'sprout', inside: 'closed' },
     { n: 3, name: 'fern', inside: 'none' },
@@ -134,35 +138,43 @@ for (const piece of PIECES) {
         }
     }
 
-    // its parts: each shape inside (not counting the line) that lies wholly in the part's box, with the line round it
-    // that is filled, comes out of the piece's fill into its own (as big as the piece, so it is drawn at the same place)
+    // its parts, each out of the piece's fill into its own (as big as the piece, so it is drawn at the same place): the
+    // shapes inside the line round each seed (kept within the part's box), and between the outermost lines of each row
+    // of a box (a shape open at one side, as the stem of a mushroom, that ends on the ground), with the line round them
     const parts = {};
-    for (const [part, b] of Object.entries(piece.parts ?? {})) {
-        const [px0, py0, px1, py1] = b.map((v) => Math.round(v * SCALE));
-        const mine = new Uint8Array(bw * bh), seen = new Uint8Array(bw * bh);
-        const open = (i) => fill[i] && !wall[i];
-        for (let s = 0; s < bw * bh; s++) {
-            if (!open(s) || seen[s]) continue;
-            const shape = [s]; seen[s] = 1;
-            let ok = true;
-            for (let k = 0; k < shape.length; k++) {
-                const i = shape[k], x = i % bw, y = (i / bw) | 0;
-                if (x + x0 < px0 || x + x0 > px1 || y + y0 < py0 || y + y0 > py1) ok = false;
+    const local = (v, axis) => Math.round(v * SCALE) - (axis ? y0 : x0);
+    for (const [part, spec] of Object.entries(piece.parts ?? {})) {
+        const mine = new Uint8Array(bw * bh);
+        const [bx0, by0, bx1, by1] = spec.box.map((v, k) => local(v, k % 2));
+        for (const [sx, sy] of spec.seeds ?? []) {
+            const s = local(sy, 1) * bw + local(sx, 0);
+            if (wall[s]) { console.warn(`${piece.name} ${part}: seed ${sx},${sy} is on the line`); continue; }
+            const stack = [s]; mine[s] = 1;
+            while (stack.length) {
+                const i = stack.pop(), x = i % bw, y = (i / bw) | 0;
                 for (const [X, Y] of [[x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]]) {
-                    if (X < 0 || Y < 0 || X >= bw || Y >= bh) continue;
+                    if (X < bx0 || Y < by0 || X > bx1 || Y > by1) continue;
                     const j = Y * bw + X;
-                    if (open(j) && !seen[j]) { seen[j] = 1; shape.push(j); }
+                    if (!wall[j] && !mine[j]) { mine[j] = 1; stack.push(j); }
                 }
             }
-            if (ok) for (const i of shape) mine[i] = 1;
         }
-        // the filled line round it, up to GAP + 1 px away
+        for (const r of spec.rows ?? []) {
+            const [rx0, ry0, rx1, ry1] = r.map((v, k) => local(v, k % 2));
+            for (let y = ry0; y <= ry1; y++) {
+                let a = -1, b = -1;
+                for (let x = rx0; x <= rx1; x++) if (ink[at(x, y)] > 0.75) { if (a < 0) a = x; b = x; }
+                for (let x = a; a >= 0 && x <= b; x++) mine[y * bw + x] = 1;
+            }
+        }
+        // the solid middle of the line round it, up to GAP + 1 px away
         const grown = mine.slice();
-        for (let i = 0; i < bw * bh; i++) if (fill[i] && wall[i] && !mine[i]) {
-            const x = i % bw, y = (i / bw) | 0;
+        for (let y = by0; y <= by1; y++) for (let x = bx0; x <= bx1; x++) {
+            const i = y * bw + x;
+            if (mine[i] || !wall[i] || ink[at(x, y)] <= 0.6) continue;
             for (let dy = -GAP - 1; dy <= GAP + 1 && !grown[i]; dy++) for (let dx = -GAP - 1; dx <= GAP + 1; dx++) {
                 const X = x + dx, Y = y + dy;
-                if (X >= 0 && Y >= 0 && X < bw && Y < bh && mine[Y * bw + X]) { grown[i] = 1; break; }
+                if (X >= 0 && Y >= 0 && X < bw && Y < bh && mine[Y * bw + X] && !wall[Y * bw + X]) { grown[i] = 1; break; }
             }
         }
         for (let i = 0; i < bw * bh; i++) if (grown[i]) fill[i] = 0;
