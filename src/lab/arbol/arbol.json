@@ -21,7 +21,10 @@
     1936,
     1799
    ],
-   "fill": true
+   "fill": true,
+   "parts": [
+    "mushroom"
+   ]
   },
   "bark": {
    "box": [

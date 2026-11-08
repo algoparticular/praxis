@@ -595,9 +595,9 @@ function draw() {
         c.fillStyle = INK; c.strokeStyle = INK;
         if (closed > 0.6 && springs.closed.x > 0.5) {         // closed, as she draws them: a little arc
             // wide, shallow arcs, a little apart, as she draws them (Upekkha)
-            const R = r * 2.6, apart = (e ? 1 : -1) * 7.5;
-            c.lineWidth = 6.5; c.lineCap = 'round';
-            c.beginPath(); c.arc(at.x + apart, at.y - R * 0.86, R, Math.PI * 0.3, Math.PI * 0.7); c.stroke();
+            const R = r * 3, apart = (e ? 1 : -1) * 11;
+            c.lineWidth = 11; c.lineCap = 'round';
+            c.beginPath(); c.arc(at.x + apart, at.y - R * 0.8, R, Math.PI * 0.27, Math.PI * 0.73); c.stroke();
         } else {
             c.beginPath(); c.ellipse(at.x, at.y, r * 0.95, r * (closed > 0.6 ? 0.18 : 0.95), 0, 0, Math.PI * 2); c.fill();
         }

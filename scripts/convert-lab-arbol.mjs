@@ -1,7 +1,8 @@
 // The tree and its plants for the puppet lab's world (/lab/sid): originales/arbol/Ilustración_sin_título-N.png (3240 x
 // 4050, black line on an opaque white ground, each piece on its own layer) -> src/lab/arbol/NAME.webp (the line: the
 // ink as transparency, so the lab can tint it) and NAME-fill.webp (what is inside the line, white over transparent, so
-// the lab can paint it in code: a cream at first, a colour of Ciclos once it is coloured), and src/lab/arbol/arbol.json:
+// the lab can paint it in code: a cream at first, a colour of Ciclos once it is coloured), NAME-PART-fill.webp (a part
+// of what is inside with a colour of its own: the mushrooms at the foot of the trunk), and src/lab/arbol/arbol.json:
 // the box of every piece in the 3240 x 4050 drawing (scaled by SCALE), so the lab can set the tree down as she drew it,
 // and spread the small plants and stones over the world.
 // What is inside: the white that cannot be reached from outside the piece without crossing its line (the line a little
@@ -28,7 +29,9 @@ const SMALLEST = 160;         // px (scaled) of white inside, below which it is 
 // Each layer, what it is and how its inside is found
 const PIECES = [
     { n: 5, name: 'crown', inside: 'rows' },
-    { n: 6, name: 'trunk', inside: 'open-top' },
+    // the mushrooms at the foot of the trunk: what is inside their own lines (the caps) goes to trunk-mushroom-fill.webp,
+    // so the lab can give them their own colour (the box in the 3240 x 4050 drawing)
+    { n: 6, name: 'trunk', inside: 'open-top', parts: { mushroom: [1375, 2968, 1814, 3393] } },
     { n: 7, name: 'bark', inside: 'none' },
     { n: 2, name: 'sprout', inside: 'closed' },
     { n: 3, name: 'fern', inside: 'none' },
@@ -131,6 +134,47 @@ for (const piece of PIECES) {
         }
     }
 
+    // its parts: each shape inside (not counting the line) that lies wholly in the part's box, with the line round it
+    // that is filled, comes out of the piece's fill into its own (as big as the piece, so it is drawn at the same place)
+    const parts = {};
+    for (const [part, b] of Object.entries(piece.parts ?? {})) {
+        const [px0, py0, px1, py1] = b.map((v) => Math.round(v * SCALE));
+        const mine = new Uint8Array(bw * bh), seen = new Uint8Array(bw * bh);
+        const open = (i) => fill[i] && !wall[i];
+        for (let s = 0; s < bw * bh; s++) {
+            if (!open(s) || seen[s]) continue;
+            const shape = [s]; seen[s] = 1;
+            let ok = true;
+            for (let k = 0; k < shape.length; k++) {
+                const i = shape[k], x = i % bw, y = (i / bw) | 0;
+                if (x + x0 < px0 || x + x0 > px1 || y + y0 < py0 || y + y0 > py1) ok = false;
+                for (const [X, Y] of [[x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]]) {
+                    if (X < 0 || Y < 0 || X >= bw || Y >= bh) continue;
+                    const j = Y * bw + X;
+                    if (open(j) && !seen[j]) { seen[j] = 1; shape.push(j); }
+                }
+            }
+            if (ok) for (const i of shape) mine[i] = 1;
+        }
+        // the filled line round it, up to GAP + 1 px away
+        const grown = mine.slice();
+        for (let i = 0; i < bw * bh; i++) if (fill[i] && wall[i] && !mine[i]) {
+            const x = i % bw, y = (i / bw) | 0;
+            for (let dy = -GAP - 1; dy <= GAP + 1 && !grown[i]; dy++) for (let dx = -GAP - 1; dx <= GAP + 1; dx++) {
+                const X = x + dx, Y = y + dy;
+                if (X >= 0 && Y >= 0 && X < bw && Y < bh && mine[Y * bw + X]) { grown[i] = 1; break; }
+            }
+        }
+        for (let i = 0; i < bw * bh; i++) if (grown[i]) fill[i] = 0;
+        parts[part] = grown;
+    }
+
+    for (const [part, grown] of Object.entries(parts)) {
+        const out = Buffer.alloc(bw * bh * 4);
+        for (let i = 0; i < bw * bh; i++) if (grown[i]) out[i * 4] = out[i * 4 + 1] = out[i * 4 + 2] = out[i * 4 + 3] = 255;
+        await sharp(out, { raw: { width: bw, height: bh, channels: 4 } }).webp({ quality: 60, alphaQuality: 80 }).toFile(path.join(target, `${piece.name}-${part}-fill.webp`));
+    }
+
     const line = Buffer.alloc(bw * bh * 4), inside = Buffer.alloc(bw * bh * 4);
     let filled = 0;
     for (let y = 0; y < bh; y++) for (let x = 0; x < bw; x++) {
@@ -140,7 +184,7 @@ for (const piece of PIECES) {
     }
     await sharp(line, { raw: { width: bw, height: bh, channels: 4 } }).webp({ quality: 90, alphaQuality: 90 }).toFile(path.join(target, `${piece.name}.webp`));
     if (filled) await sharp(inside, { raw: { width: bw, height: bh, channels: 4 } }).webp({ quality: 60, alphaQuality: 80 }).toFile(path.join(target, `${piece.name}-fill.webp`));
-    art.pieces[piece.name] = { box: [x0, y0, bw, bh], fill: filled > 0 };
+    art.pieces[piece.name] = { box: [x0, y0, bw, bh], fill: filled > 0, ...(piece.parts ? { parts: Object.keys(piece.parts) } : {}) };
     console.log(piece.name, [x0, y0, bw, bh].join(' '), filled ? `${filled} px filled` : 'no fill');
 }
 

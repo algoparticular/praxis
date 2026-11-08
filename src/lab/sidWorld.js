@@ -83,6 +83,7 @@ export const CICLOS = {
     ],
 };
 const PALETTE = CICLOS.colours.map((c) => ({ light: hex(c.light), ink: hex(c.ink) }));
+const PART_COLOUR = { mushroom: 2 };   // the mushrooms of the tree: Ciclos's coral
 const GREENS = [1, 0, 1, 3];    // the ground's plants: mostly its green and its teal (and its yellow)
 const WARM = [2, 5, 3, 0];      // the beads of the sprouts
 const mixRgb = (a, b, t) => `rgb(${a.map((v, i) => Math.round(v + (b[i] - v) * t)).join(',')})`;
@@ -224,6 +225,13 @@ export function createWorld({ depth, clouds = null, moon = null }) {
             const base = tint(`${name}-fill`, CICLOS.white), coloured = col > 0.01 && tint(`${name}-fill`, `rgb(${P.light.join(',')})`);
             if (base) c.drawImage(base, left, top, w, h);
             if (coloured) { c.globalAlpha *= col; c.drawImage(coloured, left, top, w, h); c.globalAlpha /= col; }
+            // its parts with a colour of their own (the mushrooms at the foot of the trunk)
+            for (const part of arbol.pieces[name].parts ?? []) {
+                const Q = PALETTE[PART_COLOUR[part] ?? 1], file = `${name}-${part}-fill`;
+                const cream = tint(file, CICLOS.white), own = col > 0.01 && tint(file, `rgb(${Q.light.join(',')})`);
+                if (cream) c.drawImage(cream, left, top, w, h);
+                if (own) { c.globalAlpha *= col; c.drawImage(own, left, top, w, h); c.globalAlpha /= col; }
+            }
         }
         if (layer === 'fill') return;
         const ink = tint(name, CICLOS.ink), coloured = tintLine && col > 0.01 && tint(name, `rgb(${P.ink.join(',')})`);
