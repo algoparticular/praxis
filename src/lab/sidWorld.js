@@ -62,7 +62,7 @@ const SCATTER = [
 const BLOCKS = new Set(['pebbleGrass', 'pebbleFlat', 'cairn']);
 const TALL = new Set(['fern', 'fernSmall', 'sprout', 'cairn']);
 // her tree's trunk on the floor: it stands a little behind its foot (its roots come forward), as wide as it looks
-const TRUNK = { behind: 220, r: 130 };
+const TRUNK = { behind: 170, r: 95 };   // (with room behind it to walk by, before the back of the floor)
 
 const STRETCH = 520;            // the width of the stretch of world made at a time (px of his world)
 const LINE = 7;                 // the pen: thinner than his own outline, so he stays the one you look at
@@ -128,7 +128,7 @@ export function createWorld({ depth, clouds = null, moon = null }) {
         const treeHere = TREE.x >= index * STRETCH && TREE.x < (index + 1) * STRETCH;
         if (treeHere) add({ kind: 'tree', x: TREE.x, d: TREE.d, reach: 700 });
         // nothing of the world stands on or just in front of its roots (as the camera moves it would cross them)
-        const clear = (p) => Math.abs(p.x - TREE.x) > 640 || p.d < TREE.d - 300 || p.d > TREE.d + 140;
+        const clear = (p) => Math.abs(p.x - TREE.x) > 640 || p.d > TREE.d + 140;   // (its roots reach the front of the floor)
 
         for (let n = 0; n < 34; n++) { const p = at(); if (clear(p)) tick(p.x, p.d); }
         // her pieces, spread: ferns, sprouts, pebbles, now and then a stack of them
@@ -138,6 +138,8 @@ export function createWorld({ depth, clouds = null, moon = null }) {
             if (!clear(p)) continue;
             let w = r() * weights, kind = SCATTER[0];
             for (const k of SCATTER) { w -= k.weight; if (w <= 0) { kind = k; break; } }
+            // (no stone in his way round her tree: he can always walk behind its trunk)
+            if (BLOCKS.has(kind.name) && Math.abs(p.x - TREE.x) < 700 && p.d > TREE.d) continue;
             const colour = kind.colour === 'green' ? pick(GREENS) : kind.colour === 'warm' ? pick(WARM) : pick([4, 3, 5, 0]);
             add({ kind: 'piece', name: kind.name, x: p.x, d: p.d, scale: 0.6 + r() * 0.3, flip: r() < 0.5 ? -1 : 1, sway: kind.sway ?? 0, color: colour });
         }

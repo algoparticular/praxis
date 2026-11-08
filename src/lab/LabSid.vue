@@ -41,7 +41,10 @@ const HIP = { far: { u: 134, v: 516 }, near: { u: 126, v: 515 } };
 const FRONT_HIP = { far: { u: 157, v: 514 }, near: { u: 103, v: 516 } };
 const SHOULDER = { far: { u: 100, v: 334 }, near: { u: 110, v: 334 } };   // towards his back, by the hatching
 const REST_HAND = { far: { u: 92, v: 524 }, near: { u: 116, v: 524 } };
-const hipsOf = (f) => ['far', 'near'].map((side) => ({ u: mix(HIP[side].u, FRONT_HIP[side].u, f.front), v: mix(HIP[side].v, FRONT_HIP[side].v, f.front) }));
+// (seen three quarters on, his hips, shoulders and hands are already well apart: they open out quickly as he turns
+// from his profile, so his legs do not cross like scissors and his arms are not drawn over his belly)
+const spread = (front) => Math.sqrt(Math.max(0, front));
+const hipsOf = (f) => ['far', 'near'].map((side) => ({ u: mix(HIP[side].u, FRONT_HIP[side].u, spread(f.front)), v: mix(HIP[side].v, FRONT_HIP[side].v, f.front) }));
 const EYES = rig.eyes;
 // Turned to us: his eyes in the middle of his face, a shoulder at each side of the pinch of his waist and his hands
 // hanging at each side of his belly
@@ -350,7 +353,9 @@ function update(dt, now) {
     }
     S.walk.to = walking;
     // a relaxed step (about 1.35 steps a second at his pace), shorter as he sets off, longer at a trot
-    const STRIDE = mix(64, 100, Math.min(1, state.speed / PACE)) + 46 * state.run, run = state.run;
+    // (seen from the front or three quarters on, his steps are shorter and quicker: a long stride towards us or away
+    // only shows as his feet going far out to the sides)
+    const STRIDE = (mix(64, 100, Math.min(1, state.speed / PACE)) + 46 * state.run) * (1 - 0.35 * S.front.x), run = state.run;
     if (state.speed > 0) state.phase = (state.phase + state.speed * dt / (2 * STRIDE)) % 1;
     const w = Math.max(0, Math.min(1, S.walk.x)), p = state.phase, face = Math.sign(S.face.x) || 1;
 
@@ -377,8 +382,8 @@ function update(dt, now) {
     drop += w * (1.6 + 1.6 * Math.cos(p * Math.PI * 4)) + run * (5 + 5 * Math.cos(p * Math.PI * 4));   // the bob of each step: barely, a calm walk
     // turned to us, his hands hang at each side of him (walking towards us or away, an arm swinging forward shows as
     // that hand rising a little and coming in)
-    near = { u: mix(near.u, FRONT_HAND.near.u, fr), v: mix(near.v, FRONT_HAND.near.v, fr) };
-    far = { u: mix(far.u, FRONT_HAND.far.u, fr), v: mix(far.v, FRONT_HAND.far.v, fr) };
+    near = { u: mix(near.u, FRONT_HAND.near.u, spread(fr)), v: mix(near.v, FRONT_HAND.near.v, fr) };
+    far = { u: mix(far.u, FRONT_HAND.far.u, spread(fr)), v: mix(far.v, FRONT_HAND.far.v, fr) };
     near.v -= fr * Math.max(0, -swing) * 0.9; near.u += fr * Math.max(0, -swing) * 0.6;
     far.v -= fr * Math.max(0, swing) * 0.9; far.u -= fr * Math.max(0, swing) * 0.6;
 
@@ -639,8 +644,19 @@ function draw() {
     };
 
     // Legs
+    // each foot stays on its own side of the other (as its hip is), so his legs never cross like scissors when one
+    // passes the other seen three quarters on (pushed apart just enough, only while they would cross)
+    const hips = hipsOf(f).map((hip) => map(f, hip.u, hip.v));
+    const placed = state.feet.map((fl, i) => (fl ? onFloor(fl) : { x: hips[i].x, y: state.ground }));
+    {
+        const side = Math.sign(hips[1].x - hips[0].x), apart = (placed[1].x - placed[0].x) * side, GAP = 34 * f.front;
+        if (side && !Math.max(...state.legSit) && apart < GAP) {
+            const push = (GAP - apart) / 2 * side;
+            placed[0] = { ...placed[0], x: placed[0].x - push }; placed[1] = { ...placed[1], x: placed[1].x + push };
+        }
+    }
     const legs = hipsOf(f).map((hip, i) => {
-        const h = map(f, hip.u, hip.v), floor = state.feet[i], foot = floor ? onFloor(floor) : { x: h.x, y: state.ground };
+        const h = hips[i], floor = state.feet[i], foot = placed[i];
         // knees forward in profile; turned to us, a little out to their own side
         const outward = (i ? -1 : 1) * face;                          // (turned to us, the near leg is on the far side)
         const crossed = state.legSit[i];
@@ -668,7 +684,7 @@ function draw() {
     });
     // Arms (in the world: shoulders on his body, hands where they are going, or reaching)
     const arms = ['far', 'near'].map((side, i) => {
-        const s = map(f, mix(SHOULDER[side].u, FRONT_SHOULDER[side].u, f.front), mix(SHOULDER[side].v, FRONT_SHOULDER[side].v, f.front));
+        const s = map(f, mix(SHOULDER[side].u, FRONT_SHOULDER[side].u, spread(f.front)), mix(SHOULDER[side].v, FRONT_SHOULDER[side].v, f.front));
         let hand = map(f, hands[side].u.x, hands[side].v.x);
         const r = springs.reach.x;
         if (side === 'near' && state.reached && r > 0.001) hand = { x: hand.x + (state.reached.x - hand.x) * r, y: hand.y + (state.reached.y - hand.y) * r };
