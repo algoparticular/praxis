@@ -7,9 +7,12 @@
 import { onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import rig from './sid/sid.json';
 import { CICLOS, createWorld } from './sidWorld.js';
+import { createStarField } from '../composables/useStarField.js';
 
 const ui = reactive({ bones: false, slow: false, sitting: false, touch: false });
 const canvas = ref(null);
+const nightSky = ref(null), starCanvas = ref(null);   // the cards' starry night, behind the drawing (useStarField.js)
+let stars = null;
 
 // --- The rig, in px of the source drawing (258 x 686): he faces +x (his eyes are on that side) ---
 const PIVOT = { x: 130, y: 518 };             // the middle of his bottom, where his hips are: the body bends about it
@@ -161,6 +164,8 @@ function resize() {
     state.ground = (ui.touch ? Math.min(view.h * 0.63, view.h - 252) : view.h * 0.8) / view.k;   // (252: the row of buttons, the pad)
     view.floor = (view.h * (ui.touch ? 0.18 : 0.26)) / view.k;     // from the front of the floor to the horizon
     if (!was) { state.x = view.w / view.k / 2; state.cam = state.x; }
+    // the starry night fills the sky, down to the horizon
+    if (nightSky.value) nightSky.value.style.height = `${Math.ceil(groundAt(DEPTH) * view.k)}px`;
 }
 
 function pointerTo(e) {
@@ -481,8 +486,10 @@ function draw() {
 
     // The floor, back to the horizon, and him on it at his depth (smaller and nearer the middle the farther back)
     world.drawSky(c, { width: W, cam: state.cam }, 0, groundAt(DEPTH));
+    nightSky.value.style.opacity = world.night().toFixed(3);
     c.fillStyle = world.ground();
     c.fillRect(0, groundAt(DEPTH) - 4, W, view.h / view.k);
+    world.drawGround(c, { x0: W / 2, cam: state.cam, groundAt, scaleAt, width: W });
     const x0 = W / 2, place = { x0, cam: state.cam, groundAt, scaleAt, width: W };
     world.draw(c, place, (d) => d > state.d);                         // what is behind him
     const depth = scaleAt(state.d);
@@ -601,10 +608,12 @@ onMounted(() => {
     window.addEventListener('blur', release);
     resize();
     window.addEventListener('resize', resize);
+    stars = createStarField(starCanvas.value, nightSky.value);
     raf = requestAnimationFrame(loop);
 });
 onBeforeUnmount(() => {
     cancelAnimationFrame(raf);
+    stars?.destroy();
     window.removeEventListener('resize', resize);
     window.removeEventListener('keydown', onKey);
     window.removeEventListener('keyup', onKey);
@@ -614,6 +623,7 @@ onBeforeUnmount(() => {
 
 <template>
     <div class="lab">
+        <div ref="nightSky" class="night-sky"><canvas ref="starCanvas"></canvas></div>
         <canvas ref="canvas" @pointermove="onMove" @pointerdown="onDown"></canvas>
         <p v-if="ui.touch" class="hint">Camínalo con las flechas: el mundo se colorea a su paso. Loto: todo alrededor.</p>
         <p v-else class="hint">Flechas o WASD: camina y el mundo se colorea a su paso. Barra espaciadora: loto, y se colorea todo alrededor.</p>
@@ -648,10 +658,25 @@ onBeforeUnmount(() => {
     font-family: Nunito, sans-serif;
 }
 canvas {
+    position: relative;
     width: 100%;
     height: 100%;
     display: block;
     touch-action: none;
+}
+/* The cards' starry night (useStarField.js) behind the drawing, in Ciclos's teal: it shows as the yellow clears */
+.night-sky {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    opacity: 0;
+    background: #039CA8;
+    pointer-events: none;
+}
+.night-sky canvas {
+    position: absolute;
+    inset: 0;
 }
 .hint {
     position: absolute;

@@ -8,9 +8,11 @@
 // line, its white Sid, its yellow sky, its hills that go from dry to green, and its white clouds (its own atlas,
 // public/assets/ciclos/clouds.webp, with the boxes in ciclosScene.json). Day and night come and go as in the card: the
 // yellow day with its red sun and its stippled corona, the teal night with its stars and its moon (moon.webp and its
-// stipple), each crossing the sky; while he meditates the cycle runs faster and the ground turns from dry to green
-// (`growth`, kept), as the hills of the card do.
+// stipple), each rising from under the horizon, crossing the sky and setting under it again; the ground is the card's
+// hills: green with yellow streaks by day, yellow with mustard-brown ones by night. The starry night itself is the
+// cards' own sky (useStarField.js), behind the yellow, which clears as night comes. While he meditates the cycle runs faster.
 import ciclos from '../composables/ciclosScene.json';
+import { decodeCloud, sampleCloud } from '../composables/stippleCloud.js';
 
 const STRETCH = 520;            // the width of the stretch of world made at a time (px of his world)
 const LINE = 7;                 // the pen: thinner than his own outline, so he stays the one you look at
@@ -31,7 +33,7 @@ const hex = (h) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), pa
 // are coloured: its teal night, its green, its coral sun, its yellow, the tan of its dry hills and the pink of its fans
 export const CICLOS = {
     ink: '#32300B', white: '#FEFEFD', sky: '#FED889', night: '#039CA8', star: '#FCDC8C', sun: '#FB767B',
-    groundDry: '#F2DC9A', groundDay: '#A9CB8E', groundNight: '#3F6E63',
+    groundDay: '#62A27C', groundNight: '#FFE090', detailDay: '#FFE090', detailNight: '#B08A3C',
     colours: [
         { light: '#1BAFAF', ink: '#0B7B7B' }, { light: '#64A57A', ink: '#3E7A55' }, { light: '#FF7878', ink: '#C84A4A' },
         { light: '#FFD36E', ink: '#B08A1E' }, { light: '#C8B070', ink: '#857033' }, { light: '#F2A48C', ink: '#B4664F' },
@@ -44,7 +46,6 @@ const mixRgb = (a, b, t) => `rgb(${a.map((v, i) => Math.round(v + (b[i] - v) * t
 
 export function createWorld({ depth, clouds = null, moon = null }) {
     const INK = hex(CICLOS.ink), CREAM = hex(CICLOS.white);
-    let growth = 0;                         // the ground turning green while he meditates (0..1), kept
     let clock = 0.2;                        // the cycle: 0 sunrise, 0.25 noon, 0.5 sunset, 0.75 midnight
     const CYCLE = 90;                       // s for a whole day and night (a third of it while he meditates)
     const stretches = new Map();
@@ -108,6 +109,16 @@ export function createWorld({ depth, clouds = null, moon = null }) {
             const p = at();
             add({ kind: 'fern', x: p.x, d: p.d, long: 140 + r() * 170, arch: (r() - 0.5) * 0.5, leaves: 7 + Math.floor(r() * 5), color: pick(GREENS), flex: 0.8 + r() * 0.5 });
         }
+        // streaks on the hills, as the card's: long flat shapes lying on the ground, in the ground's other colour
+        for (let n = 0, m = 2 + Math.floor(r() * 2); n < m; n++) {
+            const p = at(), rx = 120 + r() * 200, ry = rx * (0.12 + r() * 0.08), outline = [];
+            const wob = [r(), r()].map((v) => v * Math.PI * 2);
+            for (let k = 0; k < 24; k++) {
+                const a = (k / 24) * Math.PI * 2, rr = 1 + 0.12 * Math.sin(a * 2 + wob[0]) + 0.07 * Math.sin(a * 3 + wob[1]);
+                outline.push([Math.cos(a) * rx * rr, Math.sin(a) * ry * rr]);
+            }
+            add({ kind: 'streak', x: p.x, d: p.d, outline });
+        }
         // a stipple on the ground, thinning out from its middle
         for (let n = 0, m = 1 + Math.floor(r() * 2); n < m; n++) {
             const p = at(), R = 70 + r() * 110, dots = [];
@@ -137,7 +148,6 @@ export function createWorld({ depth, clouds = null, moon = null }) {
         if (sid.sitting) {
             if (!ripple) ripple = { x: sid.x, d: sid.d, r: 0 };
             ripple.r = Math.min(1400, ripple.r + dt * 260);
-            growth = Math.min(1, growth + dt * 0.06);
         } else ripple = null;
         for (const [i, items] of stretches) {
             if (Math.abs(i * STRETCH - sid.x) > 3000) continue;
@@ -203,14 +213,16 @@ export function createWorld({ depth, clouds = null, moon = null }) {
 
     function drawItem(c, item) {
         const col = colour.get(item.id) ?? 0, P = PALETTE[item.color], line = mixRgb(INK, P.ink, col * 0.8);
+        // the marks of the ground (its grass, its stipple) are in its detail colour: yellow by day, mustard by night
+        const mark_ = item.kind === 'tick' || item.kind === 'stipple' ? mixRgb(detailRgb(), P.ink, col * 0.8) : line;
         const l = life.get(item.id);
         switch (item.kind) {
         case 'tick': {
             const lean = wind(item.x) * 0.6 + (l?.bend ?? 0) * 0.9;
             c.save(); c.rotate(lean);
             for (const st of item.strokes) {
-                if (st.length === 2) mark(c, st[0], st[1], LINE * 0.8, line);
-                else pen(c, st, LINE * 0.7, line);
+                if (st.length === 2) mark(c, st[0], st[1], LINE * 0.8, mark_);
+                else pen(c, st, LINE * 0.7, mark_);
             }
             c.restore();
             break;
@@ -281,7 +293,7 @@ export function createWorld({ depth, clouds = null, moon = null }) {
             break;
         }
         case 'stipple': {
-            c.fillStyle = mixRgb(INK, P.ink, col * 0.85);
+            c.fillStyle = mark_;
             for (const [x, y, rr] of item.dots) { c.beginPath(); c.arc(x, y, rr, 0, Math.PI * 2); c.fill(); }
             break;
         }
@@ -295,7 +307,7 @@ export function createWorld({ depth, clouds = null, moon = null }) {
         const far = view.scaleAt(depth), half = view.width / 2 / far + 400;
         const first = Math.floor((view.cam - half) / STRETCH), last = Math.floor((view.cam + half) / STRETCH);
         const shown = [];
-        for (let i = first; i <= last; i++) for (const item of stretch(i)) if (keep(item.d)) shown.push(item);
+        for (let i = first; i <= last; i++) for (const item of stretch(i)) if (item.kind !== 'streak' && keep(item.d)) shown.push(item);
         shown.sort((a, b) => b.d - a.d);
         for (const item of shown) {
             const s = view.scaleAt(item.d), x = view.x0 + (item.x - view.cam) * s;
@@ -308,41 +320,28 @@ export function createWorld({ depth, clouds = null, moon = null }) {
     }
 
     // How much light there is: 1 all day, 0 all night, a soft dusk and dawn between
-    const light = () => { const v = 0.5 + 1.8 * Math.sin(clock * Math.PI * 2); return Math.max(0, Math.min(1, v)); };
-    // The stars of the night: the card's, spread over the whole sky
-    const stars = ciclos.night.stars.map(([x, y, r], i) => ({ x: ((x * 7.3 + i * 131) % ciclos.size) / ciclos.size, y: (y % 1300) / 1300, r }));
+    const light = () => { const v = 0.5 + 2.8 * Math.sin(clock * Math.PI * 2); return Math.max(0, Math.min(1, v)); };   // (a short dusk)
+    const lerp = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t);
+    const detailRgb = () => lerp(hex(CICLOS.detailNight), hex(CICLOS.detailDay), light());
 
-    // The sky: Ciclos's yellow by day and its teal by night, its stars, its sun and moon crossing it, and its clouds
+    // The sky: Ciclos's yellow by day, clearing as night comes so the cards' starry night behind it shows (the page draws
+    // it, useStarField.js); the sun by day and the moon by night, each rising from under the horizon, crossing the sky
+    // and setting under it (the ground, drawn after, hides them); and its clouds, a little dimmer at night
     function drawSky(c, view, top, bottom) {
         const L = light(), H = bottom - top;
-        c.fillStyle = mixRgb(hex(CICLOS.night), hex(CICLOS.sky), L); c.fillRect(0, top, view.width, H + 2);
-        // stars, coming out as it gets dark, a little twinkling
-        if (L < 0.95) {
-            c.fillStyle = CICLOS.star;
-            stars.forEach((s, i) => {
-                c.globalAlpha = (1 - L) * (0.75 + 0.25 * Math.sin(time * 1.7 + i));
-                const x = ((s.x * view.width * 1.3 - view.cam * 0.04) % view.width + view.width) % view.width;
-                c.beginPath(); c.arc(x, top + s.y * H * 0.95, s.r * 0.9, 0, Math.PI * 2); c.fill();
-            });
-            c.globalAlpha = 1;
-        }
-        // the sun by day and the moon by night, each along an arc from one side of the sky to the other
-        const scale = H / 1300 * 0.55, along = (t) => ({ x: view.width * (0.08 + 0.84 * t), y: top + H * (0.92 - 0.72 * Math.sin(Math.PI * t)) });
+        c.clearRect(0, top, view.width, H + 2);
+        c.globalAlpha = L; c.fillStyle = CICLOS.sky; c.fillRect(0, top, view.width, H + 2); c.globalAlpha = 1;
+        const scale = H / 1300 * 0.55;
+        const along = (t, r) => ({ x: view.width * (0.06 + 0.88 * t), y: bottom + r - (bottom + r - (top + H * 0.4)) * Math.sin(Math.PI * t) });   // (high, but under the buttons)
         const sunT = clock < 0.5 ? clock / 0.5 : null, moonT = clock >= 0.5 ? (clock - 0.5) / 0.5 : null;
-        if (sunT != null) {
-            const p = along(sunT), sun = ciclos.sun;
-            c.fillStyle = CICLOS.sun;
-            for (const [x, y, r] of sun.dots) { c.beginPath(); c.arc(p.x + (x - sun.x) * scale, p.y + (y - sun.y) * scale, r * scale * 1.1, 0, Math.PI * 2); c.fill(); }
-            c.beginPath(); c.arc(p.x, p.y, sun.r * scale, 0, Math.PI * 2); c.fill();
-        }
+        if (sunT != null) drawSun(c, along(sunT, ciclos.sun.r * scale * 1.6), scale);
         if (moonT != null && moon?.complete && moon.naturalWidth) {
-            const p = along(moonT), m = ciclos.moon, [bx, by, bw, bh] = ciclos.boxes.moon;
+            const m = ciclos.moon, [bx, by, bw, bh] = ciclos.boxes.moon, p = along(moonT, m.r * scale * 1.1);
             c.drawImage(moon, p.x + (bx - m.x) * scale, p.y + (by - m.y) * scale, bw * scale, bh * scale);
             c.fillStyle = CICLOS.ink; c.globalAlpha = 0.55;
             for (const [x, y, r] of m.dots) { c.beginPath(); c.arc(p.x + (x - m.x) * scale, p.y + (y - m.y) * scale, r * scale, 0, Math.PI * 2); c.fill(); }
             c.globalAlpha = 1;
         }
-        // the clouds, a little dimmer at night
         if (!clouds?.complete || !clouds.naturalWidth) return;
         const cs = H / 1300, span = Math.max(view.width * 1.6, 2160 * cs * 1.25);
         c.globalAlpha = 0.55 + 0.45 * L;
@@ -352,13 +351,49 @@ export function createWorld({ depth, clouds = null, moon = null }) {
         }
         c.globalAlpha = 1;
     }
-    // The ground: from dry to green as he meditates, and darker at night
-    const ground = () => {
-        const g = hex(CICLOS.groundDry).map((v, i) => v + (hex(CICLOS.groundDay)[i] - v) * growth);
-        const n = hex(CICLOS.groundNight), k = (1 - light()) * 0.55;
-        return `rgb(${g.map((v, i) => Math.round(v + (n[i] - v) * k)).join(',')})`;
-    };
+    // The card's living sun, as SceneCiclos draws it: a warm light round it and its own light, breathing, the disc only as
+    // big as where the sun is still whole, and over its edge its stippled corona read from the card (scripts/sun-cloud.mjs)
+    // as dots that drift, tremble and twinkle, so the disc and its stipple are one and no circle shows
+    let corona = null;
+    function drawSun(c, p, scale) {
+        const sun = ciclos.sun;
+        corona ??= sampleCloud(decodeCloud(sun.cloud), (u, v) => [u - sun.x, v - sun.y], 1).map(([x, y, size]) => [x, y, size, Math.random() * 100]);
+        const breath = Math.sin(time * 0.6), solid = sun.cloud.solid * scale, rgb = hex(CICLOS.sun);
+        const glow = (radius, colour, stops) => {
+            const g = c.createRadialGradient(p.x, p.y, 0, p.x, p.y, radius);
+            for (const [at, a] of stops) g.addColorStop(at, `rgba(${colour.join(',')},${a})`);
+            c.fillStyle = g; c.beginPath(); c.arc(p.x, p.y, radius, 0, Math.PI * 2); c.fill();
+        };
+        glow(solid * 3.4 * (1 + 0.03 * Math.sin(time * 0.4)), [255, 160, 112], [[0, 0.28], [0.3, 0.1], [0.7, 0]]);
+        glow(solid * 2.3 * (1 + 0.04 * breath), rgb, [[0, 0.7 + 0.12 * breath], [0.36, 0.3], [0.62, 0]]);
+        c.fillStyle = CICLOS.sun;
+        c.beginPath(); c.arc(p.x, p.y, solid, 0, Math.PI * 2); c.fill();
+        for (const [x, y, size, ph] of corona) {
+            const dx = Math.sin(time * 0.7 + ph) * 4 + Math.sin(time * 5.3 + ph * 3.1) * 0.9;   // drifting, trembling
+            const dy = Math.cos(time * 0.55 + ph * 1.3) * 4 + Math.cos(time * 4.7 + ph * 2.3) * 0.9;
+            const r = size / 2 * (1 + 0.3 * Math.sin(time * 2.1 + ph));                         // twinkling
+            c.beginPath(); c.arc(p.x + (x + dx) * scale, p.y + (y + dy) * scale, r * scale, 0, Math.PI * 2); c.fill();
+        }
+    }
+
+    // How dark it is (0 day .. 1 night), for the page's starry night
+    const night = () => 1 - light();
+    // The ground: the card's hills, green by day and yellow by night
+    const ground = () => `rgb(${lerp(hex(CICLOS.groundNight), hex(CICLOS.groundDay), light()).map(Math.round).join(',')})`;
+    // Its streaks (yellow by day, mustard by night), lying flat on the ground under everything
+    function drawGround(c, view) {
+        const far = view.scaleAt(depth), half = view.width / 2 / far + 400;
+        const first = Math.floor((view.cam - half) / STRETCH), last = Math.floor((view.cam + half) / STRETCH);
+        c.fillStyle = `rgb(${detailRgb().map(Math.round).join(',')})`;
+        for (let i = first; i <= last; i++) for (const item of stretch(i)) {
+            if (item.kind !== 'streak') continue;
+            const s = view.scaleAt(item.d), x = view.x0 + (item.x - view.cam) * s;
+            c.save(); c.translate(x, view.groundAt(item.d)); c.scale(s, s);
+            c.beginPath(); item.outline.forEach(([px, py], k) => (k ? c.lineTo(px, py) : c.moveTo(px, py))); c.closePath(); c.fill();
+            c.restore();
+        }
+    }
 
     // (setClock: to look at a given hour from the console, 0 sunrise .. 0.75 midnight)
-    return { update, draw, drawSky, ground, setClock: (v) => { clock = ((v % 1) + 1) % 1; } };
+    return { update, draw, drawSky, drawGround, ground, night, setClock: (v) => { clock = ((v % 1) + 1) % 1; } };
 }

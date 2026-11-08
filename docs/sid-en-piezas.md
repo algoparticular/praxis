@@ -17,8 +17,8 @@ Sid (que también es Particular) hoy llega a cada escena como un dibujo entero: 
 
 - **Infinito:** se hace por tramos según dónde está (el mismo lugar es siempre igual) y la cámara lo sigue. Los lugares especiales compuestos a mano (el árbol grande, la célula, el zorro) vienen después.
 - **La paleta y el cielo de Ciclos:** la tinta de su línea y su blanco (también para Sid), su cielo amarillo con sus nubes blancas (las de la carta, que flotan despacio), sus colinas y sus colores.
-- **El día y la noche de Ciclos:** el cielo va del amarillo del día, con su sol rojo y su punteado, al verde azulado de la noche, con sus estrellas y su luna; cada uno cruza el cielo de un lado al otro. Un día entero dura 90 s, y al meditar pasa tres veces más rápido. De noche las nubes y el suelo se oscurecen.
-- **Tinta que se colorea:** todo empieza en tinta y toma un color de Ciclos cuando Sid pasa cerca; sentado en loto, sale de él una onda que colorea todo alrededor y el suelo pasa de seco a verde, como sus colinas. Lo coloreado queda así. El color va como una acuarela bajo el dibujo, y la línea se tiñe.
+- **El día y la noche de Ciclos:** de día, su cielo amarillo con el sol vivo de la carta (el disco con su punteado leído de la carta, que se mueve, tiembla y titila, y su resplandor que respira) y el suelo verde con vetas amarillas, como sus colinas; de noche, el cielo estrellado de las cartas (`useStarField.js`, con sus estrellas fugaces) sobre su verde azulado, su luna y el suelo amarillo con vetas mostaza. El sol y la luna salen por debajo del horizonte, cruzan el cielo y se ponen. Un día entero dura 90 s, y al meditar pasa tres veces más rápido.
+- **Tinta que se colorea:** todo empieza en tinta y toma un color de Ciclos cuando Sid pasa cerca; sentado en loto, sale de él una onda que colorea todo alrededor. Lo coloreado queda así. El color va como una acuarela bajo el dibujo, y la línea se tiñe.
 - **Vivo:** el pasto se aparta a su paso, los helechos y los brotes se mecen con el viento.
 
 ### Las piezas del mundo, dibujadas
