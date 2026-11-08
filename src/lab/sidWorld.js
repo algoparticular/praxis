@@ -48,7 +48,7 @@ function tint(name, colour) {
 // the little mushrooms in the middle, between its roots, which sit on the ground (its roots spread over it, towards us)
 // (scale: 2.5 times as tall as Sid, from the foot of its mushrooms to the top of its crown, 1332 px of the drawing
 // against his 708; its line, about 11 px in the drawing, is then about 14, as his own outline)
-export const TREE = { x: 2000, d: 230, scale: 1.33, foot: { x: 640, y: 1358 } };
+export const TREE = { x: 2000, d: 230, behind: 160, scale: 1.33, foot: { x: 640, y: 1358 } };
 // The pieces spread over the world, how often each comes, what colour it takes, and whether it sways
 const SCATTER = [
     { name: 'fern', weight: 3, sway: 0.5, colour: 'green' }, { name: 'fernSmall', weight: 3, sway: 0.6, colour: 'green' },
@@ -217,13 +217,15 @@ export function createWorld({ depth, clouds = null, moon = null }) {
 
     // One of her pieces at (left, top) and scale k: what is inside its line in cream, taking the colour P as it is
     // coloured (col), and its line in ink (a plant with nothing inside takes the colour in its line instead)
-    function piece(c, name, left, top, k, P, col, tintLine = false) {
+    // (layer: 'fill' or 'line' draws only that part, so the tree can put its crown's colour behind its trunk)
+    function piece(c, name, left, top, k, P, col, tintLine = false, layer = 'both') {
         const box = boxOf(name), w = box[2] * k, h = box[3] * k;
-        if (arbol.pieces[name].fill) {
+        if (arbol.pieces[name].fill && layer !== 'line') {
             const base = tint(`${name}-fill`, CICLOS.white), coloured = col > 0.01 && tint(`${name}-fill`, `rgb(${P.light.join(',')})`);
             if (base) c.drawImage(base, left, top, w, h);
             if (coloured) { c.globalAlpha *= col; c.drawImage(coloured, left, top, w, h); c.globalAlpha /= col; }
         }
+        if (layer === 'fill') return;
         const ink = tint(name, CICLOS.ink), coloured = tintLine && col > 0.01 && tint(name, `rgb(${P.ink.join(',')})`);
         if (ink) c.drawImage(ink, left, top, w, h);
         if (coloured) { c.globalAlpha *= col * 0.85; c.drawImage(coloured, left, top, w, h); c.globalAlpha /= col * 0.85; }
@@ -256,19 +258,21 @@ export function createWorld({ depth, clouds = null, moon = null }) {
         }
         case 'tree': {
             // her tree, round its foot: the trunk with its roots, its bark, and its crown swaying a little with the wind
-            // about the top of the trunk (its plants and stones are spread over the world, each on the ground)
+            // about the top of the trunk (its plants and stones are spread over the world, each on the ground). The crown's
+            // colour goes behind the trunk, its line over it
             const k = TREE.scale, part = (name, colour, opts = {}) => {
                 const box = boxOf(name), left = (box[0] - TREE.foot.x) * k, top = (box[1] - TREE.foot.y) * k;
                 if (opts.sway) {
                     const px = left + box[2] * k / 2, py = top + box[3] * k;
                     c.save(); c.translate(px, py); c.rotate(opts.sway); c.translate(-px, -py);
-                    piece(c, name, left, top, k, PALETTE[colour], col, opts.tintLine);
+                    piece(c, name, left, top, k, PALETTE[colour], col, opts.tintLine, opts.layer);
                     c.restore();
-                } else piece(c, name, left, top, k, PALETTE[colour], col, opts.tintLine);
+                } else piece(c, name, left, top, k, PALETTE[colour], col, opts.tintLine, opts.layer);
             };
-            const breeze = wind(item.x);
+            const sway = wind(item.x) * 0.04;
+            part('crown', 1, { sway, layer: 'fill' });
             part('trunk', 4); part('bark', 4);
-            part('crown', 1, { sway: breeze * 0.04 });
+            part('crown', 1, { sway, layer: 'line' });
             break;
         }
         case 'stipple': {
@@ -282,12 +286,15 @@ export function createWorld({ depth, clouds = null, moon = null }) {
     // What is on the screen, back to front, filtered (to draw what is behind him and what is in front of him apart);
     // view: { x0, cam, groundAt(d), scaleAt(d), width }. What stands just in front of him (`him`: { x, d }) is drawn
     // faint, so it never hides him
+    // The tree is a trunk with roots, not a flat card: it counts as standing TREE.behind further back than its foot, so
+    // sitting at its roots, under its crown, he is in front of its trunk and its roots
+    const order = (item) => item.kind === 'tree' ? item.d + TREE.behind : item.d;
     function draw(c, view, keep, him = null) {
         const far = view.scaleAt(depth), half = view.width / 2 / far + 400;
         const first = Math.floor((view.cam - half) / STRETCH), last = Math.floor((view.cam + half) / STRETCH);
         const shown = [];
-        for (let i = first; i <= last; i++) for (const item of stretch(i)) if (item.kind !== 'streak' && keep(item.d)) shown.push(item);
-        shown.sort((a, b) => b.d - a.d);
+        for (let i = first; i <= last; i++) for (const item of stretch(i)) if (item.kind !== 'streak' && keep(order(item))) shown.push(item);
+        shown.sort((a, b) => order(b) - order(a));
         for (const item of shown) {
             const s = view.scaleAt(item.d), x = view.x0 + (item.x - view.cam) * s;
             const reach = (item.reach ?? 300) * s;
