@@ -11,7 +11,7 @@
 // yellow day with its red sun and its stippled corona, the teal night with its stars and its moon (moon.webp and its
 // stipple), each rising from under the horizon, crossing the sky and setting under it again; the ground is the card's
 // hills: green with yellow streaks by day, yellow with mustard-brown ones by night. The starry night itself is the
-// cards' own sky (useStarField.js), behind the yellow, which clears as night comes. While he meditates the cycle runs faster.
+// cards' own sky (useStarField.js), behind the yellow, which clears as night comes. While he meditates the world's time all but stops.
 import ciclos from '../composables/ciclosScene.json';
 import { decodeCloud, sampleCloud } from '../composables/stippleCloud.js';
 import arbol from './arbol/arbol.json';
@@ -98,7 +98,7 @@ const mixRgb = (a, b, t) => `rgb(${a.map((v, i) => Math.round(v + (b[i] - v) * t
 export function createWorld({ depth, clouds = null, moon = null }) {
     const INK = hex(CICLOS.ink);
     let clock = 0.2;                        // the cycle: 0 sunrise, 0.25 noon, 0.5 sunset, 0.75 midnight
-    const CYCLE = 90;                       // s for a whole day and night (a third of it while he meditates)
+    const CYCLE = 90;                       // s for a whole day and night
     const stretches = new Map();
     const colour = new Map();               // how much colour each thing has taken (0..1), kept when it goes off screen
     const life = new Map();                 // what moves on each thing (a bend, a hop, a blink)
@@ -175,8 +175,11 @@ export function createWorld({ depth, clouds = null, moon = null }) {
     const wind = (x) => 0.07 * Math.sin(time * 0.9 + x * 0.004) + 0.035 * Math.sin(time * 2.3 + x * 0.013);
 
     function update(dt, sid) {
-        time += dt;
-        clock = (clock + dt / CYCLE * (sid.sitting ? 3 : 1)) % 1;
+        // (sid.pace: how fast the world's time goes; while he meditates it all but stops: the wind, the clouds, the sun,
+        // the day; only the colour keeps spreading out of him)
+        const pace = sid.pace ?? 1;
+        time += dt * pace;
+        clock = (clock + dt * pace / CYCLE) % 1;
         if (sid.sitting) {
             if (!ripple) ripple = { x: sid.x, d: sid.d, r: 0 };
             ripple.r = Math.min(1400, ripple.r + dt * 260);

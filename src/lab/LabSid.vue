@@ -51,7 +51,8 @@ const FRONT_HAND = { far: { u: PIVOT.x + 132, v: 508 }, near: { u: PIVOT.x - 132
 const mix = (a, b, t) => a + (b - a) * t;
 const JUMP = { crouch: 0.34, speed: 560, gravity: 1700 };
 const PACE = 135, TROT = 235;                 // his easy pace and a trot (world px a second)
-const ZOOM = 0.22;                            // how much closer the camera comes when he is at the back   // the gathering (s), the spring up and the fall (px/s, px/s²)
+const ZOOM = 0.22;
+const STILLNESS = 0.05;                       // the world's pace while he meditates                            // how much closer the camera comes when he is at the back   // the gathering (s), the spring up and the fall (px/s, px/s²)
 
 // The world round him (sidWorld.js): endless, in ink, taking its colour as he goes
 const picture = (src) => (typeof Image !== 'undefined' ? Object.assign(new Image(), { src }) : null);
@@ -92,7 +93,8 @@ const state = {
     // from behind
     heading: -Math.PI / 2,
     held: 0,                       // how long the keys have been held (held a while, he breaks into a trot)
-    cam: 0, zoom: 1,               // where the camera looks (it follows him, the world has no end) and how close
+    cam: 0, zoom: 1,
+    pace: 1,                       // how fast the world's time goes (all but still while he meditates)               // where the camera looks (it follows him, the world has no end) and how close
     keys: { left: false, right: false, up: false, down: false },
     lift: 0, vy: 0, air: false,    // a jump
     target: null, speed: 0, phase: 0, run: 0,
@@ -330,7 +332,10 @@ function update(dt, now) {
     const lead = Math.cos(state.heading) * state.speed * 0.9;
     state.cam += (state.x + lead - state.cam) * Math.min(1, dt * 1.3);
     state.zoom += (1 + ZOOM * state.d / DEPTH - state.zoom) * Math.min(1, dt * 1.2);
-    world.update(dt, { x: state.x, d: state.d, sitting: ui.sitting && springs.drop.x > (STAND - SIT) * 0.8 });
+    // sitting in lotus, the world's time all but stops (softly, as he settles; and comes back as he gets up)
+    const meditating = ui.sitting && springs.drop.x > (STAND - SIT) * 0.8;
+    state.pace += ((meditating ? STILLNESS : 1) - state.pace) * Math.min(1, dt * (meditating ? 0.9 : 1.6));
+    world.update(dt, { x: state.x, d: state.d, sitting: meditating, pace: state.pace });
     // the rulito under the tree: born after a moment of sitting there, kept while he sits, gone when he gets up
     const seated = ui.sitting && Math.min(...state.legSit) > 0.9;
     state.underTree = seated && world.underCrown(state.x, state.d) ? state.underTree + dt : 0;
@@ -754,7 +759,7 @@ onMounted(() => {
     window.addEventListener('blur', release);
     resize();
     window.addEventListener('resize', resize);
-    stars = createStarField(starCanvas.value, nightSky.value);
+    stars = createStarField(starCanvas.value, nightSky.value, { pace: () => state.pace });
     raf = requestAnimationFrame(loop);
 });
 onBeforeUnmount(() => {
