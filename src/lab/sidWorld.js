@@ -41,8 +41,9 @@ function tint(name, colour) {
     TINTS.set(key, c);
     return c;
 }
-// Her tree: where it stands in his world (x, depth), how big, and where its foot is in her drawing (scaled)
-const TREE = { x: 1900, d: 320, scale: 0.7, foot: { x: 630, y: 1545 } };
+// Her tree: where it stands in his world (x, depth), how big, and where its foot is in her drawing (scaled): the foot of
+// the little mushrooms in the middle, between its roots, which sit on the ground (its roots spread over it, towards us)
+const TREE = { x: 1900, d: 320, scale: 0.7, foot: { x: 640, y: 1358 } };
 // The pieces spread over the world, how often each comes, what colour it takes, and whether it sways
 const SCATTER = [
     { name: 'fern', weight: 3, sway: 0.5, colour: 'green' }, { name: 'fernSmall', weight: 3, sway: 0.6, colour: 'green' },
