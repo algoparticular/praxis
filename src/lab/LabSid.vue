@@ -6,7 +6,7 @@
 // if it is what we want, the same rig goes into the WebGL stage (useLayerStage.js). Plan: docs/sid-en-piezas.md.
 import { onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import rig from './sid/sid.json';
-import { createWorld } from './sidWorld.js';
+import { CICLOS, createWorld } from './sidWorld.js';
 
 const ui = reactive({ bones: false, slow: false, sitting: false, touch: false });
 const canvas = ref(null);
@@ -14,7 +14,7 @@ const canvas = ref(null);
 // --- The rig, in px of the source drawing (258 x 686): he faces +x (his eyes are on that side) ---
 const PIVOT = { x: 130, y: 518 };             // the middle of his bottom, where his hips are: the body bends about it
 const TALL = 512;                             // from his bottom to the top of his head
-const INK = `rgb(${rig.ink.join(',')})`;
+const INK = CICLOS.ink;                          // his line and his white: Ciclos's (sidWorld.js)
 // His proportions as Nekkhamma's Sid standing (the drawing he is cut from): head 306 px of the source (to the pinch of
 // his waist), torso 181, legs 187 from his body to the floor: his legs as long as his torso, about 0.6 of his head
 // (Viriya's walker has them a little longer, 0.8). Limbs as thick as his outline.
@@ -42,7 +42,8 @@ const mix = (a, b, t) => a + (b - a) * t;
 const JUMP = { crouch: 0.34, speed: 560, gravity: 1700 };   // the gathering (s), the spring up and the fall (px/s, px/s²)
 
 // The world round him (sidWorld.js): endless, in ink, taking its colour as he goes
-const world = createWorld({ ink: '#' + rig.ink.map((v) => v.toString(16).padStart(2, '0')).join(''), cream: '#F7F8F1', depth: DEPTH });
+const clouds = typeof Image !== 'undefined' ? Object.assign(new Image(), { src: '/assets/ciclos/clouds.webp' }) : null;
+const world = createWorld({ depth: DEPTH, clouds });
 // The floor goes back into the distance: his depth d (0 in front .. DEPTH at the back) lifts his feet towards the
 // horizon and makes him smaller, towards the middle of the screen (a vanishing point)
 const DEPTH = 600;
@@ -425,7 +426,7 @@ function update(dt, now) {
 
 // His body drawn in code from his traced silhouette: the fill, his outline inside its edge (clean at any size and
 // bent with him point by point), and a little stroke at each of her hatching marks
-const LINE_W = 19, FILL = `rgb(${rig.fill.join(',')})`;
+const LINE_W = 19, FILL = CICLOS.white;
 function codeBody(c, f) {
     // turned to us his silhouette is the same widths, row by row, set straight about his middle
     const S0 = rig.silhouette, fr = f.front;
@@ -479,10 +480,10 @@ function draw() {
     const W = view.w / view.k;
 
     // The floor, back to the horizon, and him on it at his depth (smaller and nearer the middle the farther back)
-    c.fillStyle = '#E9EDD8';
+    world.drawSky(c, { width: W, cam: state.cam }, 0, groundAt(DEPTH));
+    c.fillStyle = world.ground();
     c.fillRect(0, groundAt(DEPTH) - 4, W, view.h / view.k);
     const x0 = W / 2, place = { x0, cam: state.cam, groundAt, scaleAt, width: W };
-    world.drawSky(c, place, 0, groundAt(DEPTH) - 20);
     world.draw(c, place, (d) => d > state.d);                         // what is behind him
     const depth = scaleAt(state.d);
     c.save();

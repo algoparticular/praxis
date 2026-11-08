@@ -13,10 +13,11 @@ Sid (que también es Particular) hoy llega a cada escena como un dibujo entero: 
 
 ## El mundo alrededor de Sid
 
-`src/lab/sidWorld.js` dibuja en código el mundo por donde camina, con las marcas de los bocetos: rayitas de pasto, piedras (algunas con cara de dos o tres puntos: seres que lo miran, parpadean y saltan cuando llega), pilas de piedritas, brotes que se enrulan en una bolita, helechos, punteado en el suelo y marcas de viento en el cielo. Todo con una pluma de tinta en código (trazos más anchos al medio y finos en las puntas, marcas que nacen anchas y terminan en punta).
+`src/lab/sidWorld.js` dibuja en código el mundo por donde camina, con las marcas de los bocetos: rayitas de pasto, piedras (algunas con cara de dos o tres puntos: seres que lo miran, parpadean y saltan cuando llega), pilas de piedritas, brotes que se enrulan en una bolita, helechos, punteado en el suelo. Todo con una pluma de tinta en código (trazos más anchos al medio y finos en las puntas, marcas que nacen anchas y terminan en punta).
 
 - **Infinito:** se hace por tramos según dónde está (el mismo lugar es siempre igual) y la cámara lo sigue. Los lugares especiales compuestos a mano (el árbol grande, la célula, el zorro) vienen después.
-- **Tinta que se colorea:** todo empieza en tinta y toma su color (uno de los siete de los chakras) cuando Sid pasa cerca; sentado en loto, sale de él una onda que colorea todo alrededor. Lo coloreado queda así. El color va como una acuarela bajo el dibujo, y la línea se tiñe.
+- **La paleta y el cielo de Ciclos:** la tinta de su línea y su blanco (también para Sid), su cielo amarillo con sus nubes blancas (las de la carta, que flotan despacio), sus colinas y sus colores.
+- **Tinta que se colorea:** todo empieza en tinta y toma un color de Ciclos cuando Sid pasa cerca; sentado en loto, sale de él una onda que colorea todo alrededor y se va haciendo de día: el cielo se llena del amarillo de la carta y el suelo pasa de seco a verde, como sus colinas. Lo coloreado queda así. El color va como una acuarela bajo el dibujo, y la línea se tiñe.
 - **Vivo:** el pasto se aparta a su paso, los helechos y los brotes se mecen con el viento.
 
 ### Las piezas del mundo, dibujadas

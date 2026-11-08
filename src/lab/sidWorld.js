@@ -4,8 +4,11 @@
 // and the marks of the wind in the sky. It is endless: it is made a stretch at a time from where it is (the same
 // place is always the same), and only what is on the screen is drawn. Everything starts in ink and takes its colour
 // (one of the seven of the chakras) as he walks by it, and all round him when he sits in lotus (a wave goes out of
-// him); what has taken its colour keeps it.
-import { CHAKRA_COLORS } from '../data/chakraColors.js';
+// him); what has taken its colour keeps it. The palette, the clouds and the day are Ciclos's (CICLOS below): the ink of its
+// line, its white Sid, its yellow sky, its hills that go from dry to green, and its white clouds (its own atlas,
+// public/assets/ciclos/clouds.webp, with the boxes in ciclosScene.json); while he meditates the day comes on (`day`,
+// kept): the sky fills with the card's yellow and the ground turns from dry to green, as the hills of the card do.
+import ciclos from '../composables/ciclosScene.json';
 
 const STRETCH = 520;            // the width of the stretch of world made at a time (px of his world)
 const LINE = 7;                 // the pen: thinner than his own outline, so he stays the one you look at
@@ -22,13 +25,23 @@ function random(seed) {
 }
 
 const hex = (h) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
-const PALETTE = CHAKRA_COLORS.map((c) => ({ light: hex(c.light), ink: hex(c.ink) }));
-const GREENS = [3, 4, 4, 5];    // the ground's plants: mostly Vulpes's green and Aura's teal (and Kätus's yellow)
-const WARM = [0, 1, 2, 6];      // the beads of the sprouts
+// Ciclos's colours (read off the card): its ink, its white, its sky, its dry and green hills, and what things take as they
+// are coloured: its teal night, its green, its coral sun, its yellow, the tan of its dry hills and the pink of its fans
+export const CICLOS = {
+    ink: '#32300B', white: '#FEFEFD', skyDawn: '#FDF0C8', sky: '#FED889', groundDry: '#F2DC9A', groundDay: '#A9CB8E',
+    colours: [
+        { light: '#1BAFAF', ink: '#0B7B7B' }, { light: '#64A57A', ink: '#3E7A55' }, { light: '#FF7878', ink: '#C84A4A' },
+        { light: '#FFD36E', ink: '#B08A1E' }, { light: '#C8B070', ink: '#857033' }, { light: '#F2A48C', ink: '#B4664F' },
+    ],
+};
+const PALETTE = CICLOS.colours.map((c) => ({ light: hex(c.light), ink: hex(c.ink) }));
+const GREENS = [1, 0, 1, 3];    // the ground's plants: mostly its green and its teal (and its yellow)
+const WARM = [2, 5, 3, 0];      // the beads of the sprouts
 const mixRgb = (a, b, t) => `rgb(${a.map((v, i) => Math.round(v + (b[i] - v) * t)).join(',')})`;
 
-export function createWorld({ ink, cream, depth }) {
-    const INK = hex(ink), CREAM = hex(cream);
+export function createWorld({ depth, clouds = null }) {
+    const INK = hex(CICLOS.ink), CREAM = hex(CICLOS.white);
+    let day = 0;                            // the day coming on while he meditates (0..1), kept
     const stretches = new Map();
     const colour = new Map();               // how much colour each thing has taken (0..1), kept when it goes off screen
     const life = new Map();                 // what moves on each thing (a bend, a hop, a blink)
@@ -66,7 +79,7 @@ export function createWorld({ ink, cream, depth }) {
                 outline.push([Math.cos(a) * w / 2 * rr, Math.min(h * 0.4, Math.sin(a) * h / 2 * rr) - h * 0.42]);   // whole ovals, resting on a flat bit
             }
             const face = r() < 0.45 ? (r() < 0.6 ? [[-0.12, -0.62], [0.08, -0.6]] : [[-0.1, -0.66], [0.1, -0.66], [0, -0.52]]) : null;
-            add({ kind: 'stone', x: p.x, d: p.d, w, h, outline, face, color: Math.floor(r() * 7), blinkAt: r() * 5 });
+            add({ kind: 'stone', x: p.x, d: p.d, w, h, outline, face, color: Math.floor(r() * PALETTE.length), blinkAt: r() * 5 });
             for (let k = 0; k < 5; k++) tick(p.x + (r() - 0.5) * w * 1.3, p.d + (r() - 0.5) * 30, 0.9);
         }
         // a stack of pebbles
@@ -78,7 +91,7 @@ export function createWorld({ ink, cream, depth }) {
                 stack.push({ dx: (r() - 0.5) * 8, y, w, h });
                 y -= h * 0.85;
             }
-            add({ kind: 'cairn', x: p.x, d: p.d, stack, color: Math.floor(r() * 7) });
+            add({ kind: 'cairn', x: p.x, d: p.d, stack, color: Math.floor(r() * PALETTE.length) });
         }
         // sprouts that curl up into a bead
         for (let n = 0; n < 3; n++) {
@@ -97,17 +110,14 @@ export function createWorld({ ink, cream, depth }) {
                 const a = r() * Math.PI * 2, t = Math.pow(r(), 0.7);
                 dots.push([Math.cos(a) * R * t, Math.sin(a) * R * t * 0.3, 1.6 + r() * 2.4 * (1 - t)]);
             }
-            add({ kind: 'stipple', x: p.x, d: p.d, dots, color: Math.floor(r() * 7) });
+            add({ kind: 'stipple', x: p.x, d: p.d, dots, color: Math.floor(r() * PALETTE.length) });
         }
         return items;
     }
     const stretch = (i) => { if (!stretches.has(i)) stretches.set(i, make(i)); return stretches.get(i); };
 
-    // The marks of the wind in the sky (⊂⊂): a few, drifting, far away (they move little with the camera)
-    const sky = Array.from({ length: 7 }, (_, i) => {
-        const r = random(9000 + i);
-        return { x: r() * 2400, y: r(), s: 0.7 + r() * 0.6, speed: 8 + r() * 14, n: 1 + Math.floor(r() * 2) };
-    });
+    // The clouds of Ciclos, drifting slowly far away (they move little with the camera), where the card has them
+    const sky = ciclos.clouds.map(([x, y, w, h, ax, ay], i) => ({ x: x / ciclos.size, y: y / 1300, w, h, ax, ay, speed: 5 + (i % 5) * 2.5 }));
 
     // ---- what moves ----
     const lifeOf = (item) => {
@@ -121,6 +131,7 @@ export function createWorld({ ink, cream, depth }) {
         if (sid.sitting) {
             if (!ripple) ripple = { x: sid.x, d: sid.d, r: 0 };
             ripple.r = Math.min(1400, ripple.r + dt * 260);
+            day = Math.min(1, day + dt * 0.06);
         } else ripple = null;
         for (const [i, items] of stretches) {
             if (Math.abs(i * STRETCH - sid.x) > 3000) continue;
@@ -290,21 +301,21 @@ export function createWorld({ ink, cream, depth }) {
         }
     }
 
+    // The sky (Ciclos's yellow, pale at dawn and full with the day, a touch lighter low down) and its clouds
     function drawSky(c, view, top, bottom) {
-        const span = view.width + 600;
+        const g = c.createLinearGradient(0, top, 0, bottom);
+        g.addColorStop(0, mixRgb(hex(CICLOS.skyDawn), hex(CICLOS.sky), day));
+        g.addColorStop(1, mixRgb(hex(CICLOS.skyDawn), hex(CICLOS.sky), day * 0.75));
+        c.fillStyle = g; c.fillRect(0, top, view.width, bottom - top + 2);
+        if (!clouds?.complete || !clouds.naturalWidth) return;
+        const scale = (bottom - top) / 1300, span = Math.max(view.width * 1.6, 2160 * scale * 1.25);
         for (const m of sky) {
-            const x = ((((m.x + time * m.speed - view.cam * 0.25) % span) + span) % span) - 300;
-            const y = top + (bottom - top) * (0.15 + m.y * 0.7);
-            c.save(); c.translate(x, y); c.scale(m.s, m.s);
-            for (let k = 0; k < m.n; k++) {
-                const pts = [];
-                for (let j = 0; j <= 8; j++) { const a = Math.PI * 0.5 + (j / 8) * Math.PI; pts.push([Math.cos(a) * 16 + 34 + k * 26, Math.sin(a) * 9]); }
-                pen(c, pts, 4.5, `rgb(${INK.join(',')})`);
-                pen(c, [[34 + k * 26, -9], [70 + k * 26 + 20, -9]], 4.5, `rgb(${INK.join(',')})`);
-            }
-            c.restore();
+            const x = ((((m.x * span + time * m.speed - view.cam * 0.15) % span) + span) % span) - m.w * scale;
+            c.drawImage(clouds, m.ax, m.ay, m.w, m.h, x, top + m.y * (bottom - top) * 0.92, m.w * scale, m.h * scale);
         }
     }
+    // The ground, from dry to green as the day comes on
+    const ground = () => mixRgb(hex(CICLOS.groundDry), hex(CICLOS.groundDay), day);
 
-    return { update, draw, drawSky };
+    return { update, draw, drawSky, ground };
 }
