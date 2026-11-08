@@ -21,8 +21,9 @@ const INK = CICLOS.ink;                          // his line and his white: Cicl
 // His proportions as Nekkhamma's Sid standing (the drawing he is cut from): head 306 px of the source (to the pinch of
 // his waist), torso 181, legs 187 from his body to the floor: his legs as long as his torso, about 0.6 of his head
 // (Viriya's walker has them a little longer, 0.8). Limbs as thick as his outline.
-const LEG = { thigh: 97, shin: 97, foot: 40, width: 22 };
-const ARM = { upper: 108, fore: 102, width: 18 };        // long, as in Upekkha (they reach his crossed legs)
+const SMALL = 0.84;
+const LEG = { thigh: 97, shin: 97, foot: 40, width: 18 };
+const ARM = { upper: 108, fore: 102, width: 15 };        // long, as in Upekkha (they reach his crossed legs)
 const STAND = 196;                            // his hips over the ground, standing: his legs all but straight
 const SIT = 52;                               // his hips over the ground, sitting with his legs crossed
 // In profile his hips are together in his middle (one leg behind the other), his arms come from the middle of him
@@ -160,9 +161,10 @@ function resize() {
     el.width = view.w * view.dpr; el.height = view.h * view.dpr;
     // He is about half the height of the screen
     // (on a phone the floor ends higher, so his feet are never under the buttons, the pad and the lotus)
-    view.k = Math.min((ui.touch ? Math.min(view.h * 0.47, view.h - 330) : view.h * 0.62) / (TALL + STAND), view.w * 0.9 / 420);
+    // (SMALL: he is a little smaller than at first, so the world, and her tree, are big round him)
+    view.k = SMALL * Math.min((ui.touch ? Math.min(view.h * 0.47, view.h - 330) : view.h * 0.62) / (TALL + STAND), view.w * 0.9 / 420);
     const was = state.ground;
-    state.ground = (ui.touch ? Math.min(view.h * 0.63, view.h - 252) : view.h * 0.8) / view.k;   // (252: the row of buttons, the pad)
+    state.ground = (ui.touch ? Math.min(view.h * 0.63, view.h - 252) : view.h * 0.83) / view.k;   // (252: the row of buttons, the pad)
     view.floor = (view.h * (ui.touch ? 0.18 : 0.26)) / view.k;     // from the front of the floor to the horizon
     if (!was) { state.x = view.w / view.k / 2; state.cam = state.x; }
     // the starry night fills the sky, down to the horizon
@@ -439,7 +441,7 @@ function update(dt, now) {
 
 // His body drawn in code from his traced silhouette: the fill, his outline inside its edge (clean at any size and
 // bent with him point by point), and a little stroke at each of her hatching marks
-const LINE_W = 19, FILL = CICLOS.white;
+const LINE_W = 16, FILL = CICLOS.white;
 function codeBody(c, f) {
     // turned to us his silhouette is the same widths, row by row, set straight about his middle
     const S0 = rig.silhouette, fr = f.front;
@@ -476,7 +478,7 @@ function codeBody(c, f) {
         for (let j = 1; j <= SEG; j++) {
             const t = j / SEG, sag = (2.2 + vary) * t * t;                  // the stroke bends down as it goes
             const next = at(base + reach * t, v + sag);
-            c.lineWidth = mix(7.6 + vary * 0.6, 2.2, Math.pow((j - 0.5) / SEG, 0.8));
+            c.lineWidth = mix(6.6 + vary * 0.5, 2, Math.pow((j - 0.5) / SEG, 0.8));
             c.beginPath(); c.moveTo(prev.x, prev.y); c.lineTo(next.x, next.y); c.stroke();
             prev = next;
         }

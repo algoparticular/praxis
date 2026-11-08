@@ -43,7 +43,7 @@ function tint(name, colour) {
 }
 // Her tree: where it stands in his world (x, depth), how big, and where its foot is in her drawing (scaled): the foot of
 // the little mushrooms in the middle, between its roots, which sit on the ground (its roots spread over it, towards us)
-const TREE = { x: 2000, d: 470, scale: 0.9, foot: { x: 640, y: 1358 } };   // (big, and further back so its crown fits)
+const TREE = { x: 2000, d: 470, scale: 1.18, foot: { x: 640, y: 1358 } };   // (big, and further back so its crown fits)
 // The pieces spread over the world, how often each comes, what colour it takes, and whether it sways
 const SCATTER = [
     { name: 'fern', weight: 3, sway: 0.5, colour: 'green' }, { name: 'fernSmall', weight: 3, sway: 0.6, colour: 'green' },
@@ -114,7 +114,8 @@ export function createWorld({ depth, clouds = null, moon = null }) {
         // her tree, where it stands (its stretch keeps clear round it for its own plants)
         const treeHere = TREE.x >= index * STRETCH && TREE.x < (index + 1) * STRETCH;
         if (treeHere) add({ kind: 'tree', x: TREE.x, d: TREE.d, reach: 700 });
-        const clear = (p) => Math.abs(p.x - TREE.x) > 380 || Math.abs(p.d - TREE.d) > 90;   // (not inside its trunk)
+        // nothing of the world stands on or just in front of its roots (as the camera moves it would cross them)
+        const clear = (p) => Math.abs(p.x - TREE.x) > 640 || p.d < TREE.d - 300 || p.d > TREE.d + 140;
 
         for (let n = 0; n < 34; n++) { const p = at(); if (clear(p)) tick(p.x, p.d); }
         // her pieces, spread: ferns, sprouts, pebbles, now and then a stack of them
