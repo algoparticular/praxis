@@ -17,7 +17,8 @@ Sid (que también es Particular) hoy llega a cada escena como un dibujo entero: 
 
 - **Infinito:** se hace por tramos según dónde está (el mismo lugar es siempre igual) y la cámara lo sigue. Los lugares especiales compuestos a mano (el árbol grande, la célula, el zorro) vienen después.
 - **La paleta y el cielo de Ciclos:** la tinta de su línea y su blanco (también para Sid), su cielo amarillo con sus nubes blancas (las de la carta, que flotan despacio), sus colinas y sus colores.
-- **Tinta que se colorea:** todo empieza en tinta y toma un color de Ciclos cuando Sid pasa cerca; sentado en loto, sale de él una onda que colorea todo alrededor y se va haciendo de día: el cielo se llena del amarillo de la carta y el suelo pasa de seco a verde, como sus colinas. Lo coloreado queda así. El color va como una acuarela bajo el dibujo, y la línea se tiñe.
+- **El día y la noche de Ciclos:** el cielo va del amarillo del día, con su sol rojo y su punteado, al verde azulado de la noche, con sus estrellas y su luna; cada uno cruza el cielo de un lado al otro. Un día entero dura 90 s, y al meditar pasa tres veces más rápido. De noche las nubes y el suelo se oscurecen.
+- **Tinta que se colorea:** todo empieza en tinta y toma un color de Ciclos cuando Sid pasa cerca; sentado en loto, sale de él una onda que colorea todo alrededor y el suelo pasa de seco a verde, como sus colinas. Lo coloreado queda así. El color va como una acuarela bajo el dibujo, y la línea se tiñe.
 - **Vivo:** el pasto se aparta a su paso, los helechos y los brotes se mecen con el viento.
 
 ### Las piezas del mundo, dibujadas

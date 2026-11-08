@@ -6,8 +6,10 @@
 // (one of the seven of the chakras) as he walks by it, and all round him when he sits in lotus (a wave goes out of
 // him); what has taken its colour keeps it. The palette, the clouds and the day are Ciclos's (CICLOS below): the ink of its
 // line, its white Sid, its yellow sky, its hills that go from dry to green, and its white clouds (its own atlas,
-// public/assets/ciclos/clouds.webp, with the boxes in ciclosScene.json); while he meditates the day comes on (`day`,
-// kept): the sky fills with the card's yellow and the ground turns from dry to green, as the hills of the card do.
+// public/assets/ciclos/clouds.webp, with the boxes in ciclosScene.json). Day and night come and go as in the card: the
+// yellow day with its red sun and its stippled corona, the teal night with its stars and its moon (moon.webp and its
+// stipple), each crossing the sky; while he meditates the cycle runs faster and the ground turns from dry to green
+// (`growth`, kept), as the hills of the card do.
 import ciclos from '../composables/ciclosScene.json';
 
 const STRETCH = 520;            // the width of the stretch of world made at a time (px of his world)
@@ -28,7 +30,8 @@ const hex = (h) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), pa
 // Ciclos's colours (read off the card): its ink, its white, its sky, its dry and green hills, and what things take as they
 // are coloured: its teal night, its green, its coral sun, its yellow, the tan of its dry hills and the pink of its fans
 export const CICLOS = {
-    ink: '#32300B', white: '#FEFEFD', skyDawn: '#FDF0C8', sky: '#FED889', groundDry: '#F2DC9A', groundDay: '#A9CB8E',
+    ink: '#32300B', white: '#FEFEFD', sky: '#FED889', night: '#039CA8', star: '#FCDC8C', sun: '#FB767B',
+    groundDry: '#F2DC9A', groundDay: '#A9CB8E', groundNight: '#3F6E63',
     colours: [
         { light: '#1BAFAF', ink: '#0B7B7B' }, { light: '#64A57A', ink: '#3E7A55' }, { light: '#FF7878', ink: '#C84A4A' },
         { light: '#FFD36E', ink: '#B08A1E' }, { light: '#C8B070', ink: '#857033' }, { light: '#F2A48C', ink: '#B4664F' },
@@ -39,9 +42,11 @@ const GREENS = [1, 0, 1, 3];    // the ground's plants: mostly its green and its
 const WARM = [2, 5, 3, 0];      // the beads of the sprouts
 const mixRgb = (a, b, t) => `rgb(${a.map((v, i) => Math.round(v + (b[i] - v) * t)).join(',')})`;
 
-export function createWorld({ depth, clouds = null }) {
+export function createWorld({ depth, clouds = null, moon = null }) {
     const INK = hex(CICLOS.ink), CREAM = hex(CICLOS.white);
-    let day = 0;                            // the day coming on while he meditates (0..1), kept
+    let growth = 0;                         // the ground turning green while he meditates (0..1), kept
+    let clock = 0.2;                        // the cycle: 0 sunrise, 0.25 noon, 0.5 sunset, 0.75 midnight
+    const CYCLE = 90;                       // s for a whole day and night (a third of it while he meditates)
     const stretches = new Map();
     const colour = new Map();               // how much colour each thing has taken (0..1), kept when it goes off screen
     const life = new Map();                 // what moves on each thing (a bend, a hop, a blink)
@@ -128,10 +133,11 @@ export function createWorld({ depth, clouds = null }) {
 
     function update(dt, sid) {
         time += dt;
+        clock = (clock + dt / CYCLE * (sid.sitting ? 3 : 1)) % 1;
         if (sid.sitting) {
             if (!ripple) ripple = { x: sid.x, d: sid.d, r: 0 };
             ripple.r = Math.min(1400, ripple.r + dt * 260);
-            day = Math.min(1, day + dt * 0.06);
+            growth = Math.min(1, growth + dt * 0.06);
         } else ripple = null;
         for (const [i, items] of stretches) {
             if (Math.abs(i * STRETCH - sid.x) > 3000) continue;
@@ -301,21 +307,58 @@ export function createWorld({ depth, clouds = null }) {
         }
     }
 
-    // The sky (Ciclos's yellow, pale at dawn and full with the day, a touch lighter low down) and its clouds
-    function drawSky(c, view, top, bottom) {
-        const g = c.createLinearGradient(0, top, 0, bottom);
-        g.addColorStop(0, mixRgb(hex(CICLOS.skyDawn), hex(CICLOS.sky), day));
-        g.addColorStop(1, mixRgb(hex(CICLOS.skyDawn), hex(CICLOS.sky), day * 0.75));
-        c.fillStyle = g; c.fillRect(0, top, view.width, bottom - top + 2);
-        if (!clouds?.complete || !clouds.naturalWidth) return;
-        const scale = (bottom - top) / 1300, span = Math.max(view.width * 1.6, 2160 * scale * 1.25);
-        for (const m of sky) {
-            const x = ((((m.x * span + time * m.speed - view.cam * 0.15) % span) + span) % span) - m.w * scale;
-            c.drawImage(clouds, m.ax, m.ay, m.w, m.h, x, top + m.y * (bottom - top) * 0.92, m.w * scale, m.h * scale);
-        }
-    }
-    // The ground, from dry to green as the day comes on
-    const ground = () => mixRgb(hex(CICLOS.groundDry), hex(CICLOS.groundDay), day);
+    // How much light there is: 1 all day, 0 all night, a soft dusk and dawn between
+    const light = () => { const v = 0.5 + 1.8 * Math.sin(clock * Math.PI * 2); return Math.max(0, Math.min(1, v)); };
+    // The stars of the night: the card's, spread over the whole sky
+    const stars = ciclos.night.stars.map(([x, y, r], i) => ({ x: ((x * 7.3 + i * 131) % ciclos.size) / ciclos.size, y: (y % 1300) / 1300, r }));
 
-    return { update, draw, drawSky, ground };
+    // The sky: Ciclos's yellow by day and its teal by night, its stars, its sun and moon crossing it, and its clouds
+    function drawSky(c, view, top, bottom) {
+        const L = light(), H = bottom - top;
+        c.fillStyle = mixRgb(hex(CICLOS.night), hex(CICLOS.sky), L); c.fillRect(0, top, view.width, H + 2);
+        // stars, coming out as it gets dark, a little twinkling
+        if (L < 0.95) {
+            c.fillStyle = CICLOS.star;
+            stars.forEach((s, i) => {
+                c.globalAlpha = (1 - L) * (0.75 + 0.25 * Math.sin(time * 1.7 + i));
+                const x = ((s.x * view.width * 1.3 - view.cam * 0.04) % view.width + view.width) % view.width;
+                c.beginPath(); c.arc(x, top + s.y * H * 0.95, s.r * 0.9, 0, Math.PI * 2); c.fill();
+            });
+            c.globalAlpha = 1;
+        }
+        // the sun by day and the moon by night, each along an arc from one side of the sky to the other
+        const scale = H / 1300 * 0.55, along = (t) => ({ x: view.width * (0.08 + 0.84 * t), y: top + H * (0.92 - 0.72 * Math.sin(Math.PI * t)) });
+        const sunT = clock < 0.5 ? clock / 0.5 : null, moonT = clock >= 0.5 ? (clock - 0.5) / 0.5 : null;
+        if (sunT != null) {
+            const p = along(sunT), sun = ciclos.sun;
+            c.fillStyle = CICLOS.sun;
+            for (const [x, y, r] of sun.dots) { c.beginPath(); c.arc(p.x + (x - sun.x) * scale, p.y + (y - sun.y) * scale, r * scale * 1.1, 0, Math.PI * 2); c.fill(); }
+            c.beginPath(); c.arc(p.x, p.y, sun.r * scale, 0, Math.PI * 2); c.fill();
+        }
+        if (moonT != null && moon?.complete && moon.naturalWidth) {
+            const p = along(moonT), m = ciclos.moon, [bx, by, bw, bh] = ciclos.boxes.moon;
+            c.drawImage(moon, p.x + (bx - m.x) * scale, p.y + (by - m.y) * scale, bw * scale, bh * scale);
+            c.fillStyle = CICLOS.ink; c.globalAlpha = 0.55;
+            for (const [x, y, r] of m.dots) { c.beginPath(); c.arc(p.x + (x - m.x) * scale, p.y + (y - m.y) * scale, r * scale, 0, Math.PI * 2); c.fill(); }
+            c.globalAlpha = 1;
+        }
+        // the clouds, a little dimmer at night
+        if (!clouds?.complete || !clouds.naturalWidth) return;
+        const cs = H / 1300, span = Math.max(view.width * 1.6, 2160 * cs * 1.25);
+        c.globalAlpha = 0.55 + 0.45 * L;
+        for (const m of sky) {
+            const x = ((((m.x * span + time * m.speed - view.cam * 0.15) % span) + span) % span) - m.w * cs;
+            c.drawImage(clouds, m.ax, m.ay, m.w, m.h, x, top + m.y * H * 0.92, m.w * cs, m.h * cs);
+        }
+        c.globalAlpha = 1;
+    }
+    // The ground: from dry to green as he meditates, and darker at night
+    const ground = () => {
+        const g = hex(CICLOS.groundDry).map((v, i) => v + (hex(CICLOS.groundDay)[i] - v) * growth);
+        const n = hex(CICLOS.groundNight), k = (1 - light()) * 0.55;
+        return `rgb(${g.map((v, i) => Math.round(v + (n[i] - v) * k)).join(',')})`;
+    };
+
+    // (setClock: to look at a given hour from the console, 0 sunrise .. 0.75 midnight)
+    return { update, draw, drawSky, ground, setClock: (v) => { clock = ((v % 1) + 1) % 1; } };
 }

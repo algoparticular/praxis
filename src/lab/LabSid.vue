@@ -42,8 +42,8 @@ const mix = (a, b, t) => a + (b - a) * t;
 const JUMP = { crouch: 0.34, speed: 560, gravity: 1700 };   // the gathering (s), the spring up and the fall (px/s, px/s²)
 
 // The world round him (sidWorld.js): endless, in ink, taking its colour as he goes
-const clouds = typeof Image !== 'undefined' ? Object.assign(new Image(), { src: '/assets/ciclos/clouds.webp' }) : null;
-const world = createWorld({ depth: DEPTH, clouds });
+const picture = (src) => (typeof Image !== 'undefined' ? Object.assign(new Image(), { src }) : null);
+const world = createWorld({ depth: DEPTH, clouds: picture('/assets/ciclos/clouds.webp'), moon: picture('/assets/ciclos/moon.webp') });
 // The floor goes back into the distance: his depth d (0 in front .. DEPTH at the back) lifts his feet towards the
 // horizon and makes him smaller, towards the middle of the screen (a vanishing point)
 const DEPTH = 600;
@@ -592,7 +592,7 @@ function loop(now) {
 }
 
 // (for trying him out from the browser's console)
-if (typeof window !== 'undefined') window.__sid = { state, springs, ui };
+if (typeof window !== 'undefined') window.__sid = { state, springs, ui, world };
 
 onMounted(() => {
     ui.touch = window.matchMedia?.('(pointer: coarse)').matches ?? false;
