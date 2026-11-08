@@ -8,11 +8,17 @@ import { onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import rig from './sid/sid.json';
 import { CICLOS, createWorld } from './sidWorld.js';
 import { createStarField } from '../composables/useStarField.js';
+import Rulito from '../components/Rulito.vue';
+import { play } from '../composables/useSound.js';
 
 const ui = reactive({ bones: false, slow: false, sitting: false, touch: false });
 const canvas = ref(null);
 const nightSky = ref(null), starCanvas = ref(null);   // the cards' starry night, behind the drawing (useStarField.js)
 let stars = null;
+// Sitting in lotus under the crown of her tree, after a moment (RULITO_AFTER) the rulito is born over his head, as in the
+// cards (Rulito.vue, in the red of Ciclos's), and stays while he sits; when he gets up its tail catches up with it
+const rulito = ref(null);
+const RULITO_AFTER = 3, RULITO_GROW = 2.2, RULITO_GO = 3.4;
 
 // --- The rig, in px of the source drawing (258 x 686): he faces +x (his eyes are on that side) ---
 const PIVOT = { x: 130, y: 518 };             // the middle of his bottom, where his hips are: the body bends about it
@@ -88,7 +94,8 @@ const state = {
     pointer: null, pointerAt: 0,   // the pointer on the screen (px / k)
     glance: null, nextGlance: 3,
     feet: [null, null], steps: [null, null], toes: [0, 0], legTuck: [0, 0],
-    legSit: [0, 0], sitT: 9, rising: false, settled: true,      // sitting down in lotus and getting up, leg by leg
+    legSit: [0, 0], sitT: 9, rising: false, settled: true,
+    underTree: 0, rul: null,                                 // seconds sitting under the tree, the rulito born there      // sitting down in lotus and getting up, leg by leg
     reach: null,                   // a world point his near hand goes to
     reached: null,                 // the last one (his hand comes back from it)
 };
@@ -256,6 +263,18 @@ function update(dt, now) {
     // The camera follows him (softly, so he moves a little on the screen as he sets off and stops)
     state.cam += (state.x - state.cam) * Math.min(1, dt * 1.6);
     world.update(dt, { x: state.x, d: state.d, sitting: ui.sitting && springs.drop.x > (STAND - SIT) * 0.8 });
+    // the rulito under the tree: born after a moment of sitting there, kept while he sits, gone when he gets up
+    const seated = ui.sitting && Math.min(...state.legSit) > 0.9;
+    state.underTree = seated && world.underCrown(state.x, state.d) ? state.underTree + dt : 0;
+    if (state.underTree >= RULITO_AFTER && !state.rul) { state.rul = { age: 0, head: 0, tail: 0, pop: 0, full: false }; rulito.value?.reshape(); }
+    if (state.rul) {
+        const r = state.rul;
+        r.age += dt; r.pop = Math.max(0, r.pop - dt * 2.2);
+        r.head = 1 - (1 - Math.min(1, r.age / RULITO_GROW)) ** 1.6;
+        if (r.head >= 1 && !r.full) { r.full = true; r.pop = 1; play('rulito'); }
+        if (!ui.sitting) r.tail = Math.min(1, r.tail + dt / RULITO_GO);
+        if (r.tail >= 1) { state.rul = null; rulito.value?.frame({ width: 40 }); }
+    }
     S.walk.to = walking;
     const STRIDE = 100;                       // a relaxed step: about 1.35 steps a second at full speed
     if (state.speed > 0) state.phase = (state.phase + state.speed * dt / (2 * STRIDE)) % 1;
@@ -588,6 +607,15 @@ function draw() {
     if (inFront) drawLegs();
     drawArm(arms[1]);
 
+    // The rulito over his head (its canvas is bigger than the glyph, 32 x 86, by 14 all round, for its glow)
+    if (state.rul && rulito.value) {
+        const r = state.rul, glyph = 92, u = glyph / 32, head = map(f, PIVOT.x, rig.silhouette.crown[1]);
+        const flare = r.full && r.head - r.tail > 0.9 ? Math.max(r.pop, Math.sin(performance.now() / 250) * 0.5 + 0.5) : 0;
+        rulito.value.frame({ head: r.head, tail: r.tail, flare, t: performance.now() / 1000, fade: Math.min(1, (r.head - r.tail) * 14), width: glyph * view.k * scaleAt(state.d) });
+        const grow = 1 + 0.2 * r.pop * r.pop, w = (32 + 28) * u * grow, h = (86 + 28) * u * grow;
+        c.drawImage(rulito.value.canvas, head.x - w / 2, head.y - 40 - h + 14 * u, w, h);
+    }
+
     if (ui.bones) {
         c.lineWidth = 2; c.strokeStyle = '#FF6F61'; c.fillStyle = '#FF6F61';
         const dot = (q) => { c.beginPath(); c.arc(q.x, q.y, 4, 0, Math.PI * 2); c.fill(); };
@@ -636,6 +664,8 @@ onBeforeUnmount(() => {
 <template>
     <div class="lab">
         <div ref="nightSky" class="night-sky"><canvas ref="starCanvas"></canvas></div>
+        <!-- the rulito draws itself on its own canvas, which this scene lays over his head -->
+        <Rulito ref="rulito" class="offstage" color="#fc747c" />
         <canvas ref="canvas" @pointermove="onMove" @pointerdown="onDown"></canvas>
         <p v-if="ui.touch" class="hint">Camínalo con las flechas: el mundo se colorea a su paso. Loto: todo alrededor.</p>
         <p v-else class="hint">Flechas o WASD: camina y el mundo se colorea a su paso. Barra espaciadora: loto, y se colorea todo alrededor.</p>
@@ -677,6 +707,13 @@ canvas {
     touch-action: none;
 }
 /* The cards' starry night (useStarField.js) behind the drawing, in Ciclos's teal: it shows as the yellow clears */
+.offstage {
+    position: absolute;
+    left: -9999px;
+    top: 0;
+    width: 40px;
+    visibility: hidden;
+}
 .night-sky {
     position: absolute;
     left: 0;

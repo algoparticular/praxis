@@ -48,7 +48,7 @@ function tint(name, colour) {
 // the little mushrooms in the middle, between its roots, which sit on the ground (its roots spread over it, towards us)
 // (scale: 2.5 times as tall as Sid, from the foot of its mushrooms to the top of its crown, 1332 px of the drawing
 // against his 708; its line, about 11 px in the drawing, is then about 14, as his own outline)
-const TREE = { x: 2000, d: 230, scale: 1.33, foot: { x: 640, y: 1358 } };
+export const TREE = { x: 2000, d: 230, scale: 1.33, foot: { x: 640, y: 1358 } };
 // The pieces spread over the world, how often each comes, what colour it takes, and whether it sways
 const SCATTER = [
     { name: 'fern', weight: 3, sway: 0.5, colour: 'green' }, { name: 'fernSmall', weight: 3, sway: 0.6, colour: 'green' },
@@ -376,6 +376,12 @@ export function createWorld({ depth, clouds = null, moon = null }) {
         }
     }
 
+    // Whether a place (x, depth) is under the crown of her tree
+    const underCrown = (x, d) => {
+        const crown = boxOf('crown'), middle = TREE.x + (crown[0] + crown[2] / 2 - TREE.foot.x) * TREE.scale;
+        return Math.abs(x - middle) < crown[2] * TREE.scale * 0.42 && Math.abs(d - TREE.d) < 260;
+    };
+
     // (setClock: to look at a given hour from the console, 0 sunrise .. 0.75 midnight)
-    return { update, draw, drawSky, drawGround, ground, night, setClock: (v) => { clock = ((v % 1) + 1) % 1; } };
+    return { update, draw, drawSky, drawGround, ground, night, underCrown, setClock: (v) => { clock = ((v % 1) + 1) % 1; } };
 }
