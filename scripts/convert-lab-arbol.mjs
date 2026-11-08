@@ -19,10 +19,11 @@ import sharp from 'sharp';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const source = path.join(root, 'originales', 'arbol');
 const target = path.join(root, 'src', 'lab', 'arbol');
-const SCALE = 0.4;            // the drawing at 1296 x 1620 (the tree is about 1560 px tall, a little over two Sids)
-const THICKER = 1.3;          // px (scaled) her line is thickened by
-const GAP = 2;                // px (scaled) the line is thickened by before finding what is inside
-const SMALLEST = 40;          // px (scaled) of white inside, below which it is not a shape (a gap between strokes)
+const SCALE = 0.8;            // the drawing at 2592 x 3240: sharp even big on a dense phone screen (the lab draws
+                              // with its sizes in units of 0.4 of the drawing, so this only changes how sharp it is)
+const THICKER = 2.6;          // px (scaled) her line is thickened by
+const GAP = 4;                // px (scaled) the line is thickened by before finding what is inside
+const SMALLEST = 160;         // px (scaled) of white inside, below which it is not a shape (a gap between strokes)
 
 // Each layer, what it is and how its inside is found
 const PIECES = [
@@ -85,7 +86,7 @@ for (const piece of PIECES) {
     if (piece.inside === 'rows') {
         for (let y = 0; y < bh; y++) {
             let a = -1, b = -1;
-            for (let x = 0; x < bw; x++) if (ink[at(x, y)] > 0.5) { if (a < 0) a = x; b = x; }   // (the line itself, not thickened)
+            for (let x = 0; x < bw; x++) if (ink[at(x, y)] > 0.75) { if (a < 0) a = x; b = x; }   // (the line itself, not thickened)
             for (let x = a; a >= 0 && x <= b; x++) fill[y * bw + x] = 1;
         }
     } else if (piece.inside !== 'none') {
@@ -126,7 +127,7 @@ for (const piece of PIECES) {
                 const X = x + dx, Y = y + dy;
                 if (X >= 0 && Y >= 0 && X < bw && Y < bh && fill[Y * bw + X] && !wall[Y * bw + X]) near = true;
             }
-            fill[i] = near && ink[at(x, y)] > 0.2 ? 1 : 0;           // only the line's own pixels, never past it
+            fill[i] = near && ink[at(x, y)] > 0.6 ? 1 : 0;           // only the solid middle of the line, never its soft outer edge
         }
     }
 

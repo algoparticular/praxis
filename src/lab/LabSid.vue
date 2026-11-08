@@ -488,6 +488,7 @@ function codeBody(c, f) {
 
 function draw() {
     const el = canvas.value, c = el.getContext('2d'), k = view.k * view.dpr;
+    c.imageSmoothingQuality = 'high';                         // (her pictures, scaled: smooth, not pixelated)
     c.setTransform(1, 0, 0, 1, 0, 0);
     c.clearRect(0, 0, el.width, el.height);
     c.setTransform(k, 0, 0, k, 0, 0);

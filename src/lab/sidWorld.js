@@ -26,6 +26,9 @@ if (typeof Image !== 'undefined') {
     }
 }
 const ready = (img) => img?.complete && img.naturalWidth > 0;
+// Sizes and places are in units of 0.4 of her drawing, whatever size the pictures were made at (arbol.scale)
+const UNIT = 0.4 / arbol.scale;
+const boxOf = (name) => arbol.pieces[name].box.map((v) => v * UNIT);
 // A picture in one colour (its transparency kept), made once per colour
 const TINTS = new Map();
 function tint(name, colour) {
@@ -45,7 +48,7 @@ function tint(name, colour) {
 // the little mushrooms in the middle, between its roots, which sit on the ground (its roots spread over it, towards us)
 // (scale: 2.5 times as tall as Sid, from the foot of its mushrooms to the top of its crown, 1332 px of the drawing
 // against his 708; its line, about 11 px in the drawing, is then about 14, as his own outline)
-const TREE = { x: 2000, d: 470, scale: 1.33, foot: { x: 640, y: 1358 } };
+const TREE = { x: 2000, d: 230, scale: 1.33, foot: { x: 640, y: 1358 } };
 // The pieces spread over the world, how often each comes, what colour it takes, and whether it sways
 const SCATTER = [
     { name: 'fern', weight: 3, sway: 0.5, colour: 'green' }, { name: 'fernSmall', weight: 3, sway: 0.6, colour: 'green' },
@@ -215,7 +218,7 @@ export function createWorld({ depth, clouds = null, moon = null }) {
     // One of her pieces at (left, top) and scale k: what is inside its line in cream, taking the colour P as it is
     // coloured (col), and its line in ink (a plant with nothing inside takes the colour in its line instead)
     function piece(c, name, left, top, k, P, col, tintLine = false) {
-        const box = arbol.pieces[name].box, w = box[2] * k, h = box[3] * k;
+        const box = boxOf(name), w = box[2] * k, h = box[3] * k;
         if (arbol.pieces[name].fill) {
             const base = tint(`${name}-fill`, CICLOS.white), coloured = col > 0.01 && tint(`${name}-fill`, `rgb(${P.light.join(',')})`);
             if (base) c.drawImage(base, left, top, w, h);
@@ -244,7 +247,7 @@ export function createWorld({ depth, clouds = null, moon = null }) {
         }
         case 'piece': {
             // one of her pieces, standing on its foot (the bottom of its box), swaying if it is a plant
-            const box = arbol.pieces[item.name].box, k = item.scale;
+            const box = boxOf(item.name), k = item.scale;
             const lean = item.sway ? wind(item.x) * item.sway + (l?.bend ?? 0) * 0.5 : 0;
             c.save(); c.rotate(lean); c.scale(item.flip, 1);
             piece(c, item.name, -box[2] * k / 2, -box[3] * k, k, P, col, !arbol.pieces[item.name].fill);
@@ -255,7 +258,7 @@ export function createWorld({ depth, clouds = null, moon = null }) {
             // her tree, round its foot: the trunk with its roots, its bark, and its crown swaying a little with the wind
             // about the top of the trunk (its plants and stones are spread over the world, each on the ground)
             const k = TREE.scale, part = (name, colour, opts = {}) => {
-                const box = arbol.pieces[name].box, left = (box[0] - TREE.foot.x) * k, top = (box[1] - TREE.foot.y) * k;
+                const box = boxOf(name), left = (box[0] - TREE.foot.x) * k, top = (box[1] - TREE.foot.y) * k;
                 if (opts.sway) {
                     const px = left + box[2] * k / 2, py = top + box[3] * k;
                     c.save(); c.translate(px, py); c.rotate(opts.sway); c.translate(-px, -py);
