@@ -109,15 +109,13 @@ export function createWorld({ depth, clouds = null, moon = null }) {
             const p = at();
             add({ kind: 'fern', x: p.x, d: p.d, long: 140 + r() * 170, arch: (r() - 0.5) * 0.5, leaves: 7 + Math.floor(r() * 5), color: pick(GREENS), flex: 0.8 + r() * 0.5 });
         }
-        // streaks on the hills, as the card's: long flat shapes lying on the ground, in the ground's other colour
-        for (let n = 0, m = 2 + Math.floor(r() * 2); n < m; n++) {
-            const p = at(), rx = 120 + r() * 200, ry = rx * (0.12 + r() * 0.08), outline = [];
-            const wob = [r(), r()].map((v) => v * Math.PI * 2);
-            for (let k = 0; k < 24; k++) {
-                const a = (k / 24) * Math.PI * 2, rr = 1 + 0.12 * Math.sin(a * 2 + wob[0]) + 0.07 * Math.sin(a * 3 + wob[1]);
-                outline.push([Math.cos(a) * rx * rr, Math.sin(a) * ry * rr]);
-            }
-            add({ kind: 'streak', x: p.x, d: p.d, outline });
+        // streaks on the hills, as the card's: short brush strokes lying along the ground (pills with round ends, a little
+        // curved, now and then two in a row) and a few small ovals, in the ground's other colour
+        for (let n = 0, m = 12 + Math.floor(r() * 6); n < m; n++) {
+            const p = at(), long = 22 + r() * 60, wide = 5 + r() * 6, bend = (r() - 0.5) * wide * 1.6, tilt = (r() - 0.5) * 6;
+            const strokes = [{ long, wide, bend, tilt, dx: 0 }];
+            if (r() < 0.3) strokes.push({ long: long * (0.3 + r() * 0.3), wide: wide * 0.9, bend: bend * 0.5, tilt, dx: long * 0.5 + 10 + r() * 12 });
+            add({ kind: 'streak', x: p.x, d: p.d, strokes, oval: r() < 0.12 ? { rx: 14 + r() * 16, ry: 5 + r() * 4 } : null });
         }
         // a stipple on the ground, thinning out from its middle
         for (let n = 0, m = 1 + Math.floor(r() * 2); n < m; n++) {
@@ -378,16 +376,20 @@ export function createWorld({ depth, clouds = null, moon = null }) {
     const night = () => 1 - light();
     // The ground: the card's hills, green by day and yellow by night
     const ground = () => `rgb(${lerp(hex(CICLOS.groundNight), hex(CICLOS.groundDay), light()).map(Math.round).join(',')})`;
-    // Its streaks (yellow by day, mustard by night), lying flat on the ground under everything
+    // Its streaks (yellow by day, mustard by night): small brush strokes lying flat on the ground under everything
     function drawGround(c, view) {
         const far = view.scaleAt(depth), half = view.width / 2 / far + 400;
         const first = Math.floor((view.cam - half) / STRETCH), last = Math.floor((view.cam + half) / STRETCH);
-        c.fillStyle = `rgb(${detailRgb().map(Math.round).join(',')})`;
+        c.fillStyle = c.strokeStyle = `rgb(${detailRgb().map(Math.round).join(',')})`;
         for (let i = first; i <= last; i++) for (const item of stretch(i)) {
             if (item.kind !== 'streak') continue;
             const s = view.scaleAt(item.d), x = view.x0 + (item.x - view.cam) * s;
             c.save(); c.translate(x, view.groundAt(item.d)); c.scale(s, s);
-            c.beginPath(); item.outline.forEach(([px, py], k) => (k ? c.lineTo(px, py) : c.moveTo(px, py))); c.closePath(); c.fill();
+            if (item.oval) { c.beginPath(); c.ellipse(0, 0, item.oval.rx, item.oval.ry, 0, 0, Math.PI * 2); c.fill(); }
+            else for (const k of item.strokes) {
+                c.lineWidth = k.wide; c.lineCap = 'round';
+                c.beginPath(); c.moveTo(k.dx - k.long / 2, 0); c.quadraticCurveTo(k.dx, k.bend, k.dx + k.long / 2, k.tilt); c.stroke();
+            }
             c.restore();
         }
     }
