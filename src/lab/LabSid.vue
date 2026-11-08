@@ -67,7 +67,8 @@ const springs = {
     lookX: spring(0, 60, 12), lookY: spring(0, 60, 12),
     walk: spring(0, 18, 9),        // how much he is walking (0..1)
     reach: spring(0, 40, 11),      // how much his near hand goes to what he reaches for
-    front: spring(1, 45, 12),      // turned to us (still, or sitting) 1, or in profile (walking) 0
+    front: spring(1, 45, 12),      // turned to us (still, sitting, walking towards us or away) 1, or in profile (walking) 0
+    back: spring(0, 40, 12),       // his back to us (walking away into the distance) 1
 };
 const hands = {                    // where his hands go, in his own px (they follow his body), or in the world
     far: { u: spring(REST_HAND.far.u, 70, 12), v: spring(REST_HAND.far.v, 70, 12) },
@@ -231,13 +232,17 @@ function update(dt, now) {
         } else { mx = dx / left; mz = dd / left; }
     }
     const length = Math.hypot(mx, mz);
-    // still a moment, he turns to us; to walk he turns back to his profile first
+    // still a moment, he turns to us; to walk sideways he turns to his profile first; walking into the distance he
+    // turns his back to us, and walking towards us he faces us
     state.still = length > 0 || state.reach ? 0 : (state.still ?? 0) + dt;
-    S.front.to = ui.sitting || state.still > 0.45 ? 1 : 0;
+    const depthWalk = length > 0 && Math.abs(mz) > Math.abs(mx) * 1.2;
+    S.front.to = ui.sitting || state.still > 0.45 || depthWalk ? 1 : 0;
+    S.back.to = depthWalk && mz > 0 ? 1 : 0;
     if (length > 0 && !state.air) {
         mx /= length; mz /= length;
-        if (Math.abs(mx) > 0.15) S.face.to = Math.sign(mx);
-        if ((Math.abs(mx) <= 0.15 || Math.abs(S.face.x - Math.sign(mx)) < 0.3) && frame().front < 0.3) {
+        if (Math.abs(mx) > 0.15 && !depthWalk) S.face.to = Math.sign(mx);
+        const turned = depthWalk ? frame().front > 0.6 : (Math.abs(mx) <= 0.15 || Math.abs(S.face.x - Math.sign(mx)) < 0.3) && frame().front < 0.3;
+        if (turned) {
             walking = 1;
             state.speed = Math.min(state.speed + 240 * dt, 135, left * 3 + 20);   // an easy, unhurried pace
             state.x += mx * state.speed * dt;
@@ -264,7 +269,8 @@ function update(dt, now) {
     // Targets, by what he is doing
     // walking: leaning a little into it, his soft body squashing a touch as each foot lands and stretching as he passes
     // over it, and swaying from side to side with his weight
-    let lean = w * 0.02 * face, sy = 1 - w * 0.007 * Math.cos(p * Math.PI * 4), rot = w * 0.006 * Math.sin(p * Math.PI * 2), drop = 0, closed = 0;
+    const fr = frame().front;
+    let lean = w * 0.02 * face * (1 - fr), sy = 1 - w * 0.007 * Math.cos(p * Math.PI * 4), rot = w * 0.006 * Math.sin(p * Math.PI * 2), drop = 0, closed = 0;
     let near = { ...REST_HAND.near }, far = { ...REST_HAND.far };
     // the arms swing against the legs (each arm forward as the other leg goes forward), a little behind them, rising a
     // touch as they go forward
@@ -272,10 +278,12 @@ function update(dt, now) {
     near.u -= swing; far.u += swing;
     near.v -= Math.max(0, -swing) * 0.35; far.v -= Math.max(0, swing) * 0.35;
     drop += w * (1.6 + 1.6 * Math.cos(p * Math.PI * 4));               // the bob of each step: barely, a calm walk
-    // turned to us, his hands hang at each side of him
-    const fr = frame().front;
+    // turned to us, his hands hang at each side of him (walking towards us or away, an arm swinging forward shows as
+    // that hand rising a little and coming in)
     near = { u: mix(near.u, FRONT_HAND.near.u, fr), v: mix(near.v, FRONT_HAND.near.v, fr) };
     far = { u: mix(far.u, FRONT_HAND.far.u, fr), v: mix(far.v, FRONT_HAND.far.v, fr) };
+    near.v -= fr * Math.max(0, -swing) * 0.9; near.u += fr * Math.max(0, -swing) * 0.6;
+    far.v -= fr * Math.max(0, swing) * 0.9; far.u -= fr * Math.max(0, swing) * 0.6;
 
     const restNear = near, restFar = far;                                    // (the poses below put new targets)
     // Sitting down in lotus: he leans in a little, lowers himself softly, crosses one leg and then the other, settles
@@ -558,7 +566,8 @@ function draw() {
     codeBody(c, f);
     // His eyes: looking, blinking, closed
     const closed = Math.max(springs.closed.x, state.blink > 0 ? 1 : 0);
-    EYES.forEach(([pu, pv, r], e) => {
+    c.globalAlpha = 1 - springs.back.x;                         // (his back to us: no eyes)
+    if (springs.back.x < 0.98) EYES.forEach(([pu, pv, r], e) => {
         const u = mix(pu, FRONT_EYES[e][0], f.front), v = mix(pv, FRONT_EYES[e][1], f.front);
         const at = local(f, u + springs.lookX.x * 7, v + springs.lookY.x * 6);
         c.fillStyle = INK; c.strokeStyle = INK;
