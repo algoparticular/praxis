@@ -22,8 +22,8 @@ const INK = CICLOS.ink;                          // his line and his white: Cicl
 // his waist), torso 181, legs 187 from his body to the floor: his legs as long as his torso, about 0.6 of his head
 // (Viriya's walker has them a little longer, 0.8). Limbs as thick as his outline.
 const SMALL = 0.84;
-const LEG = { thigh: 97, shin: 97, foot: 40, width: 18 };
-const ARM = { upper: 108, fore: 102, width: 15 };        // long, as in Upekkha (they reach his crossed legs)
+const LEG = { thigh: 97, shin: 97, foot: 40, width: 16 };
+const ARM = { upper: 108, fore: 102, width: 13.5 };        // long, as in Upekkha (they reach his crossed legs)
 const STAND = 196;                            // his hips over the ground, standing: his legs all but straight
 const SIT = 52;                               // his hips over the ground, sitting with his legs crossed
 // In profile his hips are together in his middle (one leg behind the other), his arms come from the middle of him
@@ -441,7 +441,7 @@ function update(dt, now) {
 
 // His body drawn in code from his traced silhouette: the fill, his outline inside its edge (clean at any size and
 // bent with him point by point), and a little stroke at each of her hatching marks
-const LINE_W = 16, FILL = CICLOS.white;
+const LINE_W = 15, FILL = CICLOS.white;     // (about as thick as the line of her tree beside him)
 function codeBody(c, f) {
     // turned to us his silhouette is the same widths, row by row, set straight about his middle
     const S0 = rig.silhouette, fr = f.front;

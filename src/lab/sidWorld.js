@@ -43,7 +43,9 @@ function tint(name, colour) {
 }
 // Her tree: where it stands in his world (x, depth), how big, and where its foot is in her drawing (scaled): the foot of
 // the little mushrooms in the middle, between its roots, which sit on the ground (its roots spread over it, towards us)
-const TREE = { x: 2000, d: 470, scale: 1.18, foot: { x: 640, y: 1358 } };   // (big, and further back so its crown fits)
+// (scale: 2.5 times as tall as Sid, from the foot of its mushrooms to the top of its crown, 1332 px of the drawing
+// against his 708; its line, about 11 px in the drawing, is then about 14, as his own outline)
+const TREE = { x: 2000, d: 470, scale: 1.33, foot: { x: 640, y: 1358 } };
 // The pieces spread over the world, how often each comes, what colour it takes, and whether it sways
 const SCATTER = [
     { name: 'fern', weight: 3, sway: 0.5, colour: 'green' }, { name: 'fernSmall', weight: 3, sway: 0.6, colour: 'green' },
