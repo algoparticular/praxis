@@ -55,6 +55,8 @@ Con eso, el mismo títere sirve en todas las cartas donde aparece (Nekkhamma, Up
 
 ## Lo que sigue
 
+- **El mundo semiabierto** (zonas, personajes, lugares, semillas, enseñanzas y memoria en el teléfono): el plan está en `docs/mundo-semiabierto.md`.
+
 - Elegir entre trazos en código y piezas dibujadas (o una mezcla: piernas en código, brazos dibujados).
 - Llevar el títere al escenario WebGL (`useLayerStage.js`), donde ya hay nodos con pivote para colgar unas piezas de otras, para usarlo en una escena real.
 - Los momentos especiales (el rulito, ganar un juego) como coreografías de estas mismas piezas; un cuadro a cuadro dibujado solo donde el títere no alcance.
