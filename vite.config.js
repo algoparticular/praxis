@@ -3,21 +3,9 @@ import vue from '@vitejs/plugin-vue'
 import { VitePWA } from 'vite-plugin-pwa'
 import cardMeta from './scripts/cardMetaPlugin.js'
 
-// The puppet lab (/lab/sid) only goes into a build for the deploy previews of pull requests (VITE_LAB, netlify.toml).
-// In any other build its route is never registered, and its module is replaced by an empty one before it is read, so
-// not even its pictures are copied into dist/
-const noLab = () => ({
-  name: 'no-lab',
-  apply: 'build',
-  enforce: 'pre',
-  resolveId(id) { if (process.env.VITE_LAB !== '1' && id.endsWith('/lab/LabSid.vue')) return '\0no-lab'; },
-  load(id) { if (id === '\0no-lab') return 'export default {}'; },
-});
-
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
-    noLab(),
     vue(),
     cardMeta(),
     // The service worker (dist/serviceWorker.js, registered in App.vue): the app works without internet. The app

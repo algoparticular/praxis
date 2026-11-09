@@ -5,12 +5,14 @@
 // eyes (they look, blink and close); his arms and legs, strokes with his ink and line that bend freely. Canvas 2D on purpose: it shows the movement;
 // if it is what we want, the same rig goes into the WebGL stage (useLayerStage.js). Plan: docs/sid-en-piezas.md.
 import { onBeforeUnmount, onMounted, reactive, ref } from 'vue';
+import { useRouter } from 'vue-router';
 import rig from './sid/sid.json';
 import { CICLOS, createWorld } from './sidWorld.js';
 import { createStarField } from '../composables/useStarField.js';
 import Rulito from '../components/Rulito.vue';
 import { play } from '../composables/useSound.js';
 
+const router = useRouter();
 const ui = reactive({ bones: false, sitting: false, touch: false });
 const canvas = ref(null);
 const nightSky = ref(null), starCanvas = ref(null);   // the cards' starry night, behind the drawing (useStarField.js)
@@ -899,6 +901,10 @@ onBeforeUnmount(() => {
         <!-- the rulito draws itself on its own canvas, which this scene lays over his head -->
         <Rulito ref="rulito" class="offstage" color="#fc747c" />
         <canvas ref="canvas" @pointermove="onMove" @pointerdown="onDown"></canvas>
+        <!-- back to the app (installed as an app there is no back button of the browser's) -->
+        <button class="home" :aria-label="$t('nav.back')" @click="router.push('/')">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
+        </button>
         <!-- the buttons, at the bottom; on a phone in one row over the pad and the lotus -->
         <div class="panel" :class="{ bottom: ui.touch }">
             <button @click="walkAcross">Caminar</button>
@@ -955,6 +961,20 @@ canvas {
 .night-sky canvas {
     position: absolute;
     inset: 0;
+}
+.home {
+    position: absolute;
+    top: calc(16px + env(safe-area-inset-top, 0px));
+    left: 16px;
+    width: 44px;
+    height: 44px;
+    border-radius: 999px;
+    border: 1.5px solid #143246;
+    background: #F7F8F1;
+    color: #143246;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
 }
 .panel {
     position: absolute;
