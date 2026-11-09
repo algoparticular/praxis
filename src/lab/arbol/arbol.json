@@ -1,0 +1,121 @@
+{
+ "size": [
+  2592,
+  3240
+ ],
+ "scale": 0.8,
+ "pieces": {
+  "crown": {
+   "box": [
+    112,
+    55,
+    2207,
+    1455
+   ],
+   "fill": true
+  },
+  "trunk": {
+   "box": [
+    311,
+    1384,
+    1936,
+    1799
+   ],
+   "fill": true,
+   "parts": [
+    "cap",
+    "stem"
+   ]
+  },
+  "bark": {
+   "box": [
+    780,
+    1431,
+    1233,
+    1660
+   ],
+   "fill": false
+  },
+  "sprout": {
+   "box": [
+    1629,
+    1583,
+    266,
+    827
+   ],
+   "fill": true
+  },
+  "fern": {
+   "box": [
+    1463,
+    1813,
+    700,
+    643
+   ],
+   "fill": false
+  },
+  "fernSmall": {
+   "box": [
+    102,
+    2192,
+    390,
+    328
+   ],
+   "fill": false
+  },
+  "fernLow": {
+   "box": [
+    73,
+    2788,
+    459,
+    382
+   ],
+   "fill": false
+  },
+  "pebble": {
+   "box": [
+    1282,
+    2925,
+    180,
+    113
+   ],
+   "fill": true
+  },
+  "pebbles": {
+   "box": [
+    1249,
+    2774,
+    236,
+    102
+   ],
+   "fill": true
+  },
+  "pebbleGrass": {
+   "box": [
+    1981,
+    2434,
+    316,
+    119
+   ],
+   "fill": true
+  },
+  "pebbleFlat": {
+   "box": [
+    158,
+    2584,
+    297,
+    139
+   ],
+   "fill": true
+  },
+  "cairn": {
+   "box": [
+    2070,
+    2641,
+    491,
+    392
+   ],
+   "fill": true
+  }
+ }
+}

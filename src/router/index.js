@@ -76,6 +76,9 @@ const router = createRouter({
       path: "/deck",
       component: Deck,
     },
+    // The puppet lab (Sid moving more than breathing, in a world of his own), from the labyrinth in the footer; its
+    // own chunk, loaded only when it is opened
+    { path: "/lab/sid", component: () => import('../lab/LabSid.vue') },
     {
       path: "/:pathMatch(.*)",
       component: PageNotFound,

@@ -69,7 +69,8 @@ const sparklePath = (ctx, x, y, radius, rotation, wobble) => {
     ctx.closePath();
 };
 
-export function createStarField(canvas, container, { shootingEvery = [3, 7], shooting: withShooting = true, onShoot } = {}) {
+// `pace` (optional, 0..1): how fast its time goes now (the puppet lab slows its sky almost to a stop while Sid meditates)
+export function createStarField(canvas, container, { shootingEvery = [3, 7], shooting: withShooting = true, onShoot, pace = () => 1 } = {}) {
     const ctx = canvas.getContext('2d');
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -78,6 +79,7 @@ export function createStarField(canvas, container, { shootingEvery = [3, 7], sho
     const shooting = [];
     let nextShot = 0;
     let raf = 0;
+    let sky = 0;                                         // its own time (seconds, at its pace)
     let last = 0;
     let onScreen = true;
     // The constellation being drawn: { strokes: [{ stars: [index...], closed }], color, alpha, goal }
@@ -232,8 +234,10 @@ export function createStarField(canvas, container, { shootingEvery = [3, 7], sho
         raf = requestAnimationFrame(frame);
         const time = now / 1000;
         const real = Math.min(time - last, 0.25);    // the time that really went by (a hidden tab is paused)
-        const dt = Math.min(real, 0.05);
+        const p = Math.max(0, Math.min(1, pace()));
+        const dt = Math.min(real, 0.05) * p;
         last = time;
+        sky += real * p;
 
         for (let i = shooting.length - 1; i >= 0; i--) {
             const meteor = shooting[i];
@@ -260,19 +264,19 @@ export function createStarField(canvas, container, { shootingEvery = [3, 7], sho
             if (leaving[i].alpha <= 0) leaving.splice(i, 1);
         }
 
-        if (withShooting && time >= nextShot) {
+        if (withShooting && sky >= nextShot) {
             shoot();
-            nextShot = time + rand(shootingEvery[0], shootingEvery[1]);
+            nextShot = sky + rand(shootingEvery[0], shootingEvery[1]);
         }
 
-        draw(time);
+        draw(sky);
     };
 
     const start = () => {
         if (raf || reducedMotion || !onScreen || document.hidden) return;
         last = performance.now() / 1000;
         // The first one does not make you wait the whole interval
-        nextShot = last + rand(1.5, 3.5);
+        nextShot = sky + rand(1.5, 3.5);
         raf = requestAnimationFrame(frame);
     };
     const stop = () => { cancelAnimationFrame(raf); raf = 0; };
