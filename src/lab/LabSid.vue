@@ -5,14 +5,13 @@
 // eyes (they look, blink and close); his arms and legs, strokes with his ink and line that bend freely. Canvas 2D on purpose: it shows the movement;
 // if it is what we want, the same rig goes into the WebGL stage (useLayerStage.js). Plan: docs/sid-en-piezas.md.
 import { onBeforeUnmount, onMounted, reactive, ref } from 'vue';
-import { useRouter } from 'vue-router';
+import Header from '../components/Header.vue';
 import rig from './sid/sid.json';
 import { CICLOS, createWorld } from './sidWorld.js';
 import { createStarField } from '../composables/useStarField.js';
 import Rulito from '../components/Rulito.vue';
 import { play } from '../composables/useSound.js';
 
-const router = useRouter();
 const ui = reactive({ bones: false, sitting: false, touch: false });
 const canvas = ref(null);
 const nightSky = ref(null), starCanvas = ref(null);   // the cards' starry night, behind the drawing (useStarField.js)
@@ -876,6 +875,7 @@ function loop(now) {
 if (typeof window !== 'undefined') window.__sid = { state, springs, hands, ui, world };
 
 onMounted(() => {
+    document.body.classList.add('lab-page');
     ui.touch = window.matchMedia?.('(pointer: coarse)').matches ?? false;
     window.addEventListener('keydown', onKey);
     window.addEventListener('keyup', onKey);
@@ -886,6 +886,7 @@ onMounted(() => {
     raf = requestAnimationFrame(loop);
 });
 onBeforeUnmount(() => {
+    document.body.classList.remove('lab-page');
     cancelAnimationFrame(raf);
     stars?.destroy();
     window.removeEventListener('resize', resize);
@@ -901,10 +902,8 @@ onBeforeUnmount(() => {
         <!-- the rulito draws itself on its own canvas, which this scene lays over his head -->
         <Rulito ref="rulito" class="offstage" color="#fc747c" />
         <canvas ref="canvas" @pointermove="onMove" @pointerdown="onDown"></canvas>
-        <!-- back to the app (installed as an app there is no back button of the browser's) -->
-        <button class="home" :aria-label="$t('nav.back')" @click="router.push('/')">
-            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
-        </button>
+        <!-- the app's own header: back on the left, the sound and the menu on the right -->
+        <Header :hasBack="true" :hasMenu="true" />
         <!-- the buttons, at the bottom; on a phone in one row over the pad and the lotus -->
         <div class="panel" :class="{ bottom: ui.touch }">
             <button @click="walkAcross">Caminar</button>
@@ -918,9 +917,11 @@ onBeforeUnmount(() => {
         </div>
         <!-- On a phone: a pad to walk him (held down) and a button for the lotus -->
         <div v-if="ui.touch" class="pad">
-            <button v-for="[key, arrow] in [['up', '▲'], ['left', '◀'], ['right', '▶'], ['down', '▼']]" :key="key" :class="key"
+            <button v-for="key in ['up', 'left', 'right', 'down']" :key="key" :class="key" :aria-label="key"
                 @pointerdown.prevent="press(key, true)" @pointerup="press(key, false)" @pointercancel="press(key, false)"
-                @pointerleave="press(key, false)" @contextmenu.prevent>{{ arrow }}</button>
+                @pointerleave="press(key, false)" @contextmenu.prevent>
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg>
+            </button>
         </div>
         <button v-if="ui.touch" class="lotus" :class="{ on: ui.sitting }" @click="sit()">Loto</button>
     </div>
@@ -962,44 +963,37 @@ canvas {
     position: absolute;
     inset: 0;
 }
-.home {
-    position: absolute;
-    top: calc(16px + env(safe-area-inset-top, 0px));
-    left: 16px;
-    width: 44px;
-    height: 44px;
-    border-radius: 999px;
-    border: 1.5px solid #143246;
-    background: #F7F8F1;
-    color: #143246;
-    display: grid;
-    place-items: center;
-    cursor: pointer;
-}
 .panel {
     position: absolute;
     left: 16px;
     right: 16px;
-    bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    bottom: calc(20px + env(safe-area-inset-bottom, 0px));
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: 10px;
     justify-content: center;
 }
-.panel button {
-    font: inherit;
-    font-size: 14px;
-    padding: 8px 14px;
-    border-radius: 999px;
-    border: 1.5px solid #143246;
+/* As the app's buttons (style.scss): the cream, no border, its soft warm shadow, the coral when touched or on */
+.panel button, .pad button, .lotus {
+    font-family: 'Nunito', helvetica, sans-serif;
+    font-size: 16px;
+    margin: 0;
+    height: 44px;
+    padding: 0 18px;
+    border: none;
+    border-radius: 13px;
     background: #F7F8F1;
     color: #143246;
+    filter: drop-shadow(0px 2px 3px rgba(20, 50, 70, 0.28));
     cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 200ms ease-out, color 200ms ease-out;
 }
-.panel button.on {
-    background: #143246;
-    color: #F7F8F1;
-}
+.panel button:hover, .pad button:hover, .lotus:hover { background: #FF6F61; color: #F7F8F1; }
+.panel button.on, .pad button:active, .lotus.on { background: #FF6F61; color: #F7F8F1; }
+.panel button:focus, .pad button:focus, .lotus:focus { box-shadow: none; outline: none; }
+.panel button:focus-visible, .pad button:focus-visible, .lotus:focus-visible { box-shadow: rgba(255, 111, 97, 0.35) 0 0 0 4px; }
 .sep {
     width: 12px;
 }
@@ -1009,53 +1003,64 @@ canvas {
     justify-content: flex-start;
     overflow-x: auto;
     scrollbar-width: none;
-    padding-bottom: 2px;
+    padding: 4px 2px 6px;
 }
 .panel.bottom .sep { display: none; }
 .panel.bottom button { flex: none; }
 .pad {
     position: absolute;
     left: 16px;
-    bottom: 16px;
+    bottom: calc(16px + env(safe-area-inset-bottom, 0px));
     display: grid;
     grid-template-columns: repeat(3, 52px);
     grid-template-rows: repeat(3, 52px);
-    gap: 4px;
+    gap: 6px;
     user-select: none;
     -webkit-user-select: none;
     touch-action: none;
 }
-.pad button, .lotus {
-    font: inherit;
-    border: 1.5px solid #143246;
-    background: rgba(247, 248, 241, 0.85);
-    color: #143246;
-    border-radius: 14px;
-    font-size: 18px;
+.pad button {
+    width: 52px;
+    height: 52px;
     padding: 0;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    color: #FF6F61;
     touch-action: none;
-    -webkit-tap-highlight-color: transparent;
 }
-.pad button:active, .lotus.on {
-    background: #143246;
-    color: #F7F8F1;
-}
+.pad button:active { color: #F7F8F1; }
 .pad .up { grid-area: 1 / 2; }
 .pad .left { grid-area: 2 / 1; }
+.pad .left svg { transform: rotate(-90deg); }
 .pad .right { grid-area: 2 / 3; }
+.pad .right svg { transform: rotate(90deg); }
 .pad .down { grid-area: 3 / 2; }
+.pad .down svg { transform: rotate(180deg); }
 .lotus {
     position: absolute;
-    right: 16px;
-    bottom: 40px;
+    right: 20px;
+    bottom: calc(44px + env(safe-area-inset-bottom, 0px));
     width: 84px;
     height: 84px;
+    padding: 0;
     border-radius: 50%;
-    font-size: 16px;
+    font-size: 17px;
 }
 @media (max-width: 600px) {
-        .panel { gap: 6px; }
-    .panel button { font-size: 12px; padding: 6px 10px; }
+    .panel { gap: 8px; }
+    .panel button { font-size: 14px; height: 40px; padding: 0 14px; }
     .sep { display: none; }
 }
+</style>
+
+<style>
+/* The app's header over his light sky: its cream icons in the ink of his line (the header is teleported into <body>,
+   so this is not scoped; body.lab-page only while the lab is open) */
+body.lab-page header .navContainer button,
+body.lab-page header #soundButton,
+body.lab-page header #menuButton {
+    filter: brightness(0) opacity(0.78);
+}
+body.lab-page header #menuButton.active { filter: none; }
 </style>
