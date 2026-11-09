@@ -30,7 +30,7 @@ const INK = CICLOS.ink;                          // his line and his white: Cicl
 // (Viriya's walker has them a little longer, 0.8). Limbs as thick as his outline.
 const SMALL = 0.84;
 const LEG = { thigh: 97, shin: 97, foot: 40, width: 16 };
-const ARM = { upper: 108, fore: 102, width: 13.5 };        // long, as in Upekkha (they reach his crossed legs)
+const ARM = { upper: 116, fore: 110, width: 13.5 };        // long, as in Upekkha (they reach his crossed legs)
 const STAND = 196;                            // his hips over the ground, standing: his legs all but straight
 const SIT = 12;                               // his hips over the ground, sitting with his legs crossed: his bottom on the floor
 // In profile his hips are together in his middle (one leg behind the other), his arms come from the middle of him
@@ -228,18 +228,22 @@ function turnTo(aim, most) {
     }
     state.heading = wrap(state.heading + Math.max(-most, Math.min(most, diff)));
 }
-// What stands in the way (her tree's trunk, the big stones): circles on the floor
+// What stands in the way (her tree's trunk and roots, the big stones): ellipses on the floor, { x, d, r, rd } (rd its
+// reach in depth, r if it has none). Each is worked in its own space, stretched in depth so it is a circle of radius r
 const blocking = () => world.obstacles(state.x, 900);
+const squash = (o) => o.r / (o.rd ?? o.r);
 // Going towards (mx, mz), he bends his way round what is ahead of him, by the side nearer where he is going
 function steer(mx, mz) {
     for (const o of blocking()) {
-        const rx = state.x - o.x, rz = state.d - o.d, dist = Math.hypot(rx, rz) || 1, R = o.r + 26;
+        const q = squash(o), rx = state.x - o.x, rz = (state.d - o.d) * q, dist = Math.hypot(rx, rz) || 1, R = o.r + 26;
         if (dist > R + 130) continue;
-        if (-(mx * rx + mz * rz) / dist <= 0) continue;                  // (moving away from it)
+        let mzq = mz * q;
+        if (-(mx * rx + mzq * rz) / dist <= 0) continue;                 // (moving away from it)
         const a = { x: -rz / dist, z: rx / dist }, b = { x: rz / dist, z: -rx / dist };
-        const t = a.x * mx + a.z * mz >= b.x * mx + b.z * mz ? a : b;
+        const t = a.x * mx + a.z * mzq >= b.x * mx + b.z * mzq ? a : b;
         const kk = Math.max(0, Math.min(1, 1 - (dist - R) / 130));
-        mx = mx * (1 - kk) + t.x * kk; mz = mz * (1 - kk) + t.z * kk;
+        mx = mx * (1 - kk) + t.x * kk; mzq = mzq * (1 - kk) + t.z * kk;
+        mz = mzq / q;
         const l = Math.hypot(mx, mz) || 1; mx /= l; mz /= l;
     }
     return [mx, mz];
@@ -247,17 +251,18 @@ function steer(mx, mz) {
 // and never walks into it (with the keys he slides along it)
 function collide() {
     for (const o of blocking()) {
-        const rx = state.x - o.x, rz = state.d - o.d, dist = Math.hypot(rx, rz) || 1;
-        if (dist < o.r) { state.x = o.x + rx / dist * o.r; state.d = Math.max(0, Math.min(DEPTH, o.d + rz / dist * o.r)); }
+        const q = squash(o), rx = state.x - o.x, rz = (state.d - o.d) * q, dist = Math.hypot(rx, rz) || 1;
+        if (dist < o.r) { state.x = o.x + rx / dist * o.r; state.d = Math.max(0, Math.min(DEPTH, o.d + rz / dist * o.r / q)); }
     }
 }
 
 // --- What he does ---
 const act = (name, dur, extra = {}) => { state.action = { name, t: 0, dur, ...extra }; };
 function walkTo(x, d = state.d) {
+    // (a touch on something that stands in the way: he walks to its edge, on the side the touch was)
     for (const o of world.obstacles(x, 0)) {
-        const rx = state.x - o.x, rz = state.d - o.d, dist = Math.hypot(rx, rz) || 1;
-        if (Math.hypot(x - o.x, d - o.d) < o.r + 10) { x = o.x + rx / dist * (o.r + 12); d = Math.max(0, Math.min(DEPTH, o.d + rz / dist * (o.r + 12))); }
+        const q = squash(o), rx = x - o.x, rz = (d - o.d) * q, dist = Math.hypot(rx, rz) || 1;
+        if (dist < o.r + 10) { x = o.x + rx / dist * (o.r + 12); d = Math.max(0, Math.min(DEPTH, o.d + rz / dist * (o.r + 12) / q)); }
     }
     state.target = { x, d }; state.reach = null; if (ui.sitting) sit(false);
 }
@@ -789,20 +794,20 @@ function draw() {
         let hand = map(f, hands[which].u.x, hands[which].v.x);
         const r = springs.reach.x;
         if (which === 'near' && state.reached && r > 0.001) hand = { x: hand.x + (state.reached.x - hand.x) * r, y: hand.y + (state.reached.y - hand.y) * r };
-        // in lotus, as in Upekkha: each arm comes down his side, close to him (in front of him, just inside his outline),
-        // and its hand rests on the knee at its side, as the legs cross
-        const knees = Math.min(...state.legSit);
+        // in lotus, as a Buddha meditating: the shoulders loose, each arm falls by his side, the elbow opening a little
+        // outwards, and the forearm comes in to his lap, where the two hands meet in the middle, in front of his pelvis
+        // (the mudra of meditation)
+        const knees = Math.min(...state.legSit), own = Math.sign(s.x - f.root.x) || (i ? 1 : -1);
         if (knees > 0.001) {
-            const knee = legs.map((l) => l.joint).sort((a, b) => Math.abs(a.x - s.x) - Math.abs(b.x - s.x))[0];
-            const k = knees * knees * (3 - 2 * knees), on = { x: knee.x + Math.sign(f.root.x - knee.x) * 16, y: knee.y - LEG.width * 0.5 };   // (just in from its tip, on it)
-            hand = { x: hand.x + (on.x - hand.x) * k, y: hand.y + (on.y - hand.y) * k };
+            const k = knees * knees * (3 - 2 * knees), lap = map(f, PIVOT.x + own * 13 / Math.max(0.3, Math.abs(f.face)), PIVOT.y - 50);
+            hand = { x: hand.x + (lap.x - hand.x) * k, y: hand.y + (lap.y - hand.y) * k };
         }
         const raised = hand.y < s.y;
         // elbows back in profile, out to their own side turned to us; down when the hand is up
         const out = (i ? -1 : 1) * face * lateral(), back = mix(-face * 0.7, out, f.front);
-        // (sitting, the elbow stays close to his side: it bends inwards, over him, not out into the air)
-        const sat = Math.min(...state.legSit) > 0.5;
-        const toward = raised ? { x: out * 0.5, y: 1 } : sat ? { x: -Math.sign(s.x - f.root.x || 1), y: 0.2 } : { x: back, y: 0.15 };
+        // (sitting, the elbow goes out to its own side and a little down: the arm rounds softly by his side)
+        if (Math.min(...state.legSit) > 0.5 && !raised) return { s, ...bend(s, hand, ARM.upper, ARM.fore, { x: own, y: 0.1 }) };
+        const toward = raised ? { x: out * 0.5, y: 1 } : { x: back, y: 0.15 };
         return { s, ...bend(s, hand, ARM.upper, ARM.fore, toward) };
     });
 
@@ -905,12 +910,14 @@ onBeforeUnmount(() => {
         <!-- the app's own header: back on the left, the sound and the menu on the right -->
         <Header :hasBack="true" :hasMenu="true" />
         <!-- the buttons, at the bottom; on a phone in one row over the pad and the lotus -->
-        <div class="panel" :class="{ bottom: ui.touch }">
+        <!-- on a computer, every button in a row at the bottom; on a phone only the pad, the lotus and, round it, waving
+             and jumping (below) -->
+        <div v-if="!ui.touch" class="panel">
             <button @click="walkAcross">Caminar</button>
             <button @click="wave">Saludar</button>
             <button @click="jump">Saltar</button>
             <button @click="stretch">Estirarse</button>
-            <button v-if="!ui.touch" :class="{ on: ui.sitting }" @click="sit()">Loto</button>
+            <button :class="{ on: ui.sitting }" @click="sit()">Loto</button>
 
             <span class="sep"></span>
             <button :class="{ on: ui.bones }" @click="ui.bones = !ui.bones">Esqueleto</button>
@@ -923,6 +930,8 @@ onBeforeUnmount(() => {
                 <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg>
             </button>
         </div>
+        <button v-if="ui.touch" class="act wave" @click="wave">Saludar</button>
+        <button v-if="ui.touch" class="act jump" @click="jump">Saltar</button>
         <button v-if="ui.touch" class="lotus" :class="{ on: ui.sitting }" @click="sit()">Loto</button>
     </div>
 </template>
@@ -974,7 +983,7 @@ canvas {
     justify-content: center;
 }
 /* As the app's buttons (style.scss): the cream, no border, its soft warm shadow, the coral when touched or on */
-.panel button, .pad button, .lotus {
+.panel button, .pad button, .lotus, .act {
     font-family: 'Nunito', helvetica, sans-serif;
     font-size: 16px;
     margin: 0;
@@ -990,9 +999,9 @@ canvas {
     -webkit-tap-highlight-color: transparent;
     transition: background 200ms ease-out, color 200ms ease-out;
 }
-.panel button:hover, .pad button:hover, .lotus:hover { background: #FF6F61; color: #F7F8F1; }
+.panel button:hover, .pad button:hover, .lotus:hover, .act:active { background: #FF6F61; color: #F7F8F1; }
 .panel button.on, .pad button:active, .lotus.on { background: #FF6F61; color: #F7F8F1; }
-.panel button:focus, .pad button:focus, .lotus:focus { box-shadow: none; outline: none; }
+.panel button:focus, .pad button:focus, .lotus:focus, .act:focus { box-shadow: none; outline: none; }
 .panel button:focus-visible, .pad button:focus-visible, .lotus:focus-visible { box-shadow: rgba(255, 111, 97, 0.35) 0 0 0 4px; }
 .sep {
     width: 12px;
@@ -1037,6 +1046,17 @@ canvas {
 .pad .right svg { transform: rotate(90deg); }
 .pad .down { grid-area: 3 / 2; }
 .pad .down svg { transform: rotate(180deg); }
+/* waving and jumping, smaller, in an arc round the lotus (as the buttons of a game pad) */
+.act {
+    position: absolute;
+    width: 58px;
+    height: 58px;
+    padding: 0;
+    border-radius: 50%;
+    font-size: 12px;
+}
+.act.wave { right: 116px; bottom: calc(116px + env(safe-area-inset-bottom, 0px)); }
+.act.jump { right: 33px; bottom: calc(146px + env(safe-area-inset-bottom, 0px)); }
 .lotus {
     position: absolute;
     right: 20px;
