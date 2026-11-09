@@ -103,7 +103,8 @@ const state = {
     heading: -Math.PI / 2,
     held: 0,                       // how long the keys have been held (held a while, he breaks into a trot)
     cam: 0, zoom: 1,
-    pace: 1,                       // how fast the world's time goes (all but still while he meditates)               // where the camera looks (it follows him, the world has no end) and how close
+    pace: 1,
+    shift: 0,                      // his body over the foot he stands on (seen from the front, his weight going side to side)                       // how fast the world's time goes (all but still while he meditates)               // where the camera looks (it follows him, the world has no end) and how close
     keys: { left: false, right: false, up: false, down: false },
     lift: 0, vy: 0, air: false,    // a jump
     target: null, speed: 0, phase: 0, run: 0,
@@ -126,7 +127,7 @@ function frame() {
     const front = Math.max(0, Math.min(1, springs.front.x));
     return {
         front,
-        root: { x: state.x, y: state.ground - STAND + springs.drop.x - state.lift },
+        root: { x: state.x + state.shift, y: state.ground - STAND + springs.drop.x - state.lift },
         rot: springs.rot.x, face: Math.sign(springs.face.x || 1),     // (he turns through the front: never thin)
         sy: springs.sy.x, sx: 1 / Math.sqrt(Math.max(0.5, springs.sy.x)), lean: springs.lean.x, breath,
     };
@@ -323,7 +324,9 @@ function update(dt, now) {
         else { mx = dx / left; mz = dd / left; }
     }
     let length = Math.hypot(mx, mz);
-    if (length > 0) { mx /= length; mz /= length; [mx, mz] = steer(mx, mz); length = 1; }
+    // (going somewhere he was sent with a touch, he bends his way round what is in it; with the keys he goes just the
+    // way they say, and only slides along what he bumps into)
+    if (length > 0) { mx /= length; mz /= length; if (!keyed) [mx, mz] = steer(mx, mz); length = 1; }
     state.still = length > 0 || state.reach ? 0 : (state.still ?? 0) + dt;
     let aim = null;
     if (length > 0) aim = Math.atan2(mz, mx);
@@ -333,7 +336,7 @@ function update(dt, now) {
     const off = aim === null ? 0 : Math.abs(wrap(aim - state.heading));
     // his pace: easy; held a while (or far to go), a trot. Setting off he gathers speed (the first steps are shorter),
     // and stopping he slows down over a step or two
-    const trot = keyed && state.held > 2.2;    // (only when the keys are held a good while: a touch is always a calm walk)
+    const trot = keyed && state.held > 3;    // (only when the keys are held a good while: a touch is always a calm walk)
     const top = trot ? TROT : PACE;
     const want = length > 0 && !state.air && !ui.sitting ? Math.min(top, left * 3 + 20) * Math.max(0, Math.cos(Math.min(Math.PI / 2, off * 1.15))) : 0;
     const was = state.speed;
@@ -376,6 +379,9 @@ function update(dt, now) {
     const STRIDE = (mix(84, 138, Math.min(1, state.speed / PACE)) + 46 * state.run) * (1 - 0.35 * S.front.x), run = state.run;
     if (state.speed > 0) state.phase = (state.phase + state.speed * dt / (2 * STRIDE)) % 1;
     const w = Math.max(0, Math.min(1, S.walk.x)), p = state.phase, face = Math.sign(S.face.x) || 1;
+    // seen from the front or the back, his weight goes over the foot on the ground, side to side (the far foot is down
+    // for the first half of the cycle, and is on the side lateral() and his face say)
+    state.shift = (Math.sign(lateral() * face) || 1) * Math.sin(Math.PI * 2 * p) * 9 * S.front.x * w;
 
     // Breathing (slower and deeper sitting), blinking, looking
     const rate = ui.sitting ? 0.16 : 0.26;
@@ -549,7 +555,8 @@ function update(dt, now) {
         // air the foot goes up early (highest about the down and the passing position, the knee bent) and reaches
         // forward low, its toes up, to land on its heel
         const HEEL = 11, heel = q < 0.5 ? HEEL * Math.pow(Math.max(0, (q - 0.3) / 0.2), 1.5) : 0;
-        const lift = q >= 0.5 ? Math.sin(Math.PI * Math.pow(e, 0.6)) * (18 + 18 * run) + HEEL * (1 - ease) : 0;
+        // (seen from the front or the back a step only shows as the knee coming up: it comes up more)
+        const lift = q >= 0.5 ? Math.sin(Math.PI * Math.pow(e, 0.6)) * (44 + 16 * run + 6 * f.front) + HEEL * (1 - ease) : 0;
         const was = state.lastQ[i] ?? q, landed = q < 0.5 && (was >= 0.5 || !state.plant[i]), left_ = q >= 0.5 && (was < 0.5 || !state.from[i]);
         state.lastQ[i] = q;
         let gait;
@@ -753,7 +760,8 @@ function draw() {
     const drawArm = (a) => limb([a.s, a.joint, a.end], ARM.width);
     drawArm(arms[0]);
     // Legs: behind his body, or in front of it when he sits with them crossed (as in Upekkha)
-    const drawLegs = () => legs.forEach((l) => limb([l.h, l.joint, l.end, l.toe], LEG.width));
+    // (side on, the far leg a little finer than the near one, so one is seen going forward and the other back)
+    const drawLegs = () => legs.forEach((l, i) => limb([l.h, l.joint, l.end, l.toe], LEG.width * (i ? 1 : mix(0.8, 1, f.front))));
     const inFront = Math.max(...state.legSit) > 0.3;                  // crossed, his legs are in front of him
     if (!inFront) drawLegs();
 
