@@ -40,7 +40,7 @@ const SIT = 52;                               // his hips over the ground, sitti
 const HIP = { far: { u: 134, v: 516 }, near: { u: 126, v: 515 } };
 const FRONT_HIP = { far: { u: 157, v: 514 }, near: { u: 103, v: 516 } };
 const SHOULDER = { far: { u: 100, v: 334 }, near: { u: 110, v: 334 } };   // towards his back, by the hatching
-const REST_HAND = { far: { u: 92, v: 524 }, near: { u: 116, v: 524 } };
+const REST_HAND = { far: { u: 94, v: 538 }, near: { u: 118, v: 538 } };   // (low: his arms hang loose, all but straight)
 // (seen three quarters on, his hips, shoulders and hands are already well apart: they open out quickly as he turns
 // from his profile, so his legs do not cross like scissors and his arms are not drawn over his belly)
 const spread = (front) => Math.sqrt(Math.max(0, front));
@@ -405,10 +405,10 @@ function update(dt, now) {
     // touch as they go forward
     // (at their furthest on each contact, the arm opposite the front foot forward, a frame or so behind the legs: the
     // drag of a loose arm; they pass his body on the passing position)
-    const swing = -Math.cos(Math.PI * 2 * (p - 0.04)) * (48 + 22 * run) * w;
+    const swing = -Math.cos(Math.PI * 2 * (p - 0.06)) * (30 + 16 * run) * w;    // (relaxed: a small, loose swing)
     near.u -= swing; far.u += swing;
-    near.v -= Math.max(0, -swing) * (0.35 + 0.4 * run); far.v -= Math.max(0, swing) * (0.35 + 0.4 * run);
-    if (run > 0) { near.v -= 60 * run; far.v -= 60 * run; }             // trotting, his arms bent up a little
+    near.v -= Math.max(0, -swing) * (0.15 + 0.5 * run); far.v -= Math.max(0, swing) * (0.15 + 0.5 * run);
+    if (run > 0) { near.v -= 22 * run; far.v -= 22 * run; }             // trotting, his arms just a little bent (still loose)
     drop += w * 7 * low + run * 10 * low;                                // the bob of each step: gentle, a calm walk
     // turned to us, his hands hang at each side of him (walking towards us or away, an arm swinging forward shows as
     // that hand rising a little and coming in)
@@ -546,27 +546,30 @@ function update(dt, now) {
         const under = f.root.x + (hip.u - PIVOT.x) * face;
         const rest = { x: under + face * (i ? 4 : -4), d: state.d + (i ? -1 : 1) * 9 * (1 - f.front), y: 0 };
         const q = (p + i * 0.5) % 1;
-        // On the ground (q < 0.5) the foot stays exactly where it landed (whatever his pace or his turning do meanwhile:
-        // nothing about it is worked out again while it is down); in the air it swings from where it left the ground to
-        // where it will land, half a step ahead of where he will be then, speeding up and slowing down, lifted most
-        // early in the swing (higher at a trot)
-        const e = (q - 0.5) / 0.5, ease = e * e * (3 - 2 * e);
+        // On the ground (q < STANCE) the foot stays exactly where it landed (whatever his pace or his turning do
+        // meanwhile: nothing about it is worked out again while it is down); in the air it swings from where it left the
+        // ground to where it will land, ahead of where he will be then, speeding up and slowing down, lifted most early
+        // in the swing (higher at a trot). A foot is down more than half the time, as one really walks: on each contact
+        // both are down, and the back one stays, pushing off its toes, until it is well behind him (the book's down)
+        const STANCE = 0.6 - 0.1 * run;
+        const e = Math.max(0, (q - STANCE) / (1 - STANCE)), ease = e * e * (3 - 2 * e);
         // the heel of the back foot rises at the end of its time on the ground (it pushes off its toes), and once in the
         // air the foot goes up early (highest about the down and the passing position, the knee bent) and reaches
         // forward low, its toes up, to land on its heel
-        const HEEL = 11, heel = q < 0.5 ? HEEL * Math.pow(Math.max(0, (q - 0.3) / 0.2), 1.5) : 0;
+        const HEEL = 11, heel = q < STANCE ? HEEL * Math.pow(Math.max(0, (q - (STANCE - 0.2)) / 0.2), 1.5) : 0;
         // (seen from the front or the back a step only shows as the knee coming up: it comes up more)
-        const lift = q >= 0.5 ? Math.sin(Math.PI * Math.pow(e, 0.6)) * (44 + 16 * run + 6 * f.front) + HEEL * (1 - ease) : 0;
-        const was = state.lastQ[i] ?? q, landed = q < 0.5 && (was >= 0.5 || !state.plant[i]), left_ = q >= 0.5 && (was < 0.5 || !state.from[i]);
+        const lift = q >= STANCE ? Math.sin(Math.PI * Math.pow(e, 0.6)) * (44 + 16 * run + 6 * f.front) + HEEL * (1 - ease) : 0;
+        const was = state.lastQ[i] ?? q, landed = q < STANCE && (was >= STANCE || was > q || !state.plant[i]), left_ = q >= STANCE && (was < STANCE || !state.from[i]);
         state.lastQ[i] = q;
         let gait;
-        if (q < 0.5) {
+        if (q < STANCE) {
             if (landed) state.plant[i] = { x: (state.feet[i] ?? rest).x, d: (state.feet[i] ?? rest).d };
             gait = { ...state.plant[i], y: heel };
             state.from[i] = null;
         } else {
             if (left_) state.from[i] = { x: (state.feet[i] ?? rest).x, d: (state.feet[i] ?? rest).d };
-            const ahead = STRIDE * (1 - e) + STRIDE / 2;      // (he goes on a stride in a half cycle)
+            // (he goes two strides in a cycle; the foot lands as far ahead of him as it will be behind him when it leaves)
+            const ahead = (1 - e) * (1 - STANCE) * 2 * STRIDE + STANCE * STRIDE;
             const land = { x: rest.x + hd.x * ahead, d: rest.d + hd.z * ahead };
             const from = state.from[i];
             gait = { x: from.x + (land.x - from.x) * ease, d: from.d + (land.d - from.d) * ease, y: lift };
@@ -577,7 +580,7 @@ function update(dt, now) {
         // through the swing and up again before he lands (no jump from one frame to the next)
         const toward = (a, b, t) => a + (b - a) * Math.max(0, Math.min(1, t));
         const late = Math.max(0, (e - 0.55) / 0.45), toLand = late * late * (3 - 2 * late);
-        const toe = q < 0.12 ? -9 * (1 - q / 0.12) : q < 0.5 ? heel : toward(HEEL + 6 * Math.sin(Math.PI * Math.min(1, e / 0.55)), -9, toLand);
+        const toe = q < 0.12 ? -9 * (1 - q / 0.12) : q < STANCE ? heel : toward(HEEL + 6 * Math.sin(Math.PI * Math.min(1, e / 0.55)), -9, toLand);
         state.toes[i] = (state.toes[i] ?? 0) + (toe * w - (state.toes[i] ?? 0)) * Math.min(1, dt * 20);
         let foot = state.feet[i] ?? rest;
         if (state.air) { state.plant[i] = null; state.from[i] = null; state.lastQ[i] = null; }
@@ -822,7 +825,7 @@ function loop(now) {
 }
 
 // (for trying him out from the browser's console)
-if (typeof window !== 'undefined') window.__sid = { state, springs, ui, world };
+if (typeof window !== 'undefined') window.__sid = { state, springs, hands, ui, world };
 
 onMounted(() => {
     ui.touch = window.matchMedia?.('(pointer: coarse)').matches ?? false;
