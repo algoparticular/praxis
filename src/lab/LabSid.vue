@@ -238,12 +238,13 @@ function resize() {
     // the starry night fills the sky, down to the horizon
     skyHeight();
 }
-// The camera comes a little closer when he is at the back (state.zoom), about his feet: the starry night behind the
-// drawing ends where the horizon is now
+// The camera comes a little closer when he is at the back (state.zoom), about his feet (below the horizon, so coming
+// closer lifts the horizon). The starry night behind the drawing keeps one height, down to the horizon as it is with
+// no zoom (the lowest it gets): what is under the horizon is hidden by the ground, and changing its size every frame
+// would sow its stars again
 const focus = () => ({ x: view.w / view.k / 2, y: groundAt(state.d) });
 function skyHeight() {
-    const F = focus(), horizon = F.y + (groundAt(DEPTH) - F.y) * state.zoom;
-    if (nightSky.value) nightSky.value.style.height = `${Math.ceil(horizon * view.k)}px`;
+    if (nightSky.value) nightSky.value.style.height = `${Math.ceil(groundAt(DEPTH) * view.k) + 2}px`;
 }
 
 function pointerTo(e) {
@@ -618,7 +619,6 @@ function draw() {
     c.setTransform(k, 0, 0, k, 0, 0);
     const F = focus();
     c.translate(F.x, F.y); c.scale(state.zoom, state.zoom); c.translate(-F.x, -F.y);
-    skyHeight();
     const f = frame(), face = Math.sign(f.face);
     const W = view.w / view.k;
 
