@@ -228,18 +228,22 @@ function turnTo(aim, most) {
     }
     state.heading = wrap(state.heading + Math.max(-most, Math.min(most, diff)));
 }
-// What stands in the way (her tree's trunk, the big stones): circles on the floor
+// What stands in the way (her tree's trunk and roots, the big stones): ellipses on the floor, { x, d, r, rd } (rd its
+// reach in depth, r if it has none). Each is worked in its own space, stretched in depth so it is a circle of radius r
 const blocking = () => world.obstacles(state.x, 900);
+const squash = (o) => o.r / (o.rd ?? o.r);
 // Going towards (mx, mz), he bends his way round what is ahead of him, by the side nearer where he is going
 function steer(mx, mz) {
     for (const o of blocking()) {
-        const rx = state.x - o.x, rz = state.d - o.d, dist = Math.hypot(rx, rz) || 1, R = o.r + 26;
+        const q = squash(o), rx = state.x - o.x, rz = (state.d - o.d) * q, dist = Math.hypot(rx, rz) || 1, R = o.r + 26;
         if (dist > R + 130) continue;
-        if (-(mx * rx + mz * rz) / dist <= 0) continue;                  // (moving away from it)
+        let mzq = mz * q;
+        if (-(mx * rx + mzq * rz) / dist <= 0) continue;                 // (moving away from it)
         const a = { x: -rz / dist, z: rx / dist }, b = { x: rz / dist, z: -rx / dist };
-        const t = a.x * mx + a.z * mz >= b.x * mx + b.z * mz ? a : b;
+        const t = a.x * mx + a.z * mzq >= b.x * mx + b.z * mzq ? a : b;
         const kk = Math.max(0, Math.min(1, 1 - (dist - R) / 130));
-        mx = mx * (1 - kk) + t.x * kk; mz = mz * (1 - kk) + t.z * kk;
+        mx = mx * (1 - kk) + t.x * kk; mzq = mzq * (1 - kk) + t.z * kk;
+        mz = mzq / q;
         const l = Math.hypot(mx, mz) || 1; mx /= l; mz /= l;
     }
     return [mx, mz];
@@ -247,17 +251,18 @@ function steer(mx, mz) {
 // and never walks into it (with the keys he slides along it)
 function collide() {
     for (const o of blocking()) {
-        const rx = state.x - o.x, rz = state.d - o.d, dist = Math.hypot(rx, rz) || 1;
-        if (dist < o.r) { state.x = o.x + rx / dist * o.r; state.d = Math.max(0, Math.min(DEPTH, o.d + rz / dist * o.r)); }
+        const q = squash(o), rx = state.x - o.x, rz = (state.d - o.d) * q, dist = Math.hypot(rx, rz) || 1;
+        if (dist < o.r) { state.x = o.x + rx / dist * o.r; state.d = Math.max(0, Math.min(DEPTH, o.d + rz / dist * o.r / q)); }
     }
 }
 
 // --- What he does ---
 const act = (name, dur, extra = {}) => { state.action = { name, t: 0, dur, ...extra }; };
 function walkTo(x, d = state.d) {
+    // (a touch on something that stands in the way: he walks to its edge, on the side the touch was)
     for (const o of world.obstacles(x, 0)) {
-        const rx = state.x - o.x, rz = state.d - o.d, dist = Math.hypot(rx, rz) || 1;
-        if (Math.hypot(x - o.x, d - o.d) < o.r + 10) { x = o.x + rx / dist * (o.r + 12); d = Math.max(0, Math.min(DEPTH, o.d + rz / dist * (o.r + 12))); }
+        const q = squash(o), rx = x - o.x, rz = (d - o.d) * q, dist = Math.hypot(rx, rz) || 1;
+        if (dist < o.r + 10) { x = o.x + rx / dist * (o.r + 12); d = Math.max(0, Math.min(DEPTH, o.d + rz / dist * (o.r + 12) / q)); }
     }
     state.target = { x, d }; state.reach = null; if (ui.sitting) sit(false);
 }

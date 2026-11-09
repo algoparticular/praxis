@@ -48,7 +48,7 @@ function tint(name, colour) {
 // the little mushrooms in the middle, between its roots, which sit on the ground (its roots spread over it, towards us)
 // (scale: 2.5 times as tall as Sid, from the foot of its mushrooms to the top of its crown, 1332 px of the drawing
 // against his 708; its line, about 11 px in the drawing, is then about 14, as his own outline)
-export const TREE = { x: 2000, d: 230, behind: 160, scale: 1.33, foot: { x: 640, y: 1358 } };
+export const TREE = { x: 2000, d: 420, behind: 25, scale: 1.33, foot: { x: 640, y: 1358 } };
 // The pieces spread over the world, how often each comes, what colour it takes, and whether it sways
 const SCATTER = [
     { name: 'fern', weight: 3, sway: 0.5, colour: 'green' }, { name: 'fernSmall', weight: 3, sway: 0.6, colour: 'green' },
@@ -62,7 +62,12 @@ const SCATTER = [
 const BLOCKS = new Set(['pebbleGrass', 'pebbleFlat', 'cairn']);
 const TALL = new Set(['fern', 'fernSmall', 'sprout', 'cairn']);
 // her tree's trunk on the floor: it stands a little behind its foot (its roots come forward), as wide as it looks
-const TRUNK = { behind: 170, r: 95 };   // (with room behind it to walk by, before the back of the floor)
+// Her tree stands in his way where it is drawn: its trunk (just behind its foot, as wide as it is drawn just over its
+// roots, its middle a little left of the foot) and its roots, which spread wide and come forward over the floor (an
+// ellipse: as wide as they are drawn, from the trunk to their tips). The tree stands far back, so there is room to
+// walk in front of its roots, and behind it a little
+const TRUNK = { behind: 25, r: 122, dx: -19 };
+const ROOTS = { dx: 30, dd: -150, r: 400, rd: 175 };
 
 const STRETCH = 520;            // the width of the stretch of world made at a time (px of his world)
 const LINE = 7;                 // the pen: thinner than his own outline, so he stays the one you look at
@@ -128,7 +133,7 @@ export function createWorld({ depth, clouds = null, moon = null }) {
         const treeHere = TREE.x >= index * STRETCH && TREE.x < (index + 1) * STRETCH;
         if (treeHere) add({ kind: 'tree', x: TREE.x, d: TREE.d, reach: 700 });
         // nothing of the world stands on or just in front of its roots (as the camera moves it would cross them)
-        const clear = (p) => Math.abs(p.x - TREE.x) > 640 || p.d > TREE.d + 140;   // (its roots reach the front of the floor)
+        const clear = (p) => Math.abs(p.x - TREE.x) > 640 || p.d > TREE.d + 140 || p.d < TREE.d - 420;   // (its roots come forward)
 
         for (let n = 0; n < 34; n++) { const p = at(); if (clear(p)) tick(p.x, p.d); }
         // her pieces, spread: ferns, sprouts, pebbles, now and then a stack of them
@@ -407,7 +412,7 @@ export function createWorld({ depth, clouds = null, moon = null }) {
     // Whether a place (x, depth) is under the crown of her tree
     const underCrown = (x, d) => {
         const crown = boxOf('crown'), middle = TREE.x + (crown[0] + crown[2] / 2 - TREE.foot.x) * TREE.scale;
-        return Math.abs(x - middle) < crown[2] * TREE.scale * 0.42 && Math.abs(d - TREE.d) < 260;
+        return Math.abs(x - middle) < crown[2] * TREE.scale * 0.42 && d > TREE.d - 520 && d < TREE.d + 200;   // (in front of its roots, too)
     };
 
     // What stands in his way near x (within `range`): circles on the floor { x, d, r }
@@ -415,7 +420,7 @@ export function createWorld({ depth, clouds = null, moon = null }) {
         const out = [];
         for (let i = Math.floor((x - range - 400) / STRETCH); i <= Math.floor((x + range + 400) / STRETCH); i++) {
             for (const item of stretch(i)) {
-                if (item.kind === 'tree') out.push({ x: item.x, d: item.d + TRUNK.behind, r: TRUNK.r });
+                if (item.kind === 'tree') out.push({ x: item.x + TRUNK.dx, d: item.d + TRUNK.behind, r: TRUNK.r }, { x: item.x + ROOTS.dx, d: item.d + ROOTS.dd, r: ROOTS.r, rd: ROOTS.rd });
                 else if (item.kind === 'piece' && BLOCKS.has(item.name)) out.push({ x: item.x, d: item.d, r: boxOf(item.name)[2] * item.scale * 0.36 });
             }
         }
