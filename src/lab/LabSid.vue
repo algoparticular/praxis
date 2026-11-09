@@ -31,7 +31,7 @@ const SMALL = 0.84;
 const LEG = { thigh: 97, shin: 97, foot: 40, width: 16 };
 const ARM = { upper: 108, fore: 102, width: 13.5 };        // long, as in Upekkha (they reach his crossed legs)
 const STAND = 196;                            // his hips over the ground, standing: his legs all but straight
-const SIT = 52;                               // his hips over the ground, sitting with his legs crossed
+const SIT = 12;                               // his hips over the ground, sitting with his legs crossed: his bottom on the floor
 // In profile his hips are together in his middle (one leg behind the other), his arms come from the middle of him
 // too, the near one hanging over his belly and the far one behind him (unseen until it swings out); turned to us, his
 // hips, shoulders and hands are at each side of him (FRONT_ below). Which is near and which far is as when one really
@@ -772,7 +772,7 @@ function draw() {
             // Crossed in front of him, as she draws them: each knee well out to its side, its foot under the other; each
             // leg crosses on its own (lifting its foot a little over the way), the second after the first
             const side = Math.sign(h.x - f.root.x) || (i ? face : -face), m = crossed;
-            const knee = { x: f.root.x + side * 118, y: state.ground - 58 }, under = { x: f.root.x - side * 38, y: state.ground - 7 - Math.sin(Math.PI * m) * 34 };
+            const knee = { x: f.root.x + side * 136, y: state.ground - 44 }, under = { x: f.root.x - side * 40, y: state.ground - 9 - Math.sin(Math.PI * m) * 34 };
             joint = { x: joint.x + (knee.x - joint.x) * m, y: joint.y + (knee.y - joint.y) * m };
             end = { x: end.x + (under.x - end.x) * m, y: end.y + (under.y - end.y) * m };
         }
@@ -805,8 +805,7 @@ function draw() {
     const drawArm = (a) => limb([a.s, a.joint, a.end], ARM.width);
     drawArm(arms[0]);
     // Legs: behind his body, or in front of it when he sits with them crossed (as in Upekkha)
-    // (side on, the far leg a little finer than the near one, so one is seen going forward and the other back)
-    const drawLegs = () => legs.forEach((l, i) => limb([l.h, l.joint, l.end, l.toe], LEG.width * (i ? 1 : mix(0.8, 1, f.front))));
+    const drawLegs = () => legs.forEach((l) => limb([l.h, l.joint, l.end, l.toe], LEG.width));
     const inFront = Math.max(...state.legSit) > 0.3;                  // crossed, his legs are in front of him
     if (!inFront) drawLegs();
 
