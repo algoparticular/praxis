@@ -369,10 +369,11 @@ function update(dt, now) {
         if (r.tail >= 1) { state.rul = null; rulito.value?.frame({ width: 40 }); }
     }
     S.walk.to = walking;
-    // a relaxed step (about 1.35 steps a second at his pace), shorter as he sets off, longer at a trot
+    // a long, relaxed step (as the book's contact: the legs well apart), so a slow one: under a step a second at his
+    // pace; shorter as he sets off, longer at a trot
     // (seen from the front or three quarters on, his steps are shorter and quicker: a long stride towards us or away
     // only shows as his feet going far out to the sides)
-    const STRIDE = (mix(64, 100, Math.min(1, state.speed / PACE)) + 46 * state.run) * (1 - 0.35 * S.front.x), run = state.run;
+    const STRIDE = (mix(84, 138, Math.min(1, state.speed / PACE)) + 46 * state.run) * (1 - 0.35 * S.front.x), run = state.run;
     if (state.speed > 0) state.phase = (state.phase + state.speed * dt / (2 * STRIDE)) % 1;
     const w = Math.max(0, Math.min(1, S.walk.x)), p = state.phase, face = Math.sign(S.face.x) || 1;
 
@@ -388,15 +389,21 @@ function update(dt, now) {
     // over it, and swaying from side to side with his weight
     const fr = frame().front;
     // (at a trot: leaning in more, a bigger swing and a springier bob)
-    let lean = w * (0.02 + 0.03 * run) * face * (1 - fr), sy = 1 - w * (0.007 + 0.022 * run) * Math.cos(p * Math.PI * 4), rot = w * 0.006 * Math.sin(p * Math.PI * 2), drop = 0, closed = 0;
+    // The walk as The Animator's Survival Kit draws it, step by step (st: 0 a foot's contact, 0.25 the down, 0.5 the
+    // passing position, 0.75 the up, 1 the next contact): he is lowest on the down, just after the contact, as the
+    // front knee takes his weight (squashing a touch), and highest on the up, pushing off the toes of the back foot
+    const st = (p * 2) % 1, low = 0.5 + 0.5 * Math.cos(Math.PI * 2 * (st - 0.25));       // 1 on the down, 0 on the up
+    let lean = w * (0.02 + 0.03 * run) * face * (1 - fr), sy = 1 - w * (0.012 + 0.025 * run) * (low - 0.5) * 2, rot = w * 0.006 * Math.sin(p * Math.PI * 2), drop = 0, closed = 0;
     let near = { ...REST_HAND.near }, far = { ...REST_HAND.far };
     // the arms swing against the legs (each arm forward as the other leg goes forward), a little behind them, rising a
     // touch as they go forward
-    const swing = Math.sin(p * Math.PI * 2 - 0.5) * (34 + 26 * run) * w;
+    // (at their furthest on each contact, the arm opposite the front foot forward, a frame or so behind the legs: the
+    // drag of a loose arm; they pass his body on the passing position)
+    const swing = -Math.cos(Math.PI * 2 * (p - 0.04)) * (48 + 22 * run) * w;
     near.u -= swing; far.u += swing;
     near.v -= Math.max(0, -swing) * (0.35 + 0.4 * run); far.v -= Math.max(0, swing) * (0.35 + 0.4 * run);
     if (run > 0) { near.v -= 60 * run; far.v -= 60 * run; }             // trotting, his arms bent up a little
-    drop += w * (1.6 + 1.6 * Math.cos(p * Math.PI * 4)) + run * (5 + 5 * Math.cos(p * Math.PI * 4));   // the bob of each step: barely, a calm walk
+    drop += w * 7 * low + run * 10 * low;                                // the bob of each step: gentle, a calm walk
     // turned to us, his hands hang at each side of him (walking towards us or away, an arm swinging forward shows as
     // that hand rising a little and coming in)
     near = { u: mix(near.u, side(FRONT_HAND.near.u), spread(fr)), v: mix(near.v, FRONT_HAND.near.v, fr) };
@@ -538,13 +545,17 @@ function update(dt, now) {
         // where it will land, half a step ahead of where he will be then, speeding up and slowing down, lifted most
         // early in the swing (higher at a trot)
         const e = (q - 0.5) / 0.5, ease = e * e * (3 - 2 * e);
-        const lift = q >= 0.5 ? Math.sin(Math.PI * Math.pow(e, 0.8)) * (16 + 18 * run) : 0;
+        // the heel of the back foot rises at the end of its time on the ground (it pushes off its toes), and once in the
+        // air the foot goes up early (highest about the down and the passing position, the knee bent) and reaches
+        // forward low, its toes up, to land on its heel
+        const HEEL = 11, heel = q < 0.5 ? HEEL * Math.pow(Math.max(0, (q - 0.3) / 0.2), 1.5) : 0;
+        const lift = q >= 0.5 ? Math.sin(Math.PI * Math.pow(e, 0.6)) * (18 + 18 * run) + HEEL * (1 - ease) : 0;
         const was = state.lastQ[i] ?? q, landed = q < 0.5 && (was >= 0.5 || !state.plant[i]), left_ = q >= 0.5 && (was < 0.5 || !state.from[i]);
         state.lastQ[i] = q;
         let gait;
         if (q < 0.5) {
             if (landed) state.plant[i] = { x: (state.feet[i] ?? rest).x, d: (state.feet[i] ?? rest).d };
-            gait = { ...state.plant[i], y: 0 };
+            gait = { ...state.plant[i], y: heel };
             state.from[i] = null;
         } else {
             if (left_) state.from[i] = { x: (state.feet[i] ?? rest).x, d: (state.feet[i] ?? rest).d };
@@ -555,7 +566,11 @@ function update(dt, now) {
             state.plant[i] = null;
         }
         // his toes: up as the heel lands, down as the foot leaves the ground and through the swing
-        const toe = q < 0.12 ? -9 * (1 - q / 0.12) : q > 0.4 && q < 0.5 ? 6 * (q - 0.4) / 0.1 : q >= 0.5 ? 6 * (1 - ease) + lift * 0.25 : 0;
+        // his toes (down is +): up as the heel lands, flat, then on the ground while the heel rises; pointing down
+        // through the swing and up again before he lands (no jump from one frame to the next)
+        const toward = (a, b, t) => a + (b - a) * Math.max(0, Math.min(1, t));
+        const late = Math.max(0, (e - 0.55) / 0.45), toLand = late * late * (3 - 2 * late);
+        const toe = q < 0.12 ? -9 * (1 - q / 0.12) : q < 0.5 ? heel : toward(HEEL + 6 * Math.sin(Math.PI * Math.min(1, e / 0.55)), -9, toLand);
         state.toes[i] = (state.toes[i] ?? 0) + (toe * w - (state.toes[i] ?? 0)) * Math.min(1, dt * 20);
         let foot = state.feet[i] ?? rest;
         if (state.air) { state.plant[i] = null; state.from[i] = null; state.lastQ[i] = null; }
