@@ -44,7 +44,13 @@ const REST_HAND = { far: { u: 92, v: 524 }, near: { u: 116, v: 524 } };
 // (seen three quarters on, his hips, shoulders and hands are already well apart: they open out quickly as he turns
 // from his profile, so his legs do not cross like scissors and his arms are not drawn over his belly)
 const spread = (front) => Math.sqrt(Math.max(0, front));
-const hipsOf = (f) => ['far', 'near'].map((side) => ({ u: mix(HIP[side].u, FRONT_HIP[side].u, spread(f.front)), v: mix(HIP[side].v, FRONT_HIP[side].v, f.front) }));
+// Turned to us his near side is the one away from where he faces; with his back to us it is the one on that side (as
+// when one really turns: walking away three quarters on, the arm nearer us is on the side he goes to). `lateral()` is
+// 1 facing us, -1 with his back to us (soft through his profile, where it does not show), and `side(u)` puts a point
+// of the FRONT_ poses on its side
+const lateral = () => Math.max(-1, Math.min(1, -Math.sin(state.heading) * 4));
+const side = (u) => PIVOT.x + (u - PIVOT.x) * lateral();
+const hipsOf = (f) => ['far', 'near'].map((s) => ({ u: mix(HIP[s].u, side(FRONT_HIP[s].u), spread(f.front)), v: mix(HIP[s].v, FRONT_HIP[s].v, f.front) }));
 const EYES = rig.eyes;
 // Turned to us: his eyes in the middle of his face, a shoulder at each side of the pinch of his waist and his hands
 // hanging at each side of his belly
@@ -382,8 +388,8 @@ function update(dt, now) {
     drop += w * (1.6 + 1.6 * Math.cos(p * Math.PI * 4)) + run * (5 + 5 * Math.cos(p * Math.PI * 4));   // the bob of each step: barely, a calm walk
     // turned to us, his hands hang at each side of him (walking towards us or away, an arm swinging forward shows as
     // that hand rising a little and coming in)
-    near = { u: mix(near.u, FRONT_HAND.near.u, spread(fr)), v: mix(near.v, FRONT_HAND.near.v, fr) };
-    far = { u: mix(far.u, FRONT_HAND.far.u, spread(fr)), v: mix(far.v, FRONT_HAND.far.v, fr) };
+    near = { u: mix(near.u, side(FRONT_HAND.near.u), spread(fr)), v: mix(near.v, FRONT_HAND.near.v, fr) };
+    far = { u: mix(far.u, side(FRONT_HAND.far.u), spread(fr)), v: mix(far.v, FRONT_HAND.far.v, fr) };
     near.v -= fr * Math.max(0, -swing) * 0.9; near.u += fr * Math.max(0, -swing) * 0.6;
     far.v -= fr * Math.max(0, swing) * 0.9; far.u -= fr * Math.max(0, swing) * 0.6;
 
@@ -413,7 +419,7 @@ function update(dt, now) {
         // with the arm he started with, even if he has turned round since (then it is his far one)
         const hand = { u: 250 + Math.sin(t * 12) * 34, v: 215 + Math.cos(t * 12) * 10 }, far_ = state.action.arm === 'far';
         // (the far arm waves ahead of him in profile, and on its own side turned to us, after the mirroring below)
-        if (far_) far = { u: fr > 0.5 ? 2 * PIVOT.x - hand.u : hand.u, v: hand.v }; else near = hand;
+        if (far_) far = { u: fr > 0.5 && lateral() > 0 ? 2 * PIVOT.x - hand.u : hand.u, v: hand.v }; else near = hand;
         lean = (far_ ? 0.035 : -0.035) * Math.min(1, t * 3); sy = 1.03;
     }
     if (name === 'stretch') {
@@ -430,8 +436,8 @@ function update(dt, now) {
         // arms going back to gather the spring: in profile behind him; turned to us, down and out, each on its own side
         // (`final`: already where they go, not to be mirrored below)
         if (fr > 0.5) {
-            near = { u: mix(near.u, PIVOT.x - 150, ease_), v: mix(near.v, 470, ease_), final: true };
-            far = { u: mix(far.u, PIVOT.x + 150, ease_), v: mix(far.v, 470, ease_), final: true };
+            near = { u: mix(near.u, side(PIVOT.x - 150), ease_), v: mix(near.v, 470, ease_), final: true };
+            far = { u: mix(far.u, side(PIVOT.x + 150), ease_), v: mix(far.v, 470, ease_), final: true };
         } else { near = { u: mix(near.u, 60, ease_), v: mix(near.v, 480, ease_) }; far = { u: mix(far.u, 40, ease_), v: mix(far.v, 470, ease_) }; }
         if (t >= JUMP.crouch) { state.air = true; state.jumped = true; state.vy = JUMP.speed; S.sy.v += 2.5; S.drop.v -= 260; }
     }
@@ -443,7 +449,7 @@ function update(dt, now) {
         if (fr > 0.5) {
             // turned to us: up at his sides as he springs, out to each side for balance as he comes down
             const out = up > 0 ? 118 : mix(118, 180, -up), v = up > 0 ? mix(330, 170, up) : mix(330, 400, -up);
-            near = { u: PIVOT.x - out, v, final: true }; far = { u: PIVOT.x + out, v, final: true };
+            near = { u: side(PIVOT.x - out), v, final: true }; far = { u: side(PIVOT.x + out), v, final: true };
         } else {
             near = up > 0 ? { u: 190, v: mix(330, 170, up) } : { u: mix(190, 236, -up), v: mix(330, 400, -up) };
             far = up > 0 ? { u: 70, v: mix(330, 180, up) } : { u: mix(70, 20, -up), v: mix(330, 400, -up) };
@@ -464,7 +470,7 @@ function update(dt, now) {
 
     // The poses above are written as in profile (his near hand on the side he faces); turned to us his near arm is
     // on the other side, so they are mirrored (each hand to its own side)
-    if (fr > 0.5) {
+    if (fr > 0.5 && lateral() > 0) {
         if (near !== restNear && !near.final) near = { u: 2 * PIVOT.x - near.u, v: near.v };
         if (far !== restFar && !far.final) far = { u: 2 * PIVOT.x - far.u, v: far.v };
         if (name === 'wave') lean = -lean;
@@ -658,7 +664,7 @@ function draw() {
     const legs = hipsOf(f).map((hip, i) => {
         const h = hips[i], floor = state.feet[i], foot = placed[i];
         // knees forward in profile; turned to us, a little out to their own side
-        const outward = (i ? -1 : 1) * face;                          // (turned to us, the near leg is on the far side)
+        const outward = (i ? -1 : 1) * face * lateral();              // (turned to us, the near leg is on the far side)
         const crossed = state.legSit[i];
         const toward = crossed > 0.5 ? { x: outward, y: -0.5 } : { x: mix(face, outward * 0.3, f.front), y: 0 };
         const ankle = { x: foot.x, y: foot.y - 6 };
@@ -683,11 +689,11 @@ function draw() {
         return { h, joint, end, toe: { x: end.x + toes * LEG.foot, y: end.y + 2 + tilt + (crossed > 0.5 ? 0 : state.toes[i]) } };
     });
     // Arms (in the world: shoulders on his body, hands where they are going, or reaching)
-    const arms = ['far', 'near'].map((side, i) => {
-        const s = map(f, mix(SHOULDER[side].u, FRONT_SHOULDER[side].u, spread(f.front)), mix(SHOULDER[side].v, FRONT_SHOULDER[side].v, f.front));
-        let hand = map(f, hands[side].u.x, hands[side].v.x);
+    const arms = ['far', 'near'].map((which, i) => {
+        const s = map(f, mix(SHOULDER[which].u, side(FRONT_SHOULDER[which].u), spread(f.front)), mix(SHOULDER[which].v, FRONT_SHOULDER[which].v, f.front));
+        let hand = map(f, hands[which].u.x, hands[which].v.x);
         const r = springs.reach.x;
-        if (side === 'near' && state.reached && r > 0.001) hand = { x: hand.x + (state.reached.x - hand.x) * r, y: hand.y + (state.reached.y - hand.y) * r };
+        if (which === 'near' && state.reached && r > 0.001) hand = { x: hand.x + (state.reached.x - hand.x) * r, y: hand.y + (state.reached.y - hand.y) * r };
         // in lotus, each hand rests on the knee at its side (on top of it), as the legs cross
         const knees = Math.min(...state.legSit);
         if (knees > 0.001) {
@@ -697,7 +703,7 @@ function draw() {
         }
         const raised = hand.y < s.y;
         // elbows back in profile, out to their own side turned to us; down when the hand is up
-        const out = (i ? -1 : 1) * face, back = mix(-face * 0.7, out, f.front);
+        const out = (i ? -1 : 1) * face * lateral(), back = mix(-face * 0.7, out, f.front);
         const toward = raised ? { x: out * 0.5, y: 1 } : { x: back, y: 0.15 };
         return { s, ...bend(s, hand, ARM.upper, ARM.fore, toward) };
     });
