@@ -59,7 +59,7 @@ const FRONT_SHOULDER = { far: { u: PIVOT.x + 48, v: 322 }, near: { u: PIVOT.x - 
 const FRONT_HAND = { far: { u: PIVOT.x + 132, v: 508 }, near: { u: PIVOT.x - 132, v: 508 } };   // a little away from his sides
 const mix = (a, b, t) => a + (b - a) * t;
 const JUMP = { crouch: 0.34, speed: 560, gravity: 1700 };
-const PACE = 135, TROT = 235;                 // his easy pace and a trot (world px a second)
+const PACE = 112, TROT = 215;                 // his easy, unhurried pace and a trot (world px a second)
 const ZOOM = 0.22;
 const STILLNESS = 0.05;                       // the world's pace while he meditates                            // how much closer the camera comes when he is at the back   // the gathering (s), the spring up and the fall (px/s, px/s²)
 
@@ -113,6 +113,7 @@ const state = {
     glance: null, nextGlance: 3,
     feet: [null, null],            // his feet on the floor: { x, d, y } (y: lifted), each at its own depth
     steps: [null, null], toes: [0, 0], legTuck: [0, 0],
+    plant: [null, null], from: [null, null], lastQ: [null, null],   // where each foot landed / left the ground
     legSit: [0, 0], sitT: 9, rising: false, settled: true,
     underTree: 0, rul: null,                                 // seconds sitting under the tree, the rulito born there      // sitting down in lotus and getting up, leg by leg
     reach: null,                   // a world point his near hand goes to
@@ -256,6 +257,13 @@ function onMove(e) { state.pointer = pointerTo(e); state.pointerAt = performance
 function onDown(e) {
     const screen = pointerTo(e);
     state.pointer = screen; state.pointerAt = performance.now();
+    // On him: he does not walk (it would be to a point just behind him); he greets us
+    const me = toSid(screen), top = frame().root.y - TALL * springs.sy.x;
+    if (Math.abs(me.x - state.x) < 120 && me.y > top && me.y < state.ground + 10) {
+        state.target = null;
+        if (!ui.sitting && !state.action) wave();
+        return;
+    }
     // On the floor: he walks there, to that depth too
     if (screen.y > groundAt(DEPTH) + 10) {
         const d = Math.max(0, Math.min(DEPTH, (state.ground - screen.y) / view.floor * DEPTH));
@@ -289,6 +297,7 @@ function turnedRound() {
     for (const k of ['u', 'v']) { [n[k].x, f[k].x] = [f[k].x, n[k].x]; [n[k].v, f[k].v] = [f[k].v, n[k].v]; }
     for (const h of [n, f]) { h.u.x = 2 * PIVOT.x - h.u.x; h.u.v = -h.u.v; }
     state.feet.reverse(); state.steps.reverse(); state.toes.reverse(); state.legTuck.reverse();
+    state.plant.reverse(); state.from.reverse(); state.lastQ.reverse();
     state.phase = (state.phase + 0.5) % 1;                  // each foot keeps its step
     if (state.action?.arm) state.action.arm = state.action.arm === 'near' ? 'far' : 'near';
 }
@@ -309,7 +318,8 @@ function update(dt, now) {
     else if (state.target) {
         const dx = state.target.x - state.x, dd = state.target.d - state.d;
         left = Math.hypot(dx, dd);
-        if (left < 4) state.target = null;
+        // there (near enough: closer than he turns round in, or he would circle the point, stepping on the spot)
+        if (left < 14 || (left < 50 && Math.abs(wrap(Math.atan2(dd, dx) - state.heading)) > Math.PI / 2)) state.target = null;
         else { mx = dx / left; mz = dd / left; }
     }
     let length = Math.hypot(mx, mz);
@@ -323,7 +333,7 @@ function update(dt, now) {
     const off = aim === null ? 0 : Math.abs(wrap(aim - state.heading));
     // his pace: easy; held a while (or far to go), a trot. Setting off he gathers speed (the first steps are shorter),
     // and stopping he slows down over a step or two
-    const trot = (keyed && state.held > 1.2) || (!keyed && left > 520);
+    const trot = keyed && state.held > 2.2;    // (only when the keys are held a good while: a touch is always a calm walk)
     const top = trot ? TROT : PACE;
     const want = length > 0 && !state.air && !ui.sitting ? Math.min(top, left * 3 + 20) * Math.max(0, Math.cos(Math.min(Math.PI / 2, off * 1.15))) : 0;
     const was = state.speed;
@@ -523,16 +533,32 @@ function update(dt, now) {
         const under = f.root.x + (hip.u - PIVOT.x) * face;
         const rest = { x: under + face * (i ? 4 : -4), d: state.d + (i ? -1 : 1) * 9 * (1 - f.front), y: 0 };
         const q = (p + i * 0.5) % 1;
-        // On the ground (q < 0.5) the foot goes back at exactly his speed, so it stays put; in the air it swings forward
-        // speeding up and slowing down, lifted most early in the swing (higher at a trot): all along the way he goes
+        // On the ground (q < 0.5) the foot stays exactly where it landed (whatever his pace or his turning do meanwhile:
+        // nothing about it is worked out again while it is down); in the air it swings from where it left the ground to
+        // where it will land, half a step ahead of where he will be then, speeding up and slowing down, lifted most
+        // early in the swing (higher at a trot)
         const e = (q - 0.5) / 0.5, ease = e * e * (3 - 2 * e);
-        const along = q < 0.5 ? STRIDE / 2 - STRIDE * (q / 0.5) : -STRIDE / 2 + STRIDE * ease;
         const lift = q >= 0.5 ? Math.sin(Math.PI * Math.pow(e, 0.8)) * (16 + 18 * run) : 0;
-        const gait = { x: rest.x + hd.x * along, d: rest.d + hd.z * along, y: lift };
+        const was = state.lastQ[i] ?? q, landed = q < 0.5 && (was >= 0.5 || !state.plant[i]), left_ = q >= 0.5 && (was < 0.5 || !state.from[i]);
+        state.lastQ[i] = q;
+        let gait;
+        if (q < 0.5) {
+            if (landed) state.plant[i] = { x: (state.feet[i] ?? rest).x, d: (state.feet[i] ?? rest).d };
+            gait = { ...state.plant[i], y: 0 };
+            state.from[i] = null;
+        } else {
+            if (left_) state.from[i] = { x: (state.feet[i] ?? rest).x, d: (state.feet[i] ?? rest).d };
+            const ahead = STRIDE * (1 - e) + STRIDE / 2;      // (he goes on a stride in a half cycle)
+            const land = { x: rest.x + hd.x * ahead, d: rest.d + hd.z * ahead };
+            const from = state.from[i];
+            gait = { x: from.x + (land.x - from.x) * ease, d: from.d + (land.d - from.d) * ease, y: lift };
+            state.plant[i] = null;
+        }
         // his toes: up as the heel lands, down as the foot leaves the ground and through the swing
         const toe = q < 0.12 ? -9 * (1 - q / 0.12) : q > 0.4 && q < 0.5 ? 6 * (q - 0.4) / 0.1 : q >= 0.5 ? 6 * (1 - ease) + lift * 0.25 : 0;
         state.toes[i] = (state.toes[i] ?? 0) + (toe * w - (state.toes[i] ?? 0)) * Math.min(1, dt * 20);
         let foot = state.feet[i] ?? rest;
+        if (state.air) { state.plant[i] = null; state.from[i] = null; state.lastQ[i] = null; }
         // in the air his legs hang, drawn up at the top of the jump and reaching down again to land, each in its own
         // time: one goes and comes back first, the other a moment after it (not one stiff piece)
         state.legTuck[i] += ((state.air ? state.tuck ?? 0 : 0) - state.legTuck[i]) * Math.min(1, dt * (i ? 6 : 13));
@@ -543,6 +569,7 @@ function update(dt, now) {
             foot = { x: foot.x + (gait.x - foot.x) * m, d: foot.d + (gait.d - foot.d) * m, y: foot.y + (gait.y - foot.y) * m };
             state.steps[i] = null;
         } else {
+            state.plant[i] = null; state.from[i] = null; state.lastQ[i] = null;
             // a step of its own when it is far from where it rests (one foot at a time)
             const st = state.steps[i];
             if (st) {
