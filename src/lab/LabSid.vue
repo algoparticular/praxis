@@ -772,7 +772,7 @@ function draw() {
             // Crossed in front of him, as she draws them: each knee well out to its side, its foot under the other; each
             // leg crosses on its own (lifting its foot a little over the way), the second after the first
             const side = Math.sign(h.x - f.root.x) || (i ? face : -face), m = crossed;
-            const knee = { x: f.root.x + side * 136, y: state.ground - 44 }, under = { x: f.root.x - side * 40, y: state.ground - 9 - Math.sin(Math.PI * m) * 34 };
+            const knee = { x: f.root.x + side * 104, y: state.ground - 40 }, under = { x: f.root.x - side * 36, y: state.ground - 9 - Math.sin(Math.PI * m) * 34 };
             joint = { x: joint.x + (knee.x - joint.x) * m, y: joint.y + (knee.y - joint.y) * m };
             end = { x: end.x + (under.x - end.x) * m, y: end.y + (under.y - end.y) * m };
         }
@@ -788,22 +788,26 @@ function draw() {
         let hand = map(f, hands[which].u.x, hands[which].v.x);
         const r = springs.reach.x;
         if (which === 'near' && state.reached && r > 0.001) hand = { x: hand.x + (state.reached.x - hand.x) * r, y: hand.y + (state.reached.y - hand.y) * r };
-        // in lotus, each hand rests on the knee at its side (on top of it), as the legs cross
+        // in lotus, as in Upekkha: each arm comes down his side, close to him (in front of him, just inside his outline),
+        // and its hand rests on the knee at its side, as the legs cross
         const knees = Math.min(...state.legSit);
         if (knees > 0.001) {
             const knee = legs.map((l) => l.joint).sort((a, b) => Math.abs(a.x - s.x) - Math.abs(b.x - s.x))[0];
-            const k = knees * knees * (3 - 2 * knees), on = { x: knee.x + Math.sign(f.root.x - knee.x) * 10, y: knee.y - LEG.width * 0.6 };   // (just in from its tip, touching it)
+            const k = knees * knees * (3 - 2 * knees), on = { x: knee.x + Math.sign(f.root.x - knee.x) * 16, y: knee.y - LEG.width * 0.5 };   // (just in from its tip, on it)
             hand = { x: hand.x + (on.x - hand.x) * k, y: hand.y + (on.y - hand.y) * k };
         }
         const raised = hand.y < s.y;
         // elbows back in profile, out to their own side turned to us; down when the hand is up
         const out = (i ? -1 : 1) * face * lateral(), back = mix(-face * 0.7, out, f.front);
-        const toward = raised ? { x: out * 0.5, y: 1 } : { x: back, y: 0.15 };
+        // (sitting, the elbow stays close to his side: it bends inwards, over him, not out into the air)
+        const sat = Math.min(...state.legSit) > 0.5;
+        const toward = raised ? { x: out * 0.5, y: 1 } : sat ? { x: -Math.sign(s.x - f.root.x || 1), y: 0.2 } : { x: back, y: 0.15 };
         return { s, ...bend(s, hand, ARM.upper, ARM.fore, toward) };
     });
 
     const drawArm = (a) => limb([a.s, a.joint, a.end], ARM.width);
-    drawArm(arms[0]);
+    const seated = Math.min(...state.legSit) > 0.5 && f.front > 0.5;   // (sitting turned to us both arms are in front of him)
+    if (!seated) drawArm(arms[0]);
     // Legs: behind his body, or in front of it when he sits with them crossed (as in Upekkha)
     const drawLegs = () => legs.forEach((l) => limb([l.h, l.joint, l.end, l.toe], LEG.width));
     const inFront = Math.max(...state.legSit) > 0.3;                  // crossed, his legs are in front of him
@@ -832,6 +836,7 @@ function draw() {
     c.restore();
 
     if (inFront) drawLegs();
+    if (seated) drawArm(arms[0]);
     drawArm(arms[1]);
 
     // The rulito over his head (its canvas is bigger than the glyph, 32 x 86, by 14 all round, for its glow)
