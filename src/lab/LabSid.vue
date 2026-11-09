@@ -789,24 +789,19 @@ function draw() {
         let hand = map(f, hands[which].u.x, hands[which].v.x);
         const r = springs.reach.x;
         if (which === 'near' && state.reached && r > 0.001) hand = { x: hand.x + (state.reached.x - hand.x) * r, y: hand.y + (state.reached.y - hand.y) * r };
-        // in lotus, as in Upekkha: each arm comes down his side, close to him (in front of him, just inside his outline),
-        // and its hand rests on the knee at its side, as the legs cross
-        const knees = Math.min(...state.legSit);
+        // in lotus, as a Buddha meditating: the shoulders loose, each arm falls by his side, the elbow opening a little
+        // outwards, and the forearm comes in to his lap, where the two hands meet in the middle, in front of his pelvis
+        // (the mudra of meditation)
+        const knees = Math.min(...state.legSit), own = Math.sign(s.x - f.root.x) || (i ? 1 : -1);
         if (knees > 0.001) {
-            const knee = legs.map((l) => l.joint).sort((a, b) => Math.abs(a.x - s.x) - Math.abs(b.x - s.x))[0];
-            const k = knees * knees * (3 - 2 * knees), on = { x: knee.x + Math.sign(f.root.x - knee.x) * 34, y: knee.y - LEG.width * 0.5 };   // (on its inner side)
-            hand = { x: hand.x + (on.x - hand.x) * k, y: hand.y + (on.y - hand.y) * k };
+            const k = knees * knees * (3 - 2 * knees), lap = map(f, PIVOT.x + own * 13 / Math.max(0.3, Math.abs(f.face)), PIVOT.y - 22);
+            hand = { x: hand.x + (lap.x - hand.x) * k, y: hand.y + (lap.y - hand.y) * k };
         }
         const raised = hand.y < s.y;
         // elbows back in profile, out to their own side turned to us; down when the hand is up
         const out = (i ? -1 : 1) * face * lateral(), back = mix(-face * 0.7, out, f.front);
-        // (sitting, as in Upekkha, the arm comes down all but straight from the shoulder to the inner side of the knee,
-        // over him, well inside his outline (a little white between them): as long as that way, never folded in a loop)
-        const sat = Math.min(...state.legSit) > 0.5;
-        if (sat && !raised) {
-            const d = Math.hypot(hand.x - s.x, hand.y - s.y), k = (d * 1.01) / (ARM.upper + ARM.fore);
-            return { s, ...bend(s, hand, ARM.upper * k, ARM.fore * k, { x: -(Math.sign(s.x - f.root.x) || 1), y: 0 }) };
-        }
+        // (sitting, the elbow goes out to its own side and a little down: the arm rounds softly by his side)
+        if (Math.min(...state.legSit) > 0.5 && !raised) return { s, ...bend(s, hand, ARM.upper, ARM.fore, { x: own, y: 0.35 }) };
         const toward = raised ? { x: out * 0.5, y: 1 } : { x: back, y: 0.15 };
         return { s, ...bend(s, hand, ARM.upper, ARM.fore, toward) };
     });
