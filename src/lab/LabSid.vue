@@ -235,6 +235,7 @@ const squash = (o) => o.r / (o.rd ?? o.r);
 // Going towards (mx, mz), he bends his way round what is ahead of him, by the side nearer where he is going
 function steer(mx, mz) {
     for (const o of blocking()) {
+        if (o.low && inside(o, state)) continue;                         // (on the roots: he walks on them)
         const q = squash(o), rx = state.x - o.x, rz = (state.d - o.d) * q, dist = Math.hypot(rx, rz) || 1, R = o.r + 26;
         if (dist > R + 130) continue;
         let mzq = mz * q;
@@ -248,9 +249,12 @@ function steer(mx, mz) {
     }
     return [mx, mz];
 }
-// and never walks into it (with the keys he slides along it)
-function collide() {
+// and never walks into it (with the keys he slides along it). What is low (her tree's roots) can be jumped onto: in the
+// air he goes over its edge, and once on it he walks on it and steps off where he likes; walking, it stops him
+const inside = (o, p) => Math.hypot(p.x - o.x, (p.d - o.d) * squash(o)) < o.r;
+function collide(from = null) {
     for (const o of blocking()) {
+        if (o.low && (state.air || (from && inside(o, from)))) continue;
         const q = squash(o), rx = state.x - o.x, rz = (state.d - o.d) * q, dist = Math.hypot(rx, rz) || 1;
         if (dist < o.r) { state.x = o.x + rx / dist * o.r; state.d = Math.max(0, Math.min(DEPTH, o.d + rz / dist * o.r / q)); }
     }
@@ -402,7 +406,8 @@ function update(dt, now) {
     const top = trot ? TROT : PACE;
     const want = length > 0 && !state.air && !ui.sitting ? Math.min(top, left * 3 + 20) * Math.max(0, Math.cos(Math.min(Math.PI / 2, off * 1.15))) : 0;
     const was = state.speed;
-    state.speed = want > state.speed ? Math.min(want, state.speed + (trot ? 260 : 220) * dt) : Math.max(want, state.speed - 380 * dt);
+    // (in the air he keeps the speed he jumped with: a jump while walking carries him forward, over what is low)
+    if (!state.air) state.speed = want > state.speed ? Math.min(want, state.speed + (trot ? 260 : 220) * dt) : Math.max(want, state.speed - 380 * dt);
     // His legs walk him: on his feet (not jumping, sitting or getting up) the cycle goes on at his pace and he goes
     // exactly as far as the foot on the ground goes back under him (unevenly, as the book says: quicker through the
     // contact, cushioned into the down)
@@ -420,11 +425,12 @@ function update(dt, now) {
         // his hips as high as the lower foot lets them (lowest on the down, highest pushing off: the bob of the walk)
         state.gaitDrop = STAND + 2 + Math.min(lowest(now[0]), lowest(now[1]));
     } else { state.gait = null; state.gaitDrop += (0 - state.gaitDrop) * Math.min(1, dt * 10); }
-    if (!onFeet && state.speed > 0.5 && !state.air) go = state.speed * dt;
+    if (!onFeet && state.speed > 0.5) go = state.speed * dt;
     if (go > 0) {
+        const from = { x: state.x, d: state.d };
         state.x += Math.cos(state.heading) * go;
         state.d = Math.max(0, Math.min(DEPTH, state.d + Math.sin(state.heading) * go));
-        collide();
+        collide(from);
     }
     state.run = Math.max(0, Math.min(1, (state.speed - PACE) / (TROT - PACE)));
     const walking = state.speed > 3 ? 1 : 0;
