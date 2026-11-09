@@ -59,7 +59,7 @@ const FRONT_SHOULDER = { far: { u: PIVOT.x + 48, v: 322 }, near: { u: PIVOT.x - 
 const FRONT_HAND = { far: { u: PIVOT.x + 132, v: 508 }, near: { u: PIVOT.x - 132, v: 508 } };   // a little away from his sides
 const mix = (a, b, t) => a + (b - a) * t;
 const JUMP = { crouch: 0.34, speed: 560, gravity: 1700 };
-const PACE = 112, TROT = 215;                 // his easy, unhurried pace and a trot (world px a second)
+const PACE = 150, TROT = 230;                 // his easy, unhurried pace and a trot (world px a second)
 const ZOOM = 0.22;
 const STILLNESS = 0.05;                       // the world's pace while he meditates                            // how much closer the camera comes when he is at the back   // the gathering (s), the spring up and the fall (px/s, px/s²)
 
@@ -72,6 +72,62 @@ const DEPTH = 600;
 const FAR = 0.55;                             // his size at the back
 const scaleAt = (d) => 1 - (1 - FAR) * d / DEPTH;
 
+
+// --- The walk, as The Animator's Survival Kit draws a walk: pose by pose, each leg on its own ---
+// One leg through a whole cycle (two steps), in eight poses from its contact in front: [thigh, knee, foot], in degrees
+// (thigh from straight down, + forward; knee bent, + the shin going back; foot from flat, + toes up). The other leg
+// does the same half a cycle later. In between, the poses flow smoothly (a curve through them, frame by frame).
+const WALK = [
+    [26, 3, 20],      // 1 contact, in front: straight, the heel down and the toes up
+    [17, 20, 0],      // 2 down: the knee takes his weight, the foot flat
+    [2, 7, 0],        // 3 passing: under him, all but straight
+    [-14, 2, -3],     // 4 up: behind him, straight, pushing (the heel about to rise)
+    [-23, 9, -30],    // 5 contact, behind: on its toes, the heel up
+    [-15, 52, -55],   // 6 down: off the ground, the foot up behind him
+    [11, 74, -40],    // 7 passing: the knee forward and up, the foot hanging under him
+    [30, 26, 6],      // 8 up: reaching forward, the foot low, the toes coming up
+];
+const DEG = Math.PI / 180;
+// the pose of a leg at q (0..1 of its cycle), `k` of the way from standing to walking, a trot's poses wider (amp)
+function walkPose(q, k = 1, amp = 1) {
+    const x = (((q % 1) + 1) % 1) * WALK.length, i = Math.floor(x), t = x - i, n = WALK.length;
+    const P = [WALK[(i + n - 1) % n], WALK[i], WALK[(i + 1) % n], WALK[(i + 2) % n]];
+    return [0, 1, 2].map((j) => {
+        const [a, b, c, d] = P.map((pose) => pose[j]);
+        const v = 0.5 * (2 * b + (c - a) * t + (2 * a - 5 * b + 4 * c - d) * t * t + (3 * b - a - 3 * c + d) * t * t * t);
+        return v * k * (j === 1 ? 1 + (amp - 1) * 0.6 : amp);
+    });
+}
+// A leg in that pose, from its hip: along the way he goes (a) and up (u), in px of his drawing: its knee, its ankle,
+// its heel and the tip of its toes on the ground (the points it stands on), and its toes as they are drawn
+function legShape([thigh, knee, foot]) {
+    const T = thigh * DEG, S = (thigh - knee) * DEG, F = foot * DEG;
+    const kn = { a: LEG.thigh * Math.sin(T), u: -LEG.thigh * Math.cos(T) };
+    const an = { a: kn.a + LEG.shin * Math.sin(S), u: kn.u - LEG.shin * Math.cos(S) };
+    const reach = LEG.foot * Math.cos(F), rise = LEG.foot * Math.sin(F);
+    return { knee: kn, ankle: an, heel: { a: an.a, u: an.u - 6 }, tip: { a: an.a + reach, u: an.u - 6 + rise }, toe: { a: an.a + reach, u: an.u - 2 + rise } };
+}
+// which of its points a leg stands on (the lower: the heel, or the toes once the heel is up) and how high its hip is
+const standsOn = (L) => (L.tip.u < L.heel.u - 0.3 ? 'tip' : 'heel');
+const lowest = (L) => Math.min(L.heel.u, L.tip.u);
+// both legs at the phase p of the cycle (the far leg's contact in front at 0, the near one's at 0.5)
+const gaitLegs = (p, k, amp) => [0, 1].map((i) => legShape(walkPose(p + i * 0.5, k, amp)));
+// How far he goes in a cycle, walking (worked out once per width of step): the foot on the ground goes back under
+// him and he goes forward exactly as much, so a foot down never slides
+const cycleLengths = new Map();
+function cycleLength(amp) {
+    const key = Math.round(amp * 50) / 50;
+    if (!cycleLengths.has(key)) {
+        let total = 0, prev = gaitLegs(0, 1, key);
+        for (let n = 1; n <= 400; n++) {
+            const p = n / 400, now = gaitLegs(p, 1, key), g = ((p - 1 / 800) % 1) < 0.5 ? 0 : 1, on = standsOn(now[g]);
+            total += Math.max(0, prev[g][on].a - now[g][on].a);
+            prev = now;
+        }
+        cycleLengths.set(key, total);
+    }
+    return cycleLengths.get(key);
+}
 
 // --- Springs: a value that follows its target with some give (soft, it overshoots a little) ---
 function spring(x, stiff = 120, damp = 14) { return { x, v: 0, to: x, stiff, damp }; }
@@ -104,7 +160,9 @@ const state = {
     held: 0,                       // how long the keys have been held (held a while, he breaks into a trot)
     cam: 0, zoom: 1,
     pace: 1,
-    shift: 0,                      // his body over the foot he stands on (seen from the front, his weight going side to side)                       // how fast the world's time goes (all but still while he meditates)               // where the camera looks (it follows him, the world has no end) and how close
+    shift: 0,                      // his body over the foot he stands on (seen from the front, his weight going side to side)
+    gait: null,                    // walking: his legs in their poses this frame ({ legs, hd }), and how much he is lowered
+    gaitDrop: 0,                       // how fast the world's time goes (all but still while he meditates)               // where the camera looks (it follows him, the world has no end) and how close
     keys: { left: false, right: false, up: false, down: false },
     lift: 0, vy: 0, air: false,    // a jump
     target: null, speed: 0, phase: 0, run: 0,
@@ -114,7 +172,6 @@ const state = {
     glance: null, nextGlance: 3,
     feet: [null, null],            // his feet on the floor: { x, d, y } (y: lifted), each at its own depth
     steps: [null, null], toes: [0, 0], legTuck: [0, 0],
-    plant: [null, null], from: [null, null], lastQ: [null, null],   // where each foot landed / left the ground
     legSit: [0, 0], sitT: 9, rising: false, settled: true,
     underTree: 0, rul: null,                                 // seconds sitting under the tree, the rulito born there      // sitting down in lotus and getting up, leg by leg
     reach: null,                   // a world point his near hand goes to
@@ -127,7 +184,7 @@ function frame() {
     const front = Math.max(0, Math.min(1, springs.front.x));
     return {
         front,
-        root: { x: state.x + state.shift, y: state.ground - STAND + springs.drop.x - state.lift },
+        root: { x: state.x + state.shift, y: state.ground - STAND + springs.drop.x + state.gaitDrop - state.lift },
         rot: springs.rot.x, face: Math.sign(springs.face.x || 1),     // (he turns through the front: never thin)
         sy: springs.sy.x, sx: 1 / Math.sqrt(Math.max(0.5, springs.sy.x)), lean: springs.lean.x, breath,
     };
@@ -298,7 +355,6 @@ function turnedRound() {
     for (const k of ['u', 'v']) { [n[k].x, f[k].x] = [f[k].x, n[k].x]; [n[k].v, f[k].v] = [f[k].v, n[k].v]; }
     for (const h of [n, f]) { h.u.x = 2 * PIVOT.x - h.u.x; h.u.v = -h.u.v; }
     state.feet.reverse(); state.steps.reverse(); state.toes.reverse(); state.legTuck.reverse();
-    state.plant.reverse(); state.from.reverse(); state.lastQ.reverse();
     state.phase = (state.phase + 0.5) % 1;                  // each foot keeps its step
     if (state.action?.arm) state.action.arm = state.action.arm === 'near' ? 'far' : 'near';
 }
@@ -341,9 +397,27 @@ function update(dt, now) {
     const want = length > 0 && !state.air && !ui.sitting ? Math.min(top, left * 3 + 20) * Math.max(0, Math.cos(Math.min(Math.PI / 2, off * 1.15))) : 0;
     const was = state.speed;
     state.speed = want > state.speed ? Math.min(want, state.speed + (trot ? 260 : 220) * dt) : Math.max(want, state.speed - 380 * dt);
-    if (state.speed > 0.5 && !state.air) {
-        state.x += Math.cos(state.heading) * state.speed * dt;
-        state.d = Math.max(0, Math.min(DEPTH, state.d + Math.sin(state.heading) * state.speed * dt));
+    // His legs walk him: on his feet (not jumping, sitting or getting up) the cycle goes on at his pace and he goes
+    // exactly as far as the foot on the ground goes back under him (unevenly, as the book says: quicker through the
+    // contact, cushioned into the down)
+    const onFeet = !state.air && !ui.sitting && !state.rising && Math.max(...state.legSit) < 0.01 && name !== 'jump';
+    const amp = 1 + 0.25 * state.run, kWalk = Math.max(0, Math.min(1, springs.walk.x));
+    let go = 0;
+    if (onFeet && (state.speed > 0.5 || kWalk > 0.02)) {
+        const before = gaitLegs(state.phase, kWalk, amp);
+        const dp = state.speed * dt / cycleLength(amp);
+        const after = state.phase + dp, g = (state.phase % 1) < 0.5 ? 0 : 1;
+        state.phase = after % 1;
+        const now = gaitLegs(state.phase, kWalk, amp);
+        if (((after - 1e-9) % 1 < 0.5 ? 0 : 1) === g) { const on = standsOn(now[g]); go = Math.max(0, before[g][on].a - now[g][on].a); }
+        state.gait = { legs: now, k: kWalk };
+        // his hips as high as the lower foot lets them (lowest on the down, highest pushing off: the bob of the walk)
+        state.gaitDrop = STAND + 2 + Math.min(lowest(now[0]), lowest(now[1]));
+    } else { state.gait = null; state.gaitDrop += (0 - state.gaitDrop) * Math.min(1, dt * 10); }
+    if (!onFeet && state.speed > 0.5 && !state.air) go = state.speed * dt;
+    if (go > 0) {
+        state.x += Math.cos(state.heading) * go;
+        state.d = Math.max(0, Math.min(DEPTH, state.d + Math.sin(state.heading) * go));
         collide();
     }
     state.run = Math.max(0, Math.min(1, (state.speed - PACE) / (TROT - PACE)));
@@ -372,12 +446,8 @@ function update(dt, now) {
         if (r.tail >= 1) { state.rul = null; rulito.value?.frame({ width: 40 }); }
     }
     S.walk.to = walking;
-    // a long, relaxed step (as the book's contact: the legs well apart), so a slow one: under a step a second at his
-    // pace; shorter as he sets off, longer at a trot
-    // (seen from the front or three quarters on, his steps are shorter and quicker: a long stride towards us or away
-    // only shows as his feet going far out to the sides)
-    const STRIDE = (mix(84, 138, Math.min(1, state.speed / PACE)) + 46 * state.run) * (1 - 0.35 * S.front.x), run = state.run;
-    if (state.speed > 0) state.phase = (state.phase + state.speed * dt / (2 * STRIDE)) % 1;
+    // (the cycle goes on with his legs, above: about a step a second at his pace)
+    const run = state.run;
     const w = Math.max(0, Math.min(1, S.walk.x)), p = state.phase, face = Math.sign(S.face.x) || 1;
     // seen from the front or the back, his weight goes over the foot on the ground, side to side (the far foot is down
     // for the first half of the cycle, and is on the side lateral() and his face say)
@@ -409,7 +479,6 @@ function update(dt, now) {
     near.u -= swing; far.u += swing;
     near.v -= Math.max(0, -swing) * (0.15 + 0.5 * run); far.v -= Math.max(0, swing) * (0.15 + 0.5 * run);
     if (run > 0) { near.v -= 22 * run; far.v -= 22 * run; }             // trotting, his arms just a little bent (still loose)
-    drop += w * 7 * low + run * 10 * low;                                // the bob of each step: gentle, a calm walk
     // turned to us, his hands hang at each side of him (walking towards us or away, an arm swinging forward shows as
     // that hand rising a little and coming in)
     near = { u: mix(near.u, side(FRONT_HAND.near.u), spread(fr)), v: mix(near.v, FRONT_HAND.near.v, fr) };
@@ -536,65 +605,29 @@ function update(dt, now) {
     if (before && Math.sign(S.face.x) && Math.sign(S.face.x) !== before) turnedRound();
     hands.near.u.to = near.u; hands.near.v.to = near.v; hands.far.u.to = far.u; hands.far.v.to = far.v;
 
-    // His feet, on the floor (x, d) and lifted y: planted while he walks (they never slide, also going into the distance
-    // or towards us: the foot on the ground stays where it is while he goes on), stepping back under him when he stops
+    // His feet, on the floor (x, d) and lifted y. Walking, they are where his legs' poses put them (and the legs are
+    // drawn from those poses); standing, each steps back under him when it is far from there; in the air they hang
     const f = frame(), hd = { x: Math.cos(state.heading), z: Math.sin(state.heading) };
     hipsOf(f).forEach((hip, i) => {
         const h = map(f, hip.u, hip.v);
-        // where this foot is under him, from his hip at rest (not from his body as it sways, or a planted foot slides);
-        // seen side on, his far foot is a little further back on the floor than his near one
-        const under = f.root.x + (hip.u - PIVOT.x) * face;
-        const rest = { x: under + face * (i ? 4 : -4), d: state.d + (i ? -1 : 1) * 9 * (1 - f.front), y: 0 };
-        const q = (p + i * 0.5) % 1;
-        // On the ground (q < STANCE) the foot stays exactly where it landed (whatever his pace or his turning do
-        // meanwhile: nothing about it is worked out again while it is down); in the air it swings from where it left the
-        // ground to where it will land, ahead of where he will be then, speeding up and slowing down, lifted most early
-        // in the swing (higher at a trot). A foot is down more than half the time, as one really walks: on each contact
-        // both are down, and the back one stays, pushing off its toes, until it is well behind him (the book's down)
-        const STANCE = 0.6 - 0.1 * run;
-        const e = Math.max(0, (q - STANCE) / (1 - STANCE)), ease = e * e * (3 - 2 * e);
-        // the heel of the back foot rises at the end of its time on the ground (it pushes off its toes), and once in the
-        // air the foot goes up early (highest about the down and the passing position, the knee bent) and reaches
-        // forward low, its toes up, to land on its heel
-        const HEEL = 11, heel = q < STANCE ? HEEL * Math.pow(Math.max(0, (q - (STANCE - 0.2)) / 0.2), 1.5) : 0;
-        // (seen from the front or the back a step only shows as the knee coming up: it comes up more)
-        const lift = q >= STANCE ? Math.sin(Math.PI * Math.pow(e, 0.6)) * (44 + 16 * run + 6 * f.front) + HEEL * (1 - ease) : 0;
-        const was = state.lastQ[i] ?? q, landed = q < STANCE && (was >= STANCE || was > q || !state.plant[i]), left_ = q >= STANCE && (was < STANCE || !state.from[i]);
-        state.lastQ[i] = q;
-        let gait;
-        if (q < STANCE) {
-            if (landed) state.plant[i] = { x: (state.feet[i] ?? rest).x, d: (state.feet[i] ?? rest).d };
-            gait = { ...state.plant[i], y: heel };
-            state.from[i] = null;
-        } else {
-            if (left_) state.from[i] = { x: (state.feet[i] ?? rest).x, d: (state.feet[i] ?? rest).d };
-            // (he goes two strides in a cycle; the foot lands as far ahead of him as it will be behind him when it leaves)
-            const ahead = (1 - e) * (1 - STANCE) * 2 * STRIDE + STANCE * STRIDE;
-            const land = { x: rest.x + hd.x * ahead, d: rest.d + hd.z * ahead };
-            const from = state.from[i];
-            gait = { x: from.x + (land.x - from.x) * ease, d: from.d + (land.d - from.d) * ease, y: lift };
-            state.plant[i] = null;
+        // where this foot is under him, from his hip at rest; seen side on, his far foot is a little further back on
+        // the floor than his near one
+        const under = f.root.x + (hip.u - PIVOT.x) * face, back = (i ? -1 : 1) * 9 * (1 - f.front);
+        const rest = { x: under + face * (i ? 4 : -4), d: state.d + back, y: 0 };
+        if (state.gait) {
+            const L = state.gait.legs[i], H = STAND + 2 - state.gaitDrop;
+            state.feet[i] = { x: under + hd.x * L.ankle.a, d: state.d + back + hd.z * L.ankle.a, y: Math.max(0, L.heel.u + H) };
+            state.steps[i] = null; state.toes[i] = 0;
+            return;
         }
-        // his toes: up as the heel lands, down as the foot leaves the ground and through the swing
-        // his toes (down is +): up as the heel lands, flat, then on the ground while the heel rises; pointing down
-        // through the swing and up again before he lands (no jump from one frame to the next)
-        const toward = (a, b, t) => a + (b - a) * Math.max(0, Math.min(1, t));
-        const late = Math.max(0, (e - 0.55) / 0.45), toLand = late * late * (3 - 2 * late);
-        const toe = q < 0.12 ? -9 * (1 - q / 0.12) : q < STANCE ? heel : toward(HEEL + 6 * Math.sin(Math.PI * Math.min(1, e / 0.55)), -9, toLand);
-        state.toes[i] = (state.toes[i] ?? 0) + (toe * w - (state.toes[i] ?? 0)) * Math.min(1, dt * 20);
         let foot = state.feet[i] ?? rest;
-        if (state.air) { state.plant[i] = null; state.from[i] = null; state.lastQ[i] = null; }
         // in the air his legs hang, drawn up at the top of the jump and reaching down again to land, each in its own
         // time: one goes and comes back first, the other a moment after it (not one stiff piece)
         state.legTuck[i] += ((state.air ? state.tuck ?? 0 : 0) - state.legTuck[i]) * Math.min(1, dt * (i ? 6 : 13));
+        state.toes[i] += (0 - state.toes[i]) * Math.min(1, dt * 10);
         if (state.air && i === 1 && state.lift < 24 && state.vy > 0) foot = { ...foot, y: 0 };      // the last to leave the ground
         else if (state.air) foot = { x: h.x + face * (8 + 22 * state.legTuck[i]), d: state.d, y: state.ground - (h.y + STAND * (0.97 - 0.32 * state.legTuck[i])) };
-        else if (walking) {
-            const m = Math.min(1, w * 1.2);
-            foot = { x: foot.x + (gait.x - foot.x) * m, d: foot.d + (gait.d - foot.d) * m, y: foot.y + (gait.y - foot.y) * m };
-            state.steps[i] = null;
-        } else {
-            state.plant[i] = null; state.from[i] = null; state.lastQ[i] = null;
+        else {
             // a step of its own when it is far from where it rests (one foot at a time)
             const st = state.steps[i];
             if (st) {
@@ -603,7 +636,7 @@ function update(dt, now) {
                 foot = { x: st.from.x + (rest.x - st.from.x) * s, d: st.from.d + (rest.d - st.from.d) * s, y: st.from.y * (1 - s) + Math.sin(e * Math.PI) * 20 };
                 if (e >= 1) state.steps[i] = null;
             } else if (Math.hypot(rest.x - foot.x, rest.d - foot.d) > 6 && !state.steps[1 - i]) state.steps[i] = { from: foot, t: 0 };
-            else if (!state.steps[i]) { const m = Math.min(1, dt * 6); foot = { x: foot.x + (rest.x - foot.x) * m, d: foot.d + (rest.d - foot.d) * m, y: 0 }; }
+            else if (!state.steps[i]) { const m = Math.min(1, dt * 6); foot = { x: foot.x + (rest.x - foot.x) * m, d: foot.d + (rest.d - foot.d) * m, y: foot.y * (1 - m) }; }
         }
         state.feet[i] = foot;
     });
@@ -713,8 +746,18 @@ function draw() {
             placed[0] = { ...placed[0], x: placed[0].x - push }; placed[1] = { ...placed[1], x: placed[1].x + push };
         }
     }
+    // walking: each leg from its pose, from the hip, along the way he goes (seen from the front or the back that way is
+    // towards us or away, so a knee coming up shows as the foot rising); `back`: the far leg a little further back
+    const G = state.gait, Kd = view.floor / DEPTH / scaleAt(state.d);
+    const hx = Math.cos(state.heading), hz = Math.sin(state.heading);
+    const seen = (h, pt, back) => ({ x: h.x + hx * pt.a, y: h.y - (hz * pt.a + back) * Kd - pt.u });
     const legs = hipsOf(f).map((hip, i) => {
         const h = hips[i], floor = state.feet[i], foot = placed[i];
+        if (G) {
+            const L = G.legs[i], back = (i ? -1 : 1) * 9 * (1 - f.front), outward = (i ? -1 : 1) * face * lateral();
+            const toe = seen(h, L.toe, back);
+            return { h, joint: seen(h, L.knee, back), end: seen(h, L.ankle, back), toe: { x: toe.x + outward * 0.75 * LEG.foot * f.front, y: toe.y } };
+        }
         // knees forward in profile; turned to us, a little out to their own side
         const outward = (i ? -1 : 1) * face * lateral();              // (turned to us, the near leg is on the far side)
         const crossed = state.legSit[i];
@@ -735,7 +778,6 @@ function draw() {
         }
         // his toes: ahead in profile; turned to us, each a little out to its own side (crossed, along the leg)
         // (along the way he faces: pointing into the distance a foot shows a little up, towards us a little down)
-        const hx = Math.cos(state.heading), hz = Math.sin(state.heading);
         const toes = crossed > 0.5 ? Math.sign(end.x - joint.x) : hx * (1 - f.front) + outward * 0.75 * f.front;
         const tilt = crossed > 0.5 ? 0 : -hz * LEG.foot * 0.3;
         return { h, joint, end, toe: { x: end.x + toes * LEG.foot, y: end.y + 2 + tilt + (crossed > 0.5 ? 0 : state.toes[i]) } };
