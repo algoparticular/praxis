@@ -905,12 +905,14 @@ onBeforeUnmount(() => {
         <!-- the app's own header: back on the left, the sound and the menu on the right -->
         <Header :hasBack="true" :hasMenu="true" />
         <!-- the buttons, at the bottom; on a phone in one row over the pad and the lotus -->
-        <div class="panel" :class="{ bottom: ui.touch }">
+        <!-- on a computer, every button in a row at the bottom; on a phone only the pad, the lotus and, round it, waving
+             and jumping (below) -->
+        <div v-if="!ui.touch" class="panel">
             <button @click="walkAcross">Caminar</button>
             <button @click="wave">Saludar</button>
             <button @click="jump">Saltar</button>
             <button @click="stretch">Estirarse</button>
-            <button v-if="!ui.touch" :class="{ on: ui.sitting }" @click="sit()">Loto</button>
+            <button :class="{ on: ui.sitting }" @click="sit()">Loto</button>
 
             <span class="sep"></span>
             <button :class="{ on: ui.bones }" @click="ui.bones = !ui.bones">Esqueleto</button>
@@ -923,6 +925,8 @@ onBeforeUnmount(() => {
                 <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg>
             </button>
         </div>
+        <button v-if="ui.touch" class="act wave" @click="wave">Saludar</button>
+        <button v-if="ui.touch" class="act jump" @click="jump">Saltar</button>
         <button v-if="ui.touch" class="lotus" :class="{ on: ui.sitting }" @click="sit()">Loto</button>
     </div>
 </template>
@@ -974,7 +978,7 @@ canvas {
     justify-content: center;
 }
 /* As the app's buttons (style.scss): the cream, no border, its soft warm shadow, the coral when touched or on */
-.panel button, .pad button, .lotus {
+.panel button, .pad button, .lotus, .act {
     font-family: 'Nunito', helvetica, sans-serif;
     font-size: 16px;
     margin: 0;
@@ -990,9 +994,9 @@ canvas {
     -webkit-tap-highlight-color: transparent;
     transition: background 200ms ease-out, color 200ms ease-out;
 }
-.panel button:hover, .pad button:hover, .lotus:hover { background: #FF6F61; color: #F7F8F1; }
+.panel button:hover, .pad button:hover, .lotus:hover, .act:active { background: #FF6F61; color: #F7F8F1; }
 .panel button.on, .pad button:active, .lotus.on { background: #FF6F61; color: #F7F8F1; }
-.panel button:focus, .pad button:focus, .lotus:focus { box-shadow: none; outline: none; }
+.panel button:focus, .pad button:focus, .lotus:focus, .act:focus { box-shadow: none; outline: none; }
 .panel button:focus-visible, .pad button:focus-visible, .lotus:focus-visible { box-shadow: rgba(255, 111, 97, 0.35) 0 0 0 4px; }
 .sep {
     width: 12px;
@@ -1037,6 +1041,17 @@ canvas {
 .pad .right svg { transform: rotate(90deg); }
 .pad .down { grid-area: 3 / 2; }
 .pad .down svg { transform: rotate(180deg); }
+/* waving and jumping, smaller, in an arc round the lotus (as the buttons of a game pad) */
+.act {
+    position: absolute;
+    width: 58px;
+    height: 58px;
+    padding: 0;
+    border-radius: 50%;
+    font-size: 12px;
+}
+.act.wave { right: 116px; bottom: calc(116px + env(safe-area-inset-bottom, 0px)); }
+.act.jump { right: 33px; bottom: calc(146px + env(safe-area-inset-bottom, 0px)); }
 .lotus {
     position: absolute;
     right: 20px;
