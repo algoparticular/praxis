@@ -30,7 +30,7 @@ const INK = CICLOS.ink;                          // his line and his white: Cicl
 // (Viriya's walker has them a little longer, 0.8). Limbs as thick as his outline.
 const SMALL = 0.84;
 const LEG = { thigh: 97, shin: 97, foot: 40, width: 16 };
-const ARM = { upper: 108, fore: 102, width: 13.5 };        // long, as in Upekkha (they reach his crossed legs)
+const ARM = { upper: 116, fore: 110, width: 13.5 };        // long, as in Upekkha (they reach his crossed legs)
 const STAND = 196;                            // his hips over the ground, standing: his legs all but straight
 const SIT = 12;                               // his hips over the ground, sitting with his legs crossed: his bottom on the floor
 // In profile his hips are together in his middle (one leg behind the other), his arms come from the middle of him
@@ -794,14 +794,14 @@ function draw() {
         // (the mudra of meditation)
         const knees = Math.min(...state.legSit), own = Math.sign(s.x - f.root.x) || (i ? 1 : -1);
         if (knees > 0.001) {
-            const k = knees * knees * (3 - 2 * knees), lap = map(f, PIVOT.x + own * 13 / Math.max(0.3, Math.abs(f.face)), PIVOT.y - 22);
+            const k = knees * knees * (3 - 2 * knees), lap = map(f, PIVOT.x + own * 13 / Math.max(0.3, Math.abs(f.face)), PIVOT.y - 50);
             hand = { x: hand.x + (lap.x - hand.x) * k, y: hand.y + (lap.y - hand.y) * k };
         }
         const raised = hand.y < s.y;
         // elbows back in profile, out to their own side turned to us; down when the hand is up
         const out = (i ? -1 : 1) * face * lateral(), back = mix(-face * 0.7, out, f.front);
         // (sitting, the elbow goes out to its own side and a little down: the arm rounds softly by his side)
-        if (Math.min(...state.legSit) > 0.5 && !raised) return { s, ...bend(s, hand, ARM.upper, ARM.fore, { x: own, y: 0.35 }) };
+        if (Math.min(...state.legSit) > 0.5 && !raised) return { s, ...bend(s, hand, ARM.upper, ARM.fore, { x: own, y: 0.1 }) };
         const toward = raised ? { x: out * 0.5, y: 1 } : { x: back, y: 0.15 };
         return { s, ...bend(s, hand, ARM.upper, ARM.fore, toward) };
     });
