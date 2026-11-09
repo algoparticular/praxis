@@ -420,7 +420,7 @@ export function createWorld({ depth, clouds = null, moon = null }) {
         const out = [];
         for (let i = Math.floor((x - range - 400) / STRETCH); i <= Math.floor((x + range + 400) / STRETCH); i++) {
             for (const item of stretch(i)) {
-                if (item.kind === 'tree') out.push({ x: item.x + TRUNK.dx, d: item.d + TRUNK.behind, r: TRUNK.r }, { x: item.x + ROOTS.dx, d: item.d + ROOTS.dd, r: ROOTS.r, rd: ROOTS.rd });
+                if (item.kind === 'tree') out.push({ x: item.x + TRUNK.dx, d: item.d + TRUNK.behind, r: TRUNK.r }, { x: item.x + ROOTS.dx, d: item.d + ROOTS.dd, r: ROOTS.r, rd: ROOTS.rd, low: true });
                 else if (item.kind === 'piece' && BLOCKS.has(item.name)) out.push({ x: item.x, d: item.d, r: boxOf(item.name)[2] * item.scale * 0.36 });
             }
         }
