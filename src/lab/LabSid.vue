@@ -60,7 +60,9 @@ const FRONT_SHOULDER = { far: { u: PIVOT.x + 48, v: 322 }, near: { u: PIVOT.x - 
 const FRONT_HAND = { far: { u: PIVOT.x + 132, v: 508 }, near: { u: PIVOT.x - 132, v: 508 } };   // a little away from his sides
 const mix = (a, b, t) => a + (b - a) * t;
 const JUMP = { crouch: 0.34, speed: 560, gravity: 1700 };
-const PACE = 190, TROT = 285;                 // his easy, unhurried pace and a trot (world px a second)
+// (a cycle of his walk is about 390 px of his world: an easy pace is about two steps a second, as a short-legged
+// little one walks, and the trot nearly three)
+const PACE = 420, TROT = 680;                 // his easy pace and a trot (world px a second)
 const STILLNESS = 0.05;                       // the world's pace while he meditates
 
 // The world round him (sidWorld.js): endless, in ink, taking its colour as he goes
@@ -403,17 +405,17 @@ function update(dt, now) {
     const off = aim === null ? 0 : Math.abs(wrap(aim - state.heading));
     // his pace: easy; held a while (or far to go), a trot. Setting off he gathers speed (the first steps are shorter),
     // and stopping he slows down over a step or two
-    const trot = keyed && state.held > 3;    // (only when the keys are held a good while: a touch is always a calm walk)
+    const trot = keyed && state.held > 1.2;    // (only when the keys are held a good while: a touch is always a calm walk)
     const top = trot ? TROT : PACE;
     const want = length > 0 && !state.air && !ui.sitting ? Math.min(top, left * 3 + 20) * Math.max(0, Math.cos(Math.min(Math.PI / 2, off * 1.15))) : 0;
     const was = state.speed;
     // (in the air he keeps the speed he jumped with: a jump while walking carries him forward, over what is low)
-    if (!state.air) state.speed = want > state.speed ? Math.min(want, state.speed + (trot ? 300 : 260) * dt) : Math.max(want, state.speed - 380 * dt);
+    if (!state.air) state.speed = want > state.speed ? Math.min(want, state.speed + (trot ? 800 : 700) * dt) : Math.max(want, state.speed - 900 * dt);
     // His legs walk him: on his feet (not jumping, sitting or getting up) the cycle goes on at his pace and he goes
     // exactly as far as the foot on the ground goes back under him (unevenly, as the book says: quicker through the
     // contact, cushioned into the down)
     const onFeet = !state.air && !ui.sitting && !state.rising && Math.max(...state.legSit) < 0.01 && name !== 'jump';
-    const amp = 1.12 + 0.2 * state.run, kWalk = Math.max(0, Math.min(1, springs.walk.x));
+    const amp = 1.2 + 0.25 * state.run, kWalk = Math.max(0, Math.min(1, springs.walk.x));
     let go = 0;
     if (onFeet && (state.speed > 0.5 || kWalk > 0.02)) {
         const before = gaitLegs(state.phase, kWalk, amp);
@@ -438,10 +440,10 @@ function update(dt, now) {
     // when he stops, his body goes on a little and settles back (the weight he was carrying)
     if (was > 40 && state.speed <= 40 && want === 0) { springs.lean.v += 0.22 * (Math.sign(springs.face.x) || 1) * (1 - frame().front) * (was / PACE); springs.sy.v -= 0.7; }
     // The camera follows him with a little weight (late as he sets off), a little ahead of where he goes
-    const lead = Math.cos(state.heading) * state.speed * 0.9;
-    state.cam += (state.x + lead - state.cam) * Math.min(1, dt * 1.3);
+    const lead = Math.cos(state.heading) * state.speed * 0.5;
+    state.cam += (state.x + lead - state.cam) * Math.min(1, dt * 2);
     // and into the distance: it keeps him a little below the middle of the floor, wherever he goes
-    state.camD += (state.d - follow() - state.camD) * Math.min(1, dt * 1.3);
+    state.camD += (state.d - follow() - state.camD) * Math.min(1, dt * 2);
     // sitting in lotus, the world's time all but stops (softly, as he settles; and comes back as he gets up)
     const meditating = ui.sitting && springs.drop.x > (STAND - SIT) * 0.8;
     state.pace += ((meditating ? STILLNESS : 1) - state.pace) * Math.min(1, dt * (meditating ? 0.9 : 1.6));
