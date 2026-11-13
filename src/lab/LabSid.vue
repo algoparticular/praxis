@@ -145,7 +145,7 @@ const springs = {
     drop: spring(0, 140, 16),      // how far his hips are lowered (crouch, sit)
     closed: spring(0, 60, 14),     // his eyes closed (meditating, stretching)
     lookX: spring(0, 60, 12), lookY: spring(0, 60, 12),
-    walk: spring(0, 18, 9),        // how much he is walking (0..1)
+    walk: spring(0, 55, 14),       // how much he is walking (0..1): his legs get going (and settle) within a step
     reach: spring(0, 40, 11),      // how much his near hand goes to what he reaches for
     front: spring(1, 45, 12),      // turned to us or away 1, in profile 0, three quarters between (from his heading)
     back: spring(0, 40, 12),       // his back to us (walking away into the distance) 1 (from his heading)
@@ -170,7 +170,7 @@ const state = {
     gaitDrop: 0,
     keys: { left: false, right: false, up: false, down: false },
     lift: 0, vy: 0, air: false,    // a jump
-    target: null, speed: 0, phase: 0, run: 0,
+    target: null, speed: 0, phase: 0, run: 0, turning: 0,
     action: null,                  // { name, t, dur, ... }
     breath: 0, blink: 0, nextBlink: 2,
     pointer: null, pointerAt: 0,   // the pointer on the screen (px / k)
@@ -220,6 +220,9 @@ function bend(a, target, l1, l2, toward) {
 }
 
 // --- Turning, and the way round what stands in his way ---
+// How much of his pace he keeps while he turns, by how far he still has to turn: he never stops to turn, he walks it
+// in a tight curve (slowing a little for a sharp one, never below a third), so going the other way is one swing round
+const turnPace = (off) => Math.max(0.35, Math.cos(Math.min(Math.PI / 2, off * 0.75)));
 const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
 // Turns his heading towards an angle, by at most `most`; turning right round he turns through facing us (as one does,
 // and his face shows on the way)
@@ -401,13 +404,16 @@ function update(dt, now) {
     if (length > 0) aim = Math.atan2(mz, mx);
     else if (state.reach) aim = state.reach.x >= state.x ? 0 : Math.PI;
     else if (ui.sitting || state.still > 0.45) aim = -Math.PI / 2;
-    if (aim !== null && !state.air) turnTo(aim, dt * (length > 0 ? 4.6 + 2 * state.run : 3.2));
+    // (quick on his feet: a turn right round takes him about a third of a second walking, a little more standing)
+    const heading0 = state.heading;
+    if (aim !== null && !state.air) turnTo(aim, dt * (length > 0 ? 9 + 3 * state.run : 6));
+    state.turning = dt > 0 ? wrap(state.heading - heading0) / dt : 0;
     const off = aim === null ? 0 : Math.abs(wrap(aim - state.heading));
     // his pace: easy; held a while (or far to go), a trot. Setting off he gathers speed (the first steps are shorter),
     // and stopping he slows down over a step or two
     const trot = keyed && state.held > 1.2;    // (only when the keys are held a good while: a touch is always a calm walk)
     const top = trot ? TROT : PACE;
-    const want = length > 0 && !state.air && !ui.sitting ? Math.min(top, left * 3 + 20) * Math.max(0, Math.cos(Math.min(Math.PI / 2, off * 1.15))) : 0;
+    const want = length > 0 && !state.air && !ui.sitting ? Math.min(top, left * 3 + 20) * turnPace(off) : 0;
     const was = state.speed;
     // (in the air he keeps the speed he jumped with: a jump while walking carries him forward, over what is low)
     if (!state.air) state.speed = want > state.speed ? Math.min(want, state.speed + (trot ? 800 : 700) * dt) : Math.max(want, state.speed - 900 * dt);
@@ -485,6 +491,8 @@ function update(dt, now) {
     // front knee takes his weight (squashing a touch), and highest on the up, pushing off the toes of the back foot
     const st = (p * 2) % 1, low = 0.5 + 0.5 * Math.cos(Math.PI * 2 * (st - 0.25));       // 1 on the down, 0 on the up
     let lean = w * (0.02 + 0.03 * run) * face * (1 - fr), sy = 1 - w * (0.012 + 0.025 * run) * (low - 0.5) * 2, rot = w * 0.006 * Math.sin(p * Math.PI * 2), drop = 0, closed = 0;
+    // (swinging round he tilts a touch with the turn, as one's weight goes with it)
+    rot += w * Math.max(-0.07, Math.min(0.07, state.turning * 0.012));   // (into the way he is turning to)
     let near = { ...REST_HAND.near }, far = { ...REST_HAND.far };
     // the arms swing against the legs (each arm forward as the other leg goes forward), a little behind them, rising a
     // touch as they go forward
