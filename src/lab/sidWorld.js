@@ -113,6 +113,7 @@ export function createWorld({ depth, clouds = null, moon = null }) {
     // ---- making a stretch ----
     function make(index) {
         const r = random(index * 7919 + 104729), items = [];
+        const dense = (depth + 180) / 780;      // (as many things on each patch of floor however deep the floor is)
         const pick = (list) => list[Math.floor(r() * list.length)];
         const at = () => ({ x: index * STRETCH + r() * STRETCH, d: -180 + r() * (depth + 180) });
         const jitter = (p, a = 0.8) => [p[0] + (r() - 0.5) * a, p[1] + (r() - 0.5) * a];
@@ -135,10 +136,10 @@ export function createWorld({ depth, clouds = null, moon = null }) {
         // nothing of the world stands on or just in front of its roots (as the camera moves it would cross them)
         const clear = (p) => Math.abs(p.x - TREE.x) > 640 || p.d > TREE.d + 140 || p.d < TREE.d - 420;   // (its roots come forward)
 
-        for (let n = 0; n < 34; n++) { const p = at(); if (clear(p)) tick(p.x, p.d); }
+        for (let n = 0, m = Math.round(34 * dense); n < m; n++) { const p = at(); if (clear(p)) tick(p.x, p.d); }
         // her pieces, spread: ferns, sprouts, pebbles, now and then a stack of them
         const weights = SCATTER.reduce((t, k) => t + k.weight, 0);
-        for (let n = 0, m = 3 + Math.floor(r() * 3); n < m; n++) {
+        for (let n = 0, m = Math.round((3 + r() * 3) * dense * 0.7); n < m; n++) {
             const p = at();
             if (!clear(p)) continue;
             let w = r() * weights, kind = SCATTER[0];
@@ -150,7 +151,7 @@ export function createWorld({ depth, clouds = null, moon = null }) {
         }
         // streaks on the hills, as the card's: short brush strokes lying along the ground (pills with round ends, a little
         // curved, now and then two in a row) and a few small ovals, in the ground's other colour
-        for (let n = 0, m = 12 + Math.floor(r() * 6); n < m; n++) {
+        for (let n = 0, m = Math.round((12 + r() * 6) * dense); n < m; n++) {
             const p = at(), long = 22 + r() * 60, wide = 5 + r() * 6, bend = (r() - 0.5) * wide * 1.6, tilt = (r() - 0.5) * 6;
             if (!clear(p)) continue;
             const strokes = [{ long, wide, bend, tilt, dx: 0 }];
@@ -158,7 +159,7 @@ export function createWorld({ depth, clouds = null, moon = null }) {
             add({ kind: 'streak', x: p.x, d: p.d, strokes, oval: r() < 0.12 ? { rx: 14 + r() * 16, ry: 5 + r() * 4 } : null });
         }
         // a stipple on the ground, thinning out from its middle
-        for (let n = 0, m = 1 + Math.floor(r() * 2); n < m; n++) {
+        for (let n = 0, m = Math.round((1 + r() * 2) * dense); n < m; n++) {
             const p = at(), R = 70 + r() * 110, dots = [];
             if (!clear(p)) continue;
             for (let k = 0; k < 70; k++) {
