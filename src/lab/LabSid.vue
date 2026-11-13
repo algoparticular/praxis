@@ -171,6 +171,8 @@ const state = {
     keys: { left: false, right: false, up: false, down: false },
     lift: 0, vy: 0, air: false,    // a jump
     target: null, speed: 0, phase: 0, run: 0, turning: 0,
+    guide: null,                   // a finger held down, guiding him ({ id, screen, t })
+    mark: null,                    // where he was sent, on the floor ({ x, d, t }): a ring of dots there, fading
     action: null,                  // { name, t, dur, ... }
     breath: 0, blink: 0, nextBlink: 2,
     pointer: null, pointerAt: 0,   // the pointer on the screen (px / k)
@@ -305,20 +307,18 @@ function resize() {
     view.w = el.clientWidth; view.h = el.clientHeight;
     el.width = view.w * view.dpr; el.height = view.h * view.dpr;
     // He is about half the height of the screen
-    // (on a phone the floor ends higher, so his feet are never under the buttons, the pad and the lotus)
     // (SMALL: he is a little smaller than at first, so the world, and her tree, are big round him)
-    view.k = SMALL * Math.min((ui.touch ? Math.min(view.h * 0.47, view.h - 330) : view.h * 0.62) / (TALL + STAND), view.w * 0.9 / 420);
+    view.k = SMALL * Math.min((ui.touch ? view.h * 0.55 : view.h * 0.62) / (TALL + STAND), view.w * 0.9 / 420);
     const was = state.ground;
-    state.ground = (ui.touch ? Math.min(view.h * 0.66, view.h - 252) : view.h * 0.86) / view.k;   // (252: the row of buttons, the pad)
+    state.ground = (ui.touch ? view.h * 0.84 : view.h * 0.86) / view.k;
     view.floor = (state.ground * view.k - view.h * (ui.touch ? 0.2 : 0.24)) / view.k;     // from the front of the floor to the horizon (high on the screen: little sky)
     if (!was) { state.x = 1000; state.cam = state.x; state.camD = -follow(); }     // (he starts a little before her tree, which is ahead on his way)
     // the starry night fills the sky, down to the horizon
     skyHeight();
 }
-// How far in front of him the camera stands (in depth): it keeps him a little below the middle of the screen (on a
-// phone, just over the pad and the buttons). The starry night behind the drawing goes down to the horizon, which stays
+// How far in front of him the camera stands (in depth): it keeps him a little below the middle of the screen. The starry night behind the drawing goes down to the horizon, which stays
 // where it is on the screen as the camera follows him
-const follow = () => DEPTH * (ui.touch ? 0.13 : 0.35);
+const follow = () => DEPTH * 0.35;
 function skyHeight() {
     if (nightSky.value) nightSky.value.style.height = `${Math.ceil(horizon() * view.k) + 2}px`;
 }
@@ -327,7 +327,30 @@ function pointerTo(e) {
     const r = canvas.value.getBoundingClientRect();
     return { x: (e.clientX - r.left) / view.k, y: (e.clientY - r.top) / view.k };
 }
-function onMove(e) { state.pointer = pointerTo(e); state.pointerAt = performance.now(); }
+// Where a touch sends him: on the floor, to that place (in depth too); in the air, that way, where he is in depth
+function placeOf(screen) {
+    if (screen.y > horizon() + 10) {
+        const d = state.camD + (state.ground - screen.y) / view.floor * DEPTH;
+        return { x: toSid(screen, d).x, d };
+    }
+    return { x: toSid(screen).x, d: state.d };
+}
+// A finger held down guides him: he goes on walking towards it as it moves (and as the world moves under it), and
+// held far from him a while, he trots. Let go, he walks on to where it was. (On a phone this is how he walks: no pad)
+function guideTo(screen) {
+    const p = placeOf(screen);
+    if (Math.hypot(p.x - state.x, p.d - state.d) > 40) walkTo(p.x, p.d);     // (under his feet he just stands)
+    state.mark = { x: state.target?.x ?? p.x, d: state.target?.d ?? p.d, t: state.mark?.t ?? 0 };
+}
+function onMove(e) {
+    state.pointer = pointerTo(e); state.pointerAt = performance.now();
+    if (state.guide && e.pointerId === state.guide.id) state.guide.screen = state.pointer;
+}
+function onUp(e) {
+    if (!state.guide || e.pointerId !== state.guide.id) return;
+    state.guide = null;
+    if (state.mark) state.mark.t = 0;          // (and its ring fades from now)
+}
 function onDown(e) {
     const screen = pointerTo(e);
     state.pointer = screen; state.pointerAt = performance.now();
@@ -338,17 +361,15 @@ function onDown(e) {
         if (!ui.sitting && !state.action) wave();
         return;
     }
-    // On the floor: he walks there, to that depth too
-    if (screen.y > horizon() + 10) {
-        const d = state.camD + (state.ground - screen.y) / view.floor * DEPTH;
-        walkTo(toSid(screen, d).x, d);
-        return;
+    // In the air, only a touch close to him, as high as his head or higher, is something he reaches for with his hand
+    if (screen.y <= horizon() + 10) {
+        const p = toSid(screen), head = map(frame(), PIVOT.x, 260);
+        if (Math.abs(p.x - state.x) < 170 && p.y < head.y) { if (ui.sitting) sit(false); state.target = null; reachFor(p); return; }
     }
-    // In the air: he walks that way, where he is in depth; only a touch close to him, as high as his head or higher,
-    // is something he reaches for with his hand
-    const p = toSid(screen), head = map(frame(), PIVOT.x, 260);
-    if (Math.abs(p.x - state.x) < 170 && p.y < head.y) { if (ui.sitting) sit(false); state.target = null; reachFor(p); }
-    else walkTo(p.x);
+    // Anywhere else he walks there, and on while the finger is held (it guides him)
+    state.guide = { id: e.pointerId, screen, t: 0 };
+    walkTo(placeOf(screen).x, placeOf(screen).d);
+    state.mark = { ...state.target, t: 0 };
 }
 
 // The keys: arrows or WASD walk him over the floor, the space bar sits him in lotus (and stands him up)
@@ -381,11 +402,12 @@ function update(dt, now) {
     if (a) { a.t += dt; if (a.t >= a.dur) state.action = null; }
     const name = state.action?.name, t = state.action?.t ?? 0;
 
-    // Walking over the floor: with the keys (or the pad), or towards a target (going round what stands in the way). He
-    // walks the way he faces and turns as he goes, in a curve, his eyes first: he only stops to turn when the way is
-    // well behind him. Still a moment, or sitting, he turns to us; reaching, to that side
+    // Walking over the floor: with the keys, or towards a target (a touch, or a finger held down guiding him; going
+    // round what stands in the way). He walks the way he faces and turns as he goes, in a tight curve, his eyes first. Still a moment, or sitting, he turns to us; reaching, to that side
     let mx = 0, mz = 0, left = Infinity;
     const k = state.keys, keyed = k.left || k.right || k.up || k.down;
+    if (state.guide) { state.guide.t += dt; guideTo(state.guide.screen); }
+    if (state.mark) state.mark.t += dt;
     state.held = keyed ? state.held + dt : 0;
     if (keyed) { mx = (k.right ? 1 : 0) - (k.left ? 1 : 0); mz = (k.up ? 1 : 0) - (k.down ? 1 : 0); }
     else if (state.target) {
@@ -411,7 +433,9 @@ function update(dt, now) {
     const off = aim === null ? 0 : Math.abs(wrap(aim - state.heading));
     // his pace: easy; held a while (or far to go), a trot. Setting off he gathers speed (the first steps are shorter),
     // and stopping he slows down over a step or two
-    const trot = keyed && state.held > 1.2;    // (only when the keys are held a good while: a touch is always a calm walk)
+    // (only when the keys, or a finger guiding him, are held a good while, and the finger far from him: a touch is
+    // always a calm walk)
+    const trot = (keyed && state.held > 1.2) || (state.guide && state.guide.t > 1.2 && left > 420);
     const top = trot ? TROT : PACE;
     const want = length > 0 && !state.air && !ui.sitting ? Math.min(top, left * 3 + 20) * turnPace(off) : 0;
     const was = state.speed;
@@ -674,6 +698,22 @@ function onFloor(p) {
 
 // His body drawn in code from his traced silhouette: the fill, his outline inside its edge (clean at any size and
 // bent with him point by point), and a little stroke at each of her hatching marks
+// Where he was sent: a ring of dots on the floor, in his ink, lying flat in perspective; it opens out and fades once
+// tapped, and stays (breathing) while a finger guides him
+function drawMark(c, x0) {
+    const m = state.mark;
+    if (!m) return;
+    const held = !!state.guide, life = held ? 1 : 1 - m.t / 0.9;
+    if (life <= 0 || m.d > state.camD + DEPTH) { if (!held) state.mark = null; return; }
+    const s = scaleAt(m.d), x = x0 + (m.x - state.cam) * s, y = groundAt(m.d);
+    const r = (held ? 46 + 4 * Math.sin(m.t * 5) : 40 + 30 * (1 - life)) * s;
+    c.fillStyle = INK; c.globalAlpha = 0.7 * Math.min(1, life * 1.5);
+    for (let i = 0; i < 12; i++) {
+        const a = i / 12 * Math.PI * 2 + m.t * 0.6;
+        c.beginPath(); c.arc(x + Math.cos(a) * r, y + Math.sin(a) * r * 0.32, 7 * s, 0, Math.PI * 2); c.fill();
+    }
+    c.globalAlpha = 1;
+}
 const LINE_W = 15, FILL = CICLOS.white;     // (about as thick as the line of her tree beside him)
 function codeBody(c, f) {
     // turned to us his silhouette is the same widths, row by row, set straight about his middle
@@ -736,6 +776,7 @@ function draw() {
     const x0 = W / 2, near = state.camD - (view.h / view.k - state.ground) / view.floor * DEPTH;
     const place = { x0, cam: state.cam, groundAt, scaleAt, width: W, near, far: state.camD + DEPTH };
     world.drawGround(c, place);
+    drawMark(c, x0);
     world.draw(c, place, (d) => d > state.d);                         // what is behind him
     const depth = scaleAt(state.d);
     c.save();
@@ -922,12 +963,11 @@ onBeforeUnmount(() => {
         <div ref="nightSky" class="night-sky"><canvas ref="starCanvas"></canvas></div>
         <!-- the rulito draws itself on its own canvas, which this scene lays over his head -->
         <Rulito ref="rulito" class="offstage" color="#fc747c" />
-        <canvas ref="canvas" @pointermove="onMove" @pointerdown="onDown"></canvas>
+        <canvas ref="canvas" @pointermove="onMove" @pointerdown="onDown" @pointerup="onUp" @pointercancel="onUp"></canvas>
         <!-- the app's own header: back on the left, the sound and the menu on the right -->
         <Header :hasBack="true" :hasMenu="true" />
-        <!-- the buttons, at the bottom; on a phone in one row over the pad and the lotus -->
-        <!-- on a computer, every button in a row at the bottom; on a phone only the pad, the lotus and, round it, waving
-             and jumping (below) -->
+        <!-- on a computer, every button in a row at the bottom; on a phone he walks where a finger touches (and follows
+             it while it is held), and there is only the lotus with, round it, waving and jumping (below) -->
         <div v-if="!ui.touch" class="panel">
             <button @click="walkAcross">Caminar</button>
             <button @click="wave">Saludar</button>
@@ -937,14 +977,6 @@ onBeforeUnmount(() => {
 
             <span class="sep"></span>
             <button :class="{ on: ui.bones }" @click="ui.bones = !ui.bones">Esqueleto</button>
-        </div>
-        <!-- On a phone: a pad to walk him (held down) and a button for the lotus -->
-        <div v-if="ui.touch" class="pad">
-            <button v-for="key in ['up', 'left', 'right', 'down']" :key="key" :class="key" :aria-label="key"
-                @pointerdown.prevent="press(key, true)" @pointerup="press(key, false)" @pointercancel="press(key, false)"
-                @pointerleave="press(key, false)" @contextmenu.prevent>
-                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg>
-            </button>
         </div>
         <button v-if="ui.touch" class="act wave" @click="wave">Saludar</button>
         <button v-if="ui.touch" class="act jump" @click="jump">Saltar</button>
@@ -999,7 +1031,7 @@ canvas {
     justify-content: center;
 }
 /* As the app's buttons (style.scss): the cream, no border, its soft warm shadow, the coral when touched or on */
-.panel button, .pad button, .lotus, .act {
+.panel button, .lotus, .act {
     font-family: 'Nunito', helvetica, sans-serif;
     font-size: 16px;
     margin: 0;
@@ -1015,10 +1047,10 @@ canvas {
     -webkit-tap-highlight-color: transparent;
     transition: background 200ms ease-out, color 200ms ease-out;
 }
-.panel button:hover, .pad button:hover, .lotus:hover, .act:active { background: #FF6F61; color: #F7F8F1; }
-.panel button.on, .pad button:active, .lotus.on { background: #FF6F61; color: #F7F8F1; }
-.panel button:focus, .pad button:focus, .lotus:focus, .act:focus { box-shadow: none; outline: none; }
-.panel button:focus-visible, .pad button:focus-visible, .lotus:focus-visible { box-shadow: rgba(255, 111, 97, 0.35) 0 0 0 4px; }
+.panel button:hover, .lotus:hover, .act:active { background: #FF6F61; color: #F7F8F1; }
+.panel button.on, .lotus.on { background: #FF6F61; color: #F7F8F1; }
+.panel button:focus, .lotus:focus, .act:focus { box-shadow: none; outline: none; }
+.panel button:focus-visible, .lotus:focus-visible { box-shadow: rgba(255, 111, 97, 0.35) 0 0 0 4px; }
 .sep {
     width: 12px;
 }
@@ -1032,36 +1064,6 @@ canvas {
 }
 .panel.bottom .sep { display: none; }
 .panel.bottom button { flex: none; }
-.pad {
-    position: absolute;
-    left: 16px;
-    bottom: calc(16px + env(safe-area-inset-bottom, 0px));
-    display: grid;
-    grid-template-columns: repeat(3, 52px);
-    grid-template-rows: repeat(3, 52px);
-    gap: 6px;
-    user-select: none;
-    -webkit-user-select: none;
-    touch-action: none;
-}
-.pad button {
-    width: 52px;
-    height: 52px;
-    padding: 0;
-    border-radius: 50%;
-    display: grid;
-    place-items: center;
-    color: #FF6F61;
-    touch-action: none;
-}
-.pad button:active { color: #F7F8F1; }
-.pad .up { grid-area: 1 / 2; }
-.pad .left { grid-area: 2 / 1; }
-.pad .left svg { transform: rotate(-90deg); }
-.pad .right { grid-area: 2 / 3; }
-.pad .right svg { transform: rotate(90deg); }
-.pad .down { grid-area: 3 / 2; }
-.pad .down svg { transform: rotate(180deg); }
 /* waving and jumping, smaller, in an arc round the lotus (as the buttons of a game pad) */
 .act {
     position: absolute;
