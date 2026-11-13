@@ -28,7 +28,7 @@ const INK = CICLOS.ink;                          // his line and his white: Cicl
 // His proportions as Nekkhamma's Sid standing (the drawing he is cut from): head 306 px of the source (to the pinch of
 // his waist), torso 181, legs 187 from his body to the floor: his legs as long as his torso, about 0.6 of his head
 // (Viriya's walker has them a little longer, 0.8). Limbs as thick as his outline.
-const SMALL = 0.84;
+const SMALL = 0.48;                            // (seen from further away, as from a high camera: the world big round him)
 const LEG = { thigh: 97, shin: 97, foot: 40, width: 16 };
 const ARM = { upper: 116, fore: 110, width: 13.5 };        // long, as in Upekkha (they reach his crossed legs)
 const STAND = 196;                            // his hips over the ground, standing: his legs all but straight
@@ -60,18 +60,20 @@ const FRONT_SHOULDER = { far: { u: PIVOT.x + 48, v: 322 }, near: { u: PIVOT.x - 
 const FRONT_HAND = { far: { u: PIVOT.x + 132, v: 508 }, near: { u: PIVOT.x - 132, v: 508 } };   // a little away from his sides
 const mix = (a, b, t) => a + (b - a) * t;
 const JUMP = { crouch: 0.34, speed: 560, gravity: 1700 };
-const PACE = 150, TROT = 230;                 // his easy, unhurried pace and a trot (world px a second)
-const ZOOM = 0.22;
-const STILLNESS = 0.05;                       // the world's pace while he meditates                            // how much closer the camera comes when he is at the back   // the gathering (s), the spring up and the fall (px/s, px/s²)
+const PACE = 190, TROT = 285;                 // his easy, unhurried pace and a trot (world px a second)
+const STILLNESS = 0.05;                       // the world's pace while he meditates
 
 // The world round him (sidWorld.js): endless, in ink, taking its colour as he goes
 const picture = (src) => (typeof Image !== 'undefined' ? Object.assign(new Image(), { src }) : null);
-const world = createWorld({ depth: DEPTH, clouds: picture('/assets/ciclos/clouds.webp'), moon: picture('/assets/ciclos/moon.webp') });
+const world = createWorld({ clouds: picture('/assets/ciclos/clouds.webp'), moon: picture('/assets/ciclos/moon.webp') });
 // The floor goes back into the distance: his depth d (0 in front .. DEPTH at the back) lifts his feet towards the
 // horizon and makes him smaller, towards the middle of the screen (a vanishing point)
-const DEPTH = 600;
-const FAR = 0.55;                             // his size at the back
-const scaleAt = (d) => 1 - (1 - FAR) * d / DEPTH;
+// (deep: the camera is high and far, so most of the screen is floor and little is sky; a depth unit is still about
+// 0.6 of a px of his world on the screen, as wide as it is deep seen from above at a slant)
+const DEPTH = 2200;
+const FAR = 0.5;                              // his size at the back (little smaller: the camera is high, as in a top-down game)
+// (d - state.camD: the camera follows him into the distance too, so what is measured is from where it looks)
+const scaleAt = (d) => 1 - (1 - FAR) * (d - state.camD) / DEPTH;
 
 
 // --- The walk, as The Animator's Survival Kit draws a walk: pose by pose, each leg on its own ---
@@ -153,17 +155,17 @@ const hands = {                    // where his hands go, in his own px (they fo
 
 const state = {
     x: 0, ground: 0,               // his hips over the ground, in world px (= px of the source, scaled k to the screen)
-    d: 0,                          // how far back on the floor he is (0..DEPTH)
+    d: 0,                          // how far back on the floor he is (the floor is endless both ways)
     // where he faces on the floor, an angle: 0 to the right, PI to the left, -PI/2 towards us, PI/2 into the distance.
     // It turns smoothly (never jumps), and how he is drawn follows it: in profile, three quarters, from the front or
     // from behind
     heading: -Math.PI / 2,
     held: 0,                       // how long the keys have been held (held a while, he breaks into a trot)
-    cam: 0, zoom: 1,
-    pace: 1,
+    cam: 0, camD: 0,               // where the camera looks: across and into the distance (it follows him, the world has no end)
+    pace: 1,                       // how fast the world's time goes (all but still while he meditates)
     shift: 0,                      // his body over the foot he stands on (seen from the front, his weight going side to side)
     gait: null,                    // walking: his legs in their poses this frame ({ legs, hd }), and how much he is lowered
-    gaitDrop: 0,                       // how fast the world's time goes (all but still while he meditates)               // where the camera looks (it follows him, the world has no end) and how close
+    gaitDrop: 0,
     keys: { left: false, right: false, up: false, down: false },
     lift: 0, vy: 0, air: false,    // a jump
     target: null, speed: 0, phase: 0, run: 0,
@@ -230,7 +232,7 @@ function turnTo(aim, most) {
 }
 // What stands in the way (her tree's trunk and roots, the big stones): ellipses on the floor, { x, d, r, rd } (rd its
 // reach in depth, r if it has none). Each is worked in its own space, stretched in depth so it is a circle of radius r
-const blocking = () => world.obstacles(state.x, 900);
+const blocking = () => world.obstacles(state.x, state.d, 900);
 const squash = (o) => o.r / (o.rd ?? o.r);
 // Going towards (mx, mz), he bends his way round what is ahead of him, by the side nearer where he is going
 function steer(mx, mz) {
@@ -256,7 +258,7 @@ function collide(from = null) {
     for (const o of blocking()) {
         if (o.low && (state.air || (from && inside(o, from)))) continue;
         const q = squash(o), rx = state.x - o.x, rz = (state.d - o.d) * q, dist = Math.hypot(rx, rz) || 1;
-        if (dist < o.r) { state.x = o.x + rx / dist * o.r; state.d = Math.max(0, Math.min(DEPTH, o.d + rz / dist * o.r / q)); }
+        if (dist < o.r) { state.x = o.x + rx / dist * o.r; state.d = o.d + rz / dist * o.r / q; }
     }
 }
 
@@ -264,9 +266,9 @@ function collide(from = null) {
 const act = (name, dur, extra = {}) => { state.action = { name, t: 0, dur, ...extra }; };
 function walkTo(x, d = state.d) {
     // (a touch on something that stands in the way: he walks to its edge, on the side the touch was)
-    for (const o of world.obstacles(x, 0)) {
+    for (const o of world.obstacles(x, d, 0)) {
         const q = squash(o), rx = x - o.x, rz = (d - o.d) * q, dist = Math.hypot(rx, rz) || 1;
-        if (dist < o.r + 10) { x = o.x + rx / dist * (o.r + 12); d = Math.max(0, Math.min(DEPTH, o.d + rz / dist * (o.r + 12) / q)); }
+        if (dist < o.r + 10) { x = o.x + rx / dist * (o.r + 12); d = o.d + rz / dist * (o.r + 12) / q; }
     }
     state.target = { x, d }; state.reach = null; if (ui.sitting) sit(false);
 }
@@ -282,7 +284,8 @@ function sit(on = !ui.sitting) {
 function walkAcross() { walkTo(state.x + (Math.sign(Math.cos(state.heading)) || Math.sign(springs.face.x) || 1) * 520); }
 
 // Where a point of the screen is in his own world, at his depth (his world is scaled about the vanishing point)
-const groundAt = (d) => state.ground - d / DEPTH * view.floor;
+const groundAt = (d) => state.ground - (d - state.camD) / DEPTH * view.floor;
+const horizon = () => state.ground - view.floor;
 function toSid(p, d = state.d) {
     const s = scaleAt(d), x0 = view.w / view.k / 2;
     return { x: state.cam + (p.x - x0) / s, y: state.ground + (p.y - groundAt(d)) / s };
@@ -301,25 +304,23 @@ function resize() {
     // (SMALL: he is a little smaller than at first, so the world, and her tree, are big round him)
     view.k = SMALL * Math.min((ui.touch ? Math.min(view.h * 0.47, view.h - 330) : view.h * 0.62) / (TALL + STAND), view.w * 0.9 / 420);
     const was = state.ground;
-    state.ground = (ui.touch ? Math.min(view.h * 0.63, view.h - 252) : view.h * 0.83) / view.k;   // (252: the row of buttons, the pad)
-    view.floor = (view.h * (ui.touch ? 0.18 : 0.26)) / view.k;     // from the front of the floor to the horizon
-    if (!was) { state.x = view.w / view.k / 2; state.cam = state.x; }
+    state.ground = (ui.touch ? Math.min(view.h * 0.66, view.h - 252) : view.h * 0.86) / view.k;   // (252: the row of buttons, the pad)
+    view.floor = (state.ground * view.k - view.h * (ui.touch ? 0.2 : 0.24)) / view.k;     // from the front of the floor to the horizon (high on the screen: little sky)
+    if (!was) { state.x = 1000; state.cam = state.x; state.camD = -follow(); }     // (he starts a little before her tree, which is ahead on his way)
     // the starry night fills the sky, down to the horizon
     skyHeight();
 }
-// The camera comes a little closer when he is at the back (state.zoom), about his feet (below the horizon, so coming
-// closer lifts the horizon). The starry night behind the drawing keeps one height, down to the horizon as it is with
-// no zoom (the lowest it gets): what is under the horizon is hidden by the ground, and changing its size every frame
-// would sow its stars again
-const focus = () => ({ x: view.w / view.k / 2, y: groundAt(state.d) });
+// How far in front of him the camera stands (in depth): it keeps him a little below the middle of the screen (on a
+// phone, just over the pad and the buttons). The starry night behind the drawing goes down to the horizon, which stays
+// where it is on the screen as the camera follows him
+const follow = () => DEPTH * (ui.touch ? 0.13 : 0.35);
 function skyHeight() {
-    if (nightSky.value) nightSky.value.style.height = `${Math.ceil(groundAt(DEPTH) * view.k) + 2}px`;
+    if (nightSky.value) nightSky.value.style.height = `${Math.ceil(horizon() * view.k) + 2}px`;
 }
 
 function pointerTo(e) {
-    const r = canvas.value.getBoundingClientRect(), F = focus();
-    const x = (e.clientX - r.left) / view.k, y = (e.clientY - r.top) / view.k;
-    return { x: F.x + (x - F.x) / state.zoom, y: F.y + (y - F.y) / state.zoom };
+    const r = canvas.value.getBoundingClientRect();
+    return { x: (e.clientX - r.left) / view.k, y: (e.clientY - r.top) / view.k };
 }
 function onMove(e) { state.pointer = pointerTo(e); state.pointerAt = performance.now(); }
 function onDown(e) {
@@ -333,8 +334,8 @@ function onDown(e) {
         return;
     }
     // On the floor: he walks there, to that depth too
-    if (screen.y > groundAt(DEPTH) + 10) {
-        const d = Math.max(0, Math.min(DEPTH, (state.ground - screen.y) / view.floor * DEPTH));
+    if (screen.y > horizon() + 10) {
+        const d = state.camD + (state.ground - screen.y) / view.floor * DEPTH;
         walkTo(toSid(screen, d).x, d);
         return;
     }
@@ -407,12 +408,12 @@ function update(dt, now) {
     const want = length > 0 && !state.air && !ui.sitting ? Math.min(top, left * 3 + 20) * Math.max(0, Math.cos(Math.min(Math.PI / 2, off * 1.15))) : 0;
     const was = state.speed;
     // (in the air he keeps the speed he jumped with: a jump while walking carries him forward, over what is low)
-    if (!state.air) state.speed = want > state.speed ? Math.min(want, state.speed + (trot ? 260 : 220) * dt) : Math.max(want, state.speed - 380 * dt);
+    if (!state.air) state.speed = want > state.speed ? Math.min(want, state.speed + (trot ? 300 : 260) * dt) : Math.max(want, state.speed - 380 * dt);
     // His legs walk him: on his feet (not jumping, sitting or getting up) the cycle goes on at his pace and he goes
     // exactly as far as the foot on the ground goes back under him (unevenly, as the book says: quicker through the
     // contact, cushioned into the down)
     const onFeet = !state.air && !ui.sitting && !state.rising && Math.max(...state.legSit) < 0.01 && name !== 'jump';
-    const amp = 1 + 0.25 * state.run, kWalk = Math.max(0, Math.min(1, springs.walk.x));
+    const amp = 1.12 + 0.2 * state.run, kWalk = Math.max(0, Math.min(1, springs.walk.x));
     let go = 0;
     if (onFeet && (state.speed > 0.5 || kWalk > 0.02)) {
         const before = gaitLegs(state.phase, kWalk, amp);
@@ -429,18 +430,18 @@ function update(dt, now) {
     if (go > 0) {
         const from = { x: state.x, d: state.d };
         state.x += Math.cos(state.heading) * go;
-        state.d = Math.max(0, Math.min(DEPTH, state.d + Math.sin(state.heading) * go));
+        state.d += Math.sin(state.heading) * go;
         collide(from);
     }
     state.run = Math.max(0, Math.min(1, (state.speed - PACE) / (TROT - PACE)));
     const walking = state.speed > 3 ? 1 : 0;
     // when he stops, his body goes on a little and settles back (the weight he was carrying)
     if (was > 40 && state.speed <= 40 && want === 0) { springs.lean.v += 0.22 * (Math.sign(springs.face.x) || 1) * (1 - frame().front) * (was / PACE); springs.sy.v -= 0.7; }
-    // The camera follows him with a little weight (late as he sets off), a little ahead of where he goes, and closer
-    // as he goes into the distance (so he never gets tiny)
+    // The camera follows him with a little weight (late as he sets off), a little ahead of where he goes
     const lead = Math.cos(state.heading) * state.speed * 0.9;
     state.cam += (state.x + lead - state.cam) * Math.min(1, dt * 1.3);
-    state.zoom += (1 + ZOOM * state.d / DEPTH - state.zoom) * Math.min(1, dt * 1.2);
+    // and into the distance: it keeps him a little below the middle of the floor, wherever he goes
+    state.camD += (state.d - follow() - state.camD) * Math.min(1, dt * 1.3);
     // sitting in lotus, the world's time all but stops (softly, as he settles; and comes back as he gets up)
     const meditating = ui.sitting && springs.drop.x > (STAND - SIT) * 0.8;
     state.pace += ((meditating ? STILLNESS : 1) - state.pace) * Math.min(1, dt * (meditating ? 0.9 : 1.6));
@@ -714,18 +715,17 @@ function draw() {
     c.setTransform(1, 0, 0, 1, 0, 0);
     c.clearRect(0, 0, el.width, el.height);
     c.setTransform(k, 0, 0, k, 0, 0);
-    const F = focus();
-    c.translate(F.x, F.y); c.scale(state.zoom, state.zoom); c.translate(-F.x, -F.y);
     const f = frame(), face = Math.sign(f.face);
     const W = view.w / view.k;
 
     // The floor, back to the horizon, and him on it at his depth (smaller and nearer the middle the farther back)
-    world.drawSky(c, { width: W, cam: state.cam }, 0, groundAt(DEPTH));
+    world.drawSky(c, { width: W, cam: state.cam }, 0, horizon());
     nightSky.value.style.opacity = world.night().toFixed(3);
     c.fillStyle = world.ground();
-    c.fillRect(0, groundAt(DEPTH) - 4, W, view.h / view.k);
-    world.drawGround(c, { x0: W / 2, cam: state.cam, groundAt, scaleAt, width: W });
-    const x0 = W / 2, place = { x0, cam: state.cam, groundAt, scaleAt, width: W };
+    c.fillRect(0, horizon() - 4, W, view.h / view.k);
+    const x0 = W / 2, near = state.camD - (view.h / view.k - state.ground) / view.floor * DEPTH;
+    const place = { x0, cam: state.cam, groundAt, scaleAt, width: W, near, far: state.camD + DEPTH };
+    world.drawGround(c, place);
     world.draw(c, place, (d) => d > state.d);                         // what is behind him
     const depth = scaleAt(state.d);
     c.save();

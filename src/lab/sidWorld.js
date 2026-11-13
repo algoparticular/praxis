@@ -2,7 +2,7 @@
 // drawn in code with a pen of ink, and her drawn pieces (originales/arbol, made into src/lab/arbol by
 // scripts/convert-lab-arbol.mjs: each piece's line, and what is inside it, painted in code): ferns, a sprout that curls
 // up into a bead, pebbles and a stack of them, each on the ground, spread over the world, and her tree ahead of him on
-// his way (TREE). It is endless: it is made a stretch at a time from where it is (the same
+// his way (TREE). It is endless, across and into the distance: it is made a patch at a time from where it is (the same
 // place is always the same), and only what is on the screen is drawn. Everything starts in ink and takes its colour
 // (one of the seven of the chakras) as he walks by it, and all round him when he sits in lotus (a wave goes out of
 // him); what has taken its colour keeps it. The palette, the clouds and the day are Ciclos's (CICLOS below): the ink of its
@@ -70,6 +70,7 @@ const TRUNK = { behind: 25, r: 122, dx: -19 };
 const ROOTS = { dx: 30, dd: -150, r: 400, rd: 175 };
 
 const STRETCH = 520;            // the width of the stretch of world made at a time (px of his world)
+const PATCH = 780;              // and how deep (the world is endless both ways: across and into the distance)
 const LINE = 7;                 // the pen: thinner than his own outline, so he stays the one you look at
 
 // A small random number generator that always gives the same numbers for the same seed
@@ -100,7 +101,7 @@ const GREENS = [1, 0, 1, 3];    // the ground's plants: mostly its green and its
 const WARM = [2, 5, 3, 0];      // the beads of the sprouts
 const mixRgb = (a, b, t) => `rgb(${a.map((v, i) => Math.round(v + (b[i] - v) * t)).join(',')})`;
 
-export function createWorld({ depth, clouds = null, moon = null }) {
+export function createWorld({ clouds = null, moon = null }) {
     const INK = hex(CICLOS.ink);
     let clock = 0.2;                        // the cycle: 0 sunrise, 0.25 noon, 0.5 sunset, 0.75 midnight
     const CYCLE = 90;                       // s for a whole day and night
@@ -111,12 +112,12 @@ export function createWorld({ depth, clouds = null, moon = null }) {
     let time = 0;
 
     // ---- making a stretch ----
-    function make(index) {
-        const r = random(index * 7919 + 104729), items = [];
+    function make(index, row) {
+        const r = random(index * 7919 + row * 15485863 + 104729), items = [];
         const pick = (list) => list[Math.floor(r() * list.length)];
-        const at = () => ({ x: index * STRETCH + r() * STRETCH, d: -180 + r() * (depth + 180) });
+        const at = () => ({ x: index * STRETCH + r() * STRETCH, d: (row + r()) * PATCH - 180 });
         const jitter = (p, a = 0.8) => [p[0] + (r() - 0.5) * a, p[1] + (r() - 0.5) * a];
-        const add = (item) => items.push({ id: `${index}:${items.length}`, ...item });
+        const add = (item) => items.push({ id: `${index},${row}:${items.length}`, ...item });
 
         const tick = (x, d, big = 1) => {
             const s = (0.8 + r() * 0.6) * big, kind = r();
@@ -130,15 +131,15 @@ export function createWorld({ depth, clouds = null, moon = null }) {
         };
 
         // her tree, where it stands (its stretch keeps clear round it for its own plants)
-        const treeHere = TREE.x >= index * STRETCH && TREE.x < (index + 1) * STRETCH;
+        const treeHere = TREE.x >= index * STRETCH && TREE.x < (index + 1) * STRETCH && row === Math.floor((TREE.d + 180) / PATCH);
         if (treeHere) add({ kind: 'tree', x: TREE.x, d: TREE.d, reach: 700 });
         // nothing of the world stands on or just in front of its roots (as the camera moves it would cross them)
         const clear = (p) => Math.abs(p.x - TREE.x) > 640 || p.d > TREE.d + 140 || p.d < TREE.d - 420;   // (its roots come forward)
 
-        for (let n = 0; n < 34; n++) { const p = at(); if (clear(p)) tick(p.x, p.d); }
+        for (let n = 0, m = 34; n < m; n++) { const p = at(); if (clear(p)) tick(p.x, p.d); }
         // her pieces, spread: ferns, sprouts, pebbles, now and then a stack of them
         const weights = SCATTER.reduce((t, k) => t + k.weight, 0);
-        for (let n = 0, m = 3 + Math.floor(r() * 3); n < m; n++) {
+        for (let n = 0, m = Math.round((3 + r() * 3) * 0.7); n < m; n++) {
             const p = at();
             if (!clear(p)) continue;
             let w = r() * weights, kind = SCATTER[0];
@@ -150,7 +151,7 @@ export function createWorld({ depth, clouds = null, moon = null }) {
         }
         // streaks on the hills, as the card's: short brush strokes lying along the ground (pills with round ends, a little
         // curved, now and then two in a row) and a few small ovals, in the ground's other colour
-        for (let n = 0, m = 12 + Math.floor(r() * 6); n < m; n++) {
+        for (let n = 0, m = Math.round(12 + r() * 6); n < m; n++) {
             const p = at(), long = 22 + r() * 60, wide = 5 + r() * 6, bend = (r() - 0.5) * wide * 1.6, tilt = (r() - 0.5) * 6;
             if (!clear(p)) continue;
             const strokes = [{ long, wide, bend, tilt, dx: 0 }];
@@ -158,7 +159,7 @@ export function createWorld({ depth, clouds = null, moon = null }) {
             add({ kind: 'streak', x: p.x, d: p.d, strokes, oval: r() < 0.12 ? { rx: 14 + r() * 16, ry: 5 + r() * 4 } : null });
         }
         // a stipple on the ground, thinning out from its middle
-        for (let n = 0, m = 1 + Math.floor(r() * 2); n < m; n++) {
+        for (let n = 0, m = Math.round(1 + r() * 2); n < m; n++) {
             const p = at(), R = 70 + r() * 110, dots = [];
             if (!clear(p)) continue;
             for (let k = 0; k < 70; k++) {
@@ -169,7 +170,13 @@ export function createWorld({ depth, clouds = null, moon = null }) {
         }
         return items;
     }
-    const stretch = (i) => { if (!stretches.has(i)) stretches.set(i, make(i)); return stretches.get(i); };
+    const stretch = (i, j) => { const key = `${i},${j}`; if (!stretches.has(key)) stretches.set(key, { i, items: make(i, j) }); return stretches.get(key).items; };
+    // the patches over a stretch of floor: across, from x0 to x1, and in depth, from d0 to d1
+    function* patches(x0, x1, d0, d1) {
+        for (let i = Math.floor(x0 / STRETCH); i <= Math.floor(x1 / STRETCH); i++) {
+            for (let j = Math.floor((d0 + 180) / PATCH); j <= Math.floor((d1 + 180) / PATCH); j++) yield* stretch(i, j);
+        }
+    }
 
     // The clouds of Ciclos, drifting slowly far away (they move little with the camera), where the card has them
     const sky = ciclos.clouds.map(([x, y, w, h, ax, ay], i) => ({ x: x / ciclos.size, y: y / 1300, w, h, ax, ay, speed: 5 + (i % 5) * 2.5 }));
@@ -191,7 +198,7 @@ export function createWorld({ depth, clouds = null, moon = null }) {
             if (!ripple) ripple = { x: sid.x, d: sid.d, r: 0 };
             ripple.r = Math.min(1400, ripple.r + dt * 260);
         } else ripple = null;
-        for (const [i, items] of stretches) {
+        for (const { i, items } of stretches.values()) {
             if (Math.abs(i * STRETCH - sid.x) > 3000) continue;
             for (const item of items) {
                 const dx = item.x - sid.x, dd = (item.d - sid.d) * 1.6, dist = Math.hypot(dx, dd);
@@ -314,11 +321,13 @@ export function createWorld({ depth, clouds = null, moon = null }) {
     // The tree is a trunk with roots, not a flat card: it counts as standing TREE.behind further back than its foot, so
     // sitting at its roots, under its crown, he is in front of its trunk and its roots
     const order = (item) => item.kind === 'tree' ? item.d + TREE.behind : item.d;
+    // (view.near, view.far: the depths at the bottom of the screen and at the horizon)
     function draw(c, view, keep, him = null) {
-        const far = view.scaleAt(depth), half = view.width / 2 / far + 400;
-        const first = Math.floor((view.cam - half) / STRETCH), last = Math.floor((view.cam + half) / STRETCH);
+        const half = view.width / 2 / view.scaleAt(view.far) + 400;
         const shown = [];
-        for (let i = first; i <= last; i++) for (const item of stretch(i)) if (item.kind !== 'streak' && keep(order(item))) shown.push(item);
+        for (const item of patches(view.cam - half, view.cam + half, view.near - 400, view.far + 200)) {
+            if (item.kind !== 'streak' && order(item) <= view.far + (item.kind === 'tree' ? 200 : 0) && item.d > view.near - 400 && keep(order(item))) shown.push(item);
+        }
         shown.sort((a, b) => order(b) - order(a));
         for (const item of shown) {
             const s = view.scaleAt(item.d), x = view.x0 + (item.x - view.cam) * s;
@@ -327,6 +336,8 @@ export function createWorld({ depth, clouds = null, moon = null }) {
             c.save(); c.translate(x, view.groundAt(item.d)); c.scale(s, s);
             const tall = item.kind === 'piece' && TALL.has(item.name);
             if (him && tall && item.d < him.d && him.d - item.d < 220 && Math.abs(item.x - him.x) < 150) c.globalAlpha = 0.22;
+            // (what comes over the horizon fades in, so nothing pops up there)
+            c.globalAlpha *= Math.max(0, Math.min(1, (view.far - item.d) / 260));
             drawItem(c, item);
             c.restore();
         }
@@ -393,13 +404,13 @@ export function createWorld({ depth, clouds = null, moon = null }) {
     const ground = () => `rgb(${lerp(hex(CICLOS.groundNight), hex(CICLOS.groundDay), light()).map(Math.round).join(',')})`;
     // Its streaks (yellow by day, mustard by night): small brush strokes lying flat on the ground under everything
     function drawGround(c, view) {
-        const far = view.scaleAt(depth), half = view.width / 2 / far + 400;
-        const first = Math.floor((view.cam - half) / STRETCH), last = Math.floor((view.cam + half) / STRETCH);
+        const half = view.width / 2 / view.scaleAt(view.far) + 400;
         c.fillStyle = c.strokeStyle = `rgb(${detailRgb().map(Math.round).join(',')})`;
-        for (let i = first; i <= last; i++) for (const item of stretch(i)) {
-            if (item.kind !== 'streak') continue;
+        for (const item of patches(view.cam - half, view.cam + half, view.near - 100, view.far)) {
+            if (item.kind !== 'streak' || item.d > view.far || item.d < view.near - 100) continue;
             const s = view.scaleAt(item.d), x = view.x0 + (item.x - view.cam) * s;
             c.save(); c.translate(x, view.groundAt(item.d)); c.scale(s, s);
+            c.globalAlpha = Math.max(0, Math.min(1, (view.far - item.d) / 260));
             if (item.oval) { c.beginPath(); c.ellipse(0, 0, item.oval.rx, item.oval.ry, 0, 0, Math.PI * 2); c.fill(); }
             else for (const k of item.strokes) {
                 c.lineWidth = k.wide; c.lineCap = 'round';
@@ -416,15 +427,15 @@ export function createWorld({ depth, clouds = null, moon = null }) {
     };
 
     // What stands in his way near x (within `range`): circles on the floor { x, d, r }
-    function obstacles(x, range) {
+    function obstacles(x, d, range) {
         const out = [];
-        for (let i = Math.floor((x - range - 400) / STRETCH); i <= Math.floor((x + range + 400) / STRETCH); i++) {
-            for (const item of stretch(i)) {
+        {
+            for (const item of patches(x - range - 400, x + range + 400, d - range - 600, d + range + 600)) {
                 if (item.kind === 'tree') out.push({ x: item.x + TRUNK.dx, d: item.d + TRUNK.behind, r: TRUNK.r }, { x: item.x + ROOTS.dx, d: item.d + ROOTS.dd, r: ROOTS.r, rd: ROOTS.rd, low: true });
                 else if (item.kind === 'piece' && BLOCKS.has(item.name)) out.push({ x: item.x, d: item.d, r: boxOf(item.name)[2] * item.scale * 0.36 });
             }
         }
-        return out.filter((o) => Math.abs(o.x - x) < range + o.r);
+        return out.filter((o) => Math.abs(o.x - x) < range + o.r && Math.abs(o.d - d) < range + (o.rd ?? o.r) + 200);
     }
 
     // (setClock: to look at a given hour from the console, 0 sunrise .. 0.75 midnight)
