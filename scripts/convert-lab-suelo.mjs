@@ -1,7 +1,8 @@
 // Plants, stones and mushrooms of the cards' scenes for the puppet lab's world (/lab/sid), cut out of the layers already
 // in public/assets (no originals needed): the fans and the tufts of grass of Ciclos (its own plants, in the world's own
-// palette), the mushrooms and crystals of Upekkha's line drawing, the stones of Desafío, the stack of stones and the
-// little mushrooms of Belleza, and the mushrooms of Celebración. Each piece is made, as her tree's pieces are
+// palette), the mushrooms and crystals of Upekkha's line drawing, the stones and pink mushrooms of Desafío, the little
+// glowing plants of Metta, the mushrooms of Celebración, and the zones' special places and their characters (Metta's
+// nest and beings, Upekkha's pond, Celebración's fire and everyone round it, Vulpes). Each piece is made, as her tree's pieces are
 // (scripts/convert-lab-arbol.mjs), into src/lab/suelo/NAME.webp (its line, as transparency, so the lab can tint it) and
 // NAME-fill.webp (what is inside its line, white over transparent, so the lab can paint it in code), and
 // src/lab/suelo/suelo.json: the size of every piece's picture and how many units of the world each of its pixels is
