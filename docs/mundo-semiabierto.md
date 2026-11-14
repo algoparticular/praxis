@@ -28,6 +28,8 @@ Decidido con Juan Manuel:
 
 Ir de a una, probando cada pieza en el teléfono antes de la siguiente.
 
+**Hecho: las zonas.** El mundo está en zonas a lo ancho, una por carta (`ZONES` en `sidWorld.js`): Ciclos alrededor del árbol, y hacia la derecha Belleza, Upekkha, Desafío y Celebración (que queda a la izquierda de Ciclos, y donde siempre es de noche); siguiendo, vuelven a empezar. Cada una cambia todo: la tinta y el blanco (también los de Sid), el cielo de día y de noche, el suelo y sus vetas, el sol y los colores que toman las cosas; entre dos zonas se mezclan en unos 1000 px (unos 2 s caminando). Cada carta pone sus propias plantas, piedras y hongos en su zona, que al colorearse se ven con sus colores originales.
+
 ## Preguntas abiertas (a decidir con Juan Manuel antes de empezar)
 
 1. **¿Qué carta es la segunda zona?** Opciones pensadas: **Upekkha** (pasado y futuro, el estanque; ya hay capas en `public/assets/upekkha`), **Fe** (el río y los hongos; `public/assets/fe`) o **Paciencia** (arraigar, la piña; `public/assets/paciencia`). Propuesta: Upekkha.

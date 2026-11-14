@@ -5,7 +5,10 @@
 // (scripts/convert-lab-arbol.mjs), into src/lab/suelo/NAME.webp (its line, as transparency, so the lab can tint it) and
 // NAME-fill.webp (what is inside its line, white over transparent, so the lab can paint it in code), and
 // src/lab/suelo/suelo.json: the size of every piece's picture and how many units of the world each of its pixels is
-// (unit), so that they stand beside Sid at a size that suits them.
+// (unit), so that they stand beside Sid at a size that suits them. Each also gets NAME-colour.webp: the piece in its own
+// colours, as its card has it (the lab shows it when the piece is coloured, in its card's zone of the world): the
+// coloured layer itself, or, for a piece of pure line, its line over what is inside it painted in `paint` (the colour
+// it has in its card).
 // The line of a coloured piece is its dark colour (darker than `dark`, softly); what is inside it, all of what is drawn
 // (the line goes over it). A piece of pure line (Upekkha's drawing) has its inside found as her tree's is: the white that cannot be
 // reached from the edges of its box without crossing its line. A piece with no inside (a tuft of grass) is all line.
@@ -40,18 +43,22 @@ const PIECES = {
     grass4: { from: 'ciclos/plants', crop: atlas(12), unit: 0.8, inside: 'none' },
     grass5: { from: 'ciclos/plants', crop: atlas(14), unit: 0.8, inside: 'none' },
     grass6: { from: 'ciclos/plants', crop: atlas(11), unit: 0.8, inside: 'none' },
-    // Upekkha's line drawing: the grove of big mushrooms with its crystals, crystals and small mushrooms
-    grove: { from: 'upekkha/rocks', crop: [135, 0, 815, 362], unit: 1, inside: 'closed', keep: 0.002 },
-    crystals: { from: 'upekkha/rocks', crop: [172, 452, 172, 136], unit: 1.1, inside: 'closed', keep: 0.05 },
-    crystalsSmall: { from: 'upekkha/rocks', crop: [412, 572, 146, 70], unit: 1.25, inside: 'closed', keep: 0.05 },
-    crystal: { from: 'upekkha/rocks', crop: [698, 552, 94, 76], unit: 1.35, inside: 'closed', keep: 0.2 },
-    shrooms: { from: 'upekkha/rocks', crop: [864, 528, 94, 94], unit: 1.35, inside: 'closed', keep: 0.2 },
-    shroom: { from: 'upekkha/rocks', crop: [543, 428, 74, 78], unit: 1.35, inside: 'closed', keep: 0.2 },
+    // Upekkha's line drawing: the grove of big mushrooms with its crystals, crystals and small mushrooms (in its card the
+    // mushrooms are yellow and the crystals a pale lilac)
+    grove: { from: 'upekkha/rocks', crop: [135, 0, 815, 362], unit: 1, inside: 'closed', keep: 0.002, paint: '#F6E27A' },
+    crystals: { from: 'upekkha/rocks', crop: [172, 452, 172, 136], unit: 1.1, inside: 'closed', keep: 0.05, paint: '#E8E2FA' },
+    crystalsSmall: { from: 'upekkha/rocks', crop: [412, 572, 146, 70], unit: 1.25, inside: 'closed', keep: 0.05, paint: '#E8E2FA' },
+    crystal: { from: 'upekkha/rocks', crop: [698, 552, 94, 76], unit: 1.35, inside: 'closed', keep: 0.2, paint: '#E8E2FA' },
+    shrooms: { from: 'upekkha/rocks', crop: [864, 528, 94, 94], unit: 1.35, inside: 'closed', keep: 0.2, paint: '#F6E27A' },
+    shroom: { from: 'upekkha/rocks', crop: [543, 428, 74, 78], unit: 1.35, inside: 'closed', keep: 0.2, paint: '#F6E27A' },
     // Desafío's two stones, Belleza's stack of stones and its row of little mushrooms, Celebración's mushrooms
     stones: { from: 'desafio/stones', unit: 1.15, inside: 'colour', dark: 130 },
     stack: { from: 'belleza/cairn', unit: 1, inside: 'colour', dark: 122 },
     mushroomRow: { from: 'belleza/mushrooms', crop: [0, 42, 512, 141], unit: 0.9, inside: 'colour', dark: 122 },
     mushrooms: { from: 'celebracion/mushrooms', unit: 1.5, inside: 'colour', dark: 110 },
+    // Desafío's two pink mushrooms and Belleza's blue bush with its stone
+    caps: { from: 'desafio/mushrooms', unit: 1.2, inside: 'colour', dark: 130 },
+    bush: { from: 'belleza/bush', unit: 0.75, inside: 'colour', dark: 118 },
 };
 
 await mkdir(target, { recursive: true });
@@ -152,7 +159,21 @@ for (const [name, piece] of Object.entries(PIECES)) {
     await save(line, `${name}.webp`, false);
     const hasInside = piece.inside !== 'none';
     if (hasInside) await save(inside, `${name}-fill.webp`, true);
-    out.pieces[name] = { box: [0, 0, bw, bh], unit: piece.unit, fill: hasInside };
+    // in its own colours: the layer itself (only the marks that belong to it), or its line over its inside painted
+    const own = Buffer.alloc(bw * bh * 4), paint = piece.paint && [1, 3, 5].map((k) => parseInt(piece.paint.slice(k, k + 2), 16));
+    for (let y = 0; y < bh; y++) for (let x = 0; x < bw; x++) {
+        const i = (y + y0) * W + x + x0, k = (y * bw + x) * 4;
+        if (paint) {
+            const l = Math.min(1, line[i] / Math.max(0.001, data[i * 4 + 3] / 255 || 1)), a = Math.max(line[i], inside[i]);
+            for (let c = 0; c < 3; c++) own[k + c] = Math.round(paint[c] + (data[i * 4 + c] - paint[c]) * (line[i] > 0 ? l : 0));
+            own[k + 3] = Math.round(Math.min(1, a) * 255);
+        } else {
+            for (let c = 0; c < 3; c++) own[k + c] = data[i * 4 + c];
+            own[k + 3] = Math.round(Math.min(1, piece.keep ? Math.max(line[i], inside[i]) : data[i * 4 + 3] / 255) * 255);
+        }
+    }
+    await sharp(own, { raw: { width: bw, height: bh, channels: 4 } }).webp({ quality: 90, alphaQuality: 90 }).toFile(path.join(target, `${name}-colour.webp`));
+    out.pieces[name] = { box: [0, 0, bw, bh], unit: piece.unit, fill: hasInside, colour: true };
     console.log(name, bw, bh);
 }
 await writeFile(path.join(target, 'suelo.json'), JSON.stringify(out) + '\n');

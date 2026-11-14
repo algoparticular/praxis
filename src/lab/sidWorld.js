@@ -42,6 +42,7 @@ function tint(name, colour) {
     const key = `${name}|${colour}`, img = PICTURES[name];
     if (TINTS.has(key)) return TINTS.get(key);
     if (!ready(img)) return null;
+    if (TINTS.size > 600) TINTS.clear();      // (the colours blend between zones: old ones are not kept for ever)
     const c = document.createElement('canvas');
     c.width = img.naturalWidth; c.height = img.naturalHeight;
     const g = c.getContext('2d');
@@ -61,19 +62,13 @@ export const TREE = { x: 2000, d: 420, behind: 25, scale: 1.33, foot: { x: 640, 
 // (WITH), with a colour of its own and swaying a little more than the fronds: most carry one, some two (the second
 // curling and leaning the other way, a little shorter, so their beads stand apart) and a few none. foot: where its stem meets the fern, across its picture (px)
 const WITH = { fern: { name: 'sprout', sway: 0.5, foot: 146 } };
-// (names: one of them, at random). From the cards' scenes: Ciclos's fans, Upekkha's grove of big mushrooms with its
-// crystals, its crystals and its small mushrooms, Desafío's stones, Belleza's stack of stones and its row of little
-// mushrooms, and Celebración's mushrooms; Ciclos's tufts of grass are spread apart (GRASS)
+// Her pieces go everywhere, taking the colours of the zone they are in; each zone adds its card's own (`own` in ZONES,
+// names: one of them, at random), and Ciclos its tufts of grass (GRASS)
 const SCATTER = [
     { name: 'fern', weight: 3, sway: 0.5, colour: 'green' }, { name: 'fernSmall', weight: 3, sway: 0.6, colour: 'green' },
     { name: 'fernLow', weight: 3, sway: 0.5, colour: 'green' },
     { name: 'pebble', weight: 2 }, { name: 'pebbles', weight: 2 }, { name: 'pebbleGrass', weight: 2 },
     { name: 'pebbleFlat', weight: 2 }, { name: 'cairn', weight: 1 },
-    { names: ['fan0', 'fan1', 'fan2', 'fan3'], weight: 3, sway: 0.35, colour: 'fan' },
-    { name: 'grove', weight: 0.5, colour: 'mushroom' },
-    { names: ['crystals', 'crystalsSmall', 'crystal'], weight: 1.5, colour: 'crystal' },
-    { names: ['shrooms', 'shroom', 'mushrooms', 'mushroomRow'], weight: 2, colour: 'mushroom' },
-    { name: 'stones', weight: 1 }, { name: 'stack', weight: 0.6 },
 ];
 const GRASS = ['grass0', 'grass1', 'grass2', 'grass3', 'grass4', 'grass5', 'grass6'];
 
@@ -115,17 +110,88 @@ export const CICLOS = {
         { light: '#FFD36E', ink: '#B08A1E' }, { light: '#C8B070', ink: '#857033' }, { light: '#F2A48C', ink: '#B4664F' },
     ],
 };
-const PALETTE = CICLOS.colours.map((c) => ({ light: hex(c.light), ink: hex(c.ink) }));
+
+// The zones of the world, one card each, across it (ZONE wide, in this order to his right; endless both ways, so going
+// on they come round again): Ciclos round her tree, Belleza, Upekkha, Desafío and Celebración (to the left of Ciclos).
+// Each has its card's colours: its ink (also Sid's line) and its white (Sid's body), its sky by day and by night (the
+// night is the cards' starry sky over it), its ground and the streaks and marks on it by day and by night, its sun,
+// the colours things take, and its own pieces (cut out of its scene's layers, shown in its own colours once coloured).
+// Celebración is a night clearing: there it is always night (dark). Between two zones everything blends over BLEND.
+// (The colours were read off each card.)
+const ZONES = [
+    { card: 'ciclos', ...CICLOS, own: [{ names: ['fan0', 'fan1', 'fan2', 'fan3'], weight: 3, sway: 0.35 }], grass: true },
+    {
+        card: 'belleza', ink: '#3C549C', white: '#EEF5CC', sky: '#48B4B4', night: '#1F4E86', sun: '#F7C9B6',
+        groundDay: '#90CCA8', groundNight: '#3E8A8C', detailDay: '#E4F0B4', detailNight: '#2C4A86',
+        colours: [
+            { light: '#F0B4A8', ink: '#B4665F' }, { light: '#48B4B4', ink: '#1F7F86' }, { light: '#6C84C8', ink: '#3C549C' },
+            { light: '#E4F0B4', ink: '#8FA060' }, { light: '#90CCA8', ink: '#4F8F6A' }, { light: '#F7D774', ink: '#A88A2A' },
+        ],
+        own: [{ name: 'stack', weight: 1 }, { name: 'mushroomRow', weight: 2 }, { name: 'bush', weight: 2, sway: 0.2 }],
+    },
+    {
+        card: 'upekkha', ink: '#60549C', white: '#FCFCFC', sky: '#B4E4D8', night: '#2490A8', sun: '#FC9C78',
+        groundDay: '#FC9C78', groundNight: '#2490A8', detailDay: '#FFC9AE', detailNight: '#60549C',
+        colours: [
+            { light: '#78CCD8', ink: '#3E8C98' }, { light: '#2490A8', ink: '#14607A' }, { light: '#FC9C78', ink: '#B85E40' },
+            { light: '#F6E27A', ink: '#A8901E' }, { light: '#A89CE0', ink: '#60549C' }, { light: '#B4E4D8', ink: '#5E9C8C' },
+        ],
+        own: [{ name: 'grove', weight: 0.8 }, { names: ['crystals', 'crystalsSmall', 'crystal'], weight: 2.5 },
+            { names: ['shrooms', 'shroom'], weight: 2.5 }],
+    },
+    {
+        card: 'desafio', ink: '#18789C', white: '#F2F7E8', sky: '#A8D8D8', night: '#4C6CA8', sun: '#FFF1C8',
+        groundDay: '#E2EFDA', groundNight: '#8C8CC8', detailDay: '#FCC0C0', detailNight: '#5C78B0',
+        colours: [
+            { light: '#FCC0C0', ink: '#C47A80' }, { light: '#A8A8D8', ink: '#6C6CA8' }, { light: '#A8D8D8', ink: '#4E8E8E' },
+            { light: '#90C0F0', ink: '#4A7CB0' }, { light: '#F2D48A', ink: '#A88A3A' }, { light: '#18789C', ink: '#0E5470' },
+        ],
+        own: [{ name: 'stones', weight: 2 }, { name: 'caps', weight: 2.5 }],
+    },
+    {
+        card: 'celebracion', ink: '#48486C', white: '#D8F0FC', sky: '#2460A8', night: '#2460A8', sun: '#FCE484', dark: 1,
+        groundDay: '#6CB4E4', groundNight: '#6CB4E4', detailDay: '#D8F0FC', detailNight: '#D8F0FC',
+        colours: [
+            { light: '#F09CA8', ink: '#B05A68' }, { light: '#E478A8', ink: '#A0406C' }, { light: '#FCE484', ink: '#A8901E' },
+            { light: '#D8F0FC', ink: '#7CA8C8' }, { light: '#6CB4E4', ink: '#2E78A8' }, { light: '#9C9CD0', ink: '#48486C' },
+        ],
+        own: [{ name: 'mushrooms', weight: 3 }, { name: 'caps', weight: 1 }],
+    },
+].map((z) => ({
+    ...z, dark: z.dark ?? 0,
+    rgb: Object.fromEntries(['ink', 'white', 'sky', 'night', 'sun', 'groundDay', 'groundNight', 'detailDay', 'detailNight'].map((k) => [k, hex(z[k])])),
+    palette: z.colours.map((c) => ({ light: hex(c.light), ink: hex(c.ink) })),
+}));
+const ZONE = 5000, ZONE_START = -1500, BLEND = 1000;    // (about 12 s walking across one; Ciclos from -1500, round her tree)
+const smooth = (t) => { const u = Math.max(0, Math.min(1, t)); return u * u * (3 - 2 * u); };
+// The zones at a place across the world: { a, b, t } (t: how far into b, 0 in the middle of a zone)
+function zonesAt(x) {
+    const n = ZONES.length, of = (i) => ZONES[((i % n) + n) % n], u = (x - ZONE_START) / ZONE, i = Math.floor(u), f = u - i, e = BLEND / 2 / ZONE;
+    if (f > 1 - e) return { a: of(i), b: of(i + 1), t: smooth((f - (1 - e)) / (2 * e)) };
+    if (f < e) return { a: of(i - 1), b: of(i), t: smooth((f + e) / (2 * e)) };
+    return { a: of(i), b: of(i), t: 0 };
+}
+const mixArr = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t);
+// A colour as a string, a little rounded (so the tinted pictures made for it are not made again for every small step)
+const css = (rgb) => `rgb(${rgb.map((v) => Math.round(v / 4) * 4).join(',')})`;
+const PALETTE = ZONES[0].palette;
 const PART_COLOUR = { cap: 2, stem: null };   // the mushrooms of the tree: their caps Ciclos's coral, their stems cream
 const GREENS = [1, 0, 1, 3];    // the ground's plants: mostly its green and its teal (and its yellow)
 const WARM = [2, 5, 3, 0];      // the beads of the sprouts
-// what the scenes' pieces take: the fans their pink (or the coral), the mushrooms the warm ones, the crystals the teal,
-// the pink and the yellow; the stones, as hers, the tan, the yellow, the pink and the teal
-const TAKES = { green: GREENS, fan: [5, 5, 2], mushroom: [2, 5, 3], crystal: [0, 5, 3], stone: [4, 3, 5, 0] };
+const STONES = [4, 3, 5, 0];    // her stones
 const mixRgb = (a, b, t) => `rgb(${a.map((v, i) => Math.round(v + (b[i] - v) * t)).join(',')})`;
 
 export function createWorld({ clouds = null, moon = null }) {
-    const INK = hex(CICLOS.ink);
+    // The colours on the screen now: those of the zone where the camera is (blended between two), set as the sky is
+    // drawn, first thing every frame
+    const blend = (z) => {
+        const m = (k) => mixArr(z.a.rgb[k], z.b.rgb[k], z.t);
+        return { ink: m('ink'), white: m('white'), sky: m('sky'), night: m('night'), sun: m('sun'), groundDay: m('groundDay'),
+            groundNight: m('groundNight'), detailDay: m('detailDay'), detailNight: m('detailNight'), dark: z.a.dark + (z.b.dark - z.a.dark) * z.t };
+    };
+    let screen = blend(zonesAt(1000));
+    // One of the colours a thing takes, as the zone where it stands has it (blended between two)
+    const colourOf = (z, c) => ({ light: mixArr(z.a.palette[c].light, z.b.palette[c].light, z.t), ink: mixArr(z.a.palette[c].ink, z.b.palette[c].ink, z.t) });
     let clock = 0.2;                        // the cycle: 0 sunrise, 0.25 noon, 0.5 sunset, 0.75 midnight
     const CYCLE = 90;                       // s for a whole day and night
     const stretches = new Map();
@@ -169,25 +235,25 @@ export function createWorld({ clouds = null, moon = null }) {
         const clear = (p) => Math.abs(p.x - TREE.x) > 640 || p.d > TREE.d + 140 || p.d < TREE.d - 420;   // (its roots come forward)
 
         for (let n = 0, m = 34; n < m; n++) { const p = at(); if (clear(p)) tick(p.x, p.d); }
-        // her pieces and the scenes', spread: ferns (the big ones with their sprout), pebbles, now and then a stack of them,
-        // fans, mushrooms, crystals, stones
-        const weights = SCATTER.reduce((t, k) => t + k.weight, 0);
+        // her pieces and the zone's own, spread: ferns (the big ones with their sprout), pebbles, now and then a stack of
+        // them, and what its card has (between two zones, each piece is of one or the other, more of the nearer)
         for (let n = 0, m = Math.round((4 + r() * 3) * 0.8); n < m; n++) {
             const p = at();
             if (!clear(p)) continue;
-            let w = r() * weights, kind = SCATTER[0];
-            for (const k of SCATTER) { w -= k.weight; if (w <= 0) { kind = k; break; } }
+            const z = zonesAt(p.x), home = r() < z.t ? z.b : z.a, list = [...SCATTER, ...home.own];
+            let w = r() * list.reduce((t, k) => t + k.weight, 0), kind = list[0];
+            for (const k of list) { w -= k.weight; if (w <= 0) { kind = k; break; } }
             const name = kind.names ? pick(kind.names) : kind.name;
             // (no stone in his way round her tree: he can always walk behind its trunk)
             if (BLOCKS.has(name) && Math.abs(p.x - TREE.x) < 700 && p.d > TREE.d) continue;
-            const colour = pick(TAKES[kind.colour ?? 'stone']);
+            const colour = kind.colour === 'green' ? pick(GREENS) : pick(STONES);
             add({ kind: 'piece', name, x: p.x, d: p.d, scale: 0.6 + r() * 0.3, flip: r() < 0.5 ? -1 : 1, sway: kind.sway ?? 0, color: colour,
-                sprouts: WITH[name] ? sproutsFor(r, pick) : undefined });
+                zone: z, sprouts: WITH[name] ? sproutsFor(r, pick) : undefined });
         }
-        // Ciclos's tufts of grass, a few in every stretch, swaying
+        // Ciclos's tufts of grass, a few in every stretch of it, swaying
         for (let n = 0, m = 2 + Math.floor(r() * 3); n < m; n++) {
-            const p = at();
-            if (!clear(p)) continue;
+            const p = at(), z = zonesAt(p.x);
+            if (!clear(p) || !(r() < z.t ? z.b : z.a).grass) continue;
             add({ kind: 'piece', name: pick(GRASS), x: p.x, d: p.d, scale: 0.45 + r() * 0.35, flip: r() < 0.5 ? -1 : 1, sway: 0.7, color: pick([1, 1, 0, 4]) });
         }
         // streaks on the hills, as the card's: short brush strokes lying along the ground (pills with round ends, a little
@@ -285,27 +351,39 @@ export function createWorld({ clouds = null, moon = null }) {
     // coloured (col), and its line in ink (a plant with nothing inside takes the colour in its line instead)
     // (layer: 'fill' or 'line' draws only that part, so the tree can put its crown's colour behind its trunk)
     function piece(c, name, left, top, k, P, col, tintLine = false, layer = 'both') {
-        const box = boxOf(name), w = box[2] * k, h = box[3] * k;
+        const box = boxOf(name), w = box[2] * k, h = box[3] * k, white = css(screen.white), inkCss = css(screen.ink);
+        // a piece of a card's scene: cream and ink at first, and as it is coloured, itself in its card's colours
+        const own = PIECES[name].colour && PICTURES[`${name}-colour`];
+        if (own) {
+            const base = PIECES[name].fill && tint(`${name}-fill`, white), ink = tint(name, inkCss);
+            if (base) c.drawImage(base, left, top, w, h);
+            if (ink && col < 0.99) { c.globalAlpha *= 1 - col; c.drawImage(ink, left, top, w, h); c.globalAlpha /= 1 - col; }
+            if (col > 0.01 && ready(own)) { c.globalAlpha *= col; c.drawImage(own, left, top, w, h); c.globalAlpha /= col; }
+            return;
+        }
         if (PIECES[name].fill && layer !== 'line') {
-            const base = tint(`${name}-fill`, CICLOS.white), coloured = col > 0.01 && tint(`${name}-fill`, `rgb(${P.light.join(',')})`);
+            const base = tint(`${name}-fill`, white), coloured = col > 0.01 && tint(`${name}-fill`, css(P.light));
             if (base) c.drawImage(base, left, top, w, h);
             if (coloured) { c.globalAlpha *= col; c.drawImage(coloured, left, top, w, h); c.globalAlpha /= col; }
             // its parts with a colour of their own (the mushrooms at the foot of the trunk), or none (cream)
             for (const part of PIECES[name].parts ?? []) {
                 const Q = PALETTE[PART_COLOUR[part]], file = `${name}-${part}-fill`;
-                const cream = tint(file, CICLOS.white), own = Q && col > 0.01 && tint(file, `rgb(${Q.light.join(',')})`);
+                const cream = tint(file, white), mine = Q && col > 0.01 && tint(file, css(Q.light));
                 if (cream) c.drawImage(cream, left, top, w, h);
-                if (own) { c.globalAlpha *= col; c.drawImage(own, left, top, w, h); c.globalAlpha /= col; }
+                if (mine) { c.globalAlpha *= col; c.drawImage(mine, left, top, w, h); c.globalAlpha /= col; }
             }
         }
         if (layer === 'fill') return;
-        const ink = tint(name, CICLOS.ink), coloured = tintLine && col > 0.01 && tint(name, `rgb(${P.ink.join(',')})`);
+        const ink = tint(name, inkCss), coloured = tintLine && col > 0.01 && tint(name, css(P.ink));
         if (ink) c.drawImage(ink, left, top, w, h);
         if (coloured) { c.globalAlpha *= col * 0.85; c.drawImage(coloured, left, top, w, h); c.globalAlpha /= col * 0.85; }
     }
 
     function drawItem(c, item) {
-        const col = colour.get(item.id) ?? 0, P = PALETTE[item.color ?? 1], line = mixRgb(INK, P.ink, col * 0.8);
+        // (the colours it takes are those of the zone where it stands, worked out once)
+        item.zone ??= zonesAt(item.x);
+        item.P ??= colourOf(item.zone, item.color ?? 1);
+        const col = colour.get(item.id) ?? 0, P = item.P, line = mixRgb(screen.ink, P.ink, col * 0.8);
         // the marks of the ground (its grass, its stipple) are in its detail colour: yellow by day, mustard by night
         const mark_ = item.kind === 'tick' || item.kind === 'stipple' ? mixRgb(detailRgb(), P.ink, col * 0.8) : line;
         const l = life.get(item.id);
@@ -334,7 +412,8 @@ export function createWorld({ clouds = null, moon = null }) {
                 c.save(); c.translate(fx, fy);
                 c.rotate(lean * extra.sway + sp.tilt + (sp.phase ? wind(item.x + sp.phase * 400) * 0.3 : 0));
                 c.scale(sp.flip * sp.size, sp.size);
-                piece(c, extra.name, -foot * k, -own[3] * k, k, PALETTE[sp.color], col, !PIECES[extra.name].fill);
+                sp.P ??= colourOf(item.zone, sp.color);
+                piece(c, extra.name, -foot * k, -own[3] * k, k, sp.P, col, !PIECES[extra.name].fill);
                 c.restore();
             }
             piece(c, item.name, -box[2] * k / 2, -box[3] * k, k, P, col, !PIECES[item.name].fill);
@@ -397,17 +476,19 @@ export function createWorld({ clouds = null, moon = null }) {
     }
 
     // How much light there is: 1 all day, 0 all night, a soft dusk and dawn between
-    const light = () => { const v = 0.5 + 2.8 * Math.sin(clock * Math.PI * 2); return Math.max(0, Math.min(1, v)); };   // (a short dusk)
+    // (where it is always night, Celebración's clearing, there is no day)
+    const light = () => { const v = 0.5 + 2.8 * Math.sin(clock * Math.PI * 2); return Math.max(0, Math.min(1, v)) * (1 - screen.dark); };   // (a short dusk)
     const lerp = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t);
-    const detailRgb = () => lerp(hex(CICLOS.detailNight), hex(CICLOS.detailDay), light());
+    const detailRgb = () => lerp(screen.detailNight, screen.detailDay, light());
 
     // The sky: Ciclos's yellow by day, clearing as night comes so the cards' starry night behind it shows (the page draws
     // it, useStarField.js); the sun by day and the moon by night, each rising from under the horizon, crossing the sky
     // and setting under it (the ground, drawn after, hides them); and its clouds, solid white as in the card
     function drawSky(c, view, top, bottom) {
+        screen = blend(zonesAt(view.cam));
         const L = light(), H = bottom - top;
         c.clearRect(0, top, view.width, H + 2);
-        c.globalAlpha = L; c.fillStyle = CICLOS.sky; c.fillRect(0, top, view.width, H + 2); c.globalAlpha = 1;
+        c.globalAlpha = L; c.fillStyle = css(screen.sky); c.fillRect(0, top, view.width, H + 2); c.globalAlpha = 1;
         const scale = H / 1300 * 0.55;
         const along = (t, r) => ({ x: view.width * (0.06 + 0.88 * t), y: bottom + r - (bottom + r - (top + H * 0.4)) * Math.sin(Math.PI * t) });   // (high, but under the buttons)
         const sunT = clock < 0.5 ? clock / 0.5 : null, moonT = clock >= 0.5 ? (clock - 0.5) / 0.5 : null;
@@ -415,7 +496,7 @@ export function createWorld({ clouds = null, moon = null }) {
         if (moonT != null && moon?.complete && moon.naturalWidth) {
             const m = ciclos.moon, [bx, by, bw, bh] = ciclos.boxes.moon, p = along(moonT, m.r * scale * 1.1);
             c.drawImage(moon, p.x + (bx - m.x) * scale, p.y + (by - m.y) * scale, bw * scale, bh * scale);
-            c.fillStyle = CICLOS.ink; c.globalAlpha = 0.55;
+            c.fillStyle = css(screen.ink); c.globalAlpha = 0.55;
             for (const [x, y, r] of m.dots) { c.beginPath(); c.arc(p.x + (x - m.x) * scale, p.y + (y - m.y) * scale, r * scale, 0, Math.PI * 2); c.fill(); }
             c.globalAlpha = 1;
         }
@@ -433,7 +514,7 @@ export function createWorld({ clouds = null, moon = null }) {
     function drawSun(c, p, scale) {
         const sun = ciclos.sun;
         corona ??= sampleCloud(decodeCloud(sun.cloud), (u, v) => [u - sun.x, v - sun.y], 1).map(([x, y, size]) => [x, y, size, Math.random() * 100]);
-        const breath = Math.sin(time * 0.6), solid = sun.cloud.solid * scale, rgb = hex(CICLOS.sun);
+        const breath = Math.sin(time * 0.6), solid = sun.cloud.solid * scale, rgb = screen.sun.map(Math.round);
         const glow = (radius, colour, stops) => {
             const g = c.createRadialGradient(p.x, p.y, 0, p.x, p.y, radius);
             for (const [at, a] of stops) g.addColorStop(at, `rgba(${colour.join(',')},${a})`);
@@ -441,7 +522,7 @@ export function createWorld({ clouds = null, moon = null }) {
         };
         glow(solid * 3.4 * (1 + 0.03 * Math.sin(time * 0.4)), [255, 160, 112], [[0, 0.28], [0.3, 0.1], [0.7, 0]]);
         glow(solid * 2.3 * (1 + 0.04 * breath), rgb, [[0, 0.7 + 0.12 * breath], [0.36, 0.3], [0.62, 0]]);
-        c.fillStyle = CICLOS.sun;
+        c.fillStyle = css(screen.sun);
         c.beginPath(); c.arc(p.x, p.y, solid, 0, Math.PI * 2); c.fill();
         for (const [x, y, size, ph] of corona) {
             const dx = Math.sin(time * 0.7 + ph) * 4 + Math.sin(time * 5.3 + ph * 3.1) * 0.9;   // drifting, trembling
@@ -454,7 +535,7 @@ export function createWorld({ clouds = null, moon = null }) {
     // How dark it is (0 day .. 1 night), for the page's starry night
     const night = () => 1 - light();
     // The ground: the card's hills, green by day and yellow by night
-    const ground = () => `rgb(${lerp(hex(CICLOS.groundNight), hex(CICLOS.groundDay), light()).map(Math.round).join(',')})`;
+    const ground = () => `rgb(${lerp(screen.groundNight, screen.groundDay, light()).map(Math.round).join(',')})`;
     // Its streaks (yellow by day, mustard by night): small brush strokes lying flat on the ground under everything
     function drawGround(c, view) {
         const half = view.width / 2 / view.scaleAt(view.far) + 400;
@@ -492,5 +573,7 @@ export function createWorld({ clouds = null, moon = null }) {
     }
 
     // (setClock: to look at a given hour from the console, 0 sunrise .. 0.75 midnight)
-    return { update, draw, drawSky, drawGround, ground, night, underCrown, obstacles, setClock: (v) => { clock = ((v % 1) + 1) % 1; } };
+    // The colours of the zone on the screen, for the page: Sid's line and body, and the colour under the starry night
+    const ink = () => css(screen.ink), white = () => css(screen.white), nightColour = () => css(screen.night);
+    return { update, draw, drawSky, drawGround, ground, night, ink, white, nightColour, underCrown, obstacles, setClock: (v) => { clock = ((v % 1) + 1) % 1; } };
 }
