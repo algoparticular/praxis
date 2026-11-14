@@ -122,7 +122,7 @@ const ZONES = [
     { card: 'ciclos', ...CICLOS, own: [{ names: ['fan0', 'fan1', 'fan2', 'fan3'], weight: 3, sway: 0.35 }], grass: true },
     {
         card: 'belleza', ink: '#3C549C', white: '#EEF5CC', sky: '#48B4B4', night: '#1F4E86', sun: '#F7C9B6',
-        groundDay: '#90CCA8', groundNight: '#3E8A8C', detailDay: '#E4F0B4', detailNight: '#2C4A86',
+        groundDay: '#90CCA8', groundNight: '#6FB3A6', detailDay: '#E4F0B4', detailNight: '#2C4A86',
         colours: [
             { light: '#F0B4A8', ink: '#B4665F' }, { light: '#48B4B4', ink: '#1F7F86' }, { light: '#6C84C8', ink: '#3C549C' },
             { light: '#E4F0B4', ink: '#8FA060' }, { light: '#90CCA8', ink: '#4F8F6A' }, { light: '#F7D774', ink: '#A88A2A' },
@@ -492,14 +492,21 @@ export function createWorld({ clouds = null, moon = null }) {
         const scale = H / 1300 * 0.55;
         const along = (t, r) => ({ x: view.width * (0.06 + 0.88 * t), y: bottom + r - (bottom + r - (top + H * 0.4)) * Math.sin(Math.PI * t) });   // (high, but under the buttons)
         const sunT = clock < 0.5 ? clock / 0.5 : null, moonT = clock >= 0.5 ? (clock - 0.5) / 0.5 : null;
-        if (sunT != null) drawSun(c, along(sunT, ciclos.sun.r * scale * 1.6), scale);
-        if (moonT != null && moon?.complete && moon.naturalWidth) {
-            const m = ciclos.moon, [bx, by, bw, bh] = ciclos.boxes.moon, p = along(moonT, m.r * scale * 1.1);
+        const drawMoon = (t, alpha) => {
+            if (!moon?.complete || !moon.naturalWidth || alpha <= 0.01) return;
+            const m = ciclos.moon, [bx, by, bw, bh] = ciclos.boxes.moon, p = along(t, m.r * scale * 1.1);
+            c.globalAlpha = alpha;
             c.drawImage(moon, p.x + (bx - m.x) * scale, p.y + (by - m.y) * scale, bw * scale, bh * scale);
-            c.fillStyle = css(screen.ink); c.globalAlpha = 0.55;
+            c.fillStyle = css(screen.ink); c.globalAlpha = 0.55 * alpha;
             for (const [x, y, r] of m.dots) { c.beginPath(); c.arc(p.x + (x - m.x) * scale, p.y + (y - m.y) * scale, r * scale, 0, Math.PI * 2); c.fill(); }
             c.globalAlpha = 1;
+        };
+        // (where it is always night, Celebración's clearing, the moon takes the sun's way across the sky too)
+        if (sunT != null) {
+            if (screen.dark < 0.99) { c.globalAlpha = 1 - screen.dark; drawSun(c, along(sunT, ciclos.sun.r * scale * 1.6), scale); c.globalAlpha = 1; }
+            drawMoon(sunT, screen.dark);
         }
+        if (moonT != null) drawMoon(moonT, 1);
         if (!clouds?.complete || !clouds.naturalWidth) return;
         const cs = H / 1300, span = Math.max(view.width * 1.6, 2160 * cs * 1.25);
         for (const m of sky) {                                                // solid, as the card's, day and night
