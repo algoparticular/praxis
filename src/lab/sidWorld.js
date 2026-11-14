@@ -119,9 +119,9 @@ export const CICLOS = {
 // Celebración is a night clearing: there it is always night (dark). Between two zones everything blends over BLEND.
 // (The colours were read off each card.)
 const ZONES = [
-    { card: 'ciclos', ...CICLOS, own: [{ names: ['fan0', 'fan1', 'fan2', 'fan3'], weight: 3, sway: 0.35 }], grass: true },
+    { card: 'ciclos', id: 15, ...CICLOS, own: [{ names: ['fan0', 'fan1', 'fan2', 'fan3'], weight: 3, sway: 0.35 }], grass: true },
     {
-        card: 'belleza', ink: '#3C549C', white: '#EEF5CC', sky: '#48B4B4', night: '#1F4E86', sun: '#F7C9B6',
+        card: 'belleza', id: 13, ink: '#3C549C', white: '#EEF5CC', sky: '#48B4B4', night: '#1F4E86', sun: '#F7C9B6',
         groundDay: '#90CCA8', groundNight: '#6FB3A6', detailDay: '#E4F0B4', detailNight: '#2C4A86',
         colours: [
             { light: '#F0B4A8', ink: '#B4665F' }, { light: '#48B4B4', ink: '#1F7F86' }, { light: '#6C84C8', ink: '#3C549C' },
@@ -130,7 +130,7 @@ const ZONES = [
         own: [{ name: 'stack', weight: 1 }, { name: 'mushroomRow', weight: 2 }, { name: 'bush', weight: 2, sway: 0.2 }],
     },
     {
-        card: 'upekkha', ink: '#60549C', white: '#FCFCFC', sky: '#B4E4D8', night: '#2490A8', sun: '#FC9C78',
+        card: 'upekkha', id: 9, ink: '#60549C', white: '#FCFCFC', sky: '#B4E4D8', night: '#2490A8', sun: '#FC9C78',
         groundDay: '#FC9C78', groundNight: '#60A8C0', detailDay: '#FFC9AE', detailNight: '#60549C',
         colours: [
             { light: '#78CCD8', ink: '#3E8C98' }, { light: '#2490A8', ink: '#14607A' }, { light: '#FC9C78', ink: '#B85E40' },
@@ -140,7 +140,7 @@ const ZONES = [
             { names: ['shrooms', 'shroom'], weight: 2.5 }],
     },
     {
-        card: 'desafio', ink: '#18789C', white: '#F2F7E8', sky: '#A8D8D8', night: '#4C6CA8', sun: '#FFF1C8',
+        card: 'desafio', id: 21, ink: '#18789C', white: '#F2F7E8', sky: '#A8D8D8', night: '#4C6CA8', sun: '#FFF1C8',
         groundDay: '#E2EFDA', groundNight: '#8C8CC8', detailDay: '#FCC0C0', detailNight: '#5C78B0',
         colours: [
             { light: '#FCC0C0', ink: '#C47A80' }, { light: '#A8A8D8', ink: '#6C6CA8' }, { light: '#A8D8D8', ink: '#4E8E8E' },
@@ -149,7 +149,7 @@ const ZONES = [
         own: [{ name: 'stones', weight: 2 }, { name: 'caps', weight: 2.5 }],
     },
     {
-        card: 'celebracion', ink: '#48486C', white: '#D8F0FC', sky: '#2460A8', night: '#2460A8', sun: '#FCE484', dark: 1,
+        card: 'celebracion', id: 14, ink: '#48486C', white: '#D8F0FC', sky: '#2460A8', night: '#2460A8', sun: '#FCE484', dark: 1,
         groundDay: '#6CB4E4', groundNight: '#6CB4E4', detailDay: '#D8F0FC', detailNight: '#D8F0FC',
         colours: [
             { light: '#F09CA8', ink: '#B05A68' }, { light: '#E478A8', ink: '#A0406C' }, { light: '#FCE484', ink: '#A8901E' },
@@ -163,6 +163,32 @@ const ZONES = [
     palette: z.colours.map((c) => ({ light: hex(c.light), ink: hex(c.ink) })),
 }));
 const ZONE = 8000, ZONE_START = -2000, BLEND = 1000;    // (about 19 s walking across one; Ciclos from -2000, round her tree)
+const CYCLE_W = ZONE * ZONES.length;   // (the zones come round again after this)
+const centreOf = (card) => ZONE_START + ZONE * (ZONES.findIndex((z) => z.card === card) + 0.5);
+// The special place of each zone, in its middle (and again wherever the zones come round): Ciclos's is her tree; then
+// Belleza's two beings embracing, Upekkha's pond, Desafío's labyrinth (far back, big) and Celebración's fire. Sitting in
+// lotus at one (sit: how far to its sides, in front of it and behind it) the rulito is born over him and the
+// affirmation of its card (id) is written in the sky; the place answers too (`glow`). block: what of it stands in his
+// way (a circle, or an ellipse rd deep, dd behind its foot); clear: the ground kept free round it of the world's plants
+const PLACES = [
+    { card: 'ciclos', kind: 'tree', id: 15, x: TREE.x, d: TREE.d },
+    { card: 'belleza', kind: 'pair', id: 13, x: centreOf('belleza'), d: 380, reach: 450,
+        block: { r: 160 }, sit: { w: 480, front: 540, back: 80 }, clear: { w: 600, front: 320, back: 300 } },
+    { card: 'upekkha', kind: 'pond', id: 9, x: centreOf('upekkha'), d: 560, reach: 900,
+        block: { dd: 170, r: 760, rd: 200 }, sit: { w: 700, front: 520, back: 0 }, clear: { w: 960, front: 220, back: 560 } },
+    { card: 'desafio', kind: 'maze', id: 21, x: centreOf('desafio'), d: 900, reach: 900,
+        block: { dd: 260, r: 780, rd: 300 }, sit: { w: 380, front: 560, back: 0 }, clear: { w: 980, front: 320, back: 760 } },
+    { card: 'celebracion', kind: 'fire', id: 14, x: centreOf('celebracion'), d: 420, reach: 400,
+        block: { r: 150 }, sit: { w: 500, front: 480, back: 220 }, clear: { w: 520, front: 280, back: 280 } },
+];
+// The places between x0 and x1, wherever the zones come round: { P, x }
+function placesNear(x0, x1) {
+    const out = [];
+    for (const P of PLACES) {
+        for (let k = Math.ceil((x0 - P.x) / CYCLE_W), x = P.x + k * CYCLE_W; x <= x1; k++, x = P.x + k * CYCLE_W) out.push({ P, x });
+    }
+    return out;
+}
 const smooth = (t) => { const u = Math.max(0, Math.min(1, t)); return u * u * (3 - 2 * u); };
 // The zones at a place across the world: { a, b, t } (t: how far into b, 0 in the middle of a zone)
 function zonesAt(x) {
@@ -189,7 +215,7 @@ export function createWorld({ clouds = null, moon = null }) {
         return { ink: m('ink'), white: m('white'), sky: m('sky'), night: m('night'), sun: m('sun'), groundDay: m('groundDay'),
             groundNight: m('groundNight'), detailDay: m('detailDay'), detailNight: m('detailNight'), dark: z.a.dark + (z.b.dark - z.a.dark) * z.t };
     };
-    let screen = blend(zonesAt(1000));
+    let screen = blend(zonesAt(1000)), lastCam = 1000;
     // One of the colours a thing takes, as the zone where it stands has it (blended between two)
     const colourOf = (z, c) => ({ light: mixArr(z.a.palette[c].light, z.b.palette[c].light, z.t), ink: mixArr(z.a.palette[c].ink, z.b.palette[c].ink, z.t) });
     let clock = 0.2;                        // the cycle: 0 sunrise, 0.25 noon, 0.5 sunset, 0.75 midnight
@@ -228,11 +254,18 @@ export function createWorld({ clouds = null, moon = null }) {
             add({ kind: 'tick', x, d, color: pick(GREENS), strokes: strokes.map((st) => st.map((p) => jitter([p[0] * s, p[1] * s]))) });
         };
 
-        // her tree, where it stands (its stretch keeps clear round it for its own plants)
-        const treeHere = TREE.x >= index * STRETCH && TREE.x < (index + 1) * STRETCH && row === Math.floor((TREE.d + 180) / PATCH);
-        if (treeHere) add({ kind: 'tree', x: TREE.x, d: TREE.d, reach: 700 });
-        // nothing of the world stands on or just in front of its roots (as the camera moves it would cross them)
-        const clear = (p) => Math.abs(p.x - TREE.x) > 640 || p.d > TREE.d + 140 || p.d < TREE.d - 420;   // (its roots come forward)
+        // her tree and the zones' special places, where they stand (their stretch keeps clear round them)
+        const near = placesNear(index * STRETCH - 1200, (index + 1) * STRETCH + 1200);
+        for (const { P, x } of near) {
+            if (x < index * STRETCH || x >= (index + 1) * STRETCH || row !== Math.floor((P.d + 180) / PATCH)) continue;
+            if (P.kind === 'tree') add({ kind: 'tree', x, d: P.d, reach: 700, place: P });
+            else add({ kind: 'place', x, d: P.d, reach: P.reach, place: P, scale: 1 });
+        }
+        // nothing of the world stands on or just in front of them (as the camera moves it would cross them): her tree's
+        // roots come forward
+        const clear = (p) => near.every(({ P, x }) => P.kind === 'tree'
+            ? Math.abs(p.x - x) > 640 || p.d > P.d + 140 || p.d < P.d - 420
+            : Math.abs(p.x - x) > P.clear.w || p.d > P.d + P.clear.back || p.d < P.d - P.clear.front);
 
         for (let n = 0, m = 34; n < m; n++) { const p = at(); if (clear(p)) tick(p.x, p.d); }
         // her pieces and the zone's own, spread: ferns (the big ones with their sprout), pebbles, now and then a stack of
@@ -245,7 +278,7 @@ export function createWorld({ clouds = null, moon = null }) {
             for (const k of list) { w -= k.weight; if (w <= 0) { kind = k; break; } }
             const name = kind.names ? pick(kind.names) : kind.name;
             // (no stone in his way round her tree: he can always walk behind its trunk)
-            if (BLOCKS.has(name) && Math.abs(p.x - TREE.x) < 700 && p.d > TREE.d) continue;
+            if (BLOCKS.has(name) && near.some(({ P, x }) => P.kind === 'tree' && Math.abs(p.x - x) < 700 && p.d > P.d)) continue;
             const colour = kind.colour === 'green' ? pick(GREENS) : pick(STONES);
             add({ kind: 'piece', name, x: p.x, d: p.d, scale: 0.6 + r() * 0.3, flip: r() < 0.5 ? -1 : 1, sway: kind.sway ?? 0, color: colour,
                 zone: z, sprouts: WITH[name] ? sproutsFor(r, pick) : undefined });
@@ -305,13 +338,20 @@ export function createWorld({ clouds = null, moon = null }) {
             if (!ripple) ripple = { x: sid.x, d: sid.d, r: 0 };
             ripple.r = Math.min(1400, ripple.r + dt * 260);
         } else ripple = null;
+        // the place he meditates at answers him (its glow grows while he sits there, and fades when he gets up)
+        const at = sid.sitting ? placeAt(sid.x, sid.d) : null;
         for (const { i, items } of stretches.values()) {
             if (Math.abs(i * STRETCH - sid.x) > 3000) continue;
+            for (const item of items) {
+                if (item.kind !== 'place') continue;
+                const l = lifeOf(item), want = at && at.x === item.x && at.P === item.place ? 1 : 0;
+                l.glow = (l.glow ?? 0) + (want - (l.glow ?? 0)) * Math.min(1, dt * (want ? 0.5 : 0.8));
+            }
             for (const item of items) {
                 const dx = item.x - sid.x, dd = (item.d - sid.d) * 1.6, dist = Math.hypot(dx, dd);
                 // colour: as he walks by, and inside the wave while he sits
                 let c = colour.get(item.id) ?? 0;
-                const near = item.kind === 'tree' ? 950 : 170;
+                const near = item.kind === 'tree' ? 950 : item.kind === 'place' ? item.reach + 350 : 170;
                 if (dist < near) c = Math.min(1, c + dt * 0.9 * (1 - dist / near) * 2);
                 if (ripple && Math.hypot(item.x - ripple.x, (item.d - ripple.d) * 1.6) < ripple.r) c = Math.min(1, c + dt * 1.4);
                 if (c > 0) colour.set(item.id, c);
@@ -439,6 +479,51 @@ export function createWorld({ clouds = null, moon = null }) {
             part('crown', 1, { sway, layer: 'line' });
             break;
         }
+        case 'place': {
+            // a zone's special place, in front of the world's plants round it, answering him as he meditates there (g)
+            const P = item.place, g = l?.glow ?? 0, B = (name) => boxOf(name);
+            const at = (name, x, y, k = 1) => piece(c, name, x, y, k, P_, col, false);
+            const P_ = item.P;
+            const halo = (x, y, radius, rgb, a) => {
+                if (a <= 0.01) return;
+                const gr = c.createRadialGradient(x, y, 0, x, y, radius);
+                gr.addColorStop(0, `rgba(${rgb.join(',')},${a})`); gr.addColorStop(1, `rgba(${rgb.join(',')},0)`);
+                c.fillStyle = gr; c.beginPath(); c.arc(x, y, radius, 0, Math.PI * 2); c.fill();
+            };
+            if (P.kind === 'pair') {
+                // the two embracing breathe together, and hug closer as he meditates by them, in a warm light
+                const [, , w, h] = B('pair'), breath = 1 + 0.012 * Math.sin(time * 1.3) + 0.03 * g * Math.sin(time * 0.9);
+                halo(0, -h * 0.5, h * (0.6 + 0.4 * g), [255, 236, 200], 0.15 + 0.4 * g);
+                c.save(); c.scale(1 / breath, breath); at('pair', -w / 2, -h); c.restore();
+            } else if (P.kind === 'pond') {
+                // lying on the ground (seen from his height, squashed), with rings going out over it as he meditates by it
+                const [, , w, h] = B('pond'), flat = 0.5;
+                c.save(); c.scale(1, flat);
+                at('pond', -w / 2, -h);
+                c.strokeStyle = 'rgba(255,255,255,0.9)'; c.lineWidth = 6;
+                for (let n = 0; n < 3; n++) {
+                    const ph = (time * 0.25 + n / 3) % 1, a = (0.15 + 0.6 * g) * (1 - ph);
+                    if (a < 0.02) continue;
+                    c.globalAlpha *= a; c.beginPath(); c.ellipse(0, -h * 0.5, w * 0.08 + w * 0.3 * ph, h * 0.08 + h * 0.3 * ph, 0, 0, Math.PI * 2); c.stroke(); c.globalAlpha /= a;
+                }
+                c.restore();
+            } else if (P.kind === 'maze') {
+                // the labyrinth, far back, and the light at its heart (where the card has it), brighter as he meditates
+                const [, , w, h] = B('maze');
+                at('maze', -w / 2, -h);
+                const lx = (787 / 2160 - 0.5) * w, ly = -h + 179 / 1426 * h, pulse = 1 + 0.08 * Math.sin(time * 1.6);
+                halo(lx, ly, (120 + 300 * g) * pulse, [255, 241, 200], 0.45 + 0.45 * g);
+                halo(lx, ly, 50 * pulse, [255, 255, 240], 0.7 + 0.3 * g);
+            } else if (P.kind === 'fire') {
+                // the logs and the flame over them, flickering, growing as he meditates by it, with its warm light
+                const [, , lw, lh] = B('logs'), [, , fw, fh] = B('flame');
+                const grow = 1 + 0.45 * g, sy = (1 + 0.07 * Math.sin(time * 7.1) + 0.04 * Math.sin(time * 12.7)) * grow, sx = (1 - 0.05 * Math.sin(time * 8.3)) * grow;
+                halo(0, -lh * 0.6 - fh * 0.3 * grow, fh * 0.7 * grow, [255, 190, 150], 0.25 + 0.35 * g);
+                c.save(); c.translate(0, -lh * 0.45); c.scale(sx, sy); at('flame', -fw / 2, -fh); c.restore();
+                at('logs', -lw / 2, -lh);
+            }
+            break;
+        }
         case 'stipple': {
             c.fillStyle = mark_;
             for (const [x, y, rr] of item.dots) { c.beginPath(); c.arc(x, y, rr, 0, Math.PI * 2); c.fill(); }
@@ -453,6 +538,18 @@ export function createWorld({ clouds = null, moon = null }) {
     // The tree is a trunk with roots, not a flat card: it counts as standing TREE.behind further back than its foot, so
     // sitting at its roots, under its crown, he is in front of its trunk and its roots
     const order = (item) => item.kind === 'tree' ? item.d + TREE.behind : item.d;
+    // Where he is sitting, if it is at a place: under the crown of her tree (in front of its roots, too), or in front of
+    // a zone's place: { P, x }
+    function placeAt(x, d) {
+        for (const near of placesNear(x - 1500, x + 1500)) {
+            const { P } = near;
+            if (P.kind === 'tree') {
+                const crown = boxOf('crown'), middle = near.x + (crown[0] + crown[2] / 2 - TREE.foot.x) * TREE.scale;
+                if (Math.abs(x - middle) < crown[2] * TREE.scale * 0.42 && d > P.d - 520 && d < P.d + 200) return near;
+            } else if (Math.abs(x - near.x) < P.sit.w && d > P.d - P.sit.front && d < P.d + P.sit.back) return near;
+        }
+        return null;
+    }
     // (view.near, view.far: the depths at the bottom of the screen and at the horizon)
     function draw(c, view, keep, him = null) {
         const half = view.width / 2 / view.scaleAt(view.far) + 400;
@@ -485,6 +582,7 @@ export function createWorld({ clouds = null, moon = null }) {
     // it, useStarField.js); the sun by day and the moon by night, each rising from under the horizon, crossing the sky
     // and setting under it (the ground, drawn after, hides them); and its clouds, solid white as in the card
     function drawSky(c, view, top, bottom) {
+        lastCam = view.cam;
         screen = blend(zonesAt(view.cam));
         const L = light(), H = bottom - top;
         c.clearRect(0, top, view.width, H + 2);
@@ -561,11 +659,8 @@ export function createWorld({ clouds = null, moon = null }) {
         }
     }
 
-    // Whether a place (x, depth) is under the crown of her tree
-    const underCrown = (x, d) => {
-        const crown = boxOf('crown'), middle = TREE.x + (crown[0] + crown[2] / 2 - TREE.foot.x) * TREE.scale;
-        return Math.abs(x - middle) < crown[2] * TREE.scale * 0.42 && d > TREE.d - 520 && d < TREE.d + 200;   // (in front of its roots, too)
-    };
+    // The card of the place he is at (x, depth), if any: its id in src/data/cards.json
+    const placeCard = (x, d) => placeAt(x, d)?.P.id ?? null;
 
     // What stands in his way near x (within `range`): circles on the floor { x, d, r }
     function obstacles(x, d, range) {
@@ -573,7 +668,10 @@ export function createWorld({ clouds = null, moon = null }) {
         {
             for (const item of patches(x - range - 400, x + range + 400, d - range - 600, d + range + 600)) {
                 if (item.kind === 'tree') out.push({ x: item.x + TRUNK.dx, d: item.d + TRUNK.behind, r: TRUNK.r }, { x: item.x + ROOTS.dx, d: item.d + ROOTS.dd, r: ROOTS.r, rd: ROOTS.rd, low: true });
-                else if (item.kind === 'piece' && BLOCKS.has(item.name)) out.push({ x: item.x, d: item.d, r: boxOf(item.name)[2] * item.scale * 0.36 });
+                else if (item.kind === 'place' && item.place.block) {
+                    const b = item.place.block;
+                    out.push({ x: item.x, d: item.d + (b.dd ?? 0), r: b.r, ...(b.rd ? { rd: b.rd } : {}) });
+                } else if (item.kind === 'piece' && BLOCKS.has(item.name)) out.push({ x: item.x, d: item.d, r: boxOf(item.name)[2] * item.scale * 0.36 });
             }
         }
         return out.filter((o) => Math.abs(o.x - x) < range + o.r && Math.abs(o.d - d) < range + (o.rd ?? o.r) + 200);
@@ -582,5 +680,7 @@ export function createWorld({ clouds = null, moon = null }) {
     // (setClock: to look at a given hour from the console, 0 sunrise .. 0.75 midnight)
     // The colours of the zone on the screen, for the page: Sid's line and body, and the colour under the starry night
     const ink = () => css(screen.ink), white = () => css(screen.white), nightColour = () => css(screen.night);
-    return { update, draw, drawSky, drawGround, ground, night, ink, white, nightColour, underCrown, obstacles, setClock: (v) => { clock = ((v % 1) + 1) % 1; } };
+    // The card of the zone on the screen (its id), for the music
+    const zoneCard = () => { const z = zonesAt(lastCam); return (z.t < 0.5 ? z.a : z.b).id; };
+    return { update, draw, drawSky, drawGround, ground, night, ink, white, nightColour, placeCard, zoneCard, obstacles, setClock: (v) => { clock = ((v % 1) + 1) % 1; } };
 }

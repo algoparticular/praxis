@@ -10,16 +10,21 @@ import rig from './sid/sid.json';
 import { CICLOS, createWorld } from './sidWorld.js';
 import { createStarField } from '../composables/useStarField.js';
 import Rulito from '../components/Rulito.vue';
-import { play } from '../composables/useSound.js';
+import { play, setCardChord } from '../composables/useSound.js';
+import { chordFor } from '../data/cardChords.js';
+import { getCard } from '../data/cards.js';
 
 const ui = reactive({ bones: false, sitting: false, touch: false });
 const canvas = ref(null);
 const nightSky = ref(null), starCanvas = ref(null);   // the cards' starry night, behind the drawing (useStarField.js)
 let stars = null;
-// Sitting in lotus under the crown of her tree, after a moment (RULITO_AFTER) the rulito is born over his head, as in the
-// cards (Rulito.vue, in the red of Ciclos's), and stays while he sits; when he gets up its tail catches up with it
+// Sitting in lotus at a zone's special place (under the crown of her tree, by the two embracing, the pond, the
+// labyrinth, the fire), after a moment (RULITO_AFTER) the rulito is born over his head, as in the cards (Rulito.vue, in
+// the red of Ciclos's), and stays while he sits; when he gets up its tail catches up with it. Once it is whole the
+// affirmation of that place's card is written in the sky, by hand (teaching), and goes when he gets up
 const rulito = ref(null);
 const RULITO_AFTER = 3, RULITO_GROW = 2.2, RULITO_GO = 3.4;
+const teaching = reactive({ es: '', en: '', on: false, light: false, ink: CICLOS.ink });
 
 // --- The rig, in px of the source drawing (258 x 686): he faces +x (his eyes are on that side) ---
 const PIVOT = { x: 130, y: 518 };             // the middle of his bottom, where his hips are: the body bends about it
@@ -480,14 +485,22 @@ function update(dt, now) {
     world.update(dt, { x: state.x, d: state.d, sitting: meditating, pace: state.pace });
     // the rulito under the tree: born after a moment of sitting there, kept while he sits, gone when he gets up
     const seated = ui.sitting && Math.min(...state.legSit) > 0.9;
-    state.underTree = seated && world.underCrown(state.x, state.d) ? state.underTree + dt : 0;
-    if (state.underTree >= RULITO_AFTER && !state.rul) { state.rul = { age: 0, head: 0, tail: 0, pop: 0, full: false }; rulito.value?.reshape(); }
+    const card = seated ? world.placeCard(state.x, state.d) : null;
+    state.underTree = card ? state.underTree + dt : 0;
+    if (state.underTree >= RULITO_AFTER && !state.rul) { state.rul = { age: 0, head: 0, tail: 0, pop: 0, full: false, card }; rulito.value?.reshape(); }
+    // the music moves to the chord of the card of the zone he is in (src/data/cardChords.js), as on a card's page
+    const zone = world.zoneCard();
+    if (zone !== state.zone) { state.zone = zone; setCardChord(chordFor(zone)); }
     if (state.rul) {
         const r = state.rul;
         r.age += dt; r.pop = Math.max(0, r.pop - dt * 2.2);
         r.head = 1 - (1 - Math.min(1, r.age / RULITO_GROW)) ** 1.6;
-        if (r.head >= 1 && !r.full) { r.full = true; r.pop = 1; play('rulito'); }
-        if (!ui.sitting) r.tail = Math.min(1, r.tail + dt / RULITO_GO);
+        if (r.head >= 1 && !r.full) {
+            r.full = true; r.pop = 1; play('rulito');
+            const c = getCard(r.card);
+            if (c) Object.assign(teaching, { es: c.affirmation_es.trim(), en: c.affirmation_en.trim(), on: true });
+        }
+        if (!ui.sitting) { r.tail = Math.min(1, r.tail + dt / RULITO_GO); teaching.on = false; }
         if (r.tail >= 1) { state.rul = null; rulito.value?.frame({ width: 40 }); }
     }
     S.walk.to = walking;
@@ -777,6 +790,8 @@ function draw() {
     nightSky.value.style.opacity = dark.toFixed(3);
     if (nightSky.value.style.backgroundColor !== under) nightSky.value.style.backgroundColor = under;
     document.body.classList.toggle('lab-night', dark > 0.55);
+    teaching.light = dark > 0.55;
+    if (teaching.ink !== INK) teaching.ink = INK;
     c.fillStyle = world.ground();
     c.fillRect(0, horizon() - 4, W, view.h / view.k);
     const x0 = W / 2, near = state.camD - (view.h / view.k - state.ground) / view.floor * DEPTH;
@@ -955,6 +970,7 @@ onMounted(() => {
 });
 onBeforeUnmount(() => {
     document.body.classList.remove('lab-page', 'lab-night');
+    setCardChord(null);
     cancelAnimationFrame(raf);
     stars?.destroy();
     window.removeEventListener('resize', resize);
@@ -970,6 +986,12 @@ onBeforeUnmount(() => {
         <!-- the rulito draws itself on its own canvas, which this scene lays over his head -->
         <Rulito ref="rulito" class="offstage" color="#fc747c" />
         <canvas ref="canvas" @pointermove="onMove" @pointerdown="onDown" @pointerup="onUp" @pointercancel="onUp"></canvas>
+        <!-- the affirmation of the card of the place where he meditates, written by hand in the sky -->
+        <Transition name="teaching">
+            <p v-if="teaching.on" class="teaching" :class="{ light: teaching.light }" :style="{ color: teaching.light ? null : teaching.ink }">
+                {{ $i18n.locale === 'en' ? teaching.en : teaching.es }}
+            </p>
+        </Transition>
         <!-- the app's own header: back on the left, the sound and the menu on the right -->
         <Header :hasBack="true" :hasMenu="true" />
         <!-- on a computer, every button in a row at the bottom; on a phone he walks where a finger touches (and follows
@@ -1013,6 +1035,26 @@ canvas {
     width: 40px;
     visibility: hidden;
 }
+.teaching {
+    position: absolute;
+    left: 16px;
+    right: 16px;
+    top: calc(84px + env(safe-area-inset-top, 0px));
+    margin: 0 auto;
+    max-width: 560px;
+    text-align: center;
+    font-family: 'Caveat', 'Nunito', helvetica, sans-serif;
+    font-size: clamp(28px, 6vw, 40px);
+    line-height: 1.15;
+    pointer-events: none;
+    /* (a soft halo of the sky round the letters, so they read over a cloud, the sun or the moon) */
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.85), 0 0 22px rgba(255, 255, 255, 0.55);
+}
+.teaching.light { color: #F7F8F1; text-shadow: 0 0 10px rgba(10, 30, 60, 0.75), 0 0 22px rgba(10, 30, 60, 0.45); }
+.teaching-enter-active { transition: opacity 1.6s ease-out, transform 1.6s ease-out; }
+.teaching-leave-active { transition: opacity 0.9s ease-in; }
+.teaching-enter-from { opacity: 0; transform: translateY(8px); }
+.teaching-leave-to { opacity: 0; }
 .night-sky {
     position: absolute;
     left: 0;

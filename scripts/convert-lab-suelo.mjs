@@ -56,6 +56,16 @@ const PIECES = {
     stack: { from: 'belleza/cairn', unit: 1, inside: 'colour', dark: 122 },
     mushroomRow: { from: 'belleza/mushrooms', crop: [0, 42, 512, 141], unit: 0.9, inside: 'colour', dark: 122 },
     mushrooms: { from: 'celebracion/mushrooms', unit: 1.5, inside: 'colour', dark: 110 },
+    // The special places of the zones (one each; Ciclos's is her tree): Belleza's two beings embracing (their three layers
+    // put together as in the card), Upekkha's pond (its water and its line), Desafío's labyrinth, and Celebración's fire
+    // (its logs, and its flame apart, so it can flicker). compose: layers of the card put together over `canvas` (card px)
+    pair: { compose: [['belleza/left', 884, 1076], ['belleza/right', 820, 1222], ['belleza/legs', 707, 1654]], canvas: [700, 1070, 760, 810],
+        unit: 0.6, inside: 'colour', dark: 120 },
+    // (the card cuts the pond at its left edge: it is made whole with its mirror there, `mirror`)
+    pond: { compose: [['upekkha/water', 0, 1492], ['upekkha/pond', 21, 1184]], canvas: [26, 1180, 1004, 890], mirror: true, unit: 0.8, inside: 'colour', dark: 130 },
+    maze: { from: 'desafio/maze', unit: 0.75, inside: 'colour', dark: 120 },
+    logs: { from: 'celebracion/logs', unit: 0.62, inside: 'colour', dark: 120 },
+    flame: { from: 'celebracion/flame', unit: 0.34, inside: 'colour', dark: 40 },
     // Desafío's two pink mushrooms and Belleza's blue bush with its stone
     caps: { from: 'desafio/mushrooms', unit: 1.2, inside: 'colour', dark: 130 },
     bush: { from: 'belleza/bush', unit: 0.75, inside: 'colour', dark: 118 },
@@ -65,7 +75,24 @@ await mkdir(target, { recursive: true });
 const out = { pieces: {} };
 
 for (const [name, piece] of Object.entries(PIECES)) {
-    let img = sharp(path.join(assets, `${piece.from}.webp`)).ensureAlpha();
+    let img;
+    if (piece.compose) {
+        const [cx, cy, cw, ch] = piece.canvas, layers = [];
+        for (const [from, x, y] of piece.compose) {
+            const m = await sharp(path.join(assets, `${from}.webp`)).metadata();
+            // (only what falls on the canvas)
+            const left = Math.max(0, cx - x), top = Math.max(0, cy - y);
+            const w = Math.min(m.width - left, cx + cw - x - left), h = Math.min(m.height - top, cy + ch - y - top);
+            if (w <= 0 || h <= 0) continue;
+            layers.push({ input: await sharp(path.join(assets, `${from}.webp`)).extract({ left, top, width: w, height: h }).png().toBuffer(), left: x + left - cx, top: y + top - cy });
+        }
+        img = sharp(await sharp({ create: { width: cw, height: ch, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } }).composite(layers).png().toBuffer());
+    } else img = sharp(path.join(assets, `${piece.from}.webp`)).ensureAlpha();
+    if (piece.mirror) {
+        const half = await img.png().toBuffer(), m = await sharp(half).metadata();
+        img = sharp(await sharp({ create: { width: m.width * 2, height: m.height, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } })
+            .composite([{ input: await sharp(half).flop().toBuffer(), left: 0, top: 0 }, { input: half, left: m.width, top: 0 }]).png().toBuffer());
+    }
     if (piece.crop) img = img.extract({ left: piece.crop[0], top: piece.crop[1], width: piece.crop[2], height: piece.crop[3] });
     const { data, info } = await img.raw().toBuffer({ resolveWithObject: true });
     const W = info.width, H = info.height, N = W * H;
