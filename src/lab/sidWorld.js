@@ -1,8 +1,8 @@
 // The world round Sid in the puppet lab (/lab/sid): the little ticks of grass, a stipple and the streaks of the ground
 // drawn in code with a pen of ink, and her drawn pieces (originales/arbol, made into src/lab/arbol by
-// scripts/convert-lab-arbol.mjs: each piece's line, and what is inside it, painted in code): ferns, a sprout that curls
-// up into a bead, pebbles and a stack of them, each on the ground, spread over the world, and her tree ahead of him on
-// his way (TREE). It is endless, across and into the distance: it is made a patch at a time from where it is (the same
+// scripts/convert-lab-arbol.mjs: each piece's line, and what is inside it, painted in code): ferns (the big one with
+// the sprout that grows out of its middle and curls up into a bead, as she drew them), pebbles and a stack of them,
+// each on the ground, spread over the world, and her tree ahead of him on his way (TREE). It is endless, across and into the distance: it is made a patch at a time from where it is (the same
 // place is always the same), and only what is on the screen is drawn. Everything starts in ink and takes its colour
 // (one of the seven of the chakras) as he walks by it, and all round him when he sits in lotus (a wave goes out of
 // him); what has taken its colour keeps it. The palette, the clouds and the day are Ciclos's (CICLOS below): the ink of its
@@ -49,10 +49,13 @@ function tint(name, colour) {
 // (scale: 2.5 times as tall as Sid, from the foot of its mushrooms to the top of its crown, 1332 px of the drawing
 // against his 708; its line, about 11 px in the drawing, is then about 14, as his own outline)
 export const TREE = { x: 2000, d: 420, behind: 25, scale: 1.33, foot: { x: 640, y: 1358 } };
-// The pieces spread over the world, how often each comes, what colour it takes, and whether it sways
+// The pieces spread over the world, how often each comes, what colour it takes, and whether it sways. The sprout is not
+// one of them: it is part of the big fern (it grows out of its middle), so every big fern carries it where she drew it
+// (WITH), with a colour of its own and swaying a little more than the fronds
+const WITH = { fern: { name: 'sprout', sway: 0.5 } };
 const SCATTER = [
     { name: 'fern', weight: 3, sway: 0.5, colour: 'green' }, { name: 'fernSmall', weight: 3, sway: 0.6, colour: 'green' },
-    { name: 'fernLow', weight: 3, sway: 0.5, colour: 'green' }, { name: 'sprout', weight: 2, sway: 1, colour: 'warm' },
+    { name: 'fernLow', weight: 3, sway: 0.5, colour: 'green' },
     { name: 'pebble', weight: 2 }, { name: 'pebbles', weight: 2 }, { name: 'pebbleGrass', weight: 2 },
     { name: 'pebbleFlat', weight: 2 }, { name: 'cairn', weight: 1 },
 ];
@@ -60,7 +63,7 @@ const SCATTER = [
 // The big stones stand in his way (he walks round them; the small ones he steps over), and the tall plants are drawn
 // faint when they are just in front of him (the low ones, and the grass, hide his feet as he walks through them)
 const BLOCKS = new Set(['pebbleGrass', 'pebbleFlat', 'cairn']);
-const TALL = new Set(['fern', 'fernSmall', 'sprout', 'cairn']);
+const TALL = new Set(['fern', 'fernSmall', 'cairn']);
 // her tree's trunk on the floor: it stands a little behind its foot (its roots come forward), as wide as it looks
 // Her tree stands in his way where it is drawn: its trunk (just behind its foot, as wide as it is drawn just over its
 // roots, its middle a little left of the foot) and its roots, which spread wide and come forward over the floor (an
@@ -137,7 +140,7 @@ export function createWorld({ clouds = null, moon = null }) {
         const clear = (p) => Math.abs(p.x - TREE.x) > 640 || p.d > TREE.d + 140 || p.d < TREE.d - 420;   // (its roots come forward)
 
         for (let n = 0, m = 34; n < m; n++) { const p = at(); if (clear(p)) tick(p.x, p.d); }
-        // her pieces, spread: ferns, sprouts, pebbles, now and then a stack of them
+        // her pieces, spread: ferns (the big ones with their sprout), pebbles, now and then a stack of them
         const weights = SCATTER.reduce((t, k) => t + k.weight, 0);
         for (let n = 0, m = Math.round((3 + r() * 3) * 0.7); n < m; n++) {
             const p = at();
@@ -146,8 +149,9 @@ export function createWorld({ clouds = null, moon = null }) {
             for (const k of SCATTER) { w -= k.weight; if (w <= 0) { kind = k; break; } }
             // (no stone in his way round her tree: he can always walk behind its trunk)
             if (BLOCKS.has(kind.name) && Math.abs(p.x - TREE.x) < 700 && p.d > TREE.d) continue;
-            const colour = kind.colour === 'green' ? pick(GREENS) : kind.colour === 'warm' ? pick(WARM) : pick([4, 3, 5, 0]);
-            add({ kind: 'piece', name: kind.name, x: p.x, d: p.d, scale: 0.6 + r() * 0.3, flip: r() < 0.5 ? -1 : 1, sway: kind.sway ?? 0, color: colour });
+            const colour = kind.colour === 'green' ? pick(GREENS) : pick([4, 3, 5, 0]);
+            add({ kind: 'piece', name: kind.name, x: p.x, d: p.d, scale: 0.6 + r() * 0.3, flip: r() < 0.5 ? -1 : 1, sway: kind.sway ?? 0, color: colour,
+                withColor: WITH[kind.name] ? pick(WARM) : undefined });
         }
         // streaks on the hills, as the card's: short brush strokes lying along the ground (pills with round ends, a little
         // curved, now and then two in a row) and a few small ovals, in the ground's other colour
@@ -284,6 +288,14 @@ export function createWorld({ clouds = null, moon = null }) {
             const box = boxOf(item.name), k = item.scale;
             const lean = item.sway ? wind(item.x) * item.sway + (l?.bend ?? 0) * 0.5 : 0;
             c.save(); c.rotate(lean); c.scale(item.flip, 1);
+            // what grows out of it (the big fern's sprout), behind its fronds, where she drew it, bending a little more
+            const extra = WITH[item.name];
+            if (extra) {
+                const own = boxOf(extra.name);
+                c.save(); c.rotate(lean * extra.sway);
+                piece(c, extra.name, (own[0] - box[0]) * k - box[2] * k / 2, (own[1] - box[1]) * k - box[3] * k, k, PALETTE[item.withColor], col, !arbol.pieces[extra.name].fill);
+                c.restore();
+            }
             piece(c, item.name, -box[2] * k / 2, -box[3] * k, k, P, col, !arbol.pieces[item.name].fill);
             c.restore();
             break;
