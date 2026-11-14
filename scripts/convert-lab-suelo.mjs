@@ -15,7 +15,7 @@
 // Only the marks that belong to the piece are kept: the bigger bits of line in its box (a mark smaller than `keep` of
 // the biggest is a stray from the drawing beside it).
 // Usage: node scripts/convert-lab-suelo.mjs
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
@@ -51,23 +51,31 @@ const PIECES = {
     crystal: { from: 'upekkha/rocks', crop: [698, 552, 94, 76], unit: 1.35, inside: 'closed', keep: 0.2, paint: '#E8E2FA' },
     shrooms: { from: 'upekkha/rocks', crop: [864, 528, 94, 94], unit: 1.35, inside: 'closed', keep: 0.2, paint: '#F6E27A' },
     shroom: { from: 'upekkha/rocks', crop: [543, 428, 74, 78], unit: 1.35, inside: 'closed', keep: 0.2, paint: '#F6E27A' },
-    // Desafío's two stones, Belleza's stack of stones and its row of little mushrooms, Celebración's mushrooms
+    // Desafío's two stones and Celebración's mushrooms
     stones: { from: 'desafio/stones', unit: 1.15, inside: 'colour', dark: 130 },
-    stack: { from: 'belleza/cairn', unit: 1, inside: 'colour', dark: 122 },
-    mushroomRow: { from: 'belleza/mushrooms', crop: [0, 42, 512, 141], unit: 0.9, inside: 'colour', dark: 122 },
     mushrooms: { from: 'celebracion/mushrooms', unit: 1.5, inside: 'colour', dark: 110 },
-    // The special places of the zones (one each; Ciclos's is her tree): Belleza's two beings embracing (their three layers
-    // put together as in the card), Upekkha's pond (its water and its line), and Celebración's fire
-    // (its logs, and its flame apart, so it can flicker). compose: layers of the card put together over `canvas` (card px)
-    pair: { compose: [['belleza/left', 884, 1076], ['belleza/right', 820, 1222], ['belleza/legs', 707, 1654]], canvas: [700, 1070, 760, 810],
-        unit: 0.6, inside: 'colour', dark: 120 },
-    // (the card cuts the pond at its left edge: it is made whole with its mirror there, `mirror`)
+    // Upekkha's pond, the special place of its zone (its water and its line; the card cuts it at its left edge: it is made
+    // whole with its mirror there). compose: layers of the card put together over `canvas` (card px)
     pond: { compose: [['upekkha/water', 0, 1492], ['upekkha/pond', 21, 1184]], canvas: [26, 1180, 1004, 890], mirror: true, unit: 0.8, inside: 'colour', dark: 130 },
-    logs: { from: 'celebracion/logs', unit: 0.62, inside: 'colour', dark: 120 },
-    flame: { from: 'celebracion/flame', unit: 0.34, inside: 'colour', dark: 40 },
-    // Desafío's two pink mushrooms and Belleza's blue bush with its stone
+    // Desafío's two pink mushrooms
     caps: { from: 'desafio/mushrooms', unit: 1.2, inside: 'colour', dark: 130 },
-    bush: { from: 'belleza/bush', unit: 0.75, inside: 'colour', dark: 118 },
+    // Metta's little glowing plants (dark, all line)
+    ...Object.fromEntries([0, 1, 2, 3, 4].map((i) => [`bloom${i}`, { from: `metta/flower${i}`, unit: 1.3, inside: 'colour', dark: 120 }])),
+    // The special places and the characters round them, each its own picture, where the card has it (`card`: [scene,
+    // layer], its box read from the scene's json, so the lab can set them round the place as in the card; all of one place
+    // at one unit). Metta: Sid's nest of mushrooms, its six beings, its fox and its kitten
+    nest: { card: ['metta', 'nest'], unit: 1, inside: 'colour', dark: 90 },
+    ...Object.fromEntries([0, 1, 2, 3, 4, 5].map((i) => [`metta${i}`, { card: ['metta', `being${i}`], unit: 1, inside: 'colour', dark: 70 }])),
+    mettaFox: { card: ['metta', 'fox'], unit: 1, inside: 'colour', dark: 70 },
+    mettaKitten: { card: ['metta', 'kitten'], unit: 1, inside: 'colour', dark: 70 },
+    // Celebración: the fire (its logs, and its flame with the yellow one inside it, apart, so it can flicker) and everyone
+    // round it: the two Samas, the one sitting, the foxes, the cats, the hairy ones
+    logs: { card: ['celebracion', 'logs'], unit: 0.8, inside: 'colour', dark: 120 },
+    flame: { compose: [['celebracion/flame', 854, 777], ['celebracion/heart', 910, 1276]], canvas: [854, 777, 450, 1069], unit: 0.8, inside: 'colour', dark: 40 },
+    ...Object.fromEntries(['samaLeft', 'samaRight', 'seated', 'foxLeft', 'foxRight', 'catBack', 'catFront', 'trio', 'hairy', 'pink']
+        .map((k) => [`fire_${k}`, { card: ['celebracion', k], unit: 0.8, inside: 'colour', dark: 110 }])),
+    // Desafío: Vulpes
+    vulpes: { card: ['desafio', 'fox'], unit: 0.55, inside: 'colour', dark: 130 },
 };
 
 await mkdir(target, { recursive: true });
@@ -75,7 +83,14 @@ const out = { pieces: {} };
 
 for (const [name, piece] of Object.entries(PIECES)) {
     let img;
+    // (a layer of a card, where the card has it: its box, from the scene's json)
+    if (piece.card) {
+        const [scene, layer] = piece.card, json = JSON.parse(await readFile(path.join(root, 'src', 'composables', `${scene}Scene.json`), 'utf8'));
+        const boxes = typeof json.boxes === 'string' ? JSON.parse(json.boxes) : json.boxes;
+        piece.from = `${scene}/${layer}`; piece.at = boxes[layer].slice(0, 2);
+    }
     if (piece.compose) {
+        piece.at = piece.canvas.slice(0, 2);
         const [cx, cy, cw, ch] = piece.canvas, layers = [];
         for (const [from, x, y] of piece.compose) {
             const m = await sharp(path.join(assets, `${from}.webp`)).metadata();
@@ -200,6 +215,8 @@ for (const [name, piece] of Object.entries(PIECES)) {
     }
     await sharp(own, { raw: { width: bw, height: bh, channels: 4 } }).webp({ quality: 90, alphaQuality: 90 }).toFile(path.join(target, `${name}-colour.webp`));
     out.pieces[name] = { box: [0, 0, bw, bh], unit: piece.unit, fill: hasInside, colour: true };
+    // (where it is in its card, card px, for the pieces of a place: its top left)
+    if (piece.at && !piece.mirror) out.pieces[name].at = [piece.at[0] + (piece.crop?.[0] ?? 0) + x0, piece.at[1] + (piece.crop?.[1] ?? 0) + y0];
     console.log(name, bw, bh);
 }
 await writeFile(path.join(target, 'suelo.json'), JSON.stringify(out) + '\n');

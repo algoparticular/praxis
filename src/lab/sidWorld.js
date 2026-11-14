@@ -4,7 +4,7 @@
 // the sprout that grows out of its middle and curls up into a bead, as she drew them), pebbles and a stack of them,
 // each on the ground, spread over the world, and her tree ahead of him on his way (TREE); and plants, stones and
 // mushrooms cut out of the cards' scenes the same way (src/lab/suelo, by scripts/convert-lab-suelo.mjs): Ciclos's fans
-// and tufts of grass, Upekkha's mushrooms and crystals, Desafío's and Belleza's stones, Belleza's and Celebración's
+// and tufts of grass, Upekkha's mushrooms and crystals, Desafío's stones, Metta's little glowing plants, Celebración's
 // mushrooms. It is endless, across and into the distance: it is made a patch at a time from where it is (the same
 // place is always the same), and only what is on the screen is drawn. Everything starts in ink and takes its colour
 // (one of the seven of the chakras) as he walks by it, and all round him when he sits in lotus (a wave goes out of
@@ -74,6 +74,8 @@ const GRASS = ['grass0', 'grass1', 'grass2', 'grass3', 'grass4', 'grass5', 'gras
 
 // The big stones stand in his way (he walks round them; the small ones he steps over), and the tall plants are drawn
 // faint when they are just in front of him (the low ones, and the grass, hide his feet as he walks through them)
+// what lets go of glowing spores by night (they rise from its caps and fade)
+const SPORES = new Set(['shrooms', 'shroom', 'grove', 'mushrooms', 'caps', 'bloom0', 'bloom1', 'bloom2', 'bloom3', 'bloom4']);
 const BLOCKS = new Set(['pebbleGrass', 'pebbleFlat', 'cairn', 'grove', 'stones', 'stack']);
 const TALL = new Set(['fern', 'fernSmall', 'cairn', 'grove']);
 // her tree's trunk on the floor: it stands a little behind its foot (its roots come forward), as wide as it looks
@@ -112,7 +114,7 @@ export const CICLOS = {
 };
 
 // The zones of the world, one card each, across it (ZONE wide, in this order to his right; endless both ways, so going
-// on they come round again): Ciclos round her tree, Belleza, Upekkha, Desafío and Celebración (to the left of Ciclos).
+// on they come round again): Ciclos round her tree, Metta, Upekkha, Desafío and Celebración (to the left of Ciclos).
 // Each has its card's colours: its ink (also Sid's line) and its white (Sid's body), its sky by day and by night (the
 // night is the cards' starry sky over it), its ground and the streaks and marks on it by day and by night, its sun,
 // the colours things take, and its own pieces (cut out of its scene's layers, shown in its own colours once coloured).
@@ -121,13 +123,14 @@ export const CICLOS = {
 const ZONES = [
     { card: 'ciclos', id: 15, ...CICLOS, own: [{ names: ['fan0', 'fan1', 'fan2', 'fan3'], weight: 3, sway: 0.35 }], grass: true },
     {
-        card: 'belleza', id: 13, ink: '#3C549C', white: '#EEF5CC', sky: '#48B4B4', night: '#1F4E86', sun: '#F7C9B6',
-        groundDay: '#90CCA8', groundNight: '#6FB3A6', detailDay: '#E4F0B4', detailNight: '#2C4A86',
+        // (a night card: its day is the colours of its two lights, the great yellow one and the turquoise one)
+        card: 'metta', id: 8, ink: '#18243C', white: '#FCFCFC', sky: '#FCE49C', night: '#303C6C', sun: '#00B4CC',
+        groundDay: '#305490', groundNight: '#3C64A8', detailDay: '#00B4CC', detailNight: '#1E3A70',
         colours: [
-            { light: '#F0B4A8', ink: '#B4665F' }, { light: '#48B4B4', ink: '#1F7F86' }, { light: '#6C84C8', ink: '#3C549C' },
-            { light: '#E4F0B4', ink: '#8FA060' }, { light: '#90CCA8', ink: '#4F8F6A' }, { light: '#F7D774', ink: '#A88A2A' },
+            { light: '#F09CB4', ink: '#B05A78' }, { light: '#00B4CC', ink: '#007C8C' }, { light: '#FCE49C', ink: '#A88A3A' },
+            { light: '#3C84C0', ink: '#245490' }, { light: '#305490', ink: '#18243C' }, { light: '#FCFCFC', ink: '#8C9CB4' },
         ],
-        own: [{ name: 'stack', weight: 1 }, { name: 'mushroomRow', weight: 2 }, { name: 'bush', weight: 2, sway: 0.2 }],
+        own: [{ names: ['bloom0', 'bloom1', 'bloom2', 'bloom3', 'bloom4'], weight: 5, sway: 0.4 }],
     },
     {
         card: 'upekkha', id: 9, ink: '#60549C', white: '#FCFCFC', sky: '#B4E4D8', night: '#2490A8', sun: '#FC9C78',
@@ -166,18 +169,27 @@ const ZONE = 8000, ZONE_START = -2000, BLEND = 1000;    // (about 19 s walking a
 const CYCLE_W = ZONE * ZONES.length;   // (the zones come round again after this)
 const centreOf = (card) => ZONE_START + ZONE * (ZONES.findIndex((z) => z.card === card) + 0.5);
 // The special place of each zone, in its middle (and again wherever the zones come round): Ciclos's is her tree; then
-// Belleza's two beings embracing, Upekkha's pond and Celebración's fire (Desafío has none yet). Sitting in
+// Metta's nest of mushrooms with its beings round it, Upekkha's pond and Celebración's fire with everyone round it
+// (Desafío has none yet: only Vulpes is there). Its pieces (parts) and the characters round it (crowd, each its own
+// thing on the ground, breathing, hopping when he comes, leaning to him) stand where the card has them: across, as far
+// from its anchor (the foot of its main piece, card px) as in the card, and back, as far as they are up in the card
+// (depthK times: the card's ground is seen nearly flat). Sitting in
 // lotus at one (sit: how far to its sides, in front of it and behind it) the rulito is born over him and the
 // affirmation of its card (id) is written in the sky; the place answers too (`glow`). block: what of it stands in his
 // way (a circle, or an ellipse rd deep, dd behind its foot); clear: the ground kept free round it of the world's plants
 const PLACES = [
     { card: 'ciclos', kind: 'tree', id: 15, x: TREE.x, d: TREE.d },
-    { card: 'belleza', kind: 'pair', id: 13, x: centreOf('belleza'), d: 380, reach: 450,
-        block: { r: 160 }, sit: { w: 480, front: 540, back: 80 }, clear: { w: 600, front: 320, back: 300 } },
+    { card: 'metta', kind: 'nest', id: 8, x: centreOf('metta'), d: 420, reach: 1100, anchor: [1082, 1729], depthK: 1.1,
+        parts: ['nest'], crowd: ['metta0', 'metta1', 'metta2', 'metta3', 'metta4', 'metta5', 'mettaFox', 'mettaKitten'],
+        block: { r: 330 }, sit: { w: 520, front: 620, back: 40 }, clear: { w: 1150, front: 420, back: 620 } },
     { card: 'upekkha', kind: 'pond', id: 9, x: centreOf('upekkha'), d: 560, reach: 900,
         block: { dd: 170, r: 760, rd: 200 }, sit: { w: 700, front: 520, back: 0 }, clear: { w: 960, front: 220, back: 560 } },
-    { card: 'celebracion', kind: 'fire', id: 14, x: centreOf('celebracion'), d: 420, reach: 400,
-        block: { r: 150 }, sit: { w: 500, front: 480, back: 220 }, clear: { w: 520, front: 280, back: 280 } },
+    { card: 'celebracion', kind: 'fire', id: 14, x: centreOf('celebracion'), d: 420, reach: 950, anchor: [1067, 1925], depthK: 1.1,
+        parts: ['flame', 'logs'], crowd: ['fire_samaLeft', 'fire_samaRight', 'fire_seated', 'fire_foxLeft', 'fire_foxRight',
+            'fire_catBack', 'fire_catFront', 'fire_trio', 'fire_hairy', 'fire_pink'],
+        block: { r: 220 }, sit: { w: 560, front: 520, back: 160 }, clear: { w: 950, front: 420, back: 760 } },
+    { card: 'desafio', kind: 'none', id: 21, x: centreOf('desafio'), d: 420, reach: 450, anchor: [1202, 2083], depthK: 1.1,
+        parts: [], crowd: ['vulpes'], clear: { w: 480, front: 240, back: 240 } },
 ];
 // The places between x0 and x1, wherever the zones come round: { P, x }
 function placesNear(x0, x1) {
@@ -259,6 +271,15 @@ export function createWorld({ clouds = null, moon = null }) {
             if (P.kind === 'tree') add({ kind: 'tree', x, d: P.d, reach: 700, place: P });
             else add({ kind: 'place', x, d: P.d, reach: P.reach, place: P, scale: 1 });
         }
+        // the characters round the places, each where it stands (in the stretch and the row its own place falls in)
+        for (const { P, x } of near) {
+            for (const name of P.crowd ?? []) {
+                const at = PIECES[name].at, [, , w, h] = PIECES[name].box, u = PIECES[name].unit;
+                const bx = x + (at[0] + w / 2 - P.anchor[0]) * u, bd = P.d - (at[1] + h - P.anchor[1]) * u * P.depthK;
+                if (bx < index * STRETCH || bx >= (index + 1) * STRETCH || row !== Math.floor((bd + 180) / PATCH)) continue;
+                add({ kind: 'being', name, x: bx, d: bd, place: P, at: x, phase: r() * 10, reach: w * u });
+            }
+        }
         // nothing of the world stands on or just in front of them (as the camera moves it would cross them): her tree's
         // roots come forward
         const clear = (p) => near.every(({ P, x }) => P.kind === 'tree'
@@ -286,6 +307,11 @@ export function createWorld({ clouds = null, moon = null }) {
             const p = at(), z = zonesAt(p.x);
             if (!clear(p) || !(r() < z.t ? z.b : z.a).grass) continue;
             add({ kind: 'piece', name: pick(GRASS), x: p.x, d: p.d, scale: 0.45 + r() * 0.35, flip: r() < 0.5 ? -1 : 1, sway: 0.7, color: pick([1, 1, 0, 4]) });
+        }
+        // fireflies, by night: a few in every stretch, low over the ground
+        for (let n = 0, m = 2 + Math.floor(r() * 3); n < m; n++) {
+            const p = at();
+            add({ kind: 'firefly', x: p.x, d: p.d, high: 40 + r() * 120, phase: r() * 100, reach: 60 });
         }
         // streaks on the hills, as the card's: short brush strokes lying along the ground (pills with round ends, a little
         // curved, now and then two in a row) and a few small ovals, in the ground's other colour
@@ -341,15 +367,24 @@ export function createWorld({ clouds = null, moon = null }) {
         for (const { i, items } of stretches.values()) {
             if (Math.abs(i * STRETCH - sid.x) > 3000) continue;
             for (const item of items) {
-                if (item.kind !== 'place') continue;
-                const l = lifeOf(item), want = at && at.x === item.x && at.P === item.place ? 1 : 0;
+                if (item.kind !== 'place' && item.kind !== 'being') continue;
+                const l = lifeOf(item), home = item.kind === 'place' ? item.x : item.at;
+                const want = at && at.x === home && at.P === item.place ? 1 : 0;
                 l.glow = (l.glow ?? 0) + (want - (l.glow ?? 0)) * Math.min(1, dt * (want ? 0.5 : 0.8));
+                if (item.kind !== 'being') continue;
+                // it hops once when he comes near (and again only after he has gone a little way off), and leans to him
+                const dist = Math.hypot(item.x - sid.x, (item.d - sid.d) * 1.6);
+                if (dist < 300 && !l.near && !sid.sitting) { l.near = true; l.hop = 1; }
+                if (dist > 520) l.near = false;
+                l.hop = Math.max(0, (l.hop ?? 0) - dt * 2.4);
+                const toward = dist < 700 ? Math.sign(sid.x - item.x) : 0;
+                l.lean = (l.lean ?? 0) + (toward - (l.lean ?? 0)) * Math.min(1, dt * 2);
             }
             for (const item of items) {
                 const dx = item.x - sid.x, dd = (item.d - sid.d) * 1.6, dist = Math.hypot(dx, dd);
                 // colour: as he walks by, and inside the wave while he sits
                 let c = colour.get(item.id) ?? 0;
-                const near = item.kind === 'tree' ? 950 : item.kind === 'place' ? item.reach + 350 : 170;
+                const near = item.kind === 'tree' ? 950 : item.kind === 'place' ? item.reach + 350 : item.kind === 'being' ? 320 : 170;
                 if (dist < near) c = Math.min(1, c + dt * 0.9 * (1 - dist / near) * 2);
                 if (ripple && Math.hypot(item.x - ripple.x, (item.d - ripple.d) * 1.6) < ripple.r) c = Math.min(1, c + dt * 1.4);
                 if (c > 0) colour.set(item.id, c);
@@ -455,6 +490,16 @@ export function createWorld({ clouds = null, moon = null }) {
                 c.restore();
             }
             piece(c, item.name, -box[2] * k / 2, -box[3] * k, k, P, col, !PIECES[item.name].fill);
+            // by night the mushrooms and the glowing plants let go of spores, which rise from them and fade
+            const dark = night();
+            if (dark > 0.05 && SPORES.has(item.name)) {
+                const seed = (item.x * 0.013) % 10;
+                for (let n = 0; n < 4; n++) {
+                    const t = (time * 0.11 + n / 4 + seed) % 1, a = dark * Math.sin(Math.PI * t) * 0.85;
+                    const sx = (Math.sin(t * 5 + n * 2.1 + seed) * 0.25 + (n / 3 - 0.5) * 0.4) * box[2] * k, sy = -box[3] * k * 0.75 - t * 170;
+                    c.fillStyle = `rgba(255,248,220,${a})`; c.beginPath(); c.arc(sx, sy, 2.6 + 1.4 * (1 - t), 0, Math.PI * 2); c.fill();
+                }
+            }
             c.restore();
             break;
         }
@@ -488,11 +533,14 @@ export function createWorld({ clouds = null, moon = null }) {
                 gr.addColorStop(0, `rgba(${rgb.join(',')},${a})`); gr.addColorStop(1, `rgba(${rgb.join(',')},0)`);
                 c.fillStyle = gr; c.beginPath(); c.arc(x, y, radius, 0, Math.PI * 2); c.fill();
             };
-            if (P.kind === 'pair') {
-                // the two embracing breathe together, and hug closer as he meditates by them, in a warm light
-                const [, , w, h] = B('pair'), breath = 1 + 0.012 * Math.sin(time * 1.3) + 0.03 * g * Math.sin(time * 0.9);
-                halo(0, -h * 0.5, h * (0.6 + 0.4 * g), [255, 236, 200], 0.15 + 0.4 * g);
-                c.save(); c.scale(1 / breath, breath); at('pair', -w / 2, -h); c.restore();
+            // (a piece of the place, where the card has it round its anchor)
+            const part = (name) => { const a = PIECES[name].at, u = PIECES[name].unit; return [(a[0] - P.anchor[0]) * u, (a[1] - P.anchor[1]) * u]; };
+            if (P.kind === 'nest') {
+                // Metta's nest of mushrooms, breathing a little, in the warm light of the great one as he meditates by it
+                const [, , w, h] = B('nest'), [x, y] = part('nest'), breath = 1 + 0.01 * Math.sin(time * 1.1);
+                halo(x + w / 2, y + h * 0.4, w * (0.7 + 0.5 * g), [252, 228, 156], 0.12 + 0.45 * g);
+                halo(x + w / 2, y + h * 0.3, w * (0.35 + 0.3 * g), [0, 180, 204], 0.08 + 0.35 * g);
+                c.save(); c.scale(1, breath); at('nest', x, y); c.restore();
             } else if (P.kind === 'pond') {
                 // lying on the ground (seen from his height, squashed), with rings going out over it as he meditates by it
                 const [, , w, h] = B('pond'), flat = 0.5;
@@ -506,13 +554,44 @@ export function createWorld({ clouds = null, moon = null }) {
                 }
                 c.restore();
             } else if (P.kind === 'fire') {
-                // the logs and the flame over them, flickering, growing as he meditates by it, with its warm light
-                const [, , lw, lh] = B('logs'), [, , fw, fh] = B('flame');
-                const grow = 1 + 0.45 * g, sy = (1 + 0.07 * Math.sin(time * 7.1) + 0.04 * Math.sin(time * 12.7)) * grow, sx = (1 - 0.05 * Math.sin(time * 8.3)) * grow;
-                halo(0, -lh * 0.6 - fh * 0.3 * grow, fh * 0.7 * grow, [255, 190, 150], 0.25 + 0.35 * g);
-                c.save(); c.translate(0, -lh * 0.45); c.scale(sx, sy); at('flame', -fw / 2, -fh); c.restore();
-                at('logs', -lw / 2, -lh);
+                // the logs and the flame over them (with the yellow one inside it), flickering about its foot, growing as he
+                // meditates by it, with its warm light
+                const [, , fw, fh] = B('flame'), [fx, fy] = part('flame'), [lx, ly] = part('logs');
+                const grow = 1 + 0.2 * g, sy = (1 + 0.07 * Math.sin(time * 7.1) + 0.04 * Math.sin(time * 12.7)) * grow, sx = (1 - 0.05 * Math.sin(time * 8.3)) * grow;
+                const footX = fx + fw / 2, footY = fy + fh;
+                halo(footX, footY - fh * 0.35 * grow, fh * 0.75 * grow, [255, 190, 150], 0.25 + 0.35 * g);
+                c.save(); c.translate(footX, footY); c.scale(sx, sy); at('flame', -fw / 2, -fh); c.restore();
+                at('logs', lx, ly);
             }
+            break;
+        }
+        case 'firefly': {
+            // a warm light drifting and blinking low over the ground, only by night
+            const dark = night();
+            if (dark < 0.05) break;
+            const ph = item.phase, blink = Math.max(0, Math.sin(time * 1.7 + ph)) ** 2;
+            const x = Math.sin(time * 0.5 + ph) * 40 + Math.sin(time * 1.3 + ph * 2) * 12, y = -item.high - Math.sin(time * 0.8 + ph * 3) * 26;
+            const a = dark * (0.25 + 0.75 * blink);
+            const gr = c.createRadialGradient(x, y, 0, x, y, 22);
+            gr.addColorStop(0, `rgba(255,236,150,${0.55 * a})`); gr.addColorStop(1, 'rgba(255,236,150,0)');
+            c.fillStyle = gr; c.beginPath(); c.arc(x, y, 22, 0, Math.PI * 2); c.fill();
+            c.fillStyle = `rgba(255,250,214,${a})`; c.beginPath(); c.arc(x, y, 3.2, 0, Math.PI * 2); c.fill();
+            break;
+        }
+        case 'being': {
+            // one of the characters round a place: it breathes, hops when he comes, leans a little towards him, and in the
+            // light of the place while he meditates there
+            const [, , w, h] = boxOf(item.name), g = l?.glow ?? 0, hop = l?.hop ?? 0;
+            const breath = 1 + 0.018 * Math.sin(time * 1.5 + item.phase), lift = Math.sin(Math.PI * hop) * 30;
+            const lean = (l?.lean ?? 0) * 0.06 + wind(item.x) * 0.1;
+            if (g > 0.01) {
+                const gr = c.createRadialGradient(0, -h * 0.5, 0, 0, -h * 0.5, h * 0.7);
+                gr.addColorStop(0, `rgba(255,240,200,${0.35 * g})`); gr.addColorStop(1, 'rgba(255,240,200,0)');
+                c.fillStyle = gr; c.beginPath(); c.arc(0, -h * 0.5, h * 0.7, 0, Math.PI * 2); c.fill();
+            }
+            c.save(); c.translate(0, -lift); c.rotate(lean); c.scale(1 / Math.sqrt(breath), breath);
+            piece(c, item.name, -w / 2, -h, 1, item.P, col, false);
+            c.restore();
             break;
         }
         case 'stipple': {
@@ -537,7 +616,7 @@ export function createWorld({ clouds = null, moon = null }) {
             if (P.kind === 'tree') {
                 const crown = boxOf('crown'), middle = near.x + (crown[0] + crown[2] / 2 - TREE.foot.x) * TREE.scale;
                 if (Math.abs(x - middle) < crown[2] * TREE.scale * 0.42 && d > P.d - 520 && d < P.d + 200) return near;
-            } else if (Math.abs(x - near.x) < P.sit.w && d > P.d - P.sit.front && d < P.d + P.sit.back) return near;
+            } else if (P.sit && Math.abs(x - near.x) < P.sit.w && d > P.d - P.sit.front && d < P.d + P.sit.back) return near;
         }
         return null;
     }

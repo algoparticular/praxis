@@ -965,7 +965,8 @@ onMounted(() => {
     window.addEventListener('blur', release);
     resize();
     window.addEventListener('resize', resize);
-    stars = createStarField(starCanvas.value, nightSky.value, { pace: () => state.pace });
+    // (a shooting star that passes near sounds, as in the app's other night skies; only when the night is out)
+    stars = createStarField(starCanvas.value, nightSky.value, { pace: () => state.pace, onShoot: () => { if (world.night() > 0.5) play('star'); } });
     raf = requestAnimationFrame(loop);
 });
 onBeforeUnmount(() => {
