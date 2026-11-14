@@ -1107,6 +1107,9 @@ body.lab-page header #menuButton {
     filter: brightness(0) opacity(0.78);
 }
 body.lab-page header #menuButton.active { filter: none; }
+/* the sound and menu buttons stay over the open menu, so it can be closed (elsewhere their drop shadow, a filter, puts
+   them over it; here, without it while the menu is open or by night, they would be left under it) */
+body.lab-page header .navContainer.right { position: relative; z-index: 1; }
 /* by night (and in Celebración's clearing) the icons stay cream, over the dark sky */
 body.lab-page.lab-night header .navContainer button,
 body.lab-page.lab-night header #soundButton,
