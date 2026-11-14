@@ -2,7 +2,10 @@
 // drawn in code with a pen of ink, and her drawn pieces (originales/arbol, made into src/lab/arbol by
 // scripts/convert-lab-arbol.mjs: each piece's line, and what is inside it, painted in code): ferns (the big one with
 // the sprout that grows out of its middle and curls up into a bead, as she drew them), pebbles and a stack of them,
-// each on the ground, spread over the world, and her tree ahead of him on his way (TREE). It is endless, across and into the distance: it is made a patch at a time from where it is (the same
+// each on the ground, spread over the world, and her tree ahead of him on his way (TREE); and plants, stones and
+// mushrooms cut out of the cards' scenes the same way (src/lab/suelo, by scripts/convert-lab-suelo.mjs): Ciclos's fans
+// and tufts of grass, Upekkha's mushrooms and crystals, Desafío's and Belleza's stones, Belleza's and Celebración's
+// mushrooms. It is endless, across and into the distance: it is made a patch at a time from where it is (the same
 // place is always the same), and only what is on the screen is drawn. Everything starts in ink and takes its colour
 // (one of the seven of the chakras) as he walks by it, and all round him when he sits in lotus (a wave goes out of
 // him); what has taken its colour keeps it. The palette, the clouds and the day are Ciclos's (CICLOS below): the ink of its
@@ -15,9 +18,11 @@
 import ciclos from '../composables/ciclosScene.json';
 import { decodeCloud, sampleCloud } from '../composables/stippleCloud.js';
 import arbol from './arbol/arbol.json';
+import suelo from './suelo/suelo.json';
 
-// Her pieces: the line and what is inside it, as pictures (tinted in code)
-const URLS = import.meta.glob('./arbol/*.webp', { eager: true, query: '?url', import: 'default' });
+// Her pieces, and the plants, stones and mushrooms cut out of the cards' scenes (src/lab/suelo, made by
+// scripts/convert-lab-suelo.mjs): the line and what is inside it, as pictures (tinted in code)
+const URLS = import.meta.glob(['./arbol/*.webp', './suelo/*.webp'], { eager: true, query: '?url', import: 'default' });
 const PICTURES = {};
 if (typeof Image !== 'undefined') {
     for (const [file, url] of Object.entries(URLS)) {
@@ -28,7 +33,9 @@ if (typeof Image !== 'undefined') {
 const ready = (img) => img?.complete && img.naturalWidth > 0;
 // Sizes and places are in units of 0.4 of her drawing, whatever size the pictures were made at (arbol.scale)
 const UNIT = 0.4 / arbol.scale;
-const boxOf = (name) => arbol.pieces[name].box.map((v) => v * UNIT);
+// every piece, hers and the scenes' (each of these with its own unit: how many units of the world a pixel of it is)
+const PIECES = { ...arbol.pieces, ...suelo.pieces };
+const boxOf = (name) => PIECES[name].box.map((v) => v * (PIECES[name].unit ?? UNIT));
 // A picture in one colour (its transparency kept), made once per colour
 const TINTS = new Map();
 function tint(name, colour) {
@@ -54,17 +61,26 @@ export const TREE = { x: 2000, d: 420, behind: 25, scale: 1.33, foot: { x: 640, 
 // (WITH), with a colour of its own and swaying a little more than the fronds: most carry one, some two (the second
 // curling and leaning the other way, a little shorter, so their beads stand apart) and a few none. foot: where its stem meets the fern, across its picture (px)
 const WITH = { fern: { name: 'sprout', sway: 0.5, foot: 146 } };
+// (names: one of them, at random). From the cards' scenes: Ciclos's fans, Upekkha's grove of big mushrooms with its
+// crystals, its crystals and its small mushrooms, Desafío's stones, Belleza's stack of stones and its row of little
+// mushrooms, and Celebración's mushrooms; Ciclos's tufts of grass are spread apart (GRASS)
 const SCATTER = [
     { name: 'fern', weight: 3, sway: 0.5, colour: 'green' }, { name: 'fernSmall', weight: 3, sway: 0.6, colour: 'green' },
     { name: 'fernLow', weight: 3, sway: 0.5, colour: 'green' },
     { name: 'pebble', weight: 2 }, { name: 'pebbles', weight: 2 }, { name: 'pebbleGrass', weight: 2 },
     { name: 'pebbleFlat', weight: 2 }, { name: 'cairn', weight: 1 },
+    { names: ['fan0', 'fan1', 'fan2', 'fan3'], weight: 3, sway: 0.35, colour: 'fan' },
+    { name: 'grove', weight: 0.5, colour: 'mushroom' },
+    { names: ['crystals', 'crystalsSmall', 'crystal'], weight: 1.5, colour: 'crystal' },
+    { names: ['shrooms', 'shroom', 'mushrooms', 'mushroomRow'], weight: 2, colour: 'mushroom' },
+    { name: 'stones', weight: 1 }, { name: 'stack', weight: 0.6 },
 ];
+const GRASS = ['grass0', 'grass1', 'grass2', 'grass3', 'grass4', 'grass5', 'grass6'];
 
 // The big stones stand in his way (he walks round them; the small ones he steps over), and the tall plants are drawn
 // faint when they are just in front of him (the low ones, and the grass, hide his feet as he walks through them)
-const BLOCKS = new Set(['pebbleGrass', 'pebbleFlat', 'cairn']);
-const TALL = new Set(['fern', 'fernSmall', 'cairn']);
+const BLOCKS = new Set(['pebbleGrass', 'pebbleFlat', 'cairn', 'grove', 'stones', 'stack']);
+const TALL = new Set(['fern', 'fernSmall', 'cairn', 'grove']);
 // her tree's trunk on the floor: it stands a little behind its foot (its roots come forward), as wide as it looks
 // Her tree stands in his way where it is drawn: its trunk (just behind its foot, as wide as it is drawn just over its
 // roots, its middle a little left of the foot) and its roots, which spread wide and come forward over the floor (an
@@ -103,6 +119,9 @@ const PALETTE = CICLOS.colours.map((c) => ({ light: hex(c.light), ink: hex(c.ink
 const PART_COLOUR = { cap: 2, stem: null };   // the mushrooms of the tree: their caps Ciclos's coral, their stems cream
 const GREENS = [1, 0, 1, 3];    // the ground's plants: mostly its green and its teal (and its yellow)
 const WARM = [2, 5, 3, 0];      // the beads of the sprouts
+// what the scenes' pieces take: the fans their pink (or the coral), the mushrooms the warm ones, the crystals the teal,
+// the pink and the yellow; the stones, as hers, the tan, the yellow, the pink and the teal
+const TAKES = { green: GREENS, fan: [5, 5, 2], mushroom: [2, 5, 3], crystal: [0, 5, 3], stone: [4, 3, 5, 0] };
 const mixRgb = (a, b, t) => `rgb(${a.map((v, i) => Math.round(v + (b[i] - v) * t)).join(',')})`;
 
 export function createWorld({ clouds = null, moon = null }) {
@@ -150,18 +169,26 @@ export function createWorld({ clouds = null, moon = null }) {
         const clear = (p) => Math.abs(p.x - TREE.x) > 640 || p.d > TREE.d + 140 || p.d < TREE.d - 420;   // (its roots come forward)
 
         for (let n = 0, m = 34; n < m; n++) { const p = at(); if (clear(p)) tick(p.x, p.d); }
-        // her pieces, spread: ferns (the big ones with their sprout), pebbles, now and then a stack of them
+        // her pieces and the scenes', spread: ferns (the big ones with their sprout), pebbles, now and then a stack of them,
+        // fans, mushrooms, crystals, stones
         const weights = SCATTER.reduce((t, k) => t + k.weight, 0);
-        for (let n = 0, m = Math.round((3 + r() * 3) * 0.7); n < m; n++) {
+        for (let n = 0, m = Math.round((4 + r() * 3) * 0.8); n < m; n++) {
             const p = at();
             if (!clear(p)) continue;
             let w = r() * weights, kind = SCATTER[0];
             for (const k of SCATTER) { w -= k.weight; if (w <= 0) { kind = k; break; } }
+            const name = kind.names ? pick(kind.names) : kind.name;
             // (no stone in his way round her tree: he can always walk behind its trunk)
-            if (BLOCKS.has(kind.name) && Math.abs(p.x - TREE.x) < 700 && p.d > TREE.d) continue;
-            const colour = kind.colour === 'green' ? pick(GREENS) : pick([4, 3, 5, 0]);
-            add({ kind: 'piece', name: kind.name, x: p.x, d: p.d, scale: 0.6 + r() * 0.3, flip: r() < 0.5 ? -1 : 1, sway: kind.sway ?? 0, color: colour,
-                sprouts: WITH[kind.name] ? sproutsFor(r, pick) : undefined });
+            if (BLOCKS.has(name) && Math.abs(p.x - TREE.x) < 700 && p.d > TREE.d) continue;
+            const colour = pick(TAKES[kind.colour ?? 'stone']);
+            add({ kind: 'piece', name, x: p.x, d: p.d, scale: 0.6 + r() * 0.3, flip: r() < 0.5 ? -1 : 1, sway: kind.sway ?? 0, color: colour,
+                sprouts: WITH[name] ? sproutsFor(r, pick) : undefined });
+        }
+        // Ciclos's tufts of grass, a few in every stretch, swaying
+        for (let n = 0, m = 2 + Math.floor(r() * 3); n < m; n++) {
+            const p = at();
+            if (!clear(p)) continue;
+            add({ kind: 'piece', name: pick(GRASS), x: p.x, d: p.d, scale: 0.45 + r() * 0.35, flip: r() < 0.5 ? -1 : 1, sway: 0.7, color: pick([1, 1, 0, 4]) });
         }
         // streaks on the hills, as the card's: short brush strokes lying along the ground (pills with round ends, a little
         // curved, now and then two in a row) and a few small ovals, in the ground's other colour
@@ -259,12 +286,12 @@ export function createWorld({ clouds = null, moon = null }) {
     // (layer: 'fill' or 'line' draws only that part, so the tree can put its crown's colour behind its trunk)
     function piece(c, name, left, top, k, P, col, tintLine = false, layer = 'both') {
         const box = boxOf(name), w = box[2] * k, h = box[3] * k;
-        if (arbol.pieces[name].fill && layer !== 'line') {
+        if (PIECES[name].fill && layer !== 'line') {
             const base = tint(`${name}-fill`, CICLOS.white), coloured = col > 0.01 && tint(`${name}-fill`, `rgb(${P.light.join(',')})`);
             if (base) c.drawImage(base, left, top, w, h);
             if (coloured) { c.globalAlpha *= col; c.drawImage(coloured, left, top, w, h); c.globalAlpha /= col; }
             // its parts with a colour of their own (the mushrooms at the foot of the trunk), or none (cream)
-            for (const part of arbol.pieces[name].parts ?? []) {
+            for (const part of PIECES[name].parts ?? []) {
                 const Q = PALETTE[PART_COLOUR[part]], file = `${name}-${part}-fill`;
                 const cream = tint(file, CICLOS.white), own = Q && col > 0.01 && tint(file, `rgb(${Q.light.join(',')})`);
                 if (cream) c.drawImage(cream, left, top, w, h);
@@ -307,10 +334,10 @@ export function createWorld({ clouds = null, moon = null }) {
                 c.save(); c.translate(fx, fy);
                 c.rotate(lean * extra.sway + sp.tilt + (sp.phase ? wind(item.x + sp.phase * 400) * 0.3 : 0));
                 c.scale(sp.flip * sp.size, sp.size);
-                piece(c, extra.name, -foot * k, -own[3] * k, k, PALETTE[sp.color], col, !arbol.pieces[extra.name].fill);
+                piece(c, extra.name, -foot * k, -own[3] * k, k, PALETTE[sp.color], col, !PIECES[extra.name].fill);
                 c.restore();
             }
-            piece(c, item.name, -box[2] * k / 2, -box[3] * k, k, P, col, !arbol.pieces[item.name].fill);
+            piece(c, item.name, -box[2] * k / 2, -box[3] * k, k, P, col, !PIECES[item.name].fill);
             c.restore();
             break;
         }

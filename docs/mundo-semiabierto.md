@@ -14,7 +14,7 @@ Decidido con Juan Manuel:
 ## Qué hay hoy (el punto de partida)
 
 - `src/lab/LabSid.vue`: Sid títere en Canvas 2D (camina pose por pose como en *The Animator's Survival Kit*, gira en el espacio, salta, saluda, se estira, medita en loto como un Buda; controles en la computadora y en el celular).
-- `src/lab/sidWorld.js`: el mundo infinito por tramos en la paleta de Ciclos (`CICLOS`), tinta que se colorea, día y noche, sol vivo, luna, estrellas (`useStarField.js`), nubes, y el árbol de la ilustradora (`src/lab/arbol`, por `scripts/convert-lab-arbol.mjs`) con su tronco sólido y sus raíces que se saltan (`obstacles()`); sentado bajo su copa nace el rulito; meditando, el tiempo del mundo casi se detiene.
+- `src/lab/sidWorld.js`: el mundo infinito por tramos en la paleta de Ciclos (`CICLOS`), tinta que se colorea, día y noche, sol vivo, luna, estrellas (`useStarField.js`), nubes, y el árbol de la ilustradora (`src/lab/arbol`, por `scripts/convert-lab-arbol.mjs`) con su tronco sólido y sus raíces que se saltan (`obstacles()`); plantas, piedras y hongos recortados de las escenas (Ciclos, Upekkha, Desafío, Belleza, Celebración; `src/lab/suelo`, por `scripts/convert-lab-suelo.mjs`); sentado bajo su copa nace el rulito; meditando, el tiempo del mundo casi se detiene.
 - Se entra desde el ícono del laberinto del footer del inicio.
 
 ## Primer prototipo (propuesto): una pieza de cada cosa
