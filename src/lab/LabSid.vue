@@ -24,7 +24,7 @@ const RULITO_AFTER = 3, RULITO_GROW = 2.2, RULITO_GO = 3.4;
 // --- The rig, in px of the source drawing (258 x 686): he faces +x (his eyes are on that side) ---
 const PIVOT = { x: 130, y: 518 };             // the middle of his bottom, where his hips are: the body bends about it
 const TALL = 512;                             // from his bottom to the top of his head
-const INK = CICLOS.ink;                          // his line and his white: Ciclos's (sidWorld.js)
+let INK = CICLOS.ink;                            // his line and his white: those of the zone he is in (sidWorld.js)
 // His proportions as Nekkhamma's Sid standing (the drawing he is cut from): head 306 px of the source (to the pinch of
 // his waist), torso 181, legs 187 from his body to the floor: his legs as long as his torso, about 0.6 of his head
 // (Viriya's walker has them a little longer, 0.8). Limbs as thick as his outline.
@@ -714,7 +714,8 @@ function drawMark(c, x0) {
     }
     c.globalAlpha = 1;
 }
-const LINE_W = 15, FILL = CICLOS.white;     // (about as thick as the line of her tree beside him)
+const LINE_W = 15;          // (about as thick as the line of her tree beside him)
+let FILL = CICLOS.white;
 function codeBody(c, f) {
     // turned to us his silhouette is the same widths, row by row, set straight about his middle
     const S0 = rig.silhouette, fr = f.front;
@@ -770,7 +771,12 @@ function draw() {
 
     // The floor, back to the horizon, and him on it at his depth (smaller and nearer the middle the farther back)
     world.drawSky(c, { width: W, cam: state.cam }, 0, horizon());
-    nightSky.value.style.opacity = world.night().toFixed(3);
+    // the zone's colours: his line and body, the colour under the starry night, and the header's icons cream by night
+    INK = world.ink(); FILL = world.white();
+    const dark = world.night(), under = world.nightColour();
+    nightSky.value.style.opacity = dark.toFixed(3);
+    if (nightSky.value.style.backgroundColor !== under) nightSky.value.style.backgroundColor = under;
+    document.body.classList.toggle('lab-night', dark > 0.55);
     c.fillStyle = world.ground();
     c.fillRect(0, horizon() - 4, W, view.h / view.k);
     const x0 = W / 2, near = state.camD - (view.h / view.k - state.ground) / view.floor * DEPTH;
@@ -948,7 +954,7 @@ onMounted(() => {
     raf = requestAnimationFrame(loop);
 });
 onBeforeUnmount(() => {
-    document.body.classList.remove('lab-page');
+    document.body.classList.remove('lab-page', 'lab-night');
     cancelAnimationFrame(raf);
     stars?.destroy();
     window.removeEventListener('resize', resize);
@@ -1101,4 +1107,8 @@ body.lab-page header #menuButton {
     filter: brightness(0) opacity(0.78);
 }
 body.lab-page header #menuButton.active { filter: none; }
+/* by night (and in Celebración's clearing) the icons stay cream, over the dark sky */
+body.lab-page.lab-night header .navContainer button,
+body.lab-page.lab-night header #soundButton,
+body.lab-page.lab-night header #menuButton { filter: none; }
 </style>

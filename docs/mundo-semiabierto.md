@@ -14,7 +14,7 @@ Decidido con Juan Manuel:
 ## Qué hay hoy (el punto de partida)
 
 - `src/lab/LabSid.vue`: Sid títere en Canvas 2D (camina pose por pose como en *The Animator's Survival Kit*, gira en el espacio, salta, saluda, se estira, medita en loto como un Buda; controles en la computadora y en el celular).
-- `src/lab/sidWorld.js`: el mundo infinito por tramos en la paleta de Ciclos (`CICLOS`), tinta que se colorea, día y noche, sol vivo, luna, estrellas (`useStarField.js`), nubes, y el árbol de la ilustradora (`src/lab/arbol`, por `scripts/convert-lab-arbol.mjs`) con su tronco sólido y sus raíces que se saltan (`obstacles()`); sentado bajo su copa nace el rulito; meditando, el tiempo del mundo casi se detiene.
+- `src/lab/sidWorld.js`: el mundo infinito por tramos en la paleta de Ciclos (`CICLOS`), tinta que se colorea, día y noche, sol vivo, luna, estrellas (`useStarField.js`), nubes, y el árbol de la ilustradora (`src/lab/arbol`, por `scripts/convert-lab-arbol.mjs`) con su tronco sólido y sus raíces que se saltan (`obstacles()`); plantas, piedras y hongos recortados de las escenas (Ciclos, Upekkha, Desafío, Belleza, Celebración; `src/lab/suelo`, por `scripts/convert-lab-suelo.mjs`); sentado bajo su copa nace el rulito; meditando, el tiempo del mundo casi se detiene.
 - Se entra desde el ícono del laberinto del footer del inicio.
 
 ## Primer prototipo (propuesto): una pieza de cada cosa
@@ -27,6 +27,8 @@ Decidido con Juan Manuel:
 6. **Memoria.** Un módulo chico (`src/lab/worldMemory.js`): lo plantado, las semillas, lo coloreado y los personajes conocidos, en `localStorage` con try/catch (si no hay, el mundo funciona igual, sin recordar).
 
 Ir de a una, probando cada pieza en el teléfono antes de la siguiente.
+
+**Hecho: las zonas.** El mundo está en zonas a lo ancho, una por carta (`ZONES` en `sidWorld.js`): Ciclos alrededor del árbol, y hacia la derecha Belleza, Upekkha, Desafío y Celebración (que queda a la izquierda de Ciclos, y donde siempre es de noche); siguiendo, vuelven a empezar. Cada una cambia todo: la tinta y el blanco (también los de Sid), el cielo de día y de noche, el suelo y sus vetas, el sol y los colores que toman las cosas; cada zona mide 8000 px (unos 19 s caminando, así que se camina un rato antes de cambiar de carta) y entre dos zonas se mezclan en unos 1000 px (unos 2 s). Cada carta pone sus propias plantas, piedras y hongos en su zona, que al colorearse se ven con sus colores originales.
 
 ## Preguntas abiertas (a decidir con Juan Manuel antes de empezar)
 

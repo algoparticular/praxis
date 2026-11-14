@@ -51,4 +51,7 @@ export default defineConfig({
       },
     }),
   ],
+  // The puppet lab's pieces (src/lab/arbol, src/lab/suelo) are many small pictures: they stay files, not base64 inside
+  // its JavaScript (they would double the lab's chunk)
+  build: { assetsInlineLimit: (file) => (file.includes('/src/lab/') ? false : undefined) },
 })
