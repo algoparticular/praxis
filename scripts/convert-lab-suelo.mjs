@@ -57,13 +57,12 @@ const PIECES = {
     mushroomRow: { from: 'belleza/mushrooms', crop: [0, 42, 512, 141], unit: 0.9, inside: 'colour', dark: 122 },
     mushrooms: { from: 'celebracion/mushrooms', unit: 1.5, inside: 'colour', dark: 110 },
     // The special places of the zones (one each; Ciclos's is her tree): Belleza's two beings embracing (their three layers
-    // put together as in the card), Upekkha's pond (its water and its line), Desafío's labyrinth, and Celebración's fire
+    // put together as in the card), Upekkha's pond (its water and its line), and Celebración's fire
     // (its logs, and its flame apart, so it can flicker). compose: layers of the card put together over `canvas` (card px)
     pair: { compose: [['belleza/left', 884, 1076], ['belleza/right', 820, 1222], ['belleza/legs', 707, 1654]], canvas: [700, 1070, 760, 810],
         unit: 0.6, inside: 'colour', dark: 120 },
     // (the card cuts the pond at its left edge: it is made whole with its mirror there, `mirror`)
     pond: { compose: [['upekkha/water', 0, 1492], ['upekkha/pond', 21, 1184]], canvas: [26, 1180, 1004, 890], mirror: true, unit: 0.8, inside: 'colour', dark: 130 },
-    maze: { from: 'desafio/maze', unit: 0.75, inside: 'colour', dark: 120 },
     logs: { from: 'celebracion/logs', unit: 0.62, inside: 'colour', dark: 120 },
     flame: { from: 'celebracion/flame', unit: 0.34, inside: 'colour', dark: 40 },
     // Desafío's two pink mushrooms and Belleza's blue bush with its stone

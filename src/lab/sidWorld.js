@@ -166,7 +166,7 @@ const ZONE = 8000, ZONE_START = -2000, BLEND = 1000;    // (about 19 s walking a
 const CYCLE_W = ZONE * ZONES.length;   // (the zones come round again after this)
 const centreOf = (card) => ZONE_START + ZONE * (ZONES.findIndex((z) => z.card === card) + 0.5);
 // The special place of each zone, in its middle (and again wherever the zones come round): Ciclos's is her tree; then
-// Belleza's two beings embracing, Upekkha's pond, Desafío's labyrinth (far back, big) and Celebración's fire. Sitting in
+// Belleza's two beings embracing, Upekkha's pond and Celebración's fire (Desafío has none yet). Sitting in
 // lotus at one (sit: how far to its sides, in front of it and behind it) the rulito is born over him and the
 // affirmation of its card (id) is written in the sky; the place answers too (`glow`). block: what of it stands in his
 // way (a circle, or an ellipse rd deep, dd behind its foot); clear: the ground kept free round it of the world's plants
@@ -176,8 +176,6 @@ const PLACES = [
         block: { r: 160 }, sit: { w: 480, front: 540, back: 80 }, clear: { w: 600, front: 320, back: 300 } },
     { card: 'upekkha', kind: 'pond', id: 9, x: centreOf('upekkha'), d: 560, reach: 900,
         block: { dd: 170, r: 760, rd: 200 }, sit: { w: 700, front: 520, back: 0 }, clear: { w: 960, front: 220, back: 560 } },
-    { card: 'desafio', kind: 'maze', id: 21, x: centreOf('desafio'), d: 900, reach: 900,
-        block: { dd: 260, r: 780, rd: 300 }, sit: { w: 380, front: 560, back: 0 }, clear: { w: 980, front: 320, back: 760 } },
     { card: 'celebracion', kind: 'fire', id: 14, x: centreOf('celebracion'), d: 420, reach: 400,
         block: { r: 150 }, sit: { w: 500, front: 480, back: 220 }, clear: { w: 520, front: 280, back: 280 } },
 ];
@@ -507,13 +505,6 @@ export function createWorld({ clouds = null, moon = null }) {
                     c.globalAlpha *= a; c.beginPath(); c.ellipse(0, -h * 0.5, w * 0.08 + w * 0.3 * ph, h * 0.08 + h * 0.3 * ph, 0, 0, Math.PI * 2); c.stroke(); c.globalAlpha /= a;
                 }
                 c.restore();
-            } else if (P.kind === 'maze') {
-                // the labyrinth, far back, and the light at its heart (where the card has it), brighter as he meditates
-                const [, , w, h] = B('maze');
-                at('maze', -w / 2, -h);
-                const lx = (787 / 2160 - 0.5) * w, ly = -h + 179 / 1426 * h, pulse = 1 + 0.08 * Math.sin(time * 1.6);
-                halo(lx, ly, (120 + 300 * g) * pulse, [255, 241, 200], 0.45 + 0.45 * g);
-                halo(lx, ly, 50 * pulse, [255, 255, 240], 0.7 + 0.3 * g);
             } else if (P.kind === 'fire') {
                 // the logs and the flame over them, flickering, growing as he meditates by it, with its warm light
                 const [, , lw, lh] = B('logs'), [, , fw, fh] = B('flame');

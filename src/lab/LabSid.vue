@@ -19,7 +19,7 @@ const canvas = ref(null);
 const nightSky = ref(null), starCanvas = ref(null);   // the cards' starry night, behind the drawing (useStarField.js)
 let stars = null;
 // Sitting in lotus at a zone's special place (under the crown of her tree, by the two embracing, the pond, the
-// labyrinth, the fire), after a moment (RULITO_AFTER) the rulito is born over his head, as in the cards (Rulito.vue, in
+// the fire), after a moment (RULITO_AFTER) the rulito is born over his head, as in the cards (Rulito.vue, in
 // the red of Ciclos's), and stays while he sits; when he gets up its tail catches up with it. Once it is whole the
 // affirmation of that place's card is written in the sky, by hand (teaching), and goes when he gets up
 const rulito = ref(null);
