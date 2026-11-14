@@ -1,7 +1,8 @@
 // Plants, stones and mushrooms of the cards' scenes for the puppet lab's world (/lab/sid), cut out of the layers already
 // in public/assets (no originals needed): the fans and the tufts of grass of Ciclos (its own plants, in the world's own
-// palette), the mushrooms and crystals of Upekkha's line drawing, the stones of Desafío, the stack of stones and the
-// little mushrooms of Belleza, and the mushrooms of Celebración. Each piece is made, as her tree's pieces are
+// palette), the mushrooms and crystals of Upekkha's line drawing, the stones and pink mushrooms of Desafío, the little
+// glowing plants of Metta, the mushrooms of Celebración, and the zones' special places and their characters (Metta's
+// nest and beings, Upekkha's pond, Celebración's fire and everyone round it, Vulpes). Each piece is made, as her tree's pieces are
 // (scripts/convert-lab-arbol.mjs), into src/lab/suelo/NAME.webp (its line, as transparency, so the lab can tint it) and
 // NAME-fill.webp (what is inside its line, white over transparent, so the lab can paint it in code), and
 // src/lab/suelo/suelo.json: the size of every piece's picture and how many units of the world each of its pixels is
@@ -15,7 +16,7 @@
 // Only the marks that belong to the piece are kept: the bigger bits of line in its box (a mark smaller than `keep` of
 // the biggest is a stray from the drawing beside it).
 // Usage: node scripts/convert-lab-suelo.mjs
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
@@ -51,21 +52,62 @@ const PIECES = {
     crystal: { from: 'upekkha/rocks', crop: [698, 552, 94, 76], unit: 1.35, inside: 'closed', keep: 0.2, paint: '#E8E2FA' },
     shrooms: { from: 'upekkha/rocks', crop: [864, 528, 94, 94], unit: 1.35, inside: 'closed', keep: 0.2, paint: '#F6E27A' },
     shroom: { from: 'upekkha/rocks', crop: [543, 428, 74, 78], unit: 1.35, inside: 'closed', keep: 0.2, paint: '#F6E27A' },
-    // Desafío's two stones, Belleza's stack of stones and its row of little mushrooms, Celebración's mushrooms
+    // Desafío's two stones and Celebración's mushrooms
     stones: { from: 'desafio/stones', unit: 1.15, inside: 'colour', dark: 130 },
-    stack: { from: 'belleza/cairn', unit: 1, inside: 'colour', dark: 122 },
-    mushroomRow: { from: 'belleza/mushrooms', crop: [0, 42, 512, 141], unit: 0.9, inside: 'colour', dark: 122 },
     mushrooms: { from: 'celebracion/mushrooms', unit: 1.5, inside: 'colour', dark: 110 },
-    // Desafío's two pink mushrooms and Belleza's blue bush with its stone
+    // Upekkha's pond, the special place of its zone (its water and its line; the card cuts it at its left edge: it is made
+    // whole with its mirror there). compose: layers of the card put together over `canvas` (card px)
+    pond: { compose: [['upekkha/water', 0, 1492], ['upekkha/pond', 21, 1184]], canvas: [26, 1180, 1004, 890], mirror: true, unit: 0.8, inside: 'colour', dark: 130 },
+    // Desafío's two pink mushrooms
     caps: { from: 'desafio/mushrooms', unit: 1.2, inside: 'colour', dark: 130 },
-    bush: { from: 'belleza/bush', unit: 0.75, inside: 'colour', dark: 118 },
+    // Metta's little glowing plants (dark, all line)
+    ...Object.fromEntries([0, 1, 2, 3, 4].map((i) => [`bloom${i}`, { from: `metta/flower${i}`, unit: 1.3, inside: 'colour', dark: 120 }])),
+    // The special places and the characters round them, each its own picture, where the card has it (`card`: [scene,
+    // layer], its box read from the scene's json, so the lab can set them round the place as in the card; all of one place
+    // at one unit). Metta: Sid's nest of mushrooms, its six beings, its fox and its kitten
+    nest: { card: ['metta', 'nest'], unit: 1, inside: 'colour', dark: 90 },
+    ...Object.fromEntries([0, 1, 2, 3, 4, 5].map((i) => [`metta${i}`, { card: ['metta', `being${i}`], unit: 1, inside: 'colour', dark: 70 }])),
+    mettaFox: { card: ['metta', 'fox'], unit: 1, inside: 'colour', dark: 70 },
+    mettaKitten: { card: ['metta', 'kitten'], unit: 1, inside: 'colour', dark: 70 },
+    // Celebración: the fire (its logs, and its flame with the yellow one inside it, apart, so it can flicker) and everyone
+    // round it: the two Samas, the one sitting, the foxes, the cats, the hairy ones
+    logs: { card: ['celebracion', 'logs'], unit: 0.8, inside: 'colour', dark: 120 },
+    flame: { compose: [['celebracion/flame', 854, 777], ['celebracion/heart', 910, 1276]], canvas: [854, 777, 450, 1069], unit: 0.8, inside: 'colour', dark: 40 },
+    ...Object.fromEntries(['samaLeft', 'samaRight', 'seated', 'foxLeft', 'foxRight', 'catBack', 'catFront', 'trio', 'hairy', 'pink']
+        .map((k) => [`fire_${k}`, { card: ['celebracion', k], unit: 0.8, inside: 'colour', dark: 110 }])),
+    // Desafío: Vulpes
+    vulpes: { card: ['desafio', 'fox'], unit: 0.55, inside: 'colour', dark: 130 },
 };
 
 await mkdir(target, { recursive: true });
 const out = { pieces: {} };
 
 for (const [name, piece] of Object.entries(PIECES)) {
-    let img = sharp(path.join(assets, `${piece.from}.webp`)).ensureAlpha();
+    let img;
+    // (a layer of a card, where the card has it: its box, from the scene's json)
+    if (piece.card) {
+        const [scene, layer] = piece.card, json = JSON.parse(await readFile(path.join(root, 'src', 'composables', `${scene}Scene.json`), 'utf8'));
+        const boxes = typeof json.boxes === 'string' ? JSON.parse(json.boxes) : json.boxes;
+        piece.from = `${scene}/${layer}`; piece.at = boxes[layer].slice(0, 2);
+    }
+    if (piece.compose) {
+        piece.at = piece.canvas.slice(0, 2);
+        const [cx, cy, cw, ch] = piece.canvas, layers = [];
+        for (const [from, x, y] of piece.compose) {
+            const m = await sharp(path.join(assets, `${from}.webp`)).metadata();
+            // (only what falls on the canvas)
+            const left = Math.max(0, cx - x), top = Math.max(0, cy - y);
+            const w = Math.min(m.width - left, cx + cw - x - left), h = Math.min(m.height - top, cy + ch - y - top);
+            if (w <= 0 || h <= 0) continue;
+            layers.push({ input: await sharp(path.join(assets, `${from}.webp`)).extract({ left, top, width: w, height: h }).png().toBuffer(), left: x + left - cx, top: y + top - cy });
+        }
+        img = sharp(await sharp({ create: { width: cw, height: ch, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } }).composite(layers).png().toBuffer());
+    } else img = sharp(path.join(assets, `${piece.from}.webp`)).ensureAlpha();
+    if (piece.mirror) {
+        const half = await img.png().toBuffer(), m = await sharp(half).metadata();
+        img = sharp(await sharp({ create: { width: m.width * 2, height: m.height, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } })
+            .composite([{ input: await sharp(half).flop().toBuffer(), left: 0, top: 0 }, { input: half, left: m.width, top: 0 }]).png().toBuffer());
+    }
     if (piece.crop) img = img.extract({ left: piece.crop[0], top: piece.crop[1], width: piece.crop[2], height: piece.crop[3] });
     const { data, info } = await img.raw().toBuffer({ resolveWithObject: true });
     const W = info.width, H = info.height, N = W * H;
@@ -174,6 +216,8 @@ for (const [name, piece] of Object.entries(PIECES)) {
     }
     await sharp(own, { raw: { width: bw, height: bh, channels: 4 } }).webp({ quality: 90, alphaQuality: 90 }).toFile(path.join(target, `${name}-colour.webp`));
     out.pieces[name] = { box: [0, 0, bw, bh], unit: piece.unit, fill: hasInside, colour: true };
+    // (where it is in its card, card px, for the pieces of a place: its top left)
+    if (piece.at && !piece.mirror) out.pieces[name].at = [piece.at[0] + (piece.crop?.[0] ?? 0) + x0, piece.at[1] + (piece.crop?.[1] ?? 0) + y0];
     console.log(name, bw, bh);
 }
 await writeFile(path.join(target, 'suelo.json'), JSON.stringify(out) + '\n');
