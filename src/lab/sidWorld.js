@@ -162,7 +162,7 @@ const ZONES = [
     rgb: Object.fromEntries(['ink', 'white', 'sky', 'night', 'sun', 'groundDay', 'groundNight', 'detailDay', 'detailNight'].map((k) => [k, hex(z[k])])),
     palette: z.colours.map((c) => ({ light: hex(c.light), ink: hex(c.ink) })),
 }));
-const ZONE = 5000, ZONE_START = -1500, BLEND = 1000;    // (about 12 s walking across one; Ciclos from -1500, round her tree)
+const ZONE = 8000, ZONE_START = -2000, BLEND = 1000;    // (about 19 s walking across one; Ciclos from -2000, round her tree)
 const smooth = (t) => { const u = Math.max(0, Math.min(1, t)); return u * u * (3 - 2 * u); };
 // The zones at a place across the world: { a, b, t } (t: how far into b, 0 in the middle of a zone)
 function zonesAt(x) {
