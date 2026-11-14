@@ -131,7 +131,7 @@ const ZONES = [
     },
     {
         card: 'upekkha', ink: '#60549C', white: '#FCFCFC', sky: '#B4E4D8', night: '#2490A8', sun: '#FC9C78',
-        groundDay: '#FC9C78', groundNight: '#2490A8', detailDay: '#FFC9AE', detailNight: '#60549C',
+        groundDay: '#FC9C78', groundNight: '#60A8C0', detailDay: '#FFC9AE', detailNight: '#60549C',
         colours: [
             { light: '#78CCD8', ink: '#3E8C98' }, { light: '#2490A8', ink: '#14607A' }, { light: '#FC9C78', ink: '#B85E40' },
             { light: '#F6E27A', ink: '#A8901E' }, { light: '#A89CE0', ink: '#60549C' }, { light: '#B4E4D8', ink: '#5E9C8C' },
