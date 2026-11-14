@@ -50,9 +50,10 @@ function tint(name, colour) {
 // against his 708; its line, about 11 px in the drawing, is then about 14, as his own outline)
 export const TREE = { x: 2000, d: 420, behind: 25, scale: 1.33, foot: { x: 640, y: 1358 } };
 // The pieces spread over the world, how often each comes, what colour it takes, and whether it sways. The sprout is not
-// one of them: it is part of the big fern (it grows out of its middle), so every big fern carries it where she drew it
-// (WITH), with a colour of its own and swaying a little more than the fronds
-const WITH = { fern: { name: 'sprout', sway: 0.5 } };
+// one of them: it is part of the big fern (it grows out of its middle), so a big fern carries it where she drew it
+// (WITH), with a colour of its own and swaying a little more than the fronds: most carry one, some two (the second
+// curling and leaning the other way, a little shorter, so their beads stand apart) and a few none. foot: where its stem meets the fern, across its picture (px)
+const WITH = { fern: { name: 'sprout', sway: 0.5, foot: 146 } };
 const SCATTER = [
     { name: 'fern', weight: 3, sway: 0.5, colour: 'green' }, { name: 'fernSmall', weight: 3, sway: 0.6, colour: 'green' },
     { name: 'fernLow', weight: 3, sway: 0.5, colour: 'green' },
@@ -120,6 +121,15 @@ export function createWorld({ clouds = null, moon = null }) {
         const pick = (list) => list[Math.floor(r() * list.length)];
         const at = () => ({ x: index * STRETCH + r() * STRETCH, d: (row + r()) * PATCH - 180 });
         const jitter = (p, a = 0.8) => [p[0] + (r() - 0.5) * a, p[1] + (r() - 0.5) * a];
+        const sproutsFor = (rr, pk) => {
+            const v = rr(), n = v < 0.15 ? 0 : v < 0.75 ? 1 : 2, list = [];
+            for (let i = 0; i < n; i++) {
+                list.push(i === 0
+                    ? { color: pk(WARM), flip: 1, size: 0.95 + rr() * 0.1, tilt: -rr() * 0.06 - (n > 1 ? 0.08 : 0), phase: 0 }
+                    : { color: pk(WARM), flip: -1, size: 0.72 + rr() * 0.14, tilt: 0.22 + rr() * 0.12, phase: 1 + rr() * 2 });
+            }
+            return list;
+        };
         const add = (item) => items.push({ id: `${index},${row}:${items.length}`, ...item });
 
         const tick = (x, d, big = 1) => {
@@ -151,7 +161,7 @@ export function createWorld({ clouds = null, moon = null }) {
             if (BLOCKS.has(kind.name) && Math.abs(p.x - TREE.x) < 700 && p.d > TREE.d) continue;
             const colour = kind.colour === 'green' ? pick(GREENS) : pick([4, 3, 5, 0]);
             add({ kind: 'piece', name: kind.name, x: p.x, d: p.d, scale: 0.6 + r() * 0.3, flip: r() < 0.5 ? -1 : 1, sway: kind.sway ?? 0, color: colour,
-                withColor: WITH[kind.name] ? pick(WARM) : undefined });
+                sprouts: WITH[kind.name] ? sproutsFor(r, pick) : undefined });
         }
         // streaks on the hills, as the card's: short brush strokes lying along the ground (pills with round ends, a little
         // curved, now and then two in a row) and a few small ovals, in the ground's other colour
@@ -288,12 +298,16 @@ export function createWorld({ clouds = null, moon = null }) {
             const box = boxOf(item.name), k = item.scale;
             const lean = item.sway ? wind(item.x) * item.sway + (l?.bend ?? 0) * 0.5 : 0;
             c.save(); c.rotate(lean); c.scale(item.flip, 1);
-            // what grows out of it (the big fern's sprout), behind its fronds, where she drew it, bending a little more
+            // what grows out of it (the big fern's sprouts), behind its fronds, from where she drew it, bending a little more
+            // (each round the foot of its stem, the second the other way and a little out of step)
             const extra = WITH[item.name];
-            if (extra) {
-                const own = boxOf(extra.name);
-                c.save(); c.rotate(lean * extra.sway);
-                piece(c, extra.name, (own[0] - box[0]) * k - box[2] * k / 2, (own[1] - box[1]) * k - box[3] * k, k, PALETTE[item.withColor], col, !arbol.pieces[extra.name].fill);
+            for (const sp of (extra && item.sprouts) || []) {
+                const own = boxOf(extra.name), foot = extra.foot * UNIT;
+                const fx = (own[0] - box[0] + foot) * k - box[2] * k / 2, fy = (own[1] + own[3] - box[1]) * k - box[3] * k;
+                c.save(); c.translate(fx, fy);
+                c.rotate(lean * extra.sway + sp.tilt + (sp.phase ? wind(item.x + sp.phase * 400) * 0.3 : 0));
+                c.scale(sp.flip * sp.size, sp.size);
+                piece(c, extra.name, -foot * k, -own[3] * k, k, PALETTE[sp.color], col, !arbol.pieces[extra.name].fill);
                 c.restore();
             }
             piece(c, item.name, -box[2] * k / 2, -box[3] * k, k, P, col, !arbol.pieces[item.name].fill);
