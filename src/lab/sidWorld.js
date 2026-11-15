@@ -207,15 +207,20 @@ const zoneOfCell = (i, j) => ZONES[mod(i + SHIFT * j, ZONES.length)];
 // lotus near one, on any side of it (sit: how far from what stands in his way, its block) the rulito is born over him and the
 // affirmation of its card (id) is written in the sky; the place answers too (`glow`). block: what of it stands in his
 // way (a circle, or an ellipse rd deep, dd behind its foot); clear: the ground kept free round it of the world's plants;
-// flat: it lies on the ground (the pond), so it is drawn under everything that stands, never over him
+// flat: it lies on the ground (the pond), so it is drawn under everything that stands, never over him, reaching deep
+// back from its foot whatever the screen; water: where it is in his way instead of its block (which then only says
+// where sitting by it counts): its picture's water from top to bottom (card px) every 50 px across, from x = 50
 const PLACES = [
     { card: 'ciclos', kind: 'tree', id: 15, dd: 0 },
     { card: 'metta', kind: 'nest', id: 8, dd: 0, reach: 1100, anchor: [1082, 1729], depthK: 1.1,
         parts: ['nest'], crowd: ['metta0', 'metta1', 'metta2', 'metta3', 'metta4', 'metta5', 'mettaFox', 'mettaKitten'],
         block: { r: 330 }, sit: 350, clear: { w: 1150, front: 420, back: 620 } },
     { card: 'upekkha', kind: 'pond', id: 9, dd: 140, reach: 900,
-        flat: true,
-        block: { dd: 170, r: 760, rd: 200 }, sit: 400, clear: { w: 960, front: 220, back: 560 } },
+        flat: true, deep: 300, water: [[278, 480], [259, 521], [236, 543], [222, 555], [218, 562], [217, 566], [220, 570], [23, 573],
+            [10, 575], [6, 574], [3, 572], [4, 568], [7, 566], [11, 567], [16, 565], [20, 561], [23, 557], [27, 556], [25, 555],
+            [30, 556], [27, 554], [25, 557], [21, 559], [18, 564], [13, 567], [9, 566], [5, 566], [3, 571], [4, 573], [7, 574],
+            [16, 574], [40, 571], [218, 568], [218, 564], [220, 559], [228, 548], [250, 532], [268, 501], [307, 435]],
+        block: { dd: 150, r: 790, rd: 160 }, sit: 400, clear: { w: 960, front: 220, back: 560 } },
     { card: 'celebracion', kind: 'fire', id: 14, dd: 0, reach: 950, anchor: [1067, 1925], depthK: 1.1,
         parts: ['flame', 'logs'], crowd: ['fire_samaLeft', 'fire_samaRight', 'fire_seated', 'fire_foxLeft', 'fire_foxRight',
             'fire_catBack', 'fire_catFront', 'fire_trio', 'fire_hairy', 'fire_pink'],
@@ -223,6 +228,19 @@ const PLACES = [
     { card: 'desafio', kind: 'none', id: 21, dd: 0, reach: 450, anchor: [1202, 2083], depthK: 1.1,
         parts: [], crowd: ['vulpes'], clear: { w: 480, front: 240, back: 240 } },
 ];
+// A flat place's water as ellipses on the floor, round its foot: a column of them every 50 px of its picture, from its
+// top to its bottom there, back from its foot as far as the picture is drawn deep (they overlap, so its edge is
+// scalloped by a few px at most)
+function waterOf(P, name) {
+    const [, , W, H] = PIECES[name].box, u = PIECES[name].unit, out = [];
+    const back = (row) => (H - row) / H * P.deep;
+    P.water.forEach(([top, bottom], i) => {
+        const x = (50 * (i + 1) - W / 2) * u, d0 = back(bottom), d1 = back(top), rows = Math.ceil((d1 - d0) / 90), rd = (d1 - d0) / rows / 2;
+        for (let j = 0; j < rows; j++) out.push({ x, d: d0 + rd * (2 * j + 1), r: 30 * u + 12, rd: rd * 1.3 });
+    });
+    return out;
+}
+const WATER = Object.fromEntries(PLACES.filter((P) => P.water).map((P) => [P.kind, waterOf(P, P.kind)]));
 // The places between x0 and x1 and between the depths d0 and d1, wherever their zone is in the grid: { P, x, d } (each
 // in the middle of its cell, dd behind it)
 function placesNear(x0, x1, d0, d1) {
@@ -617,7 +635,7 @@ export function createWorld({ clouds = null, moon = null }) {
                 c.save(); c.scale(1, breath); at('nest', x, y); c.restore();
             } else if (P.kind === 'pond') {
                 // lying on the ground (seen from his height, squashed), with rings going out over it as he meditates by it
-                const [, , w, h] = B('pond'), flat = 0.5;
+                const [, , w, h] = B('pond'), flat = item.flatK ?? 0.5;
                 c.save(); c.scale(1, flat);
                 at('pond', -w / 2, -h);
                 c.strokeStyle = 'rgba(255,255,255,0.9)'; c.lineWidth = 6;
@@ -781,6 +799,8 @@ export function createWorld({ clouds = null, moon = null }) {
             const reach = (item.reach ?? 300) * s;
             if (x < -reach || x > view.width + reach) continue;
             c.save(); c.translate(x, view.groundAt(item.d)); c.scale(s, s);
+            // (what lies flat reaches item.place.deep back from its foot, however the floor is seen on this screen)
+            if (item.kind === 'place' && item.place.flat) item.flatK = (view.groundAt(item.d) - view.groundAt(item.d + item.place.deep)) / s / boxOf(item.place.kind)[3];
             const tall = item.kind === 'piece' && TALL.has(item.name);
             if (him && tall && item.d < him.d && him.d - item.d < 220 && Math.abs(item.x - him.x) < 150) c.globalAlpha = 0.22;
             // (what comes over the horizon fades in, so nothing pops up there)
@@ -885,9 +905,12 @@ export function createWorld({ clouds = null, moon = null }) {
     function obstacles(x, d, range) {
         const out = [];
         {
-            for (const item of patches(x - range - 400, x + range + 400, d - range - 600, d + range + 600)) {
+            // (a place stands in its own patch, by its middle, but reaches far to its sides: the pond's ends)
+            for (const item of patches(x - range - 1000, x + range + 1000, d - range - 600, d + range + 600)) {
                 if (item.kind === 'tree') out.push({ x: item.x + TRUNK.dx, d: item.d + TRUNK.behind, r: TRUNK.r }, { x: item.x + ROOTS.dx, d: item.d + ROOTS.dd, r: ROOTS.r, rd: ROOTS.rd, low: true });
-                else if (item.kind === 'place' && item.place.block) {
+                else if (item.kind === 'place' && item.place.water) {
+                    for (const o of WATER[item.place.kind]) out.push({ x: item.x + o.x, d: item.d + o.d, r: o.r, rd: o.rd });
+                } else if (item.kind === 'place' && item.place.block) {
                     const b = item.place.block;
                     out.push({ x: item.x, d: item.d + (b.dd ?? 0), r: b.r, ...(b.rd ? { rd: b.rd } : {}) });
                 } else if (item.kind === 'piece' && BLOCKS.has(item.name)) out.push({ x: item.x, d: item.d, r: boxOf(item.name)[2] * item.scale * 0.36 });
