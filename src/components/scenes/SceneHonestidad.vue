@@ -629,7 +629,9 @@
         if (mode === 'answer' && got === 0 && t - Math.max(lastTouch, answerSince) > AGAIN && waited) { mode = 'sing'; singAt = t + 0.4; }
         // The ghost hand, left alone 7 s: a tap on the awake voice that swells, or on the person's turn the rhythm
         // (one call to due(): asked twice in a frame, the one not wanted would reset the other's count)
-        const noisy = mode === 'noise' && !singing && awake().length > 0;
+        // (not `!singing`: the drowned phrase comes down every THREAD_EVERY s while voices are awake, and stopping the
+        // count for it reset the wait every time, so the hand never came)
+        const noisy = mode === 'noise' && awake().length > 0;
         const turn = mode === 'answer' && got === 0 && !singing && !handShown;
         if (hand?.due(HINT_AFTER, noisy || turn)) {
             if (turn) { handShown = true; showRhythm(); }
