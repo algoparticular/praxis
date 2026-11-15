@@ -38,6 +38,8 @@
         card: { type: Object, default: () => ({}) },
         active: Boolean
     });
+    // (the rulito is whole: told to whoever holds the card; the lab's world, which opens it from its place, brings it back)
+    const emit = defineEmits(['rulito']);
 
     const root = ref(null);
     const canvas = ref(null);
@@ -322,7 +324,7 @@
     };
     // The charge is full: the rulito flares and throws sparks
     const bloom = () => {
-        play('rulito');
+        play('rulito'); emit('rulito');
         play('bloom');
         level = Math.min(3, level + 1);
         sceneMilestone('rulito_completed', { times: level });

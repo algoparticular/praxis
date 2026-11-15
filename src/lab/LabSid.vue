@@ -48,14 +48,15 @@ const teaching = reactive({ es: '', en: '', on: false, light: false, ink: CICLOS
 // the rulito is born in the colour its card gives it (as in the card's own scene)
 const RULITO_COLOURS = { 15: '#fc747c', 8: '#f595b6', 9: '#b3539a', 14: '#ffe285', 27: '#f37b85', 24: '#fff6c2', 32: '#f5d35a' };
 const rulitoColour = ref(RULITO_COLOURS[15]);
-// A door to the card (for now only Metta's nest): sitting in lotus at its place, after PORTAL_AFTER s the world gives way
+// A door to the card, at every place (her tree, Metta's nest, Upekkha's pond, Celebración's fire, Paciencia's boat,
+// Gratitud's house, Transformación's seed): sitting in lotus at its place, after PORTAL_AFTER s the world gives way
 // to the card itself, as its page shows it (CardTemplate.vue: its scene and, below, its reading), over the world (the
 // lab stays where it was, paused, under it). Its game is played there as on the card's page; nothing takes him back by
 // itself (the reading is there to be read): the labyrinth in the header's corner (`hasWorld`, where a card's page has
 // the deck) or Escape goes back into the world, where he is still sitting, and if its rulito was born (the scene's
 // `rulito` event) it comes back with him, whole, over his head, with the card's affirmation. Without WebGL the scene
 // would be flat (no game), so there the place keeps its own rulito.
-const PORTALS = new Set([8]);
+const PORTALS = new Set([15, 8, 9, 14, 27, 24, 32]);
 const PORTAL_AFTER = 3, PORTAL_FADE = 900;
 const portal = reactive({ card: null, won: false });
 const webgl = hasWebGL();

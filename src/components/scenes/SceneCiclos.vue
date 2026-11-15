@@ -48,6 +48,8 @@
         card: { type: Object, default: () => ({}) },
         active: Boolean
     });
+    // (the rulito is whole: told to whoever holds the card; the lab's world, which opens it from its place, brings it back)
+    const emit = defineEmits(['rulito']);
 
     const root = ref(null);
     const canvas = ref(null);
@@ -492,7 +494,7 @@
             win.age += dt;
             win.pop = Math.max(0, win.pop - dt * 2.2);
             win.head = 1 - (1 - Math.min(1, Math.max(0, (win.age - DELAY) / GROW))) ** 1.6;
-            if (win.head >= 1 && !win.full) { win.full = true; win.fullAt = win.age; win.pop = 1; play('rulito'); flare = 1; }
+            if (win.head >= 1 && !win.full) { win.full = true; win.fullAt = win.age; win.pop = 1; play('rulito'); emit('rulito'); flare = 1; }
             if (win.full && !win.back && win.age - win.fullAt > LINGER) win.back = true;
             if (win.back) win.tail = Math.min(1, win.tail + dt / EAT);
             const whole = Math.min(1, Math.max(0, (win.head - win.tail - 0.6) / 0.4));

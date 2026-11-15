@@ -41,6 +41,8 @@
         card: { type: Object, default: () => ({}) },
         active: Boolean
     });
+    // (the rulito is whole: told to whoever holds the card; the lab's world, which opens it from its place, brings it back)
+    const emit = defineEmits(['rulito']);
 
     const root = ref(null);
     const canvas = ref(null);
@@ -345,7 +347,7 @@
             win.head = 1 - (1 - Math.min(1, Math.max(0, (win.age - DELAY) / GROW))) ** 1.6;
             if (win.head >= 1 && !win.full) {
                 win.full = true; win.fullAt = win.age; win.pop = 1;
-                play('rulito');
+                play('rulito'); emit('rulito');
                 Object.keys(LIFE).forEach((name) => { if (LIFE[name].hop) hops[name] = -Math.random() * 0.3; });
                 flare = 1;
                 LAMPS.forEach((_, i) => dust?.boost(3 + i, 1));
