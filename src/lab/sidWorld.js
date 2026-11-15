@@ -204,20 +204,22 @@ const zoneOfCell = (i, j) => ZONES[mod(i + SHIFT * j, ZONES.length)];
 // thing on the ground, breathing, hopping when he comes, leaning to him) stand where the card has them: across, as far
 // from its anchor (the foot of its main piece, card px) as in the card, and back, as far as they are up in the card
 // (depthK times: the card's ground is seen nearly flat). Sitting in
-// lotus at one (sit: how far to its sides, in front of it and behind it) the rulito is born over him and the
+// lotus near one, on any side of it (sit: how far from what stands in his way, its block) the rulito is born over him and the
 // affirmation of its card (id) is written in the sky; the place answers too (`glow`). block: what of it stands in his
-// way (a circle, or an ellipse rd deep, dd behind its foot); clear: the ground kept free round it of the world's plants
+// way (a circle, or an ellipse rd deep, dd behind its foot); clear: the ground kept free round it of the world's plants;
+// flat: it lies on the ground (the pond), so it is drawn under everything that stands, never over him
 const PLACES = [
     { card: 'ciclos', kind: 'tree', id: 15, dd: 0 },
     { card: 'metta', kind: 'nest', id: 8, dd: 0, reach: 1100, anchor: [1082, 1729], depthK: 1.1,
         parts: ['nest'], crowd: ['metta0', 'metta1', 'metta2', 'metta3', 'metta4', 'metta5', 'mettaFox', 'mettaKitten'],
-        block: { r: 330 }, sit: { w: 520, front: 620, back: 40 }, clear: { w: 1150, front: 420, back: 620 } },
+        block: { r: 330 }, sit: 350, clear: { w: 1150, front: 420, back: 620 } },
     { card: 'upekkha', kind: 'pond', id: 9, dd: 140, reach: 900,
-        block: { dd: 170, r: 760, rd: 200 }, sit: { w: 700, front: 520, back: 0 }, clear: { w: 960, front: 220, back: 560 } },
+        flat: true,
+        block: { dd: 170, r: 760, rd: 200 }, sit: 400, clear: { w: 960, front: 220, back: 560 } },
     { card: 'celebracion', kind: 'fire', id: 14, dd: 0, reach: 950, anchor: [1067, 1925], depthK: 1.1,
         parts: ['flame', 'logs'], crowd: ['fire_samaLeft', 'fire_samaRight', 'fire_seated', 'fire_foxLeft', 'fire_foxRight',
             'fire_catBack', 'fire_catFront', 'fire_trio', 'fire_hairy', 'fire_pink'],
-        block: { r: 220 }, sit: { w: 560, front: 520, back: 160 }, clear: { w: 950, front: 420, back: 760 } },
+        block: { r: 220 }, sit: 380, clear: { w: 950, front: 420, back: 760 } },
     { card: 'desafio', kind: 'none', id: 21, dd: 0, reach: 450, anchor: [1202, 2083], depthK: 1.1,
         parts: [], crowd: ['vulpes'], clear: { w: 480, front: 240, back: 240 } },
 ];
@@ -755,7 +757,11 @@ export function createWorld({ clouds = null, moon = null }) {
             if (P.kind === 'tree') {
                 const crown = boxOf('crown'), middle = near.x + (crown[0] + crown[2] / 2 - TREE.foot.x) * TREE.scale;
                 if (Math.abs(x - middle) < crown[2] * TREE.scale * 0.42 && d > near.d - 520 && d < near.d + 200) return near;
-            } else if (P.sit && Math.abs(x - near.x) < P.sit.w && d > near.d - P.sit.front && d < near.d + P.sit.back) return near;
+            } else if (P.sit && P.block) {
+                // (within sit of its block, an ellipse grown by sit all round: in front of it, at its sides or behind it)
+                const b = P.block, rx = b.r + P.sit, rd = (b.rd ?? b.r) + P.sit;
+                if (((x - near.x) / rx) ** 2 + ((d - near.d - (b.dd ?? 0)) / rd) ** 2 < 1) return near;
+            }
         }
         return null;
     }
@@ -764,9 +770,12 @@ export function createWorld({ clouds = null, moon = null }) {
         const half = view.width / 2 / view.scaleAt(view.far) + 400;
         const shown = [];
         for (const item of patches(view.cam - half, view.cam + half, view.near - 400, view.far + 200)) {
-            if (item.kind !== 'streak' && order(item) <= view.far + (item.kind === 'tree' ? 200 : 0) && item.d > view.near - 400 && keep(order(item))) shown.push(item);
+            // (what lies flat on the ground goes with what is behind him, first)
+            const flat = item.kind === 'place' && item.place.flat;
+            if (item.kind !== 'streak' && order(item) <= view.far + (item.kind === 'tree' ? 200 : 0) && item.d > view.near - 400 && keep(flat ? Infinity : order(item))) shown.push(item);
         }
-        shown.sort((a, b) => order(b) - order(a));
+        const under = (item) => item.kind === 'place' && item.place.flat ? Infinity : order(item);
+        shown.sort((a, b) => under(b) - under(a));
         for (const item of shown) {
             const s = view.scaleAt(item.d), x = view.x0 + (item.x - view.cam) * s;
             const reach = (item.reach ?? 300) * s;
