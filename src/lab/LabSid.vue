@@ -13,8 +13,26 @@ import Rulito from '../components/Rulito.vue';
 import { play, setCardChord } from '../composables/useSound.js';
 import { chordFor } from '../data/cardChords.js';
 import { getCard } from '../data/cards.js';
+import { loadMemory, saveMemory } from './worldMemory.js';
 
-const ui = reactive({ bones: false, sitting: false, touch: false });
+const ui = reactive({ bones: false, sitting: false, touch: false, hint: false, seeds: 0, seedPop: 0 });
+
+// The seed's hint: until the seed has been pressed once (or the space bar used), every 7 s left without it (as the ghost
+// hand's HINT_AFTER in the scenes) the button calls for a moment: it swells and glows and rings of light go out of it,
+// twice, then rests. Once he has sat once, the person knows: it never calls again in this visit.
+const SEED_HINT_AFTER = 7000;
+const SEED_HINT_SHOW = 4400;   // two calls of the animation (.lotus.hint)
+let seedUsed = false, hintTimer = 0;
+function scheduleHint() {
+    clearTimeout(hintTimer);
+    if (seedUsed) return;
+    hintTimer = setTimeout(() => {
+        if (seedUsed) return;
+        if (ui.sitting) { scheduleHint(); return; }
+        ui.hint = true;
+        hintTimer = setTimeout(() => { ui.hint = false; scheduleHint(); }, SEED_HINT_SHOW);
+    }, SEED_HINT_AFTER);
+}
 const canvas = ref(null);
 const nightSky = ref(null), starCanvas = ref(null);   // the cards' starry night, behind the drawing (useStarField.js)
 let stars = null;
@@ -75,7 +93,19 @@ const STILLNESS = 0.05;                       // the world's pace while he medit
 
 // The world round him (sidWorld.js): endless, in ink, taking its colour as he goes
 const picture = (src) => (typeof Image !== 'undefined' ? Object.assign(new Image(), { src }) : null);
-const world = createWorld({ clouds: picture('/assets/ciclos/clouds.webp'), moon: picture('/assets/ciclos/moon.webp') });
+// What the world remembers on this phone (worldMemory.js): the visits, the seeds he carries and what he has planted.
+// A seed he walks over is picked up (counted on the seed button); sitting in lotus away from the places, after a moment
+// (PLANT_AFTER) he plants the first he found in front of him, one each time he sits
+const memory = loadMemory();
+memory.visits += 1;
+saveMemory(memory);
+ui.seeds = memory.seeds.length;
+const PLANT_AFTER = 1.5;
+const world = createWorld({
+    clouds: picture('/assets/ciclos/clouds.webp'), moon: picture('/assets/ciclos/moon.webp'),
+    planted: memory.planted, visit: memory.visits,
+    onSeed: ({ card }) => { memory.seeds.push(card); ui.seeds = memory.seeds.length; ui.seedPop += 1; saveMemory(memory); play('pick'); },
+});
 // The floor goes back into the distance: his depth d (0 in front .. DEPTH at the back) lifts his feet towards the
 // horizon and makes him smaller, towards the middle of the screen (a vanishing point)
 // (deep: the camera is high and far, so most of the screen is floor and little is sky; a depth unit is still about
@@ -188,6 +218,7 @@ const state = {
     feet: [null, null],            // his feet on the floor: { x, d, y } (y: lifted), each at its own depth
     steps: [null, null], toes: [0, 0], legTuck: [0, 0],
     legSit: [0, 0], sitT: 9, rising: false, settled: true,
+    plantT: 0, planted: false,                               // seconds sitting away from the places, and whether he planted this time
     underTree: 0, rul: null,                                 // seconds sitting under the tree, the rulito born there      // sitting down in lotus and getting up, leg by leg
     reach: null,                   // a world point his near hand goes to
     reached: null,                 // the last one (his hand comes back from it)
@@ -318,14 +349,13 @@ function walkTo(x, d = state.d) {
 }
 function wave() { if (!ui.sitting) act('wave', 2.6, { arm: 'near' }); }
 function jump() { if (!ui.sitting && !state.air) { state.jumped = false; act('jump', 1.7); } }
-function stretch() { if (!ui.sitting) act('stretch', 2.6); }
 function sit(on = !ui.sitting) {
     if (on === ui.sitting) return;
+    seedUsed = true; ui.hint = false; clearTimeout(hintTimer);
     // getting up is its own little movement while his legs are still crossed
     state.rising = !on && Math.max(...state.legSit) > 0.1;
     ui.sitting = on; state.sitT = 0; state.settled = false; state.target = null; state.action = null;
 }
-function walkAcross() { walkTo(state.x + (Math.sign(Math.cos(state.heading)) || Math.sign(springs.face.x) || 1) * 520); }
 
 // Where a point of the screen is in his own world, at his depth (his world is scaled about the vanishing point)
 const groundAt = (d) => state.ground - (d - state.camD) / DEPTH * view.floor;
@@ -521,6 +551,18 @@ function update(dt, now) {
     const seated = ui.sitting && Math.min(...state.legSit) > 0.9;
     const card = seated ? world.placeCard(state.x, state.d) : null;
     state.underTree = card ? state.underTree + dt : 0;
+    // away from the places, with seeds, he plants one in front of him (once each time he sits)
+    if (!ui.sitting) { state.plantT = 0; state.planted = false; }
+    else if (seated && !card && !state.planted && memory.seeds.length) {
+        state.plantT += dt;
+        if (state.plantT >= PLANT_AFTER) {
+            state.planted = true;
+            memory.planted.push(world.plant(memory.seeds.shift(), state.x, state.d - 110));
+            ui.seeds = memory.seeds.length;
+            saveMemory(memory);
+            play('bloom');
+        }
+    }
     if (state.underTree >= RULITO_AFTER && !state.rul) {
         state.rul = { age: 0, head: 0, tail: 0, pop: 0, full: false, card };
         rulitoColour.value = RULITO_COLOURS[card] ?? RULITO_COLOURS[15];
@@ -993,7 +1035,7 @@ function loop(now) {
 }
 
 // (for trying him out from the browser's console)
-if (typeof window !== 'undefined') window.__sid = { state, springs, hands, ui, world };
+if (typeof window !== 'undefined') window.__sid = { state, springs, hands, ui, world, walkTo, sit, memory };
 
 onMounted(() => {
     document.body.classList.add('lab-page');
@@ -1006,11 +1048,13 @@ onMounted(() => {
     // (a shooting star that passes near sounds, as in the app's other night skies; only when the night is out)
     stars = createStarField(starCanvas.value, nightSky.value, { pace: () => state.pace, onShoot: () => { if (world.night() > 0.5) play('star'); } });
     raf = requestAnimationFrame(loop);
+    scheduleHint();
 });
 onBeforeUnmount(() => {
     document.body.classList.remove('lab-page', 'lab-night');
     setCardChord(null);
     cancelAnimationFrame(raf);
+    clearTimeout(hintTimer);
     stars?.destroy();
     window.removeEventListener('resize', resize);
     window.removeEventListener('keydown', onKey);
@@ -1034,19 +1078,13 @@ onBeforeUnmount(() => {
         </Transition>
         <!-- the app's own header: back on the left, the sound and the menu on the right -->
         <Header :hasBack="true" :hasMenu="true" />
-        <!-- on a computer, every button in a row at the bottom; on a phone he walks where a finger touches (and follows
-             it while it is held), and there is only the lotus with, round it, waving and jumping (below) -->
-        <div v-if="!ui.touch" class="panel">
-            <button @click="walkAcross">Caminar</button>
-            <button @click="stretch">Estirarse</button>
-
-            <span class="sep"></span>
-            <button :class="{ on: ui.bones }" @click="ui.bones = !ui.bones">Esqueleto</button>
-        </div>
-        <!-- one button: the seed, Algo Particular's mark (as in the header), sits him in lotus and gets him up again; a
-             touch on him makes him wave (the buttons to wave and to jump are gone; on a computer J still jumps) -->
-        <button class="lotus glass" :class="{ on: ui.sitting }" :aria-pressed="ui.sitting" aria-label="Loto" title="Loto" @click="sit()">
+        <!-- one button, on a phone and on a computer alike: the seed, Algo Particular's mark (as in the header), sits him
+             in lotus and gets him up again; he walks with the arrows or WASD, or where a click or a touch on the floor
+             sends him; a touch on him makes him wave (on a computer J jumps) -->
+        <button class="lotus glass" :class="{ on: ui.sitting, hint: ui.hint }" :aria-pressed="ui.sitting" aria-label="Loto" title="Loto" @click="sit()">
             <span class="seed" aria-hidden="true"></span>
+            <!-- the seeds he carries (picked up walking, planted sitting in lotus away from the places) -->
+            <span v-if="ui.seeds" :key="ui.seedPop" class="count">{{ ui.seeds }}</span>
         </button>
     </div>
 </template>
@@ -1125,50 +1163,6 @@ canvas {
     position: absolute;
     inset: 0;
 }
-.panel {
-    position: absolute;
-    left: 16px;
-    right: 16px;
-    bottom: calc(20px + env(safe-area-inset-bottom, 0px));
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    justify-content: center;
-}
-/* As the app's buttons (style.scss): the cream, no border, its soft warm shadow, the coral when touched or on */
-.panel button {
-    font-family: 'Nunito', helvetica, sans-serif;
-    font-size: 16px;
-    margin: 0;
-    height: 44px;
-    padding: 0 18px;
-    border: none;
-    border-radius: 13px;
-    background: #F7F8F1;
-    color: #143246;
-    filter: drop-shadow(0px 2px 3px rgba(20, 50, 70, 0.28));
-    cursor: pointer;
-    touch-action: manipulation;
-    -webkit-tap-highlight-color: transparent;
-    transition: background 200ms ease-out, color 200ms ease-out;
-}
-.panel button:hover { background: #FF6F61; color: #F7F8F1; }
-.panel button.on { background: #FF6F61; color: #F7F8F1; }
-.panel button:focus { box-shadow: none; outline: none; }
-.panel button:focus-visible { box-shadow: rgba(255, 111, 97, 0.35) 0 0 0 4px; }
-.sep {
-    width: 12px;
-}
-.panel.bottom {
-    bottom: calc(196px + env(safe-area-inset-bottom, 0px));
-    flex-wrap: nowrap;
-    justify-content: flex-start;
-    overflow-x: auto;
-    scrollbar-width: none;
-    padding: 4px 2px 6px;
-}
-.panel.bottom .sep { display: none; }
-.panel.bottom button { flex: none; }
 .lotus {
     /* on the app's frosted glass (.glass: its noise and its blur), a little darkened so the cream seed reads over a light
        sky or ground; a touch lights it up, and while he meditates it keeps a soft glow that breathes */
@@ -1213,12 +1207,66 @@ canvas {
     transition: filter 400ms ease-out;
 }
 .lotus.on .seed { filter: drop-shadow(0 0 6px rgba(255, 244, 214, 0.95)); }
-@media (prefers-reduced-motion: reduce) { .lotus.on { animation: none; box-shadow: 0 0 30px 6px rgba(255, 240, 200, 0.65); } }
-@media (max-width: 600px) {
-    .panel { gap: 8px; }
-    .panel button { font-size: 14px; height: 40px; padding: 0 14px; }
-    .sep { display: none; }
+/* the seeds he carries, on the button's rim; it pops when one is picked up */
+.lotus .count {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    min-width: 28px;
+    height: 28px;
+    padding: 0 7px;
+    border-radius: 14px;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #F7F8F1;
+    color: #143246;
+    font-family: Nunito, sans-serif;
+    font-weight: 700;
+    font-size: 15px;
+    line-height: 1;
+    box-shadow: 0 2px 8px rgba(20, 50, 70, 0.3);
+    animation: count-pop 600ms ease-out;
 }
+@keyframes count-pop {
+    0% { transform: scale(0.4); }
+    45% { transform: scale(1.35); box-shadow: 0 0 18px 6px rgba(255, 240, 200, 0.85); }
+    100% { transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) { .lotus .count { animation: none; } }
+/* the hint: left 7 s without being pressed, the seed calls (swells, glows, and a ring of light goes out of it), twice */
+.lotus::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 244, 214, 0.9);
+    opacity: 0;
+    pointer-events: none;
+}
+.lotus.hint { animation: lotus-call 2.2s ease-in-out 2; }
+.lotus.hint::before { animation: lotus-ring 2.2s ease-out 2; }
+.lotus.hint .seed { animation: seed-call 2.2s ease-in-out 2; }
+@keyframes lotus-call {
+    0%, 100% { transform: scale(1); box-shadow: 0 4px 24px rgba(20, 50, 70, 0.18); }
+    35% { transform: scale(1.1); box-shadow: 0 0 36px 8px rgba(255, 240, 200, 0.8); }
+    60% { transform: scale(1.02); }
+}
+@keyframes lotus-ring {
+    0%, 20% { transform: scale(1); opacity: 0; }
+    30% { opacity: 0.9; }
+    100% { transform: scale(1.9); opacity: 0; }
+}
+@keyframes seed-call {
+    0%, 100% { filter: none; }
+    35% { filter: drop-shadow(0 0 8px rgba(255, 244, 214, 1)); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .lotus.hint, .lotus.hint::before, .lotus.hint .seed { animation: none; }
+    .lotus.hint { box-shadow: 0 0 30px 6px rgba(255, 240, 200, 0.65); }
+}
+@media (prefers-reduced-motion: reduce) { .lotus.on { animation: none; box-shadow: 0 0 30px 6px rgba(255, 240, 200, 0.65); } }
 </style>
 
 <style>

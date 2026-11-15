@@ -97,6 +97,22 @@ const SPORES = new Set(['shrooms', 'shroom', 'grove', 'mushrooms', 'caps', 'bloo
 const BLOCKS = new Set(['pebbleGrass', 'pebbleFlat', 'cairn', 'grove', 'stack', 'trRocks', 'trCairn']);
 const TALL = new Set(['fern', 'fernSmall', 'cairn', 'grove', 'grPalm']);
 const CURLS = ['pacCurl0', 'pacCurl1', 'pacCurl2', 'pacCurl3', 'pacCurl4', 'pacCurl5', 'pacCurl6'];
+// Seeds: now and then one lies on the ground (SEED_CHANCE of the stretches), of the card of the zone where it lies; he
+// picks it up as he walks over it, and sitting in lotus away from the places he plants one in front of him. What it
+// grows into is a plant of its card's scene (SEED_PLANTS: the name, its size grown, how it sways), in its card's own
+// colours wherever it is planted; it grows a little on every visit (SEED_GROWTH, by how many visits ago it was planted)
+const SEED_CHANCE = 0.1, SEED_PICK = 130, SEED_SPROUT = 5;     // (how near he picks it up; seconds it takes to sprout)
+const SEED_GROWTH = [0.6, 0.8, 1];
+const SEED_SIZE = 2.6;          // (how big a seed is drawn: big enough to be seen from afar)
+const SEED_PLANTS = {
+    ciclos: [['fan0', 0.75, 0.35], ['fan1', 0.7, 0.35], ['fan2', 0.6, 0.35], ['fan3', 0.75, 0.35]],
+    metta: [['bloom0', 1, 0.4], ['bloom1', 1, 0.4], ['bloom2', 1, 0.4], ['bloom3', 1.1, 0.4], ['bloom4', 1.15, 0.4]],
+    upekkha: [['shrooms', 1, 0], ['shroom', 1.1, 0], ['pondTuft0', 1, 0.5], ['pondTuft2', 0.9, 0.5], ['pondSprout', 1.1, 0.6]],
+    paciencia: CURLS.map((name) => [name, 0.85, 0.5]),
+    gratitud: [['grPlant', 0.85, 0.4], ['grPalm', 0.5, 0.3]],
+    transformacion: [['trTree', 0.2, 0.15]],
+    celebracion: [['mushrooms', 0.8, 0], ['caps', 0.8, 0]],
+};
 // her tree's trunk on the floor: it stands a little behind its foot (its roots come forward), as wide as it looks
 // Her tree stands in his way where it is drawn: its trunk (just behind its foot, as wide as it is drawn just over its
 // roots, its middle a little left of the foot) and its roots, which spread wide and come forward over the floor (an
@@ -227,7 +243,15 @@ const ZONE = 8000, ZONE_START = -2000, BLEND = 1000;    // (about 19 s walking a
 const ZONE_D = 6000, D_START = 420 - ZONE_D / 2, SHIFT = 2;
 const CYCLE_W = ZONE * ZONES.length;   // (the zones come round again after this, across)
 const mod = (a, n) => ((a % n) + n) % n;
-const zoneOfCell = (i, j) => ZONES[mod(i + SHIFT * j, ZONES.length)];
+// The order of the zones across is drawn again on every visit (`createWorld` shuffles them): he starts just before the
+// place of the first, and every row still has the seven once, so the grid keeps every card once in each row and column
+let zoneOrder = ZONES;
+const shuffled = (list) => {
+    const out = list.slice();
+    for (let i = out.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [out[i], out[j]] = [out[j], out[i]]; }
+    return out;
+};
+const zoneOfCell = (i, j) => zoneOrder[mod(i + SHIFT * j, zoneOrder.length)];
 // The special place of each zone, in its middle (and again wherever the zones come round): Ciclos's is her tree; then
 // Metta's nest of mushrooms with its beings round it, Upekkha's pond, Paciencia's boat with its crew floating over its
 // mycelium, Gratitud's house with its palm and its boat, Transformación's tree growing out of its seed over its pond with the
@@ -308,7 +332,7 @@ function placesNear(x0, x1, d0, d1) {
         for (const P of PLACES) {
             const d = middle + P.dd;
             if (d < d0 || d > d1) continue;
-            const k = ZONES.findIndex((z) => z.card === P.card), x = ZONE_START + ZONE * (mod(k - SHIFT * j, n) + 0.5);
+            const k = zoneOrder.findIndex((z) => z.card === P.card), x = ZONE_START + ZONE * (mod(k - SHIFT * j, n) + 0.5);
             for (let c = Math.ceil((x0 - x) / CYCLE_W), xx = x + c * CYCLE_W; xx <= x1; c++, xx = x + c * CYCLE_W) out.push({ P, x: xx, d });
         }
     }
@@ -347,7 +371,8 @@ const PART_COLOUR = { cap: 2, stem: null };   // the mushrooms of the tree: thei
 const ROLES = { plant: 'plants', bead: 'beads', stone: 'stones' };
 const mixRgb = (a, b, t) => `rgb(${a.map((v, i) => Math.round(v + (b[i] - v) * t)).join(',')})`;
 
-export function createWorld({ clouds = null, moon = null }) {
+export function createWorld({ clouds = null, moon = null, planted = [], visit = 0, onSeed = null }) {
+    zoneOrder = shuffled(ZONES);                // (a new map of the worlds on every visit)
     // The colours on the screen now: those of the zone where the camera is (blended between two), set as the sky is
     // drawn, first thing every frame
     const blend = (zs) => {
@@ -369,6 +394,8 @@ export function createWorld({ clouds = null, moon = null }) {
     const colour = new Map();               // how much colour each thing has taken (0..1), kept when it goes off screen
     const life = new Map();                 // what moves on each thing (a bend, a hop, a blink)
     let ripple = null;                      // the wave of colour out of him while he sits
+    const taken = new Set();                // the seeds he has picked up on this visit (they stay picked)
+    const garden = [...planted];            // what he has planted (remembered by the page, worldMemory.js)
     let time = 0;
 
     // ---- making a stretch ----
@@ -491,7 +518,55 @@ export function createWorld({ clouds = null, moon = null }) {
             }
             add({ kind: 'stipple', x: p.x, d: p.d, dots, role: 'bead', pick: r() });
         }
+        // now and then a seed on the ground, of the card of the zone where it lies (its own numbers, so the rest of the
+        // world is where it always was)
+        const rs = random(index * 104729 + row * 7919 + 31);
+        if (rs() < SEED_CHANCE) {
+            const p = { x: index * STRETCH + rs() * STRETCH, d: (row + rs()) * PATCH - 180 }, z = mainZone(zonesAt(p.x, p.d));
+            const id = `seed:${index},${row}`;
+            if (clear(p) && !taken.has(id)) add({ id, kind: 'seed', x: p.x, d: p.d, card: z.card, cardId: z.id, role: 'bead', pick: rs(), phase: rs() * 10, reach: 120 });
+        }
+        // what he has planted, wherever its world is now
+        for (const g of garden) {
+            for (const at of plantedAt(g, index * STRETCH, (index + 1) * STRETCH, row * PATCH - 180, (row + 1) * PATCH - 180)) items.push(plantedItem(g, at.x, at.d));
+        }
         return items;
+    }
+    // Where something planted is (it is kept by the zone it was planted in, its row of the grid and where in its cell, so
+    // it is found again in its world however the worlds were shuffled), between x0 and x1 and the depths d0 and d1
+    function plantedAt(g, x0, x1, d0, d1) {
+        const n = zoneOrder.length, k = zoneOrder.findIndex((z) => z.card === g.zone), out = [];
+        if (k < 0) return out;
+        const PD = ZONE_D * n, d = D_START + ZONE_D * g.j + g.dd;
+        for (let dd = d + PD * Math.ceil((d0 - d) / PD); dd < d1; dd += PD) {
+            const x = ZONE_START + ZONE * mod(k - SHIFT * g.j, n) + g.dx;
+            for (let xx = x + CYCLE_W * Math.ceil((x0 - x) / CYCLE_W); xx < x1; xx += CYCLE_W) out.push({ x: xx, d: dd });
+        }
+        return out;
+    }
+    // It is one of its card's plants, in its card's own colours from the start, as big as the visits since it was planted
+    // say (and, planted now, sprouting out of the ground)
+    function plantedItem(g, x, d) {
+        const id = `plant:${g.key}:${Math.round(x)},${Math.round(d)}`;
+        colour.set(id, 1);
+        return { id, kind: 'piece', name: g.name, x, d, scale: g.scale, flip: g.flip, sway: g.sway, role: 'plant', pick: g.pick ?? 0.5,
+            planted: { grown: SEED_GROWTH[Math.min(SEED_GROWTH.length - 1, Math.max(0, visit - g.visit))], now: g.visit === visit ? g.at : null } };
+    }
+    // Planting a seed of a card at (x, d): what to remember of it (and it starts to sprout there now)
+    function plant(card, x, d) {
+        const list = SEED_PLANTS[card] ?? SEED_PLANTS.ciclos, n = zoneOrder.length;
+        const [name, scale, sway] = list[Math.floor(Math.random() * list.length)];
+        const i = Math.floor((x - ZONE_START) / ZONE), j = Math.floor((d - D_START) / ZONE_D);
+        const g = {
+            key: `${Date.now().toString(36)}${Math.floor(Math.random() * 1296).toString(36)}`, card, name, scale: scale * (0.9 + Math.random() * 0.2),
+            flip: Math.random() < 0.5 ? -1 : 1, sway, pick: Math.random(), visit, at: performance.now(),
+            zone: zoneOfCell(i, j).card, j: mod(j, n), dx: x - (ZONE_START + ZONE * i), dd: d - (D_START + ZONE_D * j),
+        };
+        garden.push(g);
+        // (its stretch may already be made: it goes into it now; the rest are made with it)
+        const si = Math.floor(x / STRETCH), sj = Math.floor((d + 180) / PATCH), made = stretches.get(`${si},${sj}`);
+        if (made) made.items.push(plantedItem(g, x, d));
+        return { ...g, at: 0 };
     }
     const stretch = (i, j) => { const key = `${i},${j}`; if (!stretches.has(key)) stretches.set(key, { i, items: make(i, j) }); return stretches.get(key).items; };
     // the patches over a stretch of floor: across, from x0 to x1, and in depth, from d0 to d1
@@ -549,6 +624,12 @@ export function createWorld({ clouds = null, moon = null }) {
             }
             for (const item of items) {
                 const dx = item.x - sid.x, dd = (item.d - sid.d) * 1.6, dist = Math.hypot(dx, dd);
+                // a seed he walks over: he picks it up (it rises and goes, and the page counts it)
+                if (item.kind === 'seed' && !taken.has(item.id) && !sid.sitting && dist < SEED_PICK) {
+                    taken.add(item.id); lifeOf(item).up = 0;
+                    onSeed?.({ card: item.card, id: item.cardId });
+                }
+                if (item.kind === 'seed' && taken.has(item.id)) { const l = lifeOf(item); l.up = Math.min(1, (l.up ?? 0) + dt * 1.6); }
                 // colour: as he walks by, and inside the wave while he sits (what grows round a place, with its place)
                 let c = colour.get(item.id) ?? 0;
                 const g = item.garden, from = g ? Math.hypot(g.x - sid.x, (g.d - sid.d) * 1.6) : dist;
@@ -588,6 +669,14 @@ export function createWorld({ clouds = null, moon = null }) {
         c.quadraticCurveTo(a[0] + dx * 0.6 - nx * 0.6, a[1] + dy * 0.6 - ny * 0.6, a[0] - nx, a[1] - ny);
         c.arc(a[0], a[1], width / 2, Math.atan2(-ny, -nx), Math.atan2(ny, nx));
         c.fill();
+    }
+
+    // A soft round light at (x, y)
+    function halo(c, x, y, radius, rgb, a) {
+        if (a <= 0.01) return;
+        const gr = c.createRadialGradient(x, y, 0, x, y, radius);
+        gr.addColorStop(0, `rgba(${rgb.join(',')},${a})`); gr.addColorStop(1, `rgba(${rgb.join(',')},0)`);
+        c.fillStyle = gr; c.beginPath(); c.arc(x, y, radius, 0, Math.PI * 2); c.fill();
     }
 
     // One of her pieces at (left, top) and scale k: what is inside its line in cream, taking the colour P as it is
@@ -643,7 +732,15 @@ export function createWorld({ clouds = null, moon = null }) {
         }
         case 'piece': {
             // one of her pieces, standing on its foot (the bottom of its box), swaying if it is a plant
-            const box = boxOf(item.name), k = item.scale;
+            // (what he planted: as big as it has grown, and planted now, sprouting out of the ground with a little light)
+            let grow = 1;
+            if (item.planted) {
+                const pl = item.planted, u = pl.now == null ? 1 : Math.min(1, (performance.now() - pl.now) / 1000 / SEED_SPROUT);
+                grow = pl.grown * (u >= 1 ? 1 : 1 - (1 - u) ** 3 * Math.cos(u * 9));
+                if (u < 1) halo(c, 0, -20, 160 * (1 - u * 0.5), [255, 244, 200], 0.55 * (1 - u));
+                if (grow <= 0.01) break;
+            }
+            const box = boxOf(item.name), k = item.scale * grow;
             const lean = item.sway ? wind(item.x) * item.sway + (l?.bend ?? 0) * 0.5 : 0;
             c.save(); c.rotate(lean); c.scale(item.flip, 1);
             // what grows out of it (the big fern's sprouts), behind its fronds, from where she drew it, bending a little more
@@ -934,6 +1031,29 @@ export function createWorld({ clouds = null, moon = null }) {
             c.restore();
             break;
         }
+        case 'seed': {
+            // a seed on the ground, of its card: a little almond in its white with a line of its ink, floating a little
+            // over its own soft light in a colour of its zone, and twinkling so it is seen from afar; picked up, it rises
+            // and goes
+            const up = l?.up ?? 0;
+            if (up >= 1) break;
+            const bob = Math.sin(time * 2 + item.phase) * 7, rise = up * up * 420, a = 1 - up, K = SEED_SIZE;
+            const glowRgb = item.P.light.map(Math.round), twinkle = 0.5 + 0.5 * Math.sin(time * 3.1 + item.phase * 2);
+            c.globalAlpha *= a;
+            halo(c, 0, -6, 70 * K, glowRgb, 0.45 + 0.25 * twinkle);
+            c.save(); c.translate(0, -34 * K - bob * K - rise); c.rotate(0.35 * Math.sin(time * 0.9 + item.phase)); c.scale(K * (1 - up * 0.4), K * (1 - up * 0.4));
+            halo(c, 0, 0, 46, [255, 250, 230], 0.25 + 0.35 * twinkle);
+            c.fillStyle = css(screen.white); c.strokeStyle = line; c.lineWidth = LINE * 0.5;
+            c.beginPath(); c.moveTo(0, -24); c.bezierCurveTo(17, -14, 15, 14, 0, 22); c.bezierCurveTo(-15, 14, -17, -14, 0, -24); c.fill(); c.stroke();
+            c.fillStyle = `rgb(${glowRgb.join(',')})`;
+            c.beginPath(); c.ellipse(-3, 2, 5, 9, 0.2, 0, Math.PI * 2); c.fill();
+            // (a glint of light that comes and goes)
+            const s = 7 + 7 * twinkle;
+            c.strokeStyle = `rgba(255,255,255,${0.4 + 0.6 * twinkle})`; c.lineWidth = 3;
+            c.beginPath(); c.moveTo(16 - s, -22); c.lineTo(16 + s, -22); c.moveTo(16, -22 - s); c.lineTo(16, -22 + s); c.stroke();
+            c.restore();
+            break;
+        }
         case 'stipple': {
             c.fillStyle = mark_;
             for (const [x, y, rr] of item.dots) { c.beginPath(); c.arc(x, y, rr, 0, Math.PI * 2); c.fill(); }
@@ -1108,5 +1228,8 @@ export function createWorld({ clouds = null, moon = null }) {
     const ink = () => css(screen.ink), white = () => css(screen.white), nightColour = () => css(screen.night);
     // The card of the zone on the screen (its id), for the music
     const zoneCard = () => mainZone(zonesAt(lastCam, lastD)).id;
-    return { update, draw, drawSky, drawGround, ground, night, ink, white, nightColour, placeCard, zoneCard, obstacles, setClock: (v) => { clock = ((v % 1) + 1) % 1; } };
+    // (seedsNear: the seeds not yet picked up round (x, d), to find one from the console)
+    const seedsNear = (x, d, range = 3000) => [...patches(x - range, x + range, d - range, d + range)]
+        .filter((item) => item.kind === 'seed' && !taken.has(item.id)).map(({ x: sx, d: sd, card }) => ({ x: sx, d: sd, card }));
+    return { update, draw, drawSky, drawGround, ground, night, ink, white, nightColour, placeCard, zoneCard, obstacles, plant, seedsNear, setClock: (v) => { clock = ((v % 1) + 1) % 1; } };
 }
