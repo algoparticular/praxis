@@ -991,7 +991,8 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-    <div class="lab">
+    <!-- (no menu on a long press: a finger held down only guides him) -->
+    <div class="lab" @contextmenu.prevent>
         <div ref="nightSky" class="night-sky"><canvas ref="starCanvas"></canvas></div>
         <!-- the rulito draws itself on its own canvas, which this scene lays over his head -->
         <Rulito ref="rulito" class="offstage" :color="rulitoColour" />
@@ -1028,6 +1029,10 @@ onBeforeUnmount(() => {
     background: #F7F8F1;
     color: #143246;
     font-family: Nunito, sans-serif;
+    /* a finger held down only guides him: nothing is selected, no callout (copy, look up), no magnifier */
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
 }
 canvas {
     position: relative;
