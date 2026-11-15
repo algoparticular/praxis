@@ -14,7 +14,24 @@ import { play, setCardChord } from '../composables/useSound.js';
 import { chordFor } from '../data/cardChords.js';
 import { getCard } from '../data/cards.js';
 
-const ui = reactive({ bones: false, sitting: false, touch: false });
+const ui = reactive({ bones: false, sitting: false, touch: false, hint: false });
+
+// The seed's hint: until the seed has been pressed once (or the space bar used), every 7 s left without it (as the ghost
+// hand's HINT_AFTER in the scenes) the button calls for a moment: it swells and glows and rings of light go out of it,
+// twice, then rests. Once he has sat once, the person knows: it never calls again in this visit.
+const SEED_HINT_AFTER = 7000;
+const SEED_HINT_SHOW = 4400;   // two calls of the animation (.lotus.hint)
+let seedUsed = false, hintTimer = 0;
+function scheduleHint() {
+    clearTimeout(hintTimer);
+    if (seedUsed) return;
+    hintTimer = setTimeout(() => {
+        if (seedUsed) return;
+        if (ui.sitting) { scheduleHint(); return; }
+        ui.hint = true;
+        hintTimer = setTimeout(() => { ui.hint = false; scheduleHint(); }, SEED_HINT_SHOW);
+    }, SEED_HINT_AFTER);
+}
 const canvas = ref(null);
 const nightSky = ref(null), starCanvas = ref(null);   // the cards' starry night, behind the drawing (useStarField.js)
 let stars = null;
@@ -321,6 +338,7 @@ function jump() { if (!ui.sitting && !state.air) { state.jumped = false; act('ju
 function stretch() { if (!ui.sitting) act('stretch', 2.6); }
 function sit(on = !ui.sitting) {
     if (on === ui.sitting) return;
+    seedUsed = true; ui.hint = false; clearTimeout(hintTimer);
     // getting up is its own little movement while his legs are still crossed
     state.rising = !on && Math.max(...state.legSit) > 0.1;
     ui.sitting = on; state.sitT = 0; state.settled = false; state.target = null; state.action = null;
@@ -1006,11 +1024,13 @@ onMounted(() => {
     // (a shooting star that passes near sounds, as in the app's other night skies; only when the night is out)
     stars = createStarField(starCanvas.value, nightSky.value, { pace: () => state.pace, onShoot: () => { if (world.night() > 0.5) play('star'); } });
     raf = requestAnimationFrame(loop);
+    scheduleHint();
 });
 onBeforeUnmount(() => {
     document.body.classList.remove('lab-page', 'lab-night');
     setCardChord(null);
     cancelAnimationFrame(raf);
+    clearTimeout(hintTimer);
     stars?.destroy();
     window.removeEventListener('resize', resize);
     window.removeEventListener('keydown', onKey);
@@ -1045,7 +1065,7 @@ onBeforeUnmount(() => {
         </div>
         <!-- one button: the seed, Algo Particular's mark (as in the header), sits him in lotus and gets him up again; a
              touch on him makes him wave (the buttons to wave and to jump are gone; on a computer J still jumps) -->
-        <button class="lotus glass" :class="{ on: ui.sitting }" :aria-pressed="ui.sitting" aria-label="Loto" title="Loto" @click="sit()">
+        <button class="lotus glass" :class="{ on: ui.sitting, hint: ui.hint }" :aria-pressed="ui.sitting" aria-label="Loto" title="Loto" @click="sit()">
             <span class="seed" aria-hidden="true"></span>
         </button>
     </div>
@@ -1213,6 +1233,37 @@ canvas {
     transition: filter 400ms ease-out;
 }
 .lotus.on .seed { filter: drop-shadow(0 0 6px rgba(255, 244, 214, 0.95)); }
+/* the hint: left 7 s without being pressed, the seed calls (swells, glows, and a ring of light goes out of it), twice */
+.lotus::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 244, 214, 0.9);
+    opacity: 0;
+    pointer-events: none;
+}
+.lotus.hint { animation: lotus-call 2.2s ease-in-out 2; }
+.lotus.hint::before { animation: lotus-ring 2.2s ease-out 2; }
+.lotus.hint .seed { animation: seed-call 2.2s ease-in-out 2; }
+@keyframes lotus-call {
+    0%, 100% { transform: scale(1); box-shadow: 0 4px 24px rgba(20, 50, 70, 0.18); }
+    35% { transform: scale(1.1); box-shadow: 0 0 36px 8px rgba(255, 240, 200, 0.8); }
+    60% { transform: scale(1.02); }
+}
+@keyframes lotus-ring {
+    0%, 20% { transform: scale(1); opacity: 0; }
+    30% { opacity: 0.9; }
+    100% { transform: scale(1.9); opacity: 0; }
+}
+@keyframes seed-call {
+    0%, 100% { filter: none; }
+    35% { filter: drop-shadow(0 0 8px rgba(255, 244, 214, 1)); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .lotus.hint, .lotus.hint::before, .lotus.hint .seed { animation: none; }
+    .lotus.hint { box-shadow: 0 0 30px 6px rgba(255, 240, 200, 0.65); }
+}
 @media (prefers-reduced-motion: reduce) { .lotus.on { animation: none; box-shadow: 0 0 30px 6px rgba(255, 240, 200, 0.65); } }
 @media (max-width: 600px) {
     .panel { gap: 8px; }
