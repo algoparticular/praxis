@@ -109,7 +109,8 @@ const PIECES = {
     pacS: { atlas: ['paciencia', 'boat', ['sBody', 'sLine', 'sAntennae', 'sEyes']], unit: 1.2, inside: 'colour', dark: 110 },
     pacT: { atlas: ['paciencia', 'boat', ['tBody', 'tLine', 'tAntennae', 'tEyes']], unit: 1.2, inside: 'colour', dark: 110 },
     pacR: { atlas: ['paciencia', 'boat', ['rBody', 'rLine', 'rAntennae', 'rEyes']], unit: 1.2, inside: 'colour', dark: 110 },
-    pacBed: { from: 'paciencia/mushrooms', unit: 0.9, inside: 'colour', dark: 110 },
+    // (its mycelium: two of its strips side by side, as it goes on in the card, fading away at both ends, `fade`)
+    pacBed: { compose: [['paciencia/mushrooms', 0, 0], ['paciencia/mushrooms', 1944, 0]], canvas: [0, 0, 3888, 365], fade: 0.12, unit: 0.9, inside: 'colour', dark: 110 },
     pacCone: { from: 'paciencia/cone', unit: 0.9, inside: 'colour', dark: 110 },
     ...Object.fromEntries([[0, 111], [118, 146], [340, 174], [535, 190], [903, 300], [1250, 210], [1460, 290]]
         .map(([x, w], i) => [`pacCurl${i}`, { from: 'paciencia/grass', crop: [x, 0, w, 365], unit: 0.9, inside: 'none', keep: 0.25 }])),
@@ -191,6 +192,13 @@ for (const [name, piece] of Object.entries(PIECES)) {
     if (piece.crop) img = img.extract({ left: piece.crop[0], top: piece.crop[1], width: piece.crop[2], height: piece.crop[3] });
     const { data, info } = await img.raw().toBuffer({ resolveWithObject: true });
     const W = info.width, H = info.height, N = W * H;
+    // (fading away towards its left and right ends, over `fade` of its width)
+    if (piece.fade) {
+        for (let i = 0; i < N; i++) {
+            const x = (i % W) / (W - 1), t = Math.min(1, Math.min(x, 1 - x) / piece.fade);
+            data[i * 4 + 3] = Math.round(data[i * 4 + 3] * t * t * (3 - 2 * t));
+        }
+    }
     // (a colour taken out: the ground the piece was drawn on, softly round it)
     if (piece.drop) {
         const [dr, dg, db] = [1, 3, 5].map((k) => parseInt(piece.drop.slice(k, k + 2), 16));

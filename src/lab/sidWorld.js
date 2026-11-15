@@ -93,7 +93,7 @@ const EYES = {
 const BACK = { fire_foxLeft: 30 };
 // what lets go of glowing spores by night (they rise from its caps and fade)
 const SPORES = new Set(['shrooms', 'shroom', 'grove', 'mushrooms', 'caps', 'bloom0', 'bloom1', 'bloom2', 'bloom3', 'bloom4',
-    'pondFern', 'pondTuft0', 'pondTuft1', 'pondTuft2', 'pondSprout', 'pondShrooms', 'pacCone']);
+    'pondFern', 'pondTuft0', 'pondTuft1', 'pondTuft2', 'pondSprout', 'pondShrooms']);
 const BLOCKS = new Set(['pebbleGrass', 'pebbleFlat', 'cairn', 'grove', 'stack', 'trRocks', 'trCairn']);
 const TALL = new Set(['fern', 'fernSmall', 'cairn', 'grove', 'grPalm']);
 const CURLS = ['pacCurl0', 'pacCurl1', 'pacCurl2', 'pacCurl3', 'pacCurl4', 'pacCurl5', 'pacCurl6'];
@@ -177,7 +177,7 @@ const ZONES = [
             { light: '#F37A82', ink: '#B4464E' }, { light: '#F8DFAE', ink: '#B0904E' }, { light: '#2CB4E4', ink: '#1A78A0' },
             { light: '#F4E85C', ink: '#A89A1E' }, { light: '#2A8A92', ink: '#14505A' }, { light: '#F0C3C2', ink: '#B07A7A' },
         ],
-        own: [{ names: CURLS, weight: 4, sway: 0.5 }, { name: 'pacCone', weight: 0.5 }],
+        own: [{ names: CURLS, weight: 4, sway: 0.5 }],
     },
     {
         // (its sky the card's turquoise, its ground the teal of its island with the dark of its grass in its streaks;
@@ -270,10 +270,10 @@ const PLACES = [
             'fire_catBack', 'fire_catFront', 'fire_trio', 'fire_hairy', 'fire_pink'],
         block: { r: 220 }, sit: 380, clear: { w: 950, front: 420, back: 760 } },
     // (anchor: the foot of its hull, in the half px of the card its pieces are made at)
-    { card: 'paciencia', kind: 'boat', id: 27, dd: 0, reach: 1000, anchor: [815, 1173],
-        garden: [['pacCone', -980, 60, 1], ['pacCurl4', -1080, -60, 1.1, 0.5], ['pacCurl1', 960, 40, 1, 0.5], ['pacCurl6', 1120, -80, -1, 0.5],
-            ['pacCurl2', -720, -160, 0.9, 0.5], ['pacCurl5', 640, -170, -0.9, 0.5]],
-        block: { dd: 40, r: 880, rd: 170 }, sit: 380, clear: { w: 1300, front: 450, back: 600 } },
+    { card: 'paciencia', kind: 'boat', id: 27, dd: 0, reach: 1900, anchor: [815, 1173],
+        garden: [['pacCurl4', -1900, -60, 1.1, 0.5], ['pacCurl1', 1850, 40, 1, 0.5], ['pacCurl6', 2050, -80, -1, 0.5],
+            ['pacCurl2', -1250, -230, 0.9, 0.5], ['pacCurl5', 1150, -240, -0.9, 0.5], ['pacCurl0', -300, -260, 0.9, 0.5]],
+        block: { dd: 40, r: 1720, rd: 170 }, sit: 380, clear: { w: 2150, front: 450, back: 600 } },
     // (anchor: the foot of its house, card px; its boat and its plants stand on their own round it, `garden`)
     { card: 'gratitud', kind: 'house', id: 24, dd: 0, reach: 1300, anchor: [1122, 1423],
         garden: [['grBoat', 1240, -220, 1, 0.12], ['grPlant', 560, -40, 1.1, 0.4], ['grPlant', -480, -160, -0.9, 0.4],
@@ -720,13 +720,19 @@ export function createWorld({ clouds = null, moon = null }) {
                 }
                 c.restore();
             } else if (P.kind === 'boat') {
-                // Paciencia's mycelium on the ground and its boat floating over it, as in the card, rocking and bobbing,
-                // with its crew in it (each breathing on its own) and the oar going slowly in the hands of the one in the
-                // middle; as he meditates by it, it rises higher and a light comes from under it
+                // Paciencia's mycelium on the ground (two of its strips side by side, fading at its ends: it goes on in the card), with
+                // its glowing pine cone in the middle, and its boat floating over it as in the card (its hull a little above
+                // the caps, the leaf of the oar hanging down among them), rocking and bobbing, with its crew in it (each
+                // breathing on its own) and the oar going slowly in the hands of the one in the middle; as he meditates by
+                // it, it rises higher and the pine cone glows
                 const [, , bw, bh] = B('pacBed'), live = 0.25 + 0.75 * col;
-                halo(0, -bh * 0.9, bw * (0.35 + 0.25 * g), [255, 248, 230], 0.1 + 0.4 * g);
+                halo(0, -bh * 0.9, bw * (0.18 + 0.12 * g), [255, 248, 230], 0.1 + 0.4 * g);
                 at('pacBed', -bw / 2, -bh);
-                const hover = bh * 0.55 + 40 * Math.sin(time * 0.9) * live + 160 * g;
+                // (the pine cone as the card has it in a strip: 0.128 of its height from its top, 0.08 of its width wide)
+                const [, , cw, ch] = B('pacCone'), ck = 0.04 * bw / cw, cx = -0.035 * bw, ctop = -bh + 0.128 * bh;
+                halo(cx, ctop + ch * ck * 0.5, cw * ck * (1.2 + 1.5 * g), [255, 242, 150], 0.2 * live + 0.6 * g);
+                at('pacCone', cx - cw * ck / 2, ctop, ck);
+                const hover = bh * 1.45 + 40 * Math.sin(time * 0.9) * live + 160 * g;
                 c.save(); c.translate(0, -hover); c.rotate(0.025 * Math.sin(time * 0.7) * live);
                 const crew = (name, n) => {
                     const [x, y] = part(name), [, , w, h] = B(name), breath = 1 + 0.02 * live * Math.sin(time * 1.4 + n * 1.7);
