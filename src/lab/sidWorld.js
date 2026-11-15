@@ -101,7 +101,7 @@ const CURLS = ['pacCurl0', 'pacCurl1', 'pacCurl2', 'pacCurl3', 'pacCurl4', 'pacC
 // picks it up as he walks over it, and sitting in lotus away from the places he plants one in front of him. What it
 // grows into is a plant of its card's scene (SEED_PLANTS: the name, its size grown, how it sways), in its card's own
 // colours wherever it is planted; it grows a little on every visit (SEED_GROWTH, by how many visits ago it was planted)
-const SEED_CHANCE = 0.1, SEED_PICK = 130, SEED_SPROUT = 5;     // (how near he picks it up; seconds it takes to sprout)
+const SEED_CHANCE = 0.03, SEED_PICK = 130, SEED_SPROUT = 5;     // (how near he picks it up; seconds it takes to sprout)
 const SEED_GROWTH = [0.6, 0.8, 1];
 const SEED_SIZE = 2.6;          // (how big a seed is drawn: big enough to be seen from afar)
 const SEED_PLANTS = {
