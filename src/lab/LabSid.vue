@@ -178,7 +178,7 @@ const state = {
     gaitDrop: 0,
     keys: { left: false, right: false, up: false, down: false },
     lift: 0, vy: 0, air: false,    // a jump
-    target: null, speed: 0, phase: 0, run: 0, turning: 0,
+    target: null, speed: 0, phase: 0, run: 0, turning: 0, turnWay: 0,
     guide: null,                   // a finger held down, guiding him ({ id, screen, t })
     mark: null,                    // where he was sent, on the floor ({ x, d, t }): a ring of dots there, fading
     action: null,                  // { name, t, dur, ... }
@@ -241,30 +241,40 @@ function turnTo(aim, most) {
     if (Math.abs(diff) > Math.PI * 0.85) {
         const other = diff - Math.sign(diff) * Math.PI * 2, toUs = wrap(-Math.PI / 2 - state.heading);
         const through = (dk) => Math.sign(toUs) === Math.sign(dk) && Math.abs(toUs) <= Math.abs(dk);
-        if (!through(diff) && through(other)) diff = other;
-    }
+        // (the way is chosen as the turn starts and kept until it is done: chosen again on the way, facing us it would
+        // flip every frame and never turn)
+        if (!state.turnWay) state.turnWay = !through(diff) && through(other) ? Math.sign(other) : Math.sign(diff);
+        if (Math.sign(diff) !== state.turnWay) diff = other;
+    } else state.turnWay = 0;
     state.heading = wrap(state.heading + Math.max(-most, Math.min(most, diff)));
 }
 // What stands in the way (her tree's trunk and roots, the big stones): ellipses on the floor, { x, d, r, rd } (rd its
 // reach in depth, r if it has none). Each is worked in its own space, stretched in depth so it is a circle of radius r
 const blocking = () => world.obstacles(state.x, state.d, 900);
 const squash = (o) => o.r / (o.rd ?? o.r);
-// Going towards (mx, mz), he bends his way round what is ahead of him, by the side nearer where he is going
+// Going towards (mx, mz), he bends his way round what is ahead of him, by the side nearer where he is going: round the
+// nearest thing ahead only (what is in his way can be made of many, as the pond's water), and not round what is
+// beyond where he is going (a touch by the water's edge: he walks to it)
 function steer(mx, mz) {
+    const goal = state.target ? Math.hypot(state.target.x - state.x, state.target.d - state.d) : Infinity;
+    let best = null;
     for (const o of blocking()) {
         if (o.low && inside(o, state)) continue;                         // (on the roots: he walks on them)
         const q = squash(o), rx = state.x - o.x, rz = (state.d - o.d) * q, dist = Math.hypot(rx, rz) || 1, R = o.r + 26;
-        if (dist > R + 130) continue;
-        let mzq = mz * q;
-        if (-(mx * rx + mzq * rz) / dist <= 0) continue;                 // (moving away from it)
-        const a = { x: -rz / dist, z: rx / dist }, b = { x: rz / dist, z: -rx / dist };
-        const t = a.x * mx + a.z * mzq >= b.x * mx + b.z * mzq ? a : b;
-        const kk = Math.max(0, Math.min(1, 1 - (dist - R) / 130));
-        mx = mx * (1 - kk) + t.x * kk; mzq = mzq * (1 - kk) + t.z * kk;
-        mz = mzq / q;
-        const l = Math.hypot(mx, mz) || 1; mx /= l; mz /= l;
+        if (dist > R + 130 || dist - o.r > goal) continue;
+        if (-(mx * rx + mz * q * rz) / dist <= 0) continue;              // (moving away from it)
+        if (!best || dist - R < best.gap) best = { q, rx, rz, dist, R, gap: dist - R };
     }
-    return [mx, mz];
+    if (!best) return [mx, mz];
+    const { q, rx, rz, dist, R } = best;
+    let mzq = mz * q;
+    const a = { x: -rz / dist, z: rx / dist }, b = { x: rz / dist, z: -rx / dist };
+    const t = a.x * mx + a.z * mzq >= b.x * mx + b.z * mzq ? a : b;
+    const kk = Math.max(0, Math.min(1, 1 - (dist - R) / 130));
+    mx = mx * (1 - kk) + t.x * kk; mzq = mzq * (1 - kk) + t.z * kk;
+    mz = mzq / q;
+    const l = Math.hypot(mx, mz) || 1;
+    return [mx / l, mz / l];
 }
 // and never walks into it (with the keys he slides along it). What is low (her tree's roots) can be jumped onto: in the
 // air he goes over its edge, and once on it he walks on it and steps off where he likes; walking, it stops him
@@ -281,9 +291,28 @@ function collide(from = null) {
 const act = (name, dur, extra = {}) => { state.action = { name, t: 0, dur, ...extra }; };
 function walkTo(x, d = state.d) {
     // (a touch on something that stands in the way: he walks to its edge, on the side the touch was)
-    for (const o of world.obstacles(x, d, 0)) {
-        const q = squash(o), rx = x - o.x, rz = (d - o.d) * q, dist = Math.hypot(rx, rz) || 1;
-        if (dist < o.r + 10) { x = o.x + rx / dist * (o.r + 12); d = o.d + rz / dist * (o.r + 12) / q; }
+    // (the nearest place out of it, looking all round, and of those as near, the one on his side: what is in his way
+    // can be made of many, as the pond's water)
+    const blocked = (px, pd) => world.obstacles(px, pd, 0).some((o) => Math.hypot(px - o.x, (pd - o.d) * squash(o)) < o.r + 12);
+    if (blocked(x, d)) {
+        // (from the first ring with a way out to 150 beyond it: the one nearest him)
+        let first = null, best = null;
+        for (let far = 20; far < 1600 && (first === null || far <= first + 150); far += 20) {
+            for (let n = 0; n < 24; n++) {
+                const a = n / 24 * Math.PI * 2, px = x + Math.cos(a) * far, pd = d + Math.sin(a) * far;
+                if (blocked(px, pd)) continue;
+                first ??= far;
+                const him = Math.hypot(px - state.x, pd - state.d);
+                if (!best || him < best.him) best = { px, pd, him };
+            }
+        }
+        // (and back towards the touch, to the edge)
+        if (best) {
+            const len = Math.hypot(x - best.px, d - best.pd), ux = (x - best.px) / len, ud = (d - best.pd) / len;
+            let t = 0;
+            while (t + 10 < len && !blocked(best.px + ux * (t + 10), best.pd + ud * (t + 10))) t += 10;
+            x = best.px + ux * t; d = best.pd + ud * t;
+        }
     }
     state.target = { x, d }; state.reach = null; if (ui.sitting) sit(false);
 }

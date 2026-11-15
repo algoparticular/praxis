@@ -87,8 +87,12 @@ const EYES = {
     metta0: 'eyes_metta0', metta1: 'eyes_metta1', metta2: 'eyes_metta2', metta3: 'eyes_metta3', metta4: 'eyes_metta4', metta5: 'eyes_metta5',
     fire_samaLeft: 'eyes_fire_samaLeft',
 };
+// the characters drawn further back than their feet say (as items: their place on the ground stays): Celebración's
+// left fox stands at the feet of the being on the left and its feet are a touch lower, but it goes behind him
+const BACK = { fire_foxLeft: 30 };
 // what lets go of glowing spores by night (they rise from its caps and fade)
-const SPORES = new Set(['shrooms', 'shroom', 'grove', 'mushrooms', 'caps', 'bloom0', 'bloom1', 'bloom2', 'bloom3', 'bloom4']);
+const SPORES = new Set(['shrooms', 'shroom', 'grove', 'mushrooms', 'caps', 'bloom0', 'bloom1', 'bloom2', 'bloom3', 'bloom4',
+    'pondFern', 'pondTuft0', 'pondTuft1', 'pondTuft2', 'pondSprout', 'pondShrooms']);
 const BLOCKS = new Set(['pebbleGrass', 'pebbleFlat', 'cairn', 'grove', 'stones', 'stack']);
 const TALL = new Set(['fern', 'fernSmall', 'cairn', 'grove']);
 // her tree's trunk on the floor: it stands a little behind its foot (its roots come forward), as wide as it looks
@@ -201,23 +205,56 @@ const zoneOfCell = (i, j) => ZONES[mod(i + SHIFT * j, ZONES.length)];
 // thing on the ground, breathing, hopping when he comes, leaning to him) stand where the card has them: across, as far
 // from its anchor (the foot of its main piece, card px) as in the card, and back, as far as they are up in the card
 // (depthK times: the card's ground is seen nearly flat). Sitting in
-// lotus at one (sit: how far to its sides, in front of it and behind it) the rulito is born over him and the
+// lotus near one, on any side of it (sit: how far from what stands in his way, its block) the rulito is born over him and the
 // affirmation of its card (id) is written in the sky; the place answers too (`glow`). block: what of it stands in his
-// way (a circle, or an ellipse rd deep, dd behind its foot); clear: the ground kept free round it of the world's plants
+// way (a circle, or an ellipse rd deep, dd behind its foot); clear: the ground kept free round it of the world's plants;
+// flat: it lies on the ground (the pond), so it is drawn under everything that stands, never over him, reaching deep
+// back from its foot whatever the screen; water: where it is in his way instead of its block (which then only says
+// where sitting by it counts): its picture's water from top to bottom (card px) every 50 px across, from x = 50
 const PLACES = [
     { card: 'ciclos', kind: 'tree', id: 15, dd: 0 },
     { card: 'metta', kind: 'nest', id: 8, dd: 0, reach: 1100, anchor: [1082, 1729], depthK: 1.1,
         parts: ['nest'], crowd: ['metta0', 'metta1', 'metta2', 'metta3', 'metta4', 'metta5', 'mettaFox', 'mettaKitten'],
-        block: { r: 330 }, sit: { w: 520, front: 620, back: 40 }, clear: { w: 1150, front: 420, back: 620 } },
+        block: { r: 330 }, sit: 350, clear: { w: 1150, front: 420, back: 620 } },
     { card: 'upekkha', kind: 'pond', id: 9, dd: 140, reach: 900,
-        block: { dd: 170, r: 760, rd: 200 }, sit: { w: 700, front: 520, back: 0 }, clear: { w: 960, front: 220, back: 560 } },
+        flat: true, deep: 300, water: [[278, 480], [259, 521], [236, 543], [222, 555], [218, 562], [217, 566], [220, 570], [23, 573],
+            [10, 575], [6, 574], [3, 572], [4, 568], [7, 566], [11, 567], [16, 565], [20, 561], [23, 557], [27, 556], [25, 555],
+            [30, 556], [27, 554], [25, 557], [21, 559], [18, 564], [13, 567], [9, 566], [5, 566], [3, 571], [4, 573], [7, 574],
+            [16, 574], [40, 571], [218, 568], [218, 564], [220, 559], [228, 548], [250, 532], [268, 501], [307, 435]],
+        // what grows round it, as in its card: behind it the big fern with its glowing flower and the grove of big
+        // mushrooms with its crystals, on its banks the cairn, the stones, the tufts with a flower, the pair of yellow
+        // mushrooms and more crystals, and in front a sprout, a pebble and a small mushroom. lilies: on its water
+        garden: [
+            ['pondFern', -420, 430, 1.25, 0.25], ['pondTuft0', -130, 370, 1.1, 0.5], ['pondSprout', 110, 350, 1.2, 0.6],
+            ['pondTuft2', 300, 340, -1, 0.5], ['grove', 480, 480, 0.85], ['crystals', 830, 370, 1.2], ['shrooms', 1010, 300, 1.3],
+            ['pondCairn', -960, 170, 1.2], ['pondTuft1', -880, 330, 1.1, 0.5], ['pondStones', -1090, 0, 1.2, 0.3],
+            ['crystalsSmall', -1160, 250, -1.1], ['pondPebbles', -620, -110, 1.1], ['shroom', -830, -150, 1.2],
+            ['pondShrooms', 990, 90, 1.15], ['crystal', 800, -90, 1.3], ['crystalsSmall', 1160, -20, 1.2],
+            ['pondTuft0', 1190, 220, -0.9, 0.5], ['pondPebble', 1090, -170, -1],
+            ['pondSprout', -300, -100, -1, 0.6], ['pondTuft2', -330, -230, 0.8, 0.5], ['pondPebble', 330, -140, 1.1], ['crystal', 540, -170, -1],
+        ],
+        lilies: [[620, 330, 1], [1280, 260, -0.9]],
+        block: { dd: 150, r: 790, rd: 160 }, sit: 400, clear: { w: 1350, front: 450, back: 700 } },
     { card: 'celebracion', kind: 'fire', id: 14, dd: 0, reach: 950, anchor: [1067, 1925], depthK: 1.1,
         parts: ['flame', 'logs'], crowd: ['fire_samaLeft', 'fire_samaRight', 'fire_seated', 'fire_foxLeft', 'fire_foxRight',
             'fire_catBack', 'fire_catFront', 'fire_trio', 'fire_hairy', 'fire_pink'],
-        block: { r: 220 }, sit: { w: 560, front: 520, back: 160 }, clear: { w: 950, front: 420, back: 760 } },
+        block: { r: 220 }, sit: 380, clear: { w: 950, front: 420, back: 760 } },
     { card: 'desafio', kind: 'none', id: 21, dd: 0, reach: 450, anchor: [1202, 2083], depthK: 1.1,
         parts: [], crowd: ['vulpes'], clear: { w: 480, front: 240, back: 240 } },
 ];
+// A flat place's water as ellipses on the floor, round its foot: a column of them every 50 px of its picture, from its
+// top to its bottom there, back from its foot as far as the picture is drawn deep (they overlap, so its edge is
+// scalloped by a few px at most)
+function waterOf(P, name) {
+    const [, , W, H] = PIECES[name].box, u = PIECES[name].unit, out = [];
+    const back = (row) => (H - row) / H * P.deep;
+    P.water.forEach(([top, bottom], i) => {
+        const x = (50 * (i + 1) - W / 2) * u, d0 = back(bottom), d1 = back(top), rows = Math.ceil((d1 - d0) / 90), rd = (d1 - d0) / rows / 2;
+        for (let j = 0; j < rows; j++) out.push({ x, d: d0 + rd * (2 * j + 1), r: 30 * u + 12, rd: rd * 1.3 });
+    });
+    return out;
+}
+const WATER = Object.fromEntries(PLACES.filter((P) => P.water).map((P) => [P.kind, waterOf(P, P.kind)]));
 // The places between x0 and x1 and between the depths d0 and d1, wherever their zone is in the grid: { P, x, d } (each
 // in the middle of its cell, dd behind it)
 function placesNear(x0, x1, d0, d1) {
@@ -325,6 +362,17 @@ export function createWorld({ clouds = null, moon = null }) {
             if (P.kind === 'tree') add({ kind: 'tree', x, d, reach: 700, place: P });
             else add({ kind: 'place', x, d, reach: P.reach, place: P, scale: 1 });
         }
+        // what grows round a place, where it is drawn round it ([name, across, back from its foot, size (below 0:
+        // mirrored), sway]; in the stretch and the row it falls in itself). It is part of the place: it takes its colour
+        // with it, and goes back to ink with it
+        for (const { P, x, d } of near) {
+            for (const [name, dx, dd, scale, sway = 0] of P.garden ?? []) {
+                const bx = x + dx, bd = d + dd;
+                if (bx < index * STRETCH || bx >= (index + 1) * STRETCH || row !== Math.floor((bd + 180) / PATCH)) continue;
+                add({ kind: 'piece', name, x: bx, d: bd, scale: Math.abs(scale), flip: Math.sign(scale), sway, role: sway ? 'plant' : 'stone', pick: r(),
+                    garden: { x, d, P } });
+            }
+        }
         // the characters round the places, each where it stands (in the stretch and the row its own place falls in)
         for (const { P, x, d } of near) {
             for (const name of P.crowd ?? []) {
@@ -427,7 +475,7 @@ export function createWorld({ clouds = null, moon = null }) {
             if (Math.abs(i * STRETCH - sid.x) > 3000) {
                 // (far from him, the characters and the places go back to ink, still, ready for the next time he comes)
                 for (const item of items) {
-                    if (item.kind !== 'being' && item.kind !== 'place') continue;
+                    if (item.kind !== 'being' && item.kind !== 'place' && !item.garden) continue;
                     const c0 = colour.get(item.id) ?? 0;
                     if (c0 > 0) colour.set(item.id, Math.max(0, c0 - dt * 0.4));
                 }
@@ -449,12 +497,13 @@ export function createWorld({ clouds = null, moon = null }) {
             }
             for (const item of items) {
                 const dx = item.x - sid.x, dd = (item.d - sid.d) * 1.6, dist = Math.hypot(dx, dd);
-                // colour: as he walks by, and inside the wave while he sits
+                // colour: as he walks by, and inside the wave while he sits (what grows round a place, with its place)
                 let c = colour.get(item.id) ?? 0;
-                const near = item.kind === 'tree' ? 950 : item.kind === 'place' ? item.reach + 350 : item.kind === 'being' ? 800 : 170;
-                if (dist < near) c = Math.min(1, c + dt * 0.9 * (1 - dist / near) * 2);
+                const g = item.garden, from = g ? Math.hypot(g.x - sid.x, (g.d - sid.d) * 1.6) : dist;
+                const near = item.kind === 'tree' ? 950 : item.kind === 'place' ? item.reach + 350 : item.kind === 'being' ? 800 : g ? g.P.reach + 350 : 170;
+                if (from < near) c = Math.min(1, c + dt * 0.9 * (1 - from / near) * 2);
                 // (the characters and the places go back to ink, still, once he has gone a good way off)
-                else if ((item.kind === 'being' || item.kind === 'place') && dist > 1800) c = Math.max(0, c - dt * 0.4);
+                else if ((item.kind === 'being' || item.kind === 'place' || g) && from > 1800) c = Math.max(0, c - dt * 0.4);
                 if (ripple && Math.hypot(item.x - ripple.x, (item.d - ripple.d) * 1.6) < ripple.r) c = Math.min(1, c + dt * 1.4);
                 if (c > 0 || colour.has(item.id)) colour.set(item.id, c);
                 if (item.kind === 'tick' || (item.kind === 'piece' && item.sway)) {
@@ -612,9 +661,15 @@ export function createWorld({ clouds = null, moon = null }) {
                 c.save(); c.scale(1, breath); at('nest', x, y); c.restore();
             } else if (P.kind === 'pond') {
                 // lying on the ground (seen from his height, squashed), with rings going out over it as he meditates by it
-                const [, , w, h] = B('pond'), flat = 0.5;
+                const [, , w, h] = B('pond'), flat = item.flatK ?? 0.5;
                 c.save(); c.scale(1, flat);
                 at('pond', -w / 2, -h);
+                // its lily pads, lying on it too (where on its picture, and how big: a size below 0 is mirrored)
+                for (const [lx, ly, k] of P.lilies ?? []) {
+                    const [, , lw, lh] = B('pondLilies');
+                    c.save(); c.translate(-w / 2 + lx * PIECES.pond.unit, -h + ly * PIECES.pond.unit); c.scale(k, Math.abs(k));
+                    at('pondLilies', -lw / 2, -lh / 2); c.restore();
+                }
                 c.strokeStyle = 'rgba(255,255,255,0.9)'; c.lineWidth = 6;
                 for (let n = 0; n < 3; n++) {
                     const ph = (time * 0.25 + n / 3) % 1, a = (0.15 + 0.6 * g) * (1 - ph);
@@ -743,7 +798,7 @@ export function createWorld({ clouds = null, moon = null }) {
     // faint, so it never hides him
     // The tree is a trunk with roots, not a flat card: it counts as standing TREE.behind further back than its foot, so
     // sitting at its roots, under its crown, he is in front of its trunk and its roots
-    const order = (item) => item.kind === 'tree' ? item.d + TREE.behind : item.d;
+    const order = (item) => item.kind === 'tree' ? item.d + TREE.behind : item.d + (item.kind === 'being' ? BACK[item.name] ?? 0 : 0);
     // Where he is sitting, if it is at a place: under the crown of her tree (in front of its roots, too), or in front of
     // a zone's place: { P, x }
     function placeAt(x, d) {
@@ -752,7 +807,11 @@ export function createWorld({ clouds = null, moon = null }) {
             if (P.kind === 'tree') {
                 const crown = boxOf('crown'), middle = near.x + (crown[0] + crown[2] / 2 - TREE.foot.x) * TREE.scale;
                 if (Math.abs(x - middle) < crown[2] * TREE.scale * 0.42 && d > near.d - 520 && d < near.d + 200) return near;
-            } else if (P.sit && Math.abs(x - near.x) < P.sit.w && d > near.d - P.sit.front && d < near.d + P.sit.back) return near;
+            } else if (P.sit && P.block) {
+                // (within sit of its block, an ellipse grown by sit all round: in front of it, at its sides or behind it)
+                const b = P.block, rx = b.r + P.sit, rd = (b.rd ?? b.r) + P.sit;
+                if (((x - near.x) / rx) ** 2 + ((d - near.d - (b.dd ?? 0)) / rd) ** 2 < 1) return near;
+            }
         }
         return null;
     }
@@ -761,14 +820,19 @@ export function createWorld({ clouds = null, moon = null }) {
         const half = view.width / 2 / view.scaleAt(view.far) + 400;
         const shown = [];
         for (const item of patches(view.cam - half, view.cam + half, view.near - 400, view.far + 200)) {
-            if (item.kind !== 'streak' && order(item) <= view.far + (item.kind === 'tree' ? 200 : 0) && item.d > view.near - 400 && keep(order(item))) shown.push(item);
+            // (what lies flat on the ground goes with what is behind him, first)
+            const flat = item.kind === 'place' && item.place.flat;
+            if (item.kind !== 'streak' && order(item) <= view.far + (item.kind === 'tree' ? 200 : 0) && item.d > view.near - 400 && keep(flat ? Infinity : order(item))) shown.push(item);
         }
-        shown.sort((a, b) => order(b) - order(a));
+        const under = (item) => item.kind === 'place' && item.place.flat ? Infinity : order(item);
+        shown.sort((a, b) => under(b) - under(a));
         for (const item of shown) {
             const s = view.scaleAt(item.d), x = view.x0 + (item.x - view.cam) * s;
             const reach = (item.reach ?? 300) * s;
             if (x < -reach || x > view.width + reach) continue;
             c.save(); c.translate(x, view.groundAt(item.d)); c.scale(s, s);
+            // (what lies flat reaches item.place.deep back from its foot, however the floor is seen on this screen)
+            if (item.kind === 'place' && item.place.flat) item.flatK = (view.groundAt(item.d) - view.groundAt(item.d + item.place.deep)) / s / boxOf(item.place.kind)[3];
             const tall = item.kind === 'piece' && TALL.has(item.name);
             if (him && tall && item.d < him.d && him.d - item.d < 220 && Math.abs(item.x - him.x) < 150) c.globalAlpha = 0.22;
             // (what comes over the horizon fades in, so nothing pops up there)
@@ -873,9 +937,12 @@ export function createWorld({ clouds = null, moon = null }) {
     function obstacles(x, d, range) {
         const out = [];
         {
-            for (const item of patches(x - range - 400, x + range + 400, d - range - 600, d + range + 600)) {
+            // (a place stands in its own patch, by its middle, but reaches far to its sides: the pond's ends)
+            for (const item of patches(x - range - 1000, x + range + 1000, d - range - 600, d + range + 600)) {
                 if (item.kind === 'tree') out.push({ x: item.x + TRUNK.dx, d: item.d + TRUNK.behind, r: TRUNK.r }, { x: item.x + ROOTS.dx, d: item.d + ROOTS.dd, r: ROOTS.r, rd: ROOTS.rd, low: true });
-                else if (item.kind === 'place' && item.place.block) {
+                else if (item.kind === 'place' && item.place.water) {
+                    for (const o of WATER[item.place.kind]) out.push({ x: item.x + o.x, d: item.d + o.d, r: o.r, rd: o.rd });
+                } else if (item.kind === 'place' && item.place.block) {
                     const b = item.place.block;
                     out.push({ x: item.x, d: item.d + (b.dd ?? 0), r: b.r, ...(b.rd ? { rd: b.rd } : {}) });
                 } else if (item.kind === 'piece' && BLOCKS.has(item.name)) out.push({ x: item.x, d: item.d, r: boxOf(item.name)[2] * item.scale * 0.36 });
