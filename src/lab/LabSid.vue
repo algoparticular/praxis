@@ -996,7 +996,7 @@ onBeforeUnmount(() => {
         <canvas ref="canvas" @pointermove="onMove" @pointerdown="onDown" @pointerup="onUp" @pointercancel="onUp"></canvas>
         <!-- the affirmation of the card of the place where he meditates, written by hand in the sky -->
         <Transition name="teaching">
-            <p v-if="teaching.on" class="teaching" :class="{ light: teaching.light }" :style="{ color: teaching.light ? null : teaching.ink }">
+            <p v-if="teaching.on" class="teaching glass" :class="{ light: teaching.light }" :style="{ color: teaching.light ? null : teaching.ink }">
                 {{ $i18n.locale === 'en' ? teaching.en : teaching.es }}
             </p>
         </Transition>
@@ -1049,23 +1049,30 @@ canvas {
     right: 16px;
     top: calc(84px + env(safe-area-inset-top, 0px));
     margin: 0 auto;
-    max-width: 560px;
     text-align: center;
     font-family: 'Caveat', 'Nunito', helvetica, sans-serif;
     font-size: clamp(30px, 7.2vw, 44px);
     line-height: 1.15;
     pointer-events: none;
-    /* on a card of frosted cream (by night, of the night), so it reads over anything: a cloud, the sun, the moon */
+    /* on the app's frosted glass (its noise and its blur, .glass), as a soft cloud: an uneven round shape that breathes
+       slowly and whose edge fades into the sky, so it reads over anything (a cloud, the sun, the moon) and is not a box */
     width: fit-content;
-    max-width: min(560px, calc(100% - 32px));
-    padding: 14px 22px 16px;
-    border-radius: 22px;
-    background: rgba(247, 248, 241, 0.82);
-    -webkit-backdrop-filter: blur(10px);
-    backdrop-filter: blur(10px);
-    box-shadow: 0 6px 24px rgba(20, 50, 70, 0.18);
+    max-width: min(520px, calc(100% - 24px));
+    padding: 32px 52px 36px;
+    border: none;
+    background-color: rgba(247, 248, 241, 0.62);
+    box-shadow: none;
+    border-radius: 46% 54% 44% 56% / 56% 46% 54% 44%;
+    -webkit-mask-image: radial-gradient(closest-side, #000 80%, transparent 100%);
+    mask-image: radial-gradient(closest-side, #000 80%, transparent 100%);
+    animation: teaching-breath 9s ease-in-out infinite alternate;
 }
-.teaching.light { color: #F7F8F1; background: rgba(16, 30, 52, 0.62); box-shadow: 0 6px 24px rgba(0, 0, 0, 0.25); }
+.teaching.light { color: #F7F8F1; background-color: rgba(16, 30, 52, 0.5); }
+@keyframes teaching-breath {
+    from { border-radius: 46% 54% 44% 56% / 56% 46% 54% 44%; }
+    to { border-radius: 54% 46% 56% 44% / 46% 56% 44% 54%; }
+}
+@media (prefers-reduced-motion: reduce) { .teaching { animation: none; } }
 .teaching-enter-active { transition: opacity 1.6s ease-out, transform 1.6s ease-out; }
 .teaching-leave-active { transition: opacity 0.9s ease-in; }
 .teaching-enter-from { opacity: 0; transform: translateY(8px); }

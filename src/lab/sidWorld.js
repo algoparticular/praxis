@@ -74,6 +74,19 @@ const GRASS = ['grass0', 'grass1', 'grass2', 'grass3', 'grass4', 'grass5', 'gras
 
 // The big stones stand in his way (he walks round them; the small ones he steps over), and the tall plants are drawn
 // faint when they are just in front of him (the low ones, and the grass, hide his feet as he walks through them)
+// How each character round a place moves once it is alive, as in its card's scene: Metta's beings rock, nod, doze, sway
+// arm in arm, hum, the fox sniffs and the kitten hops; round Celebración's fire they all dance to one beat (swaying,
+// bouncing, jumping, clapping)
+const WAYS = {
+    metta0: 'rock', metta1: 'nod', metta2: 'doze', metta3: 'pair', metta4: 'pair', metta5: 'hum', mettaFox: 'sniff', mettaKitten: 'hop',
+    fire_samaLeft: 'sway', fire_samaRight: 'sway', fire_seated: 'clap', fire_foxLeft: 'jump', fire_foxRight: 'bounce',
+    fire_catBack: 'jump', fire_catFront: 'bounce', fire_trio: 'bounce', fire_hairy: 'jump', fire_pink: 'bounce', vulpes: 'sniff',
+};
+// the characters whose eyes are their own pieces (the rest have them in their picture)
+const EYES = {
+    metta0: 'eyes_metta0', metta1: 'eyes_metta1', metta2: 'eyes_metta2', metta3: 'eyes_metta3', metta4: 'eyes_metta4', metta5: 'eyes_metta5',
+    fire_samaLeft: 'eyes_fire_samaLeft',
+};
 // what lets go of glowing spores by night (they rise from its caps and fade)
 const SPORES = new Set(['shrooms', 'shroom', 'grove', 'mushrooms', 'caps', 'bloom0', 'bloom1', 'bloom2', 'bloom3', 'bloom4']);
 const BLOCKS = new Set(['pebbleGrass', 'pebbleFlat', 'cairn', 'grove', 'stones', 'stack']);
@@ -121,11 +134,13 @@ export const CICLOS = {
 // Celebración is a night clearing: there it is always night (dark). Between two zones everything blends over BLEND.
 // (The colours were read off each card.)
 const ZONES = [
-    { card: 'ciclos', id: 15, ...CICLOS, own: [{ names: ['fan0', 'fan1', 'fan2', 'fan3'], weight: 3, sway: 0.35 }], grass: true },
+    { card: 'ciclos', id: 15, ...CICLOS, roles: { plants: [1, 0, 1, 3], beads: [2, 5, 3, 0], stones: [4, 3, 5, 0] }, own: [{ names: ['fan0', 'fan1', 'fan2', 'fan3'], weight: 3, sway: 0.35 }], grass: true },
     {
-        // (a night card: its day is the colours of its two lights, the great yellow one and the turquoise one)
+        // (a night card: by day the sky is its great yellow light and the ground the turquoise of its other light; by
+        // night both are dark, as in the card: its navy sky over its blue hill)
+        roles: { plants: [1, 3, 1, 0], beads: [0, 2, 5], stones: [5, 3, 2] },
         card: 'metta', id: 8, ink: '#18243C', white: '#FCFCFC', sky: '#FCE49C', night: '#303C6C', sun: '#00B4CC',
-        groundDay: '#305490', groundNight: '#3C64A8', detailDay: '#00B4CC', detailNight: '#1E3A70',
+        groundDay: '#47BCCB', groundNight: '#305490', detailDay: '#A6E6EC', detailNight: '#1E3A70',
         colours: [
             { light: '#F09CB4', ink: '#B05A78' }, { light: '#00B4CC', ink: '#007C8C' }, { light: '#FCE49C', ink: '#A88A3A' },
             { light: '#3C84C0', ink: '#245490' }, { light: '#305490', ink: '#18243C' }, { light: '#FCFCFC', ink: '#8C9CB4' },
@@ -133,6 +148,7 @@ const ZONES = [
         own: [{ names: ['bloom0', 'bloom1', 'bloom2', 'bloom3', 'bloom4'], weight: 5, sway: 0.4 }],
     },
     {
+        roles: { plants: [1, 4, 5, 0], beads: [3, 2, 4], stones: [4, 5, 0] },
         card: 'upekkha', id: 9, ink: '#60549C', white: '#FCFCFC', sky: '#B4E4D8', night: '#2490A8', sun: '#FC9C78',
         groundDay: '#FC9C78', groundNight: '#60A8C0', detailDay: '#FFC9AE', detailNight: '#60549C',
         colours: [
@@ -143,6 +159,7 @@ const ZONES = [
             { names: ['shrooms', 'shroom'], weight: 2.5 }],
     },
     {
+        roles: { plants: [5, 2, 3, 1], beads: [0, 4, 1], stones: [4, 0, 1] },
         card: 'desafio', id: 21, ink: '#18789C', white: '#F2F7E8', sky: '#A8D8D8', night: '#4C6CA8', sun: '#FFF1C8',
         groundDay: '#E2EFDA', groundNight: '#8C8CC8', detailDay: '#FCC0C0', detailNight: '#5C78B0',
         colours: [
@@ -152,6 +169,7 @@ const ZONES = [
         own: [{ name: 'stones', weight: 2 }, { name: 'caps', weight: 2.5 }],
     },
     {
+        roles: { plants: [5, 0, 1], beads: [2, 1, 0], stones: [5, 3, 0] },
         card: 'celebracion', id: 14, ink: '#48486C', white: '#D8F0FC', sky: '#2460A8', night: '#2460A8', sun: '#FCE484', dark: 1,
         groundDay: '#6CB4E4', groundNight: '#6CB4E4', detailDay: '#D8F0FC', detailNight: '#D8F0FC',
         colours: [
@@ -239,9 +257,10 @@ const mixAll = (zs, get) => { const out = [0, 0, 0]; for (const { z, w } of zs) 
 const css = (rgb) => `rgb(${rgb.map((v) => Math.round(v / 4) * 4).join(',')})`;
 const PALETTE = ZONES[0].palette;
 const PART_COLOUR = { cap: 2, stem: null };   // the mushrooms of the tree: their caps Ciclos's coral, their stems cream
-const GREENS = [1, 0, 1, 3];    // the ground's plants: mostly its green and its teal (and its yellow)
-const WARM = [2, 5, 3, 0];      // the beads of the sprouts
-const STONES = [4, 3, 5, 0];    // her stones
+// What colours of its zone's palette a thing takes, by what it is (each zone says which of its colours, `roles`): the
+// plants (her ferns, the grass), the beads (of the sprouts, the stipple) and the stones; a thing keeps a number (`pick`,
+// 0..1) that chooses among them, so between two zones it takes the matching colour of each
+const ROLES = { plant: 'plants', bead: 'beads', stone: 'stones' };
 const mixRgb = (a, b, t) => `rgb(${a.map((v, i) => Math.round(v + (b[i] - v) * t)).join(',')})`;
 
 export function createWorld({ clouds = null, moon = null }) {
@@ -254,7 +273,10 @@ export function createWorld({ clouds = null, moon = null }) {
     };
     let screen = blend(zonesAt(1000)), lastCam = 1000, lastD = 420;
     // One of the colours a thing takes, as the zone where it stands has it (blended between two)
-    const colourOf = (zs, c) => ({ light: mixAll(zs, (z) => z.palette[c].light), ink: mixAll(zs, (z) => z.palette[c].ink) });
+    const colourOf = (zs, role = 'plant', pick = 0) => {
+        const of = (z) => { const list = z.roles[ROLES[role]]; return z.palette[list[Math.min(list.length - 1, Math.floor(pick * list.length))]]; };
+        return { light: mixAll(zs, (z) => of(z).light), ink: mixAll(zs, (z) => of(z).ink) };
+    };
     let clock = 0.2;                        // the cycle: 0 sunrise, 0.25 noon, 0.5 sunset, 0.75 midnight
     const CYCLE = 90;                       // s for a whole day and night
     const stretches = new Map();
@@ -269,12 +291,12 @@ export function createWorld({ clouds = null, moon = null }) {
         const pick = (list) => list[Math.floor(r() * list.length)];
         const at = () => ({ x: index * STRETCH + r() * STRETCH, d: (row + r()) * PATCH - 180 });
         const jitter = (p, a = 0.8) => [p[0] + (r() - 0.5) * a, p[1] + (r() - 0.5) * a];
-        const sproutsFor = (rr, pk) => {
+        const sproutsFor = (rr) => {
             const v = rr(), n = v < 0.15 ? 0 : v < 0.75 ? 1 : 2, list = [];
             for (let i = 0; i < n; i++) {
                 list.push(i === 0
-                    ? { color: pk(WARM), flip: 1, size: 0.95 + rr() * 0.1, tilt: -rr() * 0.06 - (n > 1 ? 0.08 : 0), phase: 0 }
-                    : { color: pk(WARM), flip: -1, size: 0.72 + rr() * 0.14, tilt: 0.22 + rr() * 0.12, phase: 1 + rr() * 2 });
+                    ? { role: 'bead', pick: rr(), flip: 1, size: 0.95 + rr() * 0.1, tilt: -rr() * 0.06 - (n > 1 ? 0.08 : 0), phase: 0 }
+                    : { role: 'bead', pick: rr(), flip: -1, size: 0.72 + rr() * 0.14, tilt: 0.22 + rr() * 0.12, phase: 1 + rr() * 2 });
             }
             return list;
         };
@@ -288,7 +310,7 @@ export function createWorld({ clouds = null, moon = null }) {
             else if (kind < 0.8) strokes = [[[-8, -2], [0, -14]], [[0, -14], [8, -2]]];               // ^
             else if (kind < 0.9) strokes = [[[-9, 0], [9, -1]]];                                      // -
             else strokes = [[[-11, 0], [-4, -4], [3, 0], [10, -4]]];                                  // ~
-            add({ kind: 'tick', x, d, color: pick(GREENS), strokes: strokes.map((st) => st.map((p) => jitter([p[0] * s, p[1] * s]))) });
+            add({ kind: 'tick', x, d, role: 'plant', pick: r(), strokes: strokes.map((st) => st.map((p) => jitter([p[0] * s, p[1] * s]))) });
         };
 
         // her tree and the zones' special places, where they stand (their stretch keeps clear round them)
@@ -325,15 +347,20 @@ export function createWorld({ clouds = null, moon = null }) {
             const name = kind.names ? pick(kind.names) : kind.name;
             // (no stone in his way round her tree: he can always walk behind its trunk)
             if (BLOCKS.has(name) && near.some(({ P, x, d }) => P.kind === 'tree' && Math.abs(p.x - x) < 700 && p.d > d)) continue;
-            const colour = kind.colour === 'green' ? pick(GREENS) : pick(STONES);
-            add({ kind: 'piece', name, x: p.x, d: p.d, scale: 0.6 + r() * 0.3, flip: r() < 0.5 ? -1 : 1, sway: kind.sway ?? 0, color: colour,
-                zone: z, sprouts: WITH[name] ? sproutsFor(r, pick) : undefined });
+            add({ kind: 'piece', name, x: p.x, d: p.d, scale: 0.6 + r() * 0.3, flip: r() < 0.5 ? -1 : 1, sway: kind.sway ?? 0,
+                role: kind.colour === 'green' ? 'plant' : 'stone', pick: r(),
+                zone: z, sprouts: WITH[name] ? sproutsFor(r) : undefined });
         }
         // Ciclos's tufts of grass, a few in every stretch of it, swaying
         for (let n = 0, m = 2 + Math.floor(r() * 3); n < m; n++) {
             const p = at(), z = zonesAt(p.x, p.d);
             if (!clear(p) || !pickZone(z, r()).grass) continue;
-            add({ kind: 'piece', name: pick(GRASS), x: p.x, d: p.d, scale: 0.45 + r() * 0.35, flip: r() < 0.5 ? -1 : 1, sway: 0.7, color: pick([1, 1, 0, 4]) });
+            add({ kind: 'piece', name: pick(GRASS), x: p.x, d: p.d, scale: 0.45 + r() * 0.35, flip: r() < 0.5 ? -1 : 1, sway: 0.7, role: 'plant', pick: r() });
+        }
+        // by day, butterflies (in the zone's colours) and bees, wandering low over the ground
+        for (let n = 0, m = r() < 0.55 ? 1 : 0; n < m; n++) {
+            const p = at();
+            add({ kind: r() < 0.6 ? 'butterfly' : 'bee', x: p.x, d: p.d, phase: r() * 100, role: 'bead', pick: r(), reach: 200 });
         }
         // fireflies, by night: a few in every stretch, low over the ground
         for (let n = 0, m = 2 + Math.floor(r() * 3); n < m; n++) {
@@ -357,7 +384,7 @@ export function createWorld({ clouds = null, moon = null }) {
                 const a = r() * Math.PI * 2, t = Math.pow(r(), 0.7);
                 dots.push([Math.cos(a) * R * t, Math.sin(a) * R * t * 0.3, 1.6 + r() * 2.4 * (1 - t)]);
             }
-            add({ kind: 'stipple', x: p.x, d: p.d, dots, color: Math.floor(r() * PALETTE.length) });
+            add({ kind: 'stipple', x: p.x, d: p.d, dots, role: 'bead', pick: r() });
         }
         return items;
     }
@@ -392,7 +419,15 @@ export function createWorld({ clouds = null, moon = null }) {
         // the place he meditates at answers him (its glow grows while he sits there, and fades when he gets up)
         const at = sid.sitting ? placeAt(sid.x, sid.d) : null;
         for (const { i, items } of stretches.values()) {
-            if (Math.abs(i * STRETCH - sid.x) > 3000) continue;
+            if (Math.abs(i * STRETCH - sid.x) > 3000) {
+                // (far from him, the characters and the places go back to ink, still, ready for the next time he comes)
+                for (const item of items) {
+                    if (item.kind !== 'being' && item.kind !== 'place') continue;
+                    const c0 = colour.get(item.id) ?? 0;
+                    if (c0 > 0) colour.set(item.id, Math.max(0, c0 - dt * 0.4));
+                }
+                continue;
+            }
             for (const item of items) {
                 if (item.kind !== 'place' && item.kind !== 'being') continue;
                 const l = lifeOf(item), home = item.kind === 'place' ? `${item.x},${item.d}` : item.home;
@@ -411,10 +446,12 @@ export function createWorld({ clouds = null, moon = null }) {
                 const dx = item.x - sid.x, dd = (item.d - sid.d) * 1.6, dist = Math.hypot(dx, dd);
                 // colour: as he walks by, and inside the wave while he sits
                 let c = colour.get(item.id) ?? 0;
-                const near = item.kind === 'tree' ? 950 : item.kind === 'place' ? item.reach + 350 : item.kind === 'being' ? 320 : 170;
+                const near = item.kind === 'tree' ? 950 : item.kind === 'place' ? item.reach + 350 : item.kind === 'being' ? 800 : 170;
                 if (dist < near) c = Math.min(1, c + dt * 0.9 * (1 - dist / near) * 2);
+                // (the characters and the places go back to ink, still, once he has gone a good way off)
+                else if ((item.kind === 'being' || item.kind === 'place') && dist > 1800) c = Math.max(0, c - dt * 0.4);
                 if (ripple && Math.hypot(item.x - ripple.x, (item.d - ripple.d) * 1.6) < ripple.r) c = Math.min(1, c + dt * 1.4);
-                if (c > 0) colour.set(item.id, c);
+                if (c > 0 || colour.has(item.id)) colour.set(item.id, c);
                 if (item.kind === 'tick' || (item.kind === 'piece' && item.sway)) {
                     // pushed aside as he walks through
                     const l = lifeOf(item), push = Math.abs(dd) < 50 && Math.abs(dx) < 70 ? Math.sign(dx || 1) * 0.8 * (1 - Math.abs(dx) / 70) : 0;
@@ -482,7 +519,7 @@ export function createWorld({ clouds = null, moon = null }) {
     function drawItem(c, item) {
         // (the colours it takes are those of the zone where it stands, worked out once)
         item.zone ??= zonesAt(item.x, item.d);
-        item.P ??= colourOf(item.zone, item.color ?? 1);
+        item.P ??= colourOf(item.zone, item.role, item.pick);
         const col = colour.get(item.id) ?? 0, P = item.P, line = mixRgb(screen.ink, P.ink, col * 0.8);
         // the marks of the ground (its grass, its stipple) are in its detail colour: yellow by day, mustard by night
         const mark_ = item.kind === 'tick' || item.kind === 'stipple' ? mixRgb(detailRgb(), P.ink, col * 0.8) : line;
@@ -512,7 +549,7 @@ export function createWorld({ clouds = null, moon = null }) {
                 c.save(); c.translate(fx, fy);
                 c.rotate(lean * extra.sway + sp.tilt + (sp.phase ? wind(item.x + sp.phase * 400) * 0.3 : 0));
                 c.scale(sp.flip * sp.size, sp.size);
-                sp.P ??= colourOf(item.zone, sp.color);
+                sp.P ??= colourOf(item.zone, sp.role, sp.pick);
                 piece(c, extra.name, -foot * k, -own[3] * k, k, sp.P, col, !PIECES[extra.name].fill);
                 c.restore();
             }
@@ -564,7 +601,7 @@ export function createWorld({ clouds = null, moon = null }) {
             const part = (name) => { const a = PIECES[name].at, u = PIECES[name].unit; return [(a[0] - P.anchor[0]) * u, (a[1] - P.anchor[1]) * u]; };
             if (P.kind === 'nest') {
                 // Metta's nest of mushrooms, breathing a little, in the warm light of the great one as he meditates by it
-                const [, , w, h] = B('nest'), [x, y] = part('nest'), breath = 1 + 0.01 * Math.sin(time * 1.1);
+                const [, , w, h] = B('nest'), [x, y] = part('nest'), breath = 1 + 0.01 * col * Math.sin(time * 1.1);
                 halo(x + w / 2, y + h * 0.4, w * (0.7 + 0.5 * g), [252, 228, 156], 0.12 + 0.45 * g);
                 halo(x + w / 2, y + h * 0.3, w * (0.35 + 0.3 * g), [0, 180, 204], 0.08 + 0.35 * g);
                 c.save(); c.scale(1, breath); at('nest', x, y); c.restore();
@@ -584,12 +621,55 @@ export function createWorld({ clouds = null, moon = null }) {
                 // the logs and the flame over them (with the yellow one inside it), flickering about its foot, growing as he
                 // meditates by it, with its warm light
                 const [, , fw, fh] = B('flame'), [fx, fy] = part('flame'), [lx, ly] = part('logs');
-                const grow = 1 + 0.2 * g, sy = (1 + 0.07 * Math.sin(time * 7.1) + 0.04 * Math.sin(time * 12.7)) * grow, sx = (1 - 0.05 * Math.sin(time * 8.3)) * grow;
+                // (in ink it barely flickers; alive, it dances and throws embers that rise and fade)
+                const live = 0.2 + 0.8 * col, grow = 1 + 0.2 * g;
+                const sy = (1 + (0.07 * Math.sin(time * 7.1) + 0.04 * Math.sin(time * 12.7)) * live) * grow, sx = (1 - 0.05 * Math.sin(time * 8.3) * live) * grow;
                 const footX = fx + fw / 2, footY = fy + fh;
-                halo(footX, footY - fh * 0.35 * grow, fh * 0.75 * grow, [255, 190, 150], 0.25 + 0.35 * g);
+                halo(footX, footY - fh * 0.35 * grow, fh * 0.75 * grow, [255, 190, 150], (0.25 + 0.35 * g) * live);
                 c.save(); c.translate(footX, footY); c.scale(sx, sy); at('flame', -fw / 2, -fh); c.restore();
                 at('logs', lx, ly);
+                if (col > 0.05) {
+                    for (let n = 0; n < 14; n++) {
+                        const tt = (time * 0.45 + n / 14) % 1, a = col * Math.sin(Math.PI * tt) * 0.9;
+                        const ex = footX + Math.sin(n * 7.3 + tt * 5) * fw * 0.35 * (0.4 + tt), ey = footY - fh * 0.5 - tt * fh * 1.1;
+                        c.fillStyle = n % 3 ? `rgba(255,226,133,${a})` : `rgba(255,140,170,${a})`;
+                        c.beginPath(); c.arc(ex, ey, 4 * (1 - tt) + 1.5, 0, Math.PI * 2); c.fill();
+                    }
+                }
             }
+            break;
+        }
+        case 'butterfly': case 'bee': {
+            // by day only: a butterfly wanders in slow loops, its wings opening and closing; a bee darts about, buzzing
+            const day = light();
+            if (day < 0.05) break;
+            const ph = item.phase, bee = item.kind === 'bee', sp = bee ? 1.9 : 0.55;
+            const x = Math.sin(time * sp * 0.7 + ph) * (bee ? 90 : 160) + Math.sin(time * sp * 1.9 + ph * 2) * (bee ? 30 : 40);
+            const y = -(bee ? 50 : 90) - Math.sin(time * sp + ph * 3) * (bee ? 25 : 45) - Math.abs(Math.sin(time * sp * 0.5 + ph)) * 40;
+            const dir = Math.cos(time * sp * 0.7 + ph) >= 0 ? 1 : -1;
+            c.save(); c.translate(x, y); c.scale(dir * (bee ? 1.8 : 2.4), bee ? 1.8 : 2.4); c.globalAlpha *= day;
+            if (bee) {
+                const buzz = Math.sin(time * 60 + ph) * 0.5 + 0.5;
+                c.fillStyle = 'rgba(255,255,255,0.7)';
+                c.beginPath(); c.ellipse(-2, -9, 7, 4 + 2 * buzz, -0.5, 0, Math.PI * 2); c.fill();
+                c.beginPath(); c.ellipse(4, -9, 7, 4 + 2 * buzz, 0.5, 0, Math.PI * 2); c.fill();
+                c.fillStyle = '#F6CD4C'; c.beginPath(); c.ellipse(0, 0, 11, 7.5, 0, 0, Math.PI * 2); c.fill();
+                c.strokeStyle = css(screen.ink); c.lineWidth = 2.6;
+                c.beginPath(); c.ellipse(0, 0, 11, 7.5, 0, 0, Math.PI * 2); c.stroke();
+                for (const sx of [-3, 3]) { c.beginPath(); c.moveTo(sx, -7); c.lineTo(sx, 7); c.stroke(); }
+            } else {
+                const open = 0.2 + 0.8 * Math.abs(Math.sin(time * 9 + ph));
+                c.fillStyle = css(item.P.light); c.strokeStyle = css(screen.ink); c.lineWidth = 2.4;
+                for (const [wx, wy, rx, ry] of [[-1, -10, 13, 15], [-1, 6, 9, 9]]) {
+                    for (const side of [-1, 1]) {
+                        c.save(); c.scale(side * open, 1);
+                        c.beginPath(); c.ellipse(wx + rx * 0.8, wy, rx, ry, 0.3 * Math.sign(wy || -1), 0, Math.PI * 2); c.fill(); c.stroke();
+                        c.restore();
+                    }
+                }
+                c.fillStyle = css(screen.ink); c.beginPath(); c.ellipse(0, -2, 3, 13, 0, 0, Math.PI * 2); c.fill();
+            }
+            c.restore();
             break;
         }
         case 'firefly': {
@@ -606,18 +686,40 @@ export function createWorld({ clouds = null, moon = null }) {
             break;
         }
         case 'being': {
-            // one of the characters round a place: it breathes, hops when he comes, leans a little towards him, and in the
-            // light of the place while he meditates there
-            const [, , w, h] = boxOf(item.name), g = l?.glow ?? 0, hop = l?.hop ?? 0;
-            const breath = 1 + 0.018 * Math.sin(time * 1.5 + item.phase), lift = Math.sin(Math.PI * hop) * 30;
-            const lean = (l?.lean ?? 0) * 0.06 + wind(item.x) * 0.1;
+            // one of the characters round a place, with its own way (WAYS): still while it is in ink; once he comes and it
+            // takes its colour the scene comes alive (`col`): it breathes, moves in its way (in Celebración they all dance
+            // to one beat), blinks and glances at him, hops when he comes, and glows while he meditates there
+            const [, , w, h] = boxOf(item.name), g = l?.glow ?? 0, hop = l?.hop ?? 0, a = col, t = time, ph = item.phase;
+            const way = WAYS[item.name] ?? 'still', beat = t * Math.PI * 2 * 0.85;
+            let rot = ((l?.lean ?? 0) * 0.06 + wind(item.x) * 0.1) * a, lift = Math.sin(Math.PI * hop) * 30 * a, sy = 1 + 0.018 * a * Math.sin(t * 1.5 + ph);
+            if (way === 'rock') rot += 0.05 * a * Math.sin(t * 1.1 + ph);
+            else if (way === 'nod') rot += 0.05 * a * Math.max(0, Math.sin(t * 1.4 + ph)) ** 3;
+            else if (way === 'doze') rot += 0.07 * a * (0.5 + 0.5 * Math.sin(t * 0.35 + ph)) - 0.035 * a;
+            else if (way === 'pair') rot += 0.05 * a * Math.sin(t * 0.9);
+            else if (way === 'hum') sy += 0.02 * a * Math.sin(t * 3.2 + ph);
+            else if (way === 'sniff') rot -= 0.05 * a * Math.max(0, Math.sin(t * 2.6 + ph)) ** 6;
+            else if (way === 'hop') lift += 34 * a * Math.max(0, Math.sin(t * 1.9 + ph)) ** 10;
+            else if (way === 'sway') rot += 0.08 * a * Math.sin(beat / 2 + ph);
+            else if (way === 'bounce') { lift += 16 * a * Math.abs(Math.sin(beat / 2 + ph)); sy -= 0.03 * a * Math.max(0, Math.cos(beat + ph)); }
+            else if (way === 'jump') lift += 40 * a * Math.max(0, Math.sin(beat / 2 + ph)) ** 6;
+            else if (way === 'clap') { sy -= 0.05 * a * Math.abs(Math.sin(beat)); rot += 0.04 * a * Math.sin(beat / 2); }
             if (g > 0.01) {
                 const gr = c.createRadialGradient(0, -h * 0.5, 0, 0, -h * 0.5, h * 0.7);
                 gr.addColorStop(0, `rgba(255,240,200,${0.35 * g})`); gr.addColorStop(1, 'rgba(255,240,200,0)');
                 c.fillStyle = gr; c.beginPath(); c.arc(0, -h * 0.5, h * 0.7, 0, Math.PI * 2); c.fill();
             }
-            c.save(); c.translate(0, -lift); c.rotate(lean); c.scale(1 / Math.sqrt(breath), breath);
+            c.save(); c.translate(0, -lift); c.rotate(rot); c.scale(1 / Math.sqrt(sy), sy);
             piece(c, item.name, -w / 2, -h, 1, item.P, col, false);
+            // its eyes, where the card has them: they blink now and then and, alive, look a little towards him
+            const eyes = EYES[item.name];
+            if (eyes) {
+                const at = PIECES[item.name].at, ea = PIECES[eyes].at, u = PIECES[item.name].unit, [, , ew, eh] = boxOf(eyes);
+                const ex = -w / 2 + (ea[0] - at[0]) * u + Math.sign(l?.lean ?? 0) * 4 * a, ey = -h + (ea[1] - at[1]) * u;
+                const shut = ((t + ph * 3) % 4.7) < 0.14 && a > 0.5 ? 0.15 : 1;
+                c.save(); c.translate(ex + ew / 2, ey + eh / 2); c.scale(1, shut);
+                piece(c, eyes, -ew / 2, -eh / 2, 1, item.P, col, true);
+                c.restore();
+            }
             c.restore();
             break;
         }
