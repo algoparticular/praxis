@@ -134,11 +134,13 @@ export const CICLOS = {
 // Celebración is a night clearing: there it is always night (dark). Between two zones everything blends over BLEND.
 // (The colours were read off each card.)
 const ZONES = [
-    { card: 'ciclos', id: 15, ...CICLOS, roles: { plants: [1, 0, 1, 3], beads: [2, 5, 3, 0], stones: [4, 3, 5, 0] }, own: [{ names: ['fan0', 'fan1', 'fan2', 'fan3'], weight: 3, sway: 0.35 }], grass: true },
+    { card: 'ciclos', id: 15, ...CICLOS, roles: { plants: [1, 4, 1, 0], beads: [2, 5, 3, 0], stones: [4, 3, 5, 0] }, own: [{ names: ['fan0', 'fan1', 'fan2', 'fan3'], weight: 3, sway: 0.35 }], grass: true },
     {
         // (a night card: by day the sky is its great yellow light and the ground the turquoise of its other light; by
         // night both are dark, as in the card: its navy sky over its blue hill)
-        roles: { plants: [1, 3, 1, 0], beads: [0, 2, 5], stones: [5, 3, 2] },
+        // (its plants in its yellow, pink and light blue, in their light colours: its ground is dark by night and
+        // turquoise by day, where its turquoise would not show)
+        roles: { plants: [2, 0, 3, 2], beads: [0, 2, 5], stones: [5, 3, 2] }, lines: 'light',
         card: 'metta', id: 8, ink: '#18243C', white: '#FCFCFC', sky: '#FCE49C', night: '#303C6C', sun: '#00B4CC',
         groundDay: '#47BCCB', groundNight: '#305490', detailDay: '#A6E6EC', detailNight: '#1E3A70',
         colours: [
@@ -169,7 +171,8 @@ const ZONES = [
         own: [{ name: 'stones', weight: 2 }, { name: 'caps', weight: 2.5 }],
     },
     {
-        roles: { plants: [5, 0, 1], beads: [2, 1, 0], stones: [5, 3, 0] },
+        // (its plants dark, its lavender and its blue, as the card draws them over its light blue ground)
+        roles: { plants: [5, 4, 5], beads: [2, 1, 0], stones: [5, 3, 0] },
         card: 'celebracion', id: 14, ink: '#48486C', white: '#D8F0FC', sky: '#2460A8', night: '#2460A8', sun: '#FCE484', dark: 1,
         groundDay: '#6CB4E4', groundNight: '#6CB4E4', detailDay: '#D8F0FC', detailNight: '#D8F0FC',
         colours: [
@@ -275,7 +278,9 @@ export function createWorld({ clouds = null, moon = null }) {
     // One of the colours a thing takes, as the zone where it stands has it (blended between two)
     const colourOf = (zs, role = 'plant', pick = 0) => {
         const of = (z) => { const list = z.roles[ROLES[role]]; return z.palette[list[Math.min(list.length - 1, Math.floor(pick * list.length))]]; };
-        return { light: mixAll(zs, (z) => of(z).light), ink: mixAll(zs, (z) => of(z).ink) };
+        // (what is coloured in its line, the plants with nothing inside and the marks of the ground, takes the dark of
+        // the colour, or its light one in a zone whose ground is dark, `lines: 'light'`)
+        return { light: mixAll(zs, (z) => of(z).light), ink: mixAll(zs, (z) => of(z).ink), line: mixAll(zs, (z) => (z.lines === 'light' ? of(z).light : of(z).ink)) };
     };
     let clock = 0.2;                        // the cycle: 0 sunrise, 0.25 noon, 0.5 sunset, 0.75 midnight
     const CYCLE = 90;                       // s for a whole day and night
@@ -357,8 +362,8 @@ export function createWorld({ clouds = null, moon = null }) {
             if (!clear(p) || !pickZone(z, r()).grass) continue;
             add({ kind: 'piece', name: pick(GRASS), x: p.x, d: p.d, scale: 0.45 + r() * 0.35, flip: r() < 0.5 ? -1 : 1, sway: 0.7, role: 'plant', pick: r() });
         }
-        // by day, butterflies (in the zone's colours) and bees, wandering low over the ground
-        for (let n = 0, m = r() < 0.55 ? 1 : 0; n < m; n++) {
+        // by day, little lights that move as butterflies (in the zone's colours) and bees do, low over the ground
+        for (let n = 0, m = 1 + (r() < 0.35 ? 1 : 0); n < m; n++) {
             const p = at();
             add({ kind: r() < 0.6 ? 'butterfly' : 'bee', x: p.x, d: p.d, phase: r() * 100, role: 'bead', pick: r(), reach: 200 });
         }
@@ -511,7 +516,7 @@ export function createWorld({ clouds = null, moon = null }) {
             }
         }
         if (layer === 'fill') return;
-        const ink = tint(name, inkCss), coloured = tintLine && col > 0.01 && tint(name, css(P.ink));
+        const ink = tint(name, inkCss), coloured = tintLine && col > 0.01 && tint(name, css(P.line ?? P.ink));
         if (ink) c.drawImage(ink, left, top, w, h);
         if (coloured) { c.globalAlpha *= col * 0.85; c.drawImage(coloured, left, top, w, h); c.globalAlpha /= col * 0.85; }
     }
@@ -520,9 +525,9 @@ export function createWorld({ clouds = null, moon = null }) {
         // (the colours it takes are those of the zone where it stands, worked out once)
         item.zone ??= zonesAt(item.x, item.d);
         item.P ??= colourOf(item.zone, item.role, item.pick);
-        const col = colour.get(item.id) ?? 0, P = item.P, line = mixRgb(screen.ink, P.ink, col * 0.8);
+        const col = colour.get(item.id) ?? 0, P = item.P, line = mixRgb(screen.ink, P.line ?? P.ink, col * 0.8);
         // the marks of the ground (its grass, its stipple) are in its detail colour: yellow by day, mustard by night
-        const mark_ = item.kind === 'tick' || item.kind === 'stipple' ? mixRgb(detailRgb(), P.ink, col * 0.8) : line;
+        const mark_ = item.kind === 'tick' || item.kind === 'stipple' ? mixRgb(detailRgb(), P.line ?? P.ink, col * 0.8) : line;
         const l = life.get(item.id);
         switch (item.kind) {
         case 'tick': {
@@ -640,36 +645,38 @@ export function createWorld({ clouds = null, moon = null }) {
             break;
         }
         case 'butterfly': case 'bee': {
-            // by day only: a butterfly wanders in slow loops, its wings opening and closing; a bee darts about, buzzing
+            // by day only, little lights as the fireflies are by night, that move as insects do: one (in the zone's colours)
+            // wanders slowly in curves and flutters, rising in small jumps with each beat of its wings, a short trail
+            // fading behind it; two or three golden ones buzz about a point in quick tight loops, now and then darting off
             const day = light();
             if (day < 0.05) break;
-            const ph = item.phase, bee = item.kind === 'bee', sp = bee ? 1.9 : 0.55;
-            const x = Math.sin(time * sp * 0.7 + ph) * (bee ? 90 : 160) + Math.sin(time * sp * 1.9 + ph * 2) * (bee ? 30 : 40);
-            const y = -(bee ? 50 : 90) - Math.sin(time * sp + ph * 3) * (bee ? 25 : 45) - Math.abs(Math.sin(time * sp * 0.5 + ph)) * 40;
-            const dir = Math.cos(time * sp * 0.7 + ph) >= 0 ? 1 : -1;
-            c.save(); c.translate(x, y); c.scale(dir * (bee ? 1.8 : 2.4), bee ? 1.8 : 2.4); c.globalAlpha *= day;
-            if (bee) {
-                const buzz = Math.sin(time * 60 + ph) * 0.5 + 0.5;
-                c.fillStyle = 'rgba(255,255,255,0.7)';
-                c.beginPath(); c.ellipse(-2, -9, 7, 4 + 2 * buzz, -0.5, 0, Math.PI * 2); c.fill();
-                c.beginPath(); c.ellipse(4, -9, 7, 4 + 2 * buzz, 0.5, 0, Math.PI * 2); c.fill();
-                c.fillStyle = '#F6CD4C'; c.beginPath(); c.ellipse(0, 0, 11, 7.5, 0, 0, Math.PI * 2); c.fill();
-                c.strokeStyle = css(screen.ink); c.lineWidth = 2.6;
-                c.beginPath(); c.ellipse(0, 0, 11, 7.5, 0, 0, Math.PI * 2); c.stroke();
-                for (const sx of [-3, 3]) { c.beginPath(); c.moveTo(sx, -7); c.lineTo(sx, 7); c.stroke(); }
+            const ph = item.phase;
+            const dot = (x, y, r, rgb, a) => {
+                const gr = c.createRadialGradient(x, y, 0, x, y, r * 5);
+                gr.addColorStop(0, `rgba(${rgb.join(',')},${0.6 * a})`); gr.addColorStop(1, `rgba(${rgb.join(',')},0)`);
+                c.fillStyle = gr; c.beginPath(); c.arc(x, y, r * 5, 0, Math.PI * 2); c.fill();
+                c.fillStyle = `rgba(${rgb.join(',')},${a})`; c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.fill();
+                c.fillStyle = `rgba(255,255,250,${0.85 * a})`; c.beginPath(); c.arc(x, y, r * 0.45, 0, Math.PI * 2); c.fill();
+            };
+            if (item.kind === 'butterfly') {
+                const at = (t) => [
+                    Math.sin(t * 0.38 + ph) * 170 + Math.sin(t * 1.05 + ph * 2) * 45,
+                    -95 - Math.sin(t * 0.55 + ph * 3) * 45 - Math.abs(Math.sin(t * 8.5 + ph)) * 14,
+                ];
+                const rgb = item.P.light.map((v) => Math.round(v * 0.45 + 255 * 0.55));
+                for (let k = 4; k >= 1; k--) { const [x, y] = at(time - k * 0.09); dot(x, y, 6, rgb, day * 0.35 * (1 - k / 5)); }
+                const [x, y] = at(time);
+                dot(x, y, 10, rgb, day);
             } else {
-                const open = 0.2 + 0.8 * Math.abs(Math.sin(time * 9 + ph));
-                c.fillStyle = css(item.P.light); c.strokeStyle = css(screen.ink); c.lineWidth = 2.4;
-                for (const [wx, wy, rx, ry] of [[-1, -10, 13, 15], [-1, 6, 9, 9]]) {
-                    for (const side of [-1, 1]) {
-                        c.save(); c.scale(side * open, 1);
-                        c.beginPath(); c.ellipse(wx + rx * 0.8, wy, rx, ry, 0.3 * Math.sign(wy || -1), 0, Math.PI * 2); c.fill(); c.stroke();
-                        c.restore();
-                    }
+                const cx = Math.sin(time * 0.3 + ph) * 120, cy = -60 - Math.sin(time * 0.45 + ph * 2) * 25;
+                const dart = Math.max(0, Math.sin(time * 0.6 + ph)) ** 12 * 140;
+                for (let n = 0; n < 3; n++) {
+                    const t = time * (5 + n * 1.3) + ph + n * 2.1, r = 22 + n * 7;
+                    const x = cx + Math.cos(t) * r + Math.sin(t * 2.7) * 6 + dart * (n - 1);
+                    const y = cy + Math.sin(t * 1.3) * r * 0.55 + Math.sin(time * 23 + n) * 2.5;
+                    dot(x, y, 6, [255, 226, 120], day);
                 }
-                c.fillStyle = css(screen.ink); c.beginPath(); c.ellipse(0, -2, 3, 13, 0, 0, Math.PI * 2); c.fill();
             }
-            c.restore();
             break;
         }
         case 'firefly': {
