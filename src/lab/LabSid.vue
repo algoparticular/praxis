@@ -335,7 +335,6 @@ function walkTo(x, d = state.d) {
 }
 function wave() { if (!ui.sitting) act('wave', 2.6, { arm: 'near' }); }
 function jump() { if (!ui.sitting && !state.air) { state.jumped = false; act('jump', 1.7); } }
-function stretch() { if (!ui.sitting) act('stretch', 2.6); }
 function sit(on = !ui.sitting) {
     if (on === ui.sitting) return;
     seedUsed = true; ui.hint = false; clearTimeout(hintTimer);
@@ -343,7 +342,6 @@ function sit(on = !ui.sitting) {
     state.rising = !on && Math.max(...state.legSit) > 0.1;
     ui.sitting = on; state.sitT = 0; state.settled = false; state.target = null; state.action = null;
 }
-function walkAcross() { walkTo(state.x + (Math.sign(Math.cos(state.heading)) || Math.sign(springs.face.x) || 1) * 520); }
 
 // Where a point of the screen is in his own world, at his depth (his world is scaled about the vanishing point)
 const groundAt = (d) => state.ground - (d - state.camD) / DEPTH * view.floor;
@@ -1054,17 +1052,9 @@ onBeforeUnmount(() => {
         </Transition>
         <!-- the app's own header: back on the left, the sound and the menu on the right -->
         <Header :hasBack="true" :hasMenu="true" />
-        <!-- on a computer, every button in a row at the bottom; on a phone he walks where a finger touches (and follows
-             it while it is held), and there is only the lotus with, round it, waving and jumping (below) -->
-        <div v-if="!ui.touch" class="panel">
-            <button @click="walkAcross">Caminar</button>
-            <button @click="stretch">Estirarse</button>
-
-            <span class="sep"></span>
-            <button :class="{ on: ui.bones }" @click="ui.bones = !ui.bones">Esqueleto</button>
-        </div>
-        <!-- one button: the seed, Algo Particular's mark (as in the header), sits him in lotus and gets him up again; a
-             touch on him makes him wave (the buttons to wave and to jump are gone; on a computer J still jumps) -->
+        <!-- one button, on a phone and on a computer alike: the seed, Algo Particular's mark (as in the header), sits him
+             in lotus and gets him up again; he walks with the arrows or WASD, or where a click or a touch on the floor
+             sends him; a touch on him makes him wave (on a computer J jumps) -->
         <button class="lotus glass" :class="{ on: ui.sitting, hint: ui.hint }" :aria-pressed="ui.sitting" aria-label="Loto" title="Loto" @click="sit()">
             <span class="seed" aria-hidden="true"></span>
         </button>
@@ -1145,50 +1135,6 @@ canvas {
     position: absolute;
     inset: 0;
 }
-.panel {
-    position: absolute;
-    left: 16px;
-    right: 16px;
-    bottom: calc(20px + env(safe-area-inset-bottom, 0px));
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    justify-content: center;
-}
-/* As the app's buttons (style.scss): the cream, no border, its soft warm shadow, the coral when touched or on */
-.panel button {
-    font-family: 'Nunito', helvetica, sans-serif;
-    font-size: 16px;
-    margin: 0;
-    height: 44px;
-    padding: 0 18px;
-    border: none;
-    border-radius: 13px;
-    background: #F7F8F1;
-    color: #143246;
-    filter: drop-shadow(0px 2px 3px rgba(20, 50, 70, 0.28));
-    cursor: pointer;
-    touch-action: manipulation;
-    -webkit-tap-highlight-color: transparent;
-    transition: background 200ms ease-out, color 200ms ease-out;
-}
-.panel button:hover { background: #FF6F61; color: #F7F8F1; }
-.panel button.on { background: #FF6F61; color: #F7F8F1; }
-.panel button:focus { box-shadow: none; outline: none; }
-.panel button:focus-visible { box-shadow: rgba(255, 111, 97, 0.35) 0 0 0 4px; }
-.sep {
-    width: 12px;
-}
-.panel.bottom {
-    bottom: calc(196px + env(safe-area-inset-bottom, 0px));
-    flex-wrap: nowrap;
-    justify-content: flex-start;
-    overflow-x: auto;
-    scrollbar-width: none;
-    padding: 4px 2px 6px;
-}
-.panel.bottom .sep { display: none; }
-.panel.bottom button { flex: none; }
 .lotus {
     /* on the app's frosted glass (.glass: its noise and its blur), a little darkened so the cream seed reads over a light
        sky or ground; a touch lights it up, and while he meditates it keeps a soft glow that breathes */
@@ -1265,11 +1211,6 @@ canvas {
     .lotus.hint { box-shadow: 0 0 30px 6px rgba(255, 240, 200, 0.65); }
 }
 @media (prefers-reduced-motion: reduce) { .lotus.on { animation: none; box-shadow: 0 0 30px 6px rgba(255, 240, 200, 0.65); } }
-@media (max-width: 600px) {
-    .panel { gap: 8px; }
-    .panel button { font-size: 14px; height: 40px; padding: 0 14px; }
-    .sep { display: none; }
-}
 </style>
 
 <style>
