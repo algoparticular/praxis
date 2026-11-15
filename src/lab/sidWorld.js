@@ -357,8 +357,8 @@ export function createWorld({ clouds = null, moon = null }) {
             if (!clear(p) || !pickZone(z, r()).grass) continue;
             add({ kind: 'piece', name: pick(GRASS), x: p.x, d: p.d, scale: 0.45 + r() * 0.35, flip: r() < 0.5 ? -1 : 1, sway: 0.7, role: 'plant', pick: r() });
         }
-        // by day, butterflies (in the zone's colours) and bees, wandering low over the ground
-        for (let n = 0, m = r() < 0.55 ? 1 : 0; n < m; n++) {
+        // by day, little lights that move as butterflies (in the zone's colours) and bees do, low over the ground
+        for (let n = 0, m = 1 + (r() < 0.35 ? 1 : 0); n < m; n++) {
             const p = at();
             add({ kind: r() < 0.6 ? 'butterfly' : 'bee', x: p.x, d: p.d, phase: r() * 100, role: 'bead', pick: r(), reach: 200 });
         }
@@ -640,36 +640,38 @@ export function createWorld({ clouds = null, moon = null }) {
             break;
         }
         case 'butterfly': case 'bee': {
-            // by day only: a butterfly wanders in slow loops, its wings opening and closing; a bee darts about, buzzing
+            // by day only, little lights as the fireflies are by night, that move as insects do: one (in the zone's colours)
+            // wanders slowly in curves and flutters, rising in small jumps with each beat of its wings, a short trail
+            // fading behind it; two or three golden ones buzz about a point in quick tight loops, now and then darting off
             const day = light();
             if (day < 0.05) break;
-            const ph = item.phase, bee = item.kind === 'bee', sp = bee ? 1.9 : 0.55;
-            const x = Math.sin(time * sp * 0.7 + ph) * (bee ? 90 : 160) + Math.sin(time * sp * 1.9 + ph * 2) * (bee ? 30 : 40);
-            const y = -(bee ? 50 : 90) - Math.sin(time * sp + ph * 3) * (bee ? 25 : 45) - Math.abs(Math.sin(time * sp * 0.5 + ph)) * 40;
-            const dir = Math.cos(time * sp * 0.7 + ph) >= 0 ? 1 : -1;
-            c.save(); c.translate(x, y); c.scale(dir * (bee ? 1.8 : 2.4), bee ? 1.8 : 2.4); c.globalAlpha *= day;
-            if (bee) {
-                const buzz = Math.sin(time * 60 + ph) * 0.5 + 0.5;
-                c.fillStyle = 'rgba(255,255,255,0.7)';
-                c.beginPath(); c.ellipse(-2, -9, 7, 4 + 2 * buzz, -0.5, 0, Math.PI * 2); c.fill();
-                c.beginPath(); c.ellipse(4, -9, 7, 4 + 2 * buzz, 0.5, 0, Math.PI * 2); c.fill();
-                c.fillStyle = '#F6CD4C'; c.beginPath(); c.ellipse(0, 0, 11, 7.5, 0, 0, Math.PI * 2); c.fill();
-                c.strokeStyle = css(screen.ink); c.lineWidth = 2.6;
-                c.beginPath(); c.ellipse(0, 0, 11, 7.5, 0, 0, Math.PI * 2); c.stroke();
-                for (const sx of [-3, 3]) { c.beginPath(); c.moveTo(sx, -7); c.lineTo(sx, 7); c.stroke(); }
+            const ph = item.phase;
+            const dot = (x, y, r, rgb, a) => {
+                const gr = c.createRadialGradient(x, y, 0, x, y, r * 5);
+                gr.addColorStop(0, `rgba(${rgb.join(',')},${0.6 * a})`); gr.addColorStop(1, `rgba(${rgb.join(',')},0)`);
+                c.fillStyle = gr; c.beginPath(); c.arc(x, y, r * 5, 0, Math.PI * 2); c.fill();
+                c.fillStyle = `rgba(${rgb.join(',')},${a})`; c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.fill();
+                c.fillStyle = `rgba(255,255,250,${0.85 * a})`; c.beginPath(); c.arc(x, y, r * 0.45, 0, Math.PI * 2); c.fill();
+            };
+            if (item.kind === 'butterfly') {
+                const at = (t) => [
+                    Math.sin(t * 0.38 + ph) * 170 + Math.sin(t * 1.05 + ph * 2) * 45,
+                    -95 - Math.sin(t * 0.55 + ph * 3) * 45 - Math.abs(Math.sin(t * 8.5 + ph)) * 14,
+                ];
+                const rgb = item.P.light.map((v) => Math.round(v * 0.45 + 255 * 0.55));
+                for (let k = 4; k >= 1; k--) { const [x, y] = at(time - k * 0.09); dot(x, y, 6, rgb, day * 0.35 * (1 - k / 5)); }
+                const [x, y] = at(time);
+                dot(x, y, 10, rgb, day);
             } else {
-                const open = 0.2 + 0.8 * Math.abs(Math.sin(time * 9 + ph));
-                c.fillStyle = css(item.P.light); c.strokeStyle = css(screen.ink); c.lineWidth = 2.4;
-                for (const [wx, wy, rx, ry] of [[-1, -10, 13, 15], [-1, 6, 9, 9]]) {
-                    for (const side of [-1, 1]) {
-                        c.save(); c.scale(side * open, 1);
-                        c.beginPath(); c.ellipse(wx + rx * 0.8, wy, rx, ry, 0.3 * Math.sign(wy || -1), 0, Math.PI * 2); c.fill(); c.stroke();
-                        c.restore();
-                    }
+                const cx = Math.sin(time * 0.3 + ph) * 120, cy = -60 - Math.sin(time * 0.45 + ph * 2) * 25;
+                const dart = Math.max(0, Math.sin(time * 0.6 + ph)) ** 12 * 140;
+                for (let n = 0; n < 3; n++) {
+                    const t = time * (5 + n * 1.3) + ph + n * 2.1, r = 22 + n * 7;
+                    const x = cx + Math.cos(t) * r + Math.sin(t * 2.7) * 6 + dart * (n - 1);
+                    const y = cy + Math.sin(t * 1.3) * r * 0.55 + Math.sin(time * 23 + n) * 2.5;
+                    dot(x, y, 6, [255, 226, 120], day);
                 }
-                c.fillStyle = css(screen.ink); c.beginPath(); c.ellipse(0, -2, 3, 13, 0, 0, Math.PI * 2); c.fill();
             }
-            c.restore();
             break;
         }
         case 'firefly': {
