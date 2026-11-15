@@ -13,8 +13,9 @@ import Rulito from '../components/Rulito.vue';
 import { play, setCardChord } from '../composables/useSound.js';
 import { chordFor } from '../data/cardChords.js';
 import { getCard } from '../data/cards.js';
+import { loadMemory, saveMemory } from './worldMemory.js';
 
-const ui = reactive({ bones: false, sitting: false, touch: false, hint: false });
+const ui = reactive({ bones: false, sitting: false, touch: false, hint: false, seeds: 0, seedPop: 0 });
 
 // The seed's hint: until the seed has been pressed once (or the space bar used), every 7 s left without it (as the ghost
 // hand's HINT_AFTER in the scenes) the button calls for a moment: it swells and glows and rings of light go out of it,
@@ -92,7 +93,19 @@ const STILLNESS = 0.05;                       // the world's pace while he medit
 
 // The world round him (sidWorld.js): endless, in ink, taking its colour as he goes
 const picture = (src) => (typeof Image !== 'undefined' ? Object.assign(new Image(), { src }) : null);
-const world = createWorld({ clouds: picture('/assets/ciclos/clouds.webp'), moon: picture('/assets/ciclos/moon.webp') });
+// What the world remembers on this phone (worldMemory.js): the visits, the seeds he carries and what he has planted.
+// A seed he walks over is picked up (counted on the seed button); sitting in lotus away from the places, after a moment
+// (PLANT_AFTER) he plants the first he found in front of him, one each time he sits
+const memory = loadMemory();
+memory.visits += 1;
+saveMemory(memory);
+ui.seeds = memory.seeds.length;
+const PLANT_AFTER = 1.5;
+const world = createWorld({
+    clouds: picture('/assets/ciclos/clouds.webp'), moon: picture('/assets/ciclos/moon.webp'),
+    planted: memory.planted, visit: memory.visits,
+    onSeed: ({ card }) => { memory.seeds.push(card); ui.seeds = memory.seeds.length; ui.seedPop += 1; saveMemory(memory); play('pick'); },
+});
 // The floor goes back into the distance: his depth d (0 in front .. DEPTH at the back) lifts his feet towards the
 // horizon and makes him smaller, towards the middle of the screen (a vanishing point)
 // (deep: the camera is high and far, so most of the screen is floor and little is sky; a depth unit is still about
@@ -205,6 +218,7 @@ const state = {
     feet: [null, null],            // his feet on the floor: { x, d, y } (y: lifted), each at its own depth
     steps: [null, null], toes: [0, 0], legTuck: [0, 0],
     legSit: [0, 0], sitT: 9, rising: false, settled: true,
+    plantT: 0, planted: false,                               // seconds sitting away from the places, and whether he planted this time
     underTree: 0, rul: null,                                 // seconds sitting under the tree, the rulito born there      // sitting down in lotus and getting up, leg by leg
     reach: null,                   // a world point his near hand goes to
     reached: null,                 // the last one (his hand comes back from it)
@@ -537,6 +551,18 @@ function update(dt, now) {
     const seated = ui.sitting && Math.min(...state.legSit) > 0.9;
     const card = seated ? world.placeCard(state.x, state.d) : null;
     state.underTree = card ? state.underTree + dt : 0;
+    // away from the places, with seeds, he plants one in front of him (once each time he sits)
+    if (!ui.sitting) { state.plantT = 0; state.planted = false; }
+    else if (seated && !card && !state.planted && memory.seeds.length) {
+        state.plantT += dt;
+        if (state.plantT >= PLANT_AFTER) {
+            state.planted = true;
+            memory.planted.push(world.plant(memory.seeds.shift(), state.x, state.d - 110));
+            ui.seeds = memory.seeds.length;
+            saveMemory(memory);
+            play('bloom');
+        }
+    }
     if (state.underTree >= RULITO_AFTER && !state.rul) {
         state.rul = { age: 0, head: 0, tail: 0, pop: 0, full: false, card };
         rulitoColour.value = RULITO_COLOURS[card] ?? RULITO_COLOURS[15];
@@ -1009,7 +1035,7 @@ function loop(now) {
 }
 
 // (for trying him out from the browser's console)
-if (typeof window !== 'undefined') window.__sid = { state, springs, hands, ui, world };
+if (typeof window !== 'undefined') window.__sid = { state, springs, hands, ui, world, walkTo, sit, memory };
 
 onMounted(() => {
     document.body.classList.add('lab-page');
@@ -1057,6 +1083,8 @@ onBeforeUnmount(() => {
              sends him; a touch on him makes him wave (on a computer J jumps) -->
         <button class="lotus glass" :class="{ on: ui.sitting, hint: ui.hint }" :aria-pressed="ui.sitting" aria-label="Loto" title="Loto" @click="sit()">
             <span class="seed" aria-hidden="true"></span>
+            <!-- the seeds he carries (picked up walking, planted sitting in lotus away from the places) -->
+            <span v-if="ui.seeds" :key="ui.seedPop" class="count">{{ ui.seeds }}</span>
         </button>
     </div>
 </template>
@@ -1179,6 +1207,34 @@ canvas {
     transition: filter 400ms ease-out;
 }
 .lotus.on .seed { filter: drop-shadow(0 0 6px rgba(255, 244, 214, 0.95)); }
+/* the seeds he carries, on the button's rim; it pops when one is picked up */
+.lotus .count {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    min-width: 28px;
+    height: 28px;
+    padding: 0 7px;
+    border-radius: 14px;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #F7F8F1;
+    color: #143246;
+    font-family: Nunito, sans-serif;
+    font-weight: 700;
+    font-size: 15px;
+    line-height: 1;
+    box-shadow: 0 2px 8px rgba(20, 50, 70, 0.3);
+    animation: count-pop 600ms ease-out;
+}
+@keyframes count-pop {
+    0% { transform: scale(0.4); }
+    45% { transform: scale(1.35); box-shadow: 0 0 18px 6px rgba(255, 240, 200, 0.85); }
+    100% { transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) { .lotus .count { animation: none; } }
 /* the hint: left 7 s without being pressed, the seed calls (swells, glows, and a ring of light goes out of it), twice */
 .lotus::before {
     content: '';
