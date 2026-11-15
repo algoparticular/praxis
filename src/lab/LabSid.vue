@@ -25,6 +25,9 @@ let stars = null;
 const rulito = ref(null);
 const RULITO_AFTER = 3, RULITO_GROW = 2.2, RULITO_GO = 3.4;
 const teaching = reactive({ es: '', en: '', on: false, light: false, ink: CICLOS.ink });
+// the rulito is born in the colour its card gives it (as in the card's own scene)
+const RULITO_COLOURS = { 15: '#fc747c', 8: '#f595b6', 9: '#b3539a', 14: '#ffe285', 21: '#ffb44a' };
+const rulitoColour = ref(RULITO_COLOURS[15]);
 
 // --- The rig, in px of the source drawing (258 x 686): he faces +x (his eyes are on that side) ---
 const PIVOT = { x: 130, y: 518 };             // the middle of his bottom, where his hips are: the body bends about it
@@ -487,7 +490,11 @@ function update(dt, now) {
     const seated = ui.sitting && Math.min(...state.legSit) > 0.9;
     const card = seated ? world.placeCard(state.x, state.d) : null;
     state.underTree = card ? state.underTree + dt : 0;
-    if (state.underTree >= RULITO_AFTER && !state.rul) { state.rul = { age: 0, head: 0, tail: 0, pop: 0, full: false, card }; rulito.value?.reshape(); }
+    if (state.underTree >= RULITO_AFTER && !state.rul) {
+        state.rul = { age: 0, head: 0, tail: 0, pop: 0, full: false, card };
+        rulitoColour.value = RULITO_COLOURS[card] ?? RULITO_COLOURS[15];
+        rulito.value?.reshape();
+    }
     // the music moves to the chord of the card of the zone he is in (src/data/cardChords.js), as on a card's page
     const zone = world.zoneCard();
     if (zone !== state.zone) { state.zone = zone; setCardChord(chordFor(zone)); }
@@ -783,7 +790,7 @@ function draw() {
     const W = view.w / view.k;
 
     // The floor, back to the horizon, and him on it at his depth (smaller and nearer the middle the farther back)
-    world.drawSky(c, { width: W, cam: state.cam }, 0, horizon());
+    world.drawSky(c, { width: W, cam: state.cam, d: state.d }, 0, horizon());
     // the zone's colours: his line and body, the colour under the starry night, and the header's icons cream by night
     INK = world.ink(); FILL = world.white();
     const dark = world.night(), under = world.nightColour();
@@ -985,7 +992,7 @@ onBeforeUnmount(() => {
     <div class="lab">
         <div ref="nightSky" class="night-sky"><canvas ref="starCanvas"></canvas></div>
         <!-- the rulito draws itself on its own canvas, which this scene lays over his head -->
-        <Rulito ref="rulito" class="offstage" color="#fc747c" />
+        <Rulito ref="rulito" class="offstage" :color="rulitoColour" />
         <canvas ref="canvas" @pointermove="onMove" @pointerdown="onDown" @pointerup="onUp" @pointercancel="onUp"></canvas>
         <!-- the affirmation of the card of the place where he meditates, written by hand in the sky -->
         <Transition name="teaching">
@@ -1045,13 +1052,20 @@ canvas {
     max-width: 560px;
     text-align: center;
     font-family: 'Caveat', 'Nunito', helvetica, sans-serif;
-    font-size: clamp(28px, 6vw, 40px);
+    font-size: clamp(30px, 7.2vw, 44px);
     line-height: 1.15;
     pointer-events: none;
-    /* (a soft halo of the sky round the letters, so they read over a cloud, the sun or the moon) */
-    text-shadow: 0 0 10px rgba(255, 255, 255, 0.85), 0 0 22px rgba(255, 255, 255, 0.55);
+    /* on a card of frosted cream (by night, of the night), so it reads over anything: a cloud, the sun, the moon */
+    width: fit-content;
+    max-width: min(560px, calc(100% - 32px));
+    padding: 14px 22px 16px;
+    border-radius: 22px;
+    background: rgba(247, 248, 241, 0.82);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 6px 24px rgba(20, 50, 70, 0.18);
 }
-.teaching.light { color: #F7F8F1; text-shadow: 0 0 10px rgba(10, 30, 60, 0.75), 0 0 22px rgba(10, 30, 60, 0.45); }
+.teaching.light { color: #F7F8F1; background: rgba(16, 30, 52, 0.62); box-shadow: 0 6px 24px rgba(0, 0, 0, 0.25); }
 .teaching-enter-active { transition: opacity 1.6s ease-out, transform 1.6s ease-out; }
 .teaching-leave-active { transition: opacity 0.9s ease-in; }
 .teaching-enter-from { opacity: 0; transform: translateY(8px); }
