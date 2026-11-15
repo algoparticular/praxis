@@ -134,7 +134,7 @@ export const CICLOS = {
 // Celebración is a night clearing: there it is always night (dark). Between two zones everything blends over BLEND.
 // (The colours were read off each card.)
 const ZONES = [
-    { card: 'ciclos', id: 15, ...CICLOS, roles: { plants: [1, 0, 1, 3], beads: [2, 5, 3, 0], stones: [4, 3, 5, 0] }, own: [{ names: ['fan0', 'fan1', 'fan2', 'fan3'], weight: 3, sway: 0.35 }], grass: true },
+    { card: 'ciclos', id: 15, ...CICLOS, roles: { plants: [1, 4, 1, 0], beads: [2, 5, 3, 0], stones: [4, 3, 5, 0] }, own: [{ names: ['fan0', 'fan1', 'fan2', 'fan3'], weight: 3, sway: 0.35 }], grass: true },
     {
         // (a night card: by day the sky is its great yellow light and the ground the turquoise of its other light; by
         // night both are dark, as in the card: its navy sky over its blue hill)
@@ -171,7 +171,8 @@ const ZONES = [
         own: [{ name: 'stones', weight: 2 }, { name: 'caps', weight: 2.5 }],
     },
     {
-        roles: { plants: [5, 0, 1], beads: [2, 1, 0], stones: [5, 3, 0] },
+        // (its plants dark, its lavender and its blue, as the card draws them over its light blue ground)
+        roles: { plants: [5, 4, 5], beads: [2, 1, 0], stones: [5, 3, 0] },
         card: 'celebracion', id: 14, ink: '#48486C', white: '#D8F0FC', sky: '#2460A8', night: '#2460A8', sun: '#FCE484', dark: 1,
         groundDay: '#6CB4E4', groundNight: '#6CB4E4', detailDay: '#D8F0FC', detailNight: '#D8F0FC',
         colours: [
