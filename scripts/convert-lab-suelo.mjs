@@ -1,8 +1,10 @@
 // Plants, stones and mushrooms of the cards' scenes for the puppet lab's world (/lab/sid), cut out of the layers already
 // in public/assets (no originals needed): the fans and the tufts of grass of Ciclos (its own plants, in the world's own
-// palette), the mushrooms and crystals of Upekkha's line drawing, the stones and pink mushrooms of Desafío, the little
-// glowing plants of Metta, the mushrooms of Celebración, and the zones' special places and their characters (Metta's
-// nest and beings, Upekkha's pond, Celebración's fire and everyone round it, Vulpes). Each piece is made, as her tree's pieces are
+// palette), the mushrooms and crystals of Upekkha's line drawing, the pink mushrooms of Desafío, the little glowing
+// plants of Metta, the mushrooms of Celebración, the curls of Paciencia's grass and its pine cone, Gratitud's palm and
+// plant, Transformación's stones, and the zones' special places and their characters (Metta's nest and beings,
+// Upekkha's pond, Celebración's fire and everyone round it, Paciencia's boat and its crew over its mycelium, Gratitud's
+// island and its boat, Transformación's tree, seed and pond with the little one and the elder). Each piece is made, as her tree's pieces are
 // (scripts/convert-lab-arbol.mjs), into src/lab/suelo/NAME.webp (its line, as transparency, so the lab can tint it) and
 // NAME-fill.webp (what is inside its line, white over transparent, so the lab can paint it in code), and
 // src/lab/suelo/suelo.json: the size of every piece's picture and how many units of the world each of its pixels is
@@ -52,8 +54,7 @@ const PIECES = {
     crystal: { from: 'upekkha/rocks', crop: [698, 552, 94, 76], unit: 1.35, inside: 'closed', keep: 0.2, paint: '#E8E2FA' },
     shrooms: { from: 'upekkha/rocks', crop: [864, 528, 94, 94], unit: 1.35, inside: 'closed', keep: 0.2, paint: '#F6E27A' },
     shroom: { from: 'upekkha/rocks', crop: [543, 428, 74, 78], unit: 1.35, inside: 'closed', keep: 0.2, paint: '#F6E27A' },
-    // Desafío's two stones and Celebración's mushrooms
-    stones: { from: 'desafio/stones', unit: 1.15, inside: 'colour', dark: 130 },
+    // Celebración's mushrooms
     mushrooms: { from: 'celebracion/mushrooms', unit: 1.5, inside: 'colour', dark: 110 },
     // Upekkha's pond, the special place of its zone (its water and its line; the card cuts it at its left edge: it is made
     // whole with its mirror there). compose: layers of the card put together over `canvas` (card px)
@@ -73,7 +74,7 @@ const PIECES = {
     pondPebble: { from: 'upekkha/land', crop: [416, 980, 180, 92], unit: 0.8, inside: 'colour', dark: 130 },
     pondLilies: { from: 'upekkha/land', crop: [67, 718, 182, 142], unit: 0.8, inside: 'colour', dark: 130 },
     pondShrooms: { compose: [['upekkha/land', 48, 1020], ['upekkha/crystals', 1202, 1237]], canvas: [1258, 1676, 342, 264], unit: 0.8, inside: 'colour', dark: 130 },
-    // Desafío's two pink mushrooms
+    // Desafío's two pink mushrooms (Celebración's zone has them too)
     caps: { from: 'desafio/mushrooms', unit: 1.2, inside: 'colour', dark: 130 },
     // Metta's little glowing plants (dark, all line)
     ...Object.fromEntries([0, 1, 2, 3, 4].map((i) => [`bloom${i}`, { from: `metta/flower${i}`, unit: 1.3, inside: 'colour', dark: 120 }])),
@@ -96,8 +97,42 @@ const PIECES = {
     ...Object.fromEntries(['being0', 'being1', 'being2', 'being3', 'being4', 'being5'].map((b, i) => [`eyes_metta${i}`,
         { bits: ['metta', `eyes:${b}`], unit: 1, inside: 'none' }])),
     eyes_fire_samaLeft: { card: ['celebracion', 'eyesLeft'], unit: 0.8, inside: 'none' },
-    // Desafío: Vulpes
-    vulpes: { card: ['desafio', 'fox'], unit: 0.55, inside: 'colour', dark: 130 },
+    // Paciencia: its boat with its crew, each one apart (put together from the pieces of its scene's atlas, `atlas`, at
+    // half the card's size: where each is in the card, pacienciaScene.json), drawn back to front as the scene does: the
+    // one at the left inside the hull, the hull, the one in the middle and his oar, the small one, the lookout on the left
+    // curl and the one on the right curl; the strip of the mycelium it floats over, the pine cone, and the curls of its
+    // grass, cut from the strip (only the strokes whole in each cut)
+    pacL: { atlas: ['paciencia', 'boat', ['lBody', 'lLine', 'lAntennae', 'lEyes', 'lHands']], unit: 1.2, inside: 'colour', dark: 110 },
+    pacHull: { atlas: ['paciencia', 'boat', ['fill', 'line']], unit: 1.2, inside: 'colour', dark: 110 },
+    pacC: { atlas: ['paciencia', 'boat', ['cBody', 'cLine', 'cAntennae', 'cEyes']], unit: 1.2, inside: 'colour', dark: 110 },
+    pacOar: { atlas: ['paciencia', 'boat', ['arms', 'oarFill', 'oarLine', 'oarSpot']], unit: 1.2, inside: 'colour', dark: 110 },
+    pacS: { atlas: ['paciencia', 'boat', ['sBody', 'sLine', 'sAntennae', 'sEyes']], unit: 1.2, inside: 'colour', dark: 110 },
+    pacT: { atlas: ['paciencia', 'boat', ['tBody', 'tLine', 'tAntennae', 'tEyes']], unit: 1.2, inside: 'colour', dark: 110 },
+    pacR: { atlas: ['paciencia', 'boat', ['rBody', 'rLine', 'rAntennae', 'rEyes']], unit: 1.2, inside: 'colour', dark: 110 },
+    pacBed: { from: 'paciencia/mushrooms', unit: 0.9, inside: 'colour', dark: 110 },
+    pacCone: { from: 'paciencia/cone', unit: 0.9, inside: 'colour', dark: 110 },
+    ...Object.fromEntries([[0, 111], [118, 146], [340, 174], [535, 190], [903, 300], [1250, 210], [1460, 290]]
+        .map(([x, w], i) => [`pacCurl${i}`, { from: 'paciencia/grass', crop: [x, 0, w, 365], unit: 0.9, inside: 'none', keep: 0.25 }])),
+    // Gratitud: its island with the house, the palm, the little light over it and the pale plant (Sid in his chair is
+    // left out: Sid is the one who walks), its boat apart (it rocks by the dock), and its palm and its plant again, to
+    // spread over its zone. Much bigger than in the card, where Sid is a dot beside the house
+    grIsland: { compose: [['gratitud/island', 462, 1188], ['gratitud/palm', 670, 1073], ['gratitud/light', 785, 1041],
+        ['gratitud/house', 925, 1101], ['gratitud/plant', 1237, 1338]], canvas: [462, 1041, 1107, 493], unit: 2.2, inside: 'colour', dark: 60 },
+    grBoat: { card: ['gratitud', 'boat'], unit: 2.2, inside: 'colour', dark: 60 },
+    grPalm: { from: 'gratitud/palm', unit: 1.7, inside: 'colour', dark: 60 },
+    grPlant: { from: 'gratitud/plant', unit: 1.9, inside: 'colour', dark: 60 },
+    // Transformación: the tree that grows out of the seed, its seed, the pond its root goes down into (pure line: its
+    // water painted the card's blue), the little one with its rod (its eyes apart) and the elder with its bowl; and the
+    // stones and the little mushroom of its plain (the plain's blue taken out, `drop`)
+    trTree: { card: ['transformacion', 'tree'], unit: 1, inside: 'colour', dark: 110 },
+    trSeed: { card: ['transformacion', 'seed'], unit: 1, inside: 'colour', dark: 110 },
+    trPond: { card: ['transformacion', 'pond'], unit: 1, inside: 'closed', keep: 0.05, paint: '#205DA3' },
+    trSmall: { card: ['transformacion', 'small'], unit: 1, inside: 'colour', dark: 110 },
+    eyes_trSmall: { card: ['transformacion', 'smallEyes'], unit: 1, inside: 'none' },
+    trElder: { compose: [['transformacion/elder', 1438, 1051], ['transformacion/cup', 1493, 1845]], canvas: [1438, 1051, 532, 987], unit: 1, inside: 'colour', dark: 110 },
+    trStone: { from: 'transformacion/ground', crop: [290, 150, 260, 110], drop: '#69B8E2', unit: 1, inside: 'colour', dark: 110, keep: 0.2 },
+    trCairn: { from: 'transformacion/ground', crop: [120, 320, 380, 170], drop: '#69B8E2', unit: 1, inside: 'colour', dark: 110, keep: 0.2 },
+    trRocks: { from: 'transformacion/ground', crop: [1840, 0, 320, 250], drop: '#69B8E2', unit: 1, inside: 'colour', dark: 110, keep: 0.2 },
 };
 
 await mkdir(target, { recursive: true });
@@ -117,7 +152,24 @@ for (const [name, piece] of Object.entries(PIECES)) {
         const [, x, y, w, h, ax, ay] = json.bits.find((b) => b[0] === bit);
         piece.from = `${scene}/bits`; piece.crop = [ax, ay, w, h]; piece.at = [x - ax, y - ay];
     }
-    if (piece.compose) {
+    // (put together from pieces of a scene's atlas, each where the card has it, at half the card's size: its place in
+    // the card, `at`, is then in those half px too)
+    if (piece.atlas) {
+        const [scene, layer, parts] = piece.atlas, json = JSON.parse(await readFile(path.join(root, 'src', 'composables', `${scene}Scene.json`), 'utf8'));
+        const file = path.join(assets, scene, `${layer}.webp`), m = await sharp(file).metadata(), K = 0.5;
+        const rects = parts.map((p) => json.pieces[p].rect), x0 = Math.min(...rects.map((r) => r[0])), y0 = Math.min(...rects.map((r) => r[1]));
+        const cw = Math.ceil((Math.max(...rects.map((r) => r[0] + r[2])) - x0) * K), ch = Math.ceil((Math.max(...rects.map((r) => r[1] + r[3])) - y0) * K);
+        const layers = [];
+        for (const p of parts) {
+            const [fx, fy, fw, fh] = json.pieces[p].crop, [rx, ry, rw, rh] = json.pieces[p].rect;
+            const left = Math.round(fx * m.width), top = Math.round(fy * m.height);
+            const width = Math.min(m.width - left, Math.round(fw * m.width)), height = Math.min(m.height - top, Math.round(fh * m.height));
+            layers.push({ input: await sharp(file).extract({ left, top, width, height }).resize(Math.round(rw * K), Math.round(rh * K)).png().toBuffer(),
+                left: Math.round((rx - x0) * K), top: Math.round((ry - y0) * K) });
+        }
+        piece.at = [x0 * K, y0 * K];
+        img = sharp(await sharp({ create: { width: cw, height: ch, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } }).composite(layers).png().toBuffer());
+    } else if (piece.compose) {
         piece.at = piece.canvas.slice(0, 2);
         const [cx, cy, cw, ch] = piece.canvas, layers = [];
         for (const [from, x, y] of piece.compose) {
@@ -138,6 +190,14 @@ for (const [name, piece] of Object.entries(PIECES)) {
     if (piece.crop) img = img.extract({ left: piece.crop[0], top: piece.crop[1], width: piece.crop[2], height: piece.crop[3] });
     const { data, info } = await img.raw().toBuffer({ resolveWithObject: true });
     const W = info.width, H = info.height, N = W * H;
+    // (a colour taken out: the ground the piece was drawn on, softly round it)
+    if (piece.drop) {
+        const [dr, dg, db] = [1, 3, 5].map((k) => parseInt(piece.drop.slice(k, k + 2), 16));
+        for (let i = 0; i < N; i++) {
+            const far = Math.hypot(data[i * 4] - dr, data[i * 4 + 1] - dg, data[i * 4 + 2] - db);
+            data[i * 4 + 3] = Math.round(data[i * 4 + 3] * Math.max(0, Math.min(1, (far - 30) / 30)));
+        }
+    }
     const line = new Float32Array(N), inside = new Float32Array(N);
     for (let i = 0; i < N; i++) {
         const a = data[i * 4 + 3] / 255;
@@ -171,7 +231,7 @@ for (const [name, piece] of Object.entries(PIECES)) {
                     const j = i + dy * W + dx;
                     if (j >= 0 && j < N && label[j] >= 0 && sizes[label[j]] >= biggest * piece.keep) { near = true; break; }
                 }
-                if (!near) line[i] = 0;
+                if (!near) { line[i] = 0; if (piece.inside === 'colour') inside[i] = 0; }
             }
         }
     }
