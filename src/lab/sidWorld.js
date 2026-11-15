@@ -227,7 +227,15 @@ const ZONE = 8000, ZONE_START = -2000, BLEND = 1000;    // (about 19 s walking a
 const ZONE_D = 6000, D_START = 420 - ZONE_D / 2, SHIFT = 2;
 const CYCLE_W = ZONE * ZONES.length;   // (the zones come round again after this, across)
 const mod = (a, n) => ((a % n) + n) % n;
-const zoneOfCell = (i, j) => ZONES[mod(i + SHIFT * j, ZONES.length)];
+// The order of the zones across is drawn again on every visit (`createWorld` shuffles them): he starts just before the
+// place of the first, and every row still has the seven once, so the grid keeps every card once in each row and column
+let zoneOrder = ZONES;
+const shuffled = (list) => {
+    const out = list.slice();
+    for (let i = out.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [out[i], out[j]] = [out[j], out[i]]; }
+    return out;
+};
+const zoneOfCell = (i, j) => zoneOrder[mod(i + SHIFT * j, zoneOrder.length)];
 // The special place of each zone, in its middle (and again wherever the zones come round): Ciclos's is her tree; then
 // Metta's nest of mushrooms with its beings round it, Upekkha's pond, Paciencia's boat with its crew floating over its
 // mycelium, Gratitud's house with its palm and its boat, Transformación's tree growing out of its seed over its pond with the
@@ -308,7 +316,7 @@ function placesNear(x0, x1, d0, d1) {
         for (const P of PLACES) {
             const d = middle + P.dd;
             if (d < d0 || d > d1) continue;
-            const k = ZONES.findIndex((z) => z.card === P.card), x = ZONE_START + ZONE * (mod(k - SHIFT * j, n) + 0.5);
+            const k = zoneOrder.findIndex((z) => z.card === P.card), x = ZONE_START + ZONE * (mod(k - SHIFT * j, n) + 0.5);
             for (let c = Math.ceil((x0 - x) / CYCLE_W), xx = x + c * CYCLE_W; xx <= x1; c++, xx = x + c * CYCLE_W) out.push({ P, x: xx, d });
         }
     }
@@ -348,6 +356,7 @@ const ROLES = { plant: 'plants', bead: 'beads', stone: 'stones' };
 const mixRgb = (a, b, t) => `rgb(${a.map((v, i) => Math.round(v + (b[i] - v) * t)).join(',')})`;
 
 export function createWorld({ clouds = null, moon = null }) {
+    zoneOrder = shuffled(ZONES);                // (a new map of the worlds on every visit)
     // The colours on the screen now: those of the zone where the camera is (blended between two), set as the sky is
     // drawn, first thing every frame
     const blend = (zs) => {
