@@ -43,7 +43,7 @@ const rulito = ref(null);
 const RULITO_AFTER = 3, RULITO_GROW = 2.2, RULITO_GO = 3.4;
 const teaching = reactive({ es: '', en: '', on: false, light: false, ink: CICLOS.ink });
 // the rulito is born in the colour its card gives it (as in the card's own scene)
-const RULITO_COLOURS = { 15: '#fc747c', 8: '#f595b6', 9: '#b3539a', 14: '#ffe285', 21: '#ffb44a' };
+const RULITO_COLOURS = { 15: '#fc747c', 8: '#f595b6', 9: '#b3539a', 14: '#ffe285', 27: '#f37b85', 24: '#fff6c2', 32: '#f5d35a' };
 const rulitoColour = ref(RULITO_COLOURS[15]);
 
 // --- The rig, in px of the source drawing (258 x 686): he faces +x (his eyes are on that side) ---
