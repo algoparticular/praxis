@@ -101,7 +101,7 @@ const LEG = { thigh: 97, shin: 97, foot: 40, width: 16 };
 const ARM = { upper: 116, fore: 110, width: 13.5 };        // long, as in Upekkha (they reach his crossed legs)
 // his legs crossed in lotus, as in Upekkha and Ciclos: the knees well out past his body, a little up off the floor,
 // each foot under the other knee, the two shins crossing in front of him
-const LOTUS = { knee: 132, kneeUp: 26, under: 70, hands: 15, open: 1.38 };   // (hands: how far apart in his lap; open: how far his elbows open)
+const LOTUS = { knee: 132, kneeUp: 26, under: 70, hands: 15, open: 1.38, low: 16 };   // (hands: how far apart in his lap, low: how far under his pelvis they show; open: how far his elbows open)
 const STAND = 196;                            // his hips over the ground, standing: his legs all but straight
 const SIT = 48;                               // his hips over the ground, sitting with his legs crossed: his bottom on the floor
 // In profile his hips are together in his middle (one leg behind the other), his arms come from the middle of him
@@ -1008,10 +1008,10 @@ function draw() {
         const r = springs.reach.x;
         if (which === 'near' && state.reached && r > 0.001) hand = { x: hand.x + (state.reached.x - hand.x) * r, y: hand.y + (state.reached.y - hand.y) * r };
         // in lotus: the shoulders loose, each arm opens a little out by his side (the elbow out) and comes in again
-        // low, so the two hands meet in his lap, in front of his pelvis, over his crossed legs
+        // low, so the two hands meet in his lap, showing a little under his pelvis, over his crossed legs
         const knees = Math.min(...state.legSit), own = Math.sign(s.x - f.root.x) || (i ? 1 : -1);
         if (knees > 0.001) {
-            const k = knees * knees * (3 - 2 * knees), rest = { x: f.root.x + own * LOTUS.hands, y: f.root.y - 4 };
+            const k = knees * knees * (3 - 2 * knees), rest = { x: f.root.x + own * LOTUS.hands, y: f.root.y + LOTUS.low };
             hand = { x: hand.x + (rest.x - hand.x) * k, y: hand.y + (rest.y - hand.y) * k };
         }
         const raised = hand.y < s.y;
