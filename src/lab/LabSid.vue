@@ -99,8 +99,11 @@ let INK = CICLOS.ink;                            // his line and his white: thos
 const SMALL = 0.48;                            // (seen from further away, as from a high camera: the world big round him)
 const LEG = { thigh: 97, shin: 97, foot: 40, width: 16 };
 const ARM = { upper: 116, fore: 110, width: 13.5 };        // long, as in Upekkha (they reach his crossed legs)
+// his legs crossed in lotus, as in Upekkha and Ciclos: the knees well out past his body, a little up off the floor,
+// each foot under the other knee, the two shins crossing in front of him
+const LOTUS = { knee: 132, kneeUp: 26, under: 70 };
 const STAND = 196;                            // his hips over the ground, standing: his legs all but straight
-const SIT = 12;                               // his hips over the ground, sitting with his legs crossed: his bottom on the floor
+const SIT = 48;                               // his hips over the ground, sitting with his legs crossed: his bottom on the floor
 // In profile his hips are together in his middle (one leg behind the other), his arms come from the middle of him
 // too, the near one hanging over his belly and the far one behind him (unseen until it swings out); turned to us, his
 // hips, shoulders and hands are at each side of him (FRONT_ below). Which is near and which far is as when one really
@@ -387,7 +390,9 @@ function walkTo(x, d = state.d) {
             x = best.px + ux * t; d = best.pd + ud * t;
         }
     }
-    state.target = { x, d }; state.reach = null; if (ui.sitting) sit(false);
+    // (sitting, he gets up first and only then sets off: the place is kept for when he is on his feet)
+    if (ui.sitting) sit(false);
+    state.target = { x, d }; state.reach = null;
 }
 function wave() { if (!ui.sitting) act('wave', 2.6, { arm: 'near' }); }
 function jump() { if (!ui.sitting && !state.air) { state.jumped = false; act('jump', 1.7); } }
@@ -541,7 +546,8 @@ function update(dt, now) {
     else if (ui.sitting || state.still > 0.45) aim = -Math.PI / 2;
     // (quick on his feet: a turn right round takes him about a third of a second walking, a little more standing)
     const heading0 = state.heading;
-    if (aim !== null && !state.air) turnTo(aim, dt * (length > 0 ? 9 + 3 * state.run : 6));
+    // (getting up from lotus he rises straight up where he sat; only on his feet does he turn and set off)
+    if (aim !== null && !state.air && !state.rising) turnTo(aim, dt * (length > 0 ? 9 + 3 * state.run : 6));
     state.turning = dt > 0 ? wrap(state.heading - heading0) / dt : 0;
     const off = aim === null ? 0 : Math.abs(wrap(aim - state.heading));
     // his pace: easy; held a while (or far to go), a trot. Setting off he gathers speed (the first steps are shorter),
@@ -550,7 +556,7 @@ function update(dt, now) {
     // always a calm walk)
     const trot = (keyed && state.held > 1.2) || (state.guide && state.guide.t > 1.2 && left > 420);
     const top = trot ? TROT : PACE;
-    const want = length > 0 && !state.air && !ui.sitting ? Math.min(top, left * 3 + 20) * turnPace(off) : 0;
+    const want = length > 0 && !state.air && !ui.sitting && !state.rising ? Math.min(top, left * 3 + 20) * turnPace(off) : 0;
     const was = state.speed;
     // (in the air he keeps the speed he jumped with: a jump while walking carries him forward, over what is low)
     if (!state.air) state.speed = want > state.speed ? Math.min(want, state.speed + (trot ? 800 : 700) * dt) : Math.max(want, state.speed - 900 * dt);
@@ -983,7 +989,7 @@ function draw() {
             // Crossed in front of him, as she draws them: each knee well out to its side, its foot under the other; each
             // leg crosses on its own (lifting its foot a little over the way), the second after the first
             const side = Math.sign(h.x - f.root.x) || (i ? face : -face), m = crossed;
-            const knee = { x: f.root.x + side * 104, y: state.ground - 40 }, under = { x: f.root.x - side * 36, y: state.ground - 9 - Math.sin(Math.PI * m) * 34 };
+            const knee = { x: f.root.x + side * LOTUS.knee, y: state.ground - LOTUS.kneeUp }, under = { x: f.root.x - side * LOTUS.under, y: state.ground - 2 - Math.sin(Math.PI * m) * 34 };
             joint = { x: joint.x + (knee.x - joint.x) * m, y: joint.y + (knee.y - joint.y) * m };
             end = { x: end.x + (under.x - end.x) * m, y: end.y + (under.y - end.y) * m };
         }
@@ -991,7 +997,9 @@ function draw() {
         // (along the way he faces: pointing into the distance a foot shows a little up, towards us a little down)
         const toes = crossed > 0.5 ? Math.sign(end.x - joint.x) : hx * (1 - f.front) + outward * 0.75 * f.front;
         const tilt = crossed > 0.5 ? 0 : -hz * LEG.foot * 0.3;
-        return { h, joint, end, toe: { x: end.x + toes * LEG.foot, y: end.y + 2 + tilt + (crossed > 0.5 ? 0 : state.toes[i]) } };
+        // (crossed, only the tip of the foot shows past the other shin, turning up a little)
+        if (crossed > 0.5) return { h, joint, end, toe: { x: end.x + toes * LEG.foot * 0.45, y: end.y - 7 } };
+        return { h, joint, end, toe: { x: end.x + toes * LEG.foot, y: end.y + 2 + tilt + state.toes[i] } };
     });
     // Arms (in the world: shoulders on his body, hands where they are going, or reaching)
     const arms = ['far', 'near'].map((which, i) => {
@@ -999,13 +1007,12 @@ function draw() {
         let hand = map(f, hands[which].u.x, hands[which].v.x);
         const r = springs.reach.x;
         if (which === 'near' && state.reached && r > 0.001) hand = { x: hand.x + (state.reached.x - hand.x) * r, y: hand.y + (state.reached.y - hand.y) * r };
-        // in lotus, as a Buddha meditating: the shoulders loose, each arm falls by his side, the elbow opening a little
-        // outwards, and the forearm comes in to his lap, where the two hands meet in the middle, in front of his pelvis
-        // (the mudra of meditation)
+        // in lotus, as she draws him meditating (Upekkha, Ciclos): the shoulders loose, each arm comes down along his
+        // side, outside his body, and its hand rests on the knee of its own side
         const knees = Math.min(...state.legSit), own = Math.sign(s.x - f.root.x) || (i ? 1 : -1);
         if (knees > 0.001) {
-            const k = knees * knees * (3 - 2 * knees), lap = map(f, PIVOT.x + own * 13 / Math.max(0.3, Math.abs(f.face)), PIVOT.y - 50);
-            hand = { x: hand.x + (lap.x - hand.x) * k, y: hand.y + (lap.y - hand.y) * k };
+            const k = knees * knees * (3 - 2 * knees), rest = { x: f.root.x + own * (LOTUS.knee - 14), y: state.ground - LOTUS.kneeUp - 12 };
+            hand = { x: hand.x + (rest.x - hand.x) * k, y: hand.y + (rest.y - hand.y) * k };
         }
         const raised = hand.y < s.y;
         // elbows back in profile, out to their own side turned to us; down when the hand is up
