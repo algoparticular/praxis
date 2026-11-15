@@ -184,10 +184,6 @@ p {
   /* Standard */
 }
 
-span {
-  color: #777777;
-}
-
 ul.no-bullets {
   list-style-type: none;
   padding: 0;

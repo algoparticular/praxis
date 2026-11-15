@@ -75,6 +75,12 @@ const PIECES = {
     flame: { compose: [['celebracion/flame', 854, 777], ['celebracion/heart', 910, 1276]], canvas: [854, 777, 450, 1069], unit: 0.8, inside: 'colour', dark: 40 },
     ...Object.fromEntries(['samaLeft', 'samaRight', 'seated', 'foxLeft', 'foxRight', 'catBack', 'catFront', 'trio', 'hairy', 'pink']
         .map((k) => [`fire_${k}`, { card: ['celebracion', k], unit: 0.8, inside: 'colour', dark: 110 }])),
+    // their eyes, apart (so they can blink and look about): the eyes of Metta's beings, cut from its scene's atlas of
+    // little pieces (bits.webp: where each is in the atlas and in the card, mettaScene.json), and the eyes of Celebración's
+    // Sama on the left
+    ...Object.fromEntries(['being0', 'being1', 'being2', 'being3', 'being4', 'being5'].map((b, i) => [`eyes_metta${i}`,
+        { bits: ['metta', `eyes:${b}`], unit: 1, inside: 'none' }])),
+    eyes_fire_samaLeft: { card: ['celebracion', 'eyesLeft'], unit: 0.8, inside: 'none' },
     // Desafío: Vulpes
     vulpes: { card: ['desafio', 'fox'], unit: 0.55, inside: 'colour', dark: 130 },
 };
@@ -89,6 +95,12 @@ for (const [name, piece] of Object.entries(PIECES)) {
         const [scene, layer] = piece.card, json = JSON.parse(await readFile(path.join(root, 'src', 'composables', `${scene}Scene.json`), 'utf8'));
         const boxes = typeof json.boxes === 'string' ? JSON.parse(json.boxes) : json.boxes;
         piece.from = `${scene}/${layer}`; piece.at = boxes[layer].slice(0, 2);
+    }
+    // (a little piece of a scene's atlas, `bits`: its crop in the atlas and its place in the card)
+    if (piece.bits) {
+        const [scene, bit] = piece.bits, json = JSON.parse(await readFile(path.join(root, 'src', 'composables', `${scene}Scene.json`), 'utf8'));
+        const [, x, y, w, h, ax, ay] = json.bits.find((b) => b[0] === bit);
+        piece.from = `${scene}/bits`; piece.crop = [ax, ay, w, h]; piece.at = [x - ax, y - ay];
     }
     if (piece.compose) {
         piece.at = piece.canvas.slice(0, 2);

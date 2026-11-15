@@ -25,6 +25,9 @@ let stars = null;
 const rulito = ref(null);
 const RULITO_AFTER = 3, RULITO_GROW = 2.2, RULITO_GO = 3.4;
 const teaching = reactive({ es: '', en: '', on: false, light: false, ink: CICLOS.ink });
+// the rulito is born in the colour its card gives it (as in the card's own scene)
+const RULITO_COLOURS = { 15: '#fc747c', 8: '#f595b6', 9: '#b3539a', 14: '#ffe285', 21: '#ffb44a' };
+const rulitoColour = ref(RULITO_COLOURS[15]);
 
 // --- The rig, in px of the source drawing (258 x 686): he faces +x (his eyes are on that side) ---
 const PIVOT = { x: 130, y: 518 };             // the middle of his bottom, where his hips are: the body bends about it
@@ -388,6 +391,8 @@ function onKey(e) {
     const key = KEYS[e.key.length === 1 ? e.key.toLowerCase() : e.key];
     if (key) { e.preventDefault(); if (e.type === 'keydown' && !e.repeat) press(key, true); if (e.type === 'keyup') press(key, false); return; }
     if (e.key === ' ' || e.code === 'Space') { e.preventDefault(); if (e.type === 'keydown' && !e.repeat) sit(); }
+    // (jumping has no button for now: J jumps, on a computer)
+    if ((e.key === 'j' || e.key === 'J') && e.type === 'keydown' && !e.repeat) jump();
 }
 function release() { for (const key of Object.keys(state.keys)) state.keys[key] = false; }
 function reachFor(p) { state.reach = p; state.reached = p; act('reach', 2.6); }
@@ -487,7 +492,11 @@ function update(dt, now) {
     const seated = ui.sitting && Math.min(...state.legSit) > 0.9;
     const card = seated ? world.placeCard(state.x, state.d) : null;
     state.underTree = card ? state.underTree + dt : 0;
-    if (state.underTree >= RULITO_AFTER && !state.rul) { state.rul = { age: 0, head: 0, tail: 0, pop: 0, full: false, card }; rulito.value?.reshape(); }
+    if (state.underTree >= RULITO_AFTER && !state.rul) {
+        state.rul = { age: 0, head: 0, tail: 0, pop: 0, full: false, card };
+        rulitoColour.value = RULITO_COLOURS[card] ?? RULITO_COLOURS[15];
+        rulito.value?.reshape();
+    }
     // the music moves to the chord of the card of the zone he is in (src/data/cardChords.js), as on a card's page
     const zone = world.zoneCard();
     if (zone !== state.zone) { state.zone = zone; setCardChord(chordFor(zone)); }
@@ -783,7 +792,7 @@ function draw() {
     const W = view.w / view.k;
 
     // The floor, back to the horizon, and him on it at his depth (smaller and nearer the middle the farther back)
-    world.drawSky(c, { width: W, cam: state.cam }, 0, horizon());
+    world.drawSky(c, { width: W, cam: state.cam, d: state.d }, 0, horizon());
     // the zone's colours: his line and body, the colour under the starry night, and the header's icons cream by night
     INK = world.ink(); FILL = world.white();
     const dark = world.night(), under = world.nightColour();
@@ -985,11 +994,11 @@ onBeforeUnmount(() => {
     <div class="lab">
         <div ref="nightSky" class="night-sky"><canvas ref="starCanvas"></canvas></div>
         <!-- the rulito draws itself on its own canvas, which this scene lays over his head -->
-        <Rulito ref="rulito" class="offstage" color="#fc747c" />
+        <Rulito ref="rulito" class="offstage" :color="rulitoColour" />
         <canvas ref="canvas" @pointermove="onMove" @pointerdown="onDown" @pointerup="onUp" @pointercancel="onUp"></canvas>
         <!-- the affirmation of the card of the place where he meditates, written by hand in the sky -->
         <Transition name="teaching">
-            <p v-if="teaching.on" class="teaching" :class="{ light: teaching.light }" :style="{ color: teaching.light ? null : teaching.ink }">
+            <p v-if="teaching.on" class="teaching glass" :class="{ light: teaching.light }" :style="{ color: teaching.light ? null : teaching.ink }">
                 {{ $i18n.locale === 'en' ? teaching.en : teaching.es }}
             </p>
         </Transition>
@@ -999,17 +1008,16 @@ onBeforeUnmount(() => {
              it while it is held), and there is only the lotus with, round it, waving and jumping (below) -->
         <div v-if="!ui.touch" class="panel">
             <button @click="walkAcross">Caminar</button>
-            <button @click="wave">Saludar</button>
-            <button @click="jump">Saltar</button>
             <button @click="stretch">Estirarse</button>
-            <button :class="{ on: ui.sitting }" @click="sit()">Loto</button>
 
             <span class="sep"></span>
             <button :class="{ on: ui.bones }" @click="ui.bones = !ui.bones">Esqueleto</button>
         </div>
-        <button v-if="ui.touch" class="act wave" @click="wave">Saludar</button>
-        <button v-if="ui.touch" class="act jump" @click="jump">Saltar</button>
-        <button v-if="ui.touch" class="lotus" :class="{ on: ui.sitting }" @click="sit()">Loto</button>
+        <!-- one button: the seed, Algo Particular's mark (as in the header), sits him in lotus and gets him up again; a
+             touch on him makes him wave (the buttons to wave and to jump are gone; on a computer J still jumps) -->
+        <button class="lotus glass" :class="{ on: ui.sitting }" :aria-pressed="ui.sitting" aria-label="Loto" title="Loto" @click="sit()">
+            <span class="seed" aria-hidden="true"></span>
+        </button>
     </div>
 </template>
 
@@ -1042,16 +1050,30 @@ canvas {
     right: 16px;
     top: calc(84px + env(safe-area-inset-top, 0px));
     margin: 0 auto;
-    max-width: 560px;
     text-align: center;
     font-family: 'Caveat', 'Nunito', helvetica, sans-serif;
-    font-size: clamp(28px, 6vw, 40px);
+    font-size: clamp(30px, 7.2vw, 44px);
     line-height: 1.15;
     pointer-events: none;
-    /* (a soft halo of the sky round the letters, so they read over a cloud, the sun or the moon) */
-    text-shadow: 0 0 10px rgba(255, 255, 255, 0.85), 0 0 22px rgba(255, 255, 255, 0.55);
+    /* on the app's frosted glass (its noise and its blur, .glass), as a soft cloud: an uneven round shape that breathes
+       slowly and whose edge fades into the sky, so it reads over anything (a cloud, the sun, the moon) and is not a box */
+    width: fit-content;
+    max-width: min(520px, calc(100% - 24px));
+    padding: 32px 52px 36px;
+    border: none;
+    background-color: rgba(247, 248, 241, 0.62);
+    box-shadow: none;
+    border-radius: 46% 54% 44% 56% / 56% 46% 54% 44%;
+    -webkit-mask-image: radial-gradient(closest-side, #000 80%, transparent 100%);
+    mask-image: radial-gradient(closest-side, #000 80%, transparent 100%);
+    animation: teaching-breath 9s ease-in-out infinite alternate;
 }
-.teaching.light { color: #F7F8F1; text-shadow: 0 0 10px rgba(10, 30, 60, 0.75), 0 0 22px rgba(10, 30, 60, 0.45); }
+.teaching.light { color: #F7F8F1; background-color: rgba(16, 30, 52, 0.5); }
+@keyframes teaching-breath {
+    from { border-radius: 46% 54% 44% 56% / 56% 46% 54% 44%; }
+    to { border-radius: 54% 46% 56% 44% / 46% 56% 44% 54%; }
+}
+@media (prefers-reduced-motion: reduce) { .teaching { animation: none; } }
 .teaching-enter-active { transition: opacity 1.6s ease-out, transform 1.6s ease-out; }
 .teaching-leave-active { transition: opacity 0.9s ease-in; }
 .teaching-enter-from { opacity: 0; transform: translateY(8px); }
@@ -1080,7 +1102,7 @@ canvas {
     justify-content: center;
 }
 /* As the app's buttons (style.scss): the cream, no border, its soft warm shadow, the coral when touched or on */
-.panel button, .lotus, .act {
+.panel button {
     font-family: 'Nunito', helvetica, sans-serif;
     font-size: 16px;
     margin: 0;
@@ -1096,10 +1118,10 @@ canvas {
     -webkit-tap-highlight-color: transparent;
     transition: background 200ms ease-out, color 200ms ease-out;
 }
-.panel button:hover, .lotus:hover, .act:active { background: #FF6F61; color: #F7F8F1; }
-.panel button.on, .lotus.on { background: #FF6F61; color: #F7F8F1; }
-.panel button:focus, .lotus:focus, .act:focus { box-shadow: none; outline: none; }
-.panel button:focus-visible, .lotus:focus-visible { box-shadow: rgba(255, 111, 97, 0.35) 0 0 0 4px; }
+.panel button:hover { background: #FF6F61; color: #F7F8F1; }
+.panel button.on { background: #FF6F61; color: #F7F8F1; }
+.panel button:focus { box-shadow: none; outline: none; }
+.panel button:focus-visible { box-shadow: rgba(255, 111, 97, 0.35) 0 0 0 4px; }
 .sep {
     width: 12px;
 }
@@ -1113,27 +1135,51 @@ canvas {
 }
 .panel.bottom .sep { display: none; }
 .panel.bottom button { flex: none; }
-/* waving and jumping, smaller, in an arc round the lotus (as the buttons of a game pad) */
-.act {
-    position: absolute;
-    width: 58px;
-    height: 58px;
-    padding: 0;
-    border-radius: 50%;
-    font-size: 12px;
-}
-.act.wave { right: 116px; bottom: calc(116px + env(safe-area-inset-bottom, 0px)); }
-.act.jump { right: 33px; bottom: calc(146px + env(safe-area-inset-bottom, 0px)); }
 .lotus {
+    /* on the app's frosted glass (.glass: its noise and its blur), a little darkened so the cream seed reads over a light
+       sky or ground; a touch lights it up, and while he meditates it keeps a soft glow that breathes */
     position: absolute;
     right: 20px;
     bottom: calc(44px + env(safe-area-inset-bottom, 0px));
     width: 84px;
     height: 84px;
     padding: 0;
+    margin: 0;
     border-radius: 50%;
-    font-size: 17px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #F7F8F1;
+    background-color: rgba(20, 50, 70, 0.26);
+    border: 1px solid rgba(247, 248, 241, 0.35);
+    box-shadow: 0 4px 24px rgba(20, 50, 70, 0.18);
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    transition: box-shadow 400ms ease-out, background-color 400ms ease-out, transform 160ms ease-out;
 }
+.lotus:active { transform: scale(0.94); box-shadow: 0 0 34px 6px rgba(255, 240, 200, 0.75); }
+.lotus:focus { outline: none; }
+.lotus:focus-visible { box-shadow: 0 0 0 4px rgba(247, 248, 241, 0.6); }
+.lotus.on {
+    background-color: rgba(255, 240, 200, 0.22);
+    animation: lotus-glow 3.2s ease-in-out infinite alternate;
+}
+@keyframes lotus-glow {
+    from { box-shadow: 0 0 18px 2px rgba(255, 240, 200, 0.45); }
+    to { box-shadow: 0 0 40px 10px rgba(255, 240, 200, 0.8); }
+}
+/* the seed, in cream (glowing too while he meditates) */
+.lotus .seed {
+    width: 44px;
+    height: 44px;
+    background-color: #F7F8F1;
+    -webkit-mask: url('../assets/icon/Seed.svg') center / contain no-repeat;
+    mask: url('../assets/icon/Seed.svg') center / contain no-repeat;
+    transition: filter 400ms ease-out;
+}
+.lotus.on .seed { filter: drop-shadow(0 0 6px rgba(255, 244, 214, 0.95)); }
+@media (prefers-reduced-motion: reduce) { .lotus.on { animation: none; box-shadow: 0 0 30px 6px rgba(255, 240, 200, 0.65); } }
 @media (max-width: 600px) {
     .panel { gap: 8px; }
     .panel button { font-size: 14px; height: 40px; padding: 0 14px; }
