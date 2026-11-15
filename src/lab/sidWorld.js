@@ -279,8 +279,8 @@ const PLACES = [
         // (lake: water lying round its boat, [across, back from its foot, how wide, how deep] of its middle)
         lake: [1240, -200, 760, 300],
         garden: [['grBoat', 1240, -200, 1, 0.12], ['grPlant', 360, -40, 1.1, 0.4], ['grPlant', -480, -160, -0.9, 0.4],
-            ['grPlant', 1500, 420, 0.8, 0.4], ['grPalm', -1350, 250, 0.9, 0.3]],
-        block: { dd: 80, r: 450, rd: 180 }, sit: 380, clear: { w: 2100, front: 560, back: 800 } },
+            ['grPlant', 1650, 560, 0.8, 0.4], ['grPalm', -1350, 250, 0.9, 0.3]],
+        block: { dd: 80, r: 450, rd: 180 }, sit: 380, clear: { w: 2350, front: 680, back: 800 } },
     // (anchor: the middle of its pond, card px)
     { card: 'transformacion', kind: 'seed', id: 32, dd: 0, reach: 1000, anchor: [1072, 1972], depthK: 1.1,
         parts: ['trPond', 'trTree', 'trSeed'], crowd: ['trSmall', 'trElder'],
@@ -400,7 +400,8 @@ export function createWorld({ clouds = null, moon = null }) {
         };
 
         // her tree and the zones' special places, where they stand (their stretch keeps clear round them)
-        const near = placesNear(index * STRETCH - 1200, (index + 1) * STRETCH + 1200, row * PATCH - 180 - 1200, (row + 1) * PATCH - 180 + 1200);
+        // (as far across as the widest keeps its ground clear: Gratitud's lake, and Paciencia's mycelium)
+        const near = placesNear(index * STRETCH - 2500, (index + 1) * STRETCH + 2500, row * PATCH - 180 - 1200, (row + 1) * PATCH - 180 + 1200);
         for (const { P, x, d } of near) {
             if (x < index * STRETCH || x >= (index + 1) * STRETCH || row !== Math.floor((d + 180) / PATCH)) continue;
             if (P.kind === 'tree') add({ kind: 'tree', x, d, reach: 700, place: P });
@@ -816,11 +817,22 @@ export function createWorld({ clouds = null, moon = null }) {
             // its edge in ink with a lighter shore inside it, and its little waves (the card's navy and light blue
             // strokes) drifting and coming and going on it. Its front and back are as far down and up the screen as the
             // floor there (front, back: worked out as it is drawn)
-            const fr = item.front ?? item.rd * 0.4, bk = item.back ?? item.rd * 0.3, rx = item.rx;
+            // (its shore is not a circle: round it, it comes in and goes out in a few slow bays and points, each its own
+            // (phase), and breathes a little, as water does; the inner shores follow it)
+            const fr = item.front ?? item.rd * 0.4, bk = item.back ?? item.rd * 0.3, rx = item.rx, ph = item.phase;
+            const shore = (a) => 1 + 0.13 * Math.sin(2 * a + ph) + 0.08 * Math.sin(3 * a + ph * 2.3) + 0.05 * Math.sin(5 * a + ph * 3.7)
+                + 0.015 * Math.sin(4 * a + time * 0.5 + ph);
             const shape = (k) => {
+                const pts = [];
+                for (let n = 0; n < 40; n++) {
+                    const a = n / 40 * Math.PI * 2, r = shore(a) * k, sn = Math.sin(a);
+                    pts.push([Math.cos(a) * rx * 0.9 * r, sn * (sn > 0 ? fr : bk) * 0.95 * r]);
+                }
                 c.beginPath();
-                c.ellipse(0, 0, rx * k, fr * k, 0, 0, Math.PI);
-                c.ellipse(0, 0, rx * k, bk * k, 0, Math.PI, Math.PI * 2);
+                const mid = (i) => { const p = pts[i % 40], q = pts[(i + 1) % 40]; return [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2]; };
+                c.moveTo(...mid(39));
+                for (let i = 0; i < 40; i++) { const m = mid(i); c.quadraticCurveTo(pts[i][0], pts[i][1], m[0], m[1]); }
+                c.closePath();
             };
             c.fillStyle = mixRgb(screen.white, [115, 203, 207], col); shape(1); c.fill();
             c.fillStyle = mixRgb(screen.white, [168, 226, 228], col); shape(0.86); c.fill();
@@ -828,7 +840,7 @@ export function createWorld({ clouds = null, moon = null }) {
             c.strokeStyle = line; c.lineWidth = LINE * 1.3; shape(1); c.stroke();
             for (let n = 0; n < 9; n++) {
                 const a = n * 2.39996 + item.phase, rr = 0.25 + 0.5 * ((n * 0.618 + 0.3) % 1), drift = Math.sin(time * 0.35 + n) * rx * 0.06;
-                const sin = Math.sin(a), wx = Math.cos(a) * rx * 0.75 * rr + drift, wy = sin * (sin > 0 ? fr : bk) * 0.75 * rr;
+                const sin = Math.sin(a), wx = Math.cos(a) * rx * 0.62 * rr + drift, wy = sin * (sin > 0 ? fr : bk) * 0.62 * rr;
                 const k = 0.35 + 0.65 * (0.5 + 0.5 * Math.sin(time * 0.7 + n * 1.3)), len = 26 + (n % 3) * 10;
                 c.globalAlpha *= k;
                 pen(c, [[wx - len, wy], [wx - len / 3, wy - 8], [wx + len / 3, wy], [wx + len, wy - 8]], LINE * 1.1, mixRgb(screen.ink, n % 2 ? [20, 60, 120] : [210, 245, 245], col));
@@ -1081,7 +1093,7 @@ export function createWorld({ clouds = null, moon = null }) {
                 if (item.kind === 'tree') out.push({ x: item.x + TRUNK.dx, d: item.d + TRUNK.behind, r: TRUNK.r }, { x: item.x + ROOTS.dx, d: item.d + ROOTS.dd, r: ROOTS.r, rd: ROOTS.rd, low: true });
                 else if (item.kind === 'place' && item.place.water) {
                     for (const o of WATER[item.place.kind]) out.push({ x: item.x + o.x, d: item.d + o.d, r: o.r, rd: o.rd });
-                } else if (item.kind === 'lake') out.push({ x: item.x, d: item.d, r: item.rx * 0.92, rd: item.rd * 0.85 });
+                } else if (item.kind === 'lake') out.push({ x: item.x, d: item.d, r: item.rx * 0.85, rd: item.rd * 0.8 });
                 else if (item.kind === 'place' && item.place.block) {
                     const b = item.place.block;
                     out.push({ x: item.x, d: item.d + (b.dd ?? 0), r: b.r, ...(b.rd ? { rd: b.rd } : {}) });
