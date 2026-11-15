@@ -1015,7 +1015,7 @@ onBeforeUnmount(() => {
         </div>
         <!-- one button: the seed, Algo Particular's mark (as in the header), sits him in lotus and gets him up again; a
              touch on him makes him wave (the buttons to wave and to jump are gone; on a computer J still jumps) -->
-        <button class="lotus" :class="{ on: ui.sitting }" :aria-pressed="ui.sitting" aria-label="Loto" title="Loto" @click="sit()">
+        <button class="lotus glass" :class="{ on: ui.sitting }" :aria-pressed="ui.sitting" aria-label="Loto" title="Loto" @click="sit()">
             <span class="seed" aria-hidden="true"></span>
         </button>
     </div>
@@ -1102,7 +1102,7 @@ canvas {
     justify-content: center;
 }
 /* As the app's buttons (style.scss): the cream, no border, its soft warm shadow, the coral when touched or on */
-.panel button, .lotus {
+.panel button {
     font-family: 'Nunito', helvetica, sans-serif;
     font-size: 16px;
     margin: 0;
@@ -1118,10 +1118,10 @@ canvas {
     -webkit-tap-highlight-color: transparent;
     transition: background 200ms ease-out, color 200ms ease-out;
 }
-.panel button:hover, .lotus:hover, .lotus:active { background: #FF6F61; color: #F7F8F1; }
-.panel button.on, .lotus.on { background: #FF6F61; color: #F7F8F1; }
-.panel button:focus, .lotus:focus { box-shadow: none; outline: none; }
-.panel button:focus-visible, .lotus:focus-visible { box-shadow: rgba(255, 111, 97, 0.35) 0 0 0 4px; }
+.panel button:hover { background: #FF6F61; color: #F7F8F1; }
+.panel button.on { background: #FF6F61; color: #F7F8F1; }
+.panel button:focus { box-shadow: none; outline: none; }
+.panel button:focus-visible { box-shadow: rgba(255, 111, 97, 0.35) 0 0 0 4px; }
 .sep {
     width: 12px;
 }
@@ -1136,26 +1136,50 @@ canvas {
 .panel.bottom .sep { display: none; }
 .panel.bottom button { flex: none; }
 .lotus {
+    /* on the app's frosted glass (.glass: its noise and its blur), a little darkened so the cream seed reads over a light
+       sky or ground; a touch lights it up, and while he meditates it keeps a soft glow that breathes */
     position: absolute;
     right: 20px;
     bottom: calc(44px + env(safe-area-inset-bottom, 0px));
     width: 84px;
     height: 84px;
     padding: 0;
+    margin: 0;
     border-radius: 50%;
-    font-size: 17px;
     display: flex;
     align-items: center;
     justify-content: center;
+    color: #F7F8F1;
+    background-color: rgba(20, 50, 70, 0.26);
+    border: 1px solid rgba(247, 248, 241, 0.35);
+    box-shadow: 0 4px 24px rgba(20, 50, 70, 0.18);
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    transition: box-shadow 400ms ease-out, background-color 400ms ease-out, transform 160ms ease-out;
 }
-/* the seed, in the button's own colour (navy, cream once he sits) */
+.lotus:active { transform: scale(0.94); box-shadow: 0 0 34px 6px rgba(255, 240, 200, 0.75); }
+.lotus:focus { outline: none; }
+.lotus:focus-visible { box-shadow: 0 0 0 4px rgba(247, 248, 241, 0.6); }
+.lotus.on {
+    background-color: rgba(255, 240, 200, 0.22);
+    animation: lotus-glow 3.2s ease-in-out infinite alternate;
+}
+@keyframes lotus-glow {
+    from { box-shadow: 0 0 18px 2px rgba(255, 240, 200, 0.45); }
+    to { box-shadow: 0 0 40px 10px rgba(255, 240, 200, 0.8); }
+}
+/* the seed, in cream (glowing too while he meditates) */
 .lotus .seed {
     width: 44px;
     height: 44px;
-    background-color: currentColor;
+    background-color: #F7F8F1;   /* (not currentColor: the app makes every span grey) */
     -webkit-mask: url('../assets/icon/Seed.svg') center / contain no-repeat;
     mask: url('../assets/icon/Seed.svg') center / contain no-repeat;
+    transition: filter 400ms ease-out;
 }
+.lotus.on .seed { filter: drop-shadow(0 0 6px rgba(255, 244, 214, 0.95)); }
+@media (prefers-reduced-motion: reduce) { .lotus.on { animation: none; box-shadow: 0 0 30px 6px rgba(255, 240, 200, 0.65); } }
 @media (max-width: 600px) {
     .panel { gap: 8px; }
     .panel button { font-size: 14px; height: 40px; padding: 0 14px; }
