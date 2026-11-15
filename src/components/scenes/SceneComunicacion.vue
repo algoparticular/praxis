@@ -694,7 +694,7 @@
             ],
         });
         if (reduced) dust.reveal();
-        hand = createGhostHand(stage);
+        hand = createGhostHand(stage, { color: 0x143246, shade: 0xf7f8f1 });   // navy: the cream tip was small on the beings' pale heads
         parallax = createParallax(root.value, frame);
         enter();
     };
