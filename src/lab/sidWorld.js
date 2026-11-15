@@ -138,7 +138,9 @@ const ZONES = [
     {
         // (a night card: by day the sky is its great yellow light and the ground the turquoise of its other light; by
         // night both are dark, as in the card: its navy sky over its blue hill)
-        roles: { plants: [1, 3, 1, 0], beads: [0, 2, 5], stones: [5, 3, 2] },
+        // (its plants in its yellow, pink and light blue, in their light colours: its ground is dark by night and
+        // turquoise by day, where its turquoise would not show)
+        roles: { plants: [2, 0, 3, 2], beads: [0, 2, 5], stones: [5, 3, 2] }, lines: 'light',
         card: 'metta', id: 8, ink: '#18243C', white: '#FCFCFC', sky: '#FCE49C', night: '#303C6C', sun: '#00B4CC',
         groundDay: '#47BCCB', groundNight: '#305490', detailDay: '#A6E6EC', detailNight: '#1E3A70',
         colours: [
@@ -275,7 +277,9 @@ export function createWorld({ clouds = null, moon = null }) {
     // One of the colours a thing takes, as the zone where it stands has it (blended between two)
     const colourOf = (zs, role = 'plant', pick = 0) => {
         const of = (z) => { const list = z.roles[ROLES[role]]; return z.palette[list[Math.min(list.length - 1, Math.floor(pick * list.length))]]; };
-        return { light: mixAll(zs, (z) => of(z).light), ink: mixAll(zs, (z) => of(z).ink) };
+        // (what is coloured in its line, the plants with nothing inside and the marks of the ground, takes the dark of
+        // the colour, or its light one in a zone whose ground is dark, `lines: 'light'`)
+        return { light: mixAll(zs, (z) => of(z).light), ink: mixAll(zs, (z) => of(z).ink), line: mixAll(zs, (z) => (z.lines === 'light' ? of(z).light : of(z).ink)) };
     };
     let clock = 0.2;                        // the cycle: 0 sunrise, 0.25 noon, 0.5 sunset, 0.75 midnight
     const CYCLE = 90;                       // s for a whole day and night
@@ -511,7 +515,7 @@ export function createWorld({ clouds = null, moon = null }) {
             }
         }
         if (layer === 'fill') return;
-        const ink = tint(name, inkCss), coloured = tintLine && col > 0.01 && tint(name, css(P.ink));
+        const ink = tint(name, inkCss), coloured = tintLine && col > 0.01 && tint(name, css(P.line ?? P.ink));
         if (ink) c.drawImage(ink, left, top, w, h);
         if (coloured) { c.globalAlpha *= col * 0.85; c.drawImage(coloured, left, top, w, h); c.globalAlpha /= col * 0.85; }
     }
@@ -520,9 +524,9 @@ export function createWorld({ clouds = null, moon = null }) {
         // (the colours it takes are those of the zone where it stands, worked out once)
         item.zone ??= zonesAt(item.x, item.d);
         item.P ??= colourOf(item.zone, item.role, item.pick);
-        const col = colour.get(item.id) ?? 0, P = item.P, line = mixRgb(screen.ink, P.ink, col * 0.8);
+        const col = colour.get(item.id) ?? 0, P = item.P, line = mixRgb(screen.ink, P.line ?? P.ink, col * 0.8);
         // the marks of the ground (its grass, its stipple) are in its detail colour: yellow by day, mustard by night
-        const mark_ = item.kind === 'tick' || item.kind === 'stipple' ? mixRgb(detailRgb(), P.ink, col * 0.8) : line;
+        const mark_ = item.kind === 'tick' || item.kind === 'stipple' ? mixRgb(detailRgb(), P.line ?? P.ink, col * 0.8) : line;
         const l = life.get(item.id);
         switch (item.kind) {
         case 'tick': {
