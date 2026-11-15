@@ -4,7 +4,7 @@
 // plants of Metta, the mushrooms of Celebración, the curls of Paciencia's grass and its pine cone, Gratitud's palm and
 // plant, Transformación's stones, and the zones' special places and their characters (Metta's nest and beings,
 // Upekkha's pond, Celebración's fire and everyone round it, Paciencia's boat and its crew over its mycelium, Gratitud's
-// island and its boat, Transformación's tree, seed and pond with the little one and the elder). Each piece is made, as her tree's pieces are
+// house, palm and boat, Transformación's tree, seed and pond with the little one and the elder). Each piece is made, as her tree's pieces are
 // (scripts/convert-lab-arbol.mjs), into src/lab/suelo/NAME.webp (its line, as transparency, so the lab can tint it) and
 // NAME-fill.webp (what is inside its line, white over transparent, so the lab can paint it in code), and
 // src/lab/suelo/suelo.json: the size of every piece's picture and how many units of the world each of its pixels is
@@ -113,11 +113,12 @@ const PIECES = {
     pacCone: { from: 'paciencia/cone', unit: 0.9, inside: 'colour', dark: 110 },
     ...Object.fromEntries([[0, 111], [118, 146], [340, 174], [535, 190], [903, 300], [1250, 210], [1460, 290]]
         .map(([x, w], i) => [`pacCurl${i}`, { from: 'paciencia/grass', crop: [x, 0, w, 365], unit: 0.9, inside: 'none', keep: 0.25 }])),
-    // Gratitud: its island with the house, the palm, the little light over it and the pale plant (Sid in his chair is
-    // left out: Sid is the one who walks), its boat apart (it rocks by the dock), and its palm and its plant again, to
-    // spread over its zone. Much bigger than in the card, where Sid is a dot beside the house
-    grIsland: { compose: [['gratitud/island', 462, 1188], ['gratitud/palm', 670, 1073], ['gratitud/light', 785, 1041],
-        ['gratitud/house', 925, 1101], ['gratitud/plant', 1237, 1338]], canvas: [462, 1041, 1107, 493], unit: 2.2, inside: 'colour', dark: 60 },
+    // Gratitud: what is on its island, each standing on its own on the ground of the world (the island itself is left
+    // out, and so is Sid in his chair: Sid is the one who walks): the house, the palm and the little light over it, the
+    // pale plant and the boat with its little waves. Much bigger than in the card, where Sid is a dot beside the house
+    grHouse: { card: ['gratitud', 'house'], unit: 2.2, inside: 'colour', dark: 60 },
+    grPalmBig: { card: ['gratitud', 'palm'], unit: 2.2, inside: 'colour', dark: 60 },
+    grLight: { card: ['gratitud', 'light'], unit: 2.2, inside: 'colour', dark: 60 },
     grBoat: { card: ['gratitud', 'boat'], unit: 2.2, inside: 'colour', dark: 60 },
     grPalm: { from: 'gratitud/palm', unit: 1.7, inside: 'colour', dark: 60 },
     grPlant: { from: 'gratitud/plant', unit: 1.9, inside: 'colour', dark: 60 },

@@ -230,7 +230,7 @@ const mod = (a, n) => ((a % n) + n) % n;
 const zoneOfCell = (i, j) => ZONES[mod(i + SHIFT * j, ZONES.length)];
 // The special place of each zone, in its middle (and again wherever the zones come round): Ciclos's is her tree; then
 // Metta's nest of mushrooms with its beings round it, Upekkha's pond, Paciencia's boat with its crew floating over its
-// mycelium, Gratitud's island in its little sea, Transformación's tree growing out of its seed over its pond with the
+// mycelium, Gratitud's house with its palm and its boat, Transformación's tree growing out of its seed over its pond with the
 // little one and the elder, and Celebración's fire with everyone round it. Its pieces (parts) and the characters round it (crowd, each its own
 // thing on the ground, breathing, hopping when he comes, leaning to him) stand where the card has them: across, as far
 // from its anchor (the foot of its main piece, card px) as in the card, and back, as far as they are up in the card
@@ -274,8 +274,11 @@ const PLACES = [
         garden: [['pacCone', -980, 60, 1], ['pacCurl4', -1080, -60, 1.1, 0.5], ['pacCurl1', 960, 40, 1, 0.5], ['pacCurl6', 1120, -80, -1, 0.5],
             ['pacCurl2', -720, -160, 0.9, 0.5], ['pacCurl5', 640, -170, -0.9, 0.5]],
         block: { dd: 40, r: 880, rd: 170 }, sit: 380, clear: { w: 1300, front: 450, back: 600 } },
-    { card: 'gratitud', kind: 'island', id: 24, dd: 300, reach: 1500,
-        block: { dd: 380, r: 1250, rd: 420 }, sit: 350, clear: { w: 1900, front: 650, back: 1300 } },
+    // (anchor: the foot of its house, card px; its boat and its plants stand on their own round it, `garden`)
+    { card: 'gratitud', kind: 'house', id: 24, dd: 0, reach: 1300, anchor: [1122, 1423],
+        garden: [['grBoat', 1240, -220, 1, 0.12], ['grPlant', 560, -40, 1.1, 0.4], ['grPlant', -480, -160, -0.9, 0.4],
+            ['grPlant', 980, 260, 0.8, 0.4], ['grPalm', -1350, 250, 0.9, 0.3]],
+        block: { dd: 80, r: 450, rd: 180 }, sit: 380, clear: { w: 1500, front: 500, back: 800 } },
     // (anchor: the middle of its pond, card px)
     { card: 'transformacion', kind: 'seed', id: 32, dd: 0, reach: 1000, anchor: [1072, 1972], depthK: 1.1,
         parts: ['trPond', 'trTree', 'trSeed'], crowd: ['trSmall', 'trElder'],
@@ -738,32 +741,19 @@ export function createWorld({ clouds = null, moon = null }) {
                 at('pacOar', ox, oy); c.restore();
                 crew('pacS', 2); crew('pacT', 3); crew('pacR', 4);
                 c.restore();
-            } else if (P.kind === 'island') {
-                // Gratitud's island in its little sea (code: cream in ink, the card's turquoise once coloured, with its
-                // little waves drifting), its boat rocking by the dock, and the little light over the palm, which shines
-                // as he meditates by it, and by night
-                const [, , w, h] = B('grIsland'), u = PIECES.grIsland.unit, isl = PIECES.grIsland.at;
-                const sea = mixRgb(screen.white, [115, 203, 207], col), cy = -h * 0.3;
-                c.fillStyle = sea; c.strokeStyle = css(screen.ink); c.lineWidth = LINE;
-                c.beginPath(); c.ellipse(0, cy, w * 0.66, h * 0.42, 0, 0, Math.PI * 2); c.fill(); c.stroke();
-                // (the waves: short strokes of the card's navy and light blue, each drifting and coming and going)
-                for (let n = 0; n < 12; n++) {
-                    const a = n * 2.39996, rr = 0.55 + 0.35 * ((n * 0.618) % 1), drift = Math.sin(time * 0.4 + n) * 30;
-                    const wx = Math.cos(a) * w * 0.6 * rr + drift, wy = cy + Math.sin(a) * h * 0.38 * rr;
-                    if (Math.abs(wx) < w * 0.42 && wy < -h * 0.05 && wy > -h * 0.6) continue;     // (not under the island)
-                    const k = 0.5 + 0.5 * Math.sin(time * 0.8 + n * 1.3);
-                    c.globalAlpha *= k;
-                    pen(c, [[wx - 40, wy], [wx - 14, wy - 9], [wx + 14, wy], [wx + 40, wy - 9]], LINE * 1.2, mixRgb(screen.ink, [12, 40, 90], col));
-                    c.globalAlpha /= k;
-                }
-                const [, , bw2, bh2] = B('grBoat'), ba = PIECES.grBoat.at;
-                const bx = -w / 2 + (ba[0] - isl[0]) * u, by = -h + (ba[1] - isl[1]) * u + 10 * Math.sin(time * 1.1) * (0.3 + 0.7 * col);
-                c.save(); c.translate(bx + bw2 / 2, by + bh2); c.rotate(0.05 * Math.sin(time * 0.9) * (0.3 + 0.7 * col));
-                at('grBoat', -bw2 / 2, -bh2); c.restore();
-                at('grIsland', -w / 2, -h);
-                const lx = -w / 2 + (811 - isl[0]) * u, ly = -h + (1071 - isl[1]) * u, shine = Math.max(g, night() * col);
-                halo(lx, ly, 90 + 260 * shine, [255, 236, 140], (0.2 + 0.6 * shine) * (0.85 + 0.15 * Math.sin(time * 2)));
-                halo(0, -h * 0.5, w * 0.5, [255, 210, 170], 0.3 * g);
+            } else if (P.kind === 'house') {
+                // Gratitud's house, and behind it at its left the palm swaying with the little light over its crown,
+                // which shines by night and as he meditates by it (a warm light over the house too)
+                const [px, py] = part('grPalmBig'), [, , pw, ph] = B('grPalmBig'), [lx, ly] = part('grLight'), [, , lw, lh] = B('grLight');
+                const shine = Math.max(g, night() * col);
+                c.save(); c.translate(px + pw / 2, py + ph); c.rotate(wind(item.x) * 0.25 * (0.3 + 0.7 * col)); c.translate(-px - pw / 2, -py - ph);
+                at('grPalmBig', px, py);
+                halo(lx + lw / 2, ly + lh / 2, 80 + 240 * shine, [255, 236, 140], (0.2 + 0.6 * shine) * (0.85 + 0.15 * Math.sin(time * 2)));
+                at('grLight', lx, ly);
+                c.restore();
+                const [hx, hy] = part('grHouse'), [, , hw, hh] = B('grHouse');
+                halo(hx + hw / 2, hy + hh * 0.5, hw * 0.8, [255, 210, 170], 0.3 * g);
+                at('grHouse', hx, hy);
             } else if (P.kind === 'seed') {
                 // Transformación's pond (its light in the middle), the tree growing out of it and its seed beside the
                 // trunk; alive, golden dust rises from the pond's light along the trunk, and as he meditates by it the
