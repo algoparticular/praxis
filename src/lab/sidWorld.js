@@ -276,9 +276,11 @@ const PLACES = [
         block: { dd: 40, r: 1720, rd: 170 }, sit: 380, clear: { w: 2150, front: 450, back: 600 } },
     // (anchor: the foot of its house, card px; its boat and its plants stand on their own round it, `garden`)
     { card: 'gratitud', kind: 'house', id: 24, dd: 0, reach: 1300, anchor: [1122, 1423],
-        garden: [['grBoat', 1240, -220, 1, 0.12], ['grPlant', 560, -40, 1.1, 0.4], ['grPlant', -480, -160, -0.9, 0.4],
-            ['grPlant', 980, 260, 0.8, 0.4], ['grPalm', -1350, 250, 0.9, 0.3]],
-        block: { dd: 80, r: 450, rd: 180 }, sit: 380, clear: { w: 1500, front: 500, back: 800 } },
+        // (lake: water lying round its boat, [across, back from its foot, how wide, how deep] of its middle)
+        lake: [1240, -200, 760, 300],
+        garden: [['grBoat', 1240, -200, 1, 0.12], ['grPlant', 360, -40, 1.1, 0.4], ['grPlant', -480, -160, -0.9, 0.4],
+            ['grPlant', 1500, 420, 0.8, 0.4], ['grPalm', -1350, 250, 0.9, 0.3]],
+        block: { dd: 80, r: 450, rd: 180 }, sit: 380, clear: { w: 2100, front: 560, back: 800 } },
     // (anchor: the middle of its pond, card px)
     { card: 'transformacion', kind: 'seed', id: 32, dd: 0, reach: 1000, anchor: [1072, 1972], depthK: 1.1,
         parts: ['trPond', 'trTree', 'trSeed'], crowd: ['trSmall', 'trElder'],
@@ -414,6 +416,13 @@ export function createWorld({ clouds = null, moon = null }) {
                 add({ kind: 'piece', name, x: bx, d: bd, scale: Math.abs(scale), flip: Math.sign(scale), sway, role: sway ? 'plant' : 'stone', pick: r(),
                     garden: { x, d, P } });
             }
+        }
+        // a lake by a place, lying on the ground (in the stretch and the row its middle falls in), part of it as its garden is
+        for (const { P, x, d } of near) {
+            if (!P.lake) continue;
+            const [dx, dd, rx, rd] = P.lake, lx = x + dx, ld = d + dd;
+            if (lx < index * STRETCH || lx >= (index + 1) * STRETCH || row !== Math.floor((ld + 180) / PATCH)) continue;
+            add({ kind: 'lake', x: lx, d: ld, rx, rd, reach: rx, phase: r() * 10, garden: { x, d, P } });
         }
         // the characters round the places, each where it stands (in the stretch and the row its own place falls in)
         for (const { P, x, d } of near) {
@@ -802,6 +811,31 @@ export function createWorld({ clouds = null, moon = null }) {
             }
             break;
         }
+        case 'lake': {
+            // water lying on the ground (Gratitud's, round its boat): cream in ink and the card's turquoise once coloured,
+            // its edge in ink with a lighter shore inside it, and its little waves (the card's navy and light blue
+            // strokes) drifting and coming and going on it. Its front and back are as far down and up the screen as the
+            // floor there (front, back: worked out as it is drawn)
+            const fr = item.front ?? item.rd * 0.4, bk = item.back ?? item.rd * 0.3, rx = item.rx;
+            const shape = (k) => {
+                c.beginPath();
+                c.ellipse(0, 0, rx * k, fr * k, 0, 0, Math.PI);
+                c.ellipse(0, 0, rx * k, bk * k, 0, Math.PI, Math.PI * 2);
+            };
+            c.fillStyle = mixRgb(screen.white, [115, 203, 207], col); shape(1); c.fill();
+            c.fillStyle = mixRgb(screen.white, [168, 226, 228], col); shape(0.86); c.fill();
+            c.fillStyle = mixRgb(screen.white, [92, 190, 198], col); shape(0.78); c.fill();
+            c.strokeStyle = line; c.lineWidth = LINE * 1.3; shape(1); c.stroke();
+            for (let n = 0; n < 9; n++) {
+                const a = n * 2.39996 + item.phase, rr = 0.25 + 0.5 * ((n * 0.618 + 0.3) % 1), drift = Math.sin(time * 0.35 + n) * rx * 0.06;
+                const sin = Math.sin(a), wx = Math.cos(a) * rx * 0.75 * rr + drift, wy = sin * (sin > 0 ? fr : bk) * 0.75 * rr;
+                const k = 0.35 + 0.65 * (0.5 + 0.5 * Math.sin(time * 0.7 + n * 1.3)), len = 26 + (n % 3) * 10;
+                c.globalAlpha *= k;
+                pen(c, [[wx - len, wy], [wx - len / 3, wy - 8], [wx + len / 3, wy], [wx + len, wy - 8]], LINE * 1.1, mixRgb(screen.ink, n % 2 ? [20, 60, 120] : [210, 245, 245], col));
+                c.globalAlpha /= k;
+            }
+            break;
+        }
         case 'butterfly': case 'bee': {
             // by day only, little lights as the fireflies are by night, that move as insects do: one (in the zone's colours)
             // wanders slowly in curves and flutters, rising in small jumps with each beat of its wings, a short trail
@@ -924,10 +958,10 @@ export function createWorld({ clouds = null, moon = null }) {
         const shown = [];
         for (const item of patches(view.cam - half, view.cam + half, view.near - 400, view.far + 200)) {
             // (what lies flat on the ground goes with what is behind him, first)
-            const flat = item.kind === 'place' && item.place.flat;
+            const flat = (item.kind === 'place' && item.place.flat) || item.kind === 'lake';
             if (item.kind !== 'streak' && order(item) <= view.far + (item.kind === 'tree' ? 200 : 0) && item.d > view.near - 400 && keep(flat ? Infinity : order(item))) shown.push(item);
         }
-        const under = (item) => item.kind === 'place' && item.place.flat ? Infinity : order(item);
+        const under = (item) => (item.kind === 'place' && item.place.flat) || item.kind === 'lake' ? Infinity : order(item);
         shown.sort((a, b) => under(b) - under(a));
         for (const item of shown) {
             const s = view.scaleAt(item.d), x = view.x0 + (item.x - view.cam) * s;
@@ -935,6 +969,8 @@ export function createWorld({ clouds = null, moon = null }) {
             if (x < -reach || x > view.width + reach) continue;
             c.save(); c.translate(x, view.groundAt(item.d)); c.scale(s, s);
             // (what lies flat reaches item.place.deep back from its foot, however the floor is seen on this screen)
+            // (and a lake is as deep on the screen as the floor from its front to its back)
+            if (item.kind === 'lake') { item.front = (view.groundAt(item.d - item.rd) - view.groundAt(item.d)) / s; item.back = (view.groundAt(item.d) - view.groundAt(item.d + item.rd)) / s; }
             if (item.kind === 'place' && item.place.flat) item.flatK = (view.groundAt(item.d) - view.groundAt(item.d + item.place.deep)) / s / boxOf(item.place.kind)[3];
             const tall = item.kind === 'piece' && TALL.has(item.name);
             if (him && tall && item.d < him.d && him.d - item.d < 220 && Math.abs(item.x - him.x) < 150) c.globalAlpha = 0.22;
@@ -1045,7 +1081,8 @@ export function createWorld({ clouds = null, moon = null }) {
                 if (item.kind === 'tree') out.push({ x: item.x + TRUNK.dx, d: item.d + TRUNK.behind, r: TRUNK.r }, { x: item.x + ROOTS.dx, d: item.d + ROOTS.dd, r: ROOTS.r, rd: ROOTS.rd, low: true });
                 else if (item.kind === 'place' && item.place.water) {
                     for (const o of WATER[item.place.kind]) out.push({ x: item.x + o.x, d: item.d + o.d, r: o.r, rd: o.rd });
-                } else if (item.kind === 'place' && item.place.block) {
+                } else if (item.kind === 'lake') out.push({ x: item.x, d: item.d, r: item.rx * 0.92, rd: item.rd * 0.85 });
+                else if (item.kind === 'place' && item.place.block) {
                     const b = item.place.block;
                     out.push({ x: item.x, d: item.d + (b.dd ?? 0), r: b.r, ...(b.rd ? { rd: b.rd } : {}) });
                 } else if (item.kind === 'piece' && BLOCKS.has(item.name)) out.push({ x: item.x, d: item.d, r: boxOf(item.name)[2] * item.scale * 0.36 });
