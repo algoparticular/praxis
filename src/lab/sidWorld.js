@@ -100,7 +100,8 @@ const CURLS = ['pacCurl0', 'pacCurl1', 'pacCurl2', 'pacCurl3', 'pacCurl4', 'pacC
 // Seeds: now and then one lies on the ground (SEED_CHANCE of the stretches), of the card of the zone where it lies; he
 // picks it up as he walks over it, and sitting in lotus away from the places he plants one in front of him. What it
 // grows into is a plant of its card's scene (SEED_PLANTS: the name, its size grown, how it sways), in its card's own
-// colours wherever it is planted; it grows a little on every visit (SEED_GROWTH, by how many visits ago it was planted)
+// colours wherever it is planted; it grows a little on every visit (SEED_GROWTH, by how many visits ago it was planted).
+// A card with no plant of its own (Transformación: its tree is its place, not a plant to sow) grows any other card's
 const SEED_CHANCE = 0.03, SEED_PICK = 130, SEED_SPROUT = 5;     // (how near he picks it up; seconds it takes to sprout)
 const SEED_GROWTH = [0.6, 0.8, 1];
 const SEED_SIZE = 2.6;          // (how big a seed is drawn: big enough to be seen from afar)
@@ -110,9 +111,9 @@ const SEED_PLANTS = {
     upekkha: [['shrooms', 1, 0], ['shroom', 1.1, 0], ['pondTuft0', 1, 0.5], ['pondTuft2', 0.9, 0.5], ['pondSprout', 1.1, 0.6]],
     paciencia: CURLS.map((name) => [name, 0.85, 0.5]),
     gratitud: [['grPlant', 0.85, 0.4], ['grPalm', 0.5, 0.3]],
-    transformacion: [['trTree', 0.2, 0.15]],
     celebracion: [['mushrooms', 0.8, 0], ['caps', 0.8, 0]],
 };
+const ANY_PLANT = Object.values(SEED_PLANTS).flat();
 // her tree's trunk on the floor: it stands a little behind its foot (its roots come forward), as wide as it looks
 // Her tree stands in his way where it is drawn: its trunk (just behind its foot, as wide as it is drawn just over its
 // roots, its middle a little left of the foot) and its roots, which spread wide and come forward over the floor (an
@@ -549,12 +550,14 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
     function plantedItem(g, x, d) {
         const id = `plant:${g.key}:${Math.round(x)},${Math.round(d)}`;
         colour.set(id, 1);
+        // (Transformación's seeds once grew its tree, small: those kept on the phone come up as another card's plant)
+        if (g.name === 'trTree') [g.name, g.scale, g.sway] = ANY_PLANT[Math.floor((g.pick ?? 0.5) * ANY_PLANT.length)];
         return { id, kind: 'piece', name: g.name, x, d, scale: g.scale, flip: g.flip, sway: g.sway, role: 'plant', pick: g.pick ?? 0.5,
             planted: { grown: SEED_GROWTH[Math.min(SEED_GROWTH.length - 1, Math.max(0, visit - g.visit))], now: g.visit === visit ? g.at : null } };
     }
     // Planting a seed of a card at (x, d): what to remember of it (and it starts to sprout there now)
     function plant(card, x, d) {
-        const list = SEED_PLANTS[card] ?? SEED_PLANTS.ciclos, n = zoneOrder.length;
+        const list = SEED_PLANTS[card] ?? ANY_PLANT, n = zoneOrder.length;
         const [name, scale, sway] = list[Math.floor(Math.random() * list.length)];
         const i = Math.floor((x - ZONE_START) / ZONE), j = Math.floor((d - D_START) / ZONE_D);
         const g = {
