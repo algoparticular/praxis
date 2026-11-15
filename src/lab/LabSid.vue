@@ -101,7 +101,7 @@ const LEG = { thigh: 97, shin: 97, foot: 40, width: 16 };
 const ARM = { upper: 116, fore: 110, width: 13.5 };        // long, as in Upekkha (they reach his crossed legs)
 // his legs crossed in lotus, as in Upekkha and Ciclos: the knees well out past his body, a little up off the floor,
 // each foot under the other knee, the two shins crossing in front of him
-const LOTUS = { knee: 132, kneeUp: 26, under: 70 };
+const LOTUS = { knee: 132, kneeUp: 26, under: 70, hands: 15, open: 1.38 };   // (hands: how far apart in his lap; open: how far his elbows open)
 const STAND = 196;                            // his hips over the ground, standing: his legs all but straight
 const SIT = 48;                               // his hips over the ground, sitting with his legs crossed: his bottom on the floor
 // In profile his hips are together in his middle (one leg behind the other), his arms come from the middle of him
@@ -1007,18 +1007,19 @@ function draw() {
         let hand = map(f, hands[which].u.x, hands[which].v.x);
         const r = springs.reach.x;
         if (which === 'near' && state.reached && r > 0.001) hand = { x: hand.x + (state.reached.x - hand.x) * r, y: hand.y + (state.reached.y - hand.y) * r };
-        // in lotus, as she draws him meditating (Upekkha, Ciclos): the shoulders loose, each arm comes down along his
-        // side, outside his body, and its hand rests on the knee of its own side
+        // in lotus: the shoulders loose, each arm opens a little out by his side (the elbow out) and comes in again
+        // low, so the two hands meet in his lap, in front of his pelvis, over his crossed legs
         const knees = Math.min(...state.legSit), own = Math.sign(s.x - f.root.x) || (i ? 1 : -1);
         if (knees > 0.001) {
-            const k = knees * knees * (3 - 2 * knees), rest = { x: f.root.x + own * (LOTUS.knee - 14), y: state.ground - LOTUS.kneeUp - 12 };
+            const k = knees * knees * (3 - 2 * knees), rest = { x: f.root.x + own * LOTUS.hands, y: f.root.y - 4 };
             hand = { x: hand.x + (rest.x - hand.x) * k, y: hand.y + (rest.y - hand.y) * k };
         }
         const raised = hand.y < s.y;
         // elbows back in profile, out to their own side turned to us; down when the hand is up
         const out = (i ? -1 : 1) * face * lateral(), back = mix(-face * 0.7, out, f.front);
         // (sitting, the elbow goes out to its own side and a little down: the arm rounds softly by his side)
-        if (Math.min(...state.legSit) > 0.5 && !raised) return { s, ...bend(s, hand, ARM.upper, ARM.fore, { x: own, y: 0.1 }) };
+        // (his arms are a little longer than shoulder to lap, so the elbows open out clear of his body)
+        if (Math.min(...state.legSit) > 0.5 && !raised) return { s, ...bend(s, hand, ARM.upper * LOTUS.open, ARM.fore * LOTUS.open, { x: own, y: 0.1 }) };
         const toward = raised ? { x: out * 0.5, y: 1 } : { x: back, y: 0.15 };
         return { s, ...bend(s, hand, ARM.upper, ARM.fore, toward) };
     });
