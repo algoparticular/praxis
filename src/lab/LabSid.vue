@@ -4,7 +4,7 @@
 // traced off Nekkhamma's Sid (scripts/make-sid-lab.mjs -> sid.json), bent, squashed and stretched as a soft body; his
 // eyes (they look, blink and close); his arms and legs, strokes with his ink and line that bend freely. Canvas 2D on purpose: it shows the movement;
 // if it is what we want, the same rig goes into the WebGL stage (useLayerStage.js). Plan: docs/sid-en-piezas.md.
-import { onBeforeUnmount, onMounted, reactive, ref, shallowRef } from 'vue';
+import { onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import Header from '../components/Header.vue';
 import rig from './sid/sid.json';
 import { CICLOS, createWorld } from './sidWorld.js';
@@ -14,7 +14,7 @@ import { play, setCardChord } from '../composables/useSound.js';
 import { chordFor } from '../data/cardChords.js';
 import { getCard } from '../data/cards.js';
 import { loadMemory, saveMemory } from './worldMemory.js';
-import { sceneFor } from '../data/cardScenes.js';
+import CardTemplate from '../components/CardTemplate.vue';
 import { hasWebGL } from '../composables/useLayerStage.js';
 
 const ui = reactive({ bones: false, sitting: false, touch: false, hint: false, seeds: 0, seedPop: 0 });
@@ -49,36 +49,34 @@ const teaching = reactive({ es: '', en: '', on: false, light: false, ink: CICLOS
 const RULITO_COLOURS = { 15: '#fc747c', 8: '#f595b6', 9: '#b3539a', 14: '#ffe285', 27: '#f37b85', 24: '#fff6c2', 32: '#f5d35a' };
 const rulitoColour = ref(RULITO_COLOURS[15]);
 // A door to the card (for now only Metta's nest): sitting in lotus at its place, after PORTAL_AFTER s the world gives way
-// to the card's own scene, over it (the lab stays where it was, paused, under it); its game is played there as on the
-// card's page and, a moment after its rulito is whole (PORTAL_LINGER), the scene fades back into the world, where he is
-// still sitting, with that rulito over his head and the card's affirmation. Without WebGL the scene would be flat (no
-// game), so there the place keeps its own rulito. The scene says its rulito is whole with its `rulito` event.
+// to the card itself, as its page shows it (CardTemplate.vue: its scene and, below, its reading), over the world (the
+// lab stays where it was, paused, under it). Its game is played there as on the card's page; nothing takes him back by
+// itself (the reading is there to be read): the labyrinth in the header's corner (`hasWorld`, where a card's page has
+// the deck) or Escape goes back into the world, where he is still sitting, and if its rulito was born (the scene's
+// `rulito` event) it comes back with him, whole, over his head, with the card's affirmation. Without WebGL the scene
+// would be flat (no game), so there the place keeps its own rulito.
 const PORTALS = new Set([8]);
-const PORTAL_AFTER = 3, PORTAL_FADE = 900, PORTAL_LINGER = 3200;
-const portal = reactive({ card: null, data: null, ready: false, won: false });
-const portalScene = shallowRef(null);
+const PORTAL_AFTER = 3, PORTAL_FADE = 900;
+const portal = reactive({ card: null, won: false });
 const webgl = hasWebGL();
-let portalTimers = [];
+let portalTimer = 0;
 function openPortal(card) {
-    portal.card = card; portal.data = getCard(card); portal.ready = false; portal.won = false;
-    portalScene.value = sceneFor(card);
+    portal.card = card; portal.won = false;
     release(); state.target = null; state.guide = null;
     document.body.classList.add('lab-portal');
-    // (once the card's colour covers the world, the world stops drawing and the scene comes in)
-    portalTimers.push(setTimeout(() => { if (portal.card === card) { paused = true; portal.ready = true; } }, PORTAL_FADE));
+    window.scrollTo(0, 0);
+    // (once the card's colour covers the world, the world stops drawing)
+    portalTimer = setTimeout(() => { if (portal.card === card) paused = true; }, PORTAL_FADE);
 }
-function portalWon() {
-    if (portal.won) return;
-    portal.won = true;
-    portalTimers.push(setTimeout(() => closePortal(true), PORTAL_LINGER));
-}
-function closePortal(won = false) {
+function portalWon() { portal.won = true; }
+function closePortal() {
     if (portal.card == null) return;
-    const card = portal.card;
-    portalTimers.forEach(clearTimeout); portalTimers = [];
+    const card = portal.card, won = portal.won;
+    clearTimeout(portalTimer);
     paused = false; last = 0;
     state.portalDone = true;      // (not again until he gets up)
     document.body.classList.remove('lab-portal');
+    window.scrollTo(0, 0);
     if (won) {
         // the rulito he won comes back with him, whole, and the card's affirmation is written over the world
         state.rul = { age: RULITO_GROW, head: 1, tail: 0, pop: 1, full: true, card };
@@ -87,7 +85,7 @@ function closePortal(won = false) {
         const c = getCard(card);
         if (c) Object.assign(teaching, { es: c.affirmation_es.trim(), en: c.affirmation_en.trim(), on: true });
     }
-    portal.card = null; portal.ready = false;
+    portal.card = null;
 }
 
 // --- The rig, in px of the source drawing (258 x 686): he faces +x (his eyes are on that side) ---
@@ -1101,7 +1099,7 @@ onMounted(() => {
 });
 onBeforeUnmount(() => {
     document.body.classList.remove('lab-page', 'lab-night', 'lab-portal');
-    portalTimers.forEach(clearTimeout);
+    clearTimeout(portalTimer);
     setCardChord(null);
     cancelAnimationFrame(raf);
     clearTimeout(hintTimer);
@@ -1114,6 +1112,9 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
+    <!-- (one root, for the route's transition: the world, fixed, and over it, in the page's flow so the window scrolls
+         it as on its own page, a card opened at its place) -->
+    <div class="labRoot">
     <!-- (no menu on a long press: a finger held down only guides him) -->
     <div class="lab" @contextmenu.prevent>
         <div ref="nightSky" class="night-sky"><canvas ref="starCanvas"></canvas></div>
@@ -1126,22 +1127,9 @@ onBeforeUnmount(() => {
                 {{ $i18n.locale === 'en' ? teaching.en : teaching.es }}
             </p>
         </Transition>
-        <!-- a card's own scene, over the world, while he meditates at its door (openPortal) -->
-        <Transition name="portal">
-            <div v-if="portal.card != null" class="portal" :style="{ backgroundColor: portal.data?.color }">
-                <section class="stage">
-                    <div class="sceneHost" :class="{ ready: portal.ready }">
-                        <component :is="portalScene" :card="portal.data" :active="portal.ready" @rulito="portalWon" />
-                    </div>
-                    <h1 class="title" :style="{ color: portal.data?.colorAlt, textShadow: '0 2px 18px ' + portal.data?.color }">{{ String(portal.data?.['name_' + $i18n.locale] ?? '').trim() }}</h1>
-                    <button class="back glass" :aria-label="$i18n.locale === 'en' ? 'Back to the world' : 'Volver al mundo'" @click="closePortal()">
-                        <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true"><path d="M5 5L17 17M17 5L5 17" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
-                    </button>
-                </section>
-            </div>
-        </Transition>
         <!-- the app's own header: back on the left, the sound and the menu on the right -->
-        <Header :hasBack="true" :hasMenu="true" />
+        <!-- (in a card opened here, the labyrinth takes the corner of the back arrow: back into the world) -->
+        <Header :hasBack="portal.card == null" :hasWorld="portal.card != null" :hasMenu="true" @world="closePortal()" />
         <!-- one button, on a phone and on a computer alike: the seed, Algo Particular's mark (as in the header), sits him
              in lotus and gets him up again; he walks with the arrows or WASD, or where a click or a touch on the floor
              sends him; a touch on him makes him wave (on a computer J jumps) -->
@@ -1150,6 +1138,13 @@ onBeforeUnmount(() => {
             <!-- the seeds he carries (picked up walking, planted sitting in lotus away from the places) -->
             <span v-if="ui.seeds" :key="ui.seedPop" class="count">{{ ui.seeds }}</span>
         </button>
+    </div>
+    <!-- the card of the place where he meditates (openPortal), as its own page shows it -->
+    <Transition name="portal">
+        <div v-if="portal.card != null" class="portal content cardPage">
+            <CardTemplate :id="String(portal.card)" entry="lab" @rulito="portalWon" />
+        </div>
+    </Transition>
     </div>
 </template>
 
@@ -1215,43 +1210,10 @@ canvas {
 .teaching-enter-from { opacity: 0; transform: translateY(8px); }
 .teaching-leave-to { opacity: 0; }
 .portal {
-    position: absolute;
-    inset: 0;
-    z-index: 10;                  /* (under the app's header, z-index 11) */
-}
-.portal .stage { position: absolute; inset: 0; }
-.portal .sceneHost { position: absolute; inset: 0; opacity: 0; transition: opacity 0.9s ease-out; }
-.portal .sceneHost.ready { opacity: 1; }
-/* the card's name over its scene, as on its page (CardTemplate.vue) */
-.portal .title {
-    position: absolute;
-    top: max(84px, 10.5svh);
-    left: 0;
-    width: 100%;
-    margin: 0;
-    padding: 0 7vw;
-    box-sizing: border-box;
-    text-align: center;
-    font-family: 'Caveat', 'Nunito', helvetica, sans-serif;
-    font-size: clamp(40px, 9vw, 88px);
-    font-weight: 400;
-    line-height: 1.05;
-    letter-spacing: 0.02em;
-    pointer-events: none;
-}
-/* back to the world without finishing (Escape too) */
-.portal .back {
-    position: absolute;
-    left: 50%;
-    bottom: calc(24px + env(safe-area-inset-bottom, 0px));
-    transform: translateX(-50%);
-    width: 52px;
-    height: 52px;
-    border-radius: 50%;
-    display: grid;
-    place-items: center;
-    color: #F7F8F1;
-    cursor: pointer;
+    position: relative;
+    z-index: 10;                  /* (over the world, under the app's header: z-index 11) */
+    height: auto;
+    min-height: 100vh;
 }
 .portal-enter-active { transition: opacity 0.9s ease-in-out; }
 .portal-leave-active { transition: opacity 1.4s ease-in-out; }

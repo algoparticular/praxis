@@ -7,8 +7,11 @@
     const props = defineProps({
         hasBack: Boolean,
         hasMenu: Boolean,
-        hasDeck: Boolean
+        hasDeck: Boolean,
+        // the labyrinth: back to the lab's world from a card opened there
+        hasWorld: Boolean
     });
+    const emit = defineEmits(['world']);
 
     const showMenu = ref(false);
 
@@ -89,6 +92,7 @@
     <header :class="{ tucked }">
         <div class="navContainer">
             <button v-if="props.hasBack" class="back" :aria-label="$t('nav.back')" @click="handleBack()"></button>
+            <button v-if="props.hasWorld" class="world" :aria-label="$t('nav.world')" @click="emit('world')"></button>
             <button v-if="props.hasDeck" class="deck" :class="{ nine: fromNine }" :aria-label="fromNine ? $t('praxis.theNine') : $t('praxis.fullDeck')" @click="handleGoToDeck()"></button>
             <!-- The brand mark takes the left corner on the pages with nowhere to go back to (the landing),
                  so every header has the same shape: the way out on the left, the tools on the right -->
@@ -192,6 +196,13 @@
         background-repeat: no-repeat;
         background-color: transparent;
         background-image: url('../assets/icon/deck.svg');
+        filter: drop-shadow(0px 2px 3px rgb(199, 190, 142));
+    }
+
+    button.world {
+        background-repeat: no-repeat;
+        background-color: transparent;
+        background-image: url('../assets/icon/Lab.svg');
         filter: drop-shadow(0px 2px 3px rgb(199, 190, 142));
     }
 
