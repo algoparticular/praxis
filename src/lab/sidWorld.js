@@ -87,6 +87,9 @@ const EYES = {
     metta0: 'eyes_metta0', metta1: 'eyes_metta1', metta2: 'eyes_metta2', metta3: 'eyes_metta3', metta4: 'eyes_metta4', metta5: 'eyes_metta5',
     fire_samaLeft: 'eyes_fire_samaLeft',
 };
+// the characters drawn further back than their feet say (as items: their place on the ground stays): Celebración's
+// left fox stands at the feet of the being on the left and its feet are a touch lower, but it goes behind him
+const BACK = { fire_foxLeft: 30 };
 // what lets go of glowing spores by night (they rise from its caps and fade)
 const SPORES = new Set(['shrooms', 'shroom', 'grove', 'mushrooms', 'caps', 'bloom0', 'bloom1', 'bloom2', 'bloom3', 'bloom4']);
 const BLOCKS = new Set(['pebbleGrass', 'pebbleFlat', 'cairn', 'grove', 'stones', 'stack']);
@@ -743,7 +746,7 @@ export function createWorld({ clouds = null, moon = null }) {
     // faint, so it never hides him
     // The tree is a trunk with roots, not a flat card: it counts as standing TREE.behind further back than its foot, so
     // sitting at its roots, under its crown, he is in front of its trunk and its roots
-    const order = (item) => item.kind === 'tree' ? item.d + TREE.behind : item.d;
+    const order = (item) => item.kind === 'tree' ? item.d + TREE.behind : item.d + (item.kind === 'being' ? BACK[item.name] ?? 0 : 0);
     // Where he is sitting, if it is at a place: under the crown of her tree (in front of its roots, too), or in front of
     // a zone's place: { P, x }
     function placeAt(x, d) {
