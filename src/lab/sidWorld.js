@@ -91,7 +91,8 @@ const EYES = {
 // left fox stands at the feet of the being on the left and its feet are a touch lower, but it goes behind him
 const BACK = { fire_foxLeft: 30 };
 // what lets go of glowing spores by night (they rise from its caps and fade)
-const SPORES = new Set(['shrooms', 'shroom', 'grove', 'mushrooms', 'caps', 'bloom0', 'bloom1', 'bloom2', 'bloom3', 'bloom4']);
+const SPORES = new Set(['shrooms', 'shroom', 'grove', 'mushrooms', 'caps', 'bloom0', 'bloom1', 'bloom2', 'bloom3', 'bloom4',
+    'pondFern', 'pondTuft0', 'pondTuft1', 'pondTuft2', 'pondSprout', 'pondShrooms']);
 const BLOCKS = new Set(['pebbleGrass', 'pebbleFlat', 'cairn', 'grove', 'stones', 'stack']);
 const TALL = new Set(['fern', 'fernSmall', 'cairn', 'grove']);
 // her tree's trunk on the floor: it stands a little behind its foot (its roots come forward), as wide as it looks
@@ -220,7 +221,20 @@ const PLACES = [
             [10, 575], [6, 574], [3, 572], [4, 568], [7, 566], [11, 567], [16, 565], [20, 561], [23, 557], [27, 556], [25, 555],
             [30, 556], [27, 554], [25, 557], [21, 559], [18, 564], [13, 567], [9, 566], [5, 566], [3, 571], [4, 573], [7, 574],
             [16, 574], [40, 571], [218, 568], [218, 564], [220, 559], [228, 548], [250, 532], [268, 501], [307, 435]],
-        block: { dd: 150, r: 790, rd: 160 }, sit: 400, clear: { w: 960, front: 220, back: 560 } },
+        // what grows round it, as in its card: behind it the big fern with its glowing flower and the grove of big
+        // mushrooms with its crystals, on its banks the cairn, the stones, the tufts with a flower, the pair of yellow
+        // mushrooms and more crystals, and in front a sprout, a pebble and a small mushroom. lilies: on its water
+        garden: [
+            ['pondFern', -420, 430, 1.25, 0.25], ['pondTuft0', -130, 370, 1.1, 0.5], ['pondSprout', 110, 350, 1.2, 0.6],
+            ['pondTuft2', 300, 340, -1, 0.5], ['grove', 480, 480, 0.85], ['crystals', 830, 370, 1.2], ['shrooms', 1010, 300, 1.3],
+            ['pondCairn', -960, 170, 1.2], ['pondTuft1', -880, 330, 1.1, 0.5], ['pondStones', -1090, 0, 1.2, 0.3],
+            ['crystalsSmall', -1160, 250, -1.1], ['pondPebbles', -620, -110, 1.1], ['shroom', -830, -150, 1.2],
+            ['pondShrooms', 990, 90, 1.15], ['crystal', 800, -90, 1.3], ['crystalsSmall', 1160, -20, 1.2],
+            ['pondTuft0', 1190, 220, -0.9, 0.5], ['pondPebble', 1090, -170, -1],
+            ['pondSprout', -300, -100, -1, 0.6], ['pondTuft2', -330, -230, 0.8, 0.5], ['pondPebble', 330, -140, 1.1], ['crystal', 540, -170, -1],
+        ],
+        lilies: [[620, 330, 1], [1280, 260, -0.9]],
+        block: { dd: 150, r: 790, rd: 160 }, sit: 400, clear: { w: 1350, front: 450, back: 700 } },
     { card: 'celebracion', kind: 'fire', id: 14, dd: 0, reach: 950, anchor: [1067, 1925], depthK: 1.1,
         parts: ['flame', 'logs'], crowd: ['fire_samaLeft', 'fire_samaRight', 'fire_seated', 'fire_foxLeft', 'fire_foxRight',
             'fire_catBack', 'fire_catFront', 'fire_trio', 'fire_hairy', 'fire_pink'],
@@ -348,6 +362,17 @@ export function createWorld({ clouds = null, moon = null }) {
             if (P.kind === 'tree') add({ kind: 'tree', x, d, reach: 700, place: P });
             else add({ kind: 'place', x, d, reach: P.reach, place: P, scale: 1 });
         }
+        // what grows round a place, where it is drawn round it ([name, across, back from its foot, size (below 0:
+        // mirrored), sway]; in the stretch and the row it falls in itself). It is part of the place: it takes its colour
+        // with it, and goes back to ink with it
+        for (const { P, x, d } of near) {
+            for (const [name, dx, dd, scale, sway = 0] of P.garden ?? []) {
+                const bx = x + dx, bd = d + dd;
+                if (bx < index * STRETCH || bx >= (index + 1) * STRETCH || row !== Math.floor((bd + 180) / PATCH)) continue;
+                add({ kind: 'piece', name, x: bx, d: bd, scale: Math.abs(scale), flip: Math.sign(scale), sway, role: sway ? 'plant' : 'stone', pick: r(),
+                    garden: { x, d, P } });
+            }
+        }
         // the characters round the places, each where it stands (in the stretch and the row its own place falls in)
         for (const { P, x, d } of near) {
             for (const name of P.crowd ?? []) {
@@ -450,7 +475,7 @@ export function createWorld({ clouds = null, moon = null }) {
             if (Math.abs(i * STRETCH - sid.x) > 3000) {
                 // (far from him, the characters and the places go back to ink, still, ready for the next time he comes)
                 for (const item of items) {
-                    if (item.kind !== 'being' && item.kind !== 'place') continue;
+                    if (item.kind !== 'being' && item.kind !== 'place' && !item.garden) continue;
                     const c0 = colour.get(item.id) ?? 0;
                     if (c0 > 0) colour.set(item.id, Math.max(0, c0 - dt * 0.4));
                 }
@@ -472,12 +497,13 @@ export function createWorld({ clouds = null, moon = null }) {
             }
             for (const item of items) {
                 const dx = item.x - sid.x, dd = (item.d - sid.d) * 1.6, dist = Math.hypot(dx, dd);
-                // colour: as he walks by, and inside the wave while he sits
+                // colour: as he walks by, and inside the wave while he sits (what grows round a place, with its place)
                 let c = colour.get(item.id) ?? 0;
-                const near = item.kind === 'tree' ? 950 : item.kind === 'place' ? item.reach + 350 : item.kind === 'being' ? 800 : 170;
-                if (dist < near) c = Math.min(1, c + dt * 0.9 * (1 - dist / near) * 2);
+                const g = item.garden, from = g ? Math.hypot(g.x - sid.x, (g.d - sid.d) * 1.6) : dist;
+                const near = item.kind === 'tree' ? 950 : item.kind === 'place' ? item.reach + 350 : item.kind === 'being' ? 800 : g ? g.P.reach + 350 : 170;
+                if (from < near) c = Math.min(1, c + dt * 0.9 * (1 - from / near) * 2);
                 // (the characters and the places go back to ink, still, once he has gone a good way off)
-                else if ((item.kind === 'being' || item.kind === 'place') && dist > 1800) c = Math.max(0, c - dt * 0.4);
+                else if ((item.kind === 'being' || item.kind === 'place' || g) && from > 1800) c = Math.max(0, c - dt * 0.4);
                 if (ripple && Math.hypot(item.x - ripple.x, (item.d - ripple.d) * 1.6) < ripple.r) c = Math.min(1, c + dt * 1.4);
                 if (c > 0 || colour.has(item.id)) colour.set(item.id, c);
                 if (item.kind === 'tick' || (item.kind === 'piece' && item.sway)) {
@@ -638,6 +664,12 @@ export function createWorld({ clouds = null, moon = null }) {
                 const [, , w, h] = B('pond'), flat = item.flatK ?? 0.5;
                 c.save(); c.scale(1, flat);
                 at('pond', -w / 2, -h);
+                // its lily pads, lying on it too (where on its picture, and how big: a size below 0 is mirrored)
+                for (const [lx, ly, k] of P.lilies ?? []) {
+                    const [, , lw, lh] = B('pondLilies');
+                    c.save(); c.translate(-w / 2 + lx * PIECES.pond.unit, -h + ly * PIECES.pond.unit); c.scale(k, Math.abs(k));
+                    at('pondLilies', -lw / 2, -lh / 2); c.restore();
+                }
                 c.strokeStyle = 'rgba(255,255,255,0.9)'; c.lineWidth = 6;
                 for (let n = 0; n < 3; n++) {
                     const ph = (time * 0.25 + n / 3) % 1, a = (0.15 + 0.6 * g) * (1 - ph);

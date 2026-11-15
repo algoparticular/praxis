@@ -58,6 +58,21 @@ const PIECES = {
     // Upekkha's pond, the special place of its zone (its water and its line; the card cuts it at its left edge: it is made
     // whole with its mirror there). compose: layers of the card put together over `canvas` (card px)
     pond: { compose: [['upekkha/water', 0, 1492], ['upekkha/pond', 21, 1184]], canvas: [26, 1180, 1004, 890], mirror: true, unit: 0.8, inside: 'colour', dark: 130 },
+    // and what is round it in the card (at the pond's unit, so they are as big beside it, and beside Sid, as there): the
+    // big fern with the glowing flower on its curling stem, the little tufts with a glowing flower and the sprout, the
+    // stones (the cairn, the pebbles, the stones with a fern), the lily pads on the water, and the pair of yellow
+    // mushrooms (its line in one layer, its caps in another)
+    pondFern: { compose: [['upekkha/fern', 91, 868], ['upekkha/plants', 49, 753]], canvas: [91, 753, 566, 643], unit: 0.8, inside: 'colour', dark: 130 },
+    pondTuft0: { from: 'upekkha/plants', crop: [648, 608, 157, 161], unit: 0.8, inside: 'colour', dark: 130 },
+    pondTuft1: { from: 'upekkha/plants', crop: [795, 1107, 178, 174], unit: 0.8, inside: 'colour', dark: 130 },
+    pondTuft2: { from: 'upekkha/plants', crop: [32, 1128, 186, 192], unit: 0.8, inside: 'colour', dark: 130 },
+    pondSprout: { from: 'upekkha/plants', crop: [381, 723, 95, 179], unit: 0.8, inside: 'colour', dark: 130 },
+    pondCairn: { from: 'upekkha/land', crop: [6, 396, 197, 121], unit: 0.8, inside: 'colour', dark: 130 },
+    pondPebbles: { from: 'upekkha/land', crop: [412, 261, 410, 97], unit: 0.8, inside: 'colour', dark: 130 },
+    pondStones: { from: 'upekkha/land', crop: [356, 495, 283, 199], unit: 0.8, inside: 'colour', dark: 130 },
+    pondPebble: { from: 'upekkha/land', crop: [416, 980, 180, 92], unit: 0.8, inside: 'colour', dark: 130 },
+    pondLilies: { from: 'upekkha/land', crop: [67, 718, 182, 142], unit: 0.8, inside: 'colour', dark: 130 },
+    pondShrooms: { compose: [['upekkha/land', 48, 1020], ['upekkha/crystals', 1202, 1237]], canvas: [1258, 1676, 342, 264], unit: 0.8, inside: 'colour', dark: 130 },
     // Desafío's two pink mushrooms
     caps: { from: 'desafio/mushrooms', unit: 1.2, inside: 'colour', dark: 130 },
     // Metta's little glowing plants (dark, all line)
