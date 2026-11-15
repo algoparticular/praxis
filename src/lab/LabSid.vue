@@ -391,6 +391,8 @@ function onKey(e) {
     const key = KEYS[e.key.length === 1 ? e.key.toLowerCase() : e.key];
     if (key) { e.preventDefault(); if (e.type === 'keydown' && !e.repeat) press(key, true); if (e.type === 'keyup') press(key, false); return; }
     if (e.key === ' ' || e.code === 'Space') { e.preventDefault(); if (e.type === 'keydown' && !e.repeat) sit(); }
+    // (jumping has no button for now: J jumps, on a computer)
+    if ((e.key === 'j' || e.key === 'J') && e.type === 'keydown' && !e.repeat) jump();
 }
 function release() { for (const key of Object.keys(state.keys)) state.keys[key] = false; }
 function reachFor(p) { state.reach = p; state.reached = p; act('reach', 2.6); }
@@ -1006,17 +1008,16 @@ onBeforeUnmount(() => {
              it while it is held), and there is only the lotus with, round it, waving and jumping (below) -->
         <div v-if="!ui.touch" class="panel">
             <button @click="walkAcross">Caminar</button>
-            <button @click="wave">Saludar</button>
-            <button @click="jump">Saltar</button>
             <button @click="stretch">Estirarse</button>
-            <button :class="{ on: ui.sitting }" @click="sit()">Loto</button>
 
             <span class="sep"></span>
             <button :class="{ on: ui.bones }" @click="ui.bones = !ui.bones">Esqueleto</button>
         </div>
-        <button v-if="ui.touch" class="act wave" @click="wave">Saludar</button>
-        <button v-if="ui.touch" class="act jump" @click="jump">Saltar</button>
-        <button v-if="ui.touch" class="lotus" :class="{ on: ui.sitting }" @click="sit()">Loto</button>
+        <!-- one button: the seed, Algo Particular's mark (as in the header), sits him in lotus and gets him up again; a
+             touch on him makes him wave (the buttons to wave and to jump are gone; on a computer J still jumps) -->
+        <button class="lotus" :class="{ on: ui.sitting }" :aria-pressed="ui.sitting" aria-label="Loto" title="Loto" @click="sit()">
+            <span class="seed" aria-hidden="true"></span>
+        </button>
     </div>
 </template>
 
@@ -1101,7 +1102,7 @@ canvas {
     justify-content: center;
 }
 /* As the app's buttons (style.scss): the cream, no border, its soft warm shadow, the coral when touched or on */
-.panel button, .lotus, .act {
+.panel button, .lotus {
     font-family: 'Nunito', helvetica, sans-serif;
     font-size: 16px;
     margin: 0;
@@ -1117,9 +1118,9 @@ canvas {
     -webkit-tap-highlight-color: transparent;
     transition: background 200ms ease-out, color 200ms ease-out;
 }
-.panel button:hover, .lotus:hover, .act:active { background: #FF6F61; color: #F7F8F1; }
+.panel button:hover, .lotus:hover, .lotus:active { background: #FF6F61; color: #F7F8F1; }
 .panel button.on, .lotus.on { background: #FF6F61; color: #F7F8F1; }
-.panel button:focus, .lotus:focus, .act:focus { box-shadow: none; outline: none; }
+.panel button:focus, .lotus:focus { box-shadow: none; outline: none; }
 .panel button:focus-visible, .lotus:focus-visible { box-shadow: rgba(255, 111, 97, 0.35) 0 0 0 4px; }
 .sep {
     width: 12px;
@@ -1134,17 +1135,6 @@ canvas {
 }
 .panel.bottom .sep { display: none; }
 .panel.bottom button { flex: none; }
-/* waving and jumping, smaller, in an arc round the lotus (as the buttons of a game pad) */
-.act {
-    position: absolute;
-    width: 58px;
-    height: 58px;
-    padding: 0;
-    border-radius: 50%;
-    font-size: 12px;
-}
-.act.wave { right: 116px; bottom: calc(116px + env(safe-area-inset-bottom, 0px)); }
-.act.jump { right: 33px; bottom: calc(146px + env(safe-area-inset-bottom, 0px)); }
 .lotus {
     position: absolute;
     right: 20px;
@@ -1154,6 +1144,17 @@ canvas {
     padding: 0;
     border-radius: 50%;
     font-size: 17px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+/* the seed, in the button's own colour (navy, cream once he sits) */
+.lotus .seed {
+    width: 44px;
+    height: 44px;
+    background-color: currentColor;
+    -webkit-mask: url('../assets/icon/Seed.svg') center / contain no-repeat;
+    mask: url('../assets/icon/Seed.svg') center / contain no-repeat;
 }
 @media (max-width: 600px) {
     .panel { gap: 8px; }
