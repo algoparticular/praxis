@@ -40,6 +40,8 @@
         card: { type: Object, default: () => ({}) },
         active: Boolean
     });
+    // (the rulito is whole: told to whoever holds the card; the lab's world, which opens it from its place, brings it back)
+    const emit = defineEmits(['rulito']);
 
     const root = ref(null);
     const canvas = ref(null);
@@ -358,7 +360,7 @@
                 play('star');
                 sceneMilestone('light_shared', { times: wins });
             },
-            full: () => { boost = 1; play('rulito'); },
+            full: () => { boost = 1; play('rulito'); emit('rulito'); },
             fade: () => { shineGoal = 0; },
             puff: (x, y, colors) => burst({ x, y }, 2, colors, 40),
             // The hand goes to touch one thing still to thank (on its touch target, which follows it)
