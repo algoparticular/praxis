@@ -9,8 +9,12 @@
     import { setCurrentVisit, startCardVisit, track } from '../analytics.js';
 
     const props = defineProps({
-        id: String
+        id: String,
+        // where the visit came from, when it is not the oracle nor a link (the lab, where Sid meditated at its place)
+        entry: String
     });
+    // (the scene's rulito is whole: told to whoever holds the card, the lab's world)
+    const emit = defineEmits(['rulito']);
 
     const router = useRouter();
     const card = computed(() => getCard(props.id) ?? {});
@@ -28,7 +32,7 @@
 
     // What the person does here is told as one story when they leave (analytics.js): how long, whether they touched the
     // scene, whether they read on. A card with a picked transition was chosen in the oracle; otherwise it was opened directly.
-    const visit = startCardVisit(props.id, { scene: sceneNameFor(props.id), entry: transition ? 'picked' : 'direct' });
+    const visit = startCardVisit(props.id, { scene: sceneNameFor(props.id), entry: props.entry ?? (transition ? 'picked' : 'direct') });
     setCurrentVisit(visit);
 
     // Touching the scene counts: its touchable zones are role="button" (a finger that only drags the page to the reading
@@ -113,7 +117,7 @@
 	<main class="cardWrapper" :class="{ entering }" ref="root">
         <section class="stage" ref="stage" @contextmenu.prevent @selectstart.prevent @pointerdown.capture="onStageDown" @click.capture="onStageClick">
             <div class="sceneHost" :class="{ ready }">
-                <component :is="scene" :card="card" :active="ready" />
+                <component :is="scene" :card="card" :active="ready" @rulito="emit('rulito')" />
             </div>
 
             <h1 class="title" v-if="String(card['name_' + $i18n.locale] ?? '').trim()">{{ String(card['name_' + $i18n.locale] ?? '').trim() }}</h1>

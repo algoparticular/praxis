@@ -43,6 +43,8 @@
         card: { type: Object, default: () => ({}) },
         active: Boolean
     });
+    // (the rulito is whole: the lab's world, which opened this scene at Metta's nest, goes back to itself)
+    const emit = defineEmits(['rulito']);
 
     const root = ref(null);
     const canvas = ref(null);
@@ -351,7 +353,7 @@
                 play('star');
                 sceneMilestone('light_shared', { times: wins });
             },
-            full: () => { boost = 1; play('rulito'); },
+            full: () => { boost = 1; play('rulito'); emit('rulito'); },
             // The lights fade, and he is back to the start: to give again, he loves himself first
             fade: () => { selfGoal = 0; },
             puff: (x, y, colors) => burst({ x, y }, 2, colors, 40),

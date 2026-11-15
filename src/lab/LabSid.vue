@@ -14,6 +14,8 @@ import { play, setCardChord } from '../composables/useSound.js';
 import { chordFor } from '../data/cardChords.js';
 import { getCard } from '../data/cards.js';
 import { loadMemory, saveMemory } from './worldMemory.js';
+import CardTemplate from '../components/CardTemplate.vue';
+import { hasWebGL } from '../composables/useLayerStage.js';
 
 const ui = reactive({ bones: false, sitting: false, touch: false, hint: false, seeds: 0, seedPop: 0 });
 
@@ -46,6 +48,45 @@ const teaching = reactive({ es: '', en: '', on: false, light: false, ink: CICLOS
 // the rulito is born in the colour its card gives it (as in the card's own scene)
 const RULITO_COLOURS = { 15: '#fc747c', 8: '#f595b6', 9: '#b3539a', 14: '#ffe285', 27: '#f37b85', 24: '#fff6c2', 32: '#f5d35a' };
 const rulitoColour = ref(RULITO_COLOURS[15]);
+// A door to the card (for now only Metta's nest): sitting in lotus at its place, after PORTAL_AFTER s the world gives way
+// to the card itself, as its page shows it (CardTemplate.vue: its scene and, below, its reading), over the world (the
+// lab stays where it was, paused, under it). Its game is played there as on the card's page; nothing takes him back by
+// itself (the reading is there to be read): the labyrinth in the header's corner (`hasWorld`, where a card's page has
+// the deck) or Escape goes back into the world, where he is still sitting, and if its rulito was born (the scene's
+// `rulito` event) it comes back with him, whole, over his head, with the card's affirmation. Without WebGL the scene
+// would be flat (no game), so there the place keeps its own rulito.
+const PORTALS = new Set([8]);
+const PORTAL_AFTER = 3, PORTAL_FADE = 900;
+const portal = reactive({ card: null, won: false });
+const webgl = hasWebGL();
+let portalTimer = 0;
+function openPortal(card) {
+    portal.card = card; portal.won = false;
+    release(); state.target = null; state.guide = null;
+    document.body.classList.add('lab-portal');
+    window.scrollTo(0, 0);
+    // (once the card's colour covers the world, the world stops drawing)
+    portalTimer = setTimeout(() => { if (portal.card === card) paused = true; }, PORTAL_FADE);
+}
+function portalWon() { portal.won = true; }
+function closePortal() {
+    if (portal.card == null) return;
+    const card = portal.card, won = portal.won;
+    clearTimeout(portalTimer);
+    paused = false; last = 0;
+    state.portalDone = true;      // (not again until he gets up)
+    document.body.classList.remove('lab-portal');
+    window.scrollTo(0, 0);
+    if (won) {
+        // the rulito he won comes back with him, whole, and the card's affirmation is written over the world
+        state.rul = { age: RULITO_GROW, head: 1, tail: 0, pop: 1, full: true, card };
+        rulitoColour.value = RULITO_COLOURS[card] ?? RULITO_COLOURS[15];
+        rulito.value?.reshape();
+        const c = getCard(card);
+        if (c) Object.assign(teaching, { es: c.affirmation_es.trim(), en: c.affirmation_en.trim(), on: true });
+    }
+    portal.card = null;
+}
 
 // --- The rig, in px of the source drawing (258 x 686): he faces +x (his eyes are on that side) ---
 const PIVOT = { x: 130, y: 518 };             // the middle of his bottom, where his hips are: the body bends about it
@@ -219,7 +260,7 @@ const state = {
     steps: [null, null], toes: [0, 0], legTuck: [0, 0],
     legSit: [0, 0], sitT: 9, rising: false, settled: true,
     plantT: 0, planted: false,                               // seconds sitting away from the places, and whether he planted this time
-    underTree: 0, rul: null,                                 // seconds sitting under the tree, the rulito born there      // sitting down in lotus and getting up, leg by leg
+    underTree: 0, rul: null, portalDone: false,                                 // seconds sitting under the tree, the rulito born there      // sitting down in lotus and getting up, leg by leg
     reach: null,                   // a world point his near hand goes to
     reached: null,                 // the last one (his hand comes back from it)
 };
@@ -366,7 +407,7 @@ function toSid(p, d = state.d) {
 }
 
 const view = { w: 1, h: 1, k: 1, dpr: 1, floor: 1 };
-let raf = 0, last = 0;
+let raf = 0, last = 0, paused = false;
 
 function resize() {
     const el = canvas.value;
@@ -446,6 +487,8 @@ function press(key, on) {
     if (on) { state.target = null; if (ui.sitting) sit(false); }
 }
 function onKey(e) {
+    // (in a card's scene the keys are not his; Escape goes back to the world)
+    if (portal.card != null) { if (e.key === 'Escape' && e.type === 'keydown') closePortal(); return; }
     if (e.target?.closest?.('button') && e.key === ' ') e.target.blur();
     const key = KEYS[e.key.length === 1 ? e.key.toLowerCase() : e.key];
     if (key) { e.preventDefault(); if (e.type === 'keydown' && !e.repeat) press(key, true); if (e.type === 'keyup') press(key, false); return; }
@@ -552,7 +595,7 @@ function update(dt, now) {
     const card = seated ? world.placeCard(state.x, state.d) : null;
     state.underTree = card ? state.underTree + dt : 0;
     // away from the places, with seeds, he plants one in front of him (once each time he sits)
-    if (!ui.sitting) { state.plantT = 0; state.planted = false; }
+    if (!ui.sitting) { state.plantT = 0; state.planted = false; state.portalDone = false; }
     else if (seated && !card && !state.planted && memory.seeds.length) {
         state.plantT += dt;
         if (state.plantT >= PLANT_AFTER) {
@@ -563,7 +606,10 @@ function update(dt, now) {
             play('bloom');
         }
     }
-    if (state.underTree >= RULITO_AFTER && !state.rul) {
+    // at a door to a card, the card's scene instead of the rulito here
+    const door = card != null && PORTALS.has(card) && webgl;
+    if (door && !state.portalDone && portal.card == null && state.underTree >= PORTAL_AFTER) openPortal(card);
+    if (state.underTree >= RULITO_AFTER && !state.rul && !door) {
         state.rul = { age: 0, head: 0, tail: 0, pop: 0, full: false, card };
         rulitoColour.value = RULITO_COLOURS[card] ?? RULITO_COLOURS[15];
         rulito.value?.reshape();
@@ -1028,6 +1074,7 @@ function draw() {
 
 function loop(now) {
     raf = requestAnimationFrame(loop);
+    if (paused) return;           // (under a card's scene)
     const dt = Math.min(0.05, (now - (last || now)) / 1000);
     last = now;
     update(dt, now);
@@ -1035,7 +1082,7 @@ function loop(now) {
 }
 
 // (for trying him out from the browser's console)
-if (typeof window !== 'undefined') window.__sid = { state, springs, hands, ui, world, walkTo, sit, memory };
+if (typeof window !== 'undefined') window.__sid = { state, springs, hands, ui, world, walkTo, sit, memory, portal, portalWon, closePortal };
 
 onMounted(() => {
     document.body.classList.add('lab-page');
@@ -1051,7 +1098,8 @@ onMounted(() => {
     scheduleHint();
 });
 onBeforeUnmount(() => {
-    document.body.classList.remove('lab-page', 'lab-night');
+    document.body.classList.remove('lab-page', 'lab-night', 'lab-portal');
+    clearTimeout(portalTimer);
     setCardChord(null);
     cancelAnimationFrame(raf);
     clearTimeout(hintTimer);
@@ -1064,6 +1112,9 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
+    <!-- (one root, for the route's transition: the world, fixed, and over it, in the page's flow so the window scrolls
+         it as on its own page, a card opened at its place) -->
+    <div class="labRoot">
     <!-- (no menu on a long press: a finger held down only guides him) -->
     <div class="lab" @contextmenu.prevent>
         <div ref="nightSky" class="night-sky"><canvas ref="starCanvas"></canvas></div>
@@ -1077,7 +1128,8 @@ onBeforeUnmount(() => {
             </p>
         </Transition>
         <!-- the app's own header: back on the left, the sound and the menu on the right -->
-        <Header :hasBack="true" :hasMenu="true" />
+        <!-- (in a card opened here, the labyrinth takes the corner of the back arrow: back into the world) -->
+        <Header :hasBack="portal.card == null" :hasWorld="portal.card != null" :hasMenu="true" @world="closePortal()" />
         <!-- one button, on a phone and on a computer alike: the seed, Algo Particular's mark (as in the header), sits him
              in lotus and gets him up again; he walks with the arrows or WASD, or where a click or a touch on the floor
              sends him; a touch on him makes him wave (on a computer J jumps) -->
@@ -1086,6 +1138,13 @@ onBeforeUnmount(() => {
             <!-- the seeds he carries (picked up walking, planted sitting in lotus away from the places) -->
             <span v-if="ui.seeds" :key="ui.seedPop" class="count">{{ ui.seeds }}</span>
         </button>
+    </div>
+    <!-- the card of the place where he meditates (openPortal), as its own page shows it -->
+    <Transition name="portal">
+        <div v-if="portal.card != null" class="portal content cardPage">
+            <CardTemplate :id="String(portal.card)" entry="lab" @rulito="portalWon" />
+        </div>
+    </Transition>
     </div>
 </template>
 
@@ -1150,6 +1209,15 @@ canvas {
 .teaching-leave-active { transition: opacity 0.9s ease-in; }
 .teaching-enter-from { opacity: 0; transform: translateY(8px); }
 .teaching-leave-to { opacity: 0; }
+.portal {
+    position: relative;
+    z-index: 10;                  /* (over the world, under the app's header: z-index 11) */
+    height: auto;
+    min-height: 100vh;
+}
+.portal-enter-active { transition: opacity 0.9s ease-in-out; }
+.portal-leave-active { transition: opacity 1.4s ease-in-out; }
+.portal-enter-from, .portal-leave-to { opacity: 0; }
 .night-sky {
     position: absolute;
     left: 0;
@@ -1284,5 +1352,8 @@ body.lab-page header .navContainer.right { position: relative; z-index: 1; }
 /* by night (and in Celebración's clearing) the icons stay cream, over the dark sky */
 body.lab-page.lab-night header .navContainer button,
 body.lab-page.lab-night header #soundButton,
-body.lab-page.lab-night header #menuButton { filter: none; }
+body.lab-page.lab-night header #menuButton,
+body.lab-page.lab-portal header .navContainer button,
+body.lab-page.lab-portal header #soundButton,
+body.lab-page.lab-portal header #menuButton { filter: none; }
 </style>
