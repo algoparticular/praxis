@@ -1173,7 +1173,7 @@ canvas {
 .lotus .seed {
     width: 44px;
     height: 44px;
-    background-color: #F7F8F1;   /* (not currentColor: the app makes every span grey) */
+    background-color: #F7F8F1;
     -webkit-mask: url('../assets/icon/Seed.svg') center / contain no-repeat;
     mask: url('../assets/icon/Seed.svg') center / contain no-repeat;
     transition: filter 400ms ease-out;
