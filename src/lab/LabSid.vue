@@ -1370,7 +1370,8 @@ body.lab-page header #soundButton,
 body.lab-page header #menuButton {
     filter: brightness(0) opacity(0.78);
 }
-body.lab-page header #menuButton.active { filter: none; }
+body.lab-page header #menuButton.active,
+body.lab-page header #soundButton.active { filter: drop-shadow(0px 2px 3px rgba(20, 51, 72, 0.56)); }
 /* the sound and menu buttons stay over the open menu, so it can be closed (elsewhere their drop shadow, a filter, puts
    them over it; here, without it while the menu is open or by night, they would be left under it) */
 body.lab-page header .navContainer.right { position: relative; z-index: 1; }

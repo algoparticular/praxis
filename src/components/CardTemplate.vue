@@ -1,5 +1,5 @@
 <script setup>
-	import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+	import { computed, onBeforeUnmount, onMounted, ref, watchEffect } from 'vue';
     import { useRouter } from 'vue-router';
     import { animate, inView } from 'motion';
     import { takePendingTransition } from '../cardTransition.js';
@@ -64,6 +64,11 @@
         if (stage.value && window.scrollY > stage.value.offsetHeight * 0.7) visit.reading();
     };
 
+    // Cards whose whole page is light (Tu verdad: cream on cream): the header's cream icons go dark, in the ink of the
+    // card's name (body.card-ink, the style at the end; the header is teleported into <body>)
+    const INK_HEADER = new Set(['10']);
+    const stopInk = watchEffect(() => document.body.classList.toggle('card-ink', INK_HEADER.has(String(props.id))));
+
     onMounted(async () => {
         window.addEventListener('scroll', fadeCue, { passive: true });
         window.addEventListener('pagehide', visit.finish);
@@ -110,6 +115,8 @@
         document.removeEventListener('visibilitychange', onHidden);
         visit.finish();
         setCurrentVisit(null);
+        stopInk();
+        document.body.classList.remove('card-ink');
     });
 </script>
 
@@ -209,12 +216,17 @@
     .stage .title {
         /* and a scene can turn it cream while it stands over the night (--name-night, 0..1: Ciclos), or give it a colour
            of its own over light skies, without the halo (--name-color, --name-shade: Aceptación) */
-        color: color-mix(in srgb, color-mix(in srgb, var(--name-color, v-bind(colorAlt)), #f7f8f1 calc(var(--name-night, 0) * 100%)), #fff6cf calc(var(--name-glow, 0) * 88%));
+        color: color-mix(in srgb, color-mix(in srgb, var(--name-color, v-bind(colorAlt)), #f7f8f1 calc(var(--name-night, 0) * 100%)), #fffcea calc(var(--name-glow, 0) * 100%));
+        /* lit, an amber halo close round the letters, then a pale gold one wide: the cream name reads over light
+           skies too (cream, mint, pink), and still glows over the dark ones */
         text-shadow:
             0 2px 18px var(--name-shade, v-bind(color)),
-            0 0 calc(var(--name-glow, 0) * 22px) rgba(255, 226, 120, calc(var(--name-glow, 0) * 0.9)),
-            0 0 calc(var(--name-glow, 0) * 56px) rgba(255, 226, 120, calc(var(--name-glow, 0) * 0.55));
-        filter: brightness(calc(1 + var(--name-glow, 0) * 0.3));
+            0 0 calc(var(--name-glow, 0) * 2px) rgba(196, 112, 18, calc(var(--name-glow, 0) * 0.85)),
+            0 0 calc(var(--name-glow, 0) * 9px) rgba(222, 138, 30, calc(var(--name-glow, 0) * 0.7)),
+            0 0 calc(var(--name-glow, 0) * 30px) rgba(255, 196, 90, calc(var(--name-glow, 0) * 0.6)),
+            0 0 calc(var(--name-glow, 0) * 64px) rgba(255, 214, 120, calc(var(--name-glow, 0) * 0.45));
+        /* (no `filter` here: Safari draws a filtered element in a layer cut to a box smaller than its text-shadow, and
+           the glow ended in a hard-edged rectangle round the name; its light is in the colour and the shadows) */
     }
 
 
@@ -368,4 +380,17 @@
             transition: none;
         }
     }
+</style>
+
+<style>
+/* The header over a light card (body.card-ink, CardTemplate): its cream icons in a dark ink, as the lab does over its
+   light sky; with the menu open its button keeps its own colour */
+body.card-ink header .navContainer button,
+body.card-ink header #soundButton,
+body.card-ink header #menuButton {
+    filter: brightness(0) opacity(0.82);
+}
+body.card-ink header #menuButton.active,
+body.card-ink header #soundButton.active { filter: drop-shadow(0px 2px 3px rgba(20, 51, 72, 0.56)); }
+body.card-ink header .navContainer.right { position: relative; z-index: 1; }
 </style>

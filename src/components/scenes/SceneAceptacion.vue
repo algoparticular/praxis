@@ -754,7 +754,6 @@
         dust?.shift(2, farDrift.x, farDrift.y + L.bitsNode.y);
         stage.render(t);
         if (frames++ % 2 === 0) placeHits();
-        // The name's font may arrive after the first layout
     };
 
     const begin = async () => {
