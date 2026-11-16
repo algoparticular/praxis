@@ -9,22 +9,21 @@
     //    one tube and under the next: it is drawn twice, once under the pink and once over it, and the copy over it only
     //    shows where the line crosses in front (a mask). Nothing of it stays still: several short strokes, each tapering
     //    at both ends, travel along the route at their own pace, one after another. It is only decoration.
-    //  - Its verb is Fluir (accompany the current), with the engine shared by the cards of the verb (useFlow.js): the
-    //    pink of the network starts still, as if stagnant (paler, with hardly any light of the water in it). A current of
-    //    live pink is born in the central sign, where its head (a bright core) beats until someone comes, and goes along
-    //    one route through the tubes (khantiFlow.json: x, y and half the width of the tube every few px, traced from the
-    //    artwork, and where it enters and leaves each flask) passing through the nine flasks. A few beads of light run on
-    //    ahead of it along the tube: the way it goes. Going with it is sliding a finger along the tube with it (or the
-    //    mouse, or Enter held on it): it draws on to where the finger is, at its own pace, which is never even, widening,
-    //    shining and sounding (`flow`); a still finger lets it slip just past and stop; alone it does not move, and a
-    //    finger far ahead has lost it (it flickers and waits). Nothing is lost: it never goes back.
-    //  - Each of the nine flasks has a cork (khantiFlasks.json: each flask's pink is its own picture) and is a knot: as
-    //    the current comes to it accompanied, the cork pops by itself (it can also be pressed before): the old pink
-    //    evaporates (the level sinks, the creature goes up and away with the vapour) and the tubes around it empty a
-    //    stretch. When it is nearly empty the current comes in and fills it with live pink (empty of drawing, full of
-    //    pink), and goes on. Left alone at a corked flask, the cork calls softly.
-    //  - When the current has gone through the nine, the whole network is live, the rulito is born over the central
-    //    sign and the card's name lights up; then everything goes still and corked again, and the creatures come back.
+    //  - Its verb is Fluir, carrying the current (useStream.js), moving with others: the pink of the network starts
+    //    still, as if stagnant (paler, with hardly any light of the water in it). A light of live pink is born in the
+    //    central sign, where it beats until someone comes; a finger put down near it (or the mouse over the network, or
+    //    Enter held on it) leads it anywhere over the network, a little behind, always curving, shining and sounding
+    //    (`flow`); alone it drifts back to the sign. A finger in a rush scatters it and gathers nothing.
+    //  - Each of the nine flasks has a cork (khantiFlasks.json: each flask's pink is its own picture) and is one of the
+    //    others: the light passing by it gently, the cork pops (it can also be pressed before): the old pink evaporates
+    //    (the level sinks, the creature goes up and away with the vapour) and the tubes around it empty a stretch; a mote
+    //    of live pink joins the light's train, and once the flask is nearly empty it fills with live pink (empty of
+    //    drawing, full of pink), and so do the tubes round it (khantiFlow.json: x, y and half the width of the tube every
+    //    few px, traced from the artwork, and where it enters and leaves each flask). The corks call softly as the light
+    //    comes near.
+    //  - With the nine, the light takes its train home to the central sign on its own, the whole network is live, the
+    //    rulito is born over the sign and the card's name lights up; then everything goes still and corked again, and
+    //    the creatures come back.
     //  - The blue dots of the sky and the lavender specks are particles; touching a creature makes it flash and throw
     //    sparks of its colour.
     // It is drawn in WebGL (useLayerStage): the network is a group of planes at one depth, the camera slides with the
@@ -36,7 +35,7 @@
     import { createLayerStage } from '../../composables/useLayerStage.js';
     import { startStardust } from '../../composables/useStardust.js';
     import { createSparks } from '../../composables/useSparks.js';
-    import { createFlow } from '../../composables/useFlow.js';
+    import { createStream } from '../../composables/useStream.js';
     import { createGhostHand, gesture, HINT_AFTER } from '../../composables/useGhostHand.js';
     import { play } from '../../composables/useSound.js';
     import { sceneMilestone } from '../../analytics.js';
@@ -54,7 +53,7 @@
     const root = ref(null);
     const canvas = ref(null);
     const overlay = ref(null);              // the square of the network, over the stage: the touch targets live in it
-    const headHit = ref(null);              // where the current's head is: a finger put there goes with it
+    const headHit = ref(null);              // where the light is: Enter held on it takes it, gently, to the next flask
     const rulito = ref(null);
     let stageEl = null;                     // the card's stage, where the name is lit from (--name-glow)
     const catchers = {};                    // the creatures' touch targets, by layer number
@@ -97,7 +96,7 @@
     // The flasks with a cork: how empty each is (level 0 full .. 1 empty), how far its cork
     // has popped, and which creature lives in it. corked: a knot that stops the current; live: the current has filled it
     // (fresh: how live it looks, 0..1); drain: how far the tubes round an uncorked flask have emptied
-    const FLASKS = flaskData.map((f) => ({ ...f, level: 0, pop: 0, life: 1, glow: 0, awake: false, corked: true, live: false, fresh: 0, drain: 0 }));
+    const FLASKS = flaskData.map((f) => ({ ...f, level: 0, pop: 0, life: 1, glow: 0, awake: false, corked: true, live: false, joined: false, fresh: 0, drain: 0 }));
     const flaskOfCreature = {};
     const flaskOfCork = {};
     FLASKS.forEach((f) => { f.creatures.forEach((n) => { flaskOfCreature[n] = f; }); flaskOfCork[f.cork] = f; });
@@ -190,18 +189,29 @@
 
     // The finger (or the mouse): where it is on the network's square (in the 2160 units), when it last moved, and
     // whether it is pressing
-    const pointer = { u: 0, v: 0, at: -99, down: false, touch: false };
+    // A finger put down near the light leads it until it lifts (anywhere else the page scrolls and the creatures and
+    // corks are touched); the mouse leads it while it is over the network
+    const pointer = { u: 0, v: 0, at: -99, down: false, touch: false, lead: false };
     let nowT = 0;
-    const track = (event) => {
+    const LEAD_REACH = 420;                 // how near the light (2160 units) a finger has to go down to lead it
+    const nearLight = (u, v) => Math.hypot(u - stream.x, v - stream.y) < LEAD_REACH;
+    const toSquare = (event) => {
         const box = overlay.value?.getBoundingClientRect();
-        if (!box || !box.width) return;
-        pointer.u = (event.clientX - box.left) / box.width * 2160;
-        pointer.v = (event.clientY - box.top) / box.height * 2160;
+        if (!box || !box.width) return null;
+        return [(event.clientX - box.left) / box.width * 2160, (event.clientY - box.top) / box.height * 2160];
+    };
+    const track = (event) => {
+        const at = toSquare(event);
+        if (!at) return;
+        [pointer.u, pointer.v] = at;
         pointer.touch = event.pointerType === 'touch';
         pointer.down = pointer.touch || event.buttons > 0;
         pointer.at = nowT;
+        if (event.type === 'pointerdown') pointer.lead = !win && (pointer.touch ? nearLight(...at) : stream.inBounds(...at));
+        else if (!pointer.touch && !pointer.down) pointer.lead = stream.inBounds(...at);
     };
-    const release = (event) => { track(event); pointer.down = false; };
+    const release = (event) => { track(event); pointer.down = false; if (pointer.touch) pointer.lead = false; };
+    const unlead = (event) => { if (event.pointerType !== 'touch') pointer.lead = false; };
     // The strokes of the thread travel along the route at their own pace (they are decoration: the finger is for the current)
     const moveStrokes = (dt) => {
         STROKES.forEach((k) => {
@@ -302,8 +312,9 @@
             const flask = flaskOfCork[n];
             if (flask) {
                 tx += flask.away.x * flask.pop * 3.4; ty += flask.away.y * flask.pop * 3.4; rot += (flask.away.x >= 0 ? 1 : -1) * flask.pop * 34;
-                // the cork of the flask the current is waiting at calls softly
-                if (flow.waiting?.flask === flask) { const b = 0.5 + 0.5 * Math.sin(t * 4); bright += 0.35 * b; sx *= 1 + 0.08 * b; sy *= 1 + 0.08 * b; }
+                // a cork calls softly as the light comes near
+                const near = flask.corked ? stream.nearness(flask.id) : 0;
+                if (near > 0) { const b = near * (0.5 + 0.5 * Math.sin(t * 4)); bright += 0.4 * b; sx *= 1 + 0.1 * b; sy *= 1 + 0.1 * b; }
             }
             // Touched: a flash of brightness over 0.7s
             if (flashes[n] !== undefined) {
@@ -339,6 +350,8 @@
             f.life = f.corked ? Math.min(1, f.life + dt / 1.4) : Math.max(0, f.life - dt / 1.1);
             f.fresh += ((f.live || win ? 1 : 0) - f.fresh) * Math.min(1, dt * (f.live ? 1.6 : 0.8));
             f.drain += ((f.corked ? 0 : 1) - f.drain) * Math.min(1, dt * 0.9);
+            // joined the light and nearly empty: it fills with live pink
+            if (f.joined && !f.corked && !f.live && f.level > 0.75) { f.live = true; play('bloom'); }
             const node = N_[f.id];
             if (!node) return;
             node.uniforms.uSink.value.y = f.level;
@@ -387,8 +400,9 @@
         play('breath');
     };
 
-    // ---- The current (Fluir). The route: x, y and half the tube's width every FLOW.step px of the 2160 square; the
-    // stops are the central sign and the nine flasks in the order it goes through them (enter..exit: inside the flask)
+    // ---- The current (Fluir). The route through the tubes (x, y and half the tube's width every FLOW.step px of the
+    // 2160 square, and where it enters and leaves each flask): only drawn round the flasks, the tubes emptied round an
+    // uncorked one and filled with live pink once it is live
     const FN = FLOW.pts.length / 3;
     const FX = (i) => FLOW.pts[3 * i];
     const FY = (i) => FLOW.pts[3 * i + 1];
@@ -396,51 +410,45 @@
     const STOPS = FLOW.stops.map((s) => ({ ...s, flask: FLASKS.find((f) => f.id === s.id) ?? null }));
     const inside = new Uint8Array(FN);      // samples inside a flask or the sign, where the current is not drawn
     STOPS.forEach((s) => { for (let i = s.enter; i <= s.exit; i++) inside[i] = 1; });
-    const START = STOPS[0].exit;            // the current comes out of the central sign here
-    const TOUCH_REACH = 240;                // how near the route a finger has to be to have the current (2160 units)
     const DRAIN = 16;                       // samples of tube that empty on each side of an uncorked flask
     const STILL = { saturate: 0.62, bright: 0.97, water: 0.25 };      // how the still pink looks
-    // How the current looks (its engine, useFlow, says where it is): how much of it shows, and how lit it is at the end
+    // How the current looks (its engine, useStream, says where it is): how much of it shows, and how lit it is at the end
     const cur = { alpha: 1, light: 0 };
-    let keyHold = false;                    // Enter or space held on the current's head
-    // The engine of Fluir: the finger slides with it; each corked flask is a knot that lets go as the current comes
-    // accompanied (the cork pops by itself), and the current goes in once the old pink is nearly gone
-    const flow = createFlow({
-        x: FX, y: FY, n: FN, start: START, end: FN - 1,
-        stops: STOPS.filter((s) => s.flask),
-        touchReach: TOUCH_REACH,
-        fill: FILL_S,
-        isOpen: (s) => !s.flask.corked,
-        release: (s) => uncork(s.flask),
-        ready: (s) => s.flask.level > 0.75,
-        onEnter: (s) => { s.flask.live = true; play('bloom'); },
+    let keyHold = false;                    // Enter or space held on the light
+    // The central sign, where the light is born and goes back to; the nine flasks are the others it gathers
+    const [SL, ST, SW, SH] = layers[SIGN];
+    const HOME = [(SL + SW / 2) * 21.6, (ST + SH / 2) * 21.6];
+    const KNOTS = FLASKS.map((f) => ({ name: f.id, flask: f, x: f.cx * 21.6, y: f.cy * 21.6, box: f.box.map((v) => v * 21.6) }));
+    const stream = createStream({
+        home: HOME,
+        knots: KNOTS,
+        bounds: [60, 60, 2100, 2100],
+        reach: 110,
+        orbitR: [40, 24],
+        onJoin: (k) => { k.flask.joined = true; uncork(k.flask); },
+        onAll: () => play('star'),
         onEnd: () => finish(),
         onNote: (step, level) => play('flow', { step, level }),
         onFirst: () => sceneMilestone('current_accompanied'),
     });
     const stepFlow = (dt, t) => {
         if (win) return;
-        flow.step(dt, t, pointer, { key: keyHold });
+        stream.step(dt, t, { u: pointer.u, v: pointer.v, down: pointer.lead && (pointer.down || !pointer.touch), lead: true }, { key: keyHold });
     };
-    // A point of the route (2160 units of the square) on the stage canvas now, as the network floats
+    // A point of the square (2160 units) on the stage canvas now, as the network floats
     const routeOnCanvas = (u, v) => {
         const p = net.toScreen(F.x + u / 2160 * F.size, F.y + v / 2160 * F.size);
         return [p.x, p.y];
     };
-    // The hint, without words: left alone HINT_AFTER s (not while it is accompanied, nor while the rulito lives), the
-    // ghost hand slides along the stretch of tube ahead of the head, at the current's pace. The call of the head (its
-    // beat, from flow.idle) starts again too while the rulito lives, so after a win both wait from the start
-    const HINT_LEN = 64;                    // samples of route the hand slides along (as far as the beads ahead go)
-    const hintFlow = (t) => {
-        if (win) flow.idle = 0;
-        const wanted = !win && !flow.done && !keyHold && !pointer.down && flow.idle > 0.5 && cur.alpha > 0.9;
+    // The hint, without words: left alone HINT_AFTER s (not while it is led, nor while the rulito lives), the ghost hand
+    // takes the light gently by the nearest corked flask and on to the one nearest it. The light's call (its beat, from
+    // stream.idle) starts again too while the rulito lives, so after a win both wait from the start
+    const hintFlow = () => {
+        if (win) stream.idle = 0;
+        const wanted = !win && !stream.done && !stream.homing && !keyHold && !pointer.down && stream.idle > 0.5 && cur.alpha > 0.9;
         if (!hand?.due(HINT_AFTER, wanted)) return;
-        // at the current's own pace from when it starts sliding, so the hand goes as the current would; twice, the
-        // second time at the pace the current will have then (it is never even)
-        const first = flow.hintPath(HINT_LEN, routeOnCanvas, t + gesture.SLIDE_LEAD);
-        if (!first) return;
-        const again = flow.hintPath(HINT_LEN, routeOnCanvas, t + gesture.SLIDE_LEAD + first.dur + gesture.SLIDE_AGAIN);
-        hand.play([...gesture.slide(first, first.dur, { even: true }), ...gesture.slide(again, again.dur, { even: true })], { loops: 1 });
+        const path = stream.hintPath(routeOnCanvas, 2);
+        if (path) hand.play(gesture.slide(path, path.dur), { loops: 1 });
     };
 
     // Everything is live: the rulito is born over the central sign; then the current fades, and everything is corked again
@@ -459,7 +467,7 @@
         sceneMilestone('current_flowed', { times: wins });
     };
     const corkAll = () => {
-        FLASKS.forEach((f) => { f.corked = true; f.live = false; });
+        FLASKS.forEach((f) => { f.corked = true; f.live = false; f.joined = false; });
     };
     const stepWin = (dt, t) => {
         let named = 0;
@@ -480,7 +488,7 @@
             if (win.back) cur.alpha = Math.max(0, 1 - win.tail * 1.4);
             if (win.back && win.tail >= 1) {
                 win = null;
-                flow.reset();
+                stream.reset();
                 rulito.value.frame({ width: glyph.w });
                 N_.rulito.refresh();
             }
@@ -527,87 +535,87 @@
         ctx.clearRect(0, 0, px, px);
         ctx.setTransform(px / 2160, 0, 0, px / 2160, 0, 0);
         ctx.lineCap = ctx.lineJoin = 'round';
-        // Empty glass by the uncorked flasks, where the current has not come yet
-        ctx.strokeStyle = '#cdeae6';
+        // Round each uncorked flask: empty glass while its old pink goes, live pink once it is filled, with lights
+        // travelling along it
         STOPS.forEach((s) => {
             const f = s.flask;
             if (!f || f.drain < 0.01) return;
             const reach = DRAIN * f.drain;
-            ctx.globalAlpha = Math.min(1, f.drain * 1.5);
-            if (flow.head < s.enter) along(ctx, Math.max(flow.head, s.enter - reach), s.enter, 1.18);
-            along(ctx, Math.max(flow.head, s.exit), s.exit + reach, 1.18);
+            ctx.globalAlpha = Math.min(1, f.drain * 1.5) * (f.live ? cur.alpha * (0.75 + 0.25 * f.fresh) : 1);
+            ctx.strokeStyle = f.live ? LIVE : '#cdeae6';
+            const k = f.live ? 0.9 : 1.18;
+            along(ctx, s.enter - reach, s.enter, k);
+            along(ctx, s.exit, s.exit + reach, k);
+            if (f.live) {
+                ctx.strokeStyle = '#ffe1e7';
+                ctx.globalAlpha = cur.alpha * 0.5;
+                const p = (lightPhase % (reach + 9));
+                along(ctx, s.enter - reach + p - 9, s.enter - reach + p, k * 0.42);
+                along(ctx, s.exit + p - 9, s.exit + p, k * 0.42);
+            }
         });
-        const head = flow.head;
-        const lit = Math.max(flow.acc, cur.light);
-        if (cur.alpha > 0.01 && head > START + 0.5) {
-            const k = 0.78 + 0.27 * lit;
-            ctx.globalAlpha = cur.alpha * (0.72 + 0.28 * lit);
-            ctx.strokeStyle = LIVE;
-            along(ctx, START, head, k);
-            // Lights travelling from the sign to the head, faster than it
-            ctx.strokeStyle = '#ffe1e7';
-            ctx.globalAlpha = cur.alpha * (0.4 + 0.35 * lit);
-            const GAP = 34;
-            for (let p = START + (lightPhase % GAP); p < head; p += GAP) along(ctx, Math.max(START, p - 9), Math.min(head, p), k * 0.42);
-        }
         ctx.globalAlpha = 1;
         N_.flow?.refresh();
-        // The head and the way it goes, on their own canvas over the drawing, so the glass and the outlines never hide them
+        // The light, its train and its tail, on their own canvas over the drawing, so the glass and the outlines never
+        // hide them
         if (aheadCanvas.width !== px) { aheadCanvas.width = px; aheadCanvas.height = px; }
         ctx = aheadCanvas.getContext('2d');
         ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.clearRect(0, 0, px, px);
         ctx.setTransform(px / 2160, 0, 0, px / 2160, 0, 0);
-        if (cur.alpha > 0.01 && !win) {
-            // The way it will go: a few beads of light running on ahead of the head along the tube, brighter while it
-            // waits for someone (and before anyone has come), so it is clear what moves and where
-            const call = flow.touched ? Math.min(1, Math.max(0, (flow.idle - 3) / 2)) : 1;
-            const show = cur.alpha * (0.45 + 0.3 * flow.acc + 0.25 * call) * (1 - 0.6 * flow.rush);
-            const stop = flow.next();
-            const limit = Math.min(FN - 1, stop ? stop.enter : FN - 1, head + 64);
-            const run = (nowT * (14 + 20 * flow.acc)) % 16;
-            for (let p = head + 6 + run; p < limit; p += 16) {
-                const i = Math.floor(p);
-                if (inside[i]) continue;
-                const fade = 1 - (p - head) / 64;
-                ctx.globalAlpha = show * fade;
-                ctx.fillStyle = '#fff3f6';
+        if (cur.alpha > 0.01 && !(win && win.full)) {
+            const a = cur.alpha, rushing = 1 - stream.calm;
+            const sz = (n) => n * 2160 / Math.max(1, F.size);   // a size in screen px, so it reads on a phone too
+            const call = stream.touched ? Math.min(1, Math.max(0, (stream.idle - 3) / 2)) : 1;
+            const dot = (x, y, r, colour, alpha) => {
+                const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+                g.addColorStop(0, 'rgba(255,255,255,1)');
+                g.addColorStop(0.2, colour);
+                g.addColorStop(1, 'rgba(255,160,184,0)');
+                ctx.globalAlpha = alpha;
+                ctx.fillStyle = g;
                 ctx.beginPath();
-                ctx.arc(FX(i), FY(i), FW(i) * (0.35 + 0.3 * fade), 0, Math.PI * 2);
+                ctx.arc(x, y, r, 0, Math.PI * 2);
+                ctx.fill();
+            };
+            // the train: a mote of live pink from each flask it passed by
+            stream.joined.forEach((name, j) => {
+                const [tx, ty] = stream.train(j, nowT);
+                const knot = KNOTS.find((kn) => kn.name === name);
+                const q = Math.min(1, (nowT - stream.joinedAt[name]) / 0.7), e = q * q * (3 - 2 * q);
+                dot(knot.x + (tx - knot.x) * e, knot.y + (ty - knot.y) * e, Math.max(40, sz(9)) * (1 + 0.15 * Math.sin(nowT * 3 + j)), 'rgba(255,148,170,0.9)', a * (0.95 - 0.35 * rushing));
+            });
+            // its tail
+            for (let ago = 0.02; ago < 0.34; ago += 0.02) {
+                const [x, y] = stream.past(ago), f = 1 - ago / 0.34;
+                ctx.globalAlpha = a * f * f * (0.35 + 0.5 * stream.led);
+                ctx.fillStyle = f > 0.6 ? '#ffe1e7' : LIVE;
+                ctx.beginPath();
+                ctx.arc(x, y, Math.max(16, sz(3)) * f, 0, Math.PI * 2);
                 ctx.fill();
             }
-            // Its head: a bright core in a soft light, more when it is accompanied; it calls (beats) while it waits,
-            // and flickers when the finger has gone ahead of it
-            const i = Math.min(FN - 1, Math.floor(head));
-            const beat = call * (0.5 + 0.5 * Math.sin(nowT * 3.2)) + flow.rush * (0.5 + 0.5 * Math.sin(nowT * 11));
-            const r = 78 + 50 * flow.acc + 30 * beat;
-            const g = ctx.createRadialGradient(FX(i), FY(i), 0, FX(i), FY(i), r);
-            g.addColorStop(0, 'rgba(255,255,255,1)');
-            g.addColorStop(0.18, 'rgba(255,236,241,0.95)');
-            g.addColorStop(0.45, 'rgba(255,160,184,0.5)');
-            g.addColorStop(1, 'rgba(255,160,184,0)');
-            ctx.globalAlpha = cur.alpha * (0.7 + 0.3 * Math.max(flow.acc, beat));
-            ctx.fillStyle = g;
-            ctx.beginPath();
-            ctx.arc(FX(i), FY(i), r, 0, Math.PI * 2);
-            ctx.fill();
+            // the light: a bright core in a soft light, more when it is led; it calls (beats) while it waits, and
+            // flickers, thin, when the finger rushes
+            const jx = rushing * Math.sin(nowT * 41) * 16, jy = rushing * Math.cos(nowT * 37) * 12;
+            const beat = call * (0.5 + 0.5 * Math.sin(nowT * 3.2));
+            const r = Math.max(78, sz(17)) * (1 + 0.45 * stream.led + 0.35 * beat) * (1 - 0.35 * rushing);
+            dot(stream.x + jx, stream.y + jy, r, 'rgba(255,236,241,0.95)', a * (0.75 + 0.25 * Math.max(stream.led, beat)) * (1 - 0.4 * rushing * (0.5 + 0.5 * Math.sin(nowT * 29))));
         }
         ctx.globalAlpha = 1;
         N_.ahead?.refresh();
     };
-    // Where its head is, as a touch target in the square of the network (in %)
+    // Where the light is, as a touch target in the square of the network (in %)
     const placeHead = () => {
         const el = headHit.value;
         if (!el) return;
-        const i = Math.min(FN - 1, Math.floor(flow.head));
-        const size = TOUCH_REACH * 2 / 21.6;
-        el.style.left = pct((FX(i) / 21.6 - size / 2).toFixed(2));
-        el.style.top = pct((FY(i) / 21.6 - size / 2).toFixed(2));
+        const size = 240 * 2 / 21.6;       // (smaller than LEAD_REACH: the corks and creatures by it stay to touch)
+        el.style.left = pct((stream.x / 21.6 - size / 2).toFixed(2));
+        el.style.top = pct((stream.y / 21.6 - size / 2).toFixed(2));
         el.style.width = el.style.height = pct(size.toFixed(2));
         el.style.display = win ? 'none' : '';
     };
-    // On a phone, a finger put down near the current's head must not move the page, whatever it lands on (the head, or
-    // a creature or a cork beside it, which let the page scroll): otherwise the browser takes the drag for a scroll and
+    // On a phone, a finger put down near the light must not move the page, whatever it lands on (the light, or a
+    // creature or a cork beside it, which let the page scroll): otherwise the browser takes the drag for a scroll and
     // cancels it. Anywhere else the page scrolls as usual
     const onTouchStart = (event) => {
         const touch = event.touches[0];
@@ -615,7 +623,7 @@
         if (!touch || !event.cancelable || win || !box?.width) return;
         const u = (touch.clientX - box.left) / box.width * 2160;
         const v = (touch.clientY - box.top) / box.height * 2160;
-        if (flow.nearHead(u, v)) event.preventDefault();
+        if (nearLight(u, v)) event.preventDefault();
     };
     const holdHead = (event) => {
         event.currentTarget.setPointerCapture?.(event.pointerId);
@@ -715,6 +723,7 @@
             const box = inFrame(layers[n]);
             N_[n].place(box, originOf(box, (LIFE[n] ?? [])[1] ?? '50% 50%'));
         });
+        stream.spacing = Math.max(90, 22 * 2160 / F.size);    // the train's lights apart, also on a phone
         drawThread();
         drawFlow();
     };
@@ -748,13 +757,13 @@
         nowT = t;
         moveStrokes(dt);
         stepFlow(dt, t);
-        hintFlow(t);
+        hintFlow();
         live(t, ramp);
         stepFlasks(dt);
         wakeCreatures(dt);
         stepWin(dt, t);
         // The current's lights run faster than it, and faster when it is accompanied
-        lightPhase += dt * 26 * (1.6 + 1.4 * Math.max(flow.acc, cur.light));
+        lightPhase += dt * 26 * (1.6 + 1.4 * Math.max(stream.led, cur.light));
         // The strokes of the thread and the current (every other frame is enough)
         if (tick++ % 2 === 0) { drawThread(); drawFlow(); }
         stage.render(t);
@@ -788,6 +797,7 @@
         root.value.addEventListener('pointerdown', track, { passive: true });
         root.value.addEventListener('pointerup', release, { passive: true });
         root.value.addEventListener('pointercancel', release, { passive: true });
+        root.value.addEventListener('pointerleave', unlead, { passive: true });
         root.value.addEventListener('touchstart', onTouchStart, { passive: false });
         parallax = createParallax(root.value, frame);
         enter();
@@ -802,6 +812,7 @@
         root.value?.removeEventListener('pointerup', release);
         root.value?.removeEventListener('pointercancel', release);
         root.value?.removeEventListener('touchstart', onTouchStart);
+        root.value?.removeEventListener('pointerleave', unlead);
         stageEl?.style.removeProperty('--name-glow');
         parallax?.destroy();
         sky?.destroy();
@@ -820,7 +831,7 @@
              central sign (the corks and the creatures over the head, so they can still be pressed while it goes by) -->
         <div class="network" ref="overlay">
             <div ref="headHit" class="hit head" role="button" tabindex="0"
-                :aria-label="$i18n.locale === 'en' ? 'The current: slide your finger along with it (or hold Enter)' : 'La corriente: deslizá el dedo junto a ella para acompañarla (o mantené Enter)'"
+                :aria-label="$i18n.locale === 'en' ? 'The current: lead it gently with your finger by each corked flask (or hold Enter)' : 'La corriente: llevala suave con el dedo por cada frasco tapado (o mantené Enter)'"
                 @pointerdown.prevent="holdHead" @keydown="onHeadKey(true)($event)" @keyup="onHeadKey(false)($event)" @blur="letGo"></div>
             <div v-for="t in touchable" :key="'hit' + t.n" :ref="setCatcher(t.n)" class="hit" role="button" tabindex="0" :style="t.hit"
                 :aria-label="$i18n.locale === 'en' ? 'Creature' : 'Criatura'"
