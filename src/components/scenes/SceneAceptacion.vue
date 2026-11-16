@@ -4,14 +4,17 @@
     // on the right a yellow one, with a pink planet like a pot with three spouts. Between the two skies a wavy edge
     // with drops of one colour in the other; in the river, an island with two little cairns of stones.
     // Its verb is Fluir, carrying the current (useStream.js), moving with others: a light is born at the horizon,
-    // where the river begins and the two skies meet, and goes wherever a finger on the water takes it, a little behind
-    // it, always curving and never out of the river; alone it drifts back up to the horizon. Little lights wait in the
-    // water, swimming in place, as fish: passing by gently, each joins it and follows it in a train; a finger in a
-    // rush scatters the train and gathers nobody. The two little cairns on the island are restless (they wobble, as if
-    // fighting to stay up): the light coming to one gently, its stones stop fighting and settle, still (they let go:
-    // "do not fight what you cannot control"), and it glows. With every light and both cairns, the light takes its
-    // train to the island between them, the two beings stretch up together and the rulito the card draws over each is
-    // born, the name lights up; then the light fades from the river and, slowly, the cairns grow restless again. Besides, the scene lives: the
+    // where the river begins and the two skies meet, and goes wherever a finger on the land takes it, over both banks
+    // and across the river, a little behind it, always curving; alone it drifts back to the horizon. The plants of
+    // the two banks are the others, each different (the big mushroom, the stalks with their buds, the feathery plant,
+    // the stones, the sprout by the water): passing by one gently, it lights up in its own colour (the light does not
+    // change it: it accepts it as it is, "todos somos distintos") and a mote of that colour joins the light's train,
+    // which grows many-coloured; a finger in a rush scatters the train and gathers nobody. The two little cairns on
+    // the island are restless (they wobble, as if fighting to stay up): the light coming to one gently, its stones stop
+    // fighting and settle, still (they let go: "do not fight what you cannot control"), and it glows. With every plant
+    // and both cairns, the light takes its train to the island between the two beings, they stretch up together and
+    // the rulito the card draws over each is born, the name lights up; then the light and the plants' colours fade
+    // and, slowly, the cairns grow restless again. Besides, the scene lives: the
     // two beings breathe together, as one, blink now and then and glance at each other across the water; the
     // mushrooms and plants on each bank sway; the light of the water ripples down the river; the planet turns a
     // little as it floats and the small ringed planet and the two strokes of the sky drift; a tap on a being makes it
@@ -47,7 +50,7 @@
     const root = ref(null);
     const canvas = ref(null);
     const hits = [];
-    const headHit = ref(null);              // where the light is: Enter held on it takes it, gently, to the next one
+    const headHit = ref(null);              // where the light is: Enter held on it takes it, gently, to the next plant
     const rulitos = [ref(null), ref(null)];
     let stageEl = null;                     // the card's stage, where the name is lit from (--name-glow)
     let stage = null;
@@ -203,27 +206,30 @@
     }));
     const BREATH = 0.55;                    // their breath (rad/s): slow, and the same for both
 
-    // ---- Fluir: the light on the river, in art px. It is born at the horizon, where the river begins between the two
-    // skies, and is kept on the water: the river runs from the horizon (RIVER_TOP) to the island, about RIVER_X across
-    // the middle and wider as it comes nearer (riverHalf)
-    const RIVER_TOP = 1500, RIVER_FOOT = 1940, RIVER_X = 1078;
-    const riverHalf = (y) => 26 + (y - RIVER_TOP) * 0.33;
-    const keepOnRiver = (x, y) => {
-        const yy = Math.min(RIVER_FOOT, Math.max(RIVER_TOP, y)), h = riverHalf(yy);
-        return [Math.min(RIVER_X + h, Math.max(RIVER_X - h, x)), yy];
-    };
-    // How near the viewer a point of the river is (0 at the horizon, 1 at the foot of the card): the light is wider there
+    // ---- Fluir: the light on the land, in art px. It is born at the horizon, where the river begins between the two
+    // skies, and goes over both banks and the river, from the horizon's line down to the foot of the card
+    const RIVER_X = 1078, LAND_TOP = 1505, LAND_FOOT = 2110;
+    const keepOnLand = (x, y) => [Math.min(2110, Math.max(50, x)), Math.min(LAND_FOOT, Math.max(LAND_TOP, y))];
+    // How near the viewer a point of the land is (0 at the horizon, 1 at the foot of the card): the light is wider there
     const near = (y) => Math.min(1, Math.max(0, (y - 1490) / 670));
     const CAIRN_X = [1028, 1118];           // the middle of each little cairn (left, right), its foot and its top
     const CAIRN_FOOT = 1925, CAIRN_TOP = 1802;
-    // The little lights that wait in the water, as fish (art px), and the two cairns: the others the light gathers
-    const FISH = [[1086, 1548], [1040, 1612], [1124, 1668], [1004, 1728], [1172, 1786], [1060, 1700]];
+    // The plants of the two banks (the right bank is the left one mirrored), each with its own colour: [name, x, y,
+    // colour], the point at the foot of each that the light passes by. Only what a phone upright shows: the fern and the
+    // little glowing mushroom at the far edges are left out
+    const mirror = (x) => 2160 - x;
+    const PLANTS = [
+        ['mushroomL', 300, 1610, '#f08aa8'], ['stalksL', 360, 1450, '#f6a6bc'], ['featherL', 440, 1620, '#f59fb2'],
+        ['stonesL', 330, 1960, '#7cc6d2'], ['sproutL', 850, 1540, '#86dcb6'],
+        ['mushroomR', mirror(300), 1610, '#f7a08a'], ['stalksR', mirror(360), 1450, '#f6a6bc'], ['featherR', mirror(440), 1620, '#b993e0'],
+        ['stonesR', mirror(330), 1960, '#8fd0c8'], ['sproutR', mirror(850), 1540, '#86dcb6'],
+    ].map(([name, x, y, colour]) => ({ name, x, y, colour, lit: 0 }));
     const KNOTS = [
-        ...FISH.map(([x, y], i) => ({ name: 'fish' + i, x, y })),
-        ...CAIRN_X.map((x, cairn) => ({ name: 'cairn' + cairn, x, y: (CAIRN_FOOT + CAIRN_TOP) / 2, cairn })),
+        ...PLANTS,
+        ...CAIRN_X.map((x, cairn) => ({ name: 'cairn' + cairn, x, y: (CAIRN_FOOT + CAIRN_TOP) / 2, cairn, colour: '#fff1a8' })),
     ];
-    const HOME = [RIVER_X, RIVER_TOP + 10];   // where it is born and waits: the horizon
-    const ISLAND = [(CAIRN_X[0] + CAIRN_X[1]) / 2, CAIRN_TOP + 10];   // where it takes them all
+    const HOME = [RIVER_X, LAND_TOP + 8];   // where it is born and waits: the horizon
+    const ISLAND = [(CAIRN_X[0] + CAIRN_X[1]) / 2, CAIRN_TOP + 10];   // where it takes them all, between the two beings
     // The two cairns: restless (unrest 1: they wobble, fighting to stay up) until the light comes to them gently;
     // then they settle (unrest down to 0, with a last little sway) and glow
     const CAIRNS = [0, 1].map(() => ({ unrest: 1, settling: false, lit: 0, glow: 0 }));
@@ -238,20 +244,20 @@
     const stream = createStream({
         home: HOME,
         knots: KNOTS,
-        bounds: [RIVER_X - riverHalf(RIVER_FOOT), RIVER_TOP, RIVER_X + riverHalf(RIVER_FOOT), RIVER_FOOT],
-        clamp: keepOnRiver,
-        area: [760, 1440, 1400, 2040],      // a finger put down on the river or near it leads the light
-        reach: 80,
+        bounds: [50, LAND_TOP, 2110, LAND_FOOT],
+        clamp: keepOnLand,
+        area: [0, 1460, 2160, 2160],        // a finger put down on the land leads the light (from the sky the page scrolls)
+        reach: 130,
         gentle: 1300, rush: 2900,           // (the card is bigger on a phone than Celebración's: about the same speed on the glass)
-        spacing: 60,
-        autoSpeed: 420,
-        orbitR: [18, 10],                   // alone it waits at the horizon, where the river is narrow
+        spacing: 80,
+        autoSpeed: 520,
+        orbitR: [18, 8],                    // alone it waits at the horizon, where the river is narrow
         onJoin: (k) => {
             if (k.cairn !== undefined) {
                 const c = CAIRNS[k.cairn];
                 c.settling = true; c.lit = 1;
                 play('bloom');
-            } else play('tap');
+            } else { k.lit = 1; play('tap'); }
         },
         onAll: () => { stream.home = [...ISLAND]; play('release'); },
         onEnd: () => finish(),
@@ -311,65 +317,84 @@
         ctx.fillRect(0, 0, rect.w, thick);
     };
 
-    // ---- The light on the river, on a canvas over the water and the cairns (art box LIGHT_BOX): the little lights
-    // waiting in the water (swimming in place), the train of those that joined it (each swims from where it waited to
-    // its place behind the light), a soft tail where it has just been, and the light itself, a bright core, wider
-    // nearer the viewer, that beats while nobody leads it and flickers, thin, when the finger rushes
-    const LIGHT_BOX = [840, 1440, 480, 540];
+    // ---- The light on the land, on two canvases over the land (art box LIGHT_BOX). Under the plants (`haloCanvas`):
+    // a little light of its own colour waiting at the foot of each plant, leaning in as the light comes near, and,
+    // once it has joined, a soft halo of its colour behind it, breathing. Over everything (`lightCanvas`): the train of
+    // those that joined (each mote in its own colour, from where it was to its place behind the light), a soft tail
+    // where it has just been, and the light itself, a bright core, wider nearer the viewer, that beats while nobody
+    // leads it and flickers, thin, when the finger rushes
+    const LIGHT_BOX = [0, 1250, 2160, 910];
     const lightCanvas = document.createElement('canvas');
-    const dot = (ctx, x, y, r, colour, alpha) => {
+    const haloCanvas = document.createElement('canvas');
+    const dot = (ctx, x, y, r, colour, alpha, edge = 'rgba(255,240,160,0)') => {
         const g = ctx.createRadialGradient(x, y, 0, x, y, r);
         g.addColorStop(0, 'rgba(255,255,255,1)');
         g.addColorStop(0.22, colour);
-        g.addColorStop(1, 'rgba(255,240,160,0)');
+        g.addColorStop(1, edge);
         ctx.globalAlpha = alpha;
         ctx.fillStyle = g;
         ctx.beginPath();
         ctx.arc(x, y, r, 0, Math.PI * 2);
         ctx.fill();
     };
-    const swim = (i, t) => [Math.sin(t * 0.9 + i * 1.7) * 10, Math.sin(t * 1.3 + i * 2.3) * 4];
-    const drawLight = (t) => {
+    const fresh = (canvas) => {
         const res = k() * Math.min(window.devicePixelRatio || 1, 1.5);
         const pw = Math.max(2, Math.round(LIGHT_BOX[2] * res)), ph = Math.max(2, Math.round(LIGHT_BOX[3] * res));
-        if (lightCanvas.width !== pw || lightCanvas.height !== ph) { lightCanvas.width = pw; lightCanvas.height = ph; }
-        const ctx = lightCanvas.getContext('2d');
+        if (canvas.width !== pw || canvas.height !== ph) { canvas.width = pw; canvas.height = ph; }
+        const ctx = canvas.getContext('2d');
         ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.clearRect(0, 0, pw, ph);
-        if (win && win.full || cur.alpha < 0.01) { L.light?.refresh(); return; }
         ctx.setTransform(res, 0, 0, res, -LIGHT_BOX[0] * res, -LIGHT_BOX[1] * res);
-        const a = cur.alpha, rushing = 1 - stream.calm;
+        return ctx;
+    };
+    const transparent = (hex) => `rgba(${parseInt(hex.slice(1, 3), 16)},${parseInt(hex.slice(3, 5), 16)},${parseInt(hex.slice(5, 7), 16)},0)`;
+    const drawLight = (t) => {
         const px = (n) => n / Math.max(1e-3, k());     // a size in screen px, so it reads on a phone too
-        const call = stream.touched ? Math.min(1, Math.max(0, (stream.idle - 3) / 2)) : 1;
-        // the little lights waiting in the water
-        FISH.forEach(([x, y], i) => {
-            if (stream.joined.includes('fish' + i)) return;
-            const n = stream.nearness('fish' + i), [dx, dy] = swim(i, t);
-            const pulse = 0.5 + 0.5 * Math.sin(t * 2.2 + i * 1.4);
-            dot(ctx, x + dx, y + dy, Math.max(16 + 14 * near(y), px(7)) * (1 + 0.5 * n + 0.15 * pulse * (0.4 + call)), 'rgba(255,236,150,0.8)', a * (0.55 + 0.2 * pulse + 0.25 * n));
-        });
-        // the train
-        stream.joined.forEach((name, j) => {
-            const [tx, ty] = stream.train(j, t);
-            const knot = KNOTS.find((each) => each.name === name);
-            const q = Math.min(1, (t - stream.joinedAt[name]) / 0.6), e = q * q * (3 - 2 * q);
-            const x = knot.x + (tx - knot.x) * e, y = knot.y + (ty - knot.y) * e - Math.sin(Math.PI * e) * 30;
-            dot(ctx, x, y, Math.max(14 + 16 * near(y), px(8)) * (1 + 0.15 * Math.sin(t * 3 + j)), knot.cairn !== undefined ? 'rgba(255,200,150,0.9)' : 'rgba(255,248,200,0.9)', a * (0.95 - 0.35 * rushing));
-        });
-        // its tail: where it has just been
-        for (let ago = 0.02; ago < 0.4; ago += 0.02) {
-            const [x, y] = stream.past(ago), f = 1 - ago / 0.4;
-            ctx.globalAlpha = a * f * f * (0.3 + 0.45 * stream.led);
-            ctx.fillStyle = f > 0.6 ? '#fffbe6' : '#fff2a6';
-            ctx.beginPath();
-            ctx.arc(x, y, Math.max(4 + 14 * near(y), px(3)) * f, 0, Math.PI * 2);
-            ctx.fill();
+        const a = cur.alpha;
+        // the plants: waiting, or lit in their own colour
+        let ctx = fresh(haloCanvas);
+        if (a > 0.01) {
+            const call = stream.touched ? Math.min(1, Math.max(0, (stream.idle - 3) / 2)) : 1;
+            PLANTS.forEach((p, i) => {
+                const pulse = 0.5 + 0.5 * Math.sin(t * 2.2 + i * 1.4);
+                if (p.lit > 0.01) {
+                    const r = Math.max(150, px(34)) * (1 + 0.08 * Math.sin(t * 1.3 + i));
+                    dot(ctx, p.x, p.y - 40, r, p.colour, a * p.lit * 0.7, transparent(p.colour));
+                }
+                if (!stream.joined.includes(p.name)) {
+                    const n = stream.nearness(p.name);
+                    dot(ctx, p.x, p.y, Math.max(22 + 14 * near(p.y), px(8)) * (1 + 0.6 * n + 0.18 * pulse * (0.4 + call)), p.colour, a * (0.55 + 0.2 * pulse + 0.25 * n), transparent(p.colour));
+                }
+            });
         }
-        // the light
-        const jx = rushing * Math.sin(t * 41) * 8, jy = rushing * Math.cos(t * 37) * 5;
-        const beat = call * (0.5 + 0.5 * Math.sin(t * 3.2));
-        const r = Math.max(26 + 40 * near(stream.y), px(15)) * (1 + 0.4 * stream.led + 0.35 * beat) * (1 - 0.35 * rushing);
-        dot(ctx, stream.x + jx, stream.y + jy, r, 'rgba(255,251,226,0.95)', a * (0.8 + 0.2 * Math.max(stream.led, beat)) * (1 - 0.4 * rushing * (0.5 + 0.5 * Math.sin(t * 29))));
+        L.halos?.refresh();
+        ctx = fresh(lightCanvas);
+        if (!(win && win.full) && a > 0.01) {
+            const rushing = 1 - stream.calm;
+            const call = stream.touched ? Math.min(1, Math.max(0, (stream.idle - 3) / 2)) : 1;
+            // the train, many-coloured
+            stream.joined.forEach((name, j) => {
+                const [tx, ty] = stream.train(j, t);
+                const knot = KNOTS.find((each) => each.name === name);
+                const q = Math.min(1, (t - stream.joinedAt[name]) / 0.6), e = q * q * (3 - 2 * q);
+                const x = knot.x + (tx - knot.x) * e, y = knot.y + (ty - knot.y) * e - Math.sin(Math.PI * e) * 40;
+                dot(ctx, x, y, Math.max(14 + 16 * near(y), px(9)) * (1 + 0.15 * Math.sin(t * 3 + j)), knot.colour, a * (0.95 - 0.35 * rushing), transparent(knot.colour));
+            });
+            // its tail: where it has just been
+            for (let ago = 0.02; ago < 0.4; ago += 0.02) {
+                const [x, y] = stream.past(ago), f = 1 - ago / 0.4;
+                ctx.globalAlpha = a * f * f * (0.3 + 0.45 * stream.led);
+                ctx.fillStyle = f > 0.6 ? '#fffbe6' : '#fff2a6';
+                ctx.beginPath();
+                ctx.arc(x, y, Math.max(4 + 14 * near(y), px(3)) * f, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            // the light
+            const jx = rushing * Math.sin(t * 41) * 8, jy = rushing * Math.cos(t * 37) * 5;
+            const beat = call * (0.5 + 0.5 * Math.sin(t * 3.2));
+            const r = Math.max(26 + 40 * near(stream.y), px(15)) * (1 + 0.4 * stream.led + 0.35 * beat) * (1 - 0.35 * rushing);
+            dot(ctx, stream.x + jx, stream.y + jy, r, 'rgba(255,251,226,0.95)', a * (0.8 + 0.2 * Math.max(stream.led, beat)) * (1 - 0.4 * rushing * (0.5 + 0.5 * Math.sin(t * 29))));
+        }
         ctx.globalAlpha = 1;
         L.light?.refresh();
     };
@@ -412,6 +437,7 @@
                 win = null;
                 stream.home = [...HOME];
                 stream.reset();
+                PLANTS.forEach((p) => { p.lit = 0; });
                 CAIRNS.forEach((c) => { c.settling = false; c.lit = 0; });
                 rulitos.forEach((r, i) => { r.value?.frame({ width: glyphs[i].w }); L.rulitos[i].refresh(); });
             }
@@ -458,8 +484,8 @@
         const box = root.value.getBoundingClientRect();
         return [(event.clientX - box.left - landAt.x) / landAt.s, (event.clientY - box.top - landAt.y) / landAt.s];
     };
-    // A finger put down on the river (or near it) leads the light until it lifts; the mouse leads it while it is over
-    // the river. A press that moved is not a tap (it does not strum)
+    // A finger put down on the land leads the light until it lifts; the mouse leads it while it is over the land. A
+    // press that moved is not a tap (it does not strum)
     const track = (event) => {
         if (!root.value) return;
         [pointer.u, pointer.v] = toArt(event);
@@ -474,7 +500,7 @@
         if (pointer.down && downAt && Math.hypot(event.clientX - downAt[0], event.clientY - downAt[1]) > 12) slid = true;
         if (pointer.touch && !pointer.down) pointer.lead = false;
     };
-    // On a phone, a finger put down on the river must not move the page; anywhere else it scrolls
+    // On a phone, a finger put down on the land must not move the page; from the sky it scrolls
     const onTouchStart = (event) => {
         const touch = event.touches[0];
         if (!touch || !event.cancelable || win || !root.value) return;
@@ -549,7 +575,7 @@
         // the two cairns, each half of the picture, with a soft light behind each that comes on when the light has passed
         L.stackGlows = [0, 1].map(() => land.glow({ rect: { left: 0, top: 0, w: 1, h: 1 }, color: 0xfff1a8, stops: [[0, 0.55], [0.35, 0.22], [0.7, 0]] }));
         L.stacks = [0, 1].map((i) => land.image('/assets/aceptacion/cairns.webp', { crop: [i * 0.5, 0, 0.5, 1] }));
-        L.light = land.canvas(lightCanvas, { bloom: true });
+        L.halos = land.canvas(haloCanvas, { bloom: true });
         L.plants = ['L', 'R'].map((side, i) => land.image(`/assets/aceptacion/plants${side}.webp`, { wind: { amp: 3.2, speed: 0.7 + 0.15 * i, root: 'bottom' } }));
         L.beings = BEINGS.map((b) => {
             const group = land.group();
@@ -557,6 +583,7 @@
             if (b.side === 'R') being.body.sx = being.eyes.sx = -1;
             return being;
         });
+        L.light = land.canvas(lightCanvas, { bloom: true });
         L.rulitos = rulitos.map((r) => land.canvas(r.value.canvas, { bloom: true }));
         land.enter({ y: 40, delay: 100, duration: 1800 });
     };
@@ -604,6 +631,7 @@
             const g = 2.4 * r.h;
             L.stackGlows[i].place({ left: r.left + r.w / 2 - g / 2, top: r.top + r.h * 0.5 - g / 2, w: g, h: g });
         });
+        L.halos.place(rectOf(LIGHT_BOX));
         L.light.place(rectOf(LIGHT_BOX));
         // The rulito over each being, where the card draws it (its canvas is bigger than the glyph, for the glow)
         art.rulitos.forEach((box, i) => {
@@ -805,7 +833,7 @@
         <Rulito :ref="rulitos[1]" class="offstage" color="#b880a4" />
         <!-- The light: a finger on the river leads it, or Enter held on it takes it gently to the next one -->
         <div ref="headHit" class="hit head" role="button" tabindex="0"
-            :aria-label="$i18n.locale === 'en' ? 'The light on the river: lead it gently with your finger by the little lights and the two cairns (or hold Enter)' : 'La luz del río: llevala suave con el dedo por las lucecitas y las dos pilitas de piedras (o mantené Enter)'"
+            :aria-label="$i18n.locale === 'en' ? 'The light on the land: lead it gently with your finger by the plants of both banks and the two cairns (or hold Enter)' : 'La luz de la tierra: llevala suave con el dedo por las plantas de las dos orillas y las dos pilitas de piedras (o mantené Enter)'"
             @pointerdown.prevent="holdHead" @click.stop @keydown="onHeadKey(true)($event)" @keyup="onHeadKey(false)($event)" @blur="keyHold = false"></div>
         <div v-for="i in [0, 1]" :key="i" :ref="(el) => { hits[i] = el; }" class="hit" role="button" tabindex="0"
             :aria-label="$i18n.locale === 'en' ? (i ? 'The being on the right bank' : 'The being on the left bank') : (i ? 'El ser de la orilla derecha' : 'El ser de la orilla izquierda')"
