@@ -389,6 +389,7 @@ body.card-ink header #soundButton,
 body.card-ink header #menuButton {
     filter: brightness(0) opacity(0.82);
 }
-body.card-ink header #menuButton.active { filter: none; }
+body.card-ink header #menuButton.active,
+body.card-ink header #soundButton.active { filter: drop-shadow(0px 2px 3px rgba(20, 51, 72, 0.56)); }
 body.card-ink header .navContainer.right { position: relative; z-index: 1; }
 </style>

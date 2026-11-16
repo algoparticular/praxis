@@ -182,8 +182,57 @@
         justify-content: center;        
     }
 
+    /* The menu must read over any page, the darkest card or the lightest (Tu verdad, cream on cream): over the frosted
+       glass a veil of the navy, so its cream words are at least 4.5:1 even over white */
+    #menuOverlay {
+        background-color: rgba(20, 50, 70, 0.68);
+    }
+
     #menuOverlay nav {
         gap: 56px;
+    }
+
+    /* over the veil the navy cannot mark things: the language chosen is underlined in the coral, a hovered word too,
+       and the sliders fill in cream */
+    #menuOverlay nav a:hover,
+    #menuOverlay #languageSelect label:hover {
+        color: #F7F8F1;
+        text-decoration: underline 1px;
+        text-underline-offset: 6px;
+    }
+
+    #menuOverlay #languageSelect label.active {
+        color: #F7F8F1;
+        text-decoration: underline 2px #FF6F61;
+        text-underline-offset: 6px;
+    }
+
+    #menuOverlay #audioMixer input[type="range"]::-webkit-slider-runnable-track {
+        background: linear-gradient(to right, #F7F8F1 var(--fill), rgba(247, 248, 241, 0.3) var(--fill));
+    }
+
+    #menuOverlay #audioMixer input[type="range"]::-moz-range-track {
+        background: rgba(247, 248, 241, 0.3);
+    }
+
+    /* the sound switch beside the open menu stays in cream over the veil (its navy "active" icons were for a light glass) */
+    header #soundButton.active {
+        background-image: url('../assets/icon/Sound.svg');
+        filter: drop-shadow(0px 2px 3px rgba(20, 51, 72, 0.56));
+    }
+
+    header #soundButton.off.active {
+        background-image: url('../assets/icon/SoundOff.svg');
+    }
+
+    /* and the menu's own button, its X to close it, in cream too */
+    header #menuButton.active {
+        background-image: url('../assets/icon/MenuClose.svg');
+        filter: drop-shadow(0px 2px 3px rgba(20, 51, 72, 0.56));
+    }
+
+    #menuOverlay #audioMixer input[type="range"]::-moz-range-progress {
+        background: #F7F8F1;
     }
 
     #menuOverlay nav a,
