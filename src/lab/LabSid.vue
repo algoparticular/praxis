@@ -4,7 +4,7 @@
 // traced off Nekkhamma's Sid (scripts/make-sid-lab.mjs -> sid.json), bent, squashed and stretched as a soft body; his
 // eyes (they look, blink and close); his arms and legs, strokes with his ink and line that bend freely. Canvas 2D on purpose: it shows the movement;
 // if it is what we want, the same rig goes into the WebGL stage (useLayerStage.js). Plan: docs/sid-en-piezas.md.
-import { onBeforeUnmount, onMounted, reactive, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import Header from '../components/Header.vue';
 import rig from './sid/sid.json';
 import { CICLOS, createWorld } from './sidWorld.js';
@@ -49,20 +49,30 @@ const teaching = reactive({ es: '', en: '', on: false, light: false, ink: CICLOS
 const RULITO_COLOURS = { 15: '#fc747c', 8: '#f595b6', 9: '#b3539a', 14: '#ffe285', 27: '#f37b85', 24: '#fff6c2', 32: '#f5d35a' };
 const rulitoColour = ref(RULITO_COLOURS[15]);
 // A door to the card, at every place (her tree, Metta's nest, Upekkha's pond, Celebración's fire, Paciencia's boat,
-// Gratitud's house, Transformación's seed): sitting in lotus at its place, after PORTAL_AFTER s the world gives way
-// to the card itself, as its page shows it (CardTemplate.vue: its scene and, below, its reading), over the world (the
+// Gratitud's house, Transformación's seed): sitting in lotus at its place, after PORTAL_AFTER s (230 ms, once his
+// legs are crossed) the world zooms in on him at his place (`zoom`, the world's canvases scaled about him) while it
+// gives way to the card itself, as its page shows it (CardTemplate.vue: its scene and, below, its reading), over the world (the
 // lab stays where it was, paused, under it). Its game is played there as on the card's page; nothing takes him back by
 // itself (the reading is there to be read): the labyrinth in the header's corner (`hasWorld`, where a card's page has
 // the deck) or Escape goes back into the world, where he is still sitting, and if its rulito was born (the scene's
 // `rulito` event) it comes back with him, whole, over his head, with the card's affirmation. Without WebGL the scene
 // would be flat (no game), so there the place keeps its own rulito.
 const PORTALS = new Set([15, 8, 9, 14, 27, 24, 32]);
-const PORTAL_AFTER = 3, PORTAL_FADE = 900;
+const PORTAL_AFTER = 0.23, PORTAL_FADE = 900, PORTAL_ZOOM = 2.6;
 const portal = reactive({ card: null, won: false });
+// where he is on the screen (in CSS px, drawn each frame) and the zoom of the world's canvases towards it
+const sidOnScreen = { x: 0, y: 0 };
+const zoom = reactive({ on: false, x: 0, y: 0 });
+const zoomStyle = computed(() => ({
+    transformOrigin: `${zoom.x}px ${zoom.y}px`,
+    transform: zoom.on ? `scale(${PORTAL_ZOOM})` : 'none',
+    transition: `transform ${zoom.on ? PORTAL_FADE : 1400}ms ${zoom.on ? 'cubic-bezier(0.55, 0, 0.75, 0.2)' : 'ease-out'}`,
+}));
 const webgl = hasWebGL();
 let portalTimer = 0;
 function openPortal(card) {
     portal.card = card; portal.won = false;
+    Object.assign(zoom, { on: true, x: sidOnScreen.x, y: sidOnScreen.y });
     release(); state.target = null; state.guide = null;
     document.body.classList.add('lab-portal');
     window.scrollTo(0, 0);
@@ -78,6 +88,7 @@ function closePortal() {
     state.portalDone = true;      // (not again until he gets up)
     document.body.classList.remove('lab-portal');
     window.scrollTo(0, 0);
+    zoom.on = false;            // (the world comes back out as the card fades)
     if (won) {
         // the rulito he won comes back with him, whole, and the card's affirmation is written over the world
         state.rul = { age: RULITO_GROW, head: 1, tail: 0, pop: 1, full: true, card };
@@ -1058,6 +1069,11 @@ function draw() {
     if (seated) drawArm(arms[0]);
     drawArm(arms[1]);
 
+    // where he is on the screen, for the zoom into a card (openPortal): a little below his crown
+    const mid = map(f, PIVOT.x, (rig.silhouette.crown[1] + PIVOT.y) / 2);
+    const onScreen = c.getTransform().transformPoint(mid);
+    sidOnScreen.x = onScreen.x / view.dpr; sidOnScreen.y = onScreen.y / view.dpr;
+
     // The rulito over his head (its canvas is bigger than the glyph, 32 x 86, by 14 all round, for its glow)
     if (state.rul && rulito.value) {
         const r = state.rul, glyph = 92, u = glyph / 32, head = map(f, PIVOT.x, rig.silhouette.crown[1]);
@@ -1126,10 +1142,10 @@ onBeforeUnmount(() => {
     <div class="labRoot">
     <!-- (no menu on a long press: a finger held down only guides him) -->
     <div class="lab" @contextmenu.prevent>
-        <div ref="nightSky" class="night-sky"><canvas ref="starCanvas"></canvas></div>
+        <div ref="nightSky" class="night-sky" :style="zoomStyle"><canvas ref="starCanvas"></canvas></div>
         <!-- the rulito draws itself on its own canvas, which this scene lays over his head -->
         <Rulito ref="rulito" class="offstage" :color="rulitoColour" />
-        <canvas ref="canvas" @pointermove="onMove" @pointerdown="onDown" @pointerup="onUp" @pointercancel="onUp"></canvas>
+        <canvas ref="canvas" :style="zoomStyle" @pointermove="onMove" @pointerdown="onDown" @pointerup="onUp" @pointercancel="onUp"></canvas>
         <!-- the affirmation of the card of the place where he meditates, written by hand in the sky -->
         <Transition name="teaching">
             <p v-if="teaching.on" class="teaching glass" :class="{ light: teaching.light }" :style="{ color: teaching.light ? null : teaching.ink }">
