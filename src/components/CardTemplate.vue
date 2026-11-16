@@ -207,10 +207,11 @@
 
     /* A scene can light the name: it sets --name-glow (0..1) on the stage (Paciencia does when its rulito is whole) */
     .stage .title {
-        /* and a scene can turn it cream while it stands over the night (--name-night, 0..1: Ciclos) */
-        color: color-mix(in srgb, color-mix(in srgb, v-bind(colorAlt), #f7f8f1 calc(var(--name-night, 0) * 100%)), #fff6cf calc(var(--name-glow, 0) * 88%));
+        /* and a scene can turn it cream while it stands over the night (--name-night, 0..1: Ciclos), or give it a colour
+           of its own over light skies, without the halo (--name-color, --name-shade: Aceptación) */
+        color: color-mix(in srgb, color-mix(in srgb, var(--name-color, v-bind(colorAlt)), #f7f8f1 calc(var(--name-night, 0) * 100%)), #fff6cf calc(var(--name-glow, 0) * 88%));
         text-shadow:
-            0 2px 18px v-bind(color),
+            0 2px 18px var(--name-shade, v-bind(color)),
             0 0 calc(var(--name-glow, 0) * 22px) rgba(255, 226, 120, calc(var(--name-glow, 0) * 0.9)),
             0 0 calc(var(--name-glow, 0) * 56px) rgba(255, 226, 120, calc(var(--name-glow, 0) * 0.55));
         filter: brightness(calc(1 + var(--name-glow, 0) * 0.3));

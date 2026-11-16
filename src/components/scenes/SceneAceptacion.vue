@@ -105,7 +105,6 @@
     const SUN_CLOUD = decodeCloud(SUN.cloud);
     const SKY = art.sky;
     const GROUND = art.ground;
-    const TEAL = /^#[0-9a-f]{6}$/i.test(props.card.color ?? '') ? parseInt(props.card.color.slice(1), 16) : 0x40baad;
     const ease = (p) => p * p * (3 - 2 * p);
     const centreOf = ([x, y, w, h]) => [x + w / 2, y + h / 2];
     const L = {};
@@ -215,14 +214,15 @@
     const CAIRN_X = [1028, 1118];           // the middle of each little cairn (left, right), its foot and its top
     const CAIRN_FOOT = 1925, CAIRN_TOP = 1802;
     // The plants of the two banks (the right bank is the left one mirrored), each with its own colour: [name, x, y,
-    // colour], the point at the foot of each that the light passes by. Only what a phone upright shows: the fern and the
-    // little glowing mushroom at the far edges are left out
+    // colour], the point of each that the light passes by: on its inner side, towards the river, so that on a phone
+    // upright (where the plants of the edges touch the screen's sides) it is reached away from the edge. Only what a
+    // phone upright shows: the fern and the little glowing mushroom at the far edges are left out
     const mirror = (x) => 2160 - x;
     const PLANTS = [
-        ['mushroomL', 300, 1610, '#f08aa8'], ['stalksL', 360, 1450, '#f6a6bc'], ['featherL', 440, 1620, '#f59fb2'],
-        ['stonesL', 330, 1960, '#7cc6d2'], ['sproutL', 850, 1540, '#86dcb6'],
-        ['mushroomR', mirror(300), 1610, '#f7a08a'], ['stalksR', mirror(360), 1450, '#f6a6bc'], ['featherR', mirror(440), 1620, '#b993e0'],
-        ['stonesR', mirror(330), 1960, '#8fd0c8'], ['sproutR', mirror(850), 1540, '#86dcb6'],
+        ['mushroomL', 360, 1630, '#f08aa8'], ['stalksL', 410, 1470, '#f6a6bc'], ['featherL', 500, 1640, '#f59fb2'],
+        ['stonesL', 400, 1970, '#7cc6d2'], ['sproutL', 850, 1540, '#86dcb6'],
+        ['mushroomR', mirror(360), 1630, '#f7a08a'], ['stalksR', mirror(410), 1470, '#f6a6bc'], ['featherR', mirror(500), 1640, '#b993e0'],
+        ['stonesR', mirror(400), 1970, '#8fd0c8'], ['sproutR', mirror(850), 1540, '#86dcb6'],
     ].map(([name, x, y, colour]) => ({ name, x, y, colour, lit: 0 }));
     const KNOTS = [
         ...PLANTS,
@@ -247,7 +247,7 @@
         bounds: [50, LAND_TOP, 2110, LAND_FOOT],
         clamp: keepOnLand,
         area: [0, 1460, 2160, 2160],        // a finger put down on the land leads the light (from the sky the page scrolls)
-        reach: 130,
+        reach: 170,                         // (a phone shows the land small: about 38 px on the glass)
         gentle: 1300, rush: 2900,           // (the card is bigger on a phone than Celebración's: about the same speed on the glass)
         spacing: 80,
         autoSpeed: 520,
@@ -534,20 +534,11 @@
         return { left: text.left - r.left, top: t.top - r.top, w: text.width, h: t.height };
     };
 
-    let screenH = 1;
-    const placeVeil = (h = screenH) => {
-        screenH = h;
-        const tb = titleBox(h);
-        const vw = tb.w * 1.5 + 120, vh = tb.h * 2.6 + 40;
-        L.veil.place({ left: tb.left + tb.w / 2 - vw / 2, top: tb.top + tb.h / 2 - vh / 2, w: vw, h: vh });
-    };
-
     const build = (s) => {
         // The skies
         const sky = s.depth(zFor(DEPTH.sky));
         L.skyNode = sky;
         L.sky = sky.field({ source: skyField, colors: [SKY.cream, SKY.yellow], flow: 0.8 });
-        L.veil = s.depth(0).glow({ rect: { left: 0, top: 0, w: 1, h: 1 }, color: TEAL, stops: [[0, 0.3], [0.4, 0.16], [0.72, 0]] });
         // The sun: a soft light round it (code) and, among the layers, the sun itself as particles
         const sun = s.depth(zFor(DEPTH.sun));
         L.sunNode = sun;
@@ -596,7 +587,6 @@
         L.sky.place(area);
         L.sky.refresh();
         L.sky.uniforms.uScale.value = k();
-        placeVeil(h);
 
         const sr = SUN.r * k(), sun = sunAt();
         const sg = sr * 4;
@@ -765,7 +755,6 @@
         stage.render(t);
         if (frames++ % 2 === 0) placeHits();
         // The name's font may arrive after the first layout
-        if (frames % 90 === 0) placeVeil();
     };
 
     const begin = async () => {
@@ -779,6 +768,10 @@
         if (gone) { made.destroy(); return; }
         stage = made;
         stageEl = root.value.closest('.stage');
+        // The name: the card's cream does not read on its cream and yellow skies, so it takes the dark teal of the right
+        // bank, with no halo
+        stageEl?.style.setProperty('--name-color', hexOf(GROUND.right));
+        stageEl?.style.setProperty('--name-shade', 'transparent');
         build(stage);
         stage.onResize((w, h) => place(w, h));
         const after = (node) => node.mesh.renderOrder + 0.5;
@@ -817,7 +810,7 @@
         gone = true;
         ['pointerdown', 'pointermove', 'pointerup', 'pointercancel', 'pointerleave'].forEach((type) => root.value?.removeEventListener(type, track));
         root.value?.removeEventListener('touchstart', onTouchStart);
-        stageEl?.style.removeProperty('--name-glow');
+        ['--name-glow', '--name-color', '--name-shade'].forEach((name) => stageEl?.style.removeProperty(name));
         parallax?.destroy();
         hand?.destroy();
         dust?.destroy();
