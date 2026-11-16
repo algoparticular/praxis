@@ -4,13 +4,13 @@
     // glowing. Golden dust rises from the light in the middle of the pond along the trunk; yellow signs float round it.
     // On the blue ground, between pink mountains, a little one with a rod watches it and an elder, eyes closed, holds a
     // bowl.
-    // Its verb is Fluir (crossing the change), with the engine shared by the cards of the verb (useFlow.js): golden sap
-    // is born in the light of the pond and rises up the root and the trunk as a finger slides up with it, at its own
-    // pace (never faster; alone it does not move), beads of light running on ahead of it. The six yellow signs floating
-    // round the tree are its knots: as the sap comes up to the height of one, accompanied, the sign lets go of its shape
-    // and drifts into the trunk, melting into the sap, which goes on once it has taken it in. At the crown, the sun
-    // lights up, the seed glows and swells, and the rulito is born out of it, the name lights up; then the sap fades and
-    // the signs come back, for another time. A tap strums the card's chord (`star`): the dust, the motes and the seed's
+    // Its verb is Fluir (crossing the change), carrying the current (useStream.js), moving with others: a golden light
+    // is born in the light of the pond and goes wherever a finger round the tree takes it, a little behind it, always
+    // curving; alone it drifts back to the pond. The six yellow signs floating round the tree are the others: passing
+    // by one gently, the sign lets go of its shape and melts into the light, and follows it as a golden mote in a
+    // train; a finger in a rush scatters the train and gathers nobody. With the six, the light takes them up to the
+    // crown on its own, the sap fills the root and the trunk, the sun lights up, the seed glows and swells, and the
+    // rulito is born out of it, the name lights up; then the sap fades and the signs come back, for another time. A tap strums the card's chord (`star`): the dust, the motes and the seed's
     // aura flare and the seed swells; touching near the little one makes him hop and blink, near the elder makes him
     // bow his head.
     // The sky is not a picture: it is in no layer of the card, so the converter reads its colour from the finished card,
@@ -32,7 +32,7 @@
     import { startStardust } from '../../composables/useStardust.js';
     import { decodeCloud, sampleCloud, joinLight } from '../../composables/stippleCloud.js';
     import { play } from '../../composables/useSound.js';
-    import { createFlow, routeThrough } from '../../composables/useFlow.js';
+    import { createStream, routeThrough } from '../../composables/useStream.js';
     import { createGhostHand, gesture, HINT_AFTER } from '../../composables/useGhostHand.js';
     import { sceneMilestone } from '../../analytics.js';
     import Rulito from '../Rulito.vue';
@@ -48,7 +48,7 @@
     const root = ref(null);
     const canvas = ref(null);
     const seedHit = ref(null);
-    const headHit = ref(null);              // where the sap's head is: Enter held on it goes with it
+    const headHit = ref(null);              // where the golden light is: Enter held on it takes it, gently, to the next sign
     const rulito = ref(null);
     let stageEl = null;                     // the card's stage, where the name is lit from (--name-glow)
     let stage = null;
@@ -115,7 +115,8 @@
     const streaks = glyphs.filter((g) => g.kind === 1);
 
     // ---- Fluir: the sap's way, in art px, along the middle of the root and the trunk (traced from tree.webp, row by
-    // row) from the light of the pond up to where the crown meets the trunk
+    // row) from the light of the pond up to where the crown meets the trunk: drawn full at the end, when the light has
+    // taken the signs up to the crown
     const WAY = [
         [SPOT.x, SPOT.y - 6], [1046, 1934], [1004, 1906], [978, 1880], [960, 1856], [946, 1830], [939, 1800], [939, 1770], [942, 1730],
         [946, 1690], [949, 1650], [946, 1610], [932, 1570], [922, 1530], [920, 1490], [926, 1450], [938, 1410], [952, 1370],
@@ -125,30 +126,39 @@
     ];
     const SAP = routeThrough(WAY, 8);
     const RX = (i) => SAP.xs[i], RY = (i) => SAP.ys[i];
-    // The signs, from the lowest up: each is a knot where the sap comes level with it (a short stretch of the trunk)
-    const sampleAt = (y) => { for (let i = 0; i < SAP.n; i++) if (SAP.ys[i] <= y) return i; return SAP.n - 1; };
-    const KNOTS = signs.map((g, i) => ({ i, y: g.rect[1] + g.rect[3] / 2 })).sort((a, b) => b.y - a.y)
-        .map(({ i, y }) => { const at = Math.min(SAP.n - 8, Math.max(8, sampleAt(y))); return { sign: i, enter: at, exit: at + 5 }; });
-    // Each sign: still floating (p 0), drifting into the trunk and melting (p up to 1, once let go), taken in (gone)
-    const SIGNS = signs.map(() => ({ letGo: false, p: 0, back: 1 }));
+    const POND_LIGHT = [SPOT.x, SPOT.y - 20], CROWN_TOP = [918, 500];
+    // The signs are the others the light gathers: each a knot where it floats now (moved every frame, as it floats at
+    // its own depth), and, once it has joined, where it was taken from (`to`, in the tree's art px)
+    const KNOTS = signs.map((g, i) => { const [x, y] = [g.rect[0] + g.rect[2] / 2, g.rect[1] + g.rect[3] / 2]; return { name: 'sign' + i, sign: i, x, y, home: [x, y] }; });
+    // Each sign: still floating (p 0), melting into the light (p up to 1, once it has joined), and coming back after
+    const SIGNS = signs.map(() => ({ letGo: false, p: 0, back: 1, to: [0, 0] }));
     const cur = { alpha: 1, light: 0 };
     let keyHold = false;
-    const pointer = { u: 0, v: 0, at: -99, down: false, touch: false };
+    const pointer = { u: 0, v: 0, at: -99, down: false, touch: false, lead: false };
+    let downAt = null;
     let slid = false;
     let win = null;
     let wins = 0;
     let hand = null;                        // the ghost hand, showing the gesture
-    let swell = 0;                          // the sap swells where it has just taken in a sign
-    const flow = createFlow({
-        x: RX, y: RY, n: SAP.n,
-        stops: KNOTS,
-        pace: 30,                           // about 10 s up the tree with a finger, and a moment at each sign
-        ahead: 40, behind: 10, lead: 5, press: 14, fill: 0.5,
-        reach: 150, touchReach: 230,
-        isOpen: (s) => SIGNS[s.sign].letGo,
-        release: (s) => { const g = SIGNS[s.sign]; if (g.letGo) return; g.letGo = true; play('release'); },
-        ready: (s) => SIGNS[s.sign].p > 0.95,
-        onEnter: () => { swell = 1; play('bloom'); dust?.boost(3, 0.8); },
+    let swell = 0;                          // the light swells as it takes in a sign
+    const stream = createStream({
+        home: POND_LIGHT,
+        knots: KNOTS,
+        bounds: [660, 400, 1500, 1990],     // round the tree, from the pond to the crown (within SAP_BOX, where it is drawn)
+        area: [650, 380, 1500, 2010],       // a finger put down here leads it (the elder and the little one stay to touch)
+        reach: 120,
+        gentle: 1250, rush: 2750,           // (the card is bigger on a phone than Celebración's: about the same speed on the glass)
+        spacing: 70,
+        autoSpeed: 520,
+        orbitR: [30, 10],
+        onJoin: (k) => {
+            const g = SIGNS[k.sign];
+            g.letGo = true; g.to = [stream.x, stream.y];
+            swell = 1;
+            play('bloom');
+            dust?.boost(3, 0.8);
+        },
+        onAll: () => { stream.home = [...CROWN_TOP]; play('release'); },
         onEnd: () => finish(),
         onNote: (step, level) => play('flow', { step, level }),
         onFirst: () => sceneMilestone('current_accompanied'),
@@ -205,10 +215,11 @@
         },
     };
 
-    // ---- The sap, on a canvas over the trunk (art box SAP_BOX, in the tree's group): a golden line from the pond to its
-    // head, thin along the root and wider up the trunk, with lights running up it; beads of light ahead of it, the way it
-    // goes; and its head, a bright core that beats while nobody is with it
-    const SAP_BOX = [860, 440, 240, 1560];
+    // ---- The golden light, on a canvas over the tree (art box SAP_BOX, in the tree's group): the train of the signs it
+    // took in (each a golden mote from where the sign melted to its place behind the light), a short tail where it has
+    // just been, and the light itself, a bright core that beats while nobody leads it and flickers, thin, when the
+    // finger rushes. At the end, the sap fills the root and the trunk from the pond up, with lights running up it
+    const SAP_BOX = [620, 360, 940, 1680];
     const sapCanvas = document.createElement('canvas');
     let runPhase = 0;
     const widthAt = (i) => (RY(i) > 1600 ? 9 : 16);
@@ -224,6 +235,17 @@
             ctx.stroke();
         }
     };
+    const dot = (ctx, x, y, r, colour, alpha) => {
+        const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+        g.addColorStop(0, 'rgba(255,255,255,1)');
+        g.addColorStop(0.22, colour);
+        g.addColorStop(1, 'rgba(255,214,96,0)');
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fill();
+    };
     const drawSap = (t) => {
         const res = k() * Math.min(window.devicePixelRatio || 1, 1.5);
         const pw = Math.max(2, Math.round(SAP_BOX[2] * res)), ph = Math.max(2, Math.round(SAP_BOX[3] * res));
@@ -233,46 +255,45 @@
         ctx.clearRect(0, 0, pw, ph);
         ctx.setTransform(res, 0, 0, res, -SAP_BOX[0] * res, -SAP_BOX[1] * res);
         ctx.lineCap = ctx.lineJoin = 'round';
-        const head = flow.head, lit = Math.max(flow.acc, cur.light);
+        const px = (n) => n / Math.max(1e-3, k());     // a size in screen px, so it reads on a phone too
+        // the sap, filling the trunk at the end
+        const head = (SAP.n - 1) * ease(cur.light);
         if (cur.alpha > 0.01 && head > 0.5) {
             ctx.strokeStyle = '#ffd95e';
-            ctx.globalAlpha = cur.alpha * (0.3 + 0.2 * lit);
+            ctx.globalAlpha = cur.alpha * 0.5;
             stroke(ctx, 0, head, 2.2);
             ctx.strokeStyle = '#fff1b0';
-            ctx.globalAlpha = cur.alpha * (0.7 + 0.3 * lit);
+            ctx.globalAlpha = cur.alpha;
             stroke(ctx, 0, head, 0.75);
             ctx.strokeStyle = '#ffffff';
-            ctx.globalAlpha = cur.alpha * (0.4 + 0.35 * lit);
+            ctx.globalAlpha = cur.alpha * 0.75;
             const GAP = 20;
             for (let p = runPhase % GAP; p < head; p += GAP) stroke(ctx, Math.max(0, p - 5), Math.min(head, p), 0.35);
         }
-        if (cur.alpha > 0.01 && !win) {
-            const call = flow.touched ? Math.min(1, Math.max(0, (flow.idle - 3) / 2)) : 1;
-            const stop = flow.next();
-            const limit = Math.min(SAP.n - 1, stop && head < stop.enter ? stop.enter + 2 : SAP.n - 1, head + 40);
-            const show = cur.alpha * (0.5 + 0.3 * flow.acc + 0.2 * call) * (1 - 0.6 * flow.rush);
-            const run = (t * (10 + 14 * flow.acc)) % 10;
-            ctx.fillStyle = '#fffbe8';
-            for (let p = head + 4 + run; p < limit; p += 10) {
-                const i = Math.floor(p), fade = 1 - (p - head) / 40;
-                ctx.globalAlpha = show * fade;
+        if (cur.alpha > 0.01 && !(win && win.full)) {
+            const a = cur.alpha, rushing = 1 - stream.calm;
+            const call = stream.touched ? Math.min(1, Math.max(0, (stream.idle - 3) / 2)) : 1;
+            // the train
+            stream.joined.forEach((name, j) => {
+                const [tx, ty] = stream.train(j, t);
+                const [fx, fy] = SIGNS[KNOTS.find((kn) => kn.name === name).sign].to;
+                const q = Math.min(1, (t - stream.joinedAt[name]) / 0.7), e = q * q * (3 - 2 * q);
+                dot(ctx, fx + (tx - fx) * e, fy + (ty - fy) * e, Math.max(24, px(9)) * (1 + 0.15 * Math.sin(t * 3 + j)), 'rgba(255,214,96,0.9)', a * (0.95 - 0.35 * rushing));
+            });
+            // its tail
+            for (let ago = 0.02; ago < 0.34; ago += 0.02) {
+                const [x, y] = stream.past(ago), f = 1 - ago / 0.34;
+                ctx.globalAlpha = a * f * f * (0.35 + 0.5 * stream.led);
+                ctx.fillStyle = f > 0.6 ? '#fff1b0' : '#ffd95e';
                 ctx.beginPath();
-                ctx.arc(RX(i), RY(i), 7 + 6 * fade, 0, Math.PI * 2);
+                ctx.arc(x, y, Math.max(12, px(3)) * f, 0, Math.PI * 2);
                 ctx.fill();
             }
-            const i = Math.min(SAP.n - 1, Math.floor(head));
-            const beat = call * (0.5 + 0.5 * Math.sin(t * 3.2)) + flow.rush * (0.5 + 0.5 * Math.sin(t * 11));
-            const r = 46 * (1 + 0.45 * flow.acc + 0.35 * beat + 0.6 * swell);
-            const g = ctx.createRadialGradient(RX(i), RY(i), 0, RX(i), RY(i), r);
-            g.addColorStop(0, 'rgba(255,255,255,1)');
-            g.addColorStop(0.2, 'rgba(255,248,214,0.95)');
-            g.addColorStop(0.5, 'rgba(255,214,96,0.45)');
-            g.addColorStop(1, 'rgba(255,214,96,0)');
-            ctx.globalAlpha = cur.alpha * (0.75 + 0.25 * Math.max(flow.acc, beat));
-            ctx.fillStyle = g;
-            ctx.beginPath();
-            ctx.arc(RX(i), RY(i), r, 0, Math.PI * 2);
-            ctx.fill();
+            // the light
+            const jx = rushing * Math.sin(t * 41) * 10, jy = rushing * Math.cos(t * 37) * 7;
+            const beat = call * (0.5 + 0.5 * Math.sin(t * 3.2));
+            const r = Math.max(46, px(16)) * (1 + 0.4 * stream.led + 0.35 * beat + 0.5 * swell) * (1 - 0.35 * rushing);
+            dot(ctx, stream.x + jx, stream.y + jy, r, 'rgba(255,248,214,0.95)', a * (0.8 + 0.2 * Math.max(stream.led, beat)) * (1 - 0.4 * rushing * (0.5 + 0.5 * Math.sin(t * 29))));
         }
         ctx.globalAlpha = 1;
         L.sap?.refresh();
@@ -313,7 +334,8 @@
             if (win.back) cur.alpha = Math.max(0, 1 - win.tail * 1.4);
             if (win.back && win.tail >= 1) {
                 win = null;
-                flow.reset();
+                stream.home = [...POND_LIGHT];
+                stream.reset();
                 SIGNS.forEach((g) => { g.letGo = false; g.p = 0; g.back = 0; });
                 rulito.value?.frame({ width: glyph.w });
                 L.rulito.refresh();
@@ -333,36 +355,42 @@
         const a = L.tree.toScreen(sx(0), sy(0)), b = L.tree.toScreen(sx(SIZE), sy(0));
         treeAt = { x: a.x, y: a.y, s: (b.x - a.x) / SIZE || 1 };
     };
-    // The hint, without words: left alone HINT_AFTER s (not while it is accompanied, nor while the rulito lives), the
-    // ghost hand slides along the stretch of the way ahead of the sap's head, at its pace (as Khanti's)
+    // The hint, without words: left alone HINT_AFTER s (not while it is led, nor while the rulito lives), the ghost hand
+    // takes the light gently by the nearest sign still floating and on to the one nearest it
     const routeOnCanvas = (u, v) => [treeAt.x + u * treeAt.s, treeAt.y + v * treeAt.s];
-    const hintFlow = (t) => {
-        if (win) flow.idle = 0;
-        const wanted = !win && !flow.done && !keyHold && !pointer.down && flow.idle > 0.5 && cur.alpha > 0.9;
+    const hintFlow = () => {
+        if (win) stream.idle = 0;
+        const wanted = !win && !stream.done && !stream.homing && !keyHold && !pointer.down && stream.idle > 0.5 && cur.alpha > 0.9;
         if (!hand?.due(HINT_AFTER, wanted)) return;
-        const first = flow.hintPath(undefined, routeOnCanvas, t + gesture.SLIDE_LEAD);
-        if (!first) return;
-        const again = flow.hintPath(undefined, routeOnCanvas, t + gesture.SLIDE_LEAD + first.dur + gesture.SLIDE_AGAIN);
-        hand.play([...gesture.slide(first, first.dur, { even: true }), ...(again ? gesture.slide(again, again.dur, { even: true }) : [])], { loops: 1 });
+        const path = stream.hintPath(routeOnCanvas, 2);
+        if (path) hand.play(gesture.slide(path, path.dur), { loops: 1 });
     };
     const toArt = (event) => {
         const box = root.value.getBoundingClientRect();
         return [(event.clientX - box.left - treeAt.x) / treeAt.s, (event.clientY - box.top - treeAt.y) / treeAt.s];
     };
+    // A finger put down round the tree leads the light until it lifts; the mouse leads it while it is there. A press
+    // that moved is not a tap (it does not strum)
     const track = (event) => {
         if (!root.value) return;
         [pointer.u, pointer.v] = toArt(event);
         pointer.touch = event.pointerType === 'touch';
         pointer.down = pointer.touch ? event.type !== 'pointerup' && event.type !== 'pointercancel' : event.buttons > 0;
         pointer.at = lastT;
-        if (event.type === 'pointerdown') slid = false;
+        if (event.type === 'pointerdown') {
+            slid = false;
+            downAt = [event.clientX, event.clientY];
+            pointer.lead = !win && stream.inBounds(pointer.u, pointer.v);
+        } else if (!pointer.touch && !pointer.down) pointer.lead = event.type !== 'pointerleave' && stream.inBounds(pointer.u, pointer.v);
+        if (pointer.down && downAt && Math.hypot(event.clientX - downAt[0], event.clientY - downAt[1]) > 12) slid = true;
+        if (pointer.touch && !pointer.down) pointer.lead = false;
     };
-    // On a phone, a finger put down on the sap or on the way ahead of it must not move the page; anywhere else it scrolls
+    // On a phone, a finger put down round the tree must not move the page; from the sky or the sides it scrolls
     const onTouchStart = (event) => {
         const t0 = event.touches[0];
         if (!t0 || !event.cancelable || win || !root.value) return;
         const [u, v] = toArt(t0);
-        if (flow.nearHead(u, v)) event.preventDefault();
+        if (stream.inBounds(u, v)) event.preventDefault();
     };
     const holdHead = (event) => { event.currentTarget.setPointerCapture?.(event.pointerId); track(event); };
     const onHeadKey = (down) => (event) => {
@@ -373,9 +401,8 @@
     const placeHead = () => {
         const el = headHit.value;
         if (!el) return;
-        const i = Math.min(SAP.n - 1, Math.floor(flow.head));
         const size = Math.max(56, 2 * 120 * treeAt.s);
-        el.style.translate = `${(treeAt.x + RX(i) * treeAt.s - size / 2).toFixed(1)}px ${(treeAt.y + RY(i) * treeAt.s - size / 2).toFixed(1)}px`;
+        el.style.translate = `${(treeAt.x + stream.x * treeAt.s - size / 2).toFixed(1)}px ${(treeAt.y + stream.y * treeAt.s - size / 2).toFixed(1)}px`;
         el.style.width = el.style.height = `${size.toFixed(1)}px`;
         el.style.display = win ? 'none' : '';
     };
@@ -564,31 +591,35 @@
 
         // ---- Fluir: the sap, and the signs it takes in
         measureTree();
-        if (!win) flow.step(dt, t, pointer, { key: keyHold });
-        hintFlow(t);
-        if (pointer.down && flow.acc > 0.3) slid = true;
-        runPhase += dt * 30 * (1.4 + 1.2 * Math.max(flow.acc, cur.light));
+        if (!win) stream.step(dt, t, { u: pointer.u, v: pointer.v, down: pointer.lead && (pointer.down || !pointer.touch), lead: true }, { key: keyHold });
+        hintFlow();
+        runPhase += dt * 30 * (1.4 + 1.2 * Math.max(stream.led, cur.light));
         const named = stepWin(dt, t);
         if (frames % 2 === 0) drawSap(t);
         placeHead();
 
-        // ---- The signs float, each on its own; one let go drifts into the trunk where the sap is, shrinking and
-        // melting into it; taken in, it is gone until the sap has faded, and then it comes back where it was
+        // ---- The signs float, each on its own (and the light finds each where it floats now, in the tree's art px), leaning
+        // in as the light comes near; one that joined drifts to where the light took it, shrinking and melting into it;
+        // taken in, it is gone until the sap has faded, and then it comes back where it was
         L.signsNode.y = scroll * 30;
         const treeDrift = stage.drift(L.landNode.z), signDrift = stage.drift(L.signsNode.z);
         signs.forEach((g, i) => {
             const n = L.signs[i], st = SIGNS[i];
             if (st.letGo) st.p = Math.min(1, st.p + dt / 0.9);
             st.back = Math.min(1, st.back + dt / 2);
-            const knot = KNOTS.find((kn) => kn.sign === i);
+            const knot = KNOTS[i];
             const [cx, cy] = centreOf(g.rect);
             const e = ease(st.p);
-            const toX = (sx(RX(knot.enter)) - sx(cx)) + treeDrift.x - signDrift.x;
-            const toY = (sy(RY(knot.enter)) - sy(cy)) + treeDrift.y + L.landNode.y - signDrift.y - L.signsNode.y;
-            n.y = (Math.sin(t * 0.45 + g.phase) * 10 * ramp - 8 * flare) * (1 - e) + toY * e;
-            n.x = Math.sin(t * 0.3 + g.phase * 2) * 5 * ramp * (1 - e) + toX * e;
+            const toX = (sx(st.to[0]) - sx(cx)) + treeDrift.x - signDrift.x;
+            const toY = (sy(st.to[1]) - sy(cy)) + treeDrift.y + L.landNode.y - signDrift.y - L.signsNode.y;
+            const floatY = Math.sin(t * 0.45 + g.phase) * 10 * ramp - 8 * flare, floatX = Math.sin(t * 0.3 + g.phase * 2) * 5 * ramp;
+            n.y = floatY * (1 - e) + toY * e;
+            n.x = floatX * (1 - e) + toX * e;
+            knot.x = cx + (floatX + signDrift.x - treeDrift.x) / k();
+            knot.y = cy + (floatY + signDrift.y + L.signsNode.y - treeDrift.y - L.landNode.y) / k();
+            const close = stream.nearness(knot.name);
             n.rotate = Math.sin(t * 0.5 + g.phase * 3) * 6 * ramp + 120 * e;
-            n.scale = (1 + 0.06 * flare) * (1 - 0.8 * e) * (0.6 + 0.4 * ease(st.back));
+            n.scale = (1 + 0.06 * flare + 0.15 * close) * (1 - 0.8 * e) * (0.6 + 0.4 * ease(st.back));
             n.opacity = (1 - ease(Math.max(0, (st.p - 0.5) / 0.5))) * ease(st.back);
         });
         stage.bloom = reduced ? 0 : Math.max(0.25 + 0.35 * flare, 0.7 * named);
@@ -659,7 +690,7 @@
             ],
         });
         if (reduced) dust.reveal();
-        ['pointerdown', 'pointermove', 'pointerup', 'pointercancel'].forEach((type) => root.value.addEventListener(type, track, { passive: true }));
+        ['pointerdown', 'pointermove', 'pointerup', 'pointercancel', 'pointerleave'].forEach((type) => root.value.addEventListener(type, track, { passive: true }));
         root.value.addEventListener('touchstart', onTouchStart, { passive: false });
         hand = createGhostHand(stage, { color: 0x143246, shade: 0xf7f8f1 });   // navy: the cream hand does not read on the pink sky
         parallax = createParallax(root.value, frame);
@@ -670,7 +701,7 @@
     watch(() => props.active, enter);
     onBeforeUnmount(() => {
         gone = true;
-        ['pointerdown', 'pointermove', 'pointerup', 'pointercancel'].forEach((type) => root.value?.removeEventListener(type, track));
+        ['pointerdown', 'pointermove', 'pointerup', 'pointercancel', 'pointerleave'].forEach((type) => root.value?.removeEventListener(type, track));
         root.value?.removeEventListener('touchstart', onTouchStart);
         stageEl?.style.removeProperty('--name-glow');
         parallax?.destroy();
@@ -685,9 +716,9 @@
         <canvas class="stageCanvas" ref="canvas"></canvas>
         <!-- The rulito is drawn on its own canvas, which the stage shows as a texture over the seed -->
         <Rulito ref="rulito" class="offstage" color="#f5d35a" />
-        <!-- The sap's head: a finger slides from here up the tree with it, or Enter held on it goes with it -->
+        <!-- The golden light: a finger round the tree leads it, or Enter held on it takes it gently to the next sign -->
         <div ref="headHit" class="hit head" role="button" tabindex="0"
-            :aria-label="$i18n.locale === 'en' ? 'The sap: slide your finger up the tree with it (or hold Enter)' : 'La savia: deslizá el dedo junto a ella árbol arriba (o mantené Enter)'"
+            :aria-label="$i18n.locale === 'en' ? 'The golden light: lead it gently with your finger by each sign round the tree (or hold Enter)' : 'La luz dorada: llevala suave con el dedo por cada signo alrededor del árbol (o mantené Enter)'"
             @pointerdown.prevent="holdHead" @click.stop @keydown="onHeadKey(true)($event)" @keyup="onHeadKey(false)($event)" @blur="keyHold = false"></div>
         <div ref="seedHit" class="hit" role="button" tabindex="0"
             :aria-label="$i18n.locale === 'en' ? 'The seed of the tree, glowing' : 'La semilla del árbol, brillando'"

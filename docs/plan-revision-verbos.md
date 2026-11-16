@@ -302,6 +302,8 @@ Gestos de la mano: `tap` sobre lo que se suelta. Cada tanto, `hold` sobre el per
 
 ## Paquete C: Fluir (deslizar con la corriente)
 
+> Noviembre de 2026: Fluir cambió de forma (llevar la corriente, `useStream.js`; ver `verbos-y-dinamicas.md`) y `useFlow.js` se retiró. Lo que sigue es el plan de entonces.
+
 Gesto de la mano: `slide` a lo largo del tramo de ruta que está delante de la cabeza, a su ritmo. Motor común: `useFlow.js`.
 
 - **Común a las cuatro:** la "llamada" (`call = touched ? clamp((idle-3)/2) : 1`) está copiada con números sueltos en las cuatro escenas. Conviene llevarla, junto con la pista, a `useFlow.js`: algo como un `flow.hintPath(len)` que devuelva los próximos puntos de la ruta para `gesture.slide`.

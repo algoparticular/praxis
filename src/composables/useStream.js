@@ -1,4 +1,5 @@
-// Fluir, carrying the current (docs/verbos-y-dinamicas.md): the second engine of the verb, being tried in Celebración.
+// Fluir, carrying the current (docs/verbos-y-dinamicas.md): the engine of the verb, shared by its four cards (Khanti,
+// Aceptación, Celebración and Transformación).
 // There is no route to follow: the current (a spark, a light) goes wherever the finger goes, anywhere in the scene, with
 // a little lag so it always curves; it never stops (alone, it drifts home and waits there, breathing). Moving with
 // others: what it passes by gently (`knots`: the beings round the fire) joins it, and from then on goes behind it as a
@@ -14,12 +15,15 @@ export const createStream = ({
     home,                       // [x, y]: where it is born and goes back to
     knots = [],                 // [{ name, x, y, box?: [left, top, w, h] }]: passing by one gently joins it
     bounds,                     // [left, top, right, bottom]: where it can go
+    clamp = null,               // or (x, y) -> [x, y]: where it can go, when that is not a box (a river)
+    area = null,                // [left, top, right, bottom]: where a finger put down leads it (default: bounds)
     reach = 190,                // how near a knot's point (or its box) it has to pass to join it
     follow = 7,                 // how quickly it goes to the finger (1/s)
     gentle = 1700,              // finger speed (units/s) up to which it is calm
     rush = 3800,                // and from which it is rushing
     calmToJoin = 0.55,          // how calm it has to be to gather someone
     autoSpeed = 700,            // units/s, going by itself (the keyboard, home)
+    orbitR = [70, 26],          // how far it circles round home while alone
     spacing = 90,               // units along where it has been between one in the train and the next (s.spacing:
                                 // the scene can change it with the screen, up to 3 times this)
     onJoin = () => {},
@@ -47,11 +51,13 @@ export const createStream = ({
         joined: [],             // names, in the order they joined
         joinedAt: {},           // name -> clock when it joined
         spacing,
+        home: [...home],        // (a scene can move it: Aceptación's light goes home to the island at the end)
     };
     const fill = () => { hx.fill(s.x); hy.fill(s.y); tx.fill(s.x); ty.fill(s.y); };
     fill();
     let prev = null, fingerSpeed = 0, noteAt = 0, orbit = 0;
-    const clampTo = (x, y) => [Math.min(bounds[2], Math.max(bounds[0], x)), Math.min(bounds[3], Math.max(bounds[1], y))];
+    const clampTo = clamp ?? ((x, y) => [Math.min(bounds[2], Math.max(bounds[0], x)), Math.min(bounds[3], Math.max(bounds[1], y))]);
+    const zone = area ?? bounds;
     const left = () => knots.filter((k) => !s.joined.includes(k.name));
     // How far (u, v) is from a knot: from its point, or from its box when it has one
     const away = (k, u, v) => {
@@ -64,7 +70,7 @@ export const createStream = ({
         return d;
     };
     const nearest = (u = s.x, v = s.y, list = left()) => list.reduce((best, k) => (!best || away(k, u, v) < away(best, u, v) ? k : best), null);
-    s.inBounds = (u, v) => u >= bounds[0] && u <= bounds[2] && v >= bounds[1] && v <= bounds[3];
+    s.inBounds = (u, v) => u >= zone[0] && u <= zone[2] && v >= zone[1] && v <= zone[3];
     // 0..1: how near the current is to a knot still to join (to let it lean in, waiting)
     s.nearness = (name) => {
         const k = knots.find((each) => each.name === name);
@@ -116,7 +122,7 @@ export const createStream = ({
             return d;
         };
         if (s.homing) {
-            if (toward(home, autoSpeed * 1.2) < 24) { s.done = true; onEnd(); }
+            if (toward(s.home, autoSpeed * 1.2) < 24) { s.done = true; onEnd(); }
         } else if (finger) {
             const [tx, ty] = clampTo(pointer.u, pointer.v), e = 1 - Math.exp(-follow * dt);
             s.x += (tx - s.x) * e; s.y += (ty - s.y) * e;
@@ -126,7 +132,7 @@ export const createStream = ({
         } else {
             // alone: it drifts back to the fire and circles there, breathing
             orbit += dt * 0.9;
-            const [tx, ty] = [home[0] + Math.cos(orbit) * 70, home[1] + Math.sin(orbit * 1.3) * 26];
+            const [tx, ty] = clampTo(s.home[0] + Math.cos(orbit) * orbitR[0], s.home[1] + Math.sin(orbit * 1.3) * orbitR[1]);
             const e = 1 - Math.exp(-1.1 * dt);
             s.x += (tx - s.x) * e; s.y += (ty - s.y) * e;
         }
@@ -190,10 +196,42 @@ export const createStream = ({
     };
     // Born again at home, everyone free again
     s.reset = () => {
-        s.x = home[0]; s.y = home[1];
+        s.x = s.home[0]; s.y = s.home[1];
         s.joined = []; s.joinedAt = {};
         s.homing = false; s.done = false; s.led = 0; s.calm = 1; s.speed = 0;
         fill();
     };
     return s;
+};
+
+// A route through waypoints ([x, y] in the scene's units), joined by a Catmull-Rom curve and sampled every `step`:
+// { n, xs, ys, index(w) } (index: the sample at waypoint w), for a scene that draws along a fixed way (Transformación's sap up the trunk)
+export const routeThrough = (way, step = 8) => {
+    const dense = [], marks = [];
+    let length = 0;
+    const add = (x, y) => {
+        const last = dense[dense.length - 1];
+        if (last) length += Math.hypot(x - last[0], y - last[1]);
+        dense.push([x, y, length]);
+    };
+    for (let i = 0; i < way.length - 1; i++) {
+        const p0 = way[Math.max(0, i - 1)], p1 = way[i], p2 = way[i + 1], p3 = way[Math.min(way.length - 1, i + 2)];
+        marks[i] = length;
+        for (let j = i ? 1 : 0; j <= 24; j++) {
+            const t = j / 24, t2 = t * t, t3 = t2 * t;
+            const c = (a, b, c2, d) => 0.5 * (2 * b + (c2 - a) * t + (2 * a - 5 * b + 4 * c2 - d) * t2 + (3 * b - a - 3 * c2 + d) * t3);
+            add(c(p0[0], p1[0], p2[0], p3[0]), c(p0[1], p1[1], p2[1], p3[1]));
+        }
+    }
+    marks[way.length - 1] = length;
+    const n = Math.floor(length / step) + 1, xs = new Float32Array(n), ys = new Float32Array(n);
+    let j = 0;
+    for (let i = 0; i < n; i++) {
+        const at = i * step;
+        while (j < dense.length - 2 && dense[j + 1][2] < at) j++;
+        const a = dense[j], b = dense[j + 1] ?? a, f = Math.min(1, Math.max(0, (at - a[2]) / Math.max(1e-6, b[2] - a[2])));
+        xs[i] = a[0] + (b[0] - a[0]) * f;
+        ys[i] = a[1] + (b[1] - a[1]) * f;
+    }
+    return { n, xs, ys, index: (w) => Math.min(n - 1, Math.round(marks[w] / step)) };
 };
