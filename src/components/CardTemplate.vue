@@ -1,5 +1,5 @@
 <script setup>
-	import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+	import { computed, onBeforeUnmount, onMounted, ref, watchEffect } from 'vue';
     import { useRouter } from 'vue-router';
     import { animate, inView } from 'motion';
     import { takePendingTransition } from '../cardTransition.js';
@@ -64,6 +64,11 @@
         if (stage.value && window.scrollY > stage.value.offsetHeight * 0.7) visit.reading();
     };
 
+    // Cards whose whole page is light (Tu verdad: cream on cream): the header's cream icons go dark, in the ink of the
+    // card's name (body.card-ink, the style at the end; the header is teleported into <body>)
+    const INK_HEADER = new Set(['10']);
+    const stopInk = watchEffect(() => document.body.classList.toggle('card-ink', INK_HEADER.has(String(props.id))));
+
     onMounted(async () => {
         window.addEventListener('scroll', fadeCue, { passive: true });
         window.addEventListener('pagehide', visit.finish);
@@ -110,6 +115,8 @@
         document.removeEventListener('visibilitychange', onHidden);
         visit.finish();
         setCurrentVisit(null);
+        stopInk();
+        document.body.classList.remove('card-ink');
     });
 </script>
 
@@ -372,4 +379,16 @@
             transition: none;
         }
     }
+</style>
+
+<style>
+/* The header over a light card (body.card-ink, CardTemplate): its cream icons in a dark ink, as the lab does over its
+   light sky; with the menu open its button keeps its own colour */
+body.card-ink header .navContainer button,
+body.card-ink header #soundButton,
+body.card-ink header #menuButton {
+    filter: brightness(0) opacity(0.82);
+}
+body.card-ink header #menuButton.active { filter: none; }
+body.card-ink header .navContainer.right { position: relative; z-index: 1; }
 </style>
