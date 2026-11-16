@@ -209,10 +209,14 @@
     .stage .title {
         /* and a scene can turn it cream while it stands over the night (--name-night, 0..1: Ciclos) */
         color: color-mix(in srgb, color-mix(in srgb, v-bind(colorAlt), #f7f8f1 calc(var(--name-night, 0) * 100%)), #fffcea calc(var(--name-glow, 0) * 100%));
+        /* lit, an amber halo close round the letters, then a pale gold one wide: the cream name reads over light
+           skies too (cream, mint, pink), and still glows over the dark ones */
         text-shadow:
             0 2px 18px v-bind(color),
-            0 0 calc(var(--name-glow, 0) * 22px) rgba(255, 230, 130, var(--name-glow, 0)),
-            0 0 calc(var(--name-glow, 0) * 56px) rgba(255, 230, 130, calc(var(--name-glow, 0) * 0.7));
+            0 0 calc(var(--name-glow, 0) * 2px) rgba(196, 112, 18, calc(var(--name-glow, 0) * 0.85)),
+            0 0 calc(var(--name-glow, 0) * 9px) rgba(222, 138, 30, calc(var(--name-glow, 0) * 0.7)),
+            0 0 calc(var(--name-glow, 0) * 30px) rgba(255, 196, 90, calc(var(--name-glow, 0) * 0.6)),
+            0 0 calc(var(--name-glow, 0) * 64px) rgba(255, 214, 120, calc(var(--name-glow, 0) * 0.45));
         /* (no `filter` here: Safari draws a filtered element in a layer cut to a box smaller than its text-shadow, and
            the glow ended in a hard-edged rectangle round the name; its light is in the colour and the shadows) */
     }
