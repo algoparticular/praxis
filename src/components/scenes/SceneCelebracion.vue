@@ -4,12 +4,13 @@
     // at his feet, one sits cross-legged with a kitten in his lap and a bowl in his hand, one stands on the right with his
     // staff and a fox beside him; cats, a pink family hugging by a cup, little hairy ones and mushrooms gather round, and
     // behind them a fern holds up five glowing lamp flowers.
-    // Its verb is Fluir, with the engine shared by the cards of the verb (useFlow.js): a spark leaves the fire and goes
-    // round the circle, by the feet of each of them, as a finger slides with it, at its own pace (never faster; alone
-    // it does not move), beads of light running on ahead of it. Each one it comes to is a knot: reached accompanied, it
-    // hops, lights up warm and the flame grows a little; and on goes the spark. Back in the fire with everyone lit, the
-    // fire leaps, everyone hops at once and the rulito is born over the flame, the name lights up; then the spark is
-    // born again in the fire. Besides, everything is alive. The fire flickers (the pink flame
+    // Its verb is Fluir, carrying the current (useStream.js), moving with others: a spark of the fire goes wherever the
+    // finger goes on the ground round it (no route to follow), a little behind it, always curving; alone it drifts back
+    // to the fire and circles there. A little light waits at the feet of each one round the fire: passing by gently,
+    // they join the spark (the one hops, lights up warm, the flame grows a little) and their light goes behind it in
+    // a train; a finger in a rush scatters the train and gathers nobody. With everyone in the train the spark takes them
+    // home on its own: the fire leaps, everyone hops at once and the rulito is born over the flame, the name lights up;
+    // then the spark is born again in the fire. Besides, everything is alive. The fire flickers (the pink flame
     // and its yellow heart sway and stretch each on its own, in the shader's wind, about the logs) and throws embers that
     // rise and fade; its warm light breathes on the ground. The lamps sway on their stems with the fern and breathe their
     // light, their stippled halos are particles that go with them; the little mushrooms on the ground glow (particles
@@ -31,7 +32,7 @@
     import { createLayerStage } from '../../composables/useLayerStage.js';
     import { startStardust } from '../../composables/useStardust.js';
     import { play } from '../../composables/useSound.js';
-    import { createFlow, routeThrough } from '../../composables/useFlow.js';
+    import { createStream } from '../../composables/useStream.js';
     import { createGhostHand, gesture, HINT_AFTER } from '../../composables/useGhostHand.js';
     import { sceneMilestone } from '../../analytics.js';
     import Rulito from '../Rulito.vue';
@@ -47,7 +48,7 @@
     const root = ref(null);
     const canvas = ref(null);
     const groundCanvas = ref(null);
-    const headHit = ref(null);              // where the spark is: Enter held on it goes with it
+    const headHit = ref(null);              // where the spark is: Enter held on it takes it, gently, to the next one
     const rulito = ref(null);
     let stageEl = null;                     // the card's stage, where the name is lit from (--name-glow)
     let stage = null;
@@ -122,50 +123,42 @@
     const hops = {};
     const litGlow = {};
 
-    // ---- Fluir: the spark's way round the circle, in art px on the ground: out of the fire, by the feet of the cat
-    // behind, behind the fire to the pink family and the trio, the Sama on the right and his fox, the cat in front,
-    // round the front of the fire to the little hairy one, the Sama on the left (and the fox at his feet), the
-    // mushrooms and the one sitting, and back into the fire. The little one at the right edge is left out: on a phone
-    // it is off the screen, and the way keeps a little inside the ones at the edges of a phone. Each [x, y, name]
-    // waypoint with a name is a knot at that one's feet
-    const WAY = [
-        [1079, 1640], [990, 1520], [828, 1384, 'catBack'], [940, 1395], [1080, 1418], [1210, 1432], [1318, 1446, 'pink'],
-        [1440, 1556, 'trio'], [1620, 1574], [1790, 1574, 'samaRight'], [1860, 1630], [1872, 1712, 'foxRight'],
-        [1800, 1770], [1666, 1790, 'catFront'], [1430, 1950], [1080, 1990], [820, 1930], [682, 1846, 'hairy'],
-        [500, 1940], [372, 1934, 'samaLeft'], [440, 1830], [551, 1764, 'mushrooms'], [600, 1680], [626, 1604, 'seated'],
-        [800, 1620], [960, 1680], [1079, 1720],
-    ];
-    const ROUND = routeThrough(WAY.map(([x, y]) => [x, y]), 8);
-    const RX = (i) => ROUND.xs[i], RY = (i) => ROUND.ys[i];
-    const KNOTS = WAY.map((w, i) => [w[2], ROUND.index(i)]).filter(([name]) => name)
-        .map(([name, at]) => ({ name, enter: at - 3, exit: at + 3 }));
-    const LIT = Object.fromEntries(KNOTS.map(({ name }) => [name, 0]));    // how lit each one is (0..1)
+    // ---- Fluir: everyone round the fire, by the point at their feet (art px) where a little light waits for the spark.
+    // The little one at the right edge is left out: on a phone it is off the screen
+    const FEET = [
+        ['catBack', 828, 1384], ['pink', 1318, 1446], ['trio', 1440, 1556], ['samaRight', 1790, 1574], ['foxRight', 1872, 1712],
+        ['catFront', 1666, 1790], ['hairy', 682, 1846], ['samaLeft', 372, 1934], ['mushrooms', 551, 1764], ['seated', 626, 1604],
+    ].map(([name, x, y]) => ({ name, x, y, box: B[name] }));
+    const FOOT = Object.fromEntries(FEET.map((k) => [k.name, k]));
+    const LIT = Object.fromEntries(FEET.map(({ name }) => [name, 0]));    // how lit each one is (0..1)
     const PAIRED = { samaLeft: 'foxLeft' };  // the fox at his feet hops and lights with him
+    const TRAIN_COLOURS = ['rgba(255,214,90,0.9)', 'rgba(255,150,90,0.9)', 'rgba(255,120,180,0.9)', 'rgba(255,190,80,0.9)', 'rgba(255,140,140,0.9)'];
+    const HOME = [1079, 1650];              // the spark's place, in the fire
     const cur = { alpha: 1, light: 0 };
     let keyHold = false;
-    const pointer = { u: 0, v: 0, at: -99, down: false, touch: false };
+    const pointer = { u: 0, v: 0, at: -99, down: false, touch: false, lead: false };
+    let downAt = null;
     let slid = false;
     let win = null;
     let wins = 0;
     let hand = null;                        // the ghost hand, showing the gesture
     let grown = 0;                          // how much the flame has grown with the ones lit (0..1)
     const reached = new Set();
-    const flow = createFlow({
-        x: RX, y: RY, n: ROUND.n,
-        stops: KNOTS,
-        pace: 52,                           // about 20 s round the circle with a finger
-        ahead: 50, behind: 12, lead: 6, press: 10, fill: 0.35,
-        reach: 160, touchReach: 240,
-        isOpen: (s) => reached.has(s.name),
-        release: (s) => {
-            if (reached.has(s.name)) return;
-            reached.add(s.name);
-            [s.name, PAIRED[s.name]].filter(Boolean).forEach((name) => { hops[name] = 0; });
+    const stream = createStream({
+        home: HOME,
+        knots: FEET,
+        bounds: [220, 1300, 2000, 2020],    // the ground round the fire (within SPARK_BOX, where it is drawn)
+        reach: 150,
+        onJoin: (k) => {
+            if (reached.has(k.name)) return;
+            reached.add(k.name);
+            [k.name, PAIRED[k.name]].filter(Boolean).forEach((name) => { hops[name] = 0; });
+            LIT[k.name] = 1;
             play('tap');
             flare = Math.max(flare, 0.4);
             for (let i = 0; i < 5; i++) spawnEmber(lastT, 0.6);
         },
-        onPass: (s) => { LIT[s.name] = 1; },
+        onAll: () => { play('star'); flare = Math.max(flare, 0.7); },
         onEnd: () => finish(),
         onNote: (step, level) => play('flow', { step, level }),
         onFirst: () => sceneMilestone('current_accompanied'),
@@ -266,12 +259,23 @@
     };
 
     const L = {};
-    // ---- The spark, on a canvas over everything round the fire (art box SPARK_BOX, in the front row's depth): a short
-    // tail of embers behind it, the beads of light ahead of it, the way it goes, and the spark itself, a bright core that
-    // beats while nobody is with it
+    // ---- The spark, on a canvas over everything round the fire (art box SPARK_BOX, in the front row's depth): the little
+    // lights waiting at the feet of those still to join, the train of those who joined (each flies from its feet to its
+    // place behind the spark), a short tail of embers and the spark itself, a bright core that beats while nobody leads
+    // it and flickers, thin, when the finger rushes
     const SPARK_BOX = [180, 1260, 1860, 800];
     const sparkCanvas = document.createElement('canvas');
-    const TAIL = 30;
+    const dot = (ctx, x, y, r, colour, alpha) => {
+        const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+        g.addColorStop(0, 'rgba(255,255,255,1)');
+        g.addColorStop(0.22, colour);
+        g.addColorStop(1, 'rgba(255,170,110,0)');
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fill();
+    };
     const drawSpark = (t) => {
         const res = k() * Math.min(window.devicePixelRatio || 1, 1.5);
         const pw = Math.max(2, Math.round(SPARK_BOX[2] * res)), ph = Math.max(2, Math.round(SPARK_BOX[3] * res));
@@ -281,45 +285,38 @@
         ctx.clearRect(0, 0, pw, ph);
         if (win || cur.alpha < 0.01) { L.spark?.refresh(); return; }
         ctx.setTransform(res, 0, 0, res, -SPARK_BOX[0] * res, -SPARK_BOX[1] * res);
-        const head = flow.head;
-        const call = flow.touched ? Math.min(1, Math.max(0, (flow.idle - 3) / 2)) : 1;
-        // its tail: embers left behind, fading and flickering
-        for (let p = Math.max(0, head - TAIL); p < head; p += 1.5) {
-            const i = Math.floor(p), f = 1 - (head - p) / TAIL;
-            const jitter = Math.sin(t * 13 + p * 1.7) * 6;
-            ctx.globalAlpha = cur.alpha * f * f * (0.5 + 0.4 * flow.acc);
+        const a = cur.alpha, rushing = 1 - stream.calm;
+        const px = (n) => n / Math.max(1e-3, k());     // a size in screen px, so it reads on a phone too
+        const call = stream.touched ? Math.min(1, Math.max(0, (stream.idle - 3) / 2)) : 1;
+        // the little lights waiting at their feet, leaning in as the spark comes near
+        FEET.forEach((foot, i) => {
+            if (stream.joined.includes(foot.name)) return;
+            const near = stream.nearness(foot.name);
+            const pulse = 0.5 + 0.5 * Math.sin(t * 2.4 + i * 1.3);
+            dot(ctx, foot.x, foot.y - 10 * near, Math.max(26, px(9)) * (1 + 0.5 * near + 0.18 * pulse * (0.4 + call)), 'rgba(255,150,90,0.85)', a * (0.6 + 0.2 * pulse + 0.2 * near));
+        });
+        // the train: each one's light, from its feet to its place behind the spark
+        stream.joined.forEach((name, j) => {
+            const [tx, ty] = stream.train(j, t);
+            const q = Math.min(1, (t - stream.joinedAt[name]) / 0.6), e = q * q * (3 - 2 * q);
+            const f = FOOT[name];
+            const x = f.x + (tx - f.x) * e, y = f.y + (ty - f.y) * e - Math.sin(Math.PI * e) * 90;
+            dot(ctx, x, y, Math.max(30, px(10)) * (1 + 0.15 * Math.sin(t * 3 + j)), TRAIN_COLOURS[j % TRAIN_COLOURS.length], a * (0.95 - 0.35 * rushing));
+        });
+        // its tail: where it has just been
+        for (let ago = 0.02; ago < 0.32; ago += 0.02) {
+            const [x, y] = stream.past(ago), f = 1 - ago / 0.32;
+            ctx.globalAlpha = a * f * f * (0.35 + 0.5 * stream.led);
             ctx.fillStyle = f > 0.6 ? '#fff0b8' : '#ffb07a';
             ctx.beginPath();
-            ctx.arc(RX(i), RY(i) + jitter, 3 + 9 * f, 0, Math.PI * 2);
-            ctx.fill();
-        }
-        // the way it goes
-        const stop = flow.next();
-        const limit = Math.min(ROUND.n - 1, stop && head < stop.enter ? stop.enter + 3 : ROUND.n - 1, head + 50);
-        const show = cur.alpha * (0.45 + 0.3 * flow.acc + 0.25 * call) * (1 - 0.6 * flow.rush);
-        const run = (t * (10 + 14 * flow.acc)) % 12;
-        ctx.fillStyle = '#fff6d6';
-        for (let p = head + 5 + run; p < limit; p += 12) {
-            const i = Math.floor(p), fade = 1 - (p - head) / 50;
-            ctx.globalAlpha = show * fade;
-            ctx.beginPath();
-            ctx.arc(RX(i), RY(i), 6 + 6 * fade, 0, Math.PI * 2);
+            ctx.arc(x, y + Math.sin(t * 13 + ago * 40) * 5, (3 + 10 * f) * Math.max(1, px(1.6) / 4), 0, Math.PI * 2);
             ctx.fill();
         }
         // the spark
-        const i = Math.min(ROUND.n - 1, Math.floor(head));
-        const beat = call * (0.5 + 0.5 * Math.sin(t * 3.2)) + flow.rush * (0.5 + 0.5 * Math.sin(t * 11));
-        const r = 58 * (1 + 0.5 * flow.acc + 0.35 * beat) * (1 + 0.08 * Math.sin(t * 17));
-        const g = ctx.createRadialGradient(RX(i), RY(i), 0, RX(i), RY(i), r);
-        g.addColorStop(0, 'rgba(255,255,255,1)');
-        g.addColorStop(0.2, 'rgba(255,240,190,0.95)');
-        g.addColorStop(0.5, 'rgba(255,170,110,0.45)');
-        g.addColorStop(1, 'rgba(255,170,110,0)');
-        ctx.globalAlpha = cur.alpha * (0.8 + 0.2 * Math.max(flow.acc, beat));
-        ctx.fillStyle = g;
-        ctx.beginPath();
-        ctx.arc(RX(i), RY(i), r, 0, Math.PI * 2);
-        ctx.fill();
+        const jx = rushing * Math.sin(t * 41) * 14, jy = rushing * Math.cos(t * 37) * 10;
+        const beat = call * (0.5 + 0.5 * Math.sin(t * 3.2));
+        const r = Math.max(58, px(17)) * (1 + 0.4 * stream.led + 0.35 * beat) * (1 + 0.08 * Math.sin(t * 17)) * (1 - 0.35 * rushing);
+        dot(ctx, stream.x + jx, stream.y + jy, r, 'rgba(255,240,190,0.95)', a * (0.8 + 0.2 * Math.max(stream.led, beat)) * (1 - 0.4 * rushing * (0.5 + 0.5 * Math.sin(t * 29))));
         ctx.globalAlpha = 1;
         L.spark?.refresh();
     };
@@ -363,7 +360,7 @@
             if (win.back) cur.alpha = Math.max(0, 1 - win.tail * 1.4);
             if (win.back && win.tail >= 1) {
                 win = null;
-                flow.reset();
+                stream.reset();
                 reached.clear();
                 Object.keys(LIT).forEach((name) => { LIT[name] = 0; });
                 rulito.value?.frame({ width: glyph.w });
@@ -372,7 +369,7 @@
         }
         if (!win) cur.alpha = Math.min(1, cur.alpha + dt / 1.5);
         cur.light += ((win && !win.back ? 1 : 0) - cur.light) * Math.min(1, dt * 1.5);
-        const lit = Object.values(LIT).reduce((a, b) => a + b, 0) / KNOTS.length;
+        const lit = Object.values(LIT).reduce((a, b) => a + b, 0) / FEET.length;
         grown += (Math.max(lit, win && !win.back ? 1 : 0) - grown) * Math.min(1, dt * 1.2);
         stageEl?.style.setProperty('--name-glow', named.toFixed(3));
         return named;
@@ -384,36 +381,42 @@
         const a = L.frontNode.toScreen(sx(0), sy(0)), b = L.frontNode.toScreen(sx(SIZE), sy(0));
         frontAt = { x: a.x, y: a.y, s: (b.x - a.x) / SIZE || 1 };
     };
-    // The hint, without words: left alone HINT_AFTER s (not while it is accompanied, nor while the rulito lives), the
-    // ghost hand slides along the stretch of the way ahead of the spark's head, at its pace (as Khanti's)
+    // The hint, without words: left alone HINT_AFTER s (not while it is led, nor while the rulito lives), the ghost hand
+    // takes the spark gently by the nearest one still waiting and on to the one nearest it
     const routeOnCanvas = (u, v) => [frontAt.x + u * frontAt.s, frontAt.y + v * frontAt.s];
-    const hintFlow = (t) => {
-        if (win) flow.idle = 0;
-        const wanted = !win && !flow.done && !keyHold && !pointer.down && flow.idle > 0.5 && cur.alpha > 0.9;
+    const hintFlow = () => {
+        if (win) stream.idle = 0;
+        const wanted = !win && !stream.done && !stream.homing && !keyHold && !pointer.down && stream.idle > 0.5 && cur.alpha > 0.9;
         if (!hand?.due(HINT_AFTER, wanted)) return;
-        const first = flow.hintPath(undefined, routeOnCanvas, t + gesture.SLIDE_LEAD);
-        if (!first) return;
-        const again = flow.hintPath(undefined, routeOnCanvas, t + gesture.SLIDE_LEAD + first.dur + gesture.SLIDE_AGAIN);
-        hand.play([...gesture.slide(first, first.dur, { even: true }), ...(again ? gesture.slide(again, again.dur, { even: true }) : [])], { loops: 1 });
+        const path = stream.hintPath(routeOnCanvas, 2);
+        if (path) hand.play(gesture.slide(path, path.dur), { loops: 1 });
     };
     const toArt = (event) => {
         const box = root.value.getBoundingClientRect();
         return [(event.clientX - box.left - frontAt.x) / frontAt.s, (event.clientY - box.top - frontAt.y) / frontAt.s];
     };
+    // A finger put down on the ground round the fire leads the spark until it lifts; the mouse leads it while it is over
+    // that ground. A press that moved is not a tap (it does not strum or hop)
     const track = (event) => {
         if (!root.value) return;
         [pointer.u, pointer.v] = toArt(event);
         pointer.touch = event.pointerType === 'touch';
         pointer.down = pointer.touch ? event.type !== 'pointerup' && event.type !== 'pointercancel' : event.buttons > 0;
         pointer.at = lastT;
-        if (event.type === 'pointerdown') slid = false;
+        if (event.type === 'pointerdown') {
+            slid = false;
+            downAt = [event.clientX, event.clientY];
+            pointer.lead = !win && stream.inBounds(pointer.u, pointer.v);
+        } else if (!pointer.touch && !pointer.down) pointer.lead = event.type !== 'pointerleave' && stream.inBounds(pointer.u, pointer.v);
+        if (pointer.down && downAt && Math.hypot(event.clientX - downAt[0], event.clientY - downAt[1]) > 12) slid = true;
+        if (pointer.touch && !pointer.down) pointer.lead = false;
     };
-    // On a phone, a finger put down on the spark or on the way ahead of it must not move the page; anywhere else it scrolls
+    // On a phone, a finger put down on the ground round the fire must not move the page; anywhere else it scrolls
     const onTouchStart = (event) => {
         const t0 = event.touches[0];
         if (!t0 || !event.cancelable || win || !root.value) return;
         const [u, v] = toArt(t0);
-        if (flow.nearHead(u, v)) event.preventDefault();
+        if (stream.inBounds(u, v)) event.preventDefault();
     };
     const holdHead = (event) => { event.currentTarget.setPointerCapture?.(event.pointerId); track(event); };
     const onHeadKey = (down) => (event) => {
@@ -424,9 +427,8 @@
     const placeHead = () => {
         const el = headHit.value;
         if (!el) return;
-        const i = Math.min(ROUND.n - 1, Math.floor(flow.head));
         const size = Math.max(56, 2 * 120 * frontAt.s);
-        el.style.translate = `${(frontAt.x + RX(i) * frontAt.s - size / 2).toFixed(1)}px ${(frontAt.y + RY(i) * frontAt.s - size / 2).toFixed(1)}px`;
+        el.style.translate = `${(frontAt.x + stream.x * frontAt.s - size / 2).toFixed(1)}px ${(frontAt.y + stream.y * frontAt.s - size / 2).toFixed(1)}px`;
         el.style.width = el.style.height = `${size.toFixed(1)}px`;
         el.style.display = win ? 'none' : '';
     };
@@ -602,6 +604,7 @@
         L.flame.place(rectOf(B.flame), { x: sx(fx), y: sy(fy) });
         L.heart.place(rectOf(B.heart), { x: sx(fx), y: sy(fy) });
         L.spark.place(rectOf(SPARK_BOX));
+        stream.spacing = Math.max(90, 22 / k());      // the train's lights apart, also on a phone
         glyph = rectOf(RULITO);
         L.rulito.place({ left: glyph.left - 0.4375 * glyph.w, top: glyph.top - 0.1628 * glyph.h, w: glyph.w * 1.875, h: glyph.h * 1.3256 },
             { x: glyph.left + glyph.w / 2, y: glyph.top + glyph.h });
@@ -677,9 +680,8 @@
         }
         // ---- Fluir: the spark round the circle
         measureFront();
-        if (!win) flow.step(dt, t, pointer, { key: keyHold });
-        hintFlow(t);
-        if (pointer.down && flow.acc > 0.3) slid = true;
+        if (!win) stream.step(dt, t, { u: pointer.u, v: pointer.v, down: pointer.lead && (pointer.down || !pointer.touch), lead: true }, { key: keyHold });
+        hintFlow();
         const named = stepWin(dt, t);
         drawSpark(t);
         placeHead();
@@ -715,7 +717,9 @@
             // A little warmth from the fire on them, flickering with it
             const u = node.body ? node.body.uniforms : node.uniforms;
             // and, once the spark has come by, a warm light of its own
-            const warm = LIT[name] ?? LIT[Object.keys(PAIRED).find((key) => PAIRED[key] === name)] ?? 0;
+            // (and, still waiting, a little as the spark comes near)
+            const own = Object.keys(PAIRED).find((key) => PAIRED[key] === name) ?? name;
+            const warm = Math.max(LIT[own] ?? 0, 0.5 * stream.nearness(own));
             litGlow[name] = (litGlow[name] ?? 0) + (warm - (litGlow[name] ?? 0)) * Math.min(1, dt * 2);
             if (u) u.uBright.value = 1 + 0.035 * f + 0.08 * flare + 0.06 * litGlow[name];
         });
@@ -783,7 +787,7 @@
             ],
         });
         if (reduced) dust.reveal();
-        ['pointerdown', 'pointermove', 'pointerup', 'pointercancel'].forEach((type) => root.value.addEventListener(type, track, { passive: true }));
+        ['pointerdown', 'pointermove', 'pointerup', 'pointercancel', 'pointerleave'].forEach((type) => root.value.addEventListener(type, track, { passive: true }));
         root.value.addEventListener('touchstart', onTouchStart, { passive: false });
         hand = createGhostHand(stage, { color: 0x143246, shade: 0xf7f8f1 });   // navy: it slides over the bright fire and the pale ground
         parallax = createParallax(root.value, frame);
@@ -794,7 +798,7 @@
     watch(() => props.active, enter);
     onBeforeUnmount(() => {
         gone = true;
-        ['pointerdown', 'pointermove', 'pointerup', 'pointercancel'].forEach((type) => root.value?.removeEventListener(type, track));
+        ['pointerdown', 'pointermove', 'pointerup', 'pointercancel', 'pointerleave'].forEach((type) => root.value?.removeEventListener(type, track));
         root.value?.removeEventListener('touchstart', onTouchStart);
         stageEl?.style.removeProperty('--name-glow');
         parallax?.destroy();
@@ -811,9 +815,9 @@
         <canvas class="offstage" ref="groundCanvas" aria-hidden="true"></canvas>
         <!-- The rulito is drawn on its own canvas, which the stage shows as a texture over the flame -->
         <Rulito ref="rulito" class="offstage" color="#ffe285" />
-        <!-- The spark: a finger slides from here round the circle with it, or Enter held on it goes with it -->
+        <!-- The spark: a finger on the ground leads it, or Enter held on it takes it gently to the next one -->
         <div ref="headHit" class="hit head" role="button" tabindex="0"
-            :aria-label="$i18n.locale === 'en' ? 'The spark of the fire: slide your finger round the circle with it (or hold Enter)' : 'La chispa del fuego: deslizá el dedo junto a ella alrededor de la ronda (o mantené Enter)'"
+            :aria-label="$i18n.locale === 'en' ? 'The spark of the fire: lead it gently with your finger by each one round the fire (or hold Enter)' : 'La chispa del fuego: llevala suave con el dedo por cada uno de la ronda (o mantené Enter)'"
             @pointerdown.prevent="holdHead" @click.stop @keydown="onHeadKey(true)($event)" @keyup="onHeadKey(false)($event)" @blur="keyHold = false"></div>
     </div>
 </template>
