@@ -208,12 +208,13 @@
     /* A scene can light the name: it sets --name-glow (0..1) on the stage (Paciencia does when its rulito is whole) */
     .stage .title {
         /* and a scene can turn it cream while it stands over the night (--name-night, 0..1: Ciclos) */
-        color: color-mix(in srgb, color-mix(in srgb, v-bind(colorAlt), #f7f8f1 calc(var(--name-night, 0) * 100%)), #fff6cf calc(var(--name-glow, 0) * 88%));
+        color: color-mix(in srgb, color-mix(in srgb, v-bind(colorAlt), #f7f8f1 calc(var(--name-night, 0) * 100%)), #fffcea calc(var(--name-glow, 0) * 100%));
         text-shadow:
             0 2px 18px v-bind(color),
-            0 0 calc(var(--name-glow, 0) * 22px) rgba(255, 226, 120, calc(var(--name-glow, 0) * 0.9)),
-            0 0 calc(var(--name-glow, 0) * 56px) rgba(255, 226, 120, calc(var(--name-glow, 0) * 0.55));
-        filter: brightness(calc(1 + var(--name-glow, 0) * 0.3));
+            0 0 calc(var(--name-glow, 0) * 22px) rgba(255, 230, 130, var(--name-glow, 0)),
+            0 0 calc(var(--name-glow, 0) * 56px) rgba(255, 230, 130, calc(var(--name-glow, 0) * 0.7));
+        /* (no `filter` here: Safari draws a filtered element in a layer cut to a box smaller than its text-shadow, and
+           the glow ended in a hard-edged rectangle round the name; its light is in the colour and the shadows) */
     }
 
 
