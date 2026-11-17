@@ -35,8 +35,8 @@
     import { createLayerStage } from '../../composables/useLayerStage.js';
     import { startStardust } from '../../composables/useStardust.js';
     import { createSparks } from '../../composables/useSparks.js';
-    import { createStream } from '../../composables/useStream.js';
-    import { createGhostHand, gesture, HINT_AFTER } from '../../composables/useGhostHand.js';
+    import { createStream, createStreamInput } from '../../composables/useStream.js';
+    import { createGhostHand, HINT_AFTER } from '../../composables/useGhostHand.js';
     import { play } from '../../composables/useSound.js';
     import { sceneMilestone } from '../../analytics.js';
     import Rulito from '../Rulito.vue';
@@ -187,31 +187,12 @@
     };
     STROKES.forEach(placeStroke);
 
-    // The finger (or the mouse): where it is on the network's square (in the 2160 units), when it last moved, and
-    // whether it is pressing
-    // A finger put down near the light leads it until it lifts (anywhere else the page scrolls and the creatures and
-    // corks are touched); the mouse leads it while it is over the network
-    const pointer = { u: 0, v: 0, at: -99, down: false, touch: false, lead: false };
+    // The finger (or the mouse), on the network's square (in the 2160 units): a finger put down near the light leads it
+    // until it lifts (anywhere else the page scrolls and the creatures and corks are touched); the mouse leads it while it
+    // is over the network (createStreamInput, below)
     let nowT = 0;
-    const LEAD_REACH = 420;                 // how near the light (2160 units) a finger has to go down to lead it
-    const nearLight = (u, v) => Math.hypot(u - stream.x, v - stream.y) < LEAD_REACH;
-    const toSquare = (event) => {
-        const box = overlay.value?.getBoundingClientRect();
-        if (!box || !box.width) return null;
-        return [(event.clientX - box.left) / box.width * 2160, (event.clientY - box.top) / box.height * 2160];
-    };
-    const track = (event) => {
-        const at = toSquare(event);
-        if (!at) return;
-        [pointer.u, pointer.v] = at;
-        pointer.touch = event.pointerType === 'touch';
-        pointer.down = pointer.touch || event.buttons > 0;
-        pointer.at = nowT;
-        if (event.type === 'pointerdown') pointer.lead = !win && (pointer.touch ? nearLight(...at) : stream.inBounds(...at));
-        else if (!pointer.touch && !pointer.down) pointer.lead = stream.inBounds(...at);
-    };
-    const release = (event) => { track(event); pointer.down = false; if (pointer.touch) pointer.lead = false; };
-    const unlead = (event) => { if (event.pointerType !== 'touch') pointer.lead = false; };
+    const LEAD_REACH = 80;                  // px of the screen: how near the light a finger has to go down to lead it
+    const nearLight = (u, v) => Math.hypot(u - stream.x, v - stream.y) < stream.units(LEAD_REACH);
     // The strokes of the thread travel along the route at their own pace (they are decoration: the finger is for the current)
     const moveStrokes = (dt) => {
         STROKES.forEach((k) => {
@@ -315,6 +296,11 @@
                 // a cork calls softly as the light comes near
                 const near = flask.corked ? stream.nearness(flask.id) : 0;
                 if (near > 0) { const b = near * (0.5 + 0.5 * Math.sin(t * 4)); bright += 0.4 * b; sx *= 1 + 0.1 * b; sy *= 1 + 0.1 * b; }
+                // and louder when it is one of the last (or the nearest, after a while without gathering any); it
+                // shrinks back when the light rushes by
+                const c = flask.corked ? stream.calling(flask.id) * (0.5 + 0.5 * Math.sin(t * 4.5)) : 0, sh = stream.shy(flask.id);
+                if (c > 0) { bright += 0.5 * c; sx *= 1 + 0.18 * c; sy *= 1 + 0.18 * c; rot += 9 * c * Math.sin(t * 9); }
+                if (sh > 0) { sx *= 1 - 0.18 * sh; sy *= 1 - 0.18 * sh; }
             }
             // Touched: a flash of brightness over 0.7s
             if (flashes[n] !== undefined) {
@@ -414,7 +400,6 @@
     const STILL = { saturate: 0.62, bright: 0.97, water: 0.25 };      // how the still pink looks
     // How the current looks (its engine, useStream, says where it is): how much of it shows, and how lit it is at the end
     const cur = { alpha: 1, light: 0 };
-    let keyHold = false;                    // Enter or space held on the light
     // The central sign, where the light is born and goes back to; the nine flasks are the others it gathers
     const [SL, ST, SW, SH] = layers[SIGN];
     const HOME = [(SL + SW / 2) * 21.6, (ST + SH / 2) * 21.6];
@@ -423,32 +408,32 @@
         home: HOME,
         knots: KNOTS,
         bounds: [60, 60, 2100, 2100],
-        reach: 110,
         orbitR: [40, 24],
         onJoin: (k) => { k.flask.joined = true; uncork(k.flask); },
         onAll: () => play('star'),
         onEnd: () => finish(),
         onNote: (step, level) => play('flow', { step, level }),
         onFirst: () => sceneMilestone('current_accompanied'),
+        onRush: () => play('miss'),           // passing a flask by in a rush: its cork shrinks back
     });
+    const input = createStreamInput({
+        stream,
+        toUnits: (cx, cy) => {
+            const box = overlay.value?.getBoundingClientRect();
+            return box?.width ? [(cx - box.left) / box.width * 2160, (cy - box.top) / box.height * 2160] : null;
+        },
+        canLead: (u, v, touch) => (touch ? nearLight(u, v) : stream.inBounds(u, v)),
+        busy: () => !!win,
+    });
+    let viewSize = [1, 1];                  // the stage's size, for what is on the screen
     const stepFlow = (dt, t) => {
-        if (win) return;
-        stream.step(dt, t, { u: pointer.u, v: pointer.v, down: pointer.lead && (pointer.down || !pointer.touch), lead: true }, { key: keyHold });
+        stream.view(routeOnCanvas, ...viewSize);
+        input.step(dt, t);
     };
     // A point of the square (2160 units) on the stage canvas now, as the network floats
     const routeOnCanvas = (u, v) => {
         const p = net.toScreen(F.x + u / 2160 * F.size, F.y + v / 2160 * F.size);
         return [p.x, p.y];
-    };
-    // The hint, without words: left alone HINT_AFTER s (not while it is led, nor while the rulito lives), the ghost hand
-    // takes the light gently by the nearest corked flask and on to the one nearest it. The light's call (its beat, from
-    // stream.idle) starts again too while the rulito lives, so after a win both wait from the start
-    const hintFlow = () => {
-        if (win) stream.idle = 0;
-        const wanted = !win && !stream.done && !stream.homing && !keyHold && !pointer.down && stream.idle > 0.5 && cur.alpha > 0.9;
-        if (!hand?.due(HINT_AFTER, wanted)) return;
-        const path = stream.hintPath(routeOnCanvas, 2);
-        if (path) hand.play(gesture.slide(path, path.dur), { loops: 1 });
     };
 
     // Everything is live: the rulito is born over the central sign; then the current fades, and everything is corked again
@@ -614,27 +599,6 @@
         el.style.width = el.style.height = pct(size.toFixed(2));
         el.style.display = win ? 'none' : '';
     };
-    // On a phone, a finger put down near the light must not move the page, whatever it lands on (the light, or a
-    // creature or a cork beside it, which let the page scroll): otherwise the browser takes the drag for a scroll and
-    // cancels it. Anywhere else the page scrolls as usual
-    const onTouchStart = (event) => {
-        const touch = event.touches[0];
-        const box = overlay.value?.getBoundingClientRect();
-        if (!touch || !event.cancelable || win || !box?.width) return;
-        const u = (touch.clientX - box.left) / box.width * 2160;
-        const v = (touch.clientY - box.top) / box.height * 2160;
-        if (nearLight(u, v)) event.preventDefault();
-    };
-    const holdHead = (event) => {
-        event.currentTarget.setPointerCapture?.(event.pointerId);
-        track(event);
-    };
-    const onHeadKey = (down) => (event) => {
-        if (event.key !== 'Enter' && event.key !== ' ') return;
-        event.preventDefault();
-        keyHold = down;
-    };
-    const letGo = () => { keyHold = false; };
 
     // A stroke passing by a flask lights the creature in it for a moment, with a few lavender sparks as it comes on
     const wakeCreatures = (dt) => {
@@ -702,6 +666,7 @@
     };
 
     const place = (W, H) => {
+        viewSize = [W, H];
         layout(W, H);
         net.pivot = { x: F.x + F.size / 2, y: F.y + F.size / 2 };
         const square = { left: F.x, top: F.y, w: F.size, h: F.size };
@@ -723,7 +688,6 @@
             const box = inFrame(layers[n]);
             N_[n].place(box, originOf(box, (LIFE[n] ?? [])[1] ?? '50% 50%'));
         });
-        stream.spacing = Math.max(90, 22 * 2160 / F.size);    // the train's lights apart, also on a phone
         drawThread();
         drawFlow();
     };
@@ -757,7 +721,7 @@
         nowT = t;
         moveStrokes(dt);
         stepFlow(dt, t);
-        hintFlow();
+        input.hint({ hand, after: HINT_AFTER, ready: cur.alpha > 0.9, map: routeOnCanvas });
         live(t, ramp);
         stepFlasks(dt);
         wakeCreatures(dt);
@@ -793,12 +757,7 @@
         stage.onResize((W, H) => place(W, H));
         front = startStardust(null, { stage, groups: [{ ...sparks.group(), order: 1e6 }] });
         hand = createGhostHand(stage, { color: 0x143246, shade: 0xf7f8f1 });   // navy: the cream hand does not read on this light scene
-        root.value.addEventListener('pointermove', track, { passive: true });
-        root.value.addEventListener('pointerdown', track, { passive: true });
-        root.value.addEventListener('pointerup', release, { passive: true });
-        root.value.addEventListener('pointercancel', release, { passive: true });
-        root.value.addEventListener('pointerleave', unlead, { passive: true });
-        root.value.addEventListener('touchstart', onTouchStart, { passive: false });
+        input.attach(root.value);
         parallax = createParallax(root.value, frame);
         enter();
     };
@@ -807,12 +766,7 @@
     watch(() => props.active, enter);
     onBeforeUnmount(() => {
         gone = true;
-        root.value?.removeEventListener('pointermove', track);
-        root.value?.removeEventListener('pointerdown', track);
-        root.value?.removeEventListener('pointerup', release);
-        root.value?.removeEventListener('pointercancel', release);
-        root.value?.removeEventListener('touchstart', onTouchStart);
-        root.value?.removeEventListener('pointerleave', unlead);
+        input.detach();
         stageEl?.style.removeProperty('--name-glow');
         parallax?.destroy();
         sky?.destroy();
@@ -832,7 +786,7 @@
         <div class="network" ref="overlay">
             <div ref="headHit" class="hit head" role="button" tabindex="0"
                 :aria-label="$i18n.locale === 'en' ? 'The current: lead it gently with your finger by each corked flask (or hold Enter)' : 'La corriente: llevala suave con el dedo por cada frasco tapado (o mantené Enter)'"
-                @pointerdown.prevent="holdHead" @keydown="onHeadKey(true)($event)" @keyup="onHeadKey(false)($event)" @blur="letGo"></div>
+                @pointerdown.prevent="input.holdHead" @keydown="input.onKey(true)($event)" @keyup="input.onKey(false)($event)" @blur="input.letGo()"></div>
             <div v-for="t in touchable" :key="'hit' + t.n" :ref="setCatcher(t.n)" class="hit" role="button" tabindex="0" :style="t.hit"
                 :aria-label="$i18n.locale === 'en' ? 'Creature' : 'Criatura'"
                 @pointerdown.prevent="touch(t, $event)" @keydown="onKey((e) => touch(t, e))($event)"></div>

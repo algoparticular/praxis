@@ -36,8 +36,8 @@
     import { startStardust } from '../../composables/useStardust.js';
     import { decodeCloud, sampleCloud, joinLight } from '../../composables/stippleCloud.js';
     import { play } from '../../composables/useSound.js';
-    import { createStream } from '../../composables/useStream.js';
-    import { createGhostHand, gesture, HINT_AFTER } from '../../composables/useGhostHand.js';
+    import { createStream, createStreamInput } from '../../composables/useStream.js';
+    import { createGhostHand, HINT_AFTER } from '../../composables/useGhostHand.js';
     import { sceneMilestone } from '../../analytics.js';
     import Rulito from '../Rulito.vue';
     import art from '../../composables/aceptacionScene.json';
@@ -234,10 +234,6 @@
     // then they settle (unrest down to 0, with a last little sway) and glow
     const CAIRNS = [0, 1].map(() => ({ unrest: 1, settling: false, lit: 0, glow: 0 }));
     const cur = { alpha: 1, light: 0 };     // how much the light shows, and how lit it is at the end
-    let keyHold = false;
-    const pointer = { u: 0, v: 0, at: -99, down: false, touch: false, lead: false };
-    let downAt = null;
-    let slid = false;                       // this press led the light (so its click does not strum)
     let win = null;
     let wins = 0;
     let hand = null;                        // the ghost hand, showing the gesture
@@ -247,9 +243,6 @@
         bounds: [50, LAND_TOP, 2110, LAND_FOOT],
         clamp: keepOnLand,
         area: [0, 1460, 2160, 2160],        // a finger put down on the land leads the light (from the sky the page scrolls)
-        reach: 170,                         // (a phone shows the land small: about 38 px on the glass)
-        gentle: 1300, rush: 2900,           // (the card is bigger on a phone than Celebración's: about the same speed on the glass)
-        spacing: 80,
         autoSpeed: 520,
         orbitR: [18, 8],                    // alone it waits at the horizon, where the river is narrow
         onJoin: (k) => {
@@ -263,6 +256,7 @@
         onEnd: () => finish(),
         onNote: (step, level) => play('flow', { step, level }),
         onFirst: () => sceneMilestone('current_accompanied'),
+        onRush: () => play('miss'),           // passing someone by in a rush: they shrink back
     });
 
     // ---- The banks past the frame, drawn in code: the bank's colour under the horizon's line, with the little marks
@@ -361,9 +355,11 @@
                     const r = Math.max(150, px(34)) * (1 + 0.08 * Math.sin(t * 1.3 + i));
                     dot(ctx, p.x, p.y - 40, r, p.colour, a * p.lit * 0.7, transparent(p.colour));
                 }
-                if (!stream.joined.includes(p.name)) {
-                    const n = stream.nearness(p.name);
-                    dot(ctx, p.x, p.y, Math.max(22 + 14 * near(p.y), px(8)) * (1 + 0.6 * n + 0.18 * pulse * (0.4 + call)), p.colour, a * (0.55 + 0.2 * pulse + 0.25 * n), transparent(p.colour));
+                if (stream.waits(p.name)) {
+                    // leaning in as the light comes near, calling when it is one of the last (or the nearest, after a
+                    // while without gathering anyone), shrinking back when the light rushes by
+                    const n = stream.nearness(p.name), c = stream.calling(p.name) * (0.5 + 0.5 * Math.sin(t * 4.5 + i)), sh = stream.shy(p.name);
+                    dot(ctx, p.x, p.y, Math.max(22 + 14 * near(p.y), px(8)) * (1 + 0.6 * n + 0.18 * pulse * (0.4 + call) + 0.9 * c) * (1 - 0.5 * sh), p.colour, a * Math.min(1, 0.55 + 0.2 * pulse + 0.25 * n + 0.3 * c), transparent(p.colour));
                 }
             });
         }
@@ -473,46 +469,16 @@
     // The hint, without words: left alone HINT_AFTER s (not while it is led, nor while the rulito lives), the ghost hand
     // takes the light gently by the nearest one still waiting and on to the one nearest it
     const routeOnCanvas = (u, v) => [landAt.x + u * landAt.s, landAt.y + v * landAt.s];
-    const hintFlow = () => {
-        if (win) stream.idle = 0;
-        const wanted = !win && !stream.done && !stream.homing && !keyHold && !pointer.down && stream.idle > 0.5 && cur.alpha > 0.9;
-        if (!hand?.due(HINT_AFTER, wanted)) return;
-        const path = stream.hintPath(routeOnCanvas, 2);
-        if (path) hand.play(gesture.slide(path, path.dur), { loops: 1 });
-    };
-    const toArt = (event) => {
-        const box = root.value.getBoundingClientRect();
-        return [(event.clientX - box.left - landAt.x) / landAt.s, (event.clientY - box.top - landAt.y) / landAt.s];
-    };
-    // A finger put down on the land leads the light until it lifts; the mouse leads it while it is over the land. A
-    // press that moved is not a tap (it does not strum)
-    const track = (event) => {
-        if (!root.value) return;
-        [pointer.u, pointer.v] = toArt(event);
-        pointer.touch = event.pointerType === 'touch';
-        pointer.down = pointer.touch ? event.type !== 'pointerup' && event.type !== 'pointercancel' : event.buttons > 0;
-        pointer.at = lastT;
-        if (event.type === 'pointerdown') {
-            slid = false;
-            downAt = [event.clientX, event.clientY];
-            pointer.lead = !win && stream.inBounds(pointer.u, pointer.v);
-        } else if (!pointer.touch && !pointer.down) pointer.lead = event.type !== 'pointerleave' && stream.inBounds(pointer.u, pointer.v);
-        if (pointer.down && downAt && Math.hypot(event.clientX - downAt[0], event.clientY - downAt[1]) > 12) slid = true;
-        if (pointer.touch && !pointer.down) pointer.lead = false;
-    };
-    // On a phone, a finger put down on the land must not move the page; from the sky it scrolls
-    const onTouchStart = (event) => {
-        const touch = event.touches[0];
-        if (!touch || !event.cancelable || win || !root.value) return;
-        const [u, v] = toArt(touch);
-        if (stream.inBounds(u, v)) event.preventDefault();
-    };
-    const holdHead = (event) => { event.currentTarget.setPointerCapture?.(event.pointerId); track(event); };
-    const onHeadKey = (down) => (event) => {
-        if (event.key !== 'Enter' && event.key !== ' ') return;
-        event.preventDefault();
-        keyHold = down;
-    };
+    // The finger, the mouse, the keyboard and the hint (useStream.js), in art px of the land
+    const input = createStreamInput({
+        stream,
+        toUnits: (cx, cy) => {
+            const box = root.value?.getBoundingClientRect();
+            return box ? [(cx - box.left - landAt.x) / landAt.s, (cy - box.top - landAt.y) / landAt.s] : null;
+        },
+        busy: () => !!win,
+    });
+    let viewSize = [1, 1];                  // the stage's size, for what is on the screen
     const placeHead = () => {
         const el = headHit.value;
         if (!el) return;
@@ -581,6 +547,7 @@
 
     let area = { left: 0, top: 0, w: 1, h: 1 };
     const place = (w, h) => {
+        viewSize = [w, h];
         layout(w, h);
         area = { left: -MARGIN, top: -MARGIN, w: w + 2 * MARGIN, h: h + 2 * MARGIN };
         writeField(area);
@@ -656,7 +623,7 @@
         hop(i);
     };
     const strum = () => {
-        if (slid) { slid = false; return; }
+        if (input.slid()) return;
         play('star');
         dust?.boost(0, 0.7);
         dust?.boost(1, 0.7);
@@ -737,8 +704,9 @@
         L.landNode.y = scroll * 24;
         // ---- Fluir: the light, the cairns and, at the end, the rulitos
         measureLand();
-        if (!win) stream.step(dt, t, { u: pointer.u, v: pointer.v, down: pointer.lead && (pointer.down || !pointer.touch), lead: true }, { key: keyHold });
-        hintFlow();
+        stream.view(routeOnCanvas, ...viewSize);
+        input.step(dt, t);
+        input.hint({ hand, after: HINT_AFTER, ready: cur.alpha > 0.9, map: routeOnCanvas });
         stepCairns(dt, t, ramp);
         stepWin(dt, t);
         if (frames % 2 === 0) drawLight(t);
@@ -796,8 +764,7 @@
             ],
         });
         if (reduced) dust.reveal();
-        ['pointerdown', 'pointermove', 'pointerup', 'pointercancel', 'pointerleave'].forEach((type) => root.value.addEventListener(type, track, { passive: true }));
-        root.value.addEventListener('touchstart', onTouchStart, { passive: false });
+        input.attach(root.value);
         hand = createGhostHand(stage, { color: 0x143246, shade: 0xf7f8f1 });   // navy: the cream hand does not read on the cream and yellow skies
         parallax = createParallax(root.value, frame);
         enter();
@@ -807,8 +774,7 @@
     watch(() => props.active, enter);
     onBeforeUnmount(() => {
         gone = true;
-        ['pointerdown', 'pointermove', 'pointerup', 'pointercancel', 'pointerleave'].forEach((type) => root.value?.removeEventListener(type, track));
-        root.value?.removeEventListener('touchstart', onTouchStart);
+        input.detach();
         ['--name-glow', '--name-color', '--name-shade'].forEach((name) => stageEl?.style.removeProperty(name));
         parallax?.destroy();
         hand?.destroy();
@@ -826,7 +792,7 @@
         <!-- The light: a finger on the river leads it, or Enter held on it takes it gently to the next one -->
         <div ref="headHit" class="hit head" role="button" tabindex="0"
             :aria-label="$i18n.locale === 'en' ? 'The light on the land: lead it gently with your finger by the plants of both banks and the two cairns (or hold Enter)' : 'La luz de la tierra: llevala suave con el dedo por las plantas de las dos orillas y las dos pilitas de piedras (o mantené Enter)'"
-            @pointerdown.prevent="holdHead" @click.stop @keydown="onHeadKey(true)($event)" @keyup="onHeadKey(false)($event)" @blur="keyHold = false"></div>
+            @pointerdown.prevent="input.holdHead" @click.stop @keydown="input.onKey(true)($event)" @keyup="input.onKey(false)($event)" @blur="input.letGo()"></div>
         <div v-for="i in [0, 1]" :key="i" :ref="(el) => { hits[i] = el; }" class="hit" role="button" tabindex="0"
             :aria-label="$i18n.locale === 'en' ? (i ? 'The being on the right bank' : 'The being on the left bank') : (i ? 'El ser de la orilla derecha' : 'El ser de la orilla izquierda')"
             @click.stop="hop(i)" @keydown="onKey(i, $event)"></div>
