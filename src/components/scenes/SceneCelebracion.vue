@@ -32,8 +32,8 @@
     import { createLayerStage } from '../../composables/useLayerStage.js';
     import { startStardust } from '../../composables/useStardust.js';
     import { play } from '../../composables/useSound.js';
-    import { createStream } from '../../composables/useStream.js';
-    import { createGhostHand, gesture, HINT_AFTER } from '../../composables/useGhostHand.js';
+    import { createStream, createStreamInput } from '../../composables/useStream.js';
+    import { createGhostHand, HINT_AFTER } from '../../composables/useGhostHand.js';
     import { sceneMilestone } from '../../analytics.js';
     import Rulito from '../Rulito.vue';
     import art from '../../composables/celebracionScene.json';
@@ -135,10 +135,6 @@
     const TRAIN_COLOURS = ['rgba(255,214,90,0.9)', 'rgba(255,150,90,0.9)', 'rgba(255,120,180,0.9)', 'rgba(255,190,80,0.9)', 'rgba(255,140,140,0.9)'];
     const HOME = [1079, 1650];              // the spark's place, in the fire
     const cur = { alpha: 1, light: 0 };
-    let keyHold = false;
-    const pointer = { u: 0, v: 0, at: -99, down: false, touch: false, lead: false };
-    let downAt = null;
-    let slid = false;
     let win = null;
     let wins = 0;
     let hand = null;                        // the ghost hand, showing the gesture
@@ -148,7 +144,6 @@
         home: HOME,
         knots: FEET,
         bounds: [220, 1300, 2000, 2020],    // the ground round the fire (within SPARK_BOX, where it is drawn)
-        reach: 150,
         onJoin: (k) => {
             if (reached.has(k.name)) return;
             reached.add(k.name);
@@ -162,6 +157,7 @@
         onEnd: () => finish(),
         onNote: (step, level) => play('flow', { step, level }),
         onFirst: () => sceneMilestone('current_accompanied'),
+        onRush: () => play('miss'),           // passing someone by in a rush: they shrink back
     });
 
     // ---- The fire
@@ -290,10 +286,12 @@
         const call = stream.touched ? Math.min(1, Math.max(0, (stream.idle - 3) / 2)) : 1;
         // the little lights waiting at their feet, leaning in as the spark comes near
         FEET.forEach((foot, i) => {
-            if (stream.joined.includes(foot.name)) return;
-            const near = stream.nearness(foot.name);
+            if (!stream.waits(foot.name)) return;
+            // calling when it is one of the last (or the nearest, after a while without gathering anyone), shrinking
+            // back when the spark rushes by
+            const near = stream.nearness(foot.name), c = stream.calling(foot.name) * (0.5 + 0.5 * Math.sin(t * 4.5 + i)), sh = stream.shy(foot.name);
             const pulse = 0.5 + 0.5 * Math.sin(t * 2.4 + i * 1.3);
-            dot(ctx, foot.x, foot.y - 10 * near, Math.max(26, px(9)) * (1 + 0.5 * near + 0.18 * pulse * (0.4 + call)), 'rgba(255,150,90,0.85)', a * (0.6 + 0.2 * pulse + 0.2 * near));
+            dot(ctx, foot.x, foot.y - 10 * near, Math.max(26, px(9)) * (1 + 0.5 * near + 0.18 * pulse * (0.4 + call) + 0.9 * c) * (1 - 0.5 * sh), 'rgba(255,150,90,0.85)', a * Math.min(1, 0.6 + 0.2 * pulse + 0.2 * near + 0.3 * c));
         });
         // the train: each one's light, from its feet to its place behind the spark
         stream.joined.forEach((name, j) => {
@@ -384,46 +382,16 @@
     // The hint, without words: left alone HINT_AFTER s (not while it is led, nor while the rulito lives), the ghost hand
     // takes the spark gently by the nearest one still waiting and on to the one nearest it
     const routeOnCanvas = (u, v) => [frontAt.x + u * frontAt.s, frontAt.y + v * frontAt.s];
-    const hintFlow = () => {
-        if (win) stream.idle = 0;
-        const wanted = !win && !stream.done && !stream.homing && !keyHold && !pointer.down && stream.idle > 0.5 && cur.alpha > 0.9;
-        if (!hand?.due(HINT_AFTER, wanted)) return;
-        const path = stream.hintPath(routeOnCanvas, 2);
-        if (path) hand.play(gesture.slide(path, path.dur), { loops: 1 });
-    };
-    const toArt = (event) => {
-        const box = root.value.getBoundingClientRect();
-        return [(event.clientX - box.left - frontAt.x) / frontAt.s, (event.clientY - box.top - frontAt.y) / frontAt.s];
-    };
-    // A finger put down on the ground round the fire leads the spark until it lifts; the mouse leads it while it is over
-    // that ground. A press that moved is not a tap (it does not strum or hop)
-    const track = (event) => {
-        if (!root.value) return;
-        [pointer.u, pointer.v] = toArt(event);
-        pointer.touch = event.pointerType === 'touch';
-        pointer.down = pointer.touch ? event.type !== 'pointerup' && event.type !== 'pointercancel' : event.buttons > 0;
-        pointer.at = lastT;
-        if (event.type === 'pointerdown') {
-            slid = false;
-            downAt = [event.clientX, event.clientY];
-            pointer.lead = !win && stream.inBounds(pointer.u, pointer.v);
-        } else if (!pointer.touch && !pointer.down) pointer.lead = event.type !== 'pointerleave' && stream.inBounds(pointer.u, pointer.v);
-        if (pointer.down && downAt && Math.hypot(event.clientX - downAt[0], event.clientY - downAt[1]) > 12) slid = true;
-        if (pointer.touch && !pointer.down) pointer.lead = false;
-    };
-    // On a phone, a finger put down on the ground round the fire must not move the page; anywhere else it scrolls
-    const onTouchStart = (event) => {
-        const t0 = event.touches[0];
-        if (!t0 || !event.cancelable || win || !root.value) return;
-        const [u, v] = toArt(t0);
-        if (stream.inBounds(u, v)) event.preventDefault();
-    };
-    const holdHead = (event) => { event.currentTarget.setPointerCapture?.(event.pointerId); track(event); };
-    const onHeadKey = (down) => (event) => {
-        if (event.key !== 'Enter' && event.key !== ' ') return;
-        event.preventDefault();
-        keyHold = down;
-    };
+    // The finger, the mouse, the keyboard and the hint (useStream.js), in art px of the front row's depth
+    const input = createStreamInput({
+        stream,
+        toUnits: (cx, cy) => {
+            const box = root.value?.getBoundingClientRect();
+            return box ? [(cx - box.left - frontAt.x) / frontAt.s, (cy - box.top - frontAt.y) / frontAt.s] : null;
+        },
+        busy: () => !!win,
+    });
+    let viewSize = [1, 1];                  // the stage's size, for what is on the screen
     const placeHead = () => {
         const el = headHit.value;
         if (!el) return;
@@ -547,6 +515,7 @@
     };
 
     const place = (w, h) => {
+        viewSize = [w, h];
         layout(w, h);
         paintSky(h);
         drawGround(w, h);
@@ -604,7 +573,6 @@
         L.flame.place(rectOf(B.flame), { x: sx(fx), y: sy(fy) });
         L.heart.place(rectOf(B.heart), { x: sx(fx), y: sy(fy) });
         L.spark.place(rectOf(SPARK_BOX));
-        stream.spacing = Math.max(90, 22 / k());      // the train's lights apart, also on a phone
         glyph = rectOf(RULITO);
         L.rulito.place({ left: glyph.left - 0.4375 * glyph.w, top: glyph.top - 0.1628 * glyph.h, w: glyph.w * 1.875, h: glyph.h * 1.3256 },
             { x: glyph.left + glyph.w / 2, y: glyph.top + glyph.h });
@@ -618,7 +586,7 @@
         return { x: event.clientX - area.left, y: event.clientY - area.top };
     };
     const touch = (event) => {
-        if (slid) { slid = false; return; }
+        if (input.slid()) return;
         if (!stage || !L.beings) return;
         const p = onCanvas(event);
         const order = [...FRONT].reverse().concat([...BEHIND].reverse());
@@ -680,8 +648,9 @@
         }
         // ---- Fluir: the spark round the circle
         measureFront();
-        if (!win) stream.step(dt, t, { u: pointer.u, v: pointer.v, down: pointer.lead && (pointer.down || !pointer.touch), lead: true }, { key: keyHold });
-        hintFlow();
+        stream.view(routeOnCanvas, ...viewSize);
+        input.step(dt, t);
+        input.hint({ hand, after: HINT_AFTER, ready: cur.alpha > 0.9, map: routeOnCanvas });
         const named = stepWin(dt, t);
         drawSpark(t);
         placeHead();
@@ -787,8 +756,7 @@
             ],
         });
         if (reduced) dust.reveal();
-        ['pointerdown', 'pointermove', 'pointerup', 'pointercancel', 'pointerleave'].forEach((type) => root.value.addEventListener(type, track, { passive: true }));
-        root.value.addEventListener('touchstart', onTouchStart, { passive: false });
+        input.attach(root.value);
         hand = createGhostHand(stage, { color: 0x143246, shade: 0xf7f8f1 });   // navy: it slides over the bright fire and the pale ground
         parallax = createParallax(root.value, frame);
         enter();
@@ -798,8 +766,7 @@
     watch(() => props.active, enter);
     onBeforeUnmount(() => {
         gone = true;
-        ['pointerdown', 'pointermove', 'pointerup', 'pointercancel', 'pointerleave'].forEach((type) => root.value?.removeEventListener(type, track));
-        root.value?.removeEventListener('touchstart', onTouchStart);
+        input.detach();
         stageEl?.style.removeProperty('--name-glow');
         parallax?.destroy();
         hand?.destroy();
@@ -818,7 +785,7 @@
         <!-- The spark: a finger on the ground leads it, or Enter held on it takes it gently to the next one -->
         <div ref="headHit" class="hit head" role="button" tabindex="0"
             :aria-label="$i18n.locale === 'en' ? 'The spark of the fire: lead it gently with your finger by each one round the fire (or hold Enter)' : 'La chispa del fuego: llevala suave con el dedo por cada uno de la ronda (o mantené Enter)'"
-            @pointerdown.prevent="holdHead" @click.stop @keydown="onHeadKey(true)($event)" @keyup="onHeadKey(false)($event)" @blur="keyHold = false"></div>
+            @pointerdown.prevent="input.holdHead" @click.stop @keydown="input.onKey(true)($event)" @keyup="input.onKey(false)($event)" @blur="input.letGo()"></div>
     </div>
 </template>
 

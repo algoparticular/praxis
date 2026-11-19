@@ -32,8 +32,8 @@
     import { startStardust } from '../../composables/useStardust.js';
     import { decodeCloud, sampleCloud, joinLight } from '../../composables/stippleCloud.js';
     import { play } from '../../composables/useSound.js';
-    import { createStream, routeThrough } from '../../composables/useStream.js';
-    import { createGhostHand, gesture, HINT_AFTER } from '../../composables/useGhostHand.js';
+    import { createStream, createStreamInput, routeThrough } from '../../composables/useStream.js';
+    import { createGhostHand, HINT_AFTER } from '../../composables/useGhostHand.js';
     import { sceneMilestone } from '../../analytics.js';
     import Rulito from '../Rulito.vue';
     import art from '../../composables/transformacionScene.json';
@@ -133,10 +133,6 @@
     // Each sign: still floating (p 0), melting into the light (p up to 1, once it has joined), and coming back after
     const SIGNS = signs.map(() => ({ letGo: false, p: 0, back: 1, to: [0, 0] }));
     const cur = { alpha: 1, light: 0 };
-    let keyHold = false;
-    const pointer = { u: 0, v: 0, at: -99, down: false, touch: false, lead: false };
-    let downAt = null;
-    let slid = false;
     let win = null;
     let wins = 0;
     let hand = null;                        // the ghost hand, showing the gesture
@@ -146,9 +142,6 @@
         knots: KNOTS,
         bounds: [660, 400, 1500, 1990],     // round the tree, from the pond to the crown (within SAP_BOX, where it is drawn)
         area: [650, 380, 1500, 2010],       // a finger put down here leads it (the elder and the little one stay to touch)
-        reach: 120,
-        gentle: 1250, rush: 2750,           // (the card is bigger on a phone than Celebración's: about the same speed on the glass)
-        spacing: 70,
         autoSpeed: 520,
         orbitR: [30, 10],
         onJoin: (k) => {
@@ -162,6 +155,7 @@
         onEnd: () => finish(),
         onNote: (step, level) => play('flow', { step, level }),
         onFirst: () => sceneMilestone('current_accompanied'),
+        onRush: () => play('miss'),           // passing someone by in a rush: they shrink back
     });
 
     // ---- Touch: the chord is strummed, the light of the tree flares; a being near the finger answers
@@ -173,7 +167,7 @@
     const L = {};
     const centreOf = ([x, y, w, h]) => [x + w / 2, y + h / 2];
     const touch = (event) => {
-        if (slid) { slid = false; return; }
+        if (input.slid()) return;
         play('star');
         flare = 1;
         dust?.boost(1, 0.6);
@@ -358,46 +352,16 @@
     // The hint, without words: left alone HINT_AFTER s (not while it is led, nor while the rulito lives), the ghost hand
     // takes the light gently by the nearest sign still floating and on to the one nearest it
     const routeOnCanvas = (u, v) => [treeAt.x + u * treeAt.s, treeAt.y + v * treeAt.s];
-    const hintFlow = () => {
-        if (win) stream.idle = 0;
-        const wanted = !win && !stream.done && !stream.homing && !keyHold && !pointer.down && stream.idle > 0.5 && cur.alpha > 0.9;
-        if (!hand?.due(HINT_AFTER, wanted)) return;
-        const path = stream.hintPath(routeOnCanvas, 2);
-        if (path) hand.play(gesture.slide(path, path.dur), { loops: 1 });
-    };
-    const toArt = (event) => {
-        const box = root.value.getBoundingClientRect();
-        return [(event.clientX - box.left - treeAt.x) / treeAt.s, (event.clientY - box.top - treeAt.y) / treeAt.s];
-    };
-    // A finger put down round the tree leads the light until it lifts; the mouse leads it while it is there. A press
-    // that moved is not a tap (it does not strum)
-    const track = (event) => {
-        if (!root.value) return;
-        [pointer.u, pointer.v] = toArt(event);
-        pointer.touch = event.pointerType === 'touch';
-        pointer.down = pointer.touch ? event.type !== 'pointerup' && event.type !== 'pointercancel' : event.buttons > 0;
-        pointer.at = lastT;
-        if (event.type === 'pointerdown') {
-            slid = false;
-            downAt = [event.clientX, event.clientY];
-            pointer.lead = !win && stream.inBounds(pointer.u, pointer.v);
-        } else if (!pointer.touch && !pointer.down) pointer.lead = event.type !== 'pointerleave' && stream.inBounds(pointer.u, pointer.v);
-        if (pointer.down && downAt && Math.hypot(event.clientX - downAt[0], event.clientY - downAt[1]) > 12) slid = true;
-        if (pointer.touch && !pointer.down) pointer.lead = false;
-    };
-    // On a phone, a finger put down round the tree must not move the page; from the sky or the sides it scrolls
-    const onTouchStart = (event) => {
-        const t0 = event.touches[0];
-        if (!t0 || !event.cancelable || win || !root.value) return;
-        const [u, v] = toArt(t0);
-        if (stream.inBounds(u, v)) event.preventDefault();
-    };
-    const holdHead = (event) => { event.currentTarget.setPointerCapture?.(event.pointerId); track(event); };
-    const onHeadKey = (down) => (event) => {
-        if (event.key !== 'Enter' && event.key !== ' ') return;
-        event.preventDefault();
-        keyHold = down;
-    };
+    // The finger, the mouse, the keyboard and the hint (useStream.js), in art px of the tree's depth
+    const input = createStreamInput({
+        stream,
+        toUnits: (cx, cy) => {
+            const box = root.value?.getBoundingClientRect();
+            return box ? [(cx - box.left - treeAt.x) / treeAt.s, (cy - box.top - treeAt.y) / treeAt.s] : null;
+        },
+        busy: () => !!win,
+    });
+    let viewSize = [1, 1];                  // the stage's size, for what is on the screen
     const placeHead = () => {
         const el = headHit.value;
         if (!el) return;
@@ -477,6 +441,7 @@
     const ellipse = ({ x, y, rx, ry }, grow = 1) => ({ left: sx(x - rx * grow), top: sy(y - ry * grow), w: 2 * rx * grow * k(), h: 2 * ry * grow * k() });
 
     const place = (w, h) => {
+        viewSize = [w, h];
         layout(w, h);
         paintSky();
         streaks.forEach((g, i) => L.streaks[i].place(rectOf(g.rect)));
@@ -591,8 +556,9 @@
 
         // ---- Fluir: the sap, and the signs it takes in
         measureTree();
-        if (!win) stream.step(dt, t, { u: pointer.u, v: pointer.v, down: pointer.lead && (pointer.down || !pointer.touch), lead: true }, { key: keyHold });
-        hintFlow();
+        stream.view(routeOnCanvas, ...viewSize);
+        input.step(dt, t);
+        input.hint({ hand, after: HINT_AFTER, ready: cur.alpha > 0.9, map: routeOnCanvas });
         runPhase += dt * 30 * (1.4 + 1.2 * Math.max(stream.led, cur.light));
         const named = stepWin(dt, t);
         if (frames % 2 === 0) drawSap(t);
@@ -617,9 +583,11 @@
             n.x = floatX * (1 - e) + toX * e;
             knot.x = cx + (floatX + signDrift.x - treeDrift.x) / k();
             knot.y = cy + (floatY + signDrift.y + L.signsNode.y - treeDrift.y - L.landNode.y) / k();
-            const close = stream.nearness(knot.name);
-            n.rotate = Math.sin(t * 0.5 + g.phase * 3) * 6 * ramp + 120 * e;
-            n.scale = (1 + 0.06 * flare + 0.15 * close) * (1 - 0.8 * e) * (0.6 + 0.4 * ease(st.back));
+            // leaning in as the light comes near, calling when it is one of the last (or the nearest, after a while
+            // without gathering anyone), shrinking back when the light rushes by
+            const close = stream.nearness(knot.name), c = stream.calling(knot.name) * (0.5 + 0.5 * Math.sin(t * 4.5 + i)), sh = stream.shy(knot.name);
+            n.rotate = Math.sin(t * 0.5 + g.phase * 3) * 6 * ramp + 120 * e + 8 * c * Math.sin(t * 9 + i);
+            n.scale = (1 + 0.06 * flare + 0.15 * close + 0.22 * c) * (1 - 0.3 * sh) * (1 - 0.8 * e) * (0.6 + 0.4 * ease(st.back));
             n.opacity = (1 - ease(Math.max(0, (st.p - 0.5) / 0.5))) * ease(st.back);
         });
         stage.bloom = reduced ? 0 : Math.max(0.25 + 0.35 * flare, 0.7 * named);
@@ -690,8 +658,7 @@
             ],
         });
         if (reduced) dust.reveal();
-        ['pointerdown', 'pointermove', 'pointerup', 'pointercancel', 'pointerleave'].forEach((type) => root.value.addEventListener(type, track, { passive: true }));
-        root.value.addEventListener('touchstart', onTouchStart, { passive: false });
+        input.attach(root.value);
         hand = createGhostHand(stage, { color: 0x143246, shade: 0xf7f8f1 });   // navy: the cream hand does not read on the pink sky
         parallax = createParallax(root.value, frame);
         enter();
@@ -701,8 +668,7 @@
     watch(() => props.active, enter);
     onBeforeUnmount(() => {
         gone = true;
-        ['pointerdown', 'pointermove', 'pointerup', 'pointercancel', 'pointerleave'].forEach((type) => root.value?.removeEventListener(type, track));
-        root.value?.removeEventListener('touchstart', onTouchStart);
+        input.detach();
         stageEl?.style.removeProperty('--name-glow');
         parallax?.destroy();
         hand?.destroy();
@@ -719,7 +685,7 @@
         <!-- The golden light: a finger round the tree leads it, or Enter held on it takes it gently to the next sign -->
         <div ref="headHit" class="hit head" role="button" tabindex="0"
             :aria-label="$i18n.locale === 'en' ? 'The golden light: lead it gently with your finger by each sign round the tree (or hold Enter)' : 'La luz dorada: llevala suave con el dedo por cada signo alrededor del árbol (o mantené Enter)'"
-            @pointerdown.prevent="holdHead" @click.stop @keydown="onHeadKey(true)($event)" @keyup="onHeadKey(false)($event)" @blur="keyHold = false"></div>
+            @pointerdown.prevent="input.holdHead" @click.stop @keydown="input.onKey(true)($event)" @keyup="input.onKey(false)($event)" @blur="input.letGo()"></div>
         <div ref="seedHit" class="hit" role="button" tabindex="0"
             :aria-label="$i18n.locale === 'en' ? 'The seed of the tree, glowing' : 'La semilla del árbol, brillando'"
             @keydown="onKey"></div>
