@@ -71,7 +71,7 @@
     const WIDEST = 2.1;                     // the frame grows with the width up to this many times the height
     let F = { x: 0, y: 0, size: 1 };
     let W = 1, H = 1;
-    const RULITO_H = 160, RULITO_BOTTOM = 818;   // art px: the rulito's height and where its foot is (over the big one's head)
+    const RULITO_H = 120, RULITO_BOTTOM = 785;   // art px: the rulito's height and where its foot is (over the big one's head)
     const k = () => F.size / SIZE;
     const sx = (x) => F.x + x * k();
     const sy = (y) => F.y + y * k();
