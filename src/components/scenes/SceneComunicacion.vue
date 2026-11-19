@@ -14,8 +14,8 @@
     // repeats the phrase by touching the beings in the same order. A touch while it sings cuts it off (the light fades
     // and has to be waited for again: the chatter of the mind); a wrong being sounds muted and, after the stillness, the
     // phrase is sung again, slower. The phrase grows, as a Simon: two notes, then the same phrase with a third, then a
-    // fourth. Repeated whole with four, the pollen flies to the beings like bees to pollen, the rulito is born among
-    // them, in the light, and the name glows; then a new phrase starts again from two notes. On the person's turn, left
+    // fourth. Repeated whole with four, the pollen flies to the beings like bees to pollen, the rulito is born over
+    // the big one in the middle, and the name glows; then a new phrase starts again from two notes. On the person's turn, left
     // alone a while, the being that comes next breathes, and at 7 s the ghost hand touches the beings still to repeat,
     // in order (the hint); once it has, the light gathers and sings it again. A touch
     // on the light itself does not cut it: it asks to listen (on the person's turn, it sings again after the stillness
@@ -32,7 +32,7 @@
     // particles from the card's dots. It is drawn in WebGL (useLayerStage): the far canopy, the trunks, the ring of
     // leaves and the beings are planes at their depths. The frame covers the screen (looking up, the trees close all
     // round), so it is as big as the screen's long side; on a very wide screen the canopy goes on past it mirrored.
-    // The card has no rulito: it is drawn in the light, among the three.
+    // The card has no rulito: it is born over the head of the big one in the middle.
     // From comunicacionScene.json and public/assets/comunicacion (made by scripts/convert-comunicacion.mjs).
     import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
     import { createParallax } from '../../composables/useParallax.js';
@@ -71,7 +71,7 @@
     const WIDEST = 2.1;                     // the frame grows with the width up to this many times the height
     let F = { x: 0, y: 0, size: 1 };
     let W = 1, H = 1;
-    const RULITO_H = 190, RULITO_BOTTOM = 1315;  // art px: the rulito's height and where its foot is
+    const RULITO_H = 160, RULITO_BOTTOM = 818;   // art px: the rulito's height and where its foot is (over the big one's head)
     const k = () => F.size / SIZE;
     const sx = (x) => F.x + x * k();
     const sy = (y) => F.y + y * k();
@@ -331,8 +331,8 @@
         action();
     };
 
-    // Repeated whole with four notes: the pollen flies to the beings like bees, and the rulito is born among them, in the
-    // light. Gm is minor, not a seventh: nothing resolves; the rulito climbs the chord an octave up
+    // Repeated whole with four notes: the pollen flies to the beings like bees, and the rulito is born over the big one in
+    // the middle. Gm is minor, not a seventh: nothing resolves; the rulito climbs the chord an octave up
     const complete = () => {
         wins += 1;
         win = { age: 0, head: 0, tail: 0, full: false, fullAt: 0, back: false, pop: 0 };
@@ -352,7 +352,7 @@
             const to = { x: h.x + Math.cos(a) * r * Math.random(), y: h.y + Math.sin(a) * r * Math.random() };
             send(from, to, { dur: 1.3 + Math.random() * 0.9, size: 4 + Math.random() * 3, c0: POLLEN[n % POLLEN.length], c1: CREAM, at: lastT + Math.random() * 0.6, arc: 0.1 });
         }
-        // Once it has arrived, each being's light goes to the light, where the rulito is born
+        // Once it has arrived, each being's light goes to where the rulito is born, over the big one
         const to = rulitoAt();
         BEINGS.forEach((b, i) => {
             setTimeout(() => { if (!gone) ring(i, 0.8); }, 1500 + i * 120);
@@ -380,10 +380,10 @@
             return { group, aura, body, eyes };
         });
         beings.enter({ y: 26, delay: 900, duration: 2400 });
-        // The rulito, among the three, in the light (its own node at their depth, so it does not float with any of them)
-        const among = s.depth(zFor(DEPTH.beings));
-        L.rulitoNode = among;
-        L.rulito = among.canvas(rulito.value.canvas, { bloom: true });
+        // The rulito, over the head of the big one in the middle, hanging from it (in its group, so it floats and turns
+        // with it)
+        L.rulitoNode = L.beings[1].group;
+        L.rulito = L.rulitoNode.canvas(rulito.value.canvas, { bloom: true });
         // The canopy, looking up: the far leaves, the trunks, the ring of leaves round the opening. Each comes down into
         // place from a little bigger, as if the eyes were opening on it
         const canopy = (name, depth, enter, options = {}) => {
@@ -417,10 +417,9 @@
         L.light.place({ left: c.x - ld / 2, top: sy(1150) - ld / 2, w: ld, h: ld });
         const cd = CORE_SIZE * k();
         L.core.place({ left: sx(CORE_AT[0]) - cd / 2, top: sy(CORE_AT[1]) - cd / 2, w: cd, h: cd });
-        // The rulito in the light, under the big one and between the other two (its canvas is bigger than the glyph, for
-        // the glow)
+        // The rulito over the big one's head (its canvas is bigger than the glyph, for the glow)
         const rh = RULITO_H * k(), rw = rh * 32 / 86;
-        glyph = { left: sx(CORE_AT[0]) - rw / 2, top: sy(RULITO_BOTTOM) - rh, w: rw, h: rh };
+        glyph = { left: sx(BEINGS[1].cx) - rw / 2, top: sy(RULITO_BOTTOM) - rh, w: rw, h: rh };
         L.rulito.place({ left: glyph.left - 0.4375 * glyph.w, top: glyph.top - 0.1628 * glyph.h, w: glyph.w * 1.875, h: glyph.h * 1.3256 },
             { x: glyph.left + glyph.w / 2, y: glyph.top + glyph.h });
 
@@ -533,7 +532,7 @@
         // The motes in the opening draw in to it as it gathers
         dust?.grow(5, -0.35 * g, sx(CORE_AT[0]), sy(CORE_AT[1]));
 
-        // ---- The win: the pollen flies to the beings, the rulito is born in the light, kept, gone; then a new phrase
+        // ---- The win: the pollen flies to the beings, the rulito is born over the big one, kept, gone; then a new phrase
         let named = 0;
         if (win && rulito.value) {
             win.age += dt;
@@ -644,7 +643,6 @@
             dust?.shift(2 + i, be.x + g.x, be.y + g.y + L.beingsNode.y);
         });
         dust?.shift(5, be.x, be.y + L.beingsNode.y);
-        L.rulitoNode.y = L.beingsNode.y;
         stage.render(t);
         if (frames++ % 2 === 0) placeKeys();
     };
