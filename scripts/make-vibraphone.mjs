@@ -1,10 +1,10 @@
-// The rulito, the stars and a seventh resolving ring on a vibraphone played with soft mallets: Versilian Community
-// Sample Library (VCSL, CC0, public domain: no credit needed), github.com/sgossner/VCSL, Idiophones/Struck
-// Idiophones/Vibraphone/Soft Mallets. Downloads six of its notes, one every fifth (a seventh at the top), and writes
+// The bowls of the app (every chime and bell note but the water's) ring on a vibraphone played with soft mallets:
+// Versilian Community Sample Library (VCSL, CC0, public domain: no credit needed), github.com/sgossner/VCSL,
+// Idiophones/Struck Idiophones/Vibraphone/Soft Mallets. Downloads six of its notes, one every fifth, and writes
 // public/assets/sound/vibraphone/<midi>.mp3: mono, from the first sound, 6 s with the last 1.5 s faded, at the same
 // loudness, MP3 64 kbps (every browser decodes it; the eleven notes at 96 kbps weighed 781 KB and were not heard to be
 // better). Each file is named by the note it really sounds: the library names them an octave lower (Vibes_soft_D4
-// sounds D5, 587 Hz; measured on every file). src/audio/synth.js plays the nearest one, retuned (`bowl`).
+// sounds D5, 587 Hz; measured on every file). src/audio/synth.js plays the nearest one, retuned (`bell`).
 // Needs ffmpeg. Usage: node scripts/make-vibraphone.mjs
 import { mkdir, writeFile, rm } from 'node:fs/promises';
 import { execFileSync } from 'node:child_process';
