@@ -69,6 +69,8 @@ group('Transformación layers', (rel) => rel.startsWith('assets/transformacion/'
 group('Esperanza layers', (rel) => rel.startsWith('assets/esperanza/'), { each: 100, total: 250 });
 group('Metta layers', (rel) => rel.startsWith('assets/metta/'), { each: 100, total: 350 });
 group('Paciencia layers', (rel) => rel.startsWith('assets/paciencia/'), { each: 320, total: 750 });
+// The vibraphone of the bowls (scripts/make-vibraphone.mjs), fetched only when the sound is turned on
+group('Vibraphone', (rel) => rel.startsWith('assets/sound/vibraphone/'), { each: 55, total: 320 });
 group('Deck thumbnails', (rel) => /^cards\/thumb\/\d+\.webp$/.test(rel), { each: 70, total: 650 });
 group('Card illustrations', (rel) => /^cards\/\d+\.webp$/.test(rel), { each: 900, total: 9500 });
 // What phones and most screens load (pictureUrl in src/data/cards.js; npm run thumbs makes them)

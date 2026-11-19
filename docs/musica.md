@@ -179,6 +179,8 @@ También es la base que mejor se lleva con las cartas. Comparte al menos una not
 
 ## Cómo suena
 
+Todo se sintetiza en el momento, salvo los cuencos: cada campanita y cada nota de cuenco de los efectos suena en un vibráfono tocado con mazas blandas. Son seis notas grabadas, una cada quinta de Fa3 a Mi6, de la Versilian Community Sample Library (dominio público, CC0); cada nota se toca con la grabación más cercana, afinada a la altura justa, así que los acordes, las melodías y los tiempos son los de siempre. Pesan 288 KB y se bajan recién cuando alguien prende el sonido; mientras llegan, y para las notas que quedan lejos de su rango, suena el cuenco sintetizado de antes. El toque en el agua (`ripple`) se quedó con el cuenco sintetizado: ahí gustó más. Se probaron también el vibráfono con arco, la kalimba, el arpa folk y el glockenspiel, y once notas del vibráfono a más calidad (781 KB), que no se oían mejor.
+
 - **Fuera de las cartas** suena Sol mayor: un colchón de fondo, campanitas en pentatónica y gotas de agua.
 - **Al tomar una carta en el oráculo**, el fondo empieza a moverse hacia el acorde de esa carta. Las notas de `pick` suben por la fundamental, la quinta y la octava. `flip` cae en la tercera, la nota que define si el acorde es mayor o menor, así la carta "muestra su color" al darse vuelta.
 - **Dentro de la carta**:
