@@ -47,6 +47,15 @@ export default defineConfig({
             networkTimeoutSeconds: 4,
             expiration: { maxEntries: 400, maxAgeSeconds: 60 * 60 * 24 * 60 },
           },
+        }, {
+          // the vibraphone's notes (src/audio/synth.js), fetched when the sound is turned on: kept like the pictures
+          urlPattern: ({ sameOrigin, url }) => sameOrigin && /\.mp3$/.test(url.pathname),
+          handler: 'NetworkFirst',
+          options: {
+            cacheName: 'sounds',
+            networkTimeoutSeconds: 4,
+            expiration: { maxEntries: 20, maxAgeSeconds: 60 * 60 * 24 * 60 },
+          },
         }],
       },
     }),

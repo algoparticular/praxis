@@ -1,5 +1,6 @@
-// Procedural sound for the whole app. Nothing is downloaded: every sound is synthesised with Web Audio.
-// It is meant to feel calm and open: a soft pad whose voices swell slowly, singing-bowl chimes on a
+// Sound for the whole app, made with Web Audio. Everything is synthesised except the bowls, which ring on six recorded
+// notes of a vibraphone (fetched only once the sound is turned on; see "The vibraphone" below).
+// It is meant to feel calm and open: a soft pad whose voices swell slowly, vibraphone chimes on a
 // pentatonic scale, the odd drop of water, all in a wide reverb. The app sounds in G major; inside a card
 // everything moves to that card's chord (src/data/cardChords.js). Every function takes the context
 // (a real or an offline one) so it can be rendered and checked without speakers.
@@ -124,8 +125,9 @@ export const createMaster = (ctx) => {
     return input;
 };
 
-// A singing bowl: a sine with two quiet partners, a soft attack and a long decay
-const bell = (ctx, out, time, frequency, duration, level) => {
+// A singing bowl: a sine with two quiet partners, a soft attack and a long decay. It is what every bowl sounded like
+// before the vibraphone, and still is until the recordings arrive, for the notes out of their reach and for the water
+const synthBell = (ctx, out, time, frequency, duration, level) => {
     [[1, 1, duration], [2, 0.14, duration * 0.55], [3.01, 0.05, duration * 0.3]].forEach(([ratio, share, length]) => {
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
@@ -139,6 +141,68 @@ const bell = (ctx, out, time, frequency, duration, level) => {
         osc.start(time);
         osc.stop(time + length + 0.05);
     });
+};
+
+/* ---------- The vibraphone ---------- */
+
+// Every bowl rings on a vibraphone played with soft mallets: six recorded notes, one every fifth from F3 to E6
+// (public/assets/sound/vibraphone/<midi>.mp3, made by scripts/make-vibraphone.mjs from VCSL, public domain). Each note
+// is played by the nearest recording, retuned, and keeps the length and level the effect asked for, so the chords,
+// melodies and timing are the same as ever. The recordings (288 KB) are only fetched once the sound is turned on
+// (loadVibraphone, from useSound.js); until they arrive, and for a note more than a fourth beyond them, the
+// synthesised bowl plays instead.
+const VIBRAPHONE = [53, 60, 67, 74, 81, 88];
+const REACH = 5;                        // semitones a recording is stretched past the highest and lowest ones
+let vibraphone = null;                  // [{ midi, buffer, peak }] once loaded
+let loadingVibraphone = null;
+
+const decode = (ctx, data) => new Promise((resolve, reject) => {
+    // The callback form is the one older Safari has; newer browsers also return a promise
+    const promise = ctx.decodeAudioData(data, resolve, reject);
+    if (promise?.then) promise.then(resolve, reject);
+});
+
+export const loadVibraphone = (ctx, base = '/assets/sound/vibraphone/') => {
+    if (loadingVibraphone) return loadingVibraphone;
+    loadingVibraphone = Promise.all(VIBRAPHONE.map(async (midi) => {
+        const response = await fetch(`${base}${midi}.mp3`);
+        if (!response.ok) throw new Error(`${midi}.mp3: ${response.status}`);
+        const buffer = await decode(ctx, await response.arrayBuffer());
+        let peak = 0;
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < data.length; i++) peak = Math.max(peak, Math.abs(data[i]));
+        return { midi, buffer, peak: peak || 1 };
+    })).then((notes) => {
+        vibraphone = notes;
+        return true;
+    }).catch(() => {
+        // Without them the synthesised bowls go on; the next time the sound is turned on it tries again
+        loadingVibraphone = null;
+        return false;
+    });
+    return loadingVibraphone;
+};
+
+const bell = (ctx, out, time, frequency, duration, level) => {
+    const midi = 69 + 12 * Math.log2(frequency / 440);
+    if (!vibraphone
+        || midi < VIBRAPHONE[0] - REACH || midi > VIBRAPHONE[VIBRAPHONE.length - 1] + REACH) {
+        synthBell(ctx, out, time, frequency, duration, level);
+        return;
+    }
+    const note = vibraphone.reduce((best, each) => (Math.abs(each.midi - midi) < Math.abs(best.midi - midi) ? each : best));
+    const source = ctx.createBufferSource();
+    const gain = ctx.createGain();
+    source.buffer = note.buffer;
+    source.playbackRate.value = Math.pow(2, (midi - note.midi) / 12);
+    // The synthesised bowl peaks near 1.2 x level: the recording is brought to the same peak, rings on its own for half
+    // of what was asked and then fades
+    gain.gain.setValueAtTime((level * 1.2) / note.peak, time);
+    gain.gain.setTargetAtTime(0, time + duration * 0.55, duration * 0.22);
+    source.connect(gain);
+    gain.connect(out);
+    source.start(time);
+    source.stop(time + duration * 1.6 + 0.1);
 };
 
 // A drop of water: a sine that glides upwards, panned somewhere in the stereo field
@@ -350,7 +414,8 @@ export const ripple = (ctx, out, time, harmony, level = 1) => {
     osc.start(time);
     osc.stop(time + 1.5);
     swish(ctx, out, time, { from: 1200, to: 300, duration: 1.3, level: 0.03 * k, q: 0.8 });
-    bell(ctx, out, time + 0.03, hz(h.voice - 12), 3.6, 0.04 * k);
+    // The water keeps the synthesised bowl: it was preferred to the vibraphone here
+    synthBell(ctx, out, time + 0.03, hz(h.voice - 12), 3.6, 0.04 * k);
 };
 
 // Joining two lights (Pañña): the note of each light, one after the other, so a thread is a small interval and a network

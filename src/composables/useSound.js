@@ -111,6 +111,8 @@ const enable = () => {
     if (!ensureContext()) return Promise.resolve(false);
     prepareSession();
     const resumed = resume();
+    // The vibraphone's six notes (synth.js): only fetched by someone who turns the sound on, once per visit
+    synth.loadVibraphone(ctx);
     soundOn.value = true;
     writePreference(true);
     return resumed.then(() => {
