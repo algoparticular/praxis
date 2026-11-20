@@ -61,7 +61,7 @@ Para empezar: `card_left` con promedio de `fps` y de `slow_pct`, desglosado por 
 - **Ritual**: `$pageview` (route `/`) → `oracle_mode_chosen` → `card_picked` → `card_viewed` → `card_reading_reached`.
 - **Escena**: `card_viewed` → `scene_interacted` → `scene_milestone` (desglosar por `scene` o `card_id`).
 - **Compartir**: `card_viewed` → `share_opened` → `share_clicked`.
-- **Mundo de Sid**: `world_entered` → `world_moved` → `world_zone_reached` (con `zones` = 2: salió de la primera) → `world_place_meditated` → `world_card_opened` → `world_card_closed` con `won` (desglosar por `from` y por `touch`). Y `world_left`: cuánto se queda (`seconds`), cuánto camina y si se sienta (`seconds_to_first_sit` vacío: no encontró el botón de la semilla).
+- **Mundo de Sid** (armado en el tablero "Anima: el mundo de Sid" de PostHog, con el resto de sus gráficos): `world_entered` → `world_moved` → `world_zone_reached` (con `zones` = 2: salió de la primera) → `world_place_meditated` → `world_card_opened` → `world_card_closed` con `won` (desglosar por `from` y por `touch`). Y `world_left`: cuánto se queda (`seconds`), cuánto camina y si se sienta (`seconds_to_first_sit` vacío: no encontró el botón de la semilla).
 - **Llegada por enlace**: `card_viewed` con `entry = direct` → `oracle_mode_chosen` (¿quien llega por un enlace compartido entra al oráculo?).
 
 ## Añadir un evento
