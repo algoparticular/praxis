@@ -266,16 +266,21 @@ const STILLNESS = 0.05;                       // the world's pace while he medit
 const picture = (src) => (typeof Image !== 'undefined' ? Object.assign(new Image(), { src }) : null);
 // What the world remembers on this phone (worldMemory.js): the visits, the seeds he carries and what he has planted.
 // A seed he walks over is picked up (counted on the seed button); sitting in lotus away from the places, after a moment
-// (PLANT_AFTER) he plants the first he found in front of him, one each time he sits
+// (PLANT_AFTER) he plants the first he found in front of him, one each time he sits: it does not go straight there. It
+// flies out of the button to his heart (fly(), SOW.fly), goes down through him as a light only (SOW.through), on under
+// the ground to where it is planted, a glow under the earth (SOW.under; drawSowing), and is born out of the ground
+// there with its burst (burstAt, world.plant). What he planted grows a step each time he comes back to it (onGrow)
 const memory = loadMemory();
 memory.visits += 1;
 saveMemory(memory);
 ui.seeds = memory.seeds.length;
-const PLANT_AFTER = 1.5, SOW_FLIGHT = 0.8;
+const PLANT_AFTER = 1.5;
+const SOW = { fly: 0.9, through: 1.3, under: 0.8 };    // (seconds of each part of its way)
 const world = createWorld({
     clouds: picture('/assets/ciclos/clouds.webp'), moon: picture('/assets/ciclos/moon.webp'),
     planted: memory.planted, visit: memory.visits,
     onSeed: (seed) => { visit?.seedPicked(); seedFound(seed); },
+    onGrow: () => { saveMemory(memory); play('star'); },
 });
 // The floor goes back into the distance: his depth d (0 in front .. DEPTH at the back) lifts his feet towards the
 // horizon and makes him smaller, towards the middle of the screen (a vanishing point)
@@ -391,6 +396,7 @@ const state = {
     steps: [null, null], toes: [0, 0], legTuck: [0, 0],
     legSit: [0, 0], sitT: 9, rising: false, settled: true,
     plantT: 0, planted: false,                               // seconds sitting away from the places, and whether he planted this time
+    sowing: null,                                            // the seed on its way to where it is born: { t, x, d, light }
     underTree: 0, rul: null, portalDone: false,                                 // seconds sitting under the tree, the rulito born there      // sitting down in lotus and getting up, leg by leg
     reach: null,                   // a world point his near hand goes to
     reached: null,                 // the last one (his hand comes back from it)
@@ -737,21 +743,27 @@ function update(dt, now) {
     const card = seated ? world.placeCard(state.x, state.d) : null;
     state.underTree = card ? state.underTree + dt : 0;
     // away from the places, with seeds, he plants one in front of him (once each time he sits)
-    // (the seed leaves the button SOW_FLIGHT s before, and flies to the ground in front of him, where it sprouts)
+    // (the seed leaves the button SOW.fly s before PLANT_AFTER and flies to his heart; then, as a light, through him and
+    // under the ground to where it is born)
     if (!ui.sitting) {
-        if (state.sowing && !state.planted) ui.seeds = memory.seeds.length;   // (he got up before it landed: it stays his)
-        state.plantT = 0; state.planted = false; state.sowing = false; state.portalDone = false;
+        if (state.sowing && !state.planted) ui.seeds = memory.seeds.length;   // (he got up before it was born: it stays his)
+        state.plantT = 0; state.planted = false; state.sowing = null; state.portalDone = false;
     } else if (seated && !card && !state.planted && memory.seeds.length) {
         state.plantT += dt;
-        if (!state.sowing && state.plantT >= PLANT_AFTER - SOW_FLIGHT) {
-            state.sowing = true;
+        if (!state.sowing && state.plantT >= PLANT_AFTER - SOW.fly) {
+            const light = world.seedLight(memory.seeds[0]);
+            state.sowing = { t: 0, x: state.x, d: state.d - 110, light };
             ui.seeds = memory.seeds.length - 1;
-            fly(buttonMiddle(), toScreen(state.x, state.d - 110), world.seedLight(memory.seeds[0]), null, SOW_FLIGHT * 1000, true);
+            fly(buttonMiddle(), { ...sowAt.heart }, light, () => play('tap'), SOW.fly * 1000);
         }
-        if (state.plantT >= PLANT_AFTER) {
+        if (state.sowing) state.sowing.t += dt;
+        if (state.sowing && state.sowing.t >= SOW.fly + SOW.through + SOW.under) {
+            const w = state.sowing;
+            state.sowing = null;
             state.planted = true;
+            if (!still) burstAt(toScreen(w.x, w.d), `rgb(${w.light.map(Math.round).join(',')})`);
             const seed = memory.seeds.shift();
-            memory.planted.push(world.plant(seed, state.x, state.d - 110));
+            memory.planted.push(world.plant(seed, w.x, w.d));
             visit?.seedPlanted(seed, world.zoneCard());
             ui.seeds = memory.seeds.length;
             learn('planted');
@@ -1237,6 +1249,10 @@ function draw() {
     const mid = map(f, PIVOT.x, (rig.silhouette.crown[1] + PIVOT.y) / 2);
     const onScreen = c.getTransform().transformPoint(mid);
     sidOnScreen.x = onScreen.x / view.dpr; sidOnScreen.y = onScreen.y / view.dpr;
+    // (and his heart and the ground under him, for the seed he plants: it goes into his heart and down through him)
+    const heart = c.getTransform().transformPoint(map(f, PIVOT.x, rig.silhouette.crown[1] * 0.35 + PIVOT.y * 0.65));
+    const base = c.getTransform().transformPoint({ x: f.root.x, y: state.ground });
+    Object.assign(sowAt, { heart: { x: heart.x / view.dpr, y: heart.y / view.dpr }, base: { x: base.x / view.dpr, y: base.y / view.dpr }, size: depth * view.k });
 
     // The rulito over his head (its canvas is bigger than the glyph, 32 x 86, by 14 all round, for its glow)
     if (state.rul && rulito.value) {
@@ -1259,6 +1275,34 @@ function draw() {
     }
     c.restore();
     world.draw(c, place, (d) => d <= state.d, { x: state.x, d: state.d });   // and what is in front of him (faint close to him)
+    if (state.sowing && state.sowing.t >= SOW.fly && !still) drawSowing(c, state.sowing, toScreen(state.sowing.x, state.sowing.d));
+}
+
+// The seed he plants, once it is in him (in px of the screen): only its light, going down through him from his heart
+// to the ground (his body lit softly round it), and under the ground a glow running to where it is born
+const sowAt = { heart: { x: 0, y: 0 }, base: { x: 0, y: 0 }, size: 1 };
+function drawSowing(c, w, to) {
+    const ease = (u) => u * u * (3 - 2 * u), lerp = (a, b, u) => ({ x: a.x + (b.x - a.x) * u, y: a.y + (b.y - a.y) * u });
+    const rgb = w.light.map(Math.round).join(','), size = sowAt.size, t = w.t - SOW.fly;
+    const light = (p, r, a) => {
+        const g = c.createRadialGradient(p.x, p.y, 0, p.x, p.y, r);
+        g.addColorStop(0, `rgba(255,252,236,${a})`); g.addColorStop(0.3, `rgba(${rgb},${a * 0.7})`); g.addColorStop(1, `rgba(${rgb},0)`);
+        c.fillStyle = g; c.beginPath(); c.arc(p.x, p.y, r, 0, Math.PI * 2); c.fill();
+    };
+    c.save();
+    c.setTransform(view.dpr, 0, 0, view.dpr, 0, 0);
+    c.globalCompositeOperation = 'lighter';
+    if (t < SOW.through) {
+        const u = t / SOW.through, p = lerp(sowAt.heart, sowAt.base, ease(u)), r = 150 * size, flash = Math.max(0, 1 - u * 4);
+        light(lerp(sowAt.heart, sowAt.base, 0.45), r * 1.6, 0.18 * Math.sin(Math.PI * u));
+        light(p, r * (0.5 + 0.6 * flash), 0.75);
+        for (let n = 1; n <= 4; n++) light(lerp(sowAt.heart, sowAt.base, ease(Math.max(0, u - n * 0.06))), r * 0.35, 0.25 / n);
+    } else {
+        const u = Math.min(1, (t - SOW.through) / SOW.under), p = lerp(sowAt.base, to, ease(u)), r = 120 * size;
+        c.translate(p.x, p.y); c.scale(1, 0.32);
+        light({ x: 0, y: 0 }, r * (1 + 0.5 * u), 0.55);
+    }
+    c.restore();
 }
 
 function loop(now) {
