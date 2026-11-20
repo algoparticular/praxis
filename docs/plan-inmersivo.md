@@ -24,7 +24,7 @@
 **El mazo** (`/deck`) — HECHO (primera versión): galería de las 33 cartas con el mismo cielo estrellado de la landing, título y filtros por categoría (Todas / Paramis / Regulares / Especiales). El filtro de las cartas con escena (Interactivas) se sacó cuando las 33 tuvieron la suya: mostraba lo mismo que Todas. En 3D (`src/components/DeckRing.vue` + `src/composables/useDeckRing.js`) las cartas están boca arriba en un anillo: arrastrar, rueda o flechas lo giran y se detiene en la carta más cercana; un toque abre la carta con la misma entrega (`handOffCard` en `src/cardTransition.js`, compartida con las mesas). Un filtro reordena las cartas en un arco. Respaldo 2D (`DeckTemplate.vue`) sin WebGL o con `prefers-reduced-motion`. La galería carga miniaturas de 480 px (`public/cards/thumb/`, 0,9 MB contra 8,7 MB; se generan con `npm run thumbs` y con `sync:cards`).
 
 ## Ideas para seguir en otra sesión
-Propuestas que salieron al ordenar la documentación. Son hipótesis, no decisiones: ninguna está implementada ni validada con Belén.
+Propuestas que salieron al ordenar la documentación. Son hipótesis, no decisiones: ninguna está implementada ni decidida.
 
 **Qué se puede llevar la persona.** Hoy la experiencia termina en la carta. De menor a mayor compromiso:
 1. **La afirmación como imagen.** Una tarjeta para guardar o compartir con la ilustración y la afirmación. Ya hay una imagen social por carta (`dist/og/<id>.jpg`, hecha por `scripts/cardMetaPlugin.js`), así que parte del trabajo existe.

@@ -1,6 +1,6 @@
 <script setup>
-// The puppet lab: Sid (who is also Particular) as a puppet, to try how much more he can move than breathe. Only in
-// development (/lab/sid, see the router), never in the build. He is all drawn in code: his body from his silhouette
+// The puppet lab: Sid (who is also Particular) as a puppet, to try how much more he can move than breathe; the
+// world he walks is Sid's world, at /sid (see the router). He is all drawn in code: his body from his silhouette
 // traced off Nekkhamma's Sid (scripts/make-sid-lab.mjs -> sid.json), bent, squashed and stretched as a soft body; his
 // eyes (they look, blink and close); his arms and legs, strokes with his ink and line that bend freely. Canvas 2D on purpose: it shows the movement;
 // if it is what we want, the same rig goes into the WebGL stage (useLayerStage.js). Plan: docs/sid-en-piezas.md.
@@ -17,6 +17,7 @@ import { loadMemory, saveMemory } from './worldMemory.js';
 import CardTemplate from '../components/CardTemplate.vue';
 import { hasWebGL } from '../composables/useLayerStage.js';
 import { seedSvg } from './seedShape.js';
+import { startWorldVisit } from '../analytics.js';
 
 const ui = reactive({ bones: false, sitting: false, touch: false, hint: false, seeds: 0, seedPop: 0 });
 
@@ -28,7 +29,7 @@ const ui = reactive({ bones: false, sitting: false, touch: false, hint: false, s
 //   been planted;
 // - standing at a place, where a ring of light under his feet says where to sit (always), every HINT_AT_PLACE s,
 //   until he has sat at a place once.
-// The first visit also opens with a few words written by hand, and the first place he comes to with a few more (STORY)
+// The first visit also opens with a few words written by hand, and the first seed with a few more (STORY)
 const HINT_AFTER = 7000, HINT_FIRST = 4000, HINT_SHOW = 4400, HINT_AT_PLACE = 5;
 let satThisVisit = false, hintTimer = 0, callTimer = 0, firstSeedCalled = false;
 function callButton() {
@@ -53,10 +54,11 @@ function learn(what) {
     saveMemory(memory);
 }
 // A few words written by hand on the teaching's card, once ever each (memory.learned): the story of the world, which
-// is also how it is played (DRAFT: the words are the author's to choose)
+// is also how it is played. Opening the first visit, where it all comes from (everything started from a particle,
+// docs/mundo.md); with the first seed in the button, what to do with it
 const STORY = {
-    intro: { es: 'Por el mundo hay semillas de luz. Donde Sid medita, florecen.', en: 'Seeds of light lie about the world. Where Sid meditates, they bloom.' },
-    place: { es: 'Este lugar guarda una carta.', en: 'This place holds a card.' },
+    intro: { es: 'Todo partió de una partícula.', en: 'Everything began with a particle.' },
+    seed: { es: 'Donde Sid medita, florece.', en: 'Where Sid meditates, it blooms.' },
 };
 const STORY_SHOW = 6500;
 let storyTimer = 0, gone = false;
@@ -130,7 +132,7 @@ function addSeed(card, from, light) {
     memory.seeds.push(card); saveMemory(memory); play('pick');
     fly(from, buttonMiddle(), light ?? world.seedLight(card), () => {
         ui.seeds = memory.seeds.length; ui.seedPop += 1;
-        if (!firstSeedCalled && !memory.learned.planted) { firstSeedCalled = true; callButton(); }
+        if (!firstSeedCalled && !memory.learned.planted) { firstSeedCalled = true; callButton(); tell('seed', 300); }
     });
 }
 const seedFound = ({ card, x, d, light, up = 90 }) => addSeed(card, toScreen(x, d, up), light);
@@ -176,8 +178,11 @@ const zoomStyle = computed(() => ({
 }));
 const webgl = hasWebGL();
 let portalTimer = 0;
+// The visit, told to the analytics (startWorldVisit in analytics.js): started when the world is mounted
+let visit = null;
 function openPortal(card) {
     portal.card = card; portal.won = false;
+    visit?.meditated(card); visit?.cardOpened(card);
     Object.assign(zoom, { on: true, x: sidOnScreen.x, y: sidOnScreen.y });
     release(); state.target = null; state.guide = null;
     document.body.classList.add('lab-portal');
@@ -189,6 +194,8 @@ function portalWon() { portal.won = true; }
 function closePortal() {
     if (portal.card == null) return;
     const card = portal.card, won = portal.won;
+    visit?.cardClosed(won);
+    if (won) visit?.rulito(card, 'card');
     clearTimeout(portalTimer);
     paused = false; last = 0;
     state.portalDone = true;      // (not again until he gets up)
@@ -268,7 +275,7 @@ const PLANT_AFTER = 1.5, SOW_FLIGHT = 0.8;
 const world = createWorld({
     clouds: picture('/assets/ciclos/clouds.webp'), moon: picture('/assets/ciclos/moon.webp'),
     planted: memory.planted, visit: memory.visits,
-    onSeed: seedFound,
+    onSeed: (seed) => { visit?.seedPicked(); seedFound(seed); },
 });
 // The floor goes back into the distance: his depth d (0 in front .. DEPTH at the back) lifts his feet towards the
 // horizon and makes him smaller, towards the middle of the screen (a vanishing point)
@@ -522,6 +529,7 @@ function sit(on = !ui.sitting) {
     ui.hint = false;
     // getting up is its own little movement while his legs are still crossed
     state.rising = !on && Math.max(...state.legSit) > 0.1;
+    if (on) visit?.sat();
     ui.sitting = on; state.sitT = 0; state.settled = false; state.target = null; state.action = null;
 }
 
@@ -587,6 +595,7 @@ function onUp(e) {
     if (state.mark) state.mark.t = 0;          // (and its ring fades from now)
 }
 function onDown(e) {
+    lastInput = e.pointerType === 'touch' ? 'touch' : 'pointer';
     const screen = pointerTo(e);
     state.pointer = screen; state.pointerAt = performance.now();
     // On him: he does not walk (it would be to a point just behind him); he greets us
@@ -609,7 +618,9 @@ function onDown(e) {
 
 // The keys: arrows or WASD walk him over the floor, the space bar sits him in lotus (and stands him up)
 const KEYS = { ArrowLeft: 'left', a: 'left', ArrowRight: 'right', d: 'right', ArrowUp: 'up', w: 'up', ArrowDown: 'down', s: 'down' };
+let lastInput = 'pointer', wasAt = null;      // (how he was last moved: touch, pointer or keys, for the analytics)
 function press(key, on) {
+    if (on) lastInput = 'keys';
     state.keys[key] = on;
     if (on) { state.target = null; if (ui.sitting) sit(false); }
 }
@@ -718,6 +729,9 @@ function update(dt, now) {
     const meditating = ui.sitting && springs.drop.x > (STAND - SIT) * 0.8;
     state.pace += ((meditating ? STILLNESS : 1) - state.pace) * Math.min(1, dt * (meditating ? 0.9 : 1.6));
     world.update(dt, { x: state.x, d: state.d, sitting: meditating, pace: state.pace });
+    // (how far he walked this frame, for the analytics)
+    if (wasAt) visit?.moved(Math.hypot(state.x - wasAt.x, state.d - wasAt.d), lastInput);
+    wasAt = { x: state.x, d: state.d };
     // the rulito under the tree: born after a moment of sitting there, kept while he sits, gone when he gets up
     const seated = ui.sitting && Math.min(...state.legSit) > 0.9;
     const card = seated ? world.placeCard(state.x, state.d) : null;
@@ -736,7 +750,9 @@ function update(dt, now) {
         }
         if (state.plantT >= PLANT_AFTER) {
             state.planted = true;
-            memory.planted.push(world.plant(memory.seeds.shift(), state.x, state.d - 110));
+            const seed = memory.seeds.shift();
+            memory.planted.push(world.plant(seed, state.x, state.d - 110));
+            visit?.seedPlanted(seed, world.zoneCard());
             ui.seeds = memory.seeds.length;
             learn('planted');
             saveMemory(memory);
@@ -745,13 +761,12 @@ function update(dt, now) {
     }
     if (card != null) learn('place');
     // Standing at a place, a ring of light under his feet, in its rulito's colour: here, sitting, something happens;
-    // and until he has sat at one once, the button calls while he stands there (the first time, a few words too)
+    // and until he has sat at one once, the button calls while he stands there
     const at = !ui.sitting && !state.rising && portal.card == null ? world.placeCard(state.x, state.d) : null;
     state.ring += ((at != null ? 1 : 0) - state.ring) * Math.min(1, dt * (at != null ? 2.5 : 4));
     if (at != null) {
         state.ringCard = at;
         if (!memory.learned.place) { state.placeCall -= dt; if (state.placeCall <= 0) { callButton(); state.placeCall = HINT_AT_PLACE; } }
-        tell('place');
     } else state.placeCall = 0.5;
     // at a door to a card, the card's scene instead of the rulito here
     const door = card != null && PORTALS.has(card) && webgl;
@@ -763,13 +778,14 @@ function update(dt, now) {
     }
     // the music moves to the chord of the card of the zone he is in (src/data/cardChords.js), as on a card's page
     const zone = world.zoneCard();
-    if (zone !== state.zone) { state.zone = zone; setCardChord(chordFor(zone)); }
+    if (zone !== state.zone) { state.zone = zone; setCardChord(chordFor(zone)); visit?.zone(zone); }
     if (state.rul) {
         const r = state.rul;
         r.age += dt; r.pop = Math.max(0, r.pop - dt * 2.2);
         r.head = 1 - (1 - Math.min(1, r.age / RULITO_GROW)) ** 1.6;
         if (r.head >= 1 && !r.full) {
             r.full = true; r.pop = 1; play('rulito');
+            if (r.card != null) { visit?.meditated(r.card); visit?.rulito(r.card, 'place'); }
             setTimeout(() => winSeed(r.card), 900);
             const c = getCard(r.card);
             if (c) Object.assign(teaching, { es: c.affirmation_es.trim(), en: c.affirmation_en.trim(), on: true, story: false });
@@ -1270,8 +1286,13 @@ onMounted(() => {
     raf = requestAnimationFrame(loop);
     scheduleHint();
     tell('intro', 1400);
+    // where they came from: the page before this one in the app (the landing's labyrinth), or nothing (a link)
+    const back = window.history.state?.back;
+    visit = startWorldVisit({ from: back ? (back === '/' ? 'landing' : back.split('?')[0]) : 'direct', touch: ui.touch, webgl });
 });
 onBeforeUnmount(() => {
+    visit?.cardClosed(portal.won);
+    visit?.finish();
     document.body.classList.remove('lab-page', 'lab-night', 'lab-portal');
     clearTimeout(portalTimer);
     setCardChord(null);

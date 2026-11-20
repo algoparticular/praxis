@@ -76,9 +76,14 @@ const router = createRouter({
       path: "/deck",
       component: Deck,
     },
-    // The puppet lab (Sid moving more than breathing, in a world of his own), from the labyrinth in the footer; its
-    // own chunk, loaded only when it is opened
-    { path: "/lab/sid", component: () => import('../lab/LabSid.vue') },
+    // Sid's world (the puppet lab: Sid walking a world of his own), from the labyrinth in the footer; its own chunk,
+    // loaded only when it is opened. Its code still lives in src/lab
+    { path: "/sid", component: () => import('../lab/LabSid.vue') },
+    {
+      // Its first address, kept for links already shared
+      path: "/lab/sid",
+      redirect: "/sid",
+    },
     {
       path: "/:pathMatch(.*)",
       component: PageNotFound,

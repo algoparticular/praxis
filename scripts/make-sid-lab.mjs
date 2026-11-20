@@ -1,4 +1,4 @@
-// Sid for the puppet lab (/lab/sid, only in development), read off the whole Sid of Nekkhamma
+// Sid for the puppet lab (/sid), read off the whole Sid of Nekkhamma
 // (public/assets/nekkhamma/sid.webp, standing, walking) into src/lab/sid/sid.json: the size, his colours, where his eyes
 // are, his silhouette (his body alone, without his eyes, his arm or his legs: the eyes and the arm painted over with his
 // fill, the legs what lies farther than a line's width from it, the cuts closed and smoothed, then traced to a fraction

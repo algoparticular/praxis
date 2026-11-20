@@ -181,3 +181,92 @@ export const startTableVisit = (table) => {
     document.addEventListener('visibilitychange', onHidden);
     return finish;
 };
+
+// What a person does in Sid's world (/sid), told as one story when they leave it, with a few moments on the way.
+// It counts this visit only: what the world remembers on the phone (worldMemory.js: visits, seeds, plants) is never
+// sent, so it cannot tell who comes back. `from` is the page they came from (the landing's labyrinth, a link...).
+export const startWorldVisit = ({ from, touch, webgl }) => {
+    if (!tracking()) return { zone() {}, moved() {}, sat() {}, meditated() {}, seedPicked() {}, seedPlanted() {}, cardOpened() {}, cardClosed() {}, rulito() {}, finish() {} };
+    const startedAt = performance.now();
+    const meter = measureFrames();
+    const secs = (at = performance.now()) => Math.round((at - startedAt) / 100) / 10;
+    const zones = new Set(), places = new Set(), cards = new Set();
+    let distance = 0, sits = 0, seedsPicked = 0, seedsPlanted = 0, rulitos = 0, firstMoveAt = null, firstSitAt = null;
+    let opened = null, finished = false;
+
+    track('world_entered', { from, touch, webgl });
+
+    const visit = {
+        // the zone he walks into, the card of that world (the first one too: where the shuffled world starts)
+        zone(card) {
+            if (zones.has(card)) return;
+            zones.add(card);
+            track('world_zone_reached', { zone: card, zones: zones.size, seconds: secs() });
+        },
+        // how far he walked (in px of his world; crossing a zone is about 8000)
+        moved(by, how) {
+            if (!(by < 1000)) return;      // (a jump in place is not a walk: he walks at most a few px a frame)
+            distance += by;
+            if (firstMoveAt === null && distance > 40) {      // (a step, not the settling of his first frames)
+                firstMoveAt = performance.now();
+                track('world_moved', { seconds_to_first: secs(firstMoveAt), how });
+            }
+        },
+        sat() {
+            sits += 1;
+            if (firstSitAt === null) firstSitAt = performance.now();
+        },
+        // meditating at a place (a card's door), once a visit each
+        meditated(card) {
+            if (places.has(card)) return;
+            places.add(card);
+            track('world_place_meditated', { card_id: card, seconds: secs() });
+        },
+        seedPicked() { seedsPicked += 1; },
+        seedPlanted(card, zone) {
+            seedsPlanted += 1;
+            track('world_seed_planted', { seed: card, zone });
+        },
+        cardOpened(card) {
+            cards.add(card);
+            opened = { card, at: performance.now() };
+            track('world_card_opened', { card_id: card });
+        },
+        cardClosed(won) {
+            if (!opened) return;
+            track('world_card_closed', { card_id: opened.card, won, seconds: Math.round((performance.now() - opened.at) / 1000) });
+            opened = null;
+        },
+        // a rulito he comes back to the world with: won in its card, or born at its place (without WebGL)
+        rulito(card, via) {
+            rulitos += 1;
+            track('world_rulito', { card_id: card, via });
+        },
+        finish() {
+            if (finished) return;
+            finished = true;
+            window.removeEventListener('pagehide', visit.finish);
+            document.removeEventListener('visibilitychange', onHidden);
+            track('world_left', {
+                seconds: Math.round((performance.now() - startedAt) / 1000),
+                distance: Math.round(distance),
+                zones: zones.size,
+                places: places.size,
+                cards_opened: cards.size,
+                sits,
+                seeds_picked: seedsPicked,
+                seeds_planted: seedsPlanted,
+                rulitos,
+                seconds_to_first_move: firstMoveAt === null ? null : secs(firstMoveAt),
+                seconds_to_first_sit: firstSitAt === null ? null : secs(firstSitAt),
+                touch,
+                webgl,
+                ...framesReport(meter),
+            });
+        },
+    };
+    const onHidden = () => { if (document.visibilityState === 'hidden') visit.finish(); };
+    window.addEventListener('pagehide', visit.finish);
+    document.addEventListener('visibilitychange', onHidden);
+    return visit;
+};

@@ -1,4 +1,4 @@
-// The tree and its plants for the puppet lab's world (/lab/sid): originales/arbol/Ilustración_sin_título-N.png (3240 x
+// The tree and its plants for the puppet lab's world (/sid): originales/arbol/Ilustración_sin_título-N.png (3240 x
 // 4050, black line on an opaque white ground, each piece on its own layer) -> src/lab/arbol/NAME.webp (the line: the
 // ink as transparency, so the lab can tint it) and NAME-fill.webp (what is inside the line, white over transparent, so
 // the lab can paint it in code: a cream at first, a colour of Ciclos once it is coloured), NAME-PART-fill.webp (a part
