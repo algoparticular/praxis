@@ -1,6 +1,6 @@
 # El mundo semiabierto de Sid: plan
 
-Dónde estamos y cómo seguir con el mundo del laboratorio (`/lab/sid`). Para retomar en una sesión nueva: leer esto, `docs/sid-en-piezas.md` (qué hay hoy y qué pedirle a la ilustradora) y el punto "The puppet lab" de `CLAUDE.md`.
+Dónde estamos y cómo seguir con el mundo del laboratorio (`/sid`). Para retomar en una sesión nueva: leer esto, `docs/sid-en-piezas.md` (qué hay hoy y qué pedirle a la ilustradora) y el punto "The puppet lab" de `CLAUDE.md`.
 
 ## La idea
 

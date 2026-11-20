@@ -1,6 +1,6 @@
 <script setup>
-// The puppet lab: Sid (who is also Particular) as a puppet, to try how much more he can move than breathe. Only in
-// development (/lab/sid, see the router), never in the build. He is all drawn in code: his body from his silhouette
+// The puppet lab: Sid (who is also Particular) as a puppet, to try how much more he can move than breathe; the
+// world he walks is Sid's world, at /sid (see the router). He is all drawn in code: his body from his silhouette
 // traced off Nekkhamma's Sid (scripts/make-sid-lab.mjs -> sid.json), bent, squashed and stretched as a soft body; his
 // eyes (they look, blink and close); his arms and legs, strokes with his ink and line that bend freely. Canvas 2D on purpose: it shows the movement;
 // if it is what we want, the same rig goes into the WebGL stage (useLayerStage.js). Plan: docs/sid-en-piezas.md.

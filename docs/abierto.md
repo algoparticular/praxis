@@ -35,8 +35,11 @@ Lo que queda de `plan-inmersivo.md`. Los pasos 1 a 6 y The Nine en 3D ya están 
 Hipótesis, no decisiones: ninguna está implementada ni validada con Belén. Están en `plan-inmersivo.md`.
 - Qué se puede llevar la persona. De menor a mayor compromiso: la afirmación como imagen para guardar o compartir (ya hay una imagen social por carta), la carta del día guardada en el dispositivo, la invitación como recordatorio o nota propia, y el rulito que le salió a cada persona.
 - Antes de construirlo, mirar en la analítica cuánta gente completa un juego y cuánta llega a la lectura (`pattern_seen`, `all_released`).
-- Las 33 cartas ya tienen escena viva, pero 16 todavía no tienen juego (la 10, Tu verdad, no lo tendrá por ahora): llevar un verbo por vez a las cartas de su familia.
+- Las 33 cartas tienen escena viva y 32 tienen juego; la 10, Tu verdad, no lo tendrá por ahora.
 - Dos presupuestos de tamaño están justos (otras imágenes y ilustraciones de cartas): cada escena nueva con capas WebP los va a pedir.
+
+## El mundo de Sid
+Lo abierto del mundo (`/sid`) está en `mundo.md`: su lugar en Inicio (cuatro opciones, sin elegir), qué es en el fondo, el mapa fijo cuando estén todas las cartas y qué medir.
 
 ## Música y secuencias
 - Cómo se juegan los choques de mi–fa y si–do en una secuencia que suba por los chakras.

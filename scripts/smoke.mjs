@@ -35,6 +35,7 @@ const pages = [
     { path: '/oracle', name: 'oracle', expect: '.content' },
     { path: '/oracleTheNine', name: 'oracle the nine', expect: '.content' },
     { path: '/share/3', name: 'share', expect: '#share' },
+    { path: '/sid', name: 'sid', expect: '.labRoot', draws: true },
     { path: '/there-is-no-such-page', name: 'not found', expect: '.content' },
 ];
 const cardPages = cards.map((card) => ({ path: `/card/${card.id}`, name: `card ${card.id}`, expect: '.cardWrapper .stage', card: card.id, draws: sceneCards.includes(card.id) }));

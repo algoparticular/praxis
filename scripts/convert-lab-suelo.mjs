@@ -1,4 +1,4 @@
-// Plants, stones and mushrooms of the cards' scenes for the puppet lab's world (/lab/sid), cut out of the layers already
+// Plants, stones and mushrooms of the cards' scenes for the puppet lab's world (/sid), cut out of the layers already
 // in public/assets (no originals needed): the fans and the tufts of grass of Ciclos (its own plants, in the world's own
 // palette), the mushrooms and crystals of Upekkha's line drawing, the pink mushrooms of Desafío, the little glowing
 // plants of Metta, the mushrooms of Celebración, the curls of Paciencia's grass and its pine cone, Gratitud's palm and

@@ -1,4 +1,4 @@
-// The world round Sid in the puppet lab (/lab/sid): the little ticks of grass, a stipple and the streaks of the ground
+// The world round Sid in the puppet lab (/sid): the little ticks of grass, a stipple and the streaks of the ground
 // drawn in code with a pen of ink, and her drawn pieces (originales/arbol, made into src/lab/arbol by
 // scripts/convert-lab-arbol.mjs: each piece's line, and what is inside it, painted in code): ferns (the big one with
 // the sprout that grows out of its middle and curls up into a bead, as she drew them), pebbles and a stack of them,
