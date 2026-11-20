@@ -1,12 +1,12 @@
 # El mundo semiabierto de Sid: plan
 
-Dónde estamos y cómo seguir con el mundo del laboratorio (`/lab/sid`). Para retomar en una sesión nueva: leer esto, `docs/sid-en-piezas.md` (qué hay hoy y qué pedirle a la ilustradora) y el punto "The puppet lab" de `CLAUDE.md`.
+Dónde estamos y cómo seguir con el mundo del laboratorio (`/sid`). Para retomar en una sesión nueva: leer esto, `docs/sid-en-piezas.md` (qué hay hoy y qué pedirle a la ilustradora) y el punto "The puppet lab" de `CLAUDE.md`.
 
 ## La idea
 
 Un mundo para recorrer con Sid, con zonas conectadas, donde aparecen **personajes, lugares/escenas, objetos/semillas y enseñanzas** (frases de las cartas). Todavía no está decidido qué es en el fondo (un mapa de las cartas, un camino de aprendizaje, un jardín para estar): **la idea es explorar con piezas chicas y ver qué se siente bien** antes de construir mucho.
 
-Decidido con Juan Manuel:
+Decidido con Juan:
 - **Zonas conectadas**: un mundo continuo con regiones (cada una con la paleta y el cielo de una carta), unidas por caminos; se puede volver.
 - **Memoria en el teléfono**: lo que pasa (lo plantado, lo encontrado, lo coloreado) se guarda en el dispositivo, sin cuentas (`localStorage`), y el mundo crece con cada visita.
 - **Todo dentro de la PWA**, en `src/lab/` (no hay más artifact aparte).
@@ -46,7 +46,7 @@ Para cuando estén todas las cartas: un mapa fijo donde cada carta aparezca una 
 
 **Hecho: entrar a la carta meditando.** Sentado en loto en cualquiera de los siete lugares, apenas cruza las piernas medita 230 ms (`PORTAL_AFTER` en `LabSid.vue`, antes 3 s) y entra a su carta: el mundo hace zoom hacia él (`zoom`, los canvas del mundo agrandados alrededor de Sid) mientras la carta aparece encima, como en su página. Al volver (el laberinto o Escape), el mundo se aleja de nuevo y Sid sigue donde estaba, sentado.
 
-## Preguntas abiertas (a decidir con Juan Manuel antes de empezar)
+## Preguntas abiertas (a decidir con Juan antes de empezar)
 
 1. **¿Qué carta es la segunda zona?** Opciones pensadas: **Upekkha** (pasado y futuro, el estanque; ya hay capas en `public/assets/upekkha`), **Fe** (el río y los hongos; `public/assets/fe`) o **Paciencia** (arraigar, la piña; `public/assets/paciencia`). Propuesta: Upekkha.
 2. **¿Qué personaje primero, y cómo se dibuja?** Propuesta: un **Sama**, dibujado en código como Sid (su silueta leída una vez de una carta donde aparece, por un script como `scripts/make-sid-lab.mjs`), o pedirle a la ilustradora el personaje en piezas (ver `docs/sid-en-piezas.md`).

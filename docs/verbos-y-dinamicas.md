@@ -9,7 +9,7 @@ Qué dinámica propone cada verbo: más abajo, en "Dinámicas: qué propone cada
 - **Sin perder, sin puntaje.** El gesto se completa o se vuelve a intentar.
 - **El premio es siempre el rulito** (la espiral de conexión con el Todo, ya presente en la landing, Vipassana y Pañña): al completar el gesto de una carta, aparece o se enciende.
 - **No bloquea la lectura.** La descripción, la afirmación y la invitación están siempre disponibles.
-- Cada verbo trabaja contra el "demonio" de su chakra (ver tabla). Idea a validar con Belén.
+- Cada verbo trabaja contra el "demonio" de su chakra (ver tabla). Idea de trabajo, todavía abierta.
 
 ## Los 7
 | # | Personaje | Chakra | Nota | Propósito | Demonio | Verbo | Qué hace la persona |
@@ -25,7 +25,7 @@ Qué dinámica propone cada verbo: más abajo, en "Dinámicas: qué propone cada
 Las notas siguen la correspondencia tradicional Do–Si; la decisión de música se toma aparte.
 
 ## Dos corrientes: de Arraigar a Soltar
-Lectura de trabajo, a validar con Belén. Sale del libro *Cuerpo de Oriente, mente de Occidente* (corrientes energéticas y el viaje completo de los chakras) y de las notas de Belén en Notion. Los "7 movimientos" de esas notas son estos siete verbos.
+Lectura de trabajo, todavía abierta. Sale del libro *Cuerpo de Oriente, mente de Occidente* (corrientes energéticas y el viaje completo de los chakras) y de las notas de Juan en Notion. Los "7 movimientos" de esas notas son estos siete verbos.
 
 La energía de los chakras corre en dos sentidos:
 - **Corriente de manifestación** (baja): impulso del alma y del cuerpo. Se mueve hacia la forma, la densidad, los límites, la contracción y la individualidad.
@@ -34,7 +34,7 @@ La energía de los chakras corre en dos sentidos:
 Los siete verbos, uno por chakra, quedan ordenados entre dos polos:
 - **Arraigar** (raíz) es el polo de la manifestación: de la materia a la manifestación. Está probado en Paciencia, Hogar, Addhitthana, Compromiso, Confianza y Fe: las seis cartas del verbo se juegan.
 - **Soltar** (corona) es el polo de la liberación: del entendimiento a la existencia. Está probado en Vipassana, Nekkhamma, Upekkha, Ciclos y Perdón: las cinco cartas del verbo se juegan.
-- **Dar y recibir** (corazón) es donde las dos corrientes se encuentran. Las notas de Belén lo dicen así: "dos triángulos entrelazados, el movimiento descendente del espíritu en la materia y la liberación ascendente de la materia en el espíritu: equilibrio perfecto en el corazón". Está implementado en Dana: compartir la luz de la llamita con todos los de la isla, y que vuelva multiplicada; y con el mismo motor en Metta (empezando por uno mismo) y en Gratitud (agradecer a cada cosa) (ver más abajo, en "Dinámicas").
+- **Dar y recibir** (corazón) es donde las dos corrientes se encuentran. Las notas de Juan lo dicen así: "dos triángulos entrelazados, el movimiento descendente del espíritu en la materia y la liberación ascendente de la materia en el espíritu: equilibrio perfecto en el corazón". Está implementado en Dana: compartir la luz de la llamita con todos los de la isla, y que vuelva multiplicada; y con el mismo motor en Metta (empezando por uno mismo) y en Gratitud (agradecer a cada cosa) (ver más abajo, en "Dinámicas").
 - **Fluir, Encender, Resonar y Ver** serían los pasos entre un polo y el otro. Ver está probado en Pañña (y en Esperanza y Belleza), Encender en Evolución Espiritual, Fluir en Khanti (y en Aceptación, Transformación y Celebración; desde noviembre de 2026, llevando la corriente) y Resonar en Sincronicidad (a tiempo), en Creatividad (composición libre) y en Sacca (eco).
 
 Esto se parece a lo que el rulito premia: en las notas del tercer chakra, "siento las dos corrientes, ascendente de liberación y descendente de manifestación, que se unen en mí para manifestar mi propósito de ser quien soy".
@@ -210,7 +210,7 @@ El motor es común a las tres (`src/composables/useGiving.js`: el estado de cada
 
 **La mano:** a tiempo, toca lo que brilla en su pulso, empezando el gesto antes para que el dedo apoye justo en el tiempo (`tap` con `TAP_LEAD`), dos o tres pulsos seguidos; en eco, toca en el orden de la frase (`taps`); en la composición libre, toca una pieza apagada (`tap`).
 
-Las dos formas son a validar con Belén.
+Las dos formas todavía pueden cambiar.
 
 **Cómo funciona hoy en Sincronicidad (a tiempo):** las cuatro burbujas (el huevito, la larva, el encuentro y la pareja abrazada) se iluminan en orden con un pulso fijo, una cada 1,3 s; en el quinto tiempo salen chispas del fuego y el sexto es un silencio (`BEAT`, `PERIOD`). Cada burbuja brilla más justo en su tiempo y en ese instante echa chispas.
 - *Tocar a tiempo.* Un toque a menos de 0,28 s del tiempo de una burbuja (`IN_TIME`) la hace resonar: suena su nota del acorde de la carta (del huevito a la pareja suben Sol, Si, Re y el Sol de arriba; `resonate`), echa más chispas y queda encendida, con un halo detrás que respira con el pulso.
@@ -352,7 +352,7 @@ Con teclado, Enter o espacio sobre Sid suelta el pensamiento más cercano. Con m
 **Dónde se tocó:** `SceneUpekkha.vue` (`spawn()`, `letGoOf()`, `still()`, `press()`, `release()`, `game()`, `threadGroup`, `paintRegions()`), y las capas, los colores de fondo y los puntos de `scripts/convert-upekkha.mjs`.
 
 **Cómo funciona hoy en Ciclos:** *"Sólo puedes avanzar si sos capaz de soltar lo viejo."* El cielo es día y noche, dos líquidos que no se mezclan, y el disco del cielo es luna donde está la noche y sol donde está el día.
-- *Lo que queda del ciclo viejo.* Las plantas de las lomas, los abanicos rosas y las matas de pasto, guardan el ciclo viejo en sus hojas secas, como al terminar una estación. Tocar una la suelta (`release`): tiembla, el viento se lleva sus hojas secas (motas de su color) y queda baja, fina y desteñida. Cuentan las que se ven en la pantalla, las ocho más grandes. (Hasta noviembre de 2026 eran las gotas de la carta, pero en el teléfono tres quedaban fuera de la pantalla y las demás medían 10 a 25 px; lo decidió Juan Manuel. Las gotas siguen vivas en el cielo.)
+- *Lo que queda del ciclo viejo.* Las plantas de las lomas, los abanicos rosas y las matas de pasto, guardan el ciclo viejo en sus hojas secas, como al terminar una estación. Tocar una la suelta (`release`): tiembla, el viento se lleva sus hojas secas (motas de su color) y queda baja, fina y desteñida. Cuentan las que se ven en la pantalla, las ocho más grandes. (Hasta noviembre de 2026 eran las gotas de la carta, pero en el teléfono tres quedaban fuera de la pantalla y las demás medían 10 a 25 px; lo decidió Juan. Las gotas siguen vivas en el cielo.)
 - *La luna se vuelve sol.* Con cada planta soltada el día avanza un poco más sobre el disco (una abolladura en el borde entre los dos líquidos, `uDent` del campo, que siguen las máscaras de la luna y el sol): la luna cede y queda el sol.
 - *Respirar.* Como en Vipassana, Nekkhamma y Upekkha, mantener apretado a Sid es juntar el aire (`inhale`: crece su aura y entran motas hacia él); al soltarlo, si lo juntó entero, exhala (`exhale`) y sueltan sus hojas todas las plantas que quedan. Hito: `breath_released` (con `plants`).
 - *Cerrar el ciclo.* Con todas las plantas sueltas, el sol queda entero y su corona destella, Fa7 resuelve en Sib (`resolve`), se ilumina el nombre y nace el rulito sobre la cabeza de Sid (`rulito`). Cuando el rulito se va, la noche vuelve a derramarse sobre el sol y a las plantas les vuelven a crecer las hojas, una a una: un ciclo nuevo. Hito: `cycle_closed` (con `times` y `breath`).
