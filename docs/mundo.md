@@ -29,7 +29,7 @@ Se llamaba "el laboratorio de Sid" (`/lab/sid`). Desde el 20 de noviembre de 202
 
 ## Su lugar en Inicio (sin decidir)
 
-Hoy se llega solo desde el ícono del laberinto, en el footer de Inicio: está escondido (cuánta gente llega, no lo sabemos: no se mide). Inicio tiene tres bloques: el hero (el personaje y su espiral, que lleva al oráculo), el oráculo (mazo completo o Los Nueve) y la frase final; después el footer.
+Hoy se llega solo desde el ícono del laberinto, en el footer de Inicio: está escondido (cuánta gente llega se mide desde el 20 de noviembre). Inicio tiene tres bloques: el hero (el personaje y su espiral, que lleva al oráculo), el oráculo (mazo completo o Los Nueve) y la frase final; después el footer.
 
 Opciones pensadas, ninguna elegida:
 
@@ -40,13 +40,13 @@ Opciones pensadas, ninguna elegida:
 | **En el hero** | La primera pantalla ya es Sid en su mundo; el oráculo viene después | Lo más visible; el mundo es lo más propio de Anima | Cambia qué es Anima para quien llega (hoy, un oráculo); es la decisión más grande y la más cara de deshacer |
 | **Seguir en el footer, por ahora** | Como hoy, midiendo primero | No compromete nada mientras el mundo todavía no sabe qué es | Sigue escondido |
 
-Antes de elegir sirve medir: hoy la analítica no cuenta las visitas al mundo, solo las cartas abiertas desde él (`card_viewed` con `entry: 'lab'`). Faltaría un evento al entrar y al salir (tiempo, zonas recorridas, lugares meditados, semillas plantadas) para saber si quien lo encuentra se queda.
+Antes de elegir sirve medir. Desde el 20 de noviembre de 2026 el mundo tiene su analítica (`world_entered`, `world_left` y los momentos de adentro; la lista en `analitica.md`): de dónde se llega (el laberinto de Inicio o un enlace), cuánto se queda, cuánto camina, si encuentra el botón para sentarse, cuántos lugares medita, qué cartas abre y si las completa. Con unas semanas de datos se puede ver si quien lo encuentra se queda.
 
 ## Abierto
 
 - Su lugar en Inicio (arriba).
 - Qué es en el fondo: un mapa de las cartas, un camino o un jardín.
 - Para cuando estén todas las cartas: un mapa fijo donde cada una aparezca una sola vez (por ejemplo una grilla de 6x6 que se cierra sobre sí misma), así cada carta tiene su lugar y se aprende el camino. Hoy son siete.
-- Qué medir del mundo (arriba).
+- Mirar la analítica del mundo antes de decidir su lugar en Inicio (arriba).
 - Si Sid pasa del Canvas 2D a la escena WebGL común (`useLayerStage.js`), como el resto de las escenas.
 - Qué pedirle a la ilustradora: `sid-en-piezas.md`.

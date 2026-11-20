@@ -39,7 +39,7 @@ Hipótesis, no decisiones: ninguna está implementada ni validada con Belén. Es
 - Dos presupuestos de tamaño están justos (otras imágenes y ilustraciones de cartas): cada escena nueva con capas WebP los va a pedir.
 
 ## El mundo de Sid
-Lo abierto del mundo (`/sid`) está en `mundo.md`: su lugar en Inicio (cuatro opciones, sin elegir), qué es en el fondo, el mapa fijo cuando estén todas las cartas y qué medir.
+Lo abierto del mundo (`/sid`) está en `mundo.md`: su lugar en Inicio (cuatro opciones, sin elegir), qué es en el fondo, el mapa fijo cuando estén todas las cartas, y mirar su analítica (desde el 20 de noviembre) antes de elegir.
 
 ## Música y secuencias
 - Cómo se juegan los choques de mi–fa y si–do en una secuencia que suba por los chakras.
