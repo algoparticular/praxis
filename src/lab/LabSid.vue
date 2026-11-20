@@ -16,6 +16,7 @@ import { getCard } from '../data/cards.js';
 import { loadMemory, saveMemory } from './worldMemory.js';
 import CardTemplate from '../components/CardTemplate.vue';
 import { hasWebGL } from '../composables/useLayerStage.js';
+import { seedSvg } from './seedShape.js';
 
 const ui = reactive({ bones: false, sitting: false, touch: false, hint: false, seeds: 0, seedPop: 0 });
 
@@ -75,16 +76,18 @@ function tell(what, after = 0) {
 }
 
 // A seed flying, over the world, from where it lay into the button (picked up), or from the button to the ground in
-// front of him (planted): Algo Particular's mark in the seed's light, along a soft arc (none with reduced motion)
+// front of him (planted): the seed (seedShape.js) with its germ in the seed's light, along a soft arc (none with reduced
+// motion); `burst`: landing, the seed opens in a little burst of particles of its light (everything started from a
+// particle), and only then the plant sprouts
 const labEl = ref(null), lotusEl = ref(null);
 const still = typeof window !== 'undefined' && (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false);
-function fly(from, to, rgb, done, ms = 900) {
+function fly(from, to, rgb, done, ms = 900, burst = false) {
     const root = labEl.value;
     if (!root || still) { done?.(); return; }
-    const el = document.createElement('span');
+    const el = document.createElement('span'), colour = `rgb(${rgb.map(Math.round).join(',')})`;
     el.className = 'flyer';
-    el.style.setProperty('--seed', `rgb(${rgb.map(Math.round).join(',')})`);
-    el.appendChild(document.createElement('i'));     // (the mark, masked; the glow is the wrapper's, so the mask does not cut it)
+    el.style.setProperty('--seed', colour);
+    el.innerHTML = seedSvg({ fill: FILL, germ: colour, line: INK });
     root.appendChild(el);
     const lift = Math.min(180, 60 + Math.hypot(to.x - from.x, to.y - from.y) * 0.3);
     const mid = { x: (from.x + to.x) / 2, y: Math.min(from.y, to.y) - lift };
@@ -94,9 +97,24 @@ function fly(from, to, rgb, done, ms = 900) {
         const x = q * q * from.x + 2 * q * e * mid.x + e * e * to.x, y = q * q * from.y + 2 * q * e * mid.y + e * e * to.y;
         el.style.transform = `translate(${x}px, ${y}px) translate(-50%, -50%) scale(${1 + 0.35 * Math.sin(Math.PI * e) - 0.3 * e}) rotate(${e * 200}deg)`;
         el.style.opacity = String(Math.min(1, u * 8));
-        if (u < 1) requestAnimationFrame(step); else { el.remove(); done?.(); }
+        if (u < 1) requestAnimationFrame(step); else { el.remove(); if (burst) burstAt(to, colour); done?.(); }
     };
     requestAnimationFrame(step);
+}
+function burstAt(at, colour) {
+    const root = labEl.value;
+    if (!root) return;
+    for (let n = 0; n < 22; n++) {
+        const dot = document.createElement('span'), a = Math.random() * Math.PI * 2, r = 30 + Math.random() * 70, size = 3 + Math.random() * 5;
+        dot.className = 'mote';
+        Object.assign(dot.style, { width: `${size}px`, height: `${size}px`, background: n % 3 ? colour : '#FFF8E2', left: `${at.x}px`, top: `${at.y}px` });
+        root.appendChild(dot);
+        const anim = dot.animate([
+            { transform: 'translate(-50%, -50%) scale(1)', opacity: 1 },
+            { transform: `translate(calc(-50% + ${Math.cos(a) * r}px), calc(-50% + ${Math.sin(a) * r * 0.6 - 20}px)) scale(0.3)`, opacity: 0 },
+        ], { duration: 700 + Math.random() * 500, easing: 'cubic-bezier(.2,.7,.3,1)' });
+        anim.onfinish = () => dot.remove();
+    }
 }
 // where a point of his world (x, depth, up over the floor) is on the screen, and the middle of the button
 const toScreen = (x, d, up = 0) => ({ x: (view.w / view.k / 2 + (x - state.cam) * scaleAt(d)) * view.k, y: (groundAt(d) - up * scaleAt(d)) * view.k });
@@ -104,13 +122,23 @@ function buttonMiddle() {
     const r = lotusEl.value?.getBoundingClientRect();
     return r ? { x: r.left + r.width / 2, y: r.top + r.height / 2 } : { x: view.w - 62, y: view.h - 86 };
 }
-// picked up: it flies into the button, which counts it as it arrives (and, the first time, calls: sitting plants it)
-function seedFound({ card, x, d, light }) {
+// A seed he gets flies into the button, which counts it as it arrives (and, the first time, calls: sitting plants it).
+// Seeds are found (a few on the ground, a spore of light caught on the wind: sidWorld.js) and, above all, won: the
+// rulito born at a place (its card's game, or the place's own without WebGL) gives a seed of that card, which he can
+// plant in another world
+function addSeed(card, from, light) {
     memory.seeds.push(card); saveMemory(memory); play('pick');
-    fly(toScreen(x, d, 90), buttonMiddle(), light ?? world.seedLight(card), () => {
+    fly(from, buttonMiddle(), light ?? world.seedLight(card), () => {
         ui.seeds = memory.seeds.length; ui.seedPop += 1;
         if (!firstSeedCalled && !memory.learned.planted) { firstSeedCalled = true; callButton(); }
     });
+}
+const seedFound = ({ card, x, d, light, up = 90 }) => addSeed(card, toScreen(x, d, up), light);
+// the card's name in the world (sidWorld.js PLACES) of each place's card id
+const PLACE_SEED = { 15: 'ciclos', 8: 'metta', 9: 'upekkha', 14: 'celebracion', 27: 'paciencia', 24: 'gratitud', 32: 'transformacion' };
+function winSeed(id) {
+    const card = PLACE_SEED[id];
+    if (card && !gone) addSeed(card, { x: sidOnScreen.x, y: sidOnScreen.y - 60 });
 }
 const canvas = ref(null);
 const nightSky = ref(null), starCanvas = ref(null);   // the cards' starry night, behind the drawing (useStarField.js)
@@ -174,6 +202,8 @@ function closePortal() {
         rulito.value?.reshape();
         const c = getCard(card);
         if (c) Object.assign(teaching, { es: c.affirmation_es.trim(), en: c.affirmation_en.trim(), on: true, story: false });
+        // (and its seed, once the world is back round him)
+        setTimeout(() => winSeed(card), 1600);
     }
     portal.card = null;
 }
@@ -702,7 +732,7 @@ function update(dt, now) {
         if (!state.sowing && state.plantT >= PLANT_AFTER - SOW_FLIGHT) {
             state.sowing = true;
             ui.seeds = memory.seeds.length - 1;
-            fly(buttonMiddle(), toScreen(state.x, state.d - 110), world.seedLight(memory.seeds[0]), null, SOW_FLIGHT * 1000);
+            fly(buttonMiddle(), toScreen(state.x, state.d - 110), world.seedLight(memory.seeds[0]), null, SOW_FLIGHT * 1000, true);
         }
         if (state.plantT >= PLANT_AFTER) {
             state.planted = true;
@@ -740,6 +770,7 @@ function update(dt, now) {
         r.head = 1 - (1 - Math.min(1, r.age / RULITO_GROW)) ** 1.6;
         if (r.head >= 1 && !r.full) {
             r.full = true; r.pop = 1; play('rulito');
+            setTimeout(() => winSeed(r.card), 900);
             const c = getCard(r.card);
             if (c) Object.assign(teaching, { es: c.affirmation_es.trim(), en: c.affirmation_en.trim(), on: true, story: false });
         }
@@ -1486,20 +1517,21 @@ canvas {
     position: absolute;
     left: 0;
     top: 0;
-    width: 46px;
-    height: 46px;
+    width: 38px;
+    height: 48px;
     z-index: 3;
     pointer-events: none;
-    filter: drop-shadow(0 0 1.5px rgba(20, 50, 70, 0.7)) drop-shadow(0 0 10px rgba(255, 244, 214, 1)) drop-shadow(0 0 4px rgba(255, 244, 214, 1));
+    filter: drop-shadow(0 0 8px var(--seed, #FFF4D6)) drop-shadow(0 0 3px rgba(255, 244, 214, 1));
     will-change: transform;
 }
-.lab .flyer i {
-    display: block;
-    width: 100%;
-    height: 100%;
-    background-color: var(--seed, #FFF4D6);
-    -webkit-mask: url('../assets/icon/Seed.svg') center / contain no-repeat;
-    mask: url('../assets/icon/Seed.svg') center / contain no-repeat;
+.lab .flyer svg { display: block; width: 100%; height: 100%; }
+/* the little burst of particles of a seed planted, as it lands */
+.lab .mote {
+    position: absolute;
+    z-index: 3;
+    border-radius: 50%;
+    pointer-events: none;
+    box-shadow: 0 0 6px rgba(255, 244, 214, 0.9);
 }
 /* The app's header over his light sky: its cream icons in the ink of his line (the header is teleported into <body>,
    so this is not scoped; body.lab-page only while the lab is open) */
