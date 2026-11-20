@@ -1,12 +1,14 @@
 // What the lab's world remembers on this device, with no account (localStorage): how many visits, the seeds Sid
-// carries (the card of each, in the order he found them) and what he has planted (where, in the zone of which card,
+// carries (the card of each, in the order he found them), what he has planted (where, in the zone of which card,
 // so it is found again in its world however the worlds are shuffled; see `plant` in sidWorld.js). If the browser keeps
-// nothing (a private window, storage blocked), the world works the same and simply does not remember.
+// nothing (a private window, storage blocked), the world works the same and simply does not remember. `learned`: what
+// the person has already done once, so its hint never shows again (sat in lotus, planted a seed, opened a place's card,
+// read the words that open the world and the ones at a place: see the hints in LabSid.vue).
 const KEY = 'lab.sid.world';
 const MAX_PLANTED = 300;
 
 export function loadMemory() {
-    const fresh = { v: 1, visits: 0, seeds: [], planted: [] };
+    const fresh = { v: 1, visits: 0, seeds: [], planted: [], learned: {} };
     try {
         const saved = JSON.parse(localStorage.getItem(KEY) || 'null');
         if (!saved || saved.v !== 1) return fresh;
@@ -15,6 +17,7 @@ export function loadMemory() {
             visits: Number(saved.visits) || 0,
             seeds: Array.isArray(saved.seeds) ? saved.seeds.filter((s) => typeof s === 'string') : [],
             planted: Array.isArray(saved.planted) ? saved.planted.filter((p) => p && typeof p.name === 'string') : [],
+            learned: saved.learned && typeof saved.learned === 'object' ? { ...saved.learned } : {},
         };
     } catch {
         return fresh;

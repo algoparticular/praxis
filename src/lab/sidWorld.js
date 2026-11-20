@@ -19,6 +19,7 @@ import ciclos from '../composables/ciclosScene.json';
 import { decodeCloud, sampleCloud } from '../composables/stippleCloud.js';
 import arbol from './arbol/arbol.json';
 import suelo from './suelo/suelo.json';
+import seedSvg from '../assets/icon/Seed.svg?raw';
 
 // Her pieces, and the plants, stones and mushrooms cut out of the cards' scenes (src/lab/suelo, made by
 // scripts/convert-lab-suelo.mjs): the line and what is inside it, as pictures (tinted in code)
@@ -104,7 +105,9 @@ const CURLS = ['pacCurl0', 'pacCurl1', 'pacCurl2', 'pacCurl3', 'pacCurl4', 'pacC
 // A card with no plant of its own (Transformación: its tree is its place, not a plant to sow) grows any other card's
 const SEED_CHANCE = 0.03, SEED_PICK = 130, SEED_SPROUT = 5;     // (how near he picks it up; seconds it takes to sprout)
 const SEED_GROWTH = [0.6, 0.8, 1];
-const SEED_SIZE = 2.6;          // (how big a seed is drawn: big enough to be seen from afar)
+const SEED_SIZE = 2.6;
+// the seed's shape: Algo Particular's mark, as on the seed button (src/assets/icon/Seed.svg, 40 x 40)
+const MARK = typeof Path2D === 'undefined' ? [] : [...seedSvg.matchAll(/ d="([^"]+)"/g)].map((m) => new Path2D(m[1]));          // (how big a seed is drawn: big enough to be seen from afar)
 const SEED_PLANTS = {
     ciclos: [['fan0', 0.75, 0.35], ['fan1', 0.7, 0.35], ['fan2', 0.6, 0.35], ['fan3', 0.75, 0.35]],
     metta: [['bloom0', 1, 0.4], ['bloom1', 1, 0.4], ['bloom2', 1, 0.4], ['bloom3', 1.1, 0.4], ['bloom4', 1.15, 0.4]],
@@ -630,7 +633,7 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
                 // a seed he walks over: he picks it up (it rises and goes, and the page counts it)
                 if (item.kind === 'seed' && !taken.has(item.id) && !sid.sitting && dist < SEED_PICK) {
                     taken.add(item.id); lifeOf(item).up = 0;
-                    onSeed?.({ card: item.card, id: item.cardId });
+                    onSeed?.({ card: item.card, id: item.cardId, x: item.x, d: item.d, light: item.P?.light });
                 }
                 if (item.kind === 'seed' && taken.has(item.id)) { const l = lifeOf(item); l.up = Math.min(1, (l.up ?? 0) + dt * 1.6); }
                 // colour: as he walks by, and inside the wave while he sits (what grows round a place, with its place)
@@ -1035,25 +1038,23 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
             break;
         }
         case 'seed': {
-            // a seed on the ground, of its card: a little almond in its white with a line of its ink, floating a little
-            // over its own soft light in a colour of its zone, and twinkling so it is seen from afar; picked up, it rises
-            // and goes
+            // a seed on the ground, of its card: Algo Particular's mark (the cross and its four dots, the same seed as
+            // the button's, so what is found and where it goes are seen to be one thing), in its zone's light with a
+            // line of its ink, floating a little over its own soft light and twinkling so it is seen from afar; picked
+            // up, it rises and goes (the page flies it into the button)
             const up = l?.up ?? 0;
             if (up >= 1) break;
             const bob = Math.sin(time * 2 + item.phase) * 7, rise = up * up * 420, a = 1 - up, K = SEED_SIZE;
             const glowRgb = item.P.light.map(Math.round), twinkle = 0.5 + 0.5 * Math.sin(time * 3.1 + item.phase * 2);
             c.globalAlpha *= a;
             halo(c, 0, -6, 70 * K, glowRgb, 0.45 + 0.25 * twinkle);
-            c.save(); c.translate(0, -34 * K - bob * K - rise); c.rotate(0.35 * Math.sin(time * 0.9 + item.phase)); c.scale(K * (1 - up * 0.4), K * (1 - up * 0.4));
+            c.save(); c.translate(0, -34 * K - bob * K - rise); c.rotate(0.25 * Math.sin(time * 0.9 + item.phase)); c.scale(K * (1 - up * 0.4), K * (1 - up * 0.4));
             halo(c, 0, 0, 46, [255, 250, 230], 0.25 + 0.35 * twinkle);
-            c.fillStyle = css(screen.white); c.strokeStyle = line; c.lineWidth = LINE * 0.5;
-            c.beginPath(); c.moveTo(0, -24); c.bezierCurveTo(17, -14, 15, 14, 0, 22); c.bezierCurveTo(-15, 14, -17, -14, 0, -24); c.fill(); c.stroke();
-            c.fillStyle = `rgb(${glowRgb.join(',')})`;
-            c.beginPath(); c.ellipse(-3, 2, 5, 9, 0.2, 0, Math.PI * 2); c.fill();
-            // (a glint of light that comes and goes)
-            const s = 7 + 7 * twinkle;
-            c.strokeStyle = `rgba(255,255,255,${0.4 + 0.6 * twinkle})`; c.lineWidth = 3;
-            c.beginPath(); c.moveTo(16 - s, -22); c.lineTo(16 + s, -22); c.moveTo(16, -22 - s); c.lineTo(16, -22 + s); c.stroke();
+            const breathe = 1 + 0.06 * twinkle;
+            c.scale(breathe, breathe);
+            c.fillStyle = `rgb(${glowRgb.join(',')})`; c.strokeStyle = line; c.lineWidth = LINE * 0.34; c.lineJoin = 'round';
+            c.translate(-23, -23); c.scale(1.15, 1.15);
+            for (const p of MARK) { c.stroke(p); c.fill(p); }
             c.restore();
             break;
         }
@@ -1234,5 +1235,7 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
     // (seedsNear: the seeds not yet picked up round (x, d), to find one from the console)
     const seedsNear = (x, d, range = 3000) => [...patches(x - range, x + range, d - range, d + range)]
         .filter((item) => item.kind === 'seed' && !taken.has(item.id)).map(({ x: sx, d: sd, card }) => ({ x: sx, d: sd, card }));
-    return { update, draw, drawSky, drawGround, ground, night, ink, white, nightColour, placeCard, zoneCard, obstacles, plant, seedsNear, setClock: (v) => { clock = ((v % 1) + 1) % 1; } };
+    // (seedLight: the light of a card's seeds, for the page to fly one from the button to where it is planted)
+    const seedLight = (card) => { const z = ZONES.find((q) => q.card === card); return z ? colourOf([{ z, w: 1 }], 'bead', 0.5).light : [255, 244, 214]; };
+    return { update, draw, drawSky, drawGround, ground, night, ink, white, nightColour, placeCard, zoneCard, obstacles, plant, seedsNear, seedLight, setClock: (v) => { clock = ((v % 1) + 1) % 1; } };
 }

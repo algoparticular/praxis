@@ -19,21 +19,98 @@ import { hasWebGL } from '../composables/useLayerStage.js';
 
 const ui = reactive({ bones: false, sitting: false, touch: false, hint: false, seeds: 0, seedPop: 0 });
 
-// The seed's hint: until the seed has been pressed once (or the space bar used), every 7 s left without it (as the ghost
-// hand's HINT_AFTER in the scenes) the button calls for a moment: it swells and glows and rings of light go out of it,
-// twice, then rests. Once he has sat once, the person knows: it never calls again in this visit.
-const SEED_HINT_AFTER = 7000;
-const SEED_HINT_SHOW = 4400;   // two calls of the animation (.lotus.hint)
-let seedUsed = false, hintTimer = 0;
+// The hints, with no words (as the ghost hand in the scenes): the seed button calls (it swells and glows and rings of
+// light go out of it, twice), and what the person has done once (memory.learned) is never hinted again:
+// - left a while without being pressed (HINT_FIRST on the first visit, when everything is new; HINT_AFTER later), until
+//   he has sat once in this visit;
+// - when the first seed he finds has flown into it (the seeds are kept in it, and sitting plants them), until one has
+//   been planted;
+// - standing at a place, where a ring of light under his feet says where to sit (always), every HINT_AT_PLACE s,
+//   until he has sat at a place once.
+// The first visit also opens with a few words written by hand, and the first place he comes to with a few more (STORY)
+const HINT_AFTER = 7000, HINT_FIRST = 4000, HINT_SHOW = 4400, HINT_AT_PLACE = 5;
+let satThisVisit = false, hintTimer = 0, callTimer = 0, firstSeedCalled = false;
+function callButton() {
+    if (ui.sitting || portal.card != null) return;
+    ui.hint = false;
+    clearTimeout(callTimer);
+    // (off and on again on the next frame, so the animation starts over)
+    requestAnimationFrame(() => { ui.hint = true; callTimer = setTimeout(() => { ui.hint = false; }, HINT_SHOW); });
+}
 function scheduleHint() {
     clearTimeout(hintTimer);
-    if (seedUsed) return;
+    if (satThisVisit) return;
     hintTimer = setTimeout(() => {
-        if (seedUsed) return;
-        if (ui.sitting) { scheduleHint(); return; }
-        ui.hint = true;
-        hintTimer = setTimeout(() => { ui.hint = false; scheduleHint(); }, SEED_HINT_SHOW);
-    }, SEED_HINT_AFTER);
+        if (satThisVisit) return;
+        callButton();
+        hintTimer = setTimeout(scheduleHint, HINT_SHOW);
+    }, memory.visits <= 1 ? HINT_FIRST : HINT_AFTER);
+}
+function learn(what) {
+    if (memory.learned[what]) return;
+    memory.learned[what] = true;
+    saveMemory(memory);
+}
+// A few words written by hand on the teaching's card, once ever each (memory.learned): the story of the world, which
+// is also how it is played (DRAFT: the words are the author's to choose)
+const STORY = {
+    intro: { es: 'Por el mundo hay semillas de luz. Donde Sid medita, florecen.', en: 'Seeds of light lie about the world. Where Sid meditates, they bloom.' },
+    place: { es: 'Este lugar guarda una carta.', en: 'This place holds a card.' },
+};
+const STORY_SHOW = 6500;
+let storyTimer = 0, gone = false;
+const told = new Set();                     // (said, or waiting to be said, in this visit)
+function tell(what, after = 0) {
+    if (memory.learned[`words_${what}`] || told.has(what)) return;
+    told.add(what);
+    setTimeout(function say() {
+        if (gone) return;
+        // (never over a card's affirmation or a card opened: it waits for them to go)
+        if (teaching.on || portal.card != null) { setTimeout(say, 1500); return; }
+        learn(`words_${what}`);
+        Object.assign(teaching, { ...STORY[what], on: true, story: true });
+        clearTimeout(storyTimer);
+        storyTimer = setTimeout(() => { if (teaching.story) teaching.on = false; }, STORY_SHOW);
+    }, after);
+}
+
+// A seed flying, over the world, from where it lay into the button (picked up), or from the button to the ground in
+// front of him (planted): Algo Particular's mark in the seed's light, along a soft arc (none with reduced motion)
+const labEl = ref(null), lotusEl = ref(null);
+const still = typeof window !== 'undefined' && (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false);
+function fly(from, to, rgb, done, ms = 900) {
+    const root = labEl.value;
+    if (!root || still) { done?.(); return; }
+    const el = document.createElement('span');
+    el.className = 'flyer';
+    el.style.setProperty('--seed', `rgb(${rgb.map(Math.round).join(',')})`);
+    el.appendChild(document.createElement('i'));     // (the mark, masked; the glow is the wrapper's, so the mask does not cut it)
+    root.appendChild(el);
+    const lift = Math.min(180, 60 + Math.hypot(to.x - from.x, to.y - from.y) * 0.3);
+    const mid = { x: (from.x + to.x) / 2, y: Math.min(from.y, to.y) - lift };
+    const t0 = performance.now();
+    const step = (now) => {
+        const u = Math.min(1, (now - t0) / ms), e = u < 0.5 ? 2 * u * u : 1 - (-2 * u + 2) ** 2 / 2, q = 1 - e;
+        const x = q * q * from.x + 2 * q * e * mid.x + e * e * to.x, y = q * q * from.y + 2 * q * e * mid.y + e * e * to.y;
+        el.style.transform = `translate(${x}px, ${y}px) translate(-50%, -50%) scale(${1 + 0.35 * Math.sin(Math.PI * e) - 0.3 * e}) rotate(${e * 200}deg)`;
+        el.style.opacity = String(Math.min(1, u * 8));
+        if (u < 1) requestAnimationFrame(step); else { el.remove(); done?.(); }
+    };
+    requestAnimationFrame(step);
+}
+// where a point of his world (x, depth, up over the floor) is on the screen, and the middle of the button
+const toScreen = (x, d, up = 0) => ({ x: (view.w / view.k / 2 + (x - state.cam) * scaleAt(d)) * view.k, y: (groundAt(d) - up * scaleAt(d)) * view.k });
+function buttonMiddle() {
+    const r = lotusEl.value?.getBoundingClientRect();
+    return r ? { x: r.left + r.width / 2, y: r.top + r.height / 2 } : { x: view.w - 62, y: view.h - 86 };
+}
+// picked up: it flies into the button, which counts it as it arrives (and, the first time, calls: sitting plants it)
+function seedFound({ card, x, d, light }) {
+    memory.seeds.push(card); saveMemory(memory); play('pick');
+    fly(toScreen(x, d, 90), buttonMiddle(), light ?? world.seedLight(card), () => {
+        ui.seeds = memory.seeds.length; ui.seedPop += 1;
+        if (!firstSeedCalled && !memory.learned.planted) { firstSeedCalled = true; callButton(); }
+    });
 }
 const canvas = ref(null);
 const nightSky = ref(null), starCanvas = ref(null);   // the cards' starry night, behind the drawing (useStarField.js)
@@ -44,10 +121,11 @@ let stars = null;
 // affirmation of that place's card is written in the sky, by hand (teaching), and goes when he gets up
 const rulito = ref(null);
 const RULITO_AFTER = 3, RULITO_GROW = 2.2, RULITO_GO = 3.4;
-const teaching = reactive({ es: '', en: '', on: false, light: false, ink: CICLOS.ink });
+const teaching = reactive({ es: '', en: '', on: false, story: false, light: false, ink: CICLOS.ink });
 // the rulito is born in the colour its card gives it (as in the card's own scene)
 const RULITO_COLOURS = { 15: '#fc747c', 8: '#f595b6', 9: '#b3539a', 14: '#ffe285', 27: '#f37b85', 24: '#fff6c2', 32: '#f5d35a' };
 const rulitoColour = ref(RULITO_COLOURS[15]);
+const hexRgb = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)).join(',');
 // A door to the card, at every place (her tree, Metta's nest, Upekkha's pond, Celebración's fire, Paciencia's boat,
 // Gratitud's house, Transformación's seed): sitting in lotus at its place, after PORTAL_AFTER s (230 ms, once his
 // legs are crossed) the world zooms in on him at his place (`zoom`, the world's canvases scaled about him) while it
@@ -95,7 +173,7 @@ function closePortal() {
         rulitoColour.value = RULITO_COLOURS[card] ?? RULITO_COLOURS[15];
         rulito.value?.reshape();
         const c = getCard(card);
-        if (c) Object.assign(teaching, { es: c.affirmation_es.trim(), en: c.affirmation_en.trim(), on: true });
+        if (c) Object.assign(teaching, { es: c.affirmation_es.trim(), en: c.affirmation_en.trim(), on: true, story: false });
     }
     portal.card = null;
 }
@@ -156,11 +234,11 @@ const memory = loadMemory();
 memory.visits += 1;
 saveMemory(memory);
 ui.seeds = memory.seeds.length;
-const PLANT_AFTER = 1.5;
+const PLANT_AFTER = 1.5, SOW_FLIGHT = 0.8;
 const world = createWorld({
     clouds: picture('/assets/ciclos/clouds.webp'), moon: picture('/assets/ciclos/moon.webp'),
     planted: memory.planted, visit: memory.visits,
-    onSeed: ({ card }) => { memory.seeds.push(card); ui.seeds = memory.seeds.length; ui.seedPop += 1; saveMemory(memory); play('pick'); },
+    onSeed: seedFound,
 });
 // The floor goes back into the distance: his depth d (0 in front .. DEPTH at the back) lifts his feet towards the
 // horizon and makes him smaller, towards the middle of the screen (a vanishing point)
@@ -260,6 +338,7 @@ const state = {
     cam: 0, camD: 0,               // where the camera looks: across and into the distance (it follows him, the world has no end)
     pace: 1,                       // how fast the world's time goes (all but still while he meditates)
     shift: 0,                      // his body over the foot he stands on (seen from the front, his weight going side to side)
+    ring: 0, ringCard: 15, placeCall: 0.5,   // the ring of light under his feet at a place (0..1), its card, and the button's next call there
     gait: null,                    // walking: his legs in their poses this frame ({ legs, hd }), and how much he is lowered
     gaitDrop: 0,
     keys: { left: false, right: false, up: false, down: false },
@@ -409,7 +488,8 @@ function wave() { if (!ui.sitting) act('wave', 2.6, { arm: 'near' }); }
 function jump() { if (!ui.sitting && !state.air) { state.jumped = false; act('jump', 1.7); } }
 function sit(on = !ui.sitting) {
     if (on === ui.sitting) return;
-    seedUsed = true; ui.hint = false; clearTimeout(hintTimer);
+    if (on) { satThisVisit = true; clearTimeout(hintTimer); learn('sat'); }
+    ui.hint = false;
     // getting up is its own little movement while his legs are still crossed
     state.rising = !on && Math.max(...state.legSit) > 0.1;
     ui.sitting = on; state.sitT = 0; state.settled = false; state.target = null; state.action = null;
@@ -613,17 +693,36 @@ function update(dt, now) {
     const card = seated ? world.placeCard(state.x, state.d) : null;
     state.underTree = card ? state.underTree + dt : 0;
     // away from the places, with seeds, he plants one in front of him (once each time he sits)
-    if (!ui.sitting) { state.plantT = 0; state.planted = false; state.portalDone = false; }
-    else if (seated && !card && !state.planted && memory.seeds.length) {
+    // (the seed leaves the button SOW_FLIGHT s before, and flies to the ground in front of him, where it sprouts)
+    if (!ui.sitting) {
+        if (state.sowing && !state.planted) ui.seeds = memory.seeds.length;   // (he got up before it landed: it stays his)
+        state.plantT = 0; state.planted = false; state.sowing = false; state.portalDone = false;
+    } else if (seated && !card && !state.planted && memory.seeds.length) {
         state.plantT += dt;
+        if (!state.sowing && state.plantT >= PLANT_AFTER - SOW_FLIGHT) {
+            state.sowing = true;
+            ui.seeds = memory.seeds.length - 1;
+            fly(buttonMiddle(), toScreen(state.x, state.d - 110), world.seedLight(memory.seeds[0]), null, SOW_FLIGHT * 1000);
+        }
         if (state.plantT >= PLANT_AFTER) {
             state.planted = true;
             memory.planted.push(world.plant(memory.seeds.shift(), state.x, state.d - 110));
             ui.seeds = memory.seeds.length;
+            learn('planted');
             saveMemory(memory);
             play('bloom');
         }
     }
+    if (card != null) learn('place');
+    // Standing at a place, a ring of light under his feet, in its rulito's colour: here, sitting, something happens;
+    // and until he has sat at one once, the button calls while he stands there (the first time, a few words too)
+    const at = !ui.sitting && !state.rising && portal.card == null ? world.placeCard(state.x, state.d) : null;
+    state.ring += ((at != null ? 1 : 0) - state.ring) * Math.min(1, dt * (at != null ? 2.5 : 4));
+    if (at != null) {
+        state.ringCard = at;
+        if (!memory.learned.place) { state.placeCall -= dt; if (state.placeCall <= 0) { callButton(); state.placeCall = HINT_AT_PLACE; } }
+        tell('place');
+    } else state.placeCall = 0.5;
     // at a door to a card, the card's scene instead of the rulito here
     const door = card != null && PORTALS.has(card) && webgl;
     if (door && !state.portalDone && portal.card == null && state.underTree >= PORTAL_AFTER) openPortal(card);
@@ -642,7 +741,7 @@ function update(dt, now) {
         if (r.head >= 1 && !r.full) {
             r.full = true; r.pop = 1; play('rulito');
             const c = getCard(r.card);
-            if (c) Object.assign(teaching, { es: c.affirmation_es.trim(), en: c.affirmation_en.trim(), on: true });
+            if (c) Object.assign(teaching, { es: c.affirmation_es.trim(), en: c.affirmation_en.trim(), on: true, story: false });
         }
         if (!ui.sitting) { r.tail = Math.min(1, r.tail + dt / RULITO_GO); teaching.on = false; }
         if (r.tail >= 1) { state.rul = null; rulito.value?.frame({ width: 40 }); }
@@ -950,6 +1049,24 @@ function draw() {
     c.beginPath();
     c.ellipse(f.root.x, state.ground + 4, 70 * (1 - Math.min(0.5, state.lift / 400)), 9, 0, 0, Math.PI * 2);
     c.fill();
+    // at a place, a ring of dots of light round his feet, turning slowly and breathing: sit here (cream dots, each in a
+    // halo of its rulito's colour, so it reads over any ground, by day and by night)
+    if (state.ring > 0.01) {
+        const t = performance.now() / 1000, rgb = hexRgb(RULITO_COLOURS[state.ringCard] ?? RULITO_COLOURS[15]);
+        const R = 175 + 10 * Math.sin(t * 2.2), a = state.ring, FLAT = 0.2;
+        const glow = c.createRadialGradient(0, 0, R * 0.5, 0, 0, R * 1.25);
+        glow.addColorStop(0, `rgba(${rgb},0)`); glow.addColorStop(0.6, `rgba(${rgb},${0.4 * a})`); glow.addColorStop(1, `rgba(${rgb},0)`);
+        c.save(); c.translate(f.root.x, state.ground + 4); c.scale(1, FLAT);
+        c.fillStyle = glow; c.beginPath(); c.arc(0, 0, R * 1.25, 0, Math.PI * 2); c.fill();
+        for (let i = 0; i < 20; i++) {
+            const q = i / 20 * Math.PI * 2 + t * 0.35, w = 0.6 + 0.4 * Math.sin(t * 3 - i * 0.9), x = Math.cos(q) * R, y = Math.sin(q) * R;
+            c.fillStyle = `rgba(${rgb},${0.55 * a * w})`;
+            c.beginPath(); c.ellipse(x, y, 16, 16 / FLAT, 0, 0, Math.PI * 2); c.fill();
+            c.fillStyle = `rgba(255,248,226,${a * w})`;
+            c.beginPath(); c.ellipse(x, y, 8, 8 / FLAT, 0, 0, Math.PI * 2); c.fill();
+        }
+        c.restore();
+    }
 
     // An arm or a leg as one soft curve through its elbow or knee (never a sharp corner), and the foot after it
     const limb = ([a, joint, end, toe], width) => {
@@ -1121,13 +1238,14 @@ onMounted(() => {
     stars = createStarField(starCanvas.value, nightSky.value, { pace: () => state.pace, onShoot: () => { if (world.night() > 0.5) play('star'); } });
     raf = requestAnimationFrame(loop);
     scheduleHint();
+    tell('intro', 1400);
 });
 onBeforeUnmount(() => {
     document.body.classList.remove('lab-page', 'lab-night', 'lab-portal');
     clearTimeout(portalTimer);
     setCardChord(null);
     cancelAnimationFrame(raf);
-    clearTimeout(hintTimer);
+    gone = true; clearTimeout(hintTimer); clearTimeout(callTimer); clearTimeout(storyTimer);
     stars?.destroy();
     window.removeEventListener('resize', resize);
     window.removeEventListener('keydown', onKey);
@@ -1141,7 +1259,7 @@ onBeforeUnmount(() => {
          it as on its own page, a card opened at its place) -->
     <div class="labRoot">
     <!-- (no menu on a long press: a finger held down only guides him) -->
-    <div class="lab" @contextmenu.prevent>
+    <div ref="labEl" class="lab" @contextmenu.prevent>
         <div ref="nightSky" class="night-sky" :style="zoomStyle"><canvas ref="starCanvas"></canvas></div>
         <!-- the rulito draws itself on its own canvas, which this scene lays over his head -->
         <Rulito ref="rulito" class="offstage" :color="rulitoColour" />
@@ -1158,7 +1276,7 @@ onBeforeUnmount(() => {
         <!-- one button, on a phone and on a computer alike: the seed, Algo Particular's mark (as in the header), sits him
              in lotus and gets him up again; he walks with the arrows or WASD, or where a click or a touch on the floor
              sends him; a touch on him makes him wave (on a computer J jumps) -->
-        <button class="lotus glass" :class="{ on: ui.sitting, hint: ui.hint }" :aria-pressed="ui.sitting" aria-label="Loto" title="Loto" @click="sit()">
+        <button ref="lotusEl" class="lotus glass" :class="{ on: ui.sitting, hint: ui.hint }" :aria-pressed="ui.sitting" aria-label="Loto" title="Loto" @click="sit()">
             <span class="seed" aria-hidden="true"></span>
             <!-- the seeds he carries (picked up walking, planted sitting in lotus away from the places) -->
             <span v-if="ui.seeds" :key="ui.seedPop" class="count">{{ ui.seeds }}</span>
@@ -1328,7 +1446,7 @@ canvas {
     100% { transform: scale(1); }
 }
 @media (prefers-reduced-motion: reduce) { .lotus .count { animation: none; } }
-/* the hint: left 7 s without being pressed, the seed calls (swells, glows, and a ring of light goes out of it), twice */
+/* the hint (callButton): left a while without being pressed, when the first seed comes in, at a place, the seed calls (swells, glows, and a ring of light goes out of it), twice */
 .lotus::before {
     content: '';
     position: absolute;
@@ -1363,6 +1481,26 @@ canvas {
 </style>
 
 <style>
+/* a seed flying into the button or out of it to be planted (fly() in the script, made outside Vue: not scoped) */
+.lab .flyer {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 46px;
+    height: 46px;
+    z-index: 3;
+    pointer-events: none;
+    filter: drop-shadow(0 0 1.5px rgba(20, 50, 70, 0.7)) drop-shadow(0 0 10px rgba(255, 244, 214, 1)) drop-shadow(0 0 4px rgba(255, 244, 214, 1));
+    will-change: transform;
+}
+.lab .flyer i {
+    display: block;
+    width: 100%;
+    height: 100%;
+    background-color: var(--seed, #FFF4D6);
+    -webkit-mask: url('../assets/icon/Seed.svg') center / contain no-repeat;
+    mask: url('../assets/icon/Seed.svg') center / contain no-repeat;
+}
 /* The app's header over his light sky: its cream icons in the ink of his line (the header is teleported into <body>,
    so this is not scoped; body.lab-page only while the lab is open) */
 body.lab-page header .navContainer button,
