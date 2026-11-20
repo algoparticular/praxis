@@ -8,6 +8,8 @@
         hasFullDeck: Boolean,
         // the volume sliders belong to the navigation menu only: the footer shows this same menu without them
         hasAudio: Boolean,
+        // the labyrinth into Sid's world, alone at the bottom: the navigation menu only (the footer has its own)
+        hasWorld: Boolean,
     });
 
     const emit = defineEmits(['navigate','langChanged']); 
@@ -58,6 +60,8 @@
             <input type="radio" id="lang-en" value="en" v-model="$i18n.locale" @change="langChanged($i18n.locale)"/>
             <label for="lang-en" :class="{active: $i18n.locale == 'en'}">English</label>
         </div>
+
+        <a v-if="props.hasWorld" class="world" href="/sid" :aria-label="$t('nav.lab')" :title="$t('nav.lab')" @click.prevent="navigate('/sid')"></a>
 
     </nav>
 </template>
@@ -169,6 +173,28 @@
     #audioMixer input[type="range"]:focus-visible {
         outline: 1px dashed #F7F8F1;
         outline-offset: 4px;
+    }
+
+    /* the labyrinth into Sid's world: only its icon, in cream, centred under everything; touched or hovered it glows */
+    nav a.world {
+        display: block;
+        flex: 0 0 auto;
+        width: 40px;
+        min-width: 40px;
+        height: 40px;
+        margin-top: 4px;
+        background-color: #F7F8F1;
+        -webkit-mask: url('../assets/icon/Lab.svg') center / contain no-repeat;
+        mask: url('../assets/icon/Lab.svg') center / contain no-repeat;
+        filter: drop-shadow(0 0 0 rgba(247, 248, 241, 0));
+        transition: filter 250ms ease-out, transform 250ms ease-out;
+    }
+
+    nav a.world:hover,
+    nav a.world:focus-visible {
+        filter: drop-shadow(0 0 8px rgba(247, 248, 241, 0.9));
+        transform: scale(1.06);
+        outline: none;
     }
 
     a.logout {

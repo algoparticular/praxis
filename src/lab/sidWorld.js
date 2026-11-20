@@ -19,6 +19,7 @@ import ciclos from '../composables/ciclosScene.json';
 import { decodeCloud, sampleCloud } from '../composables/stippleCloud.js';
 import arbol from './arbol/arbol.json';
 import suelo from './suelo/suelo.json';
+import { SEED_OUTLINE, SEED_SEAM, SEED_GERM } from './seedShape.js';
 
 // Her pieces, and the plants, stones and mushrooms cut out of the cards' scenes (src/lab/suelo, made by
 // scripts/convert-lab-suelo.mjs): the line and what is inside it, as pictures (tinted in code)
@@ -101,10 +102,15 @@ const CURLS = ['pacCurl0', 'pacCurl1', 'pacCurl2', 'pacCurl3', 'pacCurl4', 'pacC
 // picks it up as he walks over it, and sitting in lotus away from the places he plants one in front of him. What it
 // grows into is a plant of its card's scene (SEED_PLANTS: the name, its size grown, how it sways), in its card's own
 // colours wherever it is planted; it grows a little on every visit (SEED_GROWTH, by how many visits ago it was planted).
+// Seeds are few on the ground (most are won: the page gives the seed of a place's card when its rulito is born, and
+// now and then a spore of light flies by on the wind, SPORE_EVERY, which he catches walking under it, SPORE_PICK).
 // A card with no plant of its own (Transformación: its tree is its place, not a plant to sow) grows any other card's
-const SEED_CHANCE = 0.03, SEED_PICK = 130, SEED_SPROUT = 5;     // (how near he picks it up; seconds it takes to sprout)
+const SEED_CHANCE = 0.012, SEED_PICK = 130, SEED_SPROUT = 5;     // (how near he picks it up; seconds it takes to sprout)
 const SEED_GROWTH = [0.6, 0.8, 1];
-const SEED_SIZE = 2.6;          // (how big a seed is drawn: big enough to be seen from afar)
+const SPORE_FIRST = 14, SPORE_EVERY = [35, 60], SPORE_PICK = 210, SPORE_SPEED = 120;   // (s to the first, s between them, px)
+const SEED_SIZE = 2.6;
+// the seed's shape (seedShape.js: a seed with a particle of light inside it, until the illustrator draws it)
+const SEED_PATHS = typeof Path2D === 'undefined' ? null : { outline: new Path2D(SEED_OUTLINE), seam: new Path2D(SEED_SEAM) };          // (how big a seed is drawn: big enough to be seen from afar)
 const SEED_PLANTS = {
     ciclos: [['fan0', 0.75, 0.35], ['fan1', 0.7, 0.35], ['fan2', 0.6, 0.35], ['fan3', 0.75, 0.35]],
     metta: [['bloom0', 1, 0.4], ['bloom1', 1, 0.4], ['bloom2', 1, 0.4], ['bloom3', 1.1, 0.4], ['bloom4', 1.15, 0.4]],
@@ -396,6 +402,7 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
     const life = new Map();                 // what moves on each thing (a bend, a hop, a blink)
     let ripple = null;                      // the wave of colour out of him while he sits
     const taken = new Set();                // the seeds he has picked up on this visit (they stay picked)
+    let spore = null, sporeIn = SPORE_FIRST, sporeCount = 0;   // the spore of light flying by now, and when the next comes
     const garden = [...planted];            // what he has planted (remembered by the page, worldMemory.js)
     let time = 0;
 
@@ -589,6 +596,29 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
     };
     const wind = (x) => 0.07 * Math.sin(time * 0.9 + x * 0.004) + 0.035 * Math.sin(time * 2.3 + x * 0.013);
 
+    // A spore of light, now and then, on the wind: it comes in from beyond the screen on one side, a little behind him or
+    // in front, high over the ground, drifting and bobbing, and crosses past him; walking under it he catches it (it is
+    // a seed of the zone's card); missed, it goes on and is gone, and another comes later. Not while he sits
+    function flySpore(dt, sid, pace) {
+        if (!spore) {
+            sporeIn -= dt;
+            if (sporeIn > 0 || sid.sitting) return;
+            const side = Math.random() < 0.5 ? -1 : 1, d = sid.d + (Math.random() - 0.35) * 700, x = sid.x + side * 1500;
+            const zone = zonesAt(sid.x, sid.d), z = mainZone(zone);
+            spore = { id: `spore:${sporeCount++}`, kind: 'spore', x, d, h: 260 + Math.random() * 110, vx: -side * SPORE_SPEED * (0.8 + Math.random() * 0.4),
+                phase: Math.random() * 10, card: z.card, cardId: z.id, role: 'bead', pick: Math.random(), reach: 260, zone };
+            spore.P = colourOf(zone, 'bead', spore.pick);
+            return;
+        }
+        spore.x += spore.vx * dt * Math.max(0.15, pace);
+        spore.d += Math.sin(time * 0.7 + spore.phase) * 40 * dt;
+        const dx = spore.x - sid.x, dd = (spore.d - sid.d) * 1.6;
+        if (!sid.sitting && Math.hypot(dx, dd) < SPORE_PICK) {
+            onSeed?.({ card: spore.card, id: spore.cardId, x: spore.x, d: spore.d, light: spore.P.light, up: spore.h + 30 * Math.sin(time * 1.3 + spore.phase) });
+            spore = null;
+        } else if (Math.sign(dx) === Math.sign(spore.vx) && Math.abs(dx) > 1900) spore = null;
+        if (!spore) sporeIn = SPORE_EVERY[0] + Math.random() * (SPORE_EVERY[1] - SPORE_EVERY[0]);
+    }
     function update(dt, sid) {
         // (sid.pace: how fast the world's time goes; while he meditates it all but stops: the wind, the clouds, the sun,
         // the day; only the colour keeps spreading out of him)
@@ -599,6 +629,7 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
             if (!ripple) ripple = { x: sid.x, d: sid.d, r: 0 };
             ripple.r = Math.min(1400, ripple.r + dt * 260);
         } else ripple = null;
+        flySpore(dt, sid, pace);
         // the place he meditates at answers him (its glow grows while he sits there, and fades when he gets up)
         const at = sid.sitting ? placeAt(sid.x, sid.d) : null;
         for (const { i, items } of stretches.values()) {
@@ -630,7 +661,7 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
                 // a seed he walks over: he picks it up (it rises and goes, and the page counts it)
                 if (item.kind === 'seed' && !taken.has(item.id) && !sid.sitting && dist < SEED_PICK) {
                     taken.add(item.id); lifeOf(item).up = 0;
-                    onSeed?.({ card: item.card, id: item.cardId });
+                    onSeed?.({ card: item.card, id: item.cardId, x: item.x, d: item.d, light: item.P?.light });
                 }
                 if (item.kind === 'seed' && taken.has(item.id)) { const l = lifeOf(item); l.up = Math.min(1, (l.up ?? 0) + dt * 1.6); }
                 // colour: as he walks by, and inside the wave while he sits (what grows round a place, with its place)
@@ -1035,26 +1066,54 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
             break;
         }
         case 'seed': {
-            // a seed on the ground, of its card: a little almond in its white with a line of its ink, floating a little
-            // over its own soft light in a colour of its zone, and twinkling so it is seen from afar; picked up, it rises
-            // and goes
+            // a seed on the ground, of its card (seedShape.js): its body in the zone's white with a line of its ink, its
+            // seam, and inside it its germ, a particle of light in the card's colour that breathes; round it a stipple
+            // of dots of that light that drift and twinkle (so it is seen from afar without the drawing shouting),
+            // floating a little; picked up, it rises and goes (the page flies it into the button)
             const up = l?.up ?? 0;
-            if (up >= 1) break;
+            if (up >= 1 || !SEED_PATHS) break;
             const bob = Math.sin(time * 2 + item.phase) * 7, rise = up * up * 420, a = 1 - up, K = SEED_SIZE;
             const glowRgb = item.P.light.map(Math.round), twinkle = 0.5 + 0.5 * Math.sin(time * 3.1 + item.phase * 2);
             c.globalAlpha *= a;
-            halo(c, 0, -6, 70 * K, glowRgb, 0.45 + 0.25 * twinkle);
-            c.save(); c.translate(0, -34 * K - bob * K - rise); c.rotate(0.35 * Math.sin(time * 0.9 + item.phase)); c.scale(K * (1 - up * 0.4), K * (1 - up * 0.4));
-            halo(c, 0, 0, 46, [255, 250, 230], 0.25 + 0.35 * twinkle);
-            c.fillStyle = css(screen.white); c.strokeStyle = line; c.lineWidth = LINE * 0.5;
-            c.beginPath(); c.moveTo(0, -24); c.bezierCurveTo(17, -14, 15, 14, 0, 22); c.bezierCurveTo(-15, 14, -17, -14, 0, -24); c.fill(); c.stroke();
+            halo(c, 0, -6, 60 * K, glowRgb, 0.3 + 0.15 * twinkle);
+            c.save(); c.translate(0, -34 * K - bob * K - rise); c.scale(K * (1 - up * 0.4), K * (1 - up * 0.4));
+            // the stipple: dots of its light round it, each drifting on its own orbit and twinkling
+            for (let n = 0; n < 16; n++) {
+                const q = n * 2.399 + item.phase, r = 30 + (n % 5) * 6 + 3 * Math.sin(time * 0.8 + n), ang = q + time * (0.18 + (n % 3) * 0.06);
+                const tw = 0.5 + 0.5 * Math.sin(time * 2.6 + n * 1.7);
+                c.fillStyle = n % 3 ? `rgba(${glowRgb.join(',')},${0.35 + 0.6 * tw})` : `rgba(255,250,230,${0.4 + 0.6 * tw})`;
+                c.beginPath(); c.arc(Math.cos(ang) * r, Math.sin(ang) * r * 0.9, 2 + 2.2 * tw, 0, Math.PI * 2); c.fill();
+            }
+            c.rotate(0.15 * Math.sin(time * 0.9 + item.phase));
+            c.translate(-20, -26);
+            c.fillStyle = css(screen.white); c.strokeStyle = line; c.lineWidth = 3; c.lineJoin = 'round'; c.lineCap = 'round';
+            c.fill(SEED_PATHS.outline); c.stroke(SEED_PATHS.outline);
+            c.globalAlpha *= 0.8; c.lineWidth = 2.2; c.stroke(SEED_PATHS.seam); c.globalAlpha /= 0.8;
+            const [gx, gy, gr] = SEED_GERM;
+            halo(c, gx, gy, gr * 3.2, glowRgb, 0.55 + 0.35 * twinkle);
             c.fillStyle = `rgb(${glowRgb.join(',')})`;
-            c.beginPath(); c.ellipse(-3, 2, 5, 9, 0.2, 0, Math.PI * 2); c.fill();
-            // (a glint of light that comes and goes)
-            const s = 7 + 7 * twinkle;
-            c.strokeStyle = `rgba(255,255,255,${0.4 + 0.6 * twinkle})`; c.lineWidth = 3;
-            c.beginPath(); c.moveTo(16 - s, -22); c.lineTo(16 + s, -22); c.moveTo(16, -22 - s); c.lineTo(16, -22 + s); c.stroke();
+            c.beginPath(); c.arc(gx, gy, gr * (0.9 + 0.2 * twinkle), 0, Math.PI * 2); c.fill();
+            c.fillStyle = 'rgba(255,252,238,0.95)';
+            c.beginPath(); c.arc(gx - 1, gy - 1, gr * 0.4, 0, Math.PI * 2); c.fill();
             c.restore();
+            break;
+        }
+        case 'spore': {
+            // a spore of light on the wind: a bright core in a soft light of its zone's colour, a few motes round it
+            // and a short trail of dots behind it, bobbing high over the ground, its shadow a faint spot on the floor
+            const t = time + item.phase, bob = 30 * Math.sin(t * 1.3), y = -item.h - bob, back = -Math.sign(item.vx);
+            const rgb = item.P.light.map(Math.round), tw = 0.5 + 0.5 * Math.sin(t * 3.7);
+            c.fillStyle = 'rgba(20,50,70,0.08)'; c.beginPath(); c.ellipse(0, 0, 40, 7, 0, 0, Math.PI * 2); c.fill();
+            halo(c, 0, y, 150, rgb, 0.5 + 0.2 * tw);
+            halo(c, 0, y, 60, [255, 250, 230], 0.7 + 0.3 * tw);
+            for (let n = 0; n < 9; n++) {
+                const a = t * 1.6 + n * 0.7, k = n / 9, r = 28 + 18 * Math.sin(t * 2 + n);
+                const mx = n < 5 ? Math.cos(a) * r : back * (40 + k * 190) + Math.sin(t * 3 + n) * 10;
+                const my = n < 5 ? Math.sin(a) * r * 0.8 : Math.sin(t * 2.4 + n * 1.3) * 22 * k;
+                c.fillStyle = n % 2 ? `rgba(${rgb.join(',')},${0.95 - k * 0.5})` : `rgba(255,250,230,${0.95 - k * 0.5})`;
+                c.beginPath(); c.arc(mx, y + my, n < 5 ? 7 : 7 - k * 3, 0, Math.PI * 2); c.fill();
+            }
+            c.fillStyle = 'rgb(255,252,238)'; c.beginPath(); c.arc(0, y, 13 + 3 * tw, 0, Math.PI * 2); c.fill();
             break;
         }
         case 'stipple': {
@@ -1096,6 +1155,7 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
             const flat = (item.kind === 'place' && item.place.flat) || item.kind === 'lake';
             if (item.kind !== 'streak' && order(item) <= view.far + (item.kind === 'tree' ? 200 : 0) && item.d > view.near - 400 && keep(flat ? Infinity : order(item))) shown.push(item);
         }
+        if (spore && spore.d < view.far && spore.d > view.near - 400 && keep(spore.d)) shown.push(spore);
         const under = (item) => (item.kind === 'place' && item.place.flat) || item.kind === 'lake' ? Infinity : order(item);
         shown.sort((a, b) => under(b) - under(a));
         for (const item of shown) {
@@ -1234,5 +1294,7 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
     // (seedsNear: the seeds not yet picked up round (x, d), to find one from the console)
     const seedsNear = (x, d, range = 3000) => [...patches(x - range, x + range, d - range, d + range)]
         .filter((item) => item.kind === 'seed' && !taken.has(item.id)).map(({ x: sx, d: sd, card }) => ({ x: sx, d: sd, card }));
-    return { update, draw, drawSky, drawGround, ground, night, ink, white, nightColour, placeCard, zoneCard, obstacles, plant, seedsNear, setClock: (v) => { clock = ((v % 1) + 1) % 1; } };
+    // (seedLight: the light of a card's seeds, for the page to fly one from the button to where it is planted)
+    const seedLight = (card) => { const z = ZONES.find((q) => q.card === card); return z ? colourOf([{ z, w: 1 }], 'bead', 0.5).light : [255, 244, 214]; };
+    return { update, draw, drawSky, drawGround, ground, night, ink, white, nightColour, placeCard, zoneCard, obstacles, plant, seedsNear, seedLight, spore: () => spore, setClock: (v) => { clock = ((v % 1) + 1) % 1; } };
 }

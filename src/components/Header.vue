@@ -110,7 +110,8 @@
                     @langChanged="handleLangChanged"
                     :hasHome="true"
                     :hasFullDeck="true"
-                    :hasAudio="true"/>
+                    :hasAudio="true"
+                    :hasWorld="true"/>
             </div>
         </Transition>
         <div class="navContainer right">
@@ -192,8 +193,8 @@
         gap: 56px;
     }
 
-    /* over the veil the navy cannot mark things: the language chosen is underlined in the coral, a hovered word too,
-       and the sliders fill in cream */
+    /* over the veil the navy cannot mark things: the language chosen is underlined in light (cream, glowing a little,
+       as the sliders' thumbs), a hovered word with a fine line, and the sliders fill in cream */
     #menuOverlay nav a:hover,
     #menuOverlay #languageSelect label:hover {
         color: #F7F8F1;
@@ -203,8 +204,9 @@
 
     #menuOverlay #languageSelect label.active {
         color: #F7F8F1;
-        text-decoration: underline 2px #FF6F61;
+        text-decoration: underline 2px #F7F8F1;
         text-underline-offset: 6px;
+        text-shadow: 0 0 12px rgba(247, 248, 241, 0.75);
     }
 
     #menuOverlay #audioMixer input[type="range"]::-webkit-slider-runnable-track {
