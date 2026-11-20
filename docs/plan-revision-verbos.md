@@ -9,7 +9,7 @@ El problema de fondo: casi todas las escenas, dejadas solas, hacen brillar algo.
 1. **Las pistas no tienen texto.** Muestran el gesto, con la **mano fantasma**: un dedo de luz hecho de puntos (opción C), que hace el gesto sobre el lugar real.
 2. **El rulito nace donde lo dibuja la carta original. Si la carta no dibuja uno, nace sobre un personaje.** Nunca sobre un lugar fijo de la pantalla. Las excepciones ya decididas, carta por carta, están en "Dónde nace el rulito: decidido" y mandan sobre esta regla.
 3. Lo de siempre (`docs/verbos-y-dinamicas.md`): la lectura no se bloquea, se juega con teclado y con movimiento reducido.
-4. **En Soltar y Arraigar, dejado solo, se vuelve atrás** (decidido por Juan Manuel): lo logrado se va deshaciendo de a poco si nadie toca, como ya hace Nekkhamma (le vuelve a crecer un hilo) y como hace el rulito de Arraigar al soltar (la cola alcanza a la cabeza). Es una excepción a "nada se pierde" para esos dos verbos.
+4. **En Soltar y Arraigar, dejado solo, se vuelve atrás** (decidido por Juan): lo logrado se va deshaciendo de a poco si nadie toca, como ya hace Nekkhamma (le vuelve a crecer un hilo) y como hace el rulito de Arraigar al soltar (la cola alcanza a la cabeza). Es una excepción a "nada se pierde" para esos dos verbos.
 
 ## Paquete 0: la mano fantasma (`src/composables/useGhostHand.js`)
 
@@ -34,17 +34,17 @@ if (!held && !won && hand?.due(6)) hand.play(gesture.hold(someHit.value, 2.4));
   - `drag(A, B)`;
   - `slide(path)`, con `path(u)` para u de 0 a 1.
   - También se pueden armar guiones a mano: `go`, `path`, `down`, `up`, `ring`, `wait`.
-- **Tiempo quieto: siempre 7 segundos** (`HINT_AFTER`), decidido por Juan Manuel, que probó la mano. La mano lleva su propia cuenta, con reloj real: `hand.due(HINT_AFTER, wanted)`. `wanted` dice si el juego quiere mostrarse ahora (no mientras se juega, ni mientras vive un rulito). Mientras es falso la cuenta vuelve a cero, así que **después de ganar también espera 7 segundos enteros**, en lugar de aparecer enseguida. Si la escena tiene su propio temporizador de pista, ese también tiene que volver a cero mientras se juega o se gana (así quedó Pañña).
+- **Tiempo quieto: siempre 7 segundos** (`HINT_AFTER`), decidido por Juan, que probó la mano. La mano lleva su propia cuenta, con reloj real: `hand.due(HINT_AFTER, wanted)`. `wanted` dice si el juego quiere mostrarse ahora (no mientras se juega, ni mientras vive un rulito). Mientras es falso la cuenta vuelve a cero, así que **después de ganar también espera 7 segundos enteros**, en lugar de aparecer enseguida. Si la escena tiene su propio temporizador de pista, ese también tiene que volver a cero mientras se juega o se gana (así quedó Pañña).
 - Cualquier toque o tecla la hace irse al instante. Con movimiento reducido no aparece. `play(…, { loops })` dice cuántas veces repite el gesto (2 por defecto).
 
-**Aspecto: cerrado** (Juan Manuel, 1 de noviembre: tamaño, brillo, velocidad y 2 repeticiones).
+**Aspecto: cerrado** (Juan, 1 de noviembre: tamaño, brillo, velocidad y 2 repeticiones).
 - **Contraste:** la mano es crema por defecto. En las cartas claras, o donde hace el gesto sobre algo crema, va navy con un halo crema: `createGhostHand(stage, { color: 0x143246, shade: 0xf7f8f1 })`. Hoy así en Paciencia, Khanti y Viriya. Cada paquete, al conectar la mano en una carta, mira el contraste y le pone ese color si hace falta (decidido: se ajusta el color carta por carta).
 - **Fluir:** `gesture.slide(path, dur, { even: true })` desliza sin suavizado, para un recorrido que ya trae su ritmo: `flow.hintPath(len, map, t0)` da el de la corriente, a su paso desparejo desde `t0` (así en Khanti; las otras de Fluir lo usan igual en su revisión).
 - **Este archivo se toca solo desde un chat a la vez**, para no pisarse. Los demás paquetes solo lo usan.
 
 ## Etapa 1: un ejemplo por verbo, en las primeras cartas de cada verbo
 
-Antes de llevar la mano a todas las cartas, se conecta en la primera carta que se hizo de cada verbo. Juan Manuel las prueba en un teléfono y se cierra el aspecto de la mano (paquete 0). Solo después se pasa a las demás (etapa 2).
+Antes de llevar la mano a todas las cartas, se conecta en la primera carta que se hizo de cada verbo. Juan las prueba en un teléfono y se cierra el aspecto de la mano (paquete 0). Solo después se pasa a las demás (etapa 2).
 
 | Verbo | Carta de ejemplo | Gesto de la mano | Estado |
 |---|---|---|---|
@@ -71,12 +71,12 @@ Al terminar, `npm run check` y probar en un teléfono.
 
 ## Paquete S: soles y lunas vivos como el de Pañña
 
-Pedido de Juan Manuel: los soles y las lunas de este estilo vivo tienen que ser como el de Pañña, donde **no se nota el borde del círculo**.
+Pedido de Juan: los soles y las lunas de este estilo vivo tienen que ser como el de Pañña, donde **no se nota el borde del círculo**.
 
 - **Cómo está hecho el de Pañña** (`ScenePanna.vue`, grupo 2 de `back`): el sol entero es un punteado denso de partículas, muestreado de la imagen del sol (`sample('sun', …)`), sin un disco sólido debajo. Por eso se funde con el cielo.
 - **Cómo están hechos los otros:** un disco sólido en código (`disc()`) y el punteado solo en el borde. El borde del disco se ve.
 - **Honestidad:** completar el sol tal como lo tiene Pañña. ✅ Hecho: la luz entera es un punteado de partículas, sin disco. El mapa de densidad sale de la carta terminada con `scripts/sun-cloud.mjs` (como la carta corta la luz arriba, la completa con el borde de sus costados) y `src/composables/stippleCloud.js` lo vuelve puntos, con el mismo muestreo de Pañña. Para las demás cartas alcanza con agregar su línea al script.
-- **Metta:** ✅ Hecho (pedido de Juan Manuel, 1 de noviembre). Las dos luces son demasiado grandes para ser todas de puntos (serían cientos de miles), así que quedan como disco con el borde disuelto: el script lee de la carta la banda punteada de cada una (en los arcos donde no hay nada dibujado encima) y la dibuja alrededor; el disco llega solo hasta donde la banda es todavía entera, y sus puntos más densos tapan el borde.
+- **Metta:** ✅ Hecho (pedido de Juan, 1 de noviembre). Las dos luces son demasiado grandes para ser todas de puntos (serían cientos de miles), así que quedan como disco con el borde disuelto: el script lee de la carta la banda punteada de cada una (en los arcos donde no hay nada dibujado encima) y la dibuja alrededor; el disco llega solo hasta donde la banda es todavía entera, y sus puntos más densos tapan el borde.
 
 **Soles, lunas y luces redondas hechos con `disc()`, para revisar uno por uno:**
 
@@ -87,28 +87,28 @@ Pedido de Juan Manuel: los soles y las lunas de este estilo vivo tienen que ser 
 | 8 Metta | la gran luz amarilla y la luz turquesa: ✅ hechas, disco con el borde disuelto en su punteado |
 | 27 Paciencia | el sol: ✅ todo de puntos |
 | 11 Aceptación | el sol rosa |
-| 15 Ciclos | el sol rojo: ✅ disco con el borde disuelto, sin aire (pedido por Juan Manuel el 1 de noviembre; la luna queda igual) |
+| 15 Ciclos | el sol rojo: ✅ disco con el borde disuelto, sin aire (pedido por Juan el 1 de noviembre; la luna queda igual) |
 | 24 Gratitud | los soles durazno y rosa: ✅ los dos, cada uno con el borde disuelto |
 | 32 Transformación | el solcito de la copa: ✅ su punteado de la carta (el disco queda bajo el anillo dibujado) |
 | 6 Sacca | la luna: ✅ disco con el borde disuelto |
 | 19 Coraje | la luna |
-| 18 Confianza | la luz de la chakana: ✅ disco con el borde disuelto (Juan Manuel la sumó, 1 de noviembre) |
+| 18 Confianza | la luz de la chakana: ✅ disco con el borde disuelto (Juan la sumó, 1 de noviembre) |
 | 28 Perdón | el planeta: ✅ el mármol fluye como un líquido hasta el contorno (sin aire), con volumen; el anillo es del paquete B |
 
-- **Sila:** ✅ Hecho (pedido de Juan Manuel, 1 de noviembre). Su luna era una imagen con un borde punteado apretado. Ahora es un disco en código con la banda punteada de la carta encima, como Metta (la imagen se borró).
+- **Sila:** ✅ Hecho (pedido de Juan, 1 de noviembre). Su luna era una imagen con un borde punteado apretado. Ahora es un disco en código con la banda punteada de la carta encima, como Metta (la imagen se borró).
 
-- **Aceptación:** ✅ Hecho (pedido de Juan Manuel, 1 de noviembre): el sol rosa de la mitad izquierda es todo de puntos, como Honestidad. Honestidad y Aceptación llevan el mismo espesor que el sol de Pañña (`boost` 1.6), así el centro queda lleno como en la carta.
-- **Ciclos y Perdón:** van con el paquete B (Juan Manuel lo pidió en otro chat).
-- **Coraje:** su luna queda como está (Juan Manuel).
-- **Addhitthana y Esperanza:** sus lunas están bien así (Juan Manuel, 1 de noviembre); no se tocan.
+- **Aceptación:** ✅ Hecho (pedido de Juan, 1 de noviembre): el sol rosa de la mitad izquierda es todo de puntos, como Honestidad. Honestidad y Aceptación llevan el mismo espesor que el sol de Pañña (`boost` 1.6), así el centro queda lleno como en la carta.
+- **Ciclos y Perdón:** van con el paquete B (Juan lo pidió en otro chat).
+- **Coraje:** su luna queda como está (Juan).
+- **Addhitthana y Esperanza:** sus lunas están bien así (Juan, 1 de noviembre); no se tocan.
 
-- **Que sea uno al entrar** (Juan Manuel, 1 de noviembre: "el aro ya está y entra el círculo; es todo uno y no se debe ver el círculo solo nunca"): ✅ hecho. Antes el disco subía con la entrada de su capa y se encendía en 1,8 s, mientras su punteado quedaba quieto en su lugar y aparecía en 2,5 s, así que se veía el círculo entrar por debajo del aro. Ahora `joinLight()` (`stippleCloud.js`) hace que el punteado suba y crezca con su disco (`node.entering()` en `useLayerStage.js`) y que el disco llegue apenas detrás de sus puntos (`faded` en `useStardust.js`), así los puntos siempre le tapan el borde. Está en Viriya, Metta, Sacca, Sila, Gratitud, Confianza, Transformación, Ciclos y Paciencia, y en Honestidad y Aceptación (todas de puntos, su punteado entra con su resplandor). Falta probarlo en un teléfono.
+- **Que sea uno al entrar** (Juan, 1 de noviembre: "el aro ya está y entra el círculo; es todo uno y no se debe ver el círculo solo nunca"): ✅ hecho. Antes el disco subía con la entrada de su capa y se encendía en 1,8 s, mientras su punteado quedaba quieto en su lugar y aparecía en 2,5 s, así que se veía el círculo entrar por debajo del aro. Ahora `joinLight()` (`stippleCloud.js`) hace que el punteado suba y crezca con su disco (`node.entering()` en `useLayerStage.js`) y que el disco llegue apenas detrás de sus puntos (`faded` en `useStardust.js`), así los puntos siempre le tapan el borde. Está en Viriya, Metta, Sacca, Sila, Gratitud, Confianza, Transformación, Ciclos y Paciencia, y en Honestidad y Aceptación (todas de puntos, su punteado entra con su resplandor). Falta probarlo en un teléfono.
 
 **Decidido (1 de noviembre):** los chicos todos de puntos, como Pañña (Honestidad, Aceptación, Paciencia; Transformación con su punteado alrededor del anillo); los grandes, disco con el borde disuelto en su punteado (Metta, Sila, Viriya, Gratitud con sus dos soles, Sacca, Confianza). Coraje, Addhitthana y Esperanza quedan como están. Ciclos y Perdón van con el paquete B (el sol de Ciclos y el planeta de Perdón se coordinan con esa sesión). Todo sale de `scripts/sun-cloud.mjs` y `src/composables/stippleCloud.js`.
 
 ## Revisión juego por juego de las 18 cartas del 31 de octubre
 
-Las 18 cartas que se hicieron jugables el 31 de octubre tienen muchos detalles para revisar. Se revisan **una por una, con Juan Manuel**, como se hizo con las 15 anteriores: él la prueba en el teléfono, cuenta lo que ve y el chat lo arregla. No se reparten a ciegas.
+Las 18 cartas que se hicieron jugables el 31 de octubre tienen muchos detalles para revisar. Se revisan **una por una, con Juan**, como se hizo con las 15 anteriores: él la prueba en el teléfono, cuenta lo que ve y el chat lo arregla. No se reparten a ciegas.
 
 | PR del 31/10 | Cartas |
 |---|---|
@@ -118,19 +118,19 @@ Las 18 cartas que se hicieron jugables el 31 de octubre tienen muchos detalles p
 | #78 Soltar y Arraigar | 15 Ciclos, 28 Perdón, 16 Compromiso, 18 Confianza, 23 Fe |
 | #79 Ver y Encender | 30 Esperanza, 13 Belleza, 19 Coraje, 21 Desafío |
 
-**Para no tocar dos veces la misma escena:** en estas 18 cartas, lo que el plan pide en los paquetes A a G (la pista con la mano, el rulito decidido y lo marcado) se hace **dentro de su revisión**, junto con lo que Juan Manuel encuentre. Los paquetes A a G se reparten en paralelo solo para las otras 14 cartas con juego: Paciencia, Vipassana, Nekkhamma, Sila, Dana, Pañña, Viriya, Sacca, Addhitthana, Upekkha, Evolución, Hogar, Sincronicidad y Creatividad.
+**Para no tocar dos veces la misma escena:** en estas 18 cartas, lo que el plan pide en los paquetes A a G (la pista con la mano, el rulito decidido y lo marcado) se hace **dentro de su revisión**, junto con lo que Juan encuentre. Los paquetes A a G se reparten en paralelo solo para las otras 14 cartas con juego: Paciencia, Vipassana, Nekkhamma, Sila, Dana, Pañña, Viriya, Sacca, Addhitthana, Upekkha, Evolución, Hogar, Sincronicidad y Creatividad.
 
 Khanti es a la vez un ejemplo de la etapa 1 y una de las 18. Su mano se conecta en la etapa 1, y el resto de Khanti va en su revisión.
 
 **Cómo es cada revisión (un chat por carta, de a una):**
 1. El chat lee esta carta en el plan (su paquete) y en `docs/escenas.md`.
-2. Juan Manuel la prueba en el teléfono y lista lo que ve.
+2. Juan la prueba en el teléfono y lista lo que ve.
 3. El chat arregla lo que listó, más la pista, el rulito y lo marcado en el plan. Antes de inventar algo, pregunta.
 4. Muestra el resultado (video o capturas), corre `npm run check`, actualiza `docs/escenas.md` y `CLAUDE.md` en lo de esa carta, y marca la carta como revisada en esta tabla.
 
 **Estado:**
 
-**La mano en todas (2 de noviembre, pedido de Juan Manuel):** antes de seguir con las revisiones, la pista con la mano fantasma se puso de una vez en las 14 cartas del 31/10 que no la tenían (Metta, Gratitud, Armonía, Comunicación, Honestidad, Aceptación, Transformación, Celebración, Confianza, Fe, Esperanza, Belleza, Coraje y Desafío), con el gesto de su verbo que pide cada paquete. Lo que dice cada paquete sobre la pista de esas cartas ya está hecho; el resto (rulitos, lo marcado y lo que Juan Manuel encuentre) sigue en la revisión de cada una. Falta probar las manos en un teléfono; a mirar con cuidado: la de Coraje, en parte sobre la luna clara, y la de Comunicación, chica sobre las cabezas claras de los seres.
+**La mano en todas (2 de noviembre, pedido de Juan):** antes de seguir con las revisiones, la pista con la mano fantasma se puso de una vez en las 14 cartas del 31/10 que no la tenían (Metta, Gratitud, Armonía, Comunicación, Honestidad, Aceptación, Transformación, Celebración, Confianza, Fe, Esperanza, Belleza, Coraje y Desafío), con el gesto de su verbo que pide cada paquete. Lo que dice cada paquete sobre la pista de esas cartas ya está hecho; el resto (rulitos, lo marcado y lo que Juan encuentre) sigue en la revisión de cada una. Falta probar las manos en un teléfono; a mirar con cuidado: la de Coraje, en parte sobre la luna clara, y la de Comunicación, chica sobre las cabezas claras de los seres.
 
 | Carta | Revisada |
 |---|---|
@@ -173,9 +173,9 @@ El GDD es el artefacto "Anima GDD". Sus pestañas salen de los documentos de `do
 - **Rama base:** la mano fantasma y este plan están solo en `claude/music-chakra-cards-jft7f9`. Lo más simple es mergearla a `main` antes de repartir, y que cada chat arranque desde `main`. Si no, cada chat arranca desde esa rama.
 - **Un chat por paquete, cada uno en su propia rama.** Ningún chat toca escenas de otro paquete, ni `useGhostHand.js` (salvo el del paquete 0).
 - **Conflictos esperables:** en `CLAUDE.md` y `docs/escenas.md`, porque todos los paquetes editan esos archivos (cada uno sus párrafos). Se resuelven al mergear; por eso conviene mergear los paquetes de a uno.
-- **Si se orquesta desde un chat con sub-sesiones:** el chat principal reparte los paquetes, revisa cada resultado (lint, `npm run check`, capturas de pantalla o video de la escena) y mergea de a uno. Las decisiones de la lista de abajo no las toma ninguna sub-sesión: se le preguntan a Juan Manuel.
+- **Si se orquesta desde un chat con sub-sesiones:** el chat principal reparte los paquetes, revisa cada resultado (lint, `npm run check`, capturas de pantalla o video de la escena) y mergea de a uno. Las decisiones de la lista de abajo no las toma ninguna sub-sesión: se le preguntan a Juan.
 - **Indicación para cada chat** (copiar y completar):
-  > Leé `docs/plan-revision-verbos.md` en `main`. Hacé el paquete X, solo para las cartas que no son del 31/10 (esas se revisan de a una, con Juan Manuel): para cada carta, la pista con la mano fantasma, el rulito según la regla 2 y lo marcado. No toques `useGhostHand.js` ni escenas de otros paquetes. Lo que figure "a decidir", preguntámelo antes. Al terminar, `npm run check`, un video o capturas de cada escena, y actualizá en el plan el estado de tus cartas.
+  > Leé `docs/plan-revision-verbos.md` en `main`. Hacé el paquete X, solo para las cartas que no son del 31/10 (esas se revisan de a una, con Juan): para cada carta, la pista con la mano fantasma, el rulito según la regla 2 y lo marcado. No toques `useGhostHand.js` ni escenas de otros paquetes. Lo que figure "a decidir", preguntámelo antes. Al terminar, `npm run check`, un video o capturas de cada escena, y actualizá en el plan el estado de tus cartas.
 
 ## Dónde dibuja el rulito cada carta original
 
@@ -215,7 +215,7 @@ Cajas en px de la carta de 2160, como `[x, y, ancho, alto]`. Están medidas sobr
 
 ### Dónde nace el rulito: decidido
 
-Decidido por Juan Manuel el 1 de noviembre. Manda sobre la regla 2.
+Decidido por Juan el 1 de noviembre. Manda sobre la regla 2.
 
 | Carta | Dónde va el rulito | Qué cambia |
 |---|---|---|
@@ -246,7 +246,7 @@ Gesto de la mano: `hold` sobre lo que se sostiene. Motor común: `useRooting.js`
 **Regla 4 en todas:** al soltar, lo crecido se deshace de a poco (la cola del rulito alcanza a la cabeza). `useRooting.js`, Paciencia y Hogar ya lo hacen; revisar Addhitthana y que las seis se sientan iguales.
 
 - **27 Paciencia:** ✅ pista hecha (con la espera de 7 s también después de ganar). El lugar del rulito está bien (fracciones del bote, coincide con la carta).
-  - **Cuándo nace el rulito (pedido de Juan Manuel):** ✅ hecho. Nace **cuando las raíces están completas** (`rootGrow >= 1`). Para que el total sostenido no se alargue, las raíces tardan 2 s (antes 2,4) y el rulito 2 s más (antes 2,6): 4 s en total, contra 3,3 s de antes. Falta probar en un teléfono si se siente bien.
+  - **Cuándo nace el rulito (pedido de Juan):** ✅ hecho. Nace **cuando las raíces están completas** (`rootGrow >= 1`). Para que el total sostenido no se alargue, las raíces tardan 2 s (antes 2,4) y el rulito 2 s más (antes 2,6): 4 s en total, contra 3,3 s de antes. Falta probar en un teléfono si se siente bien.
 - **25 Hogar:** ✅ hecho (falta probar en un teléfono).
   - Pista: `hold` sobre el núcleo con la mano, a los 7 s, también después de ganar. La chispa sigue respirando antes del primer toque.
   - **Cuándo nace el rulito:** cuando llegaron todas las raíces (se sacó `BORN`). Las raíces tardan 2,6 s (antes 3,6) y el rulito 2 s más: 4,6 s en total.
@@ -256,7 +256,7 @@ Gesto de la mano: `hold` sobre lo que se sostiene. Motor común: `useRooting.js`
   - Rulito bien (`art.rulito`, en `L.boat`).
   - Regla 4: ya la cumple (al soltar, la cola alcanza a la cabeza; entero, se queda `LINGER` y se va).
   - Doc corregida en `docs/escenas.md` y `verbos-y-dinamicas.md` (`CHARGE` 1,6 + `HOLD` 3,4, `LINGER` 4, un `kindle` por tercio).
-- **16 Compromiso:** (en revisión con Juan Manuel, 2 de noviembre)
+- **16 Compromiso:** (en revisión con Juan, 2 de noviembre)
   - Pista: ✅ `hold` sobre los seres con la mano, a los 7 s, también después de ganar (antes echaba chispas al pie del camino y no se entendía qué hacer).
   - Rulito: ✅ justo sobre la cabeza del Sama grande, entre los mechones (decidido: no arriba de las puntas del pelo), colgado de su grupo. Ya no usa la "z" del cielo ni el tope contra el borde.
   - ✅ El Sama grande ya no salta con un toque (se veía el dibujo cortado bajo el casco): brilla y parpadea.
@@ -288,16 +288,16 @@ Gestos de la mano: `tap` sobre lo que se suelta. Cada tanto, `hold` sobre el per
   - Pista: `tap` sobre el pensamiento que brilla (la mano lo sigue), y cada tres veces, si ya está pegado, `hold` sobre Sid. Navy con halo crema: la crema no se leía sobre el cielo menta.
   - **Rulito:** confirmado que en ancho quedaba cortado o sobre el nombre (a 1920×1080 empezaba 46 px por encima de la pantalla). El encuadre ancho ahora deja ver desde la punta del rulito (`RULITO_TOP`) hasta debajo del nombre (`nameClear()`): el dibujo queda un poco más chico y a los costados sigue la tierra espejada.
   - Regla 4: ✅ sumada. Dejado solo 15 s, vuelve un pensamiento soltado cada 4 s (su aura se apaga un paso y llega otro).
-- **15 Ciclos** (del 31/10, en revisión con Juan Manuel):
-  - **Lo que se suelta cambió** (Juan Manuel, 1 de noviembre: en el teléfono las gotas quedaban fuera de la pantalla). Ahora son las plantas de las lomas (abanicos rosas y matas de pasto): un toque y el viento se lleva sus hojas secas, y la planta queda baja y desteñida. Cuentan las 8 más grandes que se ven. Las gotas quedan vivas en el cielo, sin juego.
+- **15 Ciclos** (del 31/10, en revisión con Juan):
+  - **Lo que se suelta cambió** (Juan, 1 de noviembre: en el teléfono las gotas quedaban fuera de la pantalla). Ahora son las plantas de las lomas (abanicos rosas y matas de pasto): un toque y el viento se lleva sus hojas secas, y la planta queda baja y desteñida. Cuentan las 8 más grandes que se ven. Las gotas quedan vivas en el cielo, sin juego.
   - Pista: ✅ `tap` sobre la planta que brilla y se mece, y cada tres veces `hold` sobre Sid. Navy, sobre el amarillo.
   - Regla 4: ✅ dejada sola 15 s, a una planta le vuelven a crecer las hojas cada 4 s.
   - Rulito sobre Sid, bien.
-- **28 Perdón** (del 31/10, en revisión con Juan Manuel):
+- **28 Perdón** (del 31/10, en revisión con Juan):
   - Pista: ✅ `tap` sobre un nudo que se ve (la mano lo sigue mientras gira el anillo), y cada tres veces `hold` sobre Particular. Crema: se lee sobre el salvia y el anillo.
   - Regla 4: ✅ dejado solo 15 s, un nudo soltado se vuelve a juntar, y otro cada 4 s.
-  - **En el teléfono (Juan Manuel, 1 de noviembre):** ✅ el bote de hoja va al centro, bajo el planeta, y ya no baja a la esquina; el planeta sube un poco; el rulito es 1,4 veces el de la carta.
-  - **Más vida (Juan Manuel, 1 de noviembre):** ✅ el anillo orbita de verdad (una vuelta en 52 s, lo de adentro más rápido), pasando por delante y por detrás del planeta; los nudos viajan con él y detrás del planeta no se pueden tocar. El planeta como cuerpo (disco, contorno, el mármol que fluye en vez de girar como imagen, volumen, sin aire entre el borde y el disco) es del paquete S, acordado con esa sesión.
+  - **En el teléfono (Juan, 1 de noviembre):** ✅ el bote de hoja va al centro, bajo el planeta, y ya no baja a la esquina; el planeta sube un poco; el rulito es 1,4 veces el de la carta.
+  - **Más vida (Juan, 1 de noviembre):** ✅ el anillo orbita de verdad (una vuelta en 52 s, lo de adentro más rápido), pasando por delante y por detrás del planeta; los nudos viajan con él y detrás del planeta no se pueden tocar. El planeta como cuerpo (disco, contorno, el mármol que fluye en vez de girar como imagen, volumen, sin aire entre el borde y el disco) es del paquete S, acordado con esa sesión.
   - Rulito: el mejor anclado de todos (caja de la carta, cuelga de Particular).
 
 ## Paquete C: Fluir (deslizar con la corriente)
@@ -402,10 +402,10 @@ Gestos de la mano: `drag` entre las dos luces del primer hilo que falta (Pañña
   - Pista: `drag`, como Pañña.
   - **Pedido nuevo: que las constelaciones tengan formas más reconocibles.**
     - Hoy el juego pide **tres ancestros** antes del rulito, siempre en el mismo orden: sentado (7 hilos), caminando (6) y descansando (6). Cada uno trae 2 estrellas señuelo, así que son 19 hilos como mínimo. Las formas están en `FIGURES` (`SceneEsperanza.vue` ≈118-128) y son polígonos que no se leen como zorros.
-    - **Decidido por Juan Manuel:** zorros como Vulpes, con lo que más los distingue (orejas, hocico, cola). Siguen siendo tres ancestros, en este orden:
+    - **Decidido por Juan:** zorros como Vulpes, con lo que más los distingue (orejas, hocico, cola). Siguen siendo tres ancestros, en este orden:
       1. **A, cabeza de frente** (7 estrellas, 7 hilos): dos orejas en punta, las mejillas y el hocico. Reemplaza al sentado, que no se entendía.
       2. **C, caminando** (7 estrellas, 6 hilos): la cabeza con una oreja, el lomo, dos patas y la cola alta. Reemplaza al caminando de hoy.
-      3. **F, la cola enroscada** (6 estrellas, 5 hilos): solo la cola del zorro, en espiral. Reemplaza al descansando de hoy. La eligió Juan Manuel.
+      3. **F, la cola enroscada** (6 estrellas, 5 hilos): solo la cola del zorro, en espiral. Reemplaza al descansando de hoy. La eligió Juan.
     - **Coordenadas para `FIGURES`** (x, y de 0 a 1 en la caja de la figura; `aspect` = alto/ancho):
       - A: `aspect: 1`, `stars: [[0.05,0],[0.35,0.3],[0.65,0.3],[0.95,0],[0.85,0.55],[0.5,1],[0.15,0.55]]`, `links: loop(7)`.
       - C: `aspect: 0.6`, `stars: [[0,0.25],[0.12,0],[0.2,0.3],[0.62,0.32],[0.92,0],[0.6,1],[0.25,1]]`, `links: [[0,1],[1,2],[2,3],[3,4],[3,5],[2,6]]`.
@@ -432,7 +432,7 @@ Gestos de la mano: `drag` entre las dos luces del primer hilo que falta (Pañña
    - **En paralelo, los paquetes A a G**, solo para las 14 cartas que no son del 31/10. Empezar por:
      - el rulito de Upekkha en pantalla ancha;
      - las cartas sin pista: Creatividad y Hogar.
-   - **De a una, con Juan Manuel, la revisión de las 18 cartas del 31/10.** Cada una lleva adentro sus arreglos de los paquetes. Conviene empezar por lo más roto:
+   - **De a una, con Juan, la revisión de las 18 cartas del 31/10.** Cada una lleva adentro sus arreglos de los paquetes. Conviene empezar por lo más roto:
      - el rulito de Compromiso;
      - la pista de Metta;
      - los rulitos nuevos de Celebración y Armonía, uno por personaje.
@@ -440,7 +440,7 @@ Gestos de la mano: `drag` entre las dos luces del primer hilo que falta (Pañña
 5. **Paquete S, soles y lunas:** ✅ hecho, también el sol de Ciclos y el planeta de Perdón (falta probarlo en un teléfono).
 6. **Paquete H, punto 5:** volver a publicar el artefacto "Anima GDD" con todo al día.
 
-## Decisiones abiertas (las toma Juan Manuel)
+## Decisiones abiertas (las toma Juan)
 
 - **Soles y lunas (paquete S):** decidido. Confianza entra (hecha); Perdón y Ciclos van con el paquete B.
 
