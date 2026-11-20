@@ -29,7 +29,7 @@ Se llamaba "el laboratorio de Sid" (`/lab/sid`). Desde el 20 de noviembre de 202
 
 ## Su lugar en Inicio (sin decidir)
 
-Hoy se llega solo desde el ícono del laberinto, en el footer de Inicio: casi nadie lo encuentra. Inicio tiene tres bloques: el hero (el personaje y su espiral, que lleva al oráculo), el oráculo (mazo completo o Los Nueve) y la frase final; después el footer.
+Hoy se llega solo desde el ícono del laberinto, en el footer de Inicio: está escondido (cuánta gente llega, no lo sabemos: no se mide). Inicio tiene tres bloques: el hero (el personaje y su espiral, que lleva al oráculo), el oráculo (mazo completo o Los Nueve) y la frase final; después el footer.
 
 Opciones pensadas, ninguna elegida:
 
