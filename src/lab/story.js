@@ -32,23 +32,24 @@ export const FRAGMENTS = [
         en: 'Finding beauty in what is simple is giving oneself more and more moments.' },
     { es: 'No tengas miedo del camino. Ten miedo de no caminar.',
         en: 'Do not fear the path. Fear not walking.' },
-    // Six more, from Algo Particular's own words in the app (its hello, its old intro, its about and its 404), added at
-    // the end so the ones kept on the phones keep their numbers; where they are read is PARAGRAPHS
-    { es: '¿En qué frecuencia estoy vibrando?',
-        en: 'What frequency am I vibrating at?' },
-    { es: 'Cada uno de nuestros átomos, y los de todo lo que existe, vienen navegando el Universo desde el principio de los tiempos.',
-        en: 'Each of our atoms, and those of everything there is, have been sailing the Universe since the beginning of time.' },
-    { es: 'Esas partículas cargan con miles de historias, de reflexiones y aprendizajes.',
-        en: 'Those particles carry thousands of stories, of reflections and lessons.' },
-    { es: 'Como es arriba, es abajo: todos somos iguales, todos somos uno.',
-        en: 'As above, so below: we are all the same, we are all one.' },
-    { es: 'Una partícula que, al volverse consciente de sí, aprende a navegar el Universo libremente.',
-        en: 'A particle that, upon becoming aware of itself, learns to sail the Universe freely.' },
-    { es: 'Hay una brújula interna que nos invita a un camino con corazón.',
-        en: 'There is an inner compass that invites us to a path with heart.' },
+    // Six more, from Algo Particular's own notes (how the Universe is born, why a particle, the void) and, the second,
+    // the Hermetic principle of correspondence as El Kybalion gives it; added at the end so the ones kept on the phones
+    // keep their numbers; where they are read is PARAGRAPHS
+    { es: 'Tan abiertos los ojos que empecé a reconocer que los límites de mi propio cuerpo eran difusos.',
+        en: 'My eyes were so open that I began to see that the limits of my own body were blurred.' },
+    { es: 'Como es arriba, es abajo; como es abajo, es arriba.',
+        en: 'As above, so below; as below, so above.' },
+    { es: 'Un manto de Amor inmenso bañó por completo mi propio Universo interior.',
+        en: 'A mantle of immense Love bathed my whole inner Universe.' },
+    { es: 'Nuestra existencia, nuestras virtudes, nuestras miserias, no son más que una gota de agua en un vasto océano.',
+        en: 'Our existence, our virtues, our miseries are no more than a drop of water in a vast ocean.' },
+    { es: 'Es en una octava más arriba que comprendemos al vacío como parte de nuestra particular existencia.',
+        en: 'It is an octave higher that we understand the void as part of our particular existence.' },
+    { es: 'Desde ese momento decidí caminar a corazón abierto: en vez de ser cada vez más vulnerable, uno se vuelve cada vez más fuerte.',
+        en: 'From that moment I decided to walk with an open heart: instead of growing more vulnerable, one grows stronger and stronger.' },
 ];
 
 // How the notebook's page of Pensamientos lays them out: in paragraphs of two or three, by what they speak of (the dream
-// and what separates us; the particle; the atoms and Love; humility, made of the same; the void; the rulito and beauty;
-// the path)
-export const PARAGRAPHS = [[0, 1, 12], [2, 13, 14], [3, 4], [5, 15, 6], [7, 8], [16, 9, 10], [17, 11]];
+// and what separates us; the particle, as above so below; the atoms and Love; humility, made of the same; the void;
+// the rulito and beauty; the path)
+export const PARAGRAPHS = [[0, 12, 1], [2, 13], [3, 4, 14], [5, 15, 6], [7, 16, 8], [9, 10], [17, 11]];
