@@ -243,15 +243,14 @@
         font-size: 32px;
     }
 
-    /* the language's two letters, small and spaced */
+    /* the language's two letters, in the menu's own hand */
     #menuOverlay nav #languageSelect {
         gap: 28px;
     }
 
     #menuOverlay nav #languageSelect label {
-        font-family: 'Nunito', helvetica, sans-serif;
-        font-size: 17px;
-        letter-spacing: 0.14em;
+        font-size: 28px;
+        letter-spacing: 0.04em;
     }
 
     button.deck {
