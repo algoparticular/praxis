@@ -464,6 +464,7 @@ function starFell() {
 // motion); `burst`: landing, the seed opens in a little burst of particles of its light (everything started from a
 // particle), and only then the plant sprouts
 const labEl = ref(null), lotusEl = ref(null);
+let pageTop = '';                                          // (the colour last given to the page's background)
 const still = typeof window !== 'undefined' && (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false);
 function fly(from, to, rgb, done, ms = 900, burst = false) {
     const root = labEl.value;
@@ -1641,6 +1642,9 @@ function draw() {
     nightSky.value.style.opacity = dark.toFixed(3);
     if (nightSky.value.style.backgroundColor !== under) nightSky.value.style.backgroundColor = under;
     document.body.classList.toggle('lab-night', dark > 0.55);
+    // (the page under the drawing in the sky's colour at the top: the iPhone's status bar takes it, cream otherwise)
+    const top = world.topColour();
+    if (top !== pageTop) { pageTop = top; labEl.value.style.backgroundColor = top; document.body.style.backgroundColor = top; }
     teaching.light = dark > 0.55;
     if (teaching.ink !== INK) teaching.ink = INK;
     c.fillStyle = world.ground();
@@ -1893,6 +1897,7 @@ onBeforeUnmount(() => {
     visit?.cardClosed(portal.won);
     visit?.finish();
     document.body.classList.remove('lab-page', 'lab-night', 'lab-portal', 'lab-story');
+    document.body.style.backgroundColor = '';
     setHush(false);
     clearTimeout(portalTimer);
     setCardChord(null);
@@ -2011,9 +2016,7 @@ onBeforeUnmount(() => {
 .lab {
     position: fixed;
     inset: 0;
-    /* navy under the drawing, as the app's page: Safari on the iPhone tints the bar with the time and the battery from
-       it (never seen otherwise, the canvases cover it) */
-    background: #143246;
+    background: #F7F8F1;
     color: #143246;
     font-family: Nunito, sans-serif;
     /* a finger held down only guides him: nothing is selected, no callout (copy, look up), no magnifier */
