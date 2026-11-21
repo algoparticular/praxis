@@ -48,6 +48,7 @@ Todos llevan `lang` (`es`/`en`) e `installed` (la app corre como PWA instalada).
 | `share_opened` | abre la pantalla de compartir | `card_id`, `from`: `reading` (el botón del final de la lectura; hasta noviembre de 2026 también `stage`, un botón sobre la escena que se sacó) |
 | `share_clicked` | elige un canal | `card_id`, `channel` (`link`, `facebook`, `twitter`, `whatsapp`) |
 | `language_changed` | cambia el idioma | `to` |
+| `world_side_changed` | en el menú, dentro del mundo de Sid, elige de qué lado van sus botones | `to` (`left` / `right`) |
 | `sound_toggled` | activa o apaga el sonido | `on` |
 | `pwa_installed` | instala la app | |
 

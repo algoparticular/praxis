@@ -1,5 +1,7 @@
 <script setup>
-    import { onMounted } from 'vue';
+    import { onMounted, computed } from 'vue';
+    import { useRoute } from 'vue-router';
+    import { worldSide, setWorldSide } from '../composables/useWorldSide.js';
     import { track } from '../analytics.js';
     import { musicVolume, effectsVolume, setMusicVolume, setEffectsVolume, play } from '../composables/useSound.js';
 
@@ -11,6 +13,14 @@
         // the labyrinth into Sid's world, alone at the bottom: the navigation menu only (the footer has its own)
         hasWorld: Boolean,
     });
+
+    // inside Sid's world only: which side its buttons sit on
+    const route = useRoute();
+    const inWorld = computed(() => route.path === '/sid');
+    const sideChanged = (side) => {
+        setWorldSide(side);
+        track('world_side_changed', { to: side });
+    };
 
     const emit = defineEmits(['navigate','langChanged']); 
 
@@ -53,12 +63,19 @@
             </label>
         </div>
 
-        <div id="languageSelect">
+        <!-- which side the world's buttons sit on: no words, two little screens with their button in one corner -->
+        <div v-if="props.hasAudio && inWorld" id="sideSelect" role="radiogroup" :aria-label="$t('nav.side')">
+            <button v-for="side in ['left', 'right']" :key="side" type="button" role="radio" :class="[side, { active: worldSide === side }]"
+                :aria-checked="worldSide === side" :aria-label="$t(side === 'left' ? 'nav.sideLeft' : 'nav.sideRight')"
+                :title="$t(side === 'left' ? 'nav.sideLeft' : 'nav.sideRight')" @click="sideChanged(side)"><span></span></button>
+        </div>
+
+        <!-- the language: its two letters, the chosen one bright and the other faint -->
+        <div id="languageSelect" role="radiogroup" aria-label="Idioma / Language">
             <input type="radio" id="lang-es" value="es" v-model="$i18n.locale" @change="langChanged($i18n.locale)"/>
-            <label for="lang-es" :class="{active: $i18n.locale == 'es'}">Español</label>
-            <span>|</span>
+            <label for="lang-es" lang="es" title="Español" aria-label="Español" :class="{active: $i18n.locale == 'es'}">ES</label>
             <input type="radio" id="lang-en" value="en" v-model="$i18n.locale" @change="langChanged($i18n.locale)"/>
-            <label for="lang-en" :class="{active: $i18n.locale == 'en'}">English</label>
+            <label for="lang-en" lang="en" title="English" aria-label="English" :class="{active: $i18n.locale == 'en'}">EN</label>
         </div>
 
         <a v-if="props.hasWorld" class="world" href="/sid" :aria-label="$t('nav.lab')" :title="$t('nav.lab')" @click.prevent="navigate('/sid')"></a>
@@ -219,6 +236,11 @@
         color: #143246;
     }
 
+    /* the language not chosen, faint */
+    #languageSelect label:not(.active) {
+        opacity: 0.45;
+    }
+
     #languageSelect span {
         font-size: 24px;
         font-family: 'Caveat', 'Nunito', helvetica, sans-serif;
@@ -234,6 +256,51 @@
                 user-select: none; /* Non-prefixed version, currently
                                     supported by Chrome, Edge, Opera and Firefox */
     }
+
+    /* Inside Sid's world: which side its buttons sit on, as two little screens in a fine cream line, each with its
+       button as a dot in one corner; the chosen one bright, the other faint */
+    #sideSelect {
+        flex-direction: row;
+        gap: 28px;
+    }
+
+    #sideSelect button {
+        position: relative;
+        width: 26px;
+        height: 40px;
+        min-width: 0;
+        padding: 0;
+        margin: 0;
+        border: 1.5px solid #F7F8F1;
+        border-radius: 6px;
+        background: none;
+        box-shadow: none;
+        opacity: 0.4;
+        cursor: pointer;
+        transition: opacity 250ms ease-out, filter 250ms ease-out;
+    }
+
+    #sideSelect button span {
+        position: absolute;
+        bottom: 5px;
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #F7F8F1;
+    }
+
+    #sideSelect button.left span { left: 4px; }
+    #sideSelect button.right span { right: 4px; }
+
+    #sideSelect button:hover { opacity: 0.7; }
+
+    #sideSelect button.active {
+        opacity: 1;
+        filter: drop-shadow(0 0 6px rgba(247, 248, 241, 0.7));
+    }
+
+    #sideSelect button:focus { outline: none; }
+    #sideSelect button:focus-visible { outline: 1px dashed #F7F8F1; outline-offset: 4px; }
 
     /* DESKTOP */
     @media screen and (min-width: 769px) {

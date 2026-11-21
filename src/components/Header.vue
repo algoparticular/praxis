@@ -193,19 +193,21 @@
         gap: 56px;
     }
 
-    /* over the veil the navy cannot mark things: the language chosen is underlined in light (cream, glowing a little,
-       as the sliders' thumbs), a hovered word with a fine line, and the sliders fill in cream */
-    #menuOverlay nav a:hover,
-    #menuOverlay #languageSelect label:hover {
+    /* over the veil the navy cannot mark things: a hovered word with a fine line, the language chosen bright in cream
+       (glowing a little, as the sliders' thumbs) and the other faint, and the sliders fill in cream */
+    #menuOverlay nav a:hover {
         color: #F7F8F1;
         text-decoration: underline 1px;
         text-underline-offset: 6px;
     }
 
+    #menuOverlay #languageSelect label:hover {
+        color: #F7F8F1;
+        opacity: 0.8;
+    }
+
     #menuOverlay #languageSelect label.active {
         color: #F7F8F1;
-        text-decoration: underline 2px #F7F8F1;
-        text-underline-offset: 6px;
         text-shadow: 0 0 12px rgba(247, 248, 241, 0.75);
     }
 
@@ -237,10 +239,19 @@
         background: #F7F8F1;
     }
 
-    #menuOverlay nav a,
-    #menuOverlay nav #languageSelect label,
-    #menuOverlay nav #languageSelect span {
+    #menuOverlay nav a {
         font-size: 32px;
+    }
+
+    /* the language's two letters, small and spaced */
+    #menuOverlay nav #languageSelect {
+        gap: 28px;
+    }
+
+    #menuOverlay nav #languageSelect label {
+        font-family: 'Nunito', helvetica, sans-serif;
+        font-size: 17px;
+        letter-spacing: 0.14em;
     }
 
     button.deck {

@@ -9,6 +9,7 @@ import Header from '../components/Header.vue';
 import rig from './sid/sid.json';
 import { CICLOS, createWorld, STAR_SEED, STAR_LIGHT, pieceUrl } from './sidWorld.js';
 import { createStarField, CONSTELLATION_TIME } from '../composables/useStarField.js';
+import { worldSide } from '../composables/useWorldSide.js';
 import { THOUGHTS } from './thoughts.js';
 import { FRAGMENTS } from './story.js';
 import { HERBARIUM, kindOf } from './herbarium.js';
@@ -100,7 +101,7 @@ function readFragment(i) {
     }, 600);
 }
 
-// Sid's notebook, written in the sky (its icon, a notebook, over the seed button, shows once there is something in it and
+// Sid's notebook, written in the sky (its icon, a notebook, on a small round button over the seed's, shows once there is something in it and
 // glows while there is something new to see; it opens on the page that has it; a touch anywhere, or Escape, closes it;
 // the header's icons go cream over it, `body.lab-story`). Two pages:
 // - Pensamientos: the fragments of the story found, in order, as one paragraph, those still hidden as faint stars the
@@ -122,6 +123,15 @@ function refreshStory() {
     const news = storyNews();
     story.fresh = news.thoughts || news.herb;
 }
+// the herbarium's drawings are small (72 to 290 px): each is shown at most at its own size over 1.5, so a phone's
+// screen does not blow it up into blurred pixels (until the illustrator's own, bigger ones come)
+const HERB_SCALE = 1 / 1.5;
+function fitHerb(e) {
+    const img = e.target;
+    img.style.maxWidth = `min(120px, 100%, ${Math.round(img.naturalWidth * HERB_SCALE)}px)`;
+    img.style.maxHeight = `${Math.min(84, Math.round(img.naturalHeight * HERB_SCALE))}px`;
+}
+
 function openStory() {
     if (!story.shown) return;
     const news = storyNews();
@@ -1747,7 +1757,7 @@ onBeforeUnmount(() => {
          it as on its own page, a card opened at its place) -->
     <div class="labRoot">
     <!-- (no menu on a long press: a finger held down only guides him) -->
-    <div ref="labEl" class="lab" @contextmenu.prevent>
+    <div ref="labEl" class="lab" :class="{ lefty: worldSide === 'left' }" @contextmenu.prevent>
         <div class="page"></div>
         <div ref="nightSky" class="night-sky" :style="zoomStyle"><canvas ref="starCanvas"></canvas></div>
         <!-- the rulito draws itself on its own canvas, which this scene lays over his head -->
@@ -1782,9 +1792,9 @@ onBeforeUnmount(() => {
                 </button>
             </div>
         </Transition>
-        <!-- Sid's notebook (openStory): its icon over the seed, once there is something in it -->
+        <!-- Sid's notebook (openStory): a small round button over the seed's, once there is something in it -->
         <Transition name="teaching">
-            <button v-if="story.shown && portal.card == null" class="story-icon" :class="{ light: teaching.light, fresh: story.fresh }"
+            <button v-if="story.shown && portal.card == null" class="story-icon glass" :class="{ fresh: story.fresh }"
                 :aria-label="$i18n.locale === 'en' ? 'Notebook' : 'Libreta'" :title="$i18n.locale === 'en' ? 'Notebook' : 'Libreta'"
                 @click="openStory"><span aria-hidden="true"></span></button>
         </Transition>
@@ -1811,7 +1821,7 @@ onBeforeUnmount(() => {
                     <ul class="herbarium">
                         <li v-for="h in HERBARIUM" :key="h.id" :class="{ known: story.herb.has(h.id), fresh: story.herbNew.has(h.id) }"
                             :style="{ animationDelay: `${300 + (story.herbNew.get(h.id) ?? 0) * 900}ms` }">
-                            <img :src="pieceUrl(h.show)" alt="" draggable="false">
+                            <span class="pic"><img :src="pieceUrl(h.show)" alt="" draggable="false" @load="fitHerb"></span>
                             <span class="name">{{ story.herb.has(h.id) ? ($i18n.locale === 'en' ? h.en : h.es) : '' }}</span>
                         </li>
                     </ul>
@@ -2195,40 +2205,51 @@ canvas {
     pointer-events: none;
     box-shadow: 0 0 6px rgba(255, 244, 214, 0.9);
 }
-/* the story's icon: an atom, as the app's icons (a line, round, no button round it), over the seed and in line with it;
-   in the ink of his line by day, cream by night (as the header's icons); while a fragment found waits to be seen it
-   breathes a soft glow */
+/* the notebook's button: as the seed's, smaller (the app's frosted glass, a little darkened, a cream line round it),
+   centred over it; the notebook in cream; while something new waits to be seen it breathes a soft glow */
 .story-icon {
     position: absolute;
-    right: 40px;
-    bottom: calc(146px + env(safe-area-inset-bottom, 0px));
-    width: 44px;
-    height: 44px;
+    right: 36px;                  /* (centred over the seed's: 20 + (84 - 52) / 2) */
+    bottom: calc(144px + env(safe-area-inset-bottom, 0px));
+    width: 52px;
+    height: 52px;
     padding: 0;
     margin: 0;
-    border: none;
-    background: none;
-    color: rgba(0, 0, 0, 0.78);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #F7F8F1;
+    background-color: rgba(20, 50, 70, 0.26);
+    border: 1px solid rgba(247, 248, 241, 0.35);
+    box-shadow: 0 4px 24px rgba(20, 50, 70, 0.18);
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
-    transition: transform 160ms ease-out, color 600ms ease-out;
+    transition: transform 160ms ease-out, box-shadow 400ms ease-out;
 }
-.story-icon.light { color: #F7F8F1; }
+/* the buttons on the left, for whoever prefers them there (the menu, inside the world: useWorldSide.js); the minutes'
+   menu then springs out of the seed to its right */
+.lab.lefty .lotus { right: auto; left: 20px; }
+.lab.lefty .lotus .count { right: auto; left: -4px; }
+.lab.lefty .story-icon { right: auto; left: 36px; }
+.lab.lefty .choose { right: auto; left: 116px; transform-origin: -54px 50%; }
+.lab.lefty .choose-enter-from, .lab.lefty .choose-leave-to { transform: translateX(-30px) scale(0.2); }
+@media (prefers-reduced-motion: reduce) { .lab.lefty .choose-enter-from, .lab.lefty .choose-leave-to { transform: none; } }
 .story-icon span {
     display: block;
-    width: 100%;
-    height: 100%;
+    width: 26px;
+    height: 26px;
     background-color: currentColor;
     -webkit-mask: url('../assets/icon/Notebook.svg') center / contain no-repeat;
     mask: url('../assets/icon/Notebook.svg') center / contain no-repeat;
 }
 .story-icon:active { transform: scale(0.9); }
 .story-icon:focus { outline: none; }
-.story-icon:focus-visible { filter: drop-shadow(0 0 6px rgba(255, 111, 97, 0.9)); }
+.story-icon:focus-visible { box-shadow: 0 0 0 4px rgba(247, 248, 241, 0.6); }
 .story-icon.fresh { animation: story-call 2.4s ease-in-out infinite alternate; }
 @keyframes story-call {
-    from { filter: drop-shadow(0 0 0 rgba(255, 240, 200, 0)); }
-    to { filter: drop-shadow(0 0 8px rgba(255, 240, 200, 0.95)); }
+    from { box-shadow: 0 0 6px 0 rgba(255, 240, 200, 0.3); }
+    to { box-shadow: 0 0 24px 6px rgba(255, 240, 200, 0.8); }
 }
 /* the story's page: over the dimmed world, a card of frosted cream with the story as one paragraph, written by hand;
    what is still hidden, dark bars the length of its words; what was found since it was last seen is painted in */
@@ -2339,11 +2360,21 @@ canvas {
     align-items: center;
     gap: 6px;
 }
-.herbarium img {
+/* each drawing no bigger than its own pixels allow (fitHerb: at most its own size over 1.5, in CSS px), so the small ones
+   (Metta's lantern, Upekkha's mushrooms are under 110 px) are not blown up and blurred; standing on one line */
+.herbarium .pic {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
     width: 100%;
-    max-width: 150px;
-    height: 104px;
-    object-fit: contain;
+    height: 84px;
+}
+.herbarium img {
+    display: block;
+    width: auto;
+    height: auto;
+    max-width: min(120px, 100%);
+    max-height: 84px;
     filter: brightness(0) opacity(0.5) drop-shadow(0 0 1px rgba(247, 248, 241, 0.45));
     -webkit-user-drag: none;
 }
@@ -2387,7 +2418,7 @@ canvas {
 .story-count span.on { background: #F7F8F1; box-shadow: 0 0 6px rgba(255, 240, 200, 0.8); }
 @media (prefers-reduced-motion: reduce) {
     .frag.fresh, .frag.locked, .herbarium li.fresh img, .herbarium li.fresh .name { animation: none; }
-    .story-icon.fresh { animation: none; filter: drop-shadow(0 0 6px rgba(255, 240, 200, 0.9)); }
+    .story-icon.fresh { animation: none; box-shadow: 0 0 18px 4px rgba(255, 240, 200, 0.7); }
 }
 /* The app's header over his light sky: its cream icons in the ink of his line (the header is teleported into <body>,
    so this is not scoped; body.lab-page only while the lab is open) */
