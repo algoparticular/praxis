@@ -31,6 +31,8 @@ for (const { file, rel } of scripts) {
     else if (/^index-/.test(name)) check(`JS ${name} (the app)`, gzipKb(file), 165);
     // PostHog's SDK: fetched after the app is idle, and only when a key is configured (src/analytics.js)
     else if (/^module-/.test(name)) check(`JS ${name} (PostHog)`, gzipKb(file), 115);
+    // Sid's world (src/lab): its own chunk, loaded only when it is opened; it grows as the world does
+    else if (/^LabSid-/.test(name)) check(`JS ${name} (Sid's world)`, gzipKb(file), 50);
     else check(`JS ${name}`, gzipKb(file), 40);
 }
 

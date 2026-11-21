@@ -186,11 +186,12 @@ export const startTableVisit = (table) => {
 // It counts this visit only: what the world remembers on the phone (worldMemory.js: visits, seeds, plants) is never
 // sent, so it cannot tell who comes back. `from` is the page they came from (the landing's labyrinth, a link...).
 export const startWorldVisit = ({ from, touch, webgl }) => {
-    if (!tracking()) return { zone() {}, moved() {}, sat() {}, meditated() {}, seedPicked() {}, seedPlanted() {}, cardOpened() {}, cardClosed() {}, rulito() {}, finish() {} };
+    if (!tracking()) return { zone() {}, moved() {}, sat() {}, meditated() {}, seedPicked() {}, seedPlanted() {}, cardOpened() {}, cardClosed() {}, rulito() {}, secret() {}, guided() {}, finish() {} };
     const startedAt = performance.now();
     const meter = measureFrames();
     const secs = (at = performance.now()) => Math.round((at - startedAt) / 100) / 10;
-    const zones = new Set(), places = new Set(), cards = new Set();
+    const zones = new Set(), places = new Set(), cards = new Set(), secrets = new Set();
+    let meditations = 0;
     let distance = 0, sits = 0, seedsPicked = 0, seedsPlanted = 0, rulitos = 0, firstMoveAt = null, firstSitAt = null;
     let opened = null, finished = false;
 
@@ -242,6 +243,18 @@ export const startWorldVisit = ({ from, touch, webgl }) => {
             rulitos += 1;
             track('world_rulito', { card_id: card, via });
         },
+        // a secret of the world found (the night's constellation, a seed of light from a shooting star, a fragment of
+        // the story), once a visit each kind
+        secret(what) {
+            if (secrets.has(what)) return;
+            secrets.add(what);
+            track('world_secret', { what, seconds: secs() });
+        },
+        // a meditation chosen (1, 3 or 5 minutes): whether it was sat through, and how long it lasted
+        guided(minutes, completed, seconds) {
+            meditations += 1;
+            track('world_meditation', { minutes, completed, seconds });
+        },
         finish() {
             if (finished) return;
             finished = true;
@@ -257,6 +270,8 @@ export const startWorldVisit = ({ from, touch, webgl }) => {
                 seeds_picked: seedsPicked,
                 seeds_planted: seedsPlanted,
                 rulitos,
+                meditations,
+                secrets: secrets.size,
                 seconds_to_first_move: firstMoveAt === null ? null : secs(firstMoveAt),
                 seconds_to_first_sit: firstSitAt === null ? null : secs(firstSitAt),
                 touch,
