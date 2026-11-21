@@ -89,7 +89,7 @@ function readFragment(i) {
     const f = FRAGMENTS[i];
     if (!f) return;
     play('star'); visit?.secret('fragment');
-    story.found = memory.marks.length; story.fresh = true;
+    story.found = memory.fragments.length; story.fresh = true;
     setTimeout(function say() {
         if (gone) return;
         if ((teaching.on && !teaching.story) || portal.card != null) { setTimeout(say, 1500); return; }
@@ -102,17 +102,20 @@ function readFragment(i) {
 // The story's own page: the fragments found, in order, as one paragraph, and those still hidden as dark bars the length
 // of their words, as the secrets of a game (its icon, an atom as the marks are drawn, over the seed button, shows once
 // the first is found and glows while one found is still to be seen there). Opened, the ones found since it was last
-// seen (memory.storySeen) are painted in, one after another; a touch anywhere, or Escape, closes it
-const story = reactive({ open: false, found: 0, from: 0, fresh: false });
+// seen (memory.storySeen) are painted in, one after another, in the order they were found (out of order in the story:
+// each mark gives one still hidden, at random); a touch anywhere, or Escape, closes it
+const story = reactive({ open: false, found: 0, fresh: false, have: new Set(), order: new Map() });
 function openStory() {
     if (!story.found) return;
-    story.from = Math.min(memory.storySeen ?? 0, story.found);
+    const seen = new Set(memory.storySeen);
+    story.have = new Set(memory.fragments);
+    // (the ones not yet seen here, by when they were found: the order they are painted in)
+    story.order = new Map(memory.fragments.filter((i) => !seen.has(i)).map((i, n) => [i, n]));
     story.open = true; ui.choose = false;
     play('tap');
-    if (memory.storySeen !== story.found) { memory.storySeen = story.found; saveMemory(memory); }
+    if (story.order.size) { memory.storySeen = [...memory.fragments]; saveMemory(memory); }
     story.fresh = false;
 }
-const storyIndex = (i) => Math.max(0, i - story.from);      // (the order in which the new ones are painted in)
 
 // What the places think, as the things of Everything do (thoughts.js): coming near one of the seven places, one of
 // its card's own sentences is written by hand in the sky over it, softly, with no card under it, and goes as he walks
@@ -489,8 +492,8 @@ const picture = (src) => (typeof Image !== 'undefined' ? Object.assign(new Image
 const memory = loadMemory();
 memory.visits += 1;
 saveMemory(memory);
-story.found = memory.marks.length;
-story.fresh = story.found > (memory.storySeen ?? 0);
+story.found = memory.fragments.length;
+story.fresh = memory.fragments.some((i) => !memory.storySeen.includes(i));
 ui.seeds = memory.seeds.length;
 // The very first visit teaches the world's one thing, in order: the words that open it, then a seed lying near him that
 // calls (rings of light on the ground; the button does not call meanwhile), then, picked up, the words of the seed and
@@ -508,7 +511,13 @@ const world = createWorld({
     // the marks of the story (story.js), while there is a fragment to read: found, the next one is written
     marks: { found: memory.marks, open: () => !firstVisit && memory.marks.length < FRAGMENTS.length },
     firstSeed: firstVisit ? FIRST_SEED : null,
-    onMark: () => { saveMemory(memory); readFragment(memory.marks.length - 1); },
+    // (each mark gives a fragment still hidden, at random: the story is found out of order)
+    onMark: () => {
+        const left = FRAGMENTS.map((f, i) => i).filter((i) => !memory.fragments.includes(i));
+        const i = left[Math.floor(Math.random() * left.length)];
+        if (i == null) return;
+        memory.fragments.push(i); saveMemory(memory); readFragment(i);
+    },
     onGrow: () => { saveMemory(memory); play('star'); },
     onSing: (p) => sing(p),
 });
@@ -1724,12 +1733,12 @@ onBeforeUnmount(() => {
         </Transition>
         <Transition name="veil">
             <div v-if="story.open" class="story" role="dialog" :aria-label="$i18n.locale === 'en' ? 'Thoughts' : 'Pensamientos'" @pointerdown.stop @click="story.open = false">
+                <h2 class="story-title">{{ $i18n.locale === 'en' ? 'Thoughts' : 'Pensamientos' }}</h2>
                 <div class="story-card">
-                    <h2>{{ $i18n.locale === 'en' ? 'Thoughts' : 'Pensamientos' }}</h2>
                     <p class="story-text">
                         <template v-for="(f, i) in FRAGMENTS" :key="i">
-                            <span class="frag" :class="{ locked: i >= story.found, fresh: i >= story.from && i < story.found }"
-                                :style="{ animationDelay: `${400 + storyIndex(i) * 1300}ms` }" :aria-hidden="i >= story.found">{{ $i18n.locale === 'en' ? f.en : f.es }}</span>{{ ' ' }}
+                            <span class="frag" :class="{ locked: !story.have.has(i), fresh: story.order.has(i) }"
+                                :style="{ animationDelay: `${400 + (story.order.get(i) ?? 0) * 1300}ms` }" :aria-hidden="!story.have.has(i)">{{ $i18n.locale === 'en' ? f.en : f.es }}</span>{{ ' ' }}
                         </template>
                     </p>
                     <!-- how many have been found: one dot each, as the world's dots -->
@@ -2155,6 +2164,7 @@ canvas {
     inset: 0;
     z-index: 20;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
     padding: calc(84px + env(safe-area-inset-top, 0px)) 16px calc(24px + env(safe-area-inset-bottom, 0px));
@@ -2166,8 +2176,9 @@ canvas {
 .story-card {
     max-width: 560px;
     max-height: 100%;
+    min-height: 0;
     overflow-y: auto;
-    padding: 28px 26px 18px;
+    padding: 24px 26px 18px;
     border-radius: 24px;
     background-color: rgba(247, 248, 241, 0.86);
     background-image: url('../assets/noise.png');
@@ -2177,14 +2188,16 @@ canvas {
     -webkit-user-select: text;
     user-select: text;
 }
-.story-card h2 {
+/* its title over the card, on the dimmed world: in cream with a glow, as the app's icons */
+.story-title {
     margin: 0 0 12px;
     font-family: Caveat, cursive;
     font-weight: 500;
-    font-size: 34px;
+    font-size: 40px;
     line-height: 1.1;
     text-align: center;
-    color: #143246;
+    color: #F7F8F1;
+    text-shadow: 0 0 14px rgba(255, 240, 200, 0.85), 0 0 4px rgba(255, 244, 214, 0.6), 0 2px 3px rgba(20, 51, 72, 0.45);
 }
 .story-text {
     margin: 0;
