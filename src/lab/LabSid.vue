@@ -104,7 +104,7 @@ function readFragment(i) {
 // the first is found and glows while one found is still to be seen there). Opened, the ones found since it was last
 // seen (memory.storySeen) are painted in, one after another, in the order they were found (out of order in the story:
 // each mark gives one still hidden, at random); a touch anywhere, or Escape, closes it
-const story = reactive({ open: false, found: 0, fresh: false, have: new Set(), order: new Map() });
+const story = reactive({ open: false, found: 0, fresh: false, have: new Set(), order: new Map(), look: 'notebook' });   // (look: 'notebook' or 'sky', being tried)
 function openStory() {
     if (!story.found) return;
     const seen = new Set(memory.storySeen);
@@ -1665,7 +1665,7 @@ function loop(now) {
 }
 
 // (for trying him out from the browser's console)
-if (typeof window !== 'undefined') window.__sid = { state, springs, hands, ui, world, walkTo, sit, memory, portal, portalWon, closePortal, toScreen, meditate, shoot: () => stars?.shoot(true), freeSky: () => freeSky(92, Math.min(horizon() * view.k, sidCrown.y) - 24), figure: (card) => { state.lookUp = true; state.look = 1; clearTimeout(state.figure); state.figure = setTimeout(() => {}, 1e9); requestAnimationFrame(() => requestAnimationFrame(() => stars?.constellation(constellationFigure(card), { color: RULITO_COLOURS[card] }))); } };
+if (typeof window !== 'undefined') window.__sid = { story, state, springs, hands, ui, world, walkTo, sit, memory, portal, portalWon, closePortal, toScreen, meditate, shoot: () => stars?.shoot(true), freeSky: () => freeSky(92, Math.min(horizon() * view.k, sidCrown.y) - 24), figure: (card) => { state.lookUp = true; state.look = 1; clearTimeout(state.figure); state.figure = setTimeout(() => {}, 1e9); requestAnimationFrame(() => requestAnimationFrame(() => stars?.constellation(constellationFigure(card), { color: RULITO_COLOURS[card] }))); } };
 
 onMounted(() => {
     document.body.classList.add('lab-page');
@@ -1750,7 +1750,7 @@ onBeforeUnmount(() => {
                 @click="openStory"><span aria-hidden="true"></span></button>
         </Transition>
         <Transition name="veil">
-            <div v-if="story.open" class="story" role="dialog" :aria-label="$i18n.locale === 'en' ? 'Thoughts' : 'Pensamientos'" @pointerdown.stop @click="story.open = false">
+            <div v-if="story.open" class="story" :class="story.look" role="dialog" :aria-label="$i18n.locale === 'en' ? 'Thoughts' : 'Pensamientos'" @pointerdown.stop @click="story.open = false">
                 <h2 class="story-title">{{ $i18n.locale === 'en' ? 'Thoughts' : 'Pensamientos' }}</h2>
                 <div class="story-card">
                     <p class="story-text">
@@ -2273,6 +2273,60 @@ canvas {
     .frag.fresh, .frag.locked { animation: none; }
     .story-icon.fresh { animation: none; filter: drop-shadow(0 0 6px rgba(255, 240, 200, 0.9)); }
 }
+/* (being tried) Sid's notebook: a page of warm paper, a little turned, with its stitched spine, faint rules under the
+   handwriting and a navy elastic band */
+.story.notebook .story-card {
+    position: relative;
+    max-width: 520px;
+    padding: 24px 40px 20px 50px;
+    border: none;
+    border-radius: 5px 16px 16px 5px;
+    background-color: #F4ECD8;
+    background-image: url('../assets/noise.png'), linear-gradient(90deg, rgba(150, 110, 60, 0.16), rgba(150, 110, 60, 0) 34px);
+    box-shadow: 0 16px 36px rgba(20, 40, 60, 0.36), 0 2px 0 rgba(150, 110, 60, 0.2), inset 0 0 50px rgba(160, 120, 60, 0.12);
+    transform: rotate(-0.8deg);
+}
+.story.notebook .story-card::before {
+    content: '';
+    position: absolute;
+    left: 20px;
+    top: 14px;
+    bottom: 14px;
+    width: 4px;
+    background-image: radial-gradient(circle, rgba(20, 50, 70, 0.42) 0 1.4px, transparent 1.9px);
+    background-size: 4px 14px;
+}
+.story.notebook .story-card::after {
+    content: '';
+    position: absolute;
+    right: 18px;
+    top: 0;
+    bottom: 0;
+    width: 7px;
+    border-radius: 2px;
+    background: #143246;
+    box-shadow: 1px 0 3px rgba(0, 0, 0, 0.3);
+}
+.story.notebook .story-text {
+    background-image: repeating-linear-gradient(to bottom, transparent 0 calc(1.5em - 1px), rgba(20, 50, 70, 0.13) calc(1.5em - 1px) 1.5em);
+    background-position: 0 -0.12em;
+}
+/* (being tried) written in the sky: no card, the world darker behind, the handwriting in cream with a glow, what is
+   still hidden as faint stars */
+.story.sky { background: rgba(10, 26, 40, 0.6); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+.story.sky .story-card { background: none; border: none; box-shadow: none; padding: 8px 10px; }
+.story.sky .story-text { color: #F7F8F1; font-size: 23px; text-shadow: 0 0 12px rgba(255, 240, 200, 0.4); }
+.story.sky .frag.locked { background-image: radial-gradient(circle, rgba(255, 244, 214, 0.6) 0 1.2px, transparent 1.8px); background-size: 12px 100%; }
+.story.sky .frag.fresh { animation-name: frag-appear-sky; }
+@keyframes frag-appear-sky {
+    0% { color: transparent; text-shadow: none; background-image: radial-gradient(circle, rgba(255, 244, 214, 0.6) 0 1.2px, transparent 1.8px); }
+    25% { color: transparent; text-shadow: 0 0 16px rgba(255, 210, 130, 1); background-image: radial-gradient(circle, rgba(255, 210, 130, 0.95) 0 1.7px, transparent 2.3px); }
+    26% { background-image: none; }
+    60% { color: transparent; text-shadow: 0 0 6px rgba(255, 244, 214, 0.8); background-image: none; }
+    100% { color: #F7F8F1; text-shadow: 0 0 12px rgba(255, 240, 200, 0.4); background-image: none; }
+}
+.story.sky .story-count span { box-shadow: inset 0 0 0 1.2px rgba(247, 248, 241, 0.5); }
+.story.sky .story-count span.on { background: #F7F8F1; box-shadow: 0 0 6px rgba(255, 240, 200, 0.8); }
 /* The app's header over his light sky: its cream icons in the ink of his line (the header is teleported into <body>,
    so this is not scoped; body.lab-page only while the lab is open) */
 body.lab-page header .navContainer button,
