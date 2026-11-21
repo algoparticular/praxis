@@ -7,7 +7,7 @@ Anónima y sin cookies. Todo el código está en `src/analytics.js`; sin `VITE_P
 2. En Netlify, *Site configuration → Environment variables*: `VITE_POSTHOG_KEY` y, si el proyecto es europeo, `VITE_POSTHOG_HOST=https://eu.i.posthog.com` (por defecto `https://us.i.posthog.com`). Volver a desplegar: las variables `VITE_` se fijan al construir.
 
 ## Qué garantiza
-- Sin cookies ni `localStorage`: el id vive en memoria y muere con la visita. Se cuentan **visitas**, no personas (no hay retención entre días, a propósito). El mundo de Sid guarda en el teléfono sus visitas, semillas y plantas (`worldMemory.js`), pero eso nunca se manda.
+- Sin cookies ni `localStorage`: el id vive en memoria y muere con la visita. Se cuentan **visitas**, no personas (no hay retención entre días, a propósito). El mundo de Sid guarda en el teléfono sus visitas, semillas, plantas, fragmentos y lo que ya se vio en la libreta (`worldMemory.js`), y de eso solo se mandan cantidades: qué número de visita es, cuántos fragmentos de la historia tiene y cuántos tipos de planta sembró (nada que identifique a la persona; sirve para ver si el mundo invita a volver y cuánto se avanza).
 - Sin autocapture, replay, encuestas ni perfiles de persona (`$process_person_profile: false`): solo los eventos de abajo.
 - Respeta Do Not Track y Global Privacy Control.
 - `$current_url` y `$pathname` van sin barra final (`/card/27`, no `/card/27/`): Netlify sirve una carta abierta directamente con barra y el router la quita, y así no cuentan como dos páginas.
@@ -28,17 +28,23 @@ Todos llevan `lang` (`es`/`en`) e `installed` (la app corre como PWA instalada).
 | `card_reading_reached` | baja hasta la lectura | `card_id`, `seconds` |
 | `card_left` | una vez por visita: se va de la carta, la oculta (cambia de app o de pestaña) o cierra la página; `seconds` llega hasta ese momento | `card_id`, `scene`, `seconds`, `touches`, `milestones`, `read`, y la fluidez (abajo) |
 | `table_left` | deja una mesa 3D (sale, la oculta o cierra la página), solo si la mesa 3D llegó a mostrarse | `table`: `full` (`/oracle`) / `nine` (`/oracleTheNine`) / `deck` (el anillo de `/deck`), y la fluidez (abajo) |
-| `world_entered` | entra al mundo de Sid (`/sid`) | `from`: `landing` (el laberinto de Inicio), `direct` (un enlace o la dirección escrita) u otra página de la app (su dirección); `touch` (pantalla táctil), `webgl` (si las cartas se abren desde sus lugares) |
+| `world_entered` | entra al mundo de Sid (`/sid`) | `from`: `landing` (el laberinto de Inicio), `direct` (un enlace o la dirección escrita) u otra página de la app (su dirección); `touch` (pantalla táctil), `webgl` (si las cartas se abren desde sus lugares), `standalone` (entró desde el ícono de la pantalla de inicio), `visit` (qué visita es de este teléfono, según lo que recuerda el mundo: 1 es la primera) |
 | `world_moved` | la primera vez que Sid da un paso | `seconds_to_first`, `how`: `touch` / `pointer` (mouse) / `keys` |
 | `world_zone_reached` | Sid llega a una zona por primera vez en la visita (la primera, donde empieza, también) | `zone` (id de la carta de esa zona), `zones` (cuántas lleva), `seconds` |
 | `world_place_meditated` | medita en un lugar (una vez por lugar en la visita) | `card_id`, `seconds` |
 | `world_card_opened` | se abre la carta de ese lugar (con WebGL); además llega su `card_viewed` con `entry: 'lab'` y, al cerrarla, su `card_left` | `card_id` |
 | `world_card_closed` | vuelve al mundo desde esa carta | `card_id`, `won` (completó su juego), `seconds` |
 | `world_rulito` | vuelve al mundo con un rulito | `card_id`, `via`: `card` (lo ganó en la carta) / `place` (nació en el lugar, sin WebGL) |
-| `world_seed_planted` | planta una semilla | `seed` (la carta de la semilla, por su nombre: `metta`), `zone` (id de la carta de la zona donde la planta) |
-| `world_secret` | descubre un secreto del mundo, una vez por visita cada uno | `what`: `constellation` (de noche, meditando, las estrellas forman el rulito), `star_seed` (una estrella fugaz le deja una semilla de luz), `fragment` (encuentra una marca de la historia); `seconds` |
+| `world_seed_planted` | planta una semilla | `seed` (la carta de la semilla, por su nombre: `metta`), `zone` (id de la carta de la zona donde la planta), `kind` (qué planta brotó, su id en `src/lab/herbarium.js`) |
+| `world_first_seed` | la primera visita enseña la semilla: la recoge y después la planta | `step`: `picked` / `planted`; `seconds` (desde que entró) |
+| `world_fragment` | encuentra un fragmento de la historia (cada marca da uno, al azar entre los que faltan) | `found` (cuántos de los 12 tiene ahora), `seconds` |
+| `world_plant_discovered` | siembra por primera vez un tipo de planta (entra al herbario) | `kind` (su id en `src/lab/herbarium.js`), `kinds` (cuántos tipos lleva) |
+| `world_secret` | descubre un secreto del mundo, una vez por visita cada uno | `what`: `constellation` (de noche, meditando, la cámara mira al cielo y las estrellas forman la figura de la zona; con `card_id`, la carta de esa figura), `star_seed` (una estrella fugaz le deja una semilla de luz), `fragment` (encuentra una marca de la historia); `seconds` |
+| `world_notebook_opened` | abre la libreta de Sid | `tab` (en qué página abrió: `thoughts` / `herbarium`), `fresh` (había algo nuevo sin ver), `fragments` (cuántos fragmentos tiene), `plants` (cuántos tipos de planta sembró) |
+| `world_sat` | cada vez que Sid se sienta en loto | `place` (id de la carta del lugar donde se sentó, o vacío lejos de los lugares), `zone` (id de la carta de la zona), `night` (de noche), `minutes` (si se sentó para una meditación de 1, 3 o 5 minutos), `sits` (cuántas veces lleva en la visita), `seconds` |
+| `world_meditation_started` | elige una meditación de 1, 3 o 5 minutos (ya sentado o no) | `minutes`, `seconds` |
 | `world_meditation` | termina una meditación elegida (1, 3 o 5 minutos) | `minutes`, `completed` (la terminó o se levantó antes), `seconds` (cuánto duró) |
-| `world_left` | una vez por visita: se va del mundo, lo oculta o cierra la página | `seconds`, `distance` (px de su mundo: cruzar una zona son unos 8000), `zones`, `places`, `cards_opened`, `sits`, `seeds_picked`, `seeds_planted`, `rulitos`, `meditations`, `secrets` (cuántos tipos de secreto descubrió), `seconds_to_first_move` y `seconds_to_first_sit` (vacíos si no pasó), `touch`, `webgl`, y la fluidez (abajo) |
+| `world_left` | una vez por visita: se va del mundo, lo oculta o cierra la página | `seconds`, `distance` (px de su mundo: cruzar una zona son unos 8000), `zones`, `places`, `cards_opened`, `sits`, `seeds_picked`, `seeds_planted`, `rulitos`, `meditations`, `notebook_opens`, `fragments` (cuántos fragmentos de la historia encontró en esta visita), `secrets` (cuántos tipos de secreto descubrió), `seconds_to_first_move` y `seconds_to_first_sit` (vacíos si no pasó), `touch`, `webgl`, y la fluidez (abajo) |
 | `share_opened` | abre la pantalla de compartir | `card_id`, `from`: `reading` (el botón del final de la lectura; hasta noviembre de 2026 también `stage`, un botón sobre la escena que se sacó) |
 | `share_clicked` | elige un canal | `card_id`, `channel` (`link`, `facebook`, `twitter`, `whatsapp`) |
 | `language_changed` | cambia el idioma | `to` |

@@ -3,7 +3,12 @@
   <head>
     <meta charset="UTF-8" />
   
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no, viewport-fit=cover">
+    <!-- Opened from the Home Screen the page goes under the clock and the battery (Sid's world shows its sky there; the
+         rest of the app paints that strip navy, .status-strip in App.vue). iOS reads this when the icon is added. -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
     <meta property="og:title" content="Algo Particular">
     <meta property="og:type" content="website" />

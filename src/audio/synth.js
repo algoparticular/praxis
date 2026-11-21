@@ -847,6 +847,19 @@ export const breath = (ctx, out, time, harmony) => {
     chordBreath(ctx, out, time, harmony, { duration, shape: breathShape, level: 0.016 });
 };
 
+// A breath to follow in a meditation in Sid's world (LabSid.vue): only the air, no chord (the meditation is silence),
+// `inhale` s in and `exhale` s out (4 and 6), soft; one is played at the start of each breath
+export const guideBreath = (ctx, out, time, harmony, { inhale = 4, exhale = 6 } = {}) => {
+    const duration = inhale + exhale;
+    const shape = (t) => {
+        if (t <= 0 || t >= duration) return 0;
+        if (t < inhale) return smooth(t / inhale);
+        return Math.max(0, 1 - smooth((t - inhale) / exhale));
+    };
+    const colour = (k) => { const t = k * duration; return t < inhale ? inColour(t / inhale) : outColour((t - inhale) / exhale); };
+    airBreath(ctx, out, time, { duration, shape, colour, level: 0.1 });
+};
+
 // Holding Sid: the air comes in through the whole inhale and is then held, thinning out slowly
 export const inhale = (ctx, out, time, harmony) => {
     const HOLD = 1.6;

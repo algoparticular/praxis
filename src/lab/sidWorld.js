@@ -24,6 +24,8 @@ import { SEED_OUTLINE, SEED_SEAM, SEED_GERM } from './seedShape.js';
 // Her pieces, and the plants, stones and mushrooms cut out of the cards' scenes (src/lab/suelo, made by
 // scripts/convert-lab-suelo.mjs): the line and what is inside it, as pictures (tinted in code)
 const URLS = import.meta.glob(['./arbol/*.webp', './suelo/*.webp'], { eager: true, query: '?url', import: 'default' });
+// (the address of one of the pieces' pictures, in its own colours where it has them: for the herbarium's page)
+export const pieceUrl = (name) => URLS[`./suelo/${name}-colour.webp`] ?? URLS[`./suelo/${name}.webp`];
 const PICTURES = {};
 if (typeof Image !== 'undefined') {
     for (const [file, url] of Object.entries(URLS)) {
@@ -414,7 +416,9 @@ const PART_COLOUR = { cap: 2, stem: null };   // the mushrooms of the tree: thei
 const ROLES = { plant: 'plants', bead: 'beads', stone: 'stones' };
 const mixRgb = (a, b, t) => `rgb(${a.map((v, i) => Math.round(v + (b[i] - v) * t)).join(',')})`;
 
-export function createWorld({ clouds = null, moon = null, planted = [], visit = 0, onSeed = null, onGrow = null, onSing = null, marks = null, onMark = null }) {
+export function createWorld({ clouds = null, moon = null, planted = [], visit = 0, onSeed = null, onGrow = null, onSing = null, marks = null, onMark = null, firstSeed = null }) {
+    // (firstSeed: { x, d }, on the very first visit: a seed lies there, near him, calling with rings of light on the
+    // ground, so the first thing learnt is that seeds are gathered; LabSid.vue)
     // (marks: { found: [keys], open: () => whether there is still a fragment to read }: the marks of the story, story.js)
     zoneOrder = shuffled(ZONES);                // (a new map of the worlds on every visit)
     // The colours on the screen now: those of the zone where the camera is (blended between two), set as the sky is
@@ -582,6 +586,11 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
             const p = { x: index * STRETCH + rs() * STRETCH, d: (row + rs()) * PATCH + PATCH_OFF }, z = mainZone(zonesAt(p.x, p.d));
             const id = `seed:${index},${row}`;
             if (clear(p) && !taken.has(id)) add({ id, kind: 'seed', x: p.x, d: p.d, card: z.card, cardId: z.id, role: 'bead', pick: rs(), phase: rs() * 10, reach: 120 });
+        }
+        // the first seed of all, near him on the first visit (firstSeed), of the card of the zone where it lies
+        if (firstSeed && Math.floor(firstSeed.x / STRETCH) === index && Math.floor((firstSeed.d - PATCH_OFF) / PATCH) === row && !taken.has('seed:first')) {
+            const z = mainZone(zonesAt(firstSeed.x, firstSeed.d));
+            add({ id: 'seed:first', kind: 'seed', x: firstSeed.x, d: firstSeed.d, card: z.card, cardId: z.id, role: 'bead', pick: 0.5, phase: 2, reach: 120, beacon: true });
         }
         // the mark of the story in each cell of the grid that falls in this stretch, while there is a fragment to read
         // (its key: the zone's card and its row of the grid, so it is the same mark however the worlds were shuffled)
@@ -1275,6 +1284,16 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
             const bob = Math.sin(time * 2 + item.phase) * 7, rise = up * up * 420, a = 1 - up, K = SEED_SIZE;
             const glowRgb = item.P.light.map(Math.round), twinkle = 0.5 + 0.5 * Math.sin(time * 3.1 + item.phase * 2);
             c.globalAlpha *= a;
+            // (the first seed calls: rings of its light go out over the ground round it, one after another)
+            if (item.beacon && up === 0) {
+                c.save(); c.lineWidth = 3;
+                for (let n = 0; n < 3; n++) {
+                    const k = (time * 0.45 + n / 3) % 1;
+                    c.strokeStyle = `rgba(${glowRgb.join(',')},${(0.75 * (1 - k)).toFixed(3)})`;
+                    c.beginPath(); c.ellipse(0, 0, 40 + 170 * k, 12 + 50 * k, 0, 0, Math.PI * 2); c.stroke();
+                }
+                c.restore();
+            }
             halo(c, 0, -6, 60 * K, glowRgb, 0.3 + 0.15 * twinkle);
             c.save(); c.translate(0, -34 * K - bob * K - rise); c.scale(K * (1 - up * 0.4), K * (1 - up * 0.4));
             // the stipple: dots of its light round it, each drifting on its own orbit and twinkling
@@ -1499,6 +1518,13 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
     // (setClock: to look at a given hour from the console, 0 sunrise .. 0.75 midnight)
     // The colours of the zone on the screen, for the page: Sid's line and body, and the colour under the starry night
     const ink = () => css(screen.ink), white = () => css(screen.white), nightColour = () => css(screen.night);
+    // The colour the top edge of the screen shows (the sky over the starry night over the page's cream), for the page's
+    // own background: Safari on the iPhone tints the bar with the time and the battery from it, not from the canvas
+    const PAGE = [247, 248, 241];
+    const topColour = () => {
+        const L = light(), d = 1 - L;
+        return css(screen.sky.map((v, i) => v * L + (1 - L) * (screen.night[i] * d + PAGE[i] * (1 - d))));
+    };
     // The card of the zone on the screen (its id), for the music
     const zoneCard = () => mainZone(zonesAt(lastCam, lastD)).id;
     // (seedsNear: the seeds not yet picked up round (x, d), to find one from the console)
@@ -1547,5 +1573,5 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
     }
     // (seedLight: the light of a card's seeds, for the page to fly one from the button to where it is planted)
     const seedLight = (card) => { if (card === STAR_SEED) return STAR_LIGHT; const z = ZONES.find((q) => q.card === card); return z ? colourOf([{ z, w: 1 }], 'bead', 0.5).light : [255, 244, 214]; };
-    return { update, draw, drawSky, drawGround, ground, night, ink, white, nightColour, placeCard, placeNear, zoneCard, obstacles, plant, plantsNear, plantBy, touchPlant, singPlant, cardIdOf, tend, seedsNear, seedLight, spore: () => spore, setClock: (v) => { clock = ((v % 1) + 1) % 1; } };
+    return { update, draw, drawSky, drawGround, ground, night, ink, white, nightColour, topColour, placeCard, placeNear, zoneCard, obstacles, plant, plantsNear, plantBy, touchPlant, singPlant, cardIdOf, tend, seedsNear, seedLight, spore: () => spore, setClock: (v) => { clock = ((v % 1) + 1) % 1; } };
 }

@@ -53,9 +53,33 @@
 			<component :is="Component" :key="$router.path" />
 		</transition>
 	</router-view>	
+	<div class="status-strip" aria-hidden="true"></div>
 	<CustomCursor />
 	<FpsMeter v-if="showFps" />
 </template>
+
+<!-- Opened from the iPhone's Home Screen the page goes under the clock and the battery (black-translucent, index.html):
+     only Sid's world shows there (its sky); everywhere else that strip is painted navy, where the white clock reads, and
+     the app starts below it. In Safari or on a computer there is no such strip (the inset is 0). -->
+<style>
+	.status-strip { display: none; }
+	@media (display-mode: standalone) {
+		.status-strip {
+			display: block;
+			position: fixed;
+			top: 0;
+			left: 0;
+			right: 0;
+			height: env(safe-area-inset-top, 0px);
+			background: #143246;
+			z-index: 60;
+			pointer-events: none;
+		}
+		body.lab-page .status-strip { display: none; }
+		body #app { padding-top: env(safe-area-inset-top, 0px); }
+		body.lab-page #app { padding-top: 0; }
+	}
+</style>
 
 <style scoped>
 	.fade-enter-from,

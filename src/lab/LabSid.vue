@@ -7,13 +7,14 @@
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import Header from '../components/Header.vue';
 import rig from './sid/sid.json';
-import { CICLOS, createWorld, STAR_SEED, STAR_LIGHT } from './sidWorld.js';
+import { CICLOS, createWorld, STAR_SEED, STAR_LIGHT, pieceUrl } from './sidWorld.js';
 import { createStarField, CONSTELLATION_TIME } from '../composables/useStarField.js';
 import { THOUGHTS } from './thoughts.js';
 import { FRAGMENTS } from './story.js';
-import { W as RUL_W, H as RUL_H, LINE_AT, LOOP_AT } from '../data/rulitoShape.js';
+import { HERBARIUM, kindOf } from './herbarium.js';
+import { CONSTELLATIONS } from './constellations.js';
 import Rulito from '../components/Rulito.vue';
-import { play, setCardChord, vibrate } from '../composables/useSound.js';
+import { play, setCardChord, setHush, vibrate } from '../composables/useSound.js';
 import { chordFor } from '../data/cardChords.js';
 import { gardenNote } from '../audio/synth.js';
 import { getCard } from '../data/cards.js';
@@ -48,6 +49,8 @@ function scheduleHint() {
     if (satThisVisit) return;
     hintTimer = setTimeout(() => {
         if (satThisVisit) return;
+        // (on the first visit the seed near him calls first: the button waits until it is picked up)
+        if (seedWaiting) { hintTimer = setTimeout(scheduleHint, HINT_SHOW); return; }
         callButton();
         hintTimer = setTimeout(scheduleHint, HINT_SHOW);
     }, memory.visits <= 1 ? HINT_FIRST : HINT_AFTER);
@@ -87,6 +90,7 @@ function readFragment(i) {
     const f = FRAGMENTS[i];
     if (!f) return;
     play('star'); visit?.secret('fragment');
+    refreshStory();
     setTimeout(function say() {
         if (gone) return;
         if ((teaching.on && !teaching.story) || portal.card != null) { setTimeout(say, 1500); return; }
@@ -94,6 +98,55 @@ function readFragment(i) {
         clearTimeout(storyTimer);
         storyTimer = setTimeout(() => { if (teaching.story) teaching.on = false; }, STORY_SHOW * 1.4);
     }, 600);
+}
+
+// Sid's notebook, written in the sky (its icon, a notebook, over the seed button, shows once there is something in it and
+// glows while there is something new to see; it opens on the page that has it; a touch anywhere, or Escape, closes it;
+// the header's icons go cream over it, `body.lab-story`). Two pages:
+// - Pensamientos: the fragments of the story found, in order, as one paragraph, those still hidden as faint stars the
+//   length of their words; those found since it was last seen (memory.storySeen) are painted in, one after another, in
+//   the order they were found (each mark gives one still hidden, at random);
+// - Herbario: every plant a seed can grow into (herbarium.js) as a dark silhouette, and in its colours with its name
+//   once one of its kind has been planted (those planted since it was last seen, memory.herbSeen, come in out of a
+//   warm light)
+const story = reactive({ open: false, tab: 'thoughts', found: 0, fresh: false, shown: false, have: new Set(), order: new Map(), herb: new Set(), herbNew: new Map() });
+const herbPlanted = () => new Set(memory.planted.map((g) => kindOf(g.name)).filter(Boolean));
+function storyNews() {
+    const thoughts = memory.fragments.some((i) => !memory.storySeen.includes(i));
+    const herb = [...herbPlanted()].some((h) => !memory.herbSeen.includes(h));
+    return { thoughts, herb };
+}
+function refreshStory() {
+    story.found = memory.fragments.length;
+    story.shown = story.found > 0 || herbPlanted().size > 0;
+    const news = storyNews();
+    story.fresh = news.thoughts || news.herb;
+}
+function openStory() {
+    if (!story.shown) return;
+    const news = storyNews();
+    showTab(news.thoughts ? 'thoughts' : news.herb ? 'herbarium' : story.found ? story.tab : 'herbarium');
+    story.open = true; ui.choose = false;
+    document.body.classList.add('lab-story');
+    visit?.notebook(story.tab, news.thoughts || news.herb, memory.fragments.length, herbPlanted().size);
+    play('tap');
+}
+function closeStory() { story.open = false; document.body.classList.remove('lab-story'); }
+// (each page, as it is shown, paints in what is new on it and remembers it as seen)
+function showTab(tab) {
+    story.tab = tab;
+    if (tab === 'thoughts') {
+        const seen = new Set(memory.storySeen);
+        story.have = new Set(memory.fragments);
+        story.order = new Map(memory.fragments.filter((i) => !seen.has(i)).map((i, n) => [i, n]));
+        if (story.order.size) { memory.storySeen = [...memory.fragments]; saveMemory(memory); }
+    } else {
+        const seen = new Set(memory.herbSeen), planted = herbPlanted();
+        story.herb = planted;
+        story.herbNew = new Map([...planted].filter((h) => !seen.has(h)).map((h, n) => [h, n]));
+        if (story.herbNew.size) { memory.herbSeen = [...planted]; saveMemory(memory); }
+    }
+    refreshStory();
 }
 
 // What the places think, as the things of Everything do (thoughts.js): coming near one of the seven places, one of
@@ -107,7 +160,9 @@ function think(dt) {
     thinkIn -= dt;
     if (thinkIn > 0) return;
     thinkIn = 0.25;
-    const near = portal.card == null ? world.placeNear(state.x, state.d, THOUGHT_KEEP) : null;
+    // (never before the words that open the world have been read, nor on the first visit until its seed is planted)
+    const waiting = firstVisit || [...told].some((w) => !memory.learned[`words_${w}`]);
+    const near = portal.card == null && !waiting ? world.placeNear(state.x, state.d, THOUGHT_KEEP) : null;
     if (!near) { thinkKey = null; thought.on = false; return; }
     thinkPlace = near;
     const key = `${near.id}:${Math.round(near.x)}:${Math.round(near.d)}`, list = THOUGHTS[near.id];
@@ -137,7 +192,10 @@ function placeThought() {
 // out of the seed on a spring): 1, 3 and 5 minutes; one can slide the finger onto one and let go, or tap it. One of them
 // sits him in lotus and a bowl sounds; he breathes slowly, BREATH_IN s in and BREATH_OUT s out; round the seed the time
 // goes by as a line of light that closes; at the end the bowl again, and he stays sitting. Getting up ends it, with no
-// bowl. While it lasts a place's card does not open (its rulito is born there instead). It is offered once, wordless,
+// bowl. While it lasts it is silence and the world lets him be (`ui.guide`): the music fades out (setHush), only a soft
+// breath is heard, in and out with him (guideBreath in synth.js); nothing is planted or grows, the plants do not sing,
+// no place's card opens and no rulito is born, the night keeps its secrets (no constellation, no star sent, no seed of
+// light; a shooting star of the sky passes without a sound). It is offered once, wordless,
 // to whoever sits a while without it (GUIDE_PEEK: the menu comes out of the seed for a moment), until one has been chosen
 const BREATH_IN = 4, BREATH_OUT = 6, GUIDE_MINUTES = [1, 3, 5], GUIDE_PEEK = 25, LONG_PRESS = 450;
 let pressTimer = 0, longPressed = false, peeked = false, peekTimer = 0;
@@ -170,8 +228,10 @@ function seedClick() {
 function meditate(minutes) {
     ui.choose = false; clearTimeout(peekTimer);
     learn('guided');
-    if (!ui.sitting) sit(true);
-    ui.guide = { minutes, total: minutes * 60, t: 0, started: false };
+    if (!ui.sitting) sit(true, minutes);
+    ui.guide = { minutes, total: minutes * 60, t: 0, started: false, breaths: 0 };
+    setHush(true);
+    visit?.guideChosen(minutes);
 }
 function endGuide(done) {
     if (!ui.guide) return;
@@ -179,6 +239,7 @@ function endGuide(done) {
     if (g.started) visit?.guided(g.minutes, done, Math.round(g.t));
     if (done) play('bowl');
     ui.guide = null;
+    setHush(false);
 }
 const breathAt = (t) => {
     const u = t % (BREATH_IN + BREATH_OUT), e = (k) => 0.5 - 0.5 * Math.cos(Math.PI * k);
@@ -186,32 +247,83 @@ const breathAt = (t) => {
 };
 
 // The secrets of the night (nothing says they are there):
-// - sitting in lotus by night a while (CONSTELLATION_AFTER s), the stars come together over him into the rulito of the
-//   card of the world he is in, in its colour, with threads of dots (useStarField's constellation, as the landing's
-//   sky draws its icons), and it shines once whole; it goes when he gets up or the day comes;
+// - sitting in lotus by night a while (CONSTELLATION_AFTER s), now and then (CONSTELLATION_ODDS, at most once a visit)
+//   the camera looks up to the sky (`state.look`: the horizon comes down, LOOK_HORIZON, and the sky fills much of the
+//   screen over him) and, once it has, the stars come together into the constellation of the world he is in
+//   (constellations.js: a figure of its card, in the colour of its rulito, with threads of dots, as the landing's sky
+//   draws its icons), and it shines once whole; it goes, and the camera looks down again, when he gets up or the day comes;
 // - sitting by night, now and then the sky sends a shooting star near (SHOOT_EVERY s, SHOOT_ODDS), and a near one
 //   passing while he sits leaves a seed of light at his feet (STAR_SEED: of no card, it grows any card's plant, which
 //   twinkles by night), once each time he sits
-const CONSTELLATION_AFTER = 6, SHOOT_EVERY = 18, SHOOT_ODDS = 0.45;
-function rulitoFigure() {
-    const h = Math.min(horizon() * view.k * 0.84, 280), k = h / RUL_H, w = RUL_W * k;
-    const cx = Math.max(w + 16, Math.min(view.w - w - 16, sidOnScreen.x)), cy = horizon() * view.k * 0.5;
-    const at = ([x, y]) => [cx + (x - RUL_W / 2) * k, cy + (y - RUL_H / 2) * k];
-    const stem = [0, 5, 10, 15, 20, 24].map((i) => at(LINE_AT[i])), loop = [0, 2, 4, 6, 8, 10, 12, 14].map((i) => at(LOOP_AT[i]));
-    return [{ points: stem, closed: false }, { points: loop, closed: false }];
+const CONSTELLATION_AFTER = 8, CONSTELLATION_ODDS = 0.5, SHOOT_EVERY = 18, SHOOT_ODDS = 0.45;
+const LOOK_TIME = 2.6;          // (s the camera takes to look up, or down again)
+let figureShown = false;        // (a constellation already seen on this visit)
+// the figure of the card, in the sky over him, in the biggest stretch of sky nothing covers: by night the drawing's sky
+// is all but clear, so whatever shows in it over the horizon (her tree's crown, a palm, the clouds, the moon) covers the
+// stars; the world's canvas is read once, in cells (SKY_CELL px), and the biggest free square is taken (the nearest to
+// him of the biggest), from under the header down to his head or the horizon. With no room for it anywhere
+// (FIGURE_LEAST), it is over him all the same
+const SKY_CELL = 10, FIGURE_LEAST = 110, FIGURE_MOST = 340;
+function constellationFigure(card) {
+    const strokes = CONSTELLATIONS[card] ?? CONSTELLATIONS[15];
+    const top = 92, bottom = Math.min(horizon() * view.k, sidCrown.y) - 24;
+    const fallback = () => {
+        const size = Math.max(120, Math.min(bottom - top, view.w - 48, FIGURE_MOST));
+        return place(strokes, Math.max(size / 2 + 20, Math.min(view.w - size / 2 - 20, sidOnScreen.x)), top + Math.max(0, bottom - top) / 2, size);
+    };
+    const free = freeSky(top, bottom);
+    if (!free) return fallback();
+    const { size, x, y } = free;
+    const s = Math.min(size - SKY_CELL, FIGURE_MOST);
+    return s >= FIGURE_LEAST ? place(strokes, x, y, s) : fallback();
+}
+function freeSky(top, bottom) {
+    const el = canvas.value, d = view.dpr, cols = Math.floor((view.w - 32) / SKY_CELL), rows = Math.floor((bottom - top) / SKY_CELL);
+    if (cols < 2 || rows < 2) return null;
+    let px;
+    try { px = el.getContext('2d').getImageData(Math.round(16 * d), Math.round(top * d), Math.round(cols * SKY_CELL * d), Math.round(rows * SKY_CELL * d)); } catch { return null; }
+    const W = px.width, step = Math.max(1, Math.round(SKY_CELL * d / 3));
+    // (the sky itself is drawn a little by dusk: only what is clearly more than it covers)
+    const clear = Math.max(140, (1 - world.night()) * 255 + 50);
+    const blocked = (r, c) => {
+        const x0 = Math.round(c * SKY_CELL * d), y0 = Math.round(r * SKY_CELL * d), n = Math.round(SKY_CELL * d);
+        for (let y = y0; y < y0 + n; y += step) for (let x = x0; x < x0 + n; x += step) if (px.data[((y * W) + x) * 4 + 3] > clear) return true;
+        return false;
+    };
+    // the biggest free square: for each cell, how big a free square ends there (from the cells above and to its left)
+    const dp = Array.from({ length: rows }, () => new Array(cols).fill(0));
+    let best = null;
+    for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+        if (blocked(r, c)) continue;
+        dp[r][c] = r && c ? Math.min(dp[r - 1][c], dp[r][c - 1], dp[r - 1][c - 1]) + 1 : 1;
+        const n = dp[r][c], x = 16 + (c + 1 - n / 2) * SKY_CELL, y = top + (r + 1 - n / 2) * SKY_CELL;
+        const far = Math.abs(x - sidOnScreen.x);
+        if (!best || n > best.n || (n === best.n && far < best.far)) best = { n, x, y, far };
+    }
+    return best && { size: best.n * SKY_CELL, x: best.x, y: best.y };
+}
+function place(strokes, cx, cy, size) {
+    return strokes.map(({ points, closed }) => ({ closed, points: points.map(([x, y]) => [cx + x * size / 2, cy + y * size / 2]) }));
 }
 function nightSecrets(dt, seated) {
     const dark = world.night();
-    const starry = seated && dark > 0.6 && portal.card == null;
-    state.starT = starry ? (state.starT ?? 0) + dt : 0;
-    if (starry && !state.figure && state.starT > CONSTELLATION_AFTER && stars) {
+    const starry = seated && dark > 0.6 && portal.card == null && !ui.guide;
+    const before = state.starT ?? 0;
+    state.starT = starry ? before + dt : 0;
+    // (once a sitting, a while into it: whether the sky shows its figure this time)
+    if (starry && before <= CONSTELLATION_AFTER && state.starT > CONSTELLATION_AFTER && !figureShown && Math.random() < CONSTELLATION_ODDS) {
+        figureShown = true; state.lookUp = true;
+    }
+    if (!starry || dark < 0.45) state.lookUp = false;
+    state.look = Math.max(0, Math.min(1, (state.look ?? 0) + (state.lookUp ? dt : -dt) / LOOK_TIME));
+    if (state.lookUp && !state.figure && state.look >= 1 && stars) {
         const card = world.placeCard(state.x, state.d) ?? world.zoneCard();
-        stars.constellation(rulitoFigure(), { color: RULITO_COLOURS[card] ?? RULITO_COLOURS[15] });
+        stars.constellation(constellationFigure(card), { color: RULITO_COLOURS[card] ?? RULITO_COLOURS[15] });
         state.figure = setTimeout(() => { if (state.figure) play('star'); }, CONSTELLATION_TIME * 1000);
         if (!memory.learned.constellation) learn('constellation');
-        visit?.secret('constellation');
+        visit?.secret('constellation', { card_id: card });
     }
-    if (state.figure && (!ui.sitting || dark < 0.45 || portal.card != null)) { clearTimeout(state.figure); state.figure = null; stars?.constellation(null); }
+    if (state.figure && !state.lookUp) { clearTimeout(state.figure); state.figure = null; stars?.constellation(null); }
     // (the sky answers his stillness with a shooting star near, now and then)
     if (starry && !state.starGiven) {
         state.shootT = (state.shootT ?? 0) + dt;
@@ -221,7 +333,7 @@ function nightSecrets(dt, seated) {
 }
 // a near shooting star while he sits by night: a seed of light falls from it to his feet, and from there to the seed
 function starFell() {
-    if (!ui.sitting || state.starGiven || world.night() < 0.5 || portal.card != null) return;
+    if (!ui.sitting || ui.guide || state.starGiven || world.night() < 0.5 || portal.card != null) return;
     state.starGiven = true;
     state.planted = true;          // (it is not planted where it fell: it is kept, to be planted wherever he chooses)
     visit?.secret('star_seed');
@@ -238,6 +350,7 @@ function starFell() {
 // motion); `burst`: landing, the seed opens in a little burst of particles of its light (everything started from a
 // particle), and only then the plant sprouts
 const labEl = ref(null), lotusEl = ref(null);
+let pageTop = '';                                          // (the colour last given to the page's background)
 const still = typeof window !== 'undefined' && (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false);
 function fly(from, to, rgb, done, ms = 900, burst = false) {
     const root = labEl.value;
@@ -288,6 +401,8 @@ function addSeed(card, from, light) {
     memory.seeds.push(card); saveMemory(memory); play('pick');
     fly(from, buttonMiddle(), light ?? world.seedLight(card), () => {
         ui.seeds = memory.seeds.length; ui.seedPop += 1;
+        if (seedWaiting) visit?.firstSeed('picked');
+        seedWaiting = false;
         if (!firstSeedCalled && !memory.learned.planted) { firstSeedCalled = true; callButton(); tell('seed', 300); }
     });
 }
@@ -325,7 +440,7 @@ const PORTALS = new Set([15, 8, 9, 14, 27, 24, 32]);
 const PORTAL_AFTER = 0.23, PORTAL_FADE = 900, PORTAL_ZOOM = 2.6;
 const portal = reactive({ card: null, won: false });
 // where he is on the screen (in CSS px, drawn each frame) and the zoom of the world's canvases towards it
-const sidOnScreen = { x: 0, y: 0 };
+const sidOnScreen = { x: 0, y: 0 }, sidCrown = { x: 0, y: 0 };
 const zoom = reactive({ on: false, x: 0, y: 0 });
 const zoomStyle = computed(() => ({
     transformOrigin: `${zoom.x}px ${zoom.y}px`,
@@ -429,7 +544,15 @@ const picture = (src) => (typeof Image !== 'undefined' ? Object.assign(new Image
 const memory = loadMemory();
 memory.visits += 1;
 saveMemory(memory);
+refreshStory();
 ui.seeds = memory.seeds.length;
+// The very first visit teaches the world's one thing, in order: the words that open it, then a seed lying near him that
+// calls (rings of light on the ground; the button does not call meanwhile), then, picked up, the words of the seed and
+// the button calling (sitting plants it). Until it is planted the places do not think aloud and the marks of the story
+// stay hidden, so nothing comes before (`firstVisit`; the seed: firstSeed in sidWorld.js)
+let firstVisit = memory.visits === 1 && !memory.learned.planted && !memory.seeds.length && !memory.planted.length;
+let seedWaiting = firstVisit;
+const FIRST_SEED = { x: 1420, d: -40 };     // (he starts at x 1000: a little ahead of him, nearer the front)
 const PLANT_AFTER = 1.5;
 const SOW = { fly: 0.9, through: 1.3, under: 0.8 };    // (seconds of each part of its way)
 const world = createWorld({
@@ -437,8 +560,16 @@ const world = createWorld({
     planted: memory.planted, visit: memory.visits,
     onSeed: (seed) => { visit?.seedPicked(); seedFound(seed); },
     // the marks of the story (story.js), while there is a fragment to read: found, the next one is written
-    marks: { found: memory.marks, open: () => memory.marks.length < FRAGMENTS.length },
-    onMark: () => { saveMemory(memory); readFragment(memory.marks.length - 1); },
+    marks: { found: memory.marks, open: () => !firstVisit && memory.marks.length < FRAGMENTS.length },
+    firstSeed: firstVisit ? FIRST_SEED : null,
+    // (each mark gives a fragment still hidden, at random: the story is found out of order)
+    onMark: () => {
+        const left = FRAGMENTS.map((f, i) => i).filter((i) => !memory.fragments.includes(i));
+        const i = left[Math.floor(Math.random() * left.length)];
+        if (i == null) return;
+        memory.fragments.push(i); saveMemory(memory); readFragment(i);
+        visit?.fragment(memory.fragments.length);
+    },
     onGrow: () => { saveMemory(memory); play('star'); },
     onSing: (p) => sing(p),
 });
@@ -448,6 +579,7 @@ const world = createWorld({
 // each swaying as it sings
 const GARDEN = { reach: 900, first: 2.6, step: 0.75, rest: 1.5 };
 function sing(p, level = 1) {
+    if (ui.guide) return;                           // (a meditation is silence)
     const midi = gardenNote(chordFor(world.cardIdOf(p.card)), chordFor(world.zoneCard()), p.pick, p.grown);
     play('garden', { midi, level });
 }
@@ -700,13 +832,14 @@ function walkTo(x, d = state.d) {
 }
 function wave() { if (!ui.sitting) act('wave', 2.6, { arm: 'near' }); }
 function jump() { if (!ui.sitting && !state.air) { state.jumped = false; act('jump', 1.7); } }
-function sit(on = !ui.sitting) {
+function sit(on = !ui.sitting, minutes = null) {
     if (on === ui.sitting) return;
     if (on) { satThisVisit = true; clearTimeout(hintTimer); learn('sat'); }
     ui.hint = false;
     // getting up is its own little movement while his legs are still crossed
     state.rising = !on && Math.max(...state.legSit) > 0.1;
-    if (on) visit?.sat();
+    // (where: the card of the place he sits at, or none; whether by night; and the meditation chosen, if one was)
+    if (on) visit?.sat({ place: world.placeCard(state.x, state.d) ?? null, zone: world.zoneCard(), night: world.night() > 0.5, minutes });
     if (!on) endGuide(false);
     ui.sitting = on; state.sitT = 0; state.settled = false; state.target = null; state.action = null;
 }
@@ -741,7 +874,8 @@ function resize() {
     view.k = SMALL * Math.min((ui.touch ? view.h * 0.55 : view.h * 0.62) / (TALL + STAND), view.w * 0.9 / 420);
     const was = state.ground;
     state.ground = (ui.touch ? view.h * 0.84 : view.h * 0.86) / view.k;
-    view.floor = (state.ground * view.k - view.h * (ui.touch ? 0.2 : 0.24)) / view.k;     // from the front of the floor to the horizon (high on the screen: little sky)
+    view.horizon0 = ui.touch ? 0.2 : 0.24;     // where the horizon is on the screen (high: little sky), and looking up
+    lookAt();
     if (!was) { state.x = 1000; state.cam = state.x; state.camD = -follow(); }     // (he starts a little before her tree, which is ahead on his way)
     // the starry night fills the sky, down to the horizon
     skyHeight();
@@ -749,8 +883,18 @@ function resize() {
 // How far in front of him the camera stands (in depth): it keeps him a little below the middle of the screen. The starry night behind the drawing goes down to the horizon, which stays
 // where it is on the screen as the camera follows him
 const follow = () => DEPTH * 0.35;
+// (the floor, from its front to the horizon: shorter as the camera looks up to the sky, state.look, so the horizon comes
+// down the screen towards him and the sky fills more of it)
+const LOOK_HORIZON = { touch: 0.6, wide: 0.52 };
+function lookAt() {
+    const e = state.look ?? 0, k = e * e * (3 - 2 * e);
+    const at = view.horizon0 + ((ui.touch ? LOOK_HORIZON.touch : LOOK_HORIZON.wide) - view.horizon0) * k;
+    view.floor = (state.ground * view.k - view.h * at) / view.k;
+}
+// (the starry night is as tall as the sky can be, looking up: the ground drawn over it hides what is under the horizon,
+// and its stars are not made again as the camera moves)
 function skyHeight() {
-    if (nightSky.value) nightSky.value.style.height = `${Math.ceil(horizon() * view.k) + 2}px`;
+    if (nightSky.value) nightSky.value.style.height = `${Math.ceil(view.h * (ui.touch ? LOOK_HORIZON.touch : LOOK_HORIZON.wide)) + 2}px`;
 }
 
 function pointerTo(e) {
@@ -818,6 +962,7 @@ function press(key, on) {
 function onKey(e) {
     // (in a card's scene the keys are not his; Escape goes back to the world)
     if (portal.card != null) { if (e.key === 'Escape' && e.type === 'keydown') closePortal(); return; }
+    if (story.open) { if (e.key === 'Escape' && e.type === 'keydown') closeStory(); return; }
     if (e.target?.closest?.('button') && e.key === ' ') e.target.blur();
     const key = KEYS[e.key.length === 1 ? e.key.toLowerCase() : e.key];
     if (key) { e.preventDefault(); if (e.type === 'keydown' && !e.repeat) press(key, true); if (e.type === 'keyup') press(key, false); return; }
@@ -935,6 +1080,8 @@ function update(dt, now) {
     if (!ui.sitting) {
         if (state.sowing && !state.planted) ui.seeds = memory.seeds.length;   // (he got up before it was born: it stays his)
         state.plantT = 0; state.planted = false; state.sowing = null; state.portalDone = false; state.tending = null;
+    } else if (ui.guide) {
+        // (a meditation: nothing is planted and nothing grows)
     } else if (seated && !card && !state.planted && (state.tending ??= world.plantBy(state.x, state.d))) {
         // by a plant of his he plants nothing: after the same moment it grows a step, or, grown since he came, it dances
         state.plantT += dt;
@@ -961,17 +1108,21 @@ function update(dt, now) {
             state.sowing = null;
             state.planted = true;
             if (!still) burstAt(toScreen(w.x, w.d), `rgb(${w.light.map(Math.round).join(',')})`);
-            const seed = memory.seeds.shift();
-            memory.planted.push(world.plant(seed, w.x, w.d));
-            visit?.seedPlanted(seed, world.zoneCard());
+            const seed = memory.seeds.shift(), kinds = herbPlanted(), g = world.plant(seed, w.x, w.d), kind = kindOf(g.name);
+            memory.planted.push(g);
+            visit?.seedPlanted(seed, world.zoneCard(), kind);
+            if (firstVisit) visit?.firstSeed('planted');
+            if (kind && !kinds.has(kind)) visit?.plantDiscovered(kind, kinds.size + 1);
             ui.seeds = memory.seeds.length;
             learn('planted');
+            firstVisit = false;
+            refreshStory();
             saveMemory(memory);
             play('bloom');
         }
     }
     // meditating among his plants (away from the places), they sing in turn
-    if (seated && card == null && portal.card == null) {
+    if (seated && card == null && portal.card == null && !ui.guide) {
         state.roundT -= dt;
         if (state.roundT <= 0) {
             const seen = new Set(), round = world.plantsNear(state.x, state.d, GARDEN.reach)
@@ -997,7 +1148,7 @@ function update(dt, now) {
     // at a door to a card, the card's scene instead of the rulito here
     const door = card != null && PORTALS.has(card) && webgl && !ui.guide;
     if (door && !state.portalDone && portal.card == null && state.underTree >= PORTAL_AFTER) openPortal(card);
-    if (state.underTree >= RULITO_AFTER && !state.rul && !door) {
+    if (state.underTree >= RULITO_AFTER && !state.rul && !door && !ui.guide) {
         state.rul = { age: 0, head: 0, tail: 0, pop: 0, full: false, card };
         rulitoColour.value = RULITO_COLOURS[card] ?? RULITO_COLOURS[15];
         rulito.value?.reshape();
@@ -1007,10 +1158,13 @@ function update(dt, now) {
     if (zone !== state.zone) { state.zone = zone; setCardChord(chordFor(zone)); visit?.zone(zone); }
     think(dt);
     nightSecrets(dt, seated);
+    lookAt();
     // the meditation chosen (meditate): it starts as he has settled in lotus, and goes by in real time
     if (ui.guide && meditating) {
         const g = ui.guide;
         if (!g.started) { g.started = true; play('bowl'); }
+        // (a soft breath to follow, at the start of each one, with him: breathAt)
+        if (g.t >= g.breaths * (BREATH_IN + BREATH_OUT)) { g.breaths += 1; play('guideBreath'); }
         g.t += dt;
         if (g.t >= g.total) endGuide(true);
     }
@@ -1320,6 +1474,9 @@ function draw() {
     nightSky.value.style.opacity = dark.toFixed(3);
     if (nightSky.value.style.backgroundColor !== under) nightSky.value.style.backgroundColor = under;
     document.body.classList.toggle('lab-night', dark > 0.55);
+    // (the page under the drawing in the sky's colour at the top: the iPhone's status bar takes it, cream otherwise)
+    const top = world.topColour();
+    if (top !== pageTop) { pageTop = top; labEl.value.style.backgroundColor = top; document.body.style.backgroundColor = top; }
     teaching.light = dark > 0.55;
     if (teaching.ink !== INK) teaching.ink = INK;
     c.fillStyle = world.ground();
@@ -1477,6 +1634,8 @@ function draw() {
     const mid = map(f, PIVOT.x, (rig.silhouette.crown[1] + PIVOT.y) / 2);
     const onScreen = c.getTransform().transformPoint(mid);
     sidOnScreen.x = onScreen.x / view.dpr; sidOnScreen.y = onScreen.y / view.dpr;
+    const crown = c.getTransform().transformPoint(map(f, PIVOT.x, rig.silhouette.crown[1]));
+    sidCrown.x = crown.x / view.dpr; sidCrown.y = crown.y / view.dpr;
     // (and his heart and the ground under him, for the seed he plants: it goes into his heart and down through him)
     const heart = c.getTransform().transformPoint(map(f, PIVOT.x, rig.silhouette.crown[1] * 0.35 + PIVOT.y * 0.65));
     const base = c.getTransform().transformPoint({ x: f.root.x, y: state.ground });
@@ -1544,7 +1703,7 @@ function loop(now) {
 }
 
 // (for trying him out from the browser's console)
-if (typeof window !== 'undefined') window.__sid = { state, springs, hands, ui, world, walkTo, sit, memory, portal, portalWon, closePortal, toScreen, meditate, shoot: () => stars?.shoot(true) };
+if (typeof window !== 'undefined') window.__sid = { story, openStory, state, springs, hands, ui, world, walkTo, sit, memory, portal, portalWon, closePortal, toScreen, meditate, shoot: () => stars?.shoot(true), freeSky: () => freeSky(92, Math.min(horizon() * view.k, sidCrown.y) - 24), figure: (card) => { state.lookUp = true; state.look = 1; clearTimeout(state.figure); state.figure = setTimeout(() => {}, 1e9); requestAnimationFrame(() => requestAnimationFrame(() => stars?.constellation(constellationFigure(card), { color: RULITO_COLOURS[card] }))); } };
 
 onMounted(() => {
     document.body.classList.add('lab-page');
@@ -1555,18 +1714,21 @@ onMounted(() => {
     resize();
     window.addEventListener('resize', resize);
     // (a shooting star that passes near sounds, as in the app's other night skies; only when the night is out)
-    stars = createStarField(starCanvas.value, nightSky.value, { pace: () => state.pace, onShoot: () => { if (world.night() > 0.5) play('star'); starFell(); } });
+    stars = createStarField(starCanvas.value, nightSky.value, { pace: () => state.pace, onShoot: () => { if (world.night() > 0.5 && !ui.guide) play('star'); starFell(); } });
     raf = requestAnimationFrame(loop);
     scheduleHint();
     tell('intro', 1400);
     // where they came from: the page before this one in the app (the landing's labyrinth), or nothing (a link)
     const back = window.history.state?.back;
-    visit = startWorldVisit({ from: back ? (back === '/' ? 'landing' : back.split('?')[0]) : 'direct', touch: ui.touch, webgl });
+    const standalone = window.matchMedia?.('(display-mode: standalone)').matches || window.navigator.standalone === true;
+    visit = startWorldVisit({ from: back ? (back === '/' ? 'landing' : back.split('?')[0]) : 'direct', touch: ui.touch, webgl, standalone, visit: memory.visits });
 });
 onBeforeUnmount(() => {
     visit?.cardClosed(portal.won);
     visit?.finish();
-    document.body.classList.remove('lab-page', 'lab-night', 'lab-portal');
+    document.body.classList.remove('lab-page', 'lab-night', 'lab-portal', 'lab-story');
+    document.body.style.backgroundColor = '';
+    setHush(false);
     clearTimeout(portalTimer);
     setCardChord(null);
     cancelAnimationFrame(raf);
@@ -1586,6 +1748,7 @@ onBeforeUnmount(() => {
     <div class="labRoot">
     <!-- (no menu on a long press: a finger held down only guides him) -->
     <div ref="labEl" class="lab" @contextmenu.prevent>
+        <div class="page"></div>
         <div ref="nightSky" class="night-sky" :style="zoomStyle"><canvas ref="starCanvas"></canvas></div>
         <!-- the rulito draws itself on its own canvas, which this scene lays over his head -->
         <Rulito ref="rulito" class="offstage" :color="rulitoColour" />
@@ -1617,6 +1780,45 @@ onBeforeUnmount(() => {
                 <button v-for="m in GUIDE_MINUTES" :key="m" class="minutes" :class="{ hover: ui.hover === m }" role="menuitem" :data-minutes="m" @click="meditate(m)">
                     <span class="dot" aria-hidden="true"></span>{{ m }} min
                 </button>
+            </div>
+        </Transition>
+        <!-- Sid's notebook (openStory): its icon over the seed, once there is something in it -->
+        <Transition name="teaching">
+            <button v-if="story.shown && portal.card == null" class="story-icon" :class="{ light: teaching.light, fresh: story.fresh }"
+                :aria-label="$i18n.locale === 'en' ? 'Notebook' : 'Libreta'" :title="$i18n.locale === 'en' ? 'Notebook' : 'Libreta'"
+                @click="openStory"><span aria-hidden="true"></span></button>
+        </Transition>
+        <Transition name="veil">
+            <div v-if="story.open" class="story" role="dialog" :aria-label="$i18n.locale === 'en' ? 'Notebook' : 'Libreta'" @pointerdown.stop @click="closeStory">
+                <!-- its two pages, as two words written in the sky: the one open glows -->
+                <div class="story-tabs" role="tablist" @click.stop>
+                    <button role="tab" :aria-selected="story.tab === 'thoughts'" :class="{ on: story.tab === 'thoughts' }" @click="showTab('thoughts')">{{ $i18n.locale === 'en' ? 'Thoughts' : 'Pensamientos' }}</button>
+                    <button role="tab" :aria-selected="story.tab === 'herbarium'" :class="{ on: story.tab === 'herbarium' }" @click="showTab('herbarium')">{{ $i18n.locale === 'en' ? 'Herbarium' : 'Herbario' }}</button>
+                </div>
+                <div v-if="story.tab === 'thoughts'" class="story-card">
+                    <p class="story-text">
+                        <template v-for="(f, i) in FRAGMENTS" :key="i">
+                            <span class="frag" :class="{ locked: !story.have.has(i), fresh: story.order.has(i) }"
+                                :style="{ animationDelay: `${400 + (story.order.get(i) ?? 0) * 1300}ms` }" :aria-hidden="!story.have.has(i)">{{ $i18n.locale === 'en' ? f.en : f.es }}</span>{{ ' ' }}
+                        </template>
+                    </p>
+                    <!-- how many have been found: one dot each, as the world's dots -->
+                    <p class="story-count" :aria-label="`${story.found} / ${FRAGMENTS.length}`">
+                        <span v-for="(f, i) in FRAGMENTS" :key="i" :class="{ on: i < story.found }"></span>
+                    </p>
+                </div>
+                <div v-else class="story-card">
+                    <ul class="herbarium">
+                        <li v-for="h in HERBARIUM" :key="h.id" :class="{ known: story.herb.has(h.id), fresh: story.herbNew.has(h.id) }"
+                            :style="{ animationDelay: `${300 + (story.herbNew.get(h.id) ?? 0) * 900}ms` }">
+                            <img :src="pieceUrl(h.show)" alt="" draggable="false">
+                            <span class="name">{{ story.herb.has(h.id) ? ($i18n.locale === 'en' ? h.en : h.es) : '' }}</span>
+                        </li>
+                    </ul>
+                    <p class="story-count" :aria-label="`${story.herb.size} / ${HERBARIUM.length}`">
+                        <span v-for="h in HERBARIUM" :key="h.id" :class="{ on: story.herb.has(h.id) }"></span>
+                    </p>
+                </div>
             </div>
         </Transition>
         <button ref="lotusEl" class="lotus glass" :class="{ on: ui.sitting, hint: ui.hint, press: ui.press, popped: ui.pop && ui.choose }" :aria-pressed="ui.sitting" aria-label="Loto" title="Loto"
@@ -1655,6 +1857,13 @@ canvas {
     height: 100%;
     display: block;
     touch-action: none;
+}
+/* The page's cream under everything: the .lab itself takes the sky's colour at the top for the iPhone's status bar */
+.page {
+    position: absolute;
+    inset: 0;
+    background: #F7F8F1;
+    pointer-events: none;
 }
 /* The cards' starry night (useStarField.js) behind the drawing, in Ciclos's teal: it shows as the yellow clears */
 .offstage {
@@ -1725,8 +1934,9 @@ canvas {
 .thought-enter-active { transition: opacity 2.2s ease-out; }
 .thought-leave-active { transition: opacity 1.4s ease-in; }
 .thought-enter-from, .thought-leave-to { opacity: 0; }
-/* the meditations' menu, as an iPhone's long press: the world dims behind a veil and a menu of frosted glass grows out
-   of the seed on a spring, right-aligned over it; the row under the finger lights up */
+/* the meditations' menu, as an iPhone's long press: the world dims behind a veil and the menu grows out of the seed to
+   its left on a spring, on the seed's own glass (.glass, darkened a little, a cream line round it): ethereal, as the
+   button; the one under the finger lights up */
 .veil {
     position: absolute;
     inset: 0;
@@ -1739,27 +1949,38 @@ canvas {
 .veil-enter-from, .veil-leave-to { opacity: 0; }
 .choose {
     position: absolute;
-    right: 20px;
-    bottom: calc(140px + env(safe-area-inset-bottom, 0px));
-    min-width: 172px;
+    right: 116px;
+    /* (its middle level with the seed's: the button is 84 high, the menu 68) */
+    bottom: calc(52px + env(safe-area-inset-bottom, 0px));
+    height: 68px;
+    display: flex;
+    flex-direction: row;
+    border-radius: 34px;
+    overflow: hidden;
+    background-color: rgba(20, 50, 70, 0.32);
+    background-image: url('../assets/noise.png');
+    -webkit-backdrop-filter: blur(18px);
+    backdrop-filter: blur(18px);
+    border: 1px solid rgba(247, 248, 241, 0.35);
+    box-shadow: 0 4px 24px rgba(20, 50, 70, 0.18);
+    color: #F7F8F1;
+    /* (it grows out of the seed: from the middle of the button, to its right) */
+    transform-origin: calc(100% + 54px) 50%;
+}
+.choose.light { background-color: rgba(28, 44, 66, 0.4); }
+.minutes {
+    /* the light above, the minutes under it */
     display: flex;
     flex-direction: column;
-    border-radius: 16px;
-    overflow: hidden;
-    background: rgba(247, 248, 241, 0.78);
-    -webkit-backdrop-filter: blur(22px) saturate(1.6);
-    backdrop-filter: blur(22px) saturate(1.6);
-    box-shadow: 0 12px 40px rgba(20, 50, 70, 0.28), 0 0 0 0.5px rgba(20, 50, 70, 0.12);
-    color: #143246;
-    /* (it grows out of the seed: from the middle of the button, under its bottom right corner) */
-    transform-origin: calc(100% - 42px) calc(100% + 54px);
-}
-.choose.light { background: rgba(28, 44, 66, 0.72); color: #F7F8F1; box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4), 0 0 0 0.5px rgba(247, 248, 241, 0.18); }
-.minutes {
-    display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 14px 20px;
+    justify-content: center;
+    gap: 7px;
+    padding: 0 18px;
+    /* (the whole height of the menu, so the words sit in its middle: the app's buttons are 48 high, style.scss) */
+    height: auto;
+    align-self: stretch;
+    line-height: 1;
+    white-space: nowrap;
     margin: 0;
     border: none;
     border-radius: 0;
@@ -1767,19 +1988,17 @@ canvas {
     background: transparent;
     color: inherit;
     font-family: Nunito, sans-serif;
-    font-size: 17px;
+    font-size: 14px;
     font-weight: 600;
-    text-align: left;
+    text-align: center;
     cursor: pointer;
     touch-action: none;
     -webkit-tap-highlight-color: transparent;
     transition: background-color 120ms ease-out;
 }
-.minutes + .minutes { border-top: 0.5px solid rgba(20, 50, 70, 0.16); }
-.choose.light .minutes + .minutes { border-top-color: rgba(247, 248, 241, 0.16); }
-.minutes.hover, .minutes:active { background-color: rgba(20, 50, 70, 0.1); }
-.choose.light .minutes.hover, .choose.light .minutes:active { background-color: rgba(247, 248, 241, 0.14); }
-@media (hover: hover) { .minutes:hover { background-color: rgba(20, 50, 70, 0.08); } .choose.light .minutes:hover { background-color: rgba(247, 248, 241, 0.12); } }
+.minutes + .minutes { border-left: 1px solid rgba(247, 248, 241, 0.2); }
+.minutes.hover, .minutes:active { background-color: rgba(255, 240, 200, 0.22); }
+@media (hover: hover) { .minutes:hover { background-color: rgba(255, 240, 200, 0.16); } }
 .minutes:focus { outline: none; }
 .minutes:focus-visible { box-shadow: inset 0 0 0 2px rgba(255, 111, 97, 0.7); }
 /* a little light before each, bigger the longer the meditation */
@@ -1790,15 +2009,16 @@ canvas {
     background: #FFE9A8;
     box-shadow: 0 0 8px 2px rgba(255, 220, 140, 0.8);
 }
-.minutes[data-minutes="3"] .dot { width: 13px; height: 13px; }
-.minutes[data-minutes="5"] .dot { width: 16px; height: 16px; }
+.minutes .dot { margin: 3px 0; }      /* (each light in a box 16 high, so the three words line up) */
+.minutes[data-minutes="3"] .dot { width: 13px; height: 13px; margin: 1.5px 0; }
+.minutes[data-minutes="5"] .dot { width: 16px; height: 16px; margin: 0; }
 .choose-enter-active { transition: transform 460ms cubic-bezier(0.3, 1.45, 0.55, 1), opacity 200ms ease-out; }
 .choose-leave-active { transition: transform 220ms ease-in, opacity 200ms ease-in; }
-.choose-enter-from, .choose-leave-to { transform: scale(0.2); opacity: 0; }
+.choose-enter-from, .choose-leave-to { transform: translateX(30px) scale(0.2); opacity: 0; }
 .choose-enter-active .minutes { animation: row-in 360ms ease-out both; }
 .choose-enter-active .minutes:nth-child(2) { animation-delay: 40ms; }
-.choose-enter-active .minutes:nth-child(3) { animation-delay: 80ms; }
-@keyframes row-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.choose-enter-active .minutes:nth-child(1) { animation-delay: 80ms; }
+@keyframes row-in { from { opacity: 0; transform: translateX(8px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) {
     .choose-enter-active, .choose-leave-active { transition: opacity 200ms; }
     .choose-enter-from, .choose-leave-to { transform: none; }
@@ -1975,6 +2195,200 @@ canvas {
     pointer-events: none;
     box-shadow: 0 0 6px rgba(255, 244, 214, 0.9);
 }
+/* the story's icon: an atom, as the app's icons (a line, round, no button round it), over the seed and in line with it;
+   in the ink of his line by day, cream by night (as the header's icons); while a fragment found waits to be seen it
+   breathes a soft glow */
+.story-icon {
+    position: absolute;
+    right: 40px;
+    bottom: calc(146px + env(safe-area-inset-bottom, 0px));
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    margin: 0;
+    border: none;
+    background: none;
+    color: rgba(0, 0, 0, 0.78);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform 160ms ease-out, color 600ms ease-out;
+}
+.story-icon.light { color: #F7F8F1; }
+.story-icon span {
+    display: block;
+    width: 100%;
+    height: 100%;
+    background-color: currentColor;
+    -webkit-mask: url('../assets/icon/Notebook.svg') center / contain no-repeat;
+    mask: url('../assets/icon/Notebook.svg') center / contain no-repeat;
+}
+.story-icon:active { transform: scale(0.9); }
+.story-icon:focus { outline: none; }
+.story-icon:focus-visible { filter: drop-shadow(0 0 6px rgba(255, 111, 97, 0.9)); }
+.story-icon.fresh { animation: story-call 2.4s ease-in-out infinite alternate; }
+@keyframes story-call {
+    from { filter: drop-shadow(0 0 0 rgba(255, 240, 200, 0)); }
+    to { filter: drop-shadow(0 0 8px rgba(255, 240, 200, 0.95)); }
+}
+/* the story's page: over the dimmed world, a card of frosted cream with the story as one paragraph, written by hand;
+   what is still hidden, dark bars the length of its words; what was found since it was last seen is painted in */
+.story {
+    position: absolute;
+    inset: 0;
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: calc(84px + env(safe-area-inset-top, 0px)) 16px calc(24px + env(safe-area-inset-bottom, 0px));
+    background: rgba(10, 26, 40, 0.62);
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+    cursor: pointer;
+}
+.story-card {
+    width: 100%;
+    max-width: 560px;
+    max-height: 100%;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 6px 10px 12px;
+    -webkit-user-select: text;
+    user-select: text;
+}
+/* the two pages' names, written in the sky: the one open in cream with a glow, as the app's icons, the other faint */
+.story-tabs {
+    display: flex;
+    gap: 26px;
+    margin: 0 0 14px;
+}
+.story-tabs button {
+    height: auto;
+    padding: 2px 4px;
+    margin: 0;
+    border: none;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+    font-family: Caveat, cursive;
+    font-weight: 500;
+    font-size: 34px;
+    line-height: 1.1;
+    color: rgba(247, 248, 241, 0.45);
+    cursor: pointer;
+    transition: color 300ms ease-out, text-shadow 300ms ease-out;
+}
+.story-tabs button.on {
+    color: #F7F8F1;
+    text-shadow: 0 0 14px rgba(255, 240, 200, 0.85), 0 0 4px rgba(255, 244, 214, 0.6), 0 2px 3px rgba(20, 51, 72, 0.45);
+}
+.story-tabs button:focus { outline: none; }
+.story-tabs button:focus-visible { text-shadow: 0 0 10px rgba(255, 111, 97, 0.9); }
+.story-text {
+    margin: 0;
+    color: #F7F8F1;
+    font-family: Caveat, cursive;
+    font-size: 23px;
+    line-height: 1.5;
+    text-shadow: 0 0 12px rgba(255, 240, 200, 0.4);
+}
+/* what is still hidden: a line of faint stars the length of its words, breathing softly */
+.frag.locked {
+    color: transparent;
+    background-image: radial-gradient(circle, rgba(255, 244, 214, 0.6) 0 1.2px, transparent 1.8px);
+    background-size: 12px 100%;
+    background-repeat: repeat-x;
+    background-position: 0 58%;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+    -webkit-user-select: none;
+    user-select: none;
+    animation: frag-breathe 3.6s ease-in-out infinite alternate;
+}
+.frag.locked:nth-child(3n) { animation-delay: -1.2s; }
+.frag.locked:nth-child(3n + 1) { animation-delay: -2.4s; }
+@keyframes frag-breathe { from { opacity: 0.55; } to { opacity: 1; } }
+/* found since it was last seen: its stars light up warm and give way to the words, which come into focus */
+.frag.fresh {
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+    background-size: 12px 100%;
+    background-repeat: repeat-x;
+    background-position: 0 58%;
+    animation: frag-appear 2s ease-out both;
+}
+@keyframes frag-appear {
+    0% { color: transparent; text-shadow: none; background-image: radial-gradient(circle, rgba(255, 244, 214, 0.6) 0 1.2px, transparent 1.8px); }
+    25% { color: transparent; text-shadow: 0 0 16px rgba(255, 210, 130, 1); background-image: radial-gradient(circle, rgba(255, 210, 130, 0.95) 0 1.7px, transparent 2.3px); }
+    26% { background-image: none; }
+    60% { color: transparent; text-shadow: 0 0 6px rgba(255, 244, 214, 0.8); background-image: none; }
+    100% { color: #F7F8F1; text-shadow: 0 0 12px rgba(255, 240, 200, 0.4); background-image: none; }
+}
+/* the herbarium: every plant as a dark silhouette with a faint light round it; planted once, in its colours with its name */
+.herbarium {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 18px 12px;
+}
+.herbarium li {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+.herbarium img {
+    width: 100%;
+    max-width: 150px;
+    height: 104px;
+    object-fit: contain;
+    filter: brightness(0) opacity(0.5) drop-shadow(0 0 1px rgba(247, 248, 241, 0.45));
+    -webkit-user-drag: none;
+}
+.herbarium li.known img { filter: drop-shadow(0 0 10px rgba(255, 240, 200, 0.35)); }
+.herbarium .name {
+    min-height: 1.3em;
+    font-family: Caveat, cursive;
+    font-size: 21px;
+    line-height: 1.2;
+    text-align: center;
+    color: #F7F8F1;
+    text-shadow: 0 0 10px rgba(255, 240, 200, 0.4);
+}
+.herbarium li:not(.known) .name {
+    width: 60%;
+    background-image: radial-gradient(circle, rgba(255, 244, 214, 0.5) 0 1.2px, transparent 1.8px);
+    background-size: 12px 100%;
+    background-repeat: repeat-x;
+    background-position: center 58%;
+}
+.herbarium li.fresh img { animation: herb-appear 1.8s ease-out both; animation-delay: inherit; }
+.herbarium li.fresh .name { animation: herb-name 1.8s ease-out both; animation-delay: inherit; }
+@keyframes herb-appear {
+    0% { filter: brightness(0) opacity(0.5) drop-shadow(0 0 1px rgba(247, 248, 241, 0.45)); }
+    35% { filter: brightness(0) invert(0.9) sepia(1) saturate(3) opacity(0.9) drop-shadow(0 0 14px rgba(255, 210, 130, 1)); }
+    100% { filter: drop-shadow(0 0 10px rgba(255, 240, 200, 0.35)); }
+}
+@keyframes herb-name { 0%, 40% { opacity: 0; } 100% { opacity: 1; } }
+.story-count {
+    display: flex;
+    justify-content: center;
+    gap: 7px;
+    margin: 18px 0 2px;
+}
+.story-count span {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    box-shadow: inset 0 0 0 1.2px rgba(247, 248, 241, 0.5);
+}
+.story-count span.on { background: #F7F8F1; box-shadow: 0 0 6px rgba(255, 240, 200, 0.8); }
+@media (prefers-reduced-motion: reduce) {
+    .frag.fresh, .frag.locked, .herbarium li.fresh img, .herbarium li.fresh .name { animation: none; }
+    .story-icon.fresh { animation: none; filter: drop-shadow(0 0 6px rgba(255, 240, 200, 0.9)); }
+}
 /* The app's header over his light sky: its cream icons in the ink of his line (the header is teleported into <body>,
    so this is not scoped; body.lab-page only while the lab is open) */
 body.lab-page header .navContainer button,
@@ -1991,6 +2405,9 @@ body.lab-page header .navContainer.right { position: relative; z-index: 1; }
 body.lab-page.lab-night header .navContainer button,
 body.lab-page.lab-night header #soundButton,
 body.lab-page.lab-night header #menuButton,
+body.lab-page.lab-story header .navContainer button,
+body.lab-page.lab-story header #soundButton,
+body.lab-page.lab-story header #menuButton,
 body.lab-page.lab-portal header .navContainer button,
 body.lab-page.lab-portal header #soundButton,
 body.lab-page.lab-portal header #menuButton { filter: none; }

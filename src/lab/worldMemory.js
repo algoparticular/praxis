@@ -4,13 +4,16 @@
 // nothing (a private window, storage blocked), the world works the same and simply does not remember. `learned`: what
 // the person has already done once, so its hint never shows again (sat in lotus, planted a seed, opened a place's card,
 // read the words that open the world and the ones at a place: see the hints in LabSid.vue). `marks`: the marks of the
-// story found (each once ever; the fragments are read in that order, story.js); `thoughts`: how many of each place's
-// thoughts have been shown (the next visit shows the next one, thoughts.js).
+// story found (each once ever, story.js); `fragments`: which fragments of the story they gave, in the order found (each
+// mark gives one still hidden, drawn at random, so the story is found out of order); `thoughts`: how many of each
+// place's thoughts have been shown (the next visit shows the next one, thoughts.js); `storySeen`: the fragments the
+// story's own page has shown (the others found are painted in the next time it opens, LabSid.vue); `herbSeen`: the
+// kinds of plant the herbarium has shown in colour (herbarium.js; one planted since comes in the next time).
 const KEY = 'lab.sid.world';
 const MAX_PLANTED = 300;
 
 export function loadMemory() {
-    const fresh = { v: 1, visits: 0, seeds: [], planted: [], learned: {}, marks: [], thoughts: {} };
+    const fresh = { v: 1, visits: 0, seeds: [], planted: [], learned: {}, marks: [], fragments: [], thoughts: {}, storySeen: [], herbSeen: [] };
     try {
         const saved = JSON.parse(localStorage.getItem(KEY) || 'null');
         if (!saved || saved.v !== 1) return fresh;
@@ -22,6 +25,12 @@ export function loadMemory() {
             learned: saved.learned && typeof saved.learned === 'object' ? { ...saved.learned } : {},
             marks: Array.isArray(saved.marks) ? saved.marks.filter((m) => typeof m === 'string') : [],
             thoughts: saved.thoughts && typeof saved.thoughts === 'object' ? { ...saved.thoughts } : {},
+            // (kept before they were found out of order: the first ones, in order, and a count of those seen)
+            fragments: Array.isArray(saved.fragments) ? saved.fragments.filter(Number.isInteger)
+                : Array.from({ length: Array.isArray(saved.marks) ? saved.marks.length : 0 }, (_, i) => i),
+            storySeen: Array.isArray(saved.storySeen) ? saved.storySeen.filter(Number.isInteger)
+                : Array.from({ length: Number(saved.storySeen) || 0 }, (_, i) => i),
+            herbSeen: Array.isArray(saved.herbSeen) ? saved.herbSeen.filter((h) => typeof h === 'string') : [],
         };
     } catch {
         return fresh;
