@@ -38,8 +38,6 @@
     import { chordColors } from '../../data/chordColors.js';
     import art from '../../composables/confianzaScene.json';
 
-    // (rulito: its rulito is born, for the card's page to write the affirmation over it)
-    const emit = defineEmits(['rulito']);
     const props = defineProps({
         card: { type: Object, default: () => ({}) },
         active: Boolean
@@ -217,7 +215,7 @@
     const rooting = createRooting({
         grow: 5.5, linger: 3.6, eat: 3.2, notes: [],
         onComplete: (times) => {
-            play('rulito'); emit('rulito');
+            play('rulito');
             play('converge');
             flare = 1;
             sendRing();

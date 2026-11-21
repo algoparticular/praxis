@@ -40,8 +40,6 @@
     import Rulito from '../Rulito.vue';
     import art from '../../composables/hogarScene.json';
 
-    // (rulito: its rulito is born, for the card's page to write the affirmation over it)
-    const emit = defineEmits(['rulito']);
     const props = defineProps({
         card: { type: Object, default: () => ({}) },
         active: Boolean
@@ -304,7 +302,7 @@
     };
     // Every mushroom is lit: the rulito flares, the spark throws sparks and a wave runs out along the roots
     const bloom = () => {
-        play('rulito'); emit('rulito');
+        play('rulito');
         play('bloom');
         level = Math.min(3, level + 1);
         sceneMilestone('rulito_completed', { times: level });

@@ -45,8 +45,6 @@
     import Rulito from '../Rulito.vue';
     import art from '../../composables/comunicacionScene.json';
 
-    // (rulito: its rulito is born, for the card's page to write the affirmation over it)
-    const emit = defineEmits(['rulito']);
     const props = defineProps({
         card: { type: Object, default: () => ({}) },
         active: Boolean
@@ -542,7 +540,7 @@
             win.head = 1 - (1 - Math.min(1, Math.max(0, (win.age - DELAY) / GROW))) ** 1.6;
             if (win.head >= 1 && !win.full) {
                 win.full = true; win.fullAt = win.age; win.pop = 1;
-                play('rulito'); emit('rulito');
+                play('rulito');
                 BEINGS.forEach((_, i) => ring(i, 0.7));
             }
             if (win.full && !win.back && win.age - win.fullAt > KEEP) win.back = true;

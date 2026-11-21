@@ -34,8 +34,6 @@
     import Rulito from '../Rulito.vue';
     import art from '../../composables/esperanzaScene.json';
 
-    // (rulito: its rulito is born, for the card's page to write the affirmation over it)
-    const emit = defineEmits(['rulito']);
     const props = defineProps({
         card: { type: Object, default: () => ({}) },
         active: Boolean
@@ -316,7 +314,7 @@
             win.pop = 1;
             lookUp = 1;
             dust?.boost(2, 1.4);
-            play('rulito'); emit('rulito');
+            play('rulito');
         }
         if (win.full && !win.back && win.age - win.fullAt > LINGER) { win.back = true; together = null; }
         if (win.back) {

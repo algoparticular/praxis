@@ -38,8 +38,6 @@
     import Rulito from '../Rulito.vue';
     import art from '../../composables/feScene.json';
 
-    // (rulito: its rulito is born, for the card's page to write the affirmation over it)
-    const emit = defineEmits(['rulito']);
     const props = defineProps({
         card: { type: Object, default: () => ({}) },
         active: Boolean
@@ -178,7 +176,7 @@
         grow: 4.4, linger: 3.4, eat: 3,
         onNote: (step) => play('kindle', { step }),
         onComplete: (times) => {
-            play('rulito'); emit('rulito');
+            play('rulito');
             play('converge');
             flare = 1;
             budFlare = 1;
