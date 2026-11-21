@@ -128,6 +128,7 @@ function openStory() {
     showTab(news.thoughts ? 'thoughts' : news.herb ? 'herbarium' : story.found ? story.tab : 'herbarium');
     story.open = true; ui.choose = false;
     document.body.classList.add('lab-story');
+    visit?.notebook(story.tab, news.thoughts || news.herb);
     play('tap');
 }
 function closeStory() { story.open = false; document.body.classList.remove('lab-story'); }
@@ -319,7 +320,7 @@ function nightSecrets(dt, seated) {
         stars.constellation(constellationFigure(card), { color: RULITO_COLOURS[card] ?? RULITO_COLOURS[15] });
         state.figure = setTimeout(() => { if (state.figure) play('star'); }, CONSTELLATION_TIME * 1000);
         if (!memory.learned.constellation) learn('constellation');
-        visit?.secret('constellation');
+        visit?.secret('constellation', { card_id: card });
     }
     if (state.figure && !state.lookUp) { clearTimeout(state.figure); state.figure = null; stars?.constellation(null); }
     // (the sky answers his stillness with a shooting star near, now and then)
@@ -565,6 +566,7 @@ const world = createWorld({
         const i = left[Math.floor(Math.random() * left.length)];
         if (i == null) return;
         memory.fragments.push(i); saveMemory(memory); readFragment(i);
+        visit?.fragment();
     },
     onGrow: () => { saveMemory(memory); play('star'); },
     onSing: (p) => sing(p),
@@ -1103,9 +1105,9 @@ function update(dt, now) {
             state.sowing = null;
             state.planted = true;
             if (!still) burstAt(toScreen(w.x, w.d), `rgb(${w.light.map(Math.round).join(',')})`);
-            const seed = memory.seeds.shift();
-            memory.planted.push(world.plant(seed, w.x, w.d));
-            visit?.seedPlanted(seed, world.zoneCard());
+            const seed = memory.seeds.shift(), g = world.plant(seed, w.x, w.d);
+            memory.planted.push(g);
+            visit?.seedPlanted(seed, world.zoneCard(), kindOf(g.name));
             ui.seeds = memory.seeds.length;
             learn('planted');
             firstVisit = false;
@@ -1713,7 +1715,8 @@ onMounted(() => {
     tell('intro', 1400);
     // where they came from: the page before this one in the app (the landing's labyrinth), or nothing (a link)
     const back = window.history.state?.back;
-    visit = startWorldVisit({ from: back ? (back === '/' ? 'landing' : back.split('?')[0]) : 'direct', touch: ui.touch, webgl });
+    const standalone = window.matchMedia?.('(display-mode: standalone)').matches || window.navigator.standalone === true;
+    visit = startWorldVisit({ from: back ? (back === '/' ? 'landing' : back.split('?')[0]) : 'direct', touch: ui.touch, webgl, standalone });
 });
 onBeforeUnmount(() => {
     visit?.cardClosed(portal.won);
