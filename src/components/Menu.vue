@@ -249,6 +249,19 @@
         outline: none;
     }
 
+    /* held down (the hidden gesture to start the world again), it lights up slowly until it asks */
+    nav a.world {
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+        user-select: none;
+    }
+
+    nav a.world.holding {
+        filter: drop-shadow(0 0 14px rgba(255, 240, 200, 1));
+        transform: scale(1.18);
+        transition: filter 3s ease-in, transform 3s ease-in;
+    }
+
     nav a.world:hover,
     nav a.world:focus-visible {
         filter: drop-shadow(0 0 8px rgba(247, 248, 241, 0.9));
