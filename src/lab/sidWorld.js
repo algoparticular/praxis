@@ -142,7 +142,8 @@ export const STAR_SEED = 'star', STAR_LIGHT = [252, 220, 140];
 // side or the other): a bright core in its zone's light with three tilted orbits of dots turning round it, each with its
 // light running along it, and a faint column of light rising from it to the sky, so it is told from the world's other
 // lights (fireflies, butterflies, bees, spores) and found from afar; walking under it he finds it, and it opens
-const MARK = { size: 620, dx: 0.32, dd: 0.28, pick: 240, high: 150 };
+// (dd: 960 back, so walking along the front the marks of the row stand at the horizon: small and far, not hidden past it)
+const MARK = { size: 620, dx: 0.32, dd: 0.16, pick: 240, high: 150 };
 // the seed's shape (seedShape.js: a seed with a particle of light inside it, until the illustrator draws it)
 const SEED_PATHS = typeof Path2D === 'undefined' ? null : { outline: new Path2D(SEED_OUTLINE), seam: new Path2D(SEED_SEAM) };          // (how big a seed is drawn: big enough to be seen from afar)
 const SEED_PLANTS = {
@@ -428,7 +429,8 @@ const mixRgb = (a, b, t) => `rgb(${a.map((v, i) => Math.round(v + (b[i] - v) * t
 export function createWorld({ clouds = null, moon = null, planted = [], visit = 0, onSeed = null, onGrow = null, onSing = null, marks = null, onMark = null, firstSeed = null }) {
     // (firstSeed: { x, d }, on the very first visit: a seed lies there, near him, calling with rings of light on the
     // ground, so the first thing learnt is that seeds are gathered; LabSid.vue)
-    // (marks: { found: [keys], open: () => whether there is still a fragment to read }: the marks of the story, story.js)
+    // (marks: { found: [keys], open: () => whether they are out, first: { x, d } or null }: the marks of the story,
+    // story.js; first: one of its own, near where he starts and in sight, until the first fragment is found)
     zoneOrder = shuffled(ZONES);                // (a new map of the worlds on every visit)
     // The colours on the screen now: those of the zone where the camera is (blended between two), set as the sky is
     // drawn, first thing every frame
@@ -613,6 +615,10 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
                     const key = `${zoneOfCell(i, j).card}:${mod(j, n)}`;
                     if (!marks.found.includes(key)) add({ kind: 'mark', key, x, d, role: 'bead', pick: 0.5, phase: (i * 3 + j) % 10, reach: 200 });
                 }
+            }
+            const f = marks.first;
+            if (f && !marks.found.includes('first') && Math.floor(f.x / STRETCH) === index && row === Math.floor((f.d + 180) / PATCH)) {
+                add({ kind: 'mark', key: 'first', x: f.x, d: f.d, role: 'bead', pick: 0.5, phase: 3, reach: 200, big: 1.4 });
             }
         }
         // what he has planted, wherever its world is now
@@ -998,7 +1004,7 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
             // column of light up to the sky; found, it rises, its orbits open out and fade
             const up = l?.up ?? 0;
             if (up >= 1 || !marks?.open() && up === 0) break;
-            const t = time + item.phase, breath = 0.5 + 0.5 * Math.sin(t * 1.4), K = MARK.size, a = 1 - up;
+            const t = time + item.phase, breath = 0.5 + 0.5 * Math.sin(t * 1.4), K = MARK.size * (item.big ?? 1), a = 1 - up;
             const rgb = P.light.map(Math.round), y = -MARK.high - 10 * Math.sin(t * 0.9) - up * 220;
             c.fillStyle = `rgba(20,50,70,${0.08 * a})`; c.beginPath(); c.ellipse(0, 0, K * 0.12, K * 0.025, 0, 0, Math.PI * 2); c.fill();
             c.globalAlpha *= a;

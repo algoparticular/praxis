@@ -681,20 +681,24 @@ let seedWaiting = firstVisit;
 const START_X = 0;                           // (where he starts across: some 2000 px before the place of the first zone, so it is
                                              // reached after a short walk to the side, not sat at from the start)
 const FIRST_SEED = { x: START_X + 420, d: -40 };     // (a little ahead of him, nearer the front)
+const FIRST_MARK = { x: START_X + 300, d: 850 };     // (the first mark of the story: ahead of him, straight up the screen, in sight;
+                                                     // not nearer: Paciencia's boat stands there when it comes first)
 const PLANT_AFTER = 1.5;
 const SOW = { fly: 0.9, through: 1.3, under: 0.8 };    // (seconds of each part of its way)
 const world = createWorld({
     clouds: picture('/assets/ciclos/clouds.webp'), moon: picture('/assets/ciclos/moon.webp'),
     planted: memory.planted, visit: memory.visits,
     onSeed: (seed) => { visit?.seedPicked(); seedFound(seed); },
-    // the marks of the story (story.js), while there is a fragment to read: found, the next one is written
-    marks: { found: memory.marks, open: () => !firstVisit && memory.marks.length < FRAGMENTS.length },
+    // the marks of the story (story.js), out once the first seed is planted, and still out once the twelve are found:
+    // found, the next one is written. The first is near where he starts, in sight (FIRST_MARK), until one is found
+    marks: { found: memory.marks, open: () => !firstVisit, first: memory.fragments.length ? null : FIRST_MARK },
     firstSeed: firstVisit ? { ...FIRST_SEED } : null,
     // (each mark gives a fragment still hidden, at random: the story is found out of order)
     onMark: () => {
         const left = FRAGMENTS.map((f, i) => i).filter((i) => !memory.fragments.includes(i));
+        // (with the twelve found, a mark gives one of them again, at random, for now)
+        if (!left.length) { saveMemory(memory); readFragment(Math.floor(Math.random() * FRAGMENTS.length)); return; }
         const i = left[Math.floor(Math.random() * left.length)];
-        if (i == null) return;
         memory.fragments.push(i); saveMemory(memory); readFragment(i);
         visit?.fragment(memory.fragments.length);
     },
