@@ -108,7 +108,9 @@ const CURLS = ['pacCurl0', 'pacCurl1', 'pacCurl2', 'pacCurl3', 'pacCurl4', 'pacC
 // 1.4, or more for a plant whose picture has the pixels to be drawn bigger and stay sharp (`mostOf`).
 // Seeds are few on the ground (most are won: the page gives the seed of a place's card when its rulito is born, and
 // now and then a spore of light flies by on the wind, SPORE_EVERY, which he catches walking under it, SPORE_PICK).
-// A card with no plant of its own (Transformación: its tree is its place, not a plant to sow) grows any other card's
+// Transformación's seeds grow the young fern that comes out of its great seed (its tree's crown and the first of its
+// stem, with its little light). A seed of light grows any card's plant. The page can say which of them (`names`): those
+// whose kind has not been planted yet, so the herbarium is filled without repeats
 const SEED_CHANCE = 0.012, SEED_PICK = 130, SEED_SPROUT = 5;     // (how near he picks it up; seconds it takes to sprout)
 const SEED_GROWTH = { start: 0.6, step: 0.12, most: 1.4, top: 2 };
 const SEED_BACK = { near: 320, away: 900 };     // (how near counts as coming back to it, and how far as having gone away)
@@ -149,8 +151,14 @@ const SEED_PLANTS = {
     paciencia: CURLS.map((name) => [name, 0.85, 0.5]),
     gratitud: [['grPlant', 0.85, 0.4], ['grPalm', 0.5, 0.3]],
     celebracion: [['mushrooms', 0.8, 0], ['caps', 0.8, 0]],
+    // (the young fern that grows out of Transformación's great seed, with its little light: FERN_LIGHT)
+    transformacion: [['trFern', 0.75, 0.3]],
 };
 const ANY_PLANT = Object.values(SEED_PLANTS).flat();
+// the names of the plants a seed of a card can grow into (any card's, for a seed of light)
+export const plantsOf = (card) => (SEED_PLANTS[card] ?? ANY_PLANT).map(([name]) => name);
+// where the young fern's little light is, in its picture (its ring, as a part of its box), and its colour (the card's sun)
+const FERN_LIGHT = { x: 0.177, y: 0.155, r: 0.05, rgb: [255, 226, 133] };
 // her tree's trunk on the floor: it stands a little behind its foot (its roots come forward), as wide as it looks
 // Her tree stands in his way where it is drawn: its trunk (just behind its foot, as wide as it is drawn just over its
 // roots, its middle a little left of the foot) and its roots, which spread wide and come forward over the floor (an
@@ -643,8 +651,9 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
             star: g.card === STAR_SEED, planted: { g, now: g.visit === visit && g.at ? g.at : null } };
     }
     // Planting a seed of a card at (x, d): what to remember of it (and it starts to sprout there now)
-    function plant(card, x, d) {
-        const list = SEED_PLANTS[card] ?? ANY_PLANT, n = zoneOrder.length;
+    function plant(card, x, d, names = null) {
+        const all = SEED_PLANTS[card] ?? ANY_PLANT, wanted = names && all.filter(([name]) => names.includes(name));
+        const list = wanted?.length ? wanted : all, n = zoneOrder.length;
         const [name, scale, sway] = list[Math.floor(Math.random() * list.length)];
         const i = Math.floor((x - ZONE_START) / ZONE), j = Math.floor((d - D_START) / ZONE_D);
         const g = {
@@ -959,6 +968,14 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
                     const sx = (Math.sin(t * 5 + n * 2.1 + seed) * 0.25 + (n / 3 - 0.5) * 0.4) * box[2] * k, sy = -box[3] * k * 0.75 - t * 170;
                     c.fillStyle = `rgba(255,248,220,${a})`; c.beginPath(); c.arc(sx, sy, 2.6 + 1.4 * (1 - t), 0, Math.PI * 2); c.fill();
                 }
+            }
+            // the young fern's little light, in its ring: it breathes, and shines more by night
+            if (item.name === 'trFern') {
+                const lx = (FERN_LIGHT.x - 0.5) * box[2] * k, ly = (FERN_LIGHT.y - 1) * box[3] * k, r = FERN_LIGHT.r * box[2] * k;
+                const breath = 0.8 + 0.2 * Math.sin(time * 1.7 + item.x * 0.01);
+                halo(c, lx, ly, r * 5, FERN_LIGHT.rgb, (0.35 + 0.4 * dark) * breath);
+                c.fillStyle = `rgba(${FERN_LIGHT.rgb.join(',')},${0.9 * breath})`;
+                c.beginPath(); c.arc(lx, ly, r, 0, Math.PI * 2); c.fill();
             }
             // what grew from a seed of light twinkles by night, a few stars round its top
             if (item.star && dark > 0.05) {
