@@ -7,7 +7,7 @@
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import Header from '../components/Header.vue';
 import rig from './sid/sid.json';
-import { CICLOS, createWorld, STAR_SEED, STAR_LIGHT, pieceUrl } from './sidWorld.js';
+import { CICLOS, createWorld, STAR_SEED, STAR_LIGHT, pieceUrl, plantsOf } from './sidWorld.js';
 import { createStarField, CONSTELLATION_TIME } from '../composables/useStarField.js';
 import { worldSide } from '../composables/useWorldSide.js';
 import { WORLD_RESUME } from '../composables/worldResume.js';
@@ -518,9 +518,20 @@ function addSeed(card, from, light) {
 const seedFound = ({ card, x, d, light, up = 90 }) => addSeed(card, toScreen(x, d, up), light);
 // the card's name in the world (sidWorld.js PLACES) of each place's card id
 const PLACE_SEED = { 15: 'ciclos', 8: 'metta', 9: 'upekkha', 14: 'celebracion', 27: 'paciencia', 24: 'gratitud', 32: 'transformacion' };
+// (one seed a place a visit: the herbarium is filled over several visits, not by playing the same card again and
+// again; its rulito and its affirmation are still given every time)
+const wonHere = new Set();
 function winSeed(id) {
     const card = PLACE_SEED[id];
-    if (card && !gone) addSeed(card, { x: sidOnScreen.x, y: sidOnScreen.y - 60 });
+    if (!card || gone || wonHere.has(id)) return;
+    wonHere.add(id);
+    addSeed(card, { x: sidOnScreen.x, y: sidOnScreen.y - 60 });
+}
+// What a seed grows into fills the herbarium first: of the plants it can grow into, those of a kind never planted (a seed
+// of a card, of its card's kinds; a seed of light, of anyone's: the gift of meditating by night); with none left, any
+function newPlants(seed, kinds) {
+    const names = plantsOf(seed === STAR_SEED ? null : seed).filter((name) => !kinds.has(kindOf(name)));
+    return names.length ? names : null;
 }
 const canvas = ref(null);
 const nightSky = ref(null), starCanvas = ref(null);   // the cards' starry night, behind the drawing (useStarField.js)
@@ -1247,7 +1258,7 @@ function update(dt, now) {
             state.sowing = null;
             state.planted = true;
             if (!still) burstAt(toScreen(w.x, w.d), `rgb(${w.light.map(Math.round).join(',')})`);
-            const seed = memory.seeds.shift(), kinds = herbPlanted(), g = world.plant(seed, w.x, w.d), kind = kindOf(g.name);
+            const seed = memory.seeds.shift(), kinds = herbPlanted(), g = world.plant(seed, w.x, w.d, newPlants(seed, kinds)), kind = kindOf(g.name);
             memory.planted.push(g);
             visit?.seedPlanted(seed, world.zoneCard(), kind);
             if (firstVisit) visit?.firstSeed('planted');

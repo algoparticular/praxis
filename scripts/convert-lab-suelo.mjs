@@ -128,6 +128,9 @@ const PIECES = {
     // stones and the little mushroom of its plain (the plain's blue taken out, `drop`)
     trTree: { card: ['transformacion', 'tree'], unit: 1, inside: 'colour', dark: 110 },
     trSeed: { card: ['transformacion', 'seed'], unit: 1, inside: 'colour', dark: 110 },
+    // and the young fern that grows out of its seed, sown (the tree's crown with its little light and the first of its
+    // stem, above where its branch starts), for the seeds of Transformación
+    trFern: { from: 'transformacion/tree', crop: [0, 0, 496, 468], unit: 0.7, inside: 'colour', dark: 110 },
     trPond: { card: ['transformacion', 'pond'], unit: 1, inside: 'closed', keep: 0.05, paint: '#205DA3' },
     trSmall: { card: ['transformacion', 'small'], unit: 1, inside: 'colour', dark: 110 },
     eyes_trSmall: { card: ['transformacion', 'smallEyes'], unit: 1, inside: 'none' },

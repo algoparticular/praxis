@@ -14,6 +14,7 @@ export const HERBARIUM = [
     { id: 'palm', card: 'gratitud', es: 'Palmera agradecida', en: 'Grateful palm', pictures: ['grPalm'], show: 'grPalm' },
     { id: 'fireShrooms', card: 'celebracion', es: 'Hongos de la fogata', en: 'Firelight mushrooms', pictures: ['mushrooms'], show: 'mushrooms' },
     { id: 'twinShrooms', card: 'celebracion', es: 'Hongos gemelos', en: 'Twin mushrooms', pictures: ['caps'], show: 'caps' },
+    { id: 'lightFern', card: 'transformacion', es: 'Helecho de luz', en: 'Light fern', pictures: ['trFern'], show: 'trFern' },
 ];
 
 // the kind of plant a planted picture is (null if it is none of them)
