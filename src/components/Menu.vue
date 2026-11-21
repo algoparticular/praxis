@@ -63,17 +63,11 @@
             </label>
         </div>
 
-        <div v-if="props.hasAudio && inWorld" id="sideSelect" class="choice">
-            <span class="title">{{ $t("nav.side") }}</span>
-            <div class="options">
-                <label :class="{active: worldSide === 'left'}">
-                    <input type="radio" name="worldSide" value="left" :checked="worldSide === 'left'" @change="sideChanged('left')"/>{{ $t("nav.sideLeft") }}
-                </label>
-                <span>|</span>
-                <label :class="{active: worldSide === 'right'}">
-                    <input type="radio" name="worldSide" value="right" :checked="worldSide === 'right'" @change="sideChanged('right')"/>{{ $t("nav.sideRight") }}
-                </label>
-            </div>
+        <!-- which side the world's buttons sit on: no words, two little screens with their button in one corner -->
+        <div v-if="props.hasAudio && inWorld" id="sideSelect" role="radiogroup" :aria-label="$t('nav.side')">
+            <button v-for="side in ['left', 'right']" :key="side" type="button" role="radio" :class="[side, { active: worldSide === side }]"
+                :aria-checked="worldSide === side" :aria-label="$t(side === 'left' ? 'nav.sideLeft' : 'nav.sideRight')"
+                :title="$t(side === 'left' ? 'nav.sideLeft' : 'nav.sideRight')" @click="sideChanged(side)"><span></span></button>
         </div>
 
         <div id="languageSelect">
@@ -258,44 +252,50 @@
                                     supported by Chrome, Edge, Opera and Firefox */
     }
 
-    /* Inside Sid's world: which side its buttons sit on, a line as the language's under its name */
+    /* Inside Sid's world: which side its buttons sit on, as two little screens in a fine cream line, each with its
+       button as a dot in one corner; the chosen one bright, the other faint */
     #sideSelect {
-        gap: 10px;
-    }
-
-    #sideSelect .title {
-        font-family: 'Caveat', 'Nunito', helvetica, sans-serif;
-        font-size: 21px;
-        color: #F7F8F1;
-    }
-
-    #sideSelect .options {
         flex-direction: row;
-        gap: 24px;
+        gap: 28px;
     }
 
-    #sideSelect input {
-        display: none;
-    }
-
-    #sideSelect label {
-        font-size: 21px;
-        font-family: 'Caveat', 'Nunito', helvetica, sans-serif;
-        color: #F7F8F1;
+    #sideSelect button {
+        position: relative;
+        width: 26px;
+        height: 40px;
+        min-width: 0;
+        padding: 0;
+        margin: 0;
+        border: 1.5px solid #F7F8F1;
+        border-radius: 6px;
+        background: none;
+        box-shadow: none;
+        opacity: 0.4;
         cursor: pointer;
+        transition: opacity 250ms ease-out, filter 250ms ease-out;
     }
 
-    #sideSelect label.active {
-        color: #143246;
+    #sideSelect button span {
+        position: absolute;
+        bottom: 5px;
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #F7F8F1;
     }
 
-    #sideSelect .options span {
-        font-size: 24px;
-        font-family: 'Caveat', 'Nunito', helvetica, sans-serif;
-        color: #F7F8F1;
-        user-select: none;
-        -webkit-user-select: none;
+    #sideSelect button.left span { left: 4px; }
+    #sideSelect button.right span { right: 4px; }
+
+    #sideSelect button:hover { opacity: 0.7; }
+
+    #sideSelect button.active {
+        opacity: 1;
+        filter: drop-shadow(0 0 6px rgba(247, 248, 241, 0.7));
     }
+
+    #sideSelect button:focus { outline: none; }
+    #sideSelect button:focus-visible { outline: 1px dashed #F7F8F1; outline-offset: 4px; }
 
     /* DESKTOP */
     @media screen and (min-width: 769px) {
