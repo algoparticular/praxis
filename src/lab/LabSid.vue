@@ -678,7 +678,9 @@ ui.seeds = memory.seeds.length;
 // stay hidden, so nothing comes before (`firstVisit`; the seed: firstSeed in sidWorld.js)
 let firstVisit = memory.visits === 1 && !memory.learned.planted && !memory.seeds.length && !memory.planted.length;
 let seedWaiting = firstVisit;
-const FIRST_SEED = { x: 1420, d: -40 };     // (he starts at x 1000: a little ahead of him, nearer the front)
+const START_X = 0;                           // (where he starts across: some 2000 px before the place of the first zone, so it is
+                                             // reached after a short walk to the side, not sat at from the start)
+const FIRST_SEED = { x: START_X + 420, d: -40 };     // (a little ahead of him, nearer the front)
 const PLANT_AFTER = 1.5;
 const SOW = { fly: 0.9, through: 1.3, under: 0.8 };    // (seconds of each part of its way)
 const world = createWorld({
@@ -1024,7 +1026,7 @@ function resize() {
     state.ground = (ui.touch ? view.h * 0.84 : view.h * 0.86) / view.k;
     view.horizon0 = ui.touch ? 0.2 : 0.24;     // where the horizon is on the screen (high: little sky), and looking up
     lookAt();
-    if (!was) { state.x = 1000; state.cam = state.x; state.camD = -follow(); }     // (he starts a little before her tree, which is ahead on his way)
+    if (!was) { state.x = START_X; state.cam = state.x; state.camD = -follow(); }     // (he starts a short walk before the first place, which is ahead on his way)
     // the starry night fills the sky, down to the horizon
     skyHeight();
 }

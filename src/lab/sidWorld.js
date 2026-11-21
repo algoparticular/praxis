@@ -437,7 +437,7 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
         return { ink: m('ink'), white: m('white'), sky: m('sky'), night: m('night'), sun: m('sun'), groundDay: m('groundDay'),
             groundNight: m('groundNight'), detailDay: m('detailDay'), detailNight: m('detailNight'), dark: zs.reduce((t, { z, w }) => t + z.dark * w, 0) };
     };
-    let screen = blend(zonesAt(1000)), lastCam = 1000, lastD = 420;
+    let screen = blend(zonesAt(0)), lastCam = 0, lastD = 420;
     // One of the colours a thing takes, as the zone where it stands has it (blended between two)
     const colourOf = (zs, role = 'plant', pick = 0) => {
         const of = (z) => { const list = z.roles[ROLES[role]]; return z.palette[list[Math.min(list.length - 1, Math.floor(pick * list.length))]]; };
