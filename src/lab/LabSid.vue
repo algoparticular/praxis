@@ -122,6 +122,15 @@ function refreshStory() {
     const news = storyNews();
     story.fresh = news.thoughts || news.herb;
 }
+// the herbarium's drawings are small (72 to 290 px): each is shown at most at its own size over 1.5, so a phone's
+// screen does not blow it up into blurred pixels (until the illustrator's own, bigger ones come)
+const HERB_SCALE = 1 / 1.5;
+function fitHerb(e) {
+    const img = e.target;
+    img.style.maxWidth = `min(120px, 100%, ${Math.round(img.naturalWidth * HERB_SCALE)}px)`;
+    img.style.maxHeight = `${Math.min(84, Math.round(img.naturalHeight * HERB_SCALE))}px`;
+}
+
 function openStory() {
     if (!story.shown) return;
     const news = storyNews();
@@ -1811,7 +1820,7 @@ onBeforeUnmount(() => {
                     <ul class="herbarium">
                         <li v-for="h in HERBARIUM" :key="h.id" :class="{ known: story.herb.has(h.id), fresh: story.herbNew.has(h.id) }"
                             :style="{ animationDelay: `${300 + (story.herbNew.get(h.id) ?? 0) * 900}ms` }">
-                            <img :src="pieceUrl(h.show)" alt="" draggable="false">
+                            <span class="pic"><img :src="pieceUrl(h.show)" alt="" draggable="false" @load="fitHerb"></span>
                             <span class="name">{{ story.herb.has(h.id) ? ($i18n.locale === 'en' ? h.en : h.es) : '' }}</span>
                         </li>
                     </ul>
@@ -2343,11 +2352,21 @@ canvas {
     align-items: center;
     gap: 6px;
 }
-.herbarium img {
+/* each drawing no bigger than its own pixels allow (fitHerb: at most its own size over 1.5, in CSS px), so the small ones
+   (Metta's lantern, Upekkha's mushrooms are under 110 px) are not blown up and blurred; standing on one line */
+.herbarium .pic {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
     width: 100%;
-    max-width: 150px;
-    height: 104px;
-    object-fit: contain;
+    height: 84px;
+}
+.herbarium img {
+    display: block;
+    width: auto;
+    height: auto;
+    max-width: min(120px, 100%);
+    max-height: 84px;
     filter: brightness(0) opacity(0.5) drop-shadow(0 0 1px rgba(247, 248, 241, 0.45));
     -webkit-user-drag: none;
 }
