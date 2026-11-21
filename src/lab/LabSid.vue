@@ -7,10 +7,11 @@
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import Header from '../components/Header.vue';
 import rig from './sid/sid.json';
-import { CICLOS, createWorld, STAR_SEED, STAR_LIGHT } from './sidWorld.js';
+import { CICLOS, createWorld, STAR_SEED, STAR_LIGHT, pieceUrl } from './sidWorld.js';
 import { createStarField, CONSTELLATION_TIME } from '../composables/useStarField.js';
 import { THOUGHTS } from './thoughts.js';
 import { FRAGMENTS } from './story.js';
+import { HERBARIUM, kindOf } from './herbarium.js';
 import { CONSTELLATIONS } from './constellations.js';
 import Rulito from '../components/Rulito.vue';
 import { play, setCardChord, setHush, vibrate } from '../composables/useSound.js';
@@ -89,7 +90,7 @@ function readFragment(i) {
     const f = FRAGMENTS[i];
     if (!f) return;
     play('star'); visit?.secret('fragment');
-    story.found = memory.fragments.length; story.fresh = true;
+    refreshStory();
     setTimeout(function say() {
         if (gone) return;
         if ((teaching.on && !teaching.story) || portal.card != null) { setTimeout(say, 1500); return; }
@@ -99,22 +100,52 @@ function readFragment(i) {
     }, 600);
 }
 
-// The story's own page: the fragments found, in order, as one paragraph, and those still hidden as dark bars the length
-// of their words, as the secrets of a game (its icon, an atom as the marks are drawn, over the seed button, shows once
-// the first is found and glows while one found is still to be seen there). Opened, the ones found since it was last
-// seen (memory.storySeen) are painted in, one after another, in the order they were found (out of order in the story:
-// each mark gives one still hidden, at random); a touch anywhere, or Escape, closes it
-const story = reactive({ open: false, found: 0, fresh: false, have: new Set(), order: new Map(), look: 'notebook' });   // (look: 'notebook' or 'sky', being tried)
+// Sid's notebook, written in the sky (its icon, a notebook, over the seed button, shows once there is something in it and
+// glows while there is something new to see; it opens on the page that has it; a touch anywhere, or Escape, closes it;
+// the header's icons go cream over it, `body.lab-story`). Two pages:
+// - Pensamientos: the fragments of the story found, in order, as one paragraph, those still hidden as faint stars the
+//   length of their words; those found since it was last seen (memory.storySeen) are painted in, one after another, in
+//   the order they were found (each mark gives one still hidden, at random);
+// - Herbario: every plant a seed can grow into (herbarium.js) as a dark silhouette, and in its colours with its name
+//   once one of its kind has been planted (those planted since it was last seen, memory.herbSeen, come in out of a
+//   warm light)
+const story = reactive({ open: false, tab: 'thoughts', found: 0, fresh: false, shown: false, have: new Set(), order: new Map(), herb: new Set(), herbNew: new Map() });
+const herbPlanted = () => new Set(memory.planted.map((g) => kindOf(g.name)).filter(Boolean));
+function storyNews() {
+    const thoughts = memory.fragments.some((i) => !memory.storySeen.includes(i));
+    const herb = [...herbPlanted()].some((h) => !memory.herbSeen.includes(h));
+    return { thoughts, herb };
+}
+function refreshStory() {
+    story.found = memory.fragments.length;
+    story.shown = story.found > 0 || herbPlanted().size > 0;
+    const news = storyNews();
+    story.fresh = news.thoughts || news.herb;
+}
 function openStory() {
-    if (!story.found) return;
-    const seen = new Set(memory.storySeen);
-    story.have = new Set(memory.fragments);
-    // (the ones not yet seen here, by when they were found: the order they are painted in)
-    story.order = new Map(memory.fragments.filter((i) => !seen.has(i)).map((i, n) => [i, n]));
+    if (!story.shown) return;
+    const news = storyNews();
+    showTab(news.thoughts ? 'thoughts' : news.herb ? 'herbarium' : story.found ? story.tab : 'herbarium');
     story.open = true; ui.choose = false;
+    document.body.classList.add('lab-story');
     play('tap');
-    if (story.order.size) { memory.storySeen = [...memory.fragments]; saveMemory(memory); }
-    story.fresh = false;
+}
+function closeStory() { story.open = false; document.body.classList.remove('lab-story'); }
+// (each page, as it is shown, paints in what is new on it and remembers it as seen)
+function showTab(tab) {
+    story.tab = tab;
+    if (tab === 'thoughts') {
+        const seen = new Set(memory.storySeen);
+        story.have = new Set(memory.fragments);
+        story.order = new Map(memory.fragments.filter((i) => !seen.has(i)).map((i, n) => [i, n]));
+        if (story.order.size) { memory.storySeen = [...memory.fragments]; saveMemory(memory); }
+    } else {
+        const seen = new Set(memory.herbSeen), planted = herbPlanted();
+        story.herb = planted;
+        story.herbNew = new Map([...planted].filter((h) => !seen.has(h)).map((h, n) => [h, n]));
+        if (story.herbNew.size) { memory.herbSeen = [...planted]; saveMemory(memory); }
+    }
+    refreshStory();
 }
 
 // What the places think, as the things of Everything do (thoughts.js): coming near one of the seven places, one of
@@ -510,8 +541,7 @@ const picture = (src) => (typeof Image !== 'undefined' ? Object.assign(new Image
 const memory = loadMemory();
 memory.visits += 1;
 saveMemory(memory);
-story.found = memory.fragments.length;
-story.fresh = memory.fragments.some((i) => !memory.storySeen.includes(i));
+refreshStory();
 ui.seeds = memory.seeds.length;
 // The very first visit teaches the world's one thing, in order: the words that open it, then a seed lying near him that
 // calls (rings of light on the ground; the button does not call meanwhile), then, picked up, the words of the seed and
@@ -927,7 +957,7 @@ function press(key, on) {
 function onKey(e) {
     // (in a card's scene the keys are not his; Escape goes back to the world)
     if (portal.card != null) { if (e.key === 'Escape' && e.type === 'keydown') closePortal(); return; }
-    if (story.open) { if (e.key === 'Escape' && e.type === 'keydown') story.open = false; return; }
+    if (story.open) { if (e.key === 'Escape' && e.type === 'keydown') closeStory(); return; }
     if (e.target?.closest?.('button') && e.key === ' ') e.target.blur();
     const key = KEYS[e.key.length === 1 ? e.key.toLowerCase() : e.key];
     if (key) { e.preventDefault(); if (e.type === 'keydown' && !e.repeat) press(key, true); if (e.type === 'keyup') press(key, false); return; }
@@ -1079,6 +1109,7 @@ function update(dt, now) {
             ui.seeds = memory.seeds.length;
             learn('planted');
             firstVisit = false;
+            refreshStory();
             saveMemory(memory);
             play('bloom');
         }
@@ -1665,7 +1696,7 @@ function loop(now) {
 }
 
 // (for trying him out from the browser's console)
-if (typeof window !== 'undefined') window.__sid = { story, state, springs, hands, ui, world, walkTo, sit, memory, portal, portalWon, closePortal, toScreen, meditate, shoot: () => stars?.shoot(true), freeSky: () => freeSky(92, Math.min(horizon() * view.k, sidCrown.y) - 24), figure: (card) => { state.lookUp = true; state.look = 1; clearTimeout(state.figure); state.figure = setTimeout(() => {}, 1e9); requestAnimationFrame(() => requestAnimationFrame(() => stars?.constellation(constellationFigure(card), { color: RULITO_COLOURS[card] }))); } };
+if (typeof window !== 'undefined') window.__sid = { story, openStory, state, springs, hands, ui, world, walkTo, sit, memory, portal, portalWon, closePortal, toScreen, meditate, shoot: () => stars?.shoot(true), freeSky: () => freeSky(92, Math.min(horizon() * view.k, sidCrown.y) - 24), figure: (card) => { state.lookUp = true; state.look = 1; clearTimeout(state.figure); state.figure = setTimeout(() => {}, 1e9); requestAnimationFrame(() => requestAnimationFrame(() => stars?.constellation(constellationFigure(card), { color: RULITO_COLOURS[card] }))); } };
 
 onMounted(() => {
     document.body.classList.add('lab-page');
@@ -1687,7 +1718,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
     visit?.cardClosed(portal.won);
     visit?.finish();
-    document.body.classList.remove('lab-page', 'lab-night', 'lab-portal');
+    document.body.classList.remove('lab-page', 'lab-night', 'lab-portal', 'lab-story');
     document.body.style.backgroundColor = '';
     setHush(false);
     clearTimeout(portalTimer);
@@ -1743,16 +1774,20 @@ onBeforeUnmount(() => {
                 </button>
             </div>
         </Transition>
-        <!-- the story's own page (openStory): its icon over the seed, once a fragment has been found -->
+        <!-- Sid's notebook (openStory): its icon over the seed, once there is something in it -->
         <Transition name="teaching">
-            <button v-if="story.found && portal.card == null" class="story-icon" :class="{ light: teaching.light, fresh: story.fresh }"
-                :aria-label="$i18n.locale === 'en' ? 'Thoughts' : 'Pensamientos'" :title="$i18n.locale === 'en' ? 'Thoughts' : 'Pensamientos'"
+            <button v-if="story.shown && portal.card == null" class="story-icon" :class="{ light: teaching.light, fresh: story.fresh }"
+                :aria-label="$i18n.locale === 'en' ? 'Notebook' : 'Libreta'" :title="$i18n.locale === 'en' ? 'Notebook' : 'Libreta'"
                 @click="openStory"><span aria-hidden="true"></span></button>
         </Transition>
         <Transition name="veil">
-            <div v-if="story.open" class="story" :class="story.look" role="dialog" :aria-label="$i18n.locale === 'en' ? 'Thoughts' : 'Pensamientos'" @pointerdown.stop @click="story.open = false">
-                <h2 class="story-title">{{ $i18n.locale === 'en' ? 'Thoughts' : 'Pensamientos' }}</h2>
-                <div class="story-card">
+            <div v-if="story.open" class="story" role="dialog" :aria-label="$i18n.locale === 'en' ? 'Notebook' : 'Libreta'" @pointerdown.stop @click="closeStory">
+                <!-- its two pages, as two words written in the sky: the one open glows -->
+                <div class="story-tabs" role="tablist" @click.stop>
+                    <button role="tab" :aria-selected="story.tab === 'thoughts'" :class="{ on: story.tab === 'thoughts' }" @click="showTab('thoughts')">{{ $i18n.locale === 'en' ? 'Thoughts' : 'Pensamientos' }}</button>
+                    <button role="tab" :aria-selected="story.tab === 'herbarium'" :class="{ on: story.tab === 'herbarium' }" @click="showTab('herbarium')">{{ $i18n.locale === 'en' ? 'Herbarium' : 'Herbario' }}</button>
+                </div>
+                <div v-if="story.tab === 'thoughts'" class="story-card">
                     <p class="story-text">
                         <template v-for="(f, i) in FRAGMENTS" :key="i">
                             <span class="frag" :class="{ locked: !story.have.has(i), fresh: story.order.has(i) }"
@@ -1762,6 +1797,18 @@ onBeforeUnmount(() => {
                     <!-- how many have been found: one dot each, as the world's dots -->
                     <p class="story-count" :aria-label="`${story.found} / ${FRAGMENTS.length}`">
                         <span v-for="(f, i) in FRAGMENTS" :key="i" :class="{ on: i < story.found }"></span>
+                    </p>
+                </div>
+                <div v-else class="story-card">
+                    <ul class="herbarium">
+                        <li v-for="h in HERBARIUM" :key="h.id" :class="{ known: story.herb.has(h.id), fresh: story.herbNew.has(h.id) }"
+                            :style="{ animationDelay: `${300 + (story.herbNew.get(h.id) ?? 0) * 900}ms` }">
+                            <img :src="pieceUrl(h.show)" alt="" draggable="false">
+                            <span class="name">{{ story.herb.has(h.id) ? ($i18n.locale === 'en' ? h.en : h.es) : '' }}</span>
+                        </li>
+                    </ul>
+                    <p class="story-count" :aria-label="`${story.herb.size} / ${HERBARIUM.length}`">
+                        <span v-for="h in HERBARIUM" :key="h.id" :class="{ on: story.herb.has(h.id) }"></span>
                     </p>
                 </div>
             </div>
@@ -2164,8 +2211,8 @@ canvas {
     width: 100%;
     height: 100%;
     background-color: currentColor;
-    -webkit-mask: url('../assets/icon/Atom.svg') center / contain no-repeat;
-    mask: url('../assets/icon/Atom.svg') center / contain no-repeat;
+    -webkit-mask: url('../assets/icon/Notebook.svg') center / contain no-repeat;
+    mask: url('../assets/icon/Notebook.svg') center / contain no-repeat;
 }
 .story-icon:active { transform: scale(0.9); }
 .story-icon:focus { outline: none; }
@@ -2186,49 +2233,62 @@ canvas {
     align-items: center;
     justify-content: center;
     padding: calc(84px + env(safe-area-inset-top, 0px)) 16px calc(24px + env(safe-area-inset-bottom, 0px));
-    background: rgba(20, 50, 70, 0.3);
-    -webkit-backdrop-filter: blur(6px);
-    backdrop-filter: blur(6px);
+    background: rgba(10, 26, 40, 0.62);
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
     cursor: pointer;
 }
 .story-card {
+    width: 100%;
     max-width: 560px;
     max-height: 100%;
     min-height: 0;
     overflow-y: auto;
-    padding: 24px 26px 18px;
-    border-radius: 24px;
-    background-color: rgba(247, 248, 241, 0.86);
-    background-image: url('../assets/noise.png');
-    border: 1px solid rgba(255, 255, 255, 0.5);
-    box-shadow: 0 12px 40px rgba(20, 50, 70, 0.28);
-    color: #143246;
+    padding: 6px 10px 12px;
     -webkit-user-select: text;
     user-select: text;
 }
-/* its title over the card, on the dimmed world: in cream with a glow, as the app's icons */
-.story-title {
-    margin: 0 0 12px;
+/* the two pages' names, written in the sky: the one open in cream with a glow, as the app's icons, the other faint */
+.story-tabs {
+    display: flex;
+    gap: 26px;
+    margin: 0 0 14px;
+}
+.story-tabs button {
+    height: auto;
+    padding: 2px 4px;
+    margin: 0;
+    border: none;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
     font-family: Caveat, cursive;
     font-weight: 500;
-    font-size: 40px;
+    font-size: 34px;
     line-height: 1.1;
-    text-align: center;
+    color: rgba(247, 248, 241, 0.45);
+    cursor: pointer;
+    transition: color 300ms ease-out, text-shadow 300ms ease-out;
+}
+.story-tabs button.on {
     color: #F7F8F1;
     text-shadow: 0 0 14px rgba(255, 240, 200, 0.85), 0 0 4px rgba(255, 244, 214, 0.6), 0 2px 3px rgba(20, 51, 72, 0.45);
 }
+.story-tabs button:focus { outline: none; }
+.story-tabs button:focus-visible { text-shadow: 0 0 10px rgba(255, 111, 97, 0.9); }
 .story-text {
     margin: 0;
-    color: #143246;
+    color: #F7F8F1;
     font-family: Caveat, cursive;
-    font-size: 21px;
+    font-size: 23px;
     line-height: 1.5;
+    text-shadow: 0 0 12px rgba(255, 240, 200, 0.4);
 }
-/* what is still hidden: a thread of dots the length of its words, as the threads of the scenes, breathing softly */
+/* what is still hidden: a line of faint stars the length of its words, breathing softly */
 .frag.locked {
     color: transparent;
-    background-image: radial-gradient(circle, rgba(20, 50, 70, 0.34) 0 1.3px, transparent 1.9px);
-    background-size: 9px 100%;
+    background-image: radial-gradient(circle, rgba(255, 244, 214, 0.6) 0 1.2px, transparent 1.8px);
+    background-size: 12px 100%;
     background-repeat: repeat-x;
     background-position: 0 58%;
     -webkit-box-decoration-break: clone;
@@ -2240,22 +2300,70 @@ canvas {
 .frag.locked:nth-child(3n) { animation-delay: -1.2s; }
 .frag.locked:nth-child(3n + 1) { animation-delay: -2.4s; }
 @keyframes frag-breathe { from { opacity: 0.55; } to { opacity: 1; } }
-/* found since it was last seen: its thread of dots gives way to the words, which come into focus out of a warm light */
+/* found since it was last seen: its stars light up warm and give way to the words, which come into focus */
 .frag.fresh {
     -webkit-box-decoration-break: clone;
     box-decoration-break: clone;
-    background-size: 9px 100%;
+    background-size: 12px 100%;
     background-repeat: repeat-x;
     background-position: 0 58%;
     animation: frag-appear 2s ease-out both;
 }
 @keyframes frag-appear {
-    0% { color: transparent; text-shadow: none; background-image: radial-gradient(circle, rgba(20, 50, 70, 0.34) 0 1.3px, transparent 1.9px); }
-    25% { color: transparent; text-shadow: 0 0 14px rgba(255, 196, 110, 0.95); background-image: radial-gradient(circle, rgba(255, 180, 90, 0.8) 0 1.6px, transparent 2.2px); }
+    0% { color: transparent; text-shadow: none; background-image: radial-gradient(circle, rgba(255, 244, 214, 0.6) 0 1.2px, transparent 1.8px); }
+    25% { color: transparent; text-shadow: 0 0 16px rgba(255, 210, 130, 1); background-image: radial-gradient(circle, rgba(255, 210, 130, 0.95) 0 1.7px, transparent 2.3px); }
     26% { background-image: none; }
-    60% { color: transparent; text-shadow: 0 0 5px rgba(20, 50, 70, 0.65); background-image: none; }
-    100% { color: #143246; text-shadow: 0 0 0 rgba(20, 50, 70, 0); background-image: none; }
+    60% { color: transparent; text-shadow: 0 0 6px rgba(255, 244, 214, 0.8); background-image: none; }
+    100% { color: #F7F8F1; text-shadow: 0 0 12px rgba(255, 240, 200, 0.4); background-image: none; }
 }
+/* the herbarium: every plant as a dark silhouette with a faint light round it; planted once, in its colours with its name */
+.herbarium {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 18px 12px;
+}
+.herbarium li {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+.herbarium img {
+    width: 100%;
+    max-width: 150px;
+    height: 104px;
+    object-fit: contain;
+    filter: brightness(0) opacity(0.5) drop-shadow(0 0 1px rgba(247, 248, 241, 0.45));
+    -webkit-user-drag: none;
+}
+.herbarium li.known img { filter: drop-shadow(0 0 10px rgba(255, 240, 200, 0.35)); }
+.herbarium .name {
+    min-height: 1.3em;
+    font-family: Caveat, cursive;
+    font-size: 21px;
+    line-height: 1.2;
+    text-align: center;
+    color: #F7F8F1;
+    text-shadow: 0 0 10px rgba(255, 240, 200, 0.4);
+}
+.herbarium li:not(.known) .name {
+    width: 60%;
+    background-image: radial-gradient(circle, rgba(255, 244, 214, 0.5) 0 1.2px, transparent 1.8px);
+    background-size: 12px 100%;
+    background-repeat: repeat-x;
+    background-position: center 58%;
+}
+.herbarium li.fresh img { animation: herb-appear 1.8s ease-out both; animation-delay: inherit; }
+.herbarium li.fresh .name { animation: herb-name 1.8s ease-out both; animation-delay: inherit; }
+@keyframes herb-appear {
+    0% { filter: brightness(0) opacity(0.5) drop-shadow(0 0 1px rgba(247, 248, 241, 0.45)); }
+    35% { filter: brightness(0) invert(0.9) sepia(1) saturate(3) opacity(0.9) drop-shadow(0 0 14px rgba(255, 210, 130, 1)); }
+    100% { filter: drop-shadow(0 0 10px rgba(255, 240, 200, 0.35)); }
+}
+@keyframes herb-name { 0%, 40% { opacity: 0; } 100% { opacity: 1; } }
 .story-count {
     display: flex;
     justify-content: center;
@@ -2266,67 +2374,13 @@ canvas {
     width: 6px;
     height: 6px;
     border-radius: 50%;
-    box-shadow: inset 0 0 0 1.2px rgba(20, 50, 70, 0.4);
+    box-shadow: inset 0 0 0 1.2px rgba(247, 248, 241, 0.5);
 }
-.story-count span.on { background: #143246; box-shadow: none; }
+.story-count span.on { background: #F7F8F1; box-shadow: 0 0 6px rgba(255, 240, 200, 0.8); }
 @media (prefers-reduced-motion: reduce) {
-    .frag.fresh, .frag.locked { animation: none; }
+    .frag.fresh, .frag.locked, .herbarium li.fresh img, .herbarium li.fresh .name { animation: none; }
     .story-icon.fresh { animation: none; filter: drop-shadow(0 0 6px rgba(255, 240, 200, 0.9)); }
 }
-/* (being tried) Sid's notebook: a page of warm paper, a little turned, with its stitched spine, faint rules under the
-   handwriting and a navy elastic band */
-.story.notebook .story-card {
-    position: relative;
-    max-width: 520px;
-    padding: 24px 40px 20px 50px;
-    border: none;
-    border-radius: 5px 16px 16px 5px;
-    background-color: #F4ECD8;
-    background-image: url('../assets/noise.png'), linear-gradient(90deg, rgba(150, 110, 60, 0.16), rgba(150, 110, 60, 0) 34px);
-    box-shadow: 0 16px 36px rgba(20, 40, 60, 0.36), 0 2px 0 rgba(150, 110, 60, 0.2), inset 0 0 50px rgba(160, 120, 60, 0.12);
-    transform: rotate(-0.8deg);
-}
-.story.notebook .story-card::before {
-    content: '';
-    position: absolute;
-    left: 20px;
-    top: 14px;
-    bottom: 14px;
-    width: 4px;
-    background-image: radial-gradient(circle, rgba(20, 50, 70, 0.42) 0 1.4px, transparent 1.9px);
-    background-size: 4px 14px;
-}
-.story.notebook .story-card::after {
-    content: '';
-    position: absolute;
-    right: 18px;
-    top: 0;
-    bottom: 0;
-    width: 7px;
-    border-radius: 2px;
-    background: #143246;
-    box-shadow: 1px 0 3px rgba(0, 0, 0, 0.3);
-}
-.story.notebook .story-text {
-    background-image: repeating-linear-gradient(to bottom, transparent 0 calc(1.5em - 1px), rgba(20, 50, 70, 0.13) calc(1.5em - 1px) 1.5em);
-    background-position: 0 -0.12em;
-}
-/* (being tried) written in the sky: no card, the world darker behind, the handwriting in cream with a glow, what is
-   still hidden as faint stars */
-.story.sky { background: rgba(10, 26, 40, 0.6); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
-.story.sky .story-card { background: none; border: none; box-shadow: none; padding: 8px 10px; }
-.story.sky .story-text { color: #F7F8F1; font-size: 23px; text-shadow: 0 0 12px rgba(255, 240, 200, 0.4); }
-.story.sky .frag.locked { background-image: radial-gradient(circle, rgba(255, 244, 214, 0.6) 0 1.2px, transparent 1.8px); background-size: 12px 100%; }
-.story.sky .frag.fresh { animation-name: frag-appear-sky; }
-@keyframes frag-appear-sky {
-    0% { color: transparent; text-shadow: none; background-image: radial-gradient(circle, rgba(255, 244, 214, 0.6) 0 1.2px, transparent 1.8px); }
-    25% { color: transparent; text-shadow: 0 0 16px rgba(255, 210, 130, 1); background-image: radial-gradient(circle, rgba(255, 210, 130, 0.95) 0 1.7px, transparent 2.3px); }
-    26% { background-image: none; }
-    60% { color: transparent; text-shadow: 0 0 6px rgba(255, 244, 214, 0.8); background-image: none; }
-    100% { color: #F7F8F1; text-shadow: 0 0 12px rgba(255, 240, 200, 0.4); background-image: none; }
-}
-.story.sky .story-count span { box-shadow: inset 0 0 0 1.2px rgba(247, 248, 241, 0.5); }
-.story.sky .story-count span.on { background: #F7F8F1; box-shadow: 0 0 6px rgba(255, 240, 200, 0.8); }
 /* The app's header over his light sky: its cream icons in the ink of his line (the header is teleported into <body>,
    so this is not scoped; body.lab-page only while the lab is open) */
 body.lab-page header .navContainer button,
@@ -2343,6 +2397,9 @@ body.lab-page header .navContainer.right { position: relative; z-index: 1; }
 body.lab-page.lab-night header .navContainer button,
 body.lab-page.lab-night header #soundButton,
 body.lab-page.lab-night header #menuButton,
+body.lab-page.lab-story header .navContainer button,
+body.lab-page.lab-story header #soundButton,
+body.lab-page.lab-story header #menuButton,
 body.lab-page.lab-portal header .navContainer button,
 body.lab-page.lab-portal header #soundButton,
 body.lab-page.lab-portal header #menuButton { filter: none; }

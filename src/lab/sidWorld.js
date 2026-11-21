@@ -24,6 +24,8 @@ import { SEED_OUTLINE, SEED_SEAM, SEED_GERM } from './seedShape.js';
 // Her pieces, and the plants, stones and mushrooms cut out of the cards' scenes (src/lab/suelo, made by
 // scripts/convert-lab-suelo.mjs): the line and what is inside it, as pictures (tinted in code)
 const URLS = import.meta.glob(['./arbol/*.webp', './suelo/*.webp'], { eager: true, query: '?url', import: 'default' });
+// (the address of one of the pieces' pictures, in its own colours where it has them: for the herbarium's page)
+export const pieceUrl = (name) => URLS[`./suelo/${name}-colour.webp`] ?? URLS[`./suelo/${name}.webp`];
 const PICTURES = {};
 if (typeof Image !== 'undefined') {
     for (const [file, url] of Object.entries(URLS)) {
