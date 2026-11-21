@@ -131,7 +131,7 @@
         justify-content: space-between;
         align-items: center;
         position: fixed;
-        top: 0;
+        top: env(safe-area-inset-top, 0px);     /* (below the clock when opened from the Home Screen; 0 elsewhere) */
         left: 0;
         z-index: 11;
         width: 96vw;
