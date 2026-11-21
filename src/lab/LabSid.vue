@@ -100,7 +100,7 @@ function readFragment(i) {
     }, 600);
 }
 
-// Sid's notebook, written in the sky (its icon, a notebook, over the seed button, shows once there is something in it and
+// Sid's notebook, written in the sky (its icon, a notebook, under the header's menu button, shows once there is something in it and
 // glows while there is something new to see; it opens on the page that has it; a touch anywhere, or Escape, closes it;
 // the header's icons go cream over it, `body.lab-story`). Two pages:
 // - Pensamientos: the fragments of the story found, in order, as one paragraph, those still hidden as faint stars the
@@ -1761,7 +1761,7 @@ onBeforeUnmount(() => {
         </Transition>
         <!-- the affirmation of the card of the place where he meditates, written by hand in the sky -->
         <Transition name="teaching">
-            <p v-if="teaching.on" class="teaching glass" :class="{ light: teaching.light }" :style="{ color: teaching.light ? null : teaching.ink }">
+            <p v-if="teaching.on" class="teaching glass" :class="{ light: teaching.light, low: story.shown && portal.card == null }" :style="{ color: teaching.light ? null : teaching.ink }">
                 {{ $i18n.locale === 'en' ? teaching.en : teaching.es }}
             </p>
         </Transition>
@@ -1782,7 +1782,7 @@ onBeforeUnmount(() => {
                 </button>
             </div>
         </Transition>
-        <!-- Sid's notebook (openStory): its icon over the seed, once there is something in it -->
+        <!-- Sid's notebook (openStory): its icon under the menu button, once there is something in it -->
         <Transition name="teaching">
             <button v-if="story.shown && portal.card == null" class="story-icon" :class="{ light: teaching.light, fresh: story.fresh }"
                 :aria-label="$i18n.locale === 'en' ? 'Notebook' : 'Libreta'" :title="$i18n.locale === 'en' ? 'Notebook' : 'Libreta'"
@@ -1902,6 +1902,8 @@ canvas {
     from { border-radius: 46% 54% 44% 56% / 56% 46% 54% 44%; }
     to { border-radius: 54% 46% 56% 44% / 46% 56% 44% 54%; }
 }
+/* under the notebook's icon while it is shown in the corner, so the two never overlap */
+.teaching.low { top: calc(120px + env(safe-area-inset-top, 0px)); }
 @media (prefers-reduced-motion: reduce) { .teaching { animation: none; } }
 .teaching-enter-active { transition: opacity 1.6s ease-out, transform 1.6s ease-out; }
 .teaching-leave-active { transition: opacity 0.9s ease-in; }
@@ -2195,13 +2197,15 @@ canvas {
     pointer-events: none;
     box-shadow: 0 0 6px rgba(255, 244, 214, 0.9);
 }
-/* the story's icon: an atom, as the app's icons (a line, round, no button round it), over the seed and in line with it;
+/* the story's icon: a notebook, as the app's icons (a line, no button round it), in the top right corner under the
+   header's menu button, so the sound, the menu and the notebook make a little triangle there;
    in the ink of his line by day, cream by night (as the header's icons); while a fragment found waits to be seen it
    breathes a soft glow */
 .story-icon {
     position: absolute;
-    right: 40px;
-    bottom: calc(146px + env(safe-area-inset-bottom, 0px));
+    /* centred under the menu button (50 px wide, at the header's 2vw from the edge, 16 px under its top) */
+    right: calc(2vw + 3px);
+    top: calc(64px + env(safe-area-inset-top, 0px));
     width: 44px;
     height: 44px;
     padding: 0;
