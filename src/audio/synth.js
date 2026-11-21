@@ -706,16 +706,17 @@ export const rulito = (ctx, out, time, harmony) => {
 };
 
 // A seed sown, as the law of octaves too (the rulito's leap, spread over the seed's way): as it leaves the button the
-// chord starts to climb, a note at a time, slowly, all the way down through him and under the ground (`span` s), and
-// as the plant is born `sprout` rings the whole chord on the do above, with a bowl on the root it started from
-export const sow = (ctx, out, time, harmony, { span = 3 } = {}) => {
-    const h = harmony ?? PLAIN;
+// chord of its own card (`own`, a chord's name; the one sounding if it has none) starts to climb, a note at a time,
+// slowly, all the way down through him and under the ground (`span` s), and as the plant is born `sprout` rings that
+// chord whole on the do above, with a bowl on the root it started from
+export const sow = (ctx, out, time, harmony, { span = 3, own = null } = {}) => {
+    const h = own ? chord(own) : harmony ?? PLAIN;
     const climb = h.tones(h.voice, 12), gap = span / climb.length;
     climb.forEach((midi, i) => bell(ctx, out, time + i * gap, hz(midi), 2.2, 0.014 + 0.006 * (i / climb.length)));
     swish(ctx, out, time, { from: 1800, to: 6000, duration: span, level: 0.006, q: 0.6 });
 };
-export const sprout = (ctx, out, time, harmony) => {
-    const h = harmony ?? PLAIN;
+export const sprout = (ctx, out, time, harmony, { own = null } = {}) => {
+    const h = own ? chord(own) : harmony ?? PLAIN;
     const minor = isMinor(h.kind), seventh = hasSeventh(h);
     h.tones(h.voice + 12, 11).forEach((midi, i) => {
         bell(ctx, out, time + i * 0.018, hz(midi), minor ? 4.2 : 3.6, 0.024);

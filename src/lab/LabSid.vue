@@ -1232,12 +1232,14 @@ function update(dt, now) {
     } else if (seated && !card && !state.planted && memory.seeds.length) {
         state.plantT += dt;
         if (!state.sowing && state.plantT >= PLANT_AFTER - SOW.fly) {
-            const light = world.seedLight(memory.seeds[0]);
-            state.sowing = { t: 0, x: state.x, d: state.d - 110, light };
+            const light = world.seedLight(memory.seeds[0]), id = world.cardIdOf(memory.seeds[0]);
+            // (the chord of the seed's own card; a seed of light, of no card, takes the world's)
+            const own = id == null ? null : chordFor(id);
+            state.sowing = { t: 0, x: state.x, d: state.d - 110, light, own };
             ui.seeds = memory.seeds.length - 1;
             fly(buttonMiddle(), { ...sowAt.heart }, light, null, SOW.fly * 1000);
             // (the chord climbs all along its way, and leaps to the octave as it is born: the law of octaves)
-            play('sow', { span: SOW.fly + SOW.through + SOW.under });
+            play('sow', { span: SOW.fly + SOW.through + SOW.under, own });
         }
         if (state.sowing) state.sowing.t += dt;
         if (state.sowing && state.sowing.t >= SOW.fly + SOW.through + SOW.under) {
@@ -1261,7 +1263,7 @@ function update(dt, now) {
             firstVisit = false;
             refreshStory();
             saveMemory(memory);
-            play('sprout');
+            play('sprout', { own: w.own });
         }
     }
     // meditating among his plants (away from the places), they sing in turn
