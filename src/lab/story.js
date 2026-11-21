@@ -48,6 +48,7 @@ export const FRAGMENTS = [
         en: 'There is an inner compass that invites us to a path with heart.' },
 ];
 
-// How the notebook's page of Pensamientos lays them out: in paragraphs, by what they speak of (the dream and what
-// separates us; the particle, the atoms and Love; humility, made of the same; the void; the rulito, beauty, the path)
-export const PARAGRAPHS = [[0, 1, 12], [2, 13, 14, 3, 4], [5, 15, 6], [7, 8], [16, 9, 10, 17, 11]];
+// How the notebook's page of Pensamientos lays them out: in paragraphs of two or three, by what they speak of (the dream
+// and what separates us; the particle; the atoms and Love; humility, made of the same; the void; the rulito and beauty;
+// the path)
+export const PARAGRAPHS = [[0, 1, 12], [2, 13, 14], [3, 4], [5, 15, 6], [7, 8], [16, 9, 10], [17, 11]];
