@@ -585,9 +585,9 @@ const world = createWorld({
 });
 // The garden sings (as in Proteus): each plant his note, of its own card's chord, moved to the nearest that fits if it
 // clashes with the world where it grows (gardenNote in synth.js); it sings as he passes near it (sidWorld.js) and, while
-// he meditates among his plants (GARDEN.reach), they sing in turn from left to right, slowly, a rest after each round,
-// each swaying as it sings
-const GARDEN = { reach: 900, first: 2.6, step: 0.75, rest: 1.5 };
+// he meditates among his plants (GARDEN.reach), they sing in turn from left to right, slowly, each swaying as it sings;
+// then they rest a long while (GARDEN.rest s) before singing again, so a plant does not keep ringing by him
+const GARDEN = { reach: 900, first: 2.6, step: 0.75, rest: 14 };
 function sing(p, level = 1) {
     if (ui.guide) return;                           // (a meditation is silence)
     const midi = gardenNote(chordFor(world.cardIdOf(p.card)), chordFor(world.zoneCard()), p.pick, p.grown);
@@ -1102,7 +1102,10 @@ function update(dt, now) {
                 if (!still) burstAt(toScreen(p.x, p.d, p.h * 0.4), `rgb(${world.seedLight(p.card).map(Math.round).join(',')})`);
                 saveMemory(memory);
                 play('bloom');
-            } else if (how === 'dance') sing(p);
+            } else if (how === 'dance') {
+                sing(p);
+                state.roundT = GARDEN.rest;     // (it has just sung: the round waits, so it is not heard twice)
+            }
         }
     } else if (seated && !card && !state.planted && memory.seeds.length) {
         state.plantT += dt;
@@ -1142,7 +1145,7 @@ function update(dt, now) {
                 const i = state.roundI % round.length, p = round[i];
                 world.singPlant(p.key); sing(p, 0.85);
                 state.roundI = i + 1;
-                state.roundT = i === round.length - 1 ? GARDEN.rest + GARDEN.step : GARDEN.step;
+                state.roundT = i === round.length - 1 ? GARDEN.rest : GARDEN.step;
             } else state.roundT = 1;
         }
     } else { state.roundT = GARDEN.first; state.roundI = 0; }
