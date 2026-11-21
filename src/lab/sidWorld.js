@@ -101,20 +101,28 @@ const CURLS = ['pacCurl0', 'pacCurl1', 'pacCurl2', 'pacCurl3', 'pacCurl4', 'pacC
 // Seeds: now and then one lies on the ground (SEED_CHANCE of the stretches), of the card of the zone where it lies; he
 // picks it up as he walks over it, and sitting in lotus away from the places he plants one in front of him. What it
 // grows into is a plant of its card's scene (SEED_PLANTS: the name, its size grown, how it sways), in its card's own
-// colours wherever it is planted; it grows a step each time he comes back to it after going away (SEED_GROWTH: how big
-// it starts, each step, and the most it grows; the steps are kept on the phone with it, `steps`).
+// colours wherever it is planted; it grows a step when he comes back to it after going away, once a visit (SEED_GROWTH:
+// how big it starts, each step, and the most it grows; the steps are kept on the phone with it, `steps`). The most is
+// 1.4, or more for a plant whose picture has the pixels to be drawn bigger and stay sharp (`mostOf`).
 // Seeds are few on the ground (most are won: the page gives the seed of a place's card when its rulito is born, and
 // now and then a spore of light flies by on the wind, SPORE_EVERY, which he catches walking under it, SPORE_PICK).
 // A card with no plant of its own (Transformación: its tree is its place, not a plant to sow) grows any other card's
 const SEED_CHANCE = 0.012, SEED_PICK = 130, SEED_SPROUT = 5;     // (how near he picks it up; seconds it takes to sprout)
-const SEED_GROWTH = { start: 0.6, step: 0.12, most: 1.4 };
+const SEED_GROWTH = { start: 0.6, step: 0.12, most: 1.4, top: 2 };
 const SEED_BACK = { near: 320, away: 900 };     // (how near counts as coming back to it, and how far as having gone away)
 const SEED_GREW = 1.6;                          // (seconds a step of growing takes)
 // What he planted answers him: a touch makes it wiggle (and the page strums the chord of its world), and sitting in
 // lotus by it (SEED_TEND, as near as he plants) it grows a step, once a visit (besides growing when he comes back);
 // after that, or grown all it grows, it dances (seconds of each)
 const SEED_TEND = 260, SEED_WIGGLE = 0.9, SEED_DANCE = 4.5;
-const grownOf = (steps) => Math.min(SEED_GROWTH.most, SEED_GROWTH.start + SEED_GROWTH.step * steps);
+// (how big it can grow: as long as each pixel of its picture covers no more than one of the screen, on a screen of
+// about 0.76 of a screen's pixel to a px of his world, a phone's or a laptop's at the depth he stands; never less than
+// `most`, never more than `top`. Ciclos's fans, Paciencia's curls, Upekkha's tufts and sprout, Gratitud's palm grow more)
+const mostOf = (g) => {
+    const k = (PIECES[g.name]?.unit ?? UNIT) * (g.scale ?? 1) * 0.76;
+    return Math.max(SEED_GROWTH.most, Math.min(SEED_GROWTH.top, 1 / k));
+};
+const grownOf = (g, steps = g.steps) => Math.min(mostOf(g), SEED_GROWTH.start + SEED_GROWTH.step * steps);
 const SPORE_FIRST = 14, SPORE_EVERY = [35, 60], SPORE_PICK = 210, SPORE_SPEED = 120;   // (s to the first, s between them, px)
 const SEED_SIZE = 2.6;
 // the seed's shape (seedShape.js: a seed with a particle of light inside it, until the illustrator draws it)
@@ -421,6 +429,7 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
     const by = new Map(), growing = new Map();
     // (what has grown by his meditating on this visit, and how each is dancing now: { at, long })
     const tended = new Set(), dancing = new Map();
+    const returned = new Set();             // (what has grown on this visit by his coming back to it: once a visit)
     let time = 0;
 
     // ---- making a stretch ----
@@ -707,8 +716,10 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
             if (dist > SEED_BACK.away) by.set(g.key, false);
             else if (dist < SEED_BACK.near && !by.get(g.key)) {
                 by.set(g.key, true);
-                if (grownOf(g.steps + 1) <= grownOf(g.steps)) continue;     // (grown all it grows)
-                growing.set(g.key, { from: grownOf(g.steps), at: performance.now() });
+                if (returned.has(g.key)) continue;                          // (once a visit)
+                if (grownOf(g, g.steps + 1) <= grownOf(g)) continue;        // (grown all it grows)
+                returned.add(g.key);
+                growing.set(g.key, { from: grownOf(g), at: performance.now() });
                 g.steps += 1;
                 onGrow?.(g);
             }
@@ -804,7 +815,7 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
             let grow = 1;
             if (item.planted) {
                 const pl = item.planted, now = performance.now(), u = pl.now == null ? 1 : Math.min(1, (now - pl.now) / 1000 / SEED_SPROUT);
-                let grown = grownOf(pl.g.steps);
+                let grown = grownOf(pl.g);
                 const step = growing.get(pl.g.key);
                 if (step) {
                     const v = Math.min(1, (now - step.at) / 1000 / SEED_GREW);
@@ -1377,7 +1388,7 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
         const out = [];
         for (const item of patches(x - range, x + range, d - range, d + range)) {
             if (!item.planted) continue;
-            const box = boxOf(item.name), k = item.scale * grownOf(item.planted.g.steps);
+            const box = boxOf(item.name), k = item.scale * grownOf(item.planted.g);
             out.push({ key: item.planted.g.key, card: item.planted.g.card, x: item.x, d: item.d, w: box[2] * k, h: box[3] * k });
         }
         return out;
@@ -1397,8 +1408,8 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
     function tend(key) {
         const g = garden.find((q) => q.key === key);
         if (!g) return null;
-        if (!tended.has(key) && grownOf(g.steps + 1) > grownOf(g.steps)) {
-            growing.set(key, { from: grownOf(g.steps), at: performance.now() });
+        if (!tended.has(key) && grownOf(g, g.steps + 1) > grownOf(g)) {
+            growing.set(key, { from: grownOf(g), at: performance.now() });
             g.steps += 1;
             tended.add(key);
             return 'grow';
