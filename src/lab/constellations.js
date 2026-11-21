@@ -56,13 +56,11 @@ export const CONSTELLATIONS = {
         { points: [[-0.02, -0.3], [0.44, -0.3], [0.76, -0.02]], closed: false },
         { points: [[-0.04, -0.86]], closed: false },
     ],
-    // Transformación: the seed, its root going down and its sprout going up with two leaves
+    // Transformación: a sprout, its stem curving up and its two leaves open
     32: [
-        { points: [[0, -0.18], [-0.24, -0.06], [-0.26, 0.16], [0, 0.3], [0.26, 0.16], [0.24, -0.06]], closed: true },
-        { points: [[0, 0.3], [-0.1, 0.56], [0.08, 0.74], [-0.04, 0.94]], closed: false },
-        { points: [[0, -0.18], [0.04, -0.5], [0, -0.92]], closed: false },
-        { points: [[0.04, -0.5], [-0.34, -0.66], [-0.5, -0.52]], closed: false },
-        { points: [[0.02, -0.72], [0.36, -0.86], [0.52, -0.7]], closed: false },
+        { points: [[0.06, 0.94], [0.02, 0.56], [-0.06, 0.2], [0, -0.14]], closed: false },
+        { points: [[-0.04, -0.1], [-0.36, -0.44], [-0.82, -0.48], [-0.52, -0.16]], closed: true },
+        { points: [[0.04, -0.18], [0.3, -0.58], [0.76, -0.78], [0.58, -0.32]], closed: true },
     ],
     // Celebración: the fire, its tongues of flame over two crossed logs
     14: [

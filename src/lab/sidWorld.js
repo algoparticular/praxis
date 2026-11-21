@@ -427,7 +427,6 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
             groundNight: m('groundNight'), detailDay: m('detailDay'), detailNight: m('detailNight'), dark: zs.reduce((t, { z, w }) => t + z.dark * w, 0) };
     };
     let screen = blend(zonesAt(1000)), lastCam = 1000, lastD = 420;
-    let lastMoon = null;                    // (where the moon was drawn last, in px of his world: the page keeps clear of it)
     // One of the colours a thing takes, as the zone where it stands has it (blended between two)
     const colourOf = (zs, role = 'plant', pick = 0) => {
         const of = (z) => { const list = z.roles[ROLES[role]]; return z.palette[list[Math.min(list.length - 1, Math.floor(pick * list.length))]]; };
@@ -1413,11 +1412,9 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
         const scale = H / 1300 * 0.55;
         const along = (t, r) => ({ x: view.width * (0.06 + 0.88 * t), y: bottom + r - (bottom + r - (top + H * 0.4)) * Math.sin(Math.PI * t) });   // (high, but under the buttons)
         const sunT = clock < 0.5 ? clock / 0.5 : null, moonT = clock >= 0.5 ? (clock - 0.5) / 0.5 : null;
-        lastMoon = null;
         const drawMoon = (t, alpha) => {
             if (!moon?.complete || !moon.naturalWidth || alpha <= 0.01) return;
             const m = ciclos.moon, [bx, by, bw, bh] = ciclos.boxes.moon, p = along(t, m.r * scale * 1.1);
-            lastMoon = { x: p.x, y: p.y, r: m.r * scale };
             c.globalAlpha = alpha;
             c.drawImage(moon, p.x + (bx - m.x) * scale, p.y + (by - m.y) * scale, bw * scale, bh * scale);
             c.fillStyle = css(screen.ink); c.globalAlpha = 0.55 * alpha;
@@ -1574,5 +1571,5 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
     }
     // (seedLight: the light of a card's seeds, for the page to fly one from the button to where it is planted)
     const seedLight = (card) => { if (card === STAR_SEED) return STAR_LIGHT; const z = ZONES.find((q) => q.card === card); return z ? colourOf([{ z, w: 1 }], 'bead', 0.5).light : [255, 244, 214]; };
-    return { update, draw, drawSky, drawGround, ground, night, ink, white, nightColour, topColour, moonAt: () => lastMoon, placeCard, placeNear, zoneCard, obstacles, plant, plantsNear, plantBy, touchPlant, singPlant, cardIdOf, tend, seedsNear, seedLight, spore: () => spore, setClock: (v) => { clock = ((v % 1) + 1) % 1; } };
+    return { update, draw, drawSky, drawGround, ground, night, ink, white, nightColour, topColour, placeCard, placeNear, zoneCard, obstacles, plant, plantsNear, plantBy, touchPlant, singPlant, cardIdOf, tend, seedsNear, seedLight, spore: () => spore, setClock: (v) => { clock = ((v % 1) + 1) % 1; } };
 }

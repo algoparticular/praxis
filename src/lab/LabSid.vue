@@ -225,31 +225,49 @@ const breathAt = (t) => {
 const CONSTELLATION_AFTER = 8, CONSTELLATION_ODDS = 0.5, SHOOT_EVERY = 18, SHOOT_ODDS = 0.45;
 const LOOK_TIME = 2.6;          // (s the camera takes to look up, or down again)
 let figureShown = false;        // (a constellation already seen on this visit)
-// the figure of the card, in the sky over him: as big as the sky between the header and his head (or the horizon) allows
+// the figure of the card, in the sky over him, in the biggest stretch of sky nothing covers: by night the drawing's sky
+// is all but clear, so whatever shows in it over the horizon (her tree's crown, a palm, the clouds, the moon) covers the
+// stars; the world's canvas is read once, in cells (SKY_CELL px), and the biggest free square is taken (the nearest to
+// him of the biggest), from under the header down to his head or the horizon. With no room for it anywhere
+// (FIGURE_LEAST), it is over him all the same
+const SKY_CELL = 10, FIGURE_LEAST = 110, FIGURE_MOST = 340;
 function constellationFigure(card) {
     const strokes = CONSTELLATIONS[card] ?? CONSTELLATIONS[15];
     const top = 92, bottom = Math.min(horizon() * view.k, sidCrown.y) - 24;
-    const size = Math.max(120, Math.min(bottom - top, view.w - 48, 340));
-    const cy = top + Math.max(0, bottom - top) / 2;
-    const cx = Math.max(size / 2 + 20, Math.min(view.w - size / 2 - 20, sidOnScreen.x));
-    // (over him if the moon leaves room; else in the biggest part of the sky the moon leaves free: beside it, above it or
-    // under it, smaller if it must be)
-    const m = world.moonAt();
-    if (m) {
-        const mx = m.x * view.k, my = m.y * view.k, mr = m.r * view.k + 16;
-        if (Math.abs(cx - mx) < size / 2 + mr && Math.abs(cy - my) < size / 2 + mr) {
-            const fit = (s) => Math.min(size, s);
-            const spots = [
-                { s: fit(Math.min(mx - mr - 20, bottom - top)), x: (mx - mr + 20) / 2, y: cy },
-                { s: fit(Math.min(view.w - mx - mr - 20, bottom - top)), x: (mx + mr + view.w - 20) / 2, y: cy },
-                { s: fit(Math.min(my - mr - top, view.w - 40)), x: cx, y: (top + my - mr) / 2 },
-                { s: fit(Math.min(bottom - my - mr, view.w - 40)), x: cx, y: (my + mr + bottom) / 2 },
-            ].sort((a, b) => b.s - a.s);
-            const best = spots[0];
-            if (best.s >= 110) return place(strokes, Math.max(best.s / 2 + 20, Math.min(view.w - best.s / 2 - 20, best.x)), best.y, best.s);
-        }
+    const fallback = () => {
+        const size = Math.max(120, Math.min(bottom - top, view.w - 48, FIGURE_MOST));
+        return place(strokes, Math.max(size / 2 + 20, Math.min(view.w - size / 2 - 20, sidOnScreen.x)), top + Math.max(0, bottom - top) / 2, size);
+    };
+    const free = freeSky(top, bottom);
+    if (!free) return fallback();
+    const { size, x, y } = free;
+    const s = Math.min(size - SKY_CELL, FIGURE_MOST);
+    return s >= FIGURE_LEAST ? place(strokes, x, y, s) : fallback();
+}
+function freeSky(top, bottom) {
+    const el = canvas.value, d = view.dpr, cols = Math.floor((view.w - 32) / SKY_CELL), rows = Math.floor((bottom - top) / SKY_CELL);
+    if (cols < 2 || rows < 2) return null;
+    let px;
+    try { px = el.getContext('2d').getImageData(Math.round(16 * d), Math.round(top * d), Math.round(cols * SKY_CELL * d), Math.round(rows * SKY_CELL * d)); } catch { return null; }
+    const W = px.width, step = Math.max(1, Math.round(SKY_CELL * d / 3));
+    // (the sky itself is drawn a little by dusk: only what is clearly more than it covers)
+    const clear = Math.max(140, (1 - world.night()) * 255 + 50);
+    const blocked = (r, c) => {
+        const x0 = Math.round(c * SKY_CELL * d), y0 = Math.round(r * SKY_CELL * d), n = Math.round(SKY_CELL * d);
+        for (let y = y0; y < y0 + n; y += step) for (let x = x0; x < x0 + n; x += step) if (px.data[((y * W) + x) * 4 + 3] > clear) return true;
+        return false;
+    };
+    // the biggest free square: for each cell, how big a free square ends there (from the cells above and to its left)
+    const dp = Array.from({ length: rows }, () => new Array(cols).fill(0));
+    let best = null;
+    for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+        if (blocked(r, c)) continue;
+        dp[r][c] = r && c ? Math.min(dp[r - 1][c], dp[r][c - 1], dp[r - 1][c - 1]) + 1 : 1;
+        const n = dp[r][c], x = 16 + (c + 1 - n / 2) * SKY_CELL, y = top + (r + 1 - n / 2) * SKY_CELL;
+        const far = Math.abs(x - sidOnScreen.x);
+        if (!best || n > best.n || (n === best.n && far < best.far)) best = { n, x, y, far };
     }
-    return place(strokes, cx, cy, size);
+    return best && { size: best.n * SKY_CELL, x: best.x, y: best.y };
 }
 function place(strokes, cx, cy, size) {
     return strokes.map(({ points, closed }) => ({ closed, points: points.map(([x, y]) => [cx + x * size / 2, cy + y * size / 2]) }));
@@ -1647,7 +1665,7 @@ function loop(now) {
 }
 
 // (for trying him out from the browser's console)
-if (typeof window !== 'undefined') window.__sid = { state, springs, hands, ui, world, walkTo, sit, memory, portal, portalWon, closePortal, toScreen, meditate, shoot: () => stars?.shoot(true), figure: (card) => { state.lookUp = true; state.look = 1; lookAt(); clearTimeout(state.figure); state.figure = setTimeout(() => {}, 1e9); stars?.constellation(constellationFigure(card), { color: RULITO_COLOURS[card] }); } };
+if (typeof window !== 'undefined') window.__sid = { state, springs, hands, ui, world, walkTo, sit, memory, portal, portalWon, closePortal, toScreen, meditate, shoot: () => stars?.shoot(true), freeSky: () => freeSky(92, Math.min(horizon() * view.k, sidCrown.y) - 24), figure: (card) => { state.lookUp = true; state.look = 1; clearTimeout(state.figure); state.figure = setTimeout(() => {}, 1e9); requestAnimationFrame(() => requestAnimationFrame(() => stars?.constellation(constellationFigure(card), { color: RULITO_COLOURS[card] }))); } };
 
 onMounted(() => {
     document.body.classList.add('lab-page');
