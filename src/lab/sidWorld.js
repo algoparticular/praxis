@@ -132,12 +132,12 @@ const SEED_SIZE = 2.6;
 // A seed of light: the one a shooting star leaves at his feet while he meditates by night (LabSid.vue). It is of no card
 // (`star`): it grows any card's plant, in the night's star yellow, and by night that plant twinkles with a few stars
 export const STAR_SEED = 'star', STAR_LIGHT = [252, 220, 140];
-// The marks of the story (story.js): the Algo Particular mark (its cross and its four dots, as in Tu verdad's scene, in
-// px of a mark MARK.size across), lying on the ground in every cell of the grid, away from its place (MARK.dx across and
-// MARK.dd back from the place, to one side or the other), glowing in its zone's colour; walking over one he finds it
-const MARK = { size: 200, dx: 0.32, dd: 0.28, pick: 200 };
-const MARK_STROKES = [[[-0.004, -0.42], [0.012, -0.12]], [[0.025, 0.11], [0.032, 0.39]], [[-0.435, 0.019], [-0.102, -0.009]], [[0.102, -0.031], [0.435, -0.032]]];
-const MARK_DOTS = [[-0.376, -0.362], [0.379, -0.407], [-0.329, 0.405], [0.428, 0.365]];
+// The marks of the story (story.js): a particle, as an atom is drawn (everything started from a particle), floating low
+// over the ground in every cell of the grid, away from its place (MARK.dx across and MARK.dd back from the place, to one
+// side or the other): a bright core in its zone's light with three tilted orbits of dots turning round it, each with its
+// light running along it, and a faint column of light rising from it to the sky, so it is told from the world's other
+// lights (fireflies, butterflies, bees, spores) and found from afar; walking under it he finds it, and it opens
+const MARK = { size: 620, dx: 0.32, dd: 0.28, pick: 240, high: 150 };
 // the seed's shape (seedShape.js: a seed with a particle of light inside it, until the illustrator draws it)
 const SEED_PATHS = typeof Path2D === 'undefined' ? null : { outline: new Path2D(SEED_OUTLINE), seam: new Path2D(SEED_SEAM) };          // (how big a seed is drawn: big enough to be seen from afar)
 const SEED_PLANTS = {
@@ -966,28 +966,42 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
             break;
         }
         case 'mark': {
-            // the Algo Particular mark lying on the ground, in its zone's light, breathing a soft glow, a few motes rising
-            // from it (so it is seen from afar); found, it rises in light and goes
+            // a particle as an atom: a core, three tilted orbits of dots turning, a light running along each, and a faint
+            // column of light up to the sky; found, it rises, its orbits open out and fade
             const up = l?.up ?? 0;
             if (up >= 1 || !marks?.open() && up === 0) break;
-            const rgb = P.light.map(Math.round), breath = 0.5 + 0.5 * Math.sin(time * 1.4 + item.phase), K = MARK.size, a = 1 - up;
+            const t = time + item.phase, breath = 0.5 + 0.5 * Math.sin(t * 1.4), K = MARK.size, a = 1 - up;
+            const rgb = P.light.map(Math.round), y = -MARK.high - 10 * Math.sin(t * 0.9) - up * 220;
+            c.fillStyle = `rgba(20,50,70,${0.08 * a})`; c.beginPath(); c.ellipse(0, 0, K * 0.12, K * 0.025, 0, 0, Math.PI * 2); c.fill();
             c.globalAlpha *= a;
-            halo(c, 0, -10, K * (0.75 + 0.15 * breath + up), rgb, 0.42 + 0.16 * breath);
-            for (let n = 0; n < 6; n++) {
-                const t = (time * 0.18 + n / 6 + item.phase) % 1, ma = Math.sin(Math.PI * t) * (0.5 + 0.5 * up);
-                c.fillStyle = `rgba(255,250,230,${ma})`;
-                c.beginPath(); c.arc(Math.sin(n * 2.3 + t * 4) * K * 0.35, -t * (140 + up * 200), 2.4 + 1.6 * (1 - t), 0, Math.PI * 2); c.fill();
+            // the column of light, from the ground up to the sky, fading upwards
+            const col = c.createLinearGradient(0, 0, 0, -2600);
+            col.addColorStop(0, `rgba(${rgb.join(',')},${0.32 + 0.1 * breath})`); col.addColorStop(1, `rgba(${rgb.join(',')},0)`);
+            // (soft at its sides: a few bands, the wider the fainter)
+            c.fillStyle = col;
+            for (const [w, al] of [[0.06, 0.35], [0.032, 0.5], [0.012, 0.9]]) { c.globalAlpha *= al; c.fillRect(-K * w / 2, -2600, K * w, 2600); c.globalAlpha /= al; }
+            halo(c, 0, y, K * (0.32 + 0.06 * breath), rgb, 0.4 + 0.15 * breath);
+            // the orbits: ellipses of dots, each tilted its own way, turning, with a light running along (the dots in the
+            // zone's ink by day, so they read on its ground, and cream by night)
+            const orbit = mixRgb(P.ink, [255, 250, 230], night());
+            for (let o = 0; o < 3; o++) {
+                const tilt = o * Math.PI / 3 + 0.3, R = K * 0.3 * (1 + up * 2.5), r = R * 0.34, spin = t * (0.7 + o * 0.25) + o * 2;
+                const ct = Math.cos(tilt), st = Math.sin(tilt);
+                for (let n = 0; n < 16; n++) {
+                    const u = n / 16 * Math.PI * 2 + spin * 0.15, ex = Math.cos(u) * R, ey = Math.sin(u) * r;
+                    c.fillStyle = orbit;
+                    c.beginPath(); c.arc(ex * ct - ey * st, y + ex * st + ey * ct, K * 0.01, 0, Math.PI * 2); c.fill();
+                }
+                const ex = Math.cos(spin) * R, ey = Math.sin(spin) * r, px = ex * ct - ey * st, py = y + ex * st + ey * ct;
+                halo(c, px, py, K * 0.07, rgb, 0.9);
+                c.fillStyle = `rgb(${rgb.join(',')})`; c.beginPath(); c.arc(px, py, K * 0.026, 0, Math.PI * 2); c.fill();
+                c.fillStyle = 'rgba(255,252,238,1)'; c.beginPath(); c.arc(px, py, K * 0.013, 0, Math.PI * 2); c.fill();
             }
-            c.save(); c.translate(0, -up * 90); c.scale(1, 0.5 + up * 0.4);
-            // (in the zone's ink by day, so it reads on its ground, and in its light by night)
-            const ink = mixRgb(P.ink, P.light, night());
-            c.strokeStyle = ink; c.lineWidth = K * 0.07; c.lineCap = 'round';
-            for (const [p0, p1] of MARK_STROKES) { c.beginPath(); c.moveTo(p0[0] * K, p0[1] * K); c.lineTo(p1[0] * K, p1[1] * K); c.stroke(); }
-            c.fillStyle = ink;
-            for (const [dx, dy] of MARK_DOTS) { c.beginPath(); c.arc(dx * K, dy * K, K * (0.047 + 0.009 * breath), 0, Math.PI * 2); c.fill(); }
-            c.fillStyle = 'rgba(255,252,238,0.9)';
-            c.beginPath(); c.arc(0.014 * K, -0.004 * K, K * (0.024 + 0.012 * breath), 0, Math.PI * 2); c.fill();
-            c.restore();
+            halo(c, 0, y, K * 0.11, [255, 250, 230], 0.8 + 0.2 * breath);
+            c.fillStyle = `rgb(${rgb.join(',')})`;
+            c.beginPath(); c.arc(0, y, K * (0.05 + 0.01 * breath), 0, Math.PI * 2); c.fill();
+            c.fillStyle = 'rgba(255,252,238,0.95)';
+            c.beginPath(); c.arc(-K * 0.01, y - K * 0.01, K * 0.022, 0, Math.PI * 2); c.fill();
             break;
         }
         case 'tree': {

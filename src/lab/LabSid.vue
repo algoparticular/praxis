@@ -62,7 +62,7 @@ function learn(what) {
 // docs/mundo.md); with the first seed in the button, what to do with it
 const STORY = {
     intro: { es: 'Todo partió de una partícula.', en: 'Everything began with a particle.' },
-    seed: { es: 'Donde Sid medita, florece.', en: 'Where Sid meditates, it blooms.' },
+    seed: { es: 'Lo que se siembra en calma, florece.', en: 'What is sown in calm, blooms.' },
 };
 const STORY_SHOW = 6500;
 let storyTimer = 0, gone = false;
