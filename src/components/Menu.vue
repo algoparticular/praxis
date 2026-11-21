@@ -70,12 +70,12 @@
                 :title="$t(side === 'left' ? 'nav.sideLeft' : 'nav.sideRight')" @click="sideChanged(side)"><span></span></button>
         </div>
 
-        <div id="languageSelect">
+        <!-- the language: its two letters, the chosen one bright and the other faint -->
+        <div id="languageSelect" role="radiogroup" aria-label="Idioma / Language">
             <input type="radio" id="lang-es" value="es" v-model="$i18n.locale" @change="langChanged($i18n.locale)"/>
-            <label for="lang-es" :class="{active: $i18n.locale == 'es'}">Español</label>
-            <span>|</span>
+            <label for="lang-es" lang="es" title="Español" aria-label="Español" :class="{active: $i18n.locale == 'es'}">ES</label>
             <input type="radio" id="lang-en" value="en" v-model="$i18n.locale" @change="langChanged($i18n.locale)"/>
-            <label for="lang-en" :class="{active: $i18n.locale == 'en'}">English</label>
+            <label for="lang-en" lang="en" title="English" aria-label="English" :class="{active: $i18n.locale == 'en'}">EN</label>
         </div>
 
         <a v-if="props.hasWorld" class="world" href="/sid" :aria-label="$t('nav.lab')" :title="$t('nav.lab')" @click.prevent="navigate('/sid')"></a>
@@ -234,6 +234,11 @@
 
     #languageSelect label.active {
         color: #143246;
+    }
+
+    /* the language not chosen, faint */
+    #languageSelect label:not(.active) {
+        opacity: 0.45;
     }
 
     #languageSelect span {
