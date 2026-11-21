@@ -1592,7 +1592,7 @@ onBeforeUnmount(() => {
         <canvas ref="canvas" :style="zoomStyle" @pointermove="onMove" @pointerdown="onDown" @pointerup="onUp" @pointercancel="onUp"></canvas>
         <!-- what a place thinks as he comes near (thoughts.js), over it in the sky -->
         <Transition name="thought">
-            <p v-if="thought.on" ref="thoughtEl" class="thought" :class="{ light: teaching.light }" :style="{ color: teaching.light ? null : teaching.ink }">
+            <p v-if="thought.on" ref="thoughtEl" class="thought glass" :class="{ light: teaching.light }" :style="{ color: teaching.light ? null : teaching.ink }">
                 {{ $i18n.locale === 'en' ? thought.en : thought.es }}
             </p>
         </Transition>
@@ -1698,22 +1698,30 @@ canvas {
 .teaching-leave-active { transition: opacity 0.9s ease-in; }
 .teaching-enter-from { opacity: 0; transform: translateY(8px); }
 .teaching-leave-to { opacity: 0; }
-/* a place's thought: written by hand in the sky over it, with no card, a soft halo of the sky round its letters */
+/* a place's thought: written by hand in the sky over it, on the app's frosted glass as the teaching's card (a soft cloud
+   that breathes, its edge fading into the sky), so it reads over anything */
 .thought {
     position: absolute;
     left: 0;
     top: 0;
     margin: 0;
-    max-width: min(420px, calc(100vw - 32px));
+    max-width: min(440px, calc(100vw - 32px));
     width: max-content;
+    box-sizing: border-box;
+    padding: 24px 40px 28px;
     text-align: center;
     font-family: 'Caveat', 'Nunito', helvetica, sans-serif;
     font-size: clamp(24px, 5.6vw, 34px);
     line-height: 1.15;
     pointer-events: none;
-    text-shadow: 0 0 14px rgba(247, 248, 241, 0.95), 0 0 4px rgba(247, 248, 241, 0.9);
+    border: none;
+    background-color: rgba(247, 248, 241, 0.62);
+    box-shadow: none;
+    border-radius: 46% 54% 44% 56% / 56% 46% 54% 44%;
+    -webkit-mask-image: radial-gradient(closest-side, #000 80%, transparent 100%);
+    mask-image: radial-gradient(closest-side, #000 80%, transparent 100%);
 }
-.thought.light { color: #F7F8F1; text-shadow: 0 0 14px rgba(16, 30, 52, 0.9), 0 0 4px rgba(16, 30, 52, 0.8); }
+.thought.light { color: #F7F8F1; background-color: rgba(16, 30, 52, 0.5); }
 .thought-enter-active { transition: opacity 2.2s ease-out; }
 .thought-leave-active { transition: opacity 1.4s ease-in; }
 .thought-enter-from, .thought-leave-to { opacity: 0; }

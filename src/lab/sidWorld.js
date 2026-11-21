@@ -135,7 +135,7 @@ export const STAR_SEED = 'star', STAR_LIGHT = [252, 220, 140];
 // The marks of the story (story.js): the Algo Particular mark (its cross and its four dots, as in Tu verdad's scene, in
 // px of a mark MARK.size across), lying on the ground in every cell of the grid, away from its place (MARK.dx across and
 // MARK.dd back from the place, to one side or the other), glowing in its zone's colour; walking over one he finds it
-const MARK = { size: 340, dx: 0.32, dd: 0.28, pick: 220 };
+const MARK = { size: 200, dx: 0.32, dd: 0.28, pick: 200 };
 const MARK_STROKES = [[[-0.004, -0.42], [0.012, -0.12]], [[0.025, 0.11], [0.032, 0.39]], [[-0.435, 0.019], [-0.102, -0.009]], [[0.102, -0.031], [0.435, -0.032]]];
 const MARK_DOTS = [[-0.376, -0.362], [0.379, -0.407], [-0.329, 0.405], [0.428, 0.365]];
 // the seed's shape (seedShape.js: a seed with a particle of light inside it, until the illustrator draws it)
@@ -981,12 +981,12 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
             c.save(); c.translate(0, -up * 90); c.scale(1, 0.5 + up * 0.4);
             // (in the zone's ink by day, so it reads on its ground, and in its light by night)
             const ink = mixRgb(P.ink, P.light, night());
-            c.strokeStyle = ink; c.lineWidth = 24; c.lineCap = 'round';
+            c.strokeStyle = ink; c.lineWidth = K * 0.07; c.lineCap = 'round';
             for (const [p0, p1] of MARK_STROKES) { c.beginPath(); c.moveTo(p0[0] * K, p0[1] * K); c.lineTo(p1[0] * K, p1[1] * K); c.stroke(); }
             c.fillStyle = ink;
-            for (const [dx, dy] of MARK_DOTS) { c.beginPath(); c.arc(dx * K, dy * K, 16 + 3 * breath, 0, Math.PI * 2); c.fill(); }
+            for (const [dx, dy] of MARK_DOTS) { c.beginPath(); c.arc(dx * K, dy * K, K * (0.047 + 0.009 * breath), 0, Math.PI * 2); c.fill(); }
             c.fillStyle = 'rgba(255,252,238,0.9)';
-            c.beginPath(); c.arc(0.014 * K, -0.004 * K, 8 + 4 * breath, 0, Math.PI * 2); c.fill();
+            c.beginPath(); c.arc(0.014 * K, -0.004 * K, K * (0.024 + 0.012 * breath), 0, Math.PI * 2); c.fill();
             c.restore();
             break;
         }
