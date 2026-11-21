@@ -214,39 +214,52 @@
         outline-offset: 4px;
     }
 
-    /* the labyrinth into Sid's world: only its icon, in cream, centred under everything; touched or hovered it glows */
+    /* the labyrinth into Sid's world: only its icon, in cream, centred under everything; touched or hovered it glows.
+       The icon is a mask on ::before and the glow a filter on the link round it: a mask clips its own element's shadow */
     nav a.world {
+        position: relative;
         display: block;
         flex: 0 0 auto;
         width: 40px;
         min-width: 40px;
         height: 40px;
         margin-top: 4px;
-        background-color: #F7F8F1;
-        -webkit-mask: url('../assets/icon/Lab.svg') center / contain no-repeat;
-        mask: url('../assets/icon/Lab.svg') center / contain no-repeat;
-        filter: drop-shadow(0 0 0 rgba(247, 248, 241, 0));
+        filter: drop-shadow(0 0 0 rgba(255, 240, 200, 0));
         transition: filter 250ms ease-out, transform 250ms ease-out;
-    }
-
-    /* held down (the hidden gesture to start the world again), it lights up slowly until it asks */
-    nav a.world {
+        /* held down (the hidden gesture to start the world again) no callout, no selection, no tap highlight and not
+           the green ring every link gets on focus (style.scss): it only glows */
         -webkit-touch-callout: none;
         -webkit-user-select: none;
         user-select: none;
+        -webkit-tap-highlight-color: transparent;
+        outline: none;
     }
 
-    nav a.world.holding {
-        filter: drop-shadow(0 0 14px rgba(255, 240, 200, 1));
-        transform: scale(1.18);
-        transition: filter 3s ease-in, transform 3s ease-in;
+    nav a.world::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background-color: #F7F8F1;
+        -webkit-mask: url('../assets/icon/Lab.svg') center / contain no-repeat;
+        mask: url('../assets/icon/Lab.svg') center / contain no-repeat;
+    }
+
+    nav a.world:focus {
+        box-shadow: none;
+        outline: none;
     }
 
     nav a.world:hover,
     nav a.world:focus-visible {
         filter: drop-shadow(0 0 8px rgba(247, 248, 241, 0.9));
         transform: scale(1.06);
-        outline: none;
+    }
+
+    /* it lights up slowly until it asks */
+    nav a.world.holding {
+        filter: drop-shadow(0 0 6px rgba(255, 244, 214, 1)) drop-shadow(0 0 16px rgba(255, 236, 190, 0.9));
+        transform: scale(1.18);
+        transition: filter 3s ease-in, transform 3s ease-in;
     }
 
     a.logout {

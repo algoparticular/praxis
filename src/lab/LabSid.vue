@@ -105,9 +105,9 @@ function readFragment(i) {
             // read, its words come undone into motes of light that fly into the notebook, where it is kept
             const r = teachingEl.value?.getBoundingClientRect(), root = labEl.value?.getBoundingClientRect();
             teaching.on = false;
-            // (in the colour its words were written in: the world's ink by day, cream by night)
-            const ink = teaching.light ? '#FFF4D6' : teaching.ink;
-            if (r && root) intoNotebook({ x: r.left - root.left, y: r.top - root.top, w: r.width, h: r.height }, ink, 30);
+            // (as light, whatever the colour its words were written in: the world's dark ink by day did not read as
+            // something flying anywhere)
+            if (r && root) intoNotebook({ x: r.left - root.left, y: r.top - root.top, w: r.width, h: r.height }, '#FFF4D6', 46);
             else releaseNotebook();
         }, STORY_SHOW * 1.4);
     }, 600);
@@ -137,7 +137,9 @@ function refreshStory() {
 }
 // What goes into the notebook is seen going in (its only lesson, with no words): a fragment read comes undone into
 // motes of light, a plant of a new kind sends a spark of its colour, and they fly into the notebook's button, which takes
-// them in with a little pulse (`note.got`). The first time, the button itself appears as they arrive (`story.hold`).
+// them in, lighting up with rings of light going out of it as the seed's button calls (`note.got`). The motes are always
+// light: a hot cream core with a glow of their colour, and a few sparkle as they go. The first time, the button itself
+// appears as they arrive (`story.hold`).
 // And while something new waits in it and it has never been opened, it calls now and then, as the seed's button does
 // (NOTE_CALL s, `note.hint`), until it is opened once (memory.learned.notebook)
 const note = reactive({ got: false, hint: false });
@@ -160,16 +162,17 @@ function intoNotebook(from, light, count) {
     const arrive = () => {
         releaseNotebook(); play('pick');
         note.got = false;
-        requestAnimationFrame(() => { note.got = true; setTimeout(() => { note.got = false; }, 900); });
+        requestAnimationFrame(() => { note.got = true; setTimeout(() => { note.got = false; }, 2300); });
     };
     if (!root || still) { arrive(); return; }
     let last = 0;
     for (let n = 0; n < count; n++) {
         const x0 = from.w ? from.x + Math.random() * from.w : from.x + (Math.random() - 0.5) * 24;
         const y0 = from.h ? from.y + from.h * (0.25 + Math.random() * 0.5) : from.y + (Math.random() - 0.5) * 24;
-        const dot = document.createElement('span'), size = 2.5 + Math.random() * 3.5;
-        dot.className = 'mote';
-        Object.assign(dot.style, { width: `${size}px`, height: `${size}px`, background: colour, left: '0px', top: '0px' });
+        const dot = document.createElement('span'), size = 3.5 + Math.random() * 4.5, spark = Math.random() < 0.3;
+        dot.className = 'mote into';
+        Object.assign(dot.style, { width: `${size}px`, height: `${size}px`, left: '0px', top: '0px' });
+        dot.style.setProperty('--glow', colour);
         root.appendChild(dot);
         // (each on its own curve, up and over, a little apart in time, so they stream in as a thread of light)
         const lift = 40 + Math.random() * 90, side = (Math.random() - 0.5) * 120;
@@ -177,7 +180,9 @@ function intoNotebook(from, light, count) {
         for (let k = 0; k <= 12; k++) {
             const e = k / 12, q = 1 - e;
             const x = q * q * x0 + 2 * q * e * mid.x + e * e * to.x, y = q * q * y0 + 2 * q * e * mid.y + e * e * to.y;
-            frames.push({ transform: `translate(${x}px, ${y}px) translate(-50%, -50%) scale(${1 - 0.5 * e})`, opacity: k === 0 ? 0 : k === 12 ? 0.2 : 1 });
+            // (a few sparkle on the way: they flare and dim)
+            const flare = spark ? 1 + 0.6 * Math.max(0, Math.sin(e * Math.PI * 4)) : 1;
+            frames.push({ transform: `translate(${x}px, ${y}px) translate(-50%, -50%) scale(${(1.2 - 0.6 * e) * flare})`, opacity: k === 0 ? 0 : k === 12 ? 0.6 : 1 });
         }
         const delay = Math.random() * 500, ms = NOTE_FLY + Math.random() * 400;
         last = Math.max(last, delay + ms);
@@ -682,7 +687,7 @@ const world = createWorld({
     onSeed: (seed) => { visit?.seedPicked(); seedFound(seed); },
     // the marks of the story (story.js), while there is a fragment to read: found, the next one is written
     marks: { found: memory.marks, open: () => !firstVisit && memory.marks.length < FRAGMENTS.length },
-    firstSeed: firstVisit ? FIRST_SEED : null,
+    firstSeed: firstVisit ? { ...FIRST_SEED } : null,
     // (each mark gives a fragment still hidden, at random: the story is found out of order)
     onMark: () => {
         const left = FRAGMENTS.map((f, i) => i).filter((i) => !memory.fragments.includes(i));
@@ -2357,6 +2362,12 @@ canvas {
     pointer-events: none;
     box-shadow: 0 0 6px rgba(255, 244, 214, 0.9);
 }
+/* what flies into the notebook: a hot cream core with a glow of its colour round it */
+.lab .mote.into {
+    background: #FFFDF4;
+    box-shadow: 0 0 4px 1px #FFFDF4, 0 0 12px 4px var(--glow, #FFF4D6), 0 0 26px 8px rgba(255, 240, 200, 0.35);
+    mix-blend-mode: screen;
+}
 /* the notebook's button: as the seed's, smaller (the app's frosted glass, a little darkened, a cream line round it),
    centred over it; the notebook in cream; while something new waits to be seen it breathes a soft glow */
 .story-icon {
@@ -2400,13 +2411,22 @@ canvas {
 .story-icon:focus-visible { box-shadow: 0 0 0 4px rgba(247, 248, 241, 0.6); }
 .story-icon.fresh { animation: story-call 2.4s ease-in-out infinite alternate; }
 /* what flies into it, taken in with a little pulse; and, until it has been opened once, its call (as the seed's) */
-.story-icon.got { animation: story-got 0.8s ease-out; }
+.story-icon.got { animation: story-got 1.6s ease-out; }
+.story-icon.got span { animation: story-got-icon 1.6s ease-out; }
+.story-icon.got::before { animation: note-ring 1.1s ease-out 2; }
+.story-icon.got::after { animation: note-ring 1.1s ease-out 0.35s 2; }
 @keyframes story-got {
     0% { transform: scale(1); }
-    35% { transform: scale(1.22); box-shadow: 0 0 30px 8px rgba(255, 240, 200, 0.9); }
+    22% { transform: scale(1.28); box-shadow: 0 0 44px 14px rgba(255, 240, 200, 0.95); background-color: rgba(255, 244, 214, 0.35); }
+    60% { transform: scale(1.04); box-shadow: 0 0 26px 6px rgba(255, 240, 200, 0.6); }
     100% { transform: scale(1); }
 }
-.story-icon::before {
+@keyframes story-got-icon {
+    0%, 100% { filter: none; }
+    22% { filter: drop-shadow(0 0 8px rgba(255, 250, 230, 1)); }
+}
+.story-icon::before,
+.story-icon::after {
     content: '';
     position: absolute;
     inset: -1px;
@@ -2415,8 +2435,20 @@ canvas {
     opacity: 0;
     pointer-events: none;
 }
-.story-icon.hint { animation: lotus-call 2.2s ease-in-out 2; }
-.story-icon.hint::before { animation: lotus-ring 2.2s ease-out 2; }
+.story-icon.hint { animation: note-call 2.2s ease-in-out 2; }
+.story-icon.hint::before { animation: note-ring 2.2s ease-out 2; }
+/* (the seed's call, lotus-call and lotus-ring, again here: keyframes in the scoped style are renamed by Vue, so this
+   style cannot use them) */
+@keyframes note-call {
+    0%, 100% { transform: scale(1); box-shadow: 0 4px 24px rgba(20, 50, 70, 0.18); }
+    35% { transform: scale(1.1); box-shadow: 0 0 36px 8px rgba(255, 240, 200, 0.8); }
+    60% { transform: scale(1.02); }
+}
+@keyframes note-ring {
+    0%, 20% { transform: scale(1); opacity: 0; }
+    30% { opacity: 0.9; }
+    100% { transform: scale(1.9); opacity: 0; }
+}
 @keyframes story-call {
     from { box-shadow: 0 0 6px 0 rgba(255, 240, 200, 0.3); }
     to { box-shadow: 0 0 24px 6px rgba(255, 240, 200, 0.8); }
@@ -2596,7 +2628,7 @@ canvas {
 @media (prefers-reduced-motion: reduce) {
     .frag.fresh, .frag.locked, .herbarium li.fresh img, .herbarium li.fresh .name { animation: none; }
     .story-icon.fresh { animation: none; box-shadow: 0 0 18px 4px rgba(255, 240, 200, 0.7); }
-    .story-icon.got, .story-icon.hint, .story-icon.hint::before { animation: none; }
+    .story-icon.got, .story-icon.got span, .story-icon.got::before, .story-icon.got::after, .story-icon.hint, .story-icon.hint::before { animation: none; }
 }
 /* The app's header over his light sky: its cream icons in the ink of his line (the header is teleported into <body>,
    so this is not scoped; body.lab-page only while the lab is open) */

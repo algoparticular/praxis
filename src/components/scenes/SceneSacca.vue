@@ -33,6 +33,8 @@
     import Rulito from '../Rulito.vue';
     import art from '../../composables/saccaScene.json';
 
+    // (rulito: its rulito is born, for the card's page to write the affirmation over it)
+    const emit = defineEmits(['rulito']);
     const props = defineProps({
         card: { type: Object, default: () => ({}) },
         active: Boolean
@@ -650,7 +652,7 @@
             win.age += dt;
             win.pop = Math.max(0, win.pop - dt * 2.2);
             win.head = 1 - (1 - Math.min(1, Math.max(0, (win.age - DELAY) / GROW))) ** 1.6;
-            if (win.head >= 1 && !win.full) { win.full = true; win.fullAt = win.age; win.pop = 1; play('rulito'); heart = 1; dust?.boost(1, 0.8); }
+            if (win.head >= 1 && !win.full) { win.full = true; win.fullAt = win.age; win.pop = 1; play('rulito'); emit('rulito'); heart = 1; dust?.boost(1, 0.8); }
             if (win.full && !win.back && win.age - win.fullAt > KEEP) { win.back = true; on.fill(false); }
             if (win.back) win.tail = Math.min(1, win.tail + dt / EAT);
             const whole = Math.min(1, Math.max(0, (win.head - win.tail - 0.6) / 0.4));

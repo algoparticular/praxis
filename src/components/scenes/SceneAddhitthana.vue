@@ -26,6 +26,8 @@
     import Rulito from '../Rulito.vue';
     import art from '../../composables/addhitthanaScene.json';
 
+    // (rulito: its rulito is born, for the card's page to write the affirmation over it)
+    const emit = defineEmits(['rulito']);
     const props = defineProps({
         card: { type: Object, default: () => ({}) },
         active: Boolean
@@ -341,7 +343,7 @@
         full = true;
         pop = 1;
         wins += 1;
-        play('rulito');
+        play('rulito'); emit('rulito');
         play('converge');
         dust?.boost(1, 1);
         dust?.boost(2, 1);

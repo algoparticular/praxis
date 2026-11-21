@@ -30,6 +30,8 @@
     import boxes from '../../composables/pannaLayers.json';
     import clouds from '../../composables/pannaClouds.json';
 
+    // (rulito: its rulito is born, for the card's page to write the affirmation over it)
+    const emit = defineEmits(['rulito']);
     const props = defineProps({
         card: { type: Object, default: () => ({}) },
         active: Boolean
@@ -567,7 +569,7 @@
             threads.surge = 1;
             back?.boost(G.aura, 1.6);
             back?.boost(G.sun, 1.2);
-            play('rulito');
+            play('rulito'); emit('rulito');
         }
         if (win.full && !win.back && win.age - win.fullAt > LINGER) { win.back = true; linksOut = true; }
         if (win.back) win.tail = Math.min(win.head, win.tail + dt / EAT);

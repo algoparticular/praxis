@@ -36,6 +36,8 @@
     import { createGhostHand, gesture, HINT_AFTER } from '../../composables/useGhostHand.js';
     import Rulito from '../Rulito.vue';
 
+    // (rulito: its rulito is born, for the card's page to write the affirmation over it)
+    const emit = defineEmits(['rulito']);
     const props = defineProps({
         card: { type: Object, default: () => ({}) },
         active: Boolean
@@ -155,7 +157,7 @@
         win.pop = Math.max(0, win.pop - dt * 2.2);
         // It starts quickly and eases in as it gets there, as in Paciencia
         if (win.age > 0.4 && win.head < 1) win.head = 1 - (1 - Math.min(1, (win.age - 0.4) / GROW)) ** 1.6;
-        if (win.head >= 1 && !win.full) { win.full = true; win.fullAt = win.age; win.pop = 1; play('rulito'); }
+        if (win.head >= 1 && !win.full) { win.full = true; win.fullAt = win.age; win.pop = 1; play('rulito'); emit('rulito'); }
         if (win.full && !win.back && win.age - win.fullAt > LINGER) {
             win.back = true;
             cellField?.gather();

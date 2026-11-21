@@ -40,6 +40,8 @@
     import AURA from '../../composables/danaAura.json';
     import GIVER_AURA from '../../composables/danaGiverAura.json';
 
+    // (rulito: its rulito is born, for the card's page to write the affirmation over it)
+    const emit = defineEmits(['rulito']);
     const props = defineProps({
         card: { type: Object, default: () => ({}) },
         active: Boolean
@@ -263,7 +265,7 @@
                 play('star');
                 sceneMilestone('light_shared', { times: wins });
             },
-            full: () => { boost = 1; play('rulito'); },
+            full: () => { boost = 1; play('rulito'); emit('rulito'); },
             // The lights fade slowly (the friend keeps a little of his) and the flame goes back to its size
             fade: () => {
                 giving.state[FRIEND].goal = 0.35;

@@ -112,6 +112,7 @@ const CURLS = ['pacCurl0', 'pacCurl1', 'pacCurl2', 'pacCurl3', 'pacCurl4', 'pacC
 // stem, with its little light). A seed of light grows any card's plant. The page can say which of them (`names`): those
 // whose kind has not been planted yet, so the herbarium is filled without repeats
 const SEED_CHANCE = 0.012, SEED_PICK = 130, SEED_SPROUT = 5;     // (how near he picks it up; seconds it takes to sprout)
+const SEED_ROOM = 300;     // (how far round the first seed no place may be sat at)
 const SEED_GROWTH = { start: 0.6, step: 0.12, most: 1.4, top: 2 };
 const SEED_BACK = { near: 320, away: 900 };     // (how near counts as coming back to it, and how far as having gone away)
 const SEED_GREW = 1.6;                          // (seconds a step of growing takes)
@@ -596,6 +597,7 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
             if (clear(p) && !taken.has(id)) add({ id, kind: 'seed', x: p.x, d: p.d, card: z.card, cardId: z.id, role: 'bead', pick: rs(), phase: rs() * 10, reach: 120 });
         }
         // the first seed of all, near him on the first visit (firstSeed), of the card of the zone where it lies
+        if (firstSeed && !firstSeed.clear) clearOfPlaces(firstSeed);
         if (firstSeed && Math.floor(firstSeed.x / STRETCH) === index && Math.floor((firstSeed.d - PATCH_OFF) / PATCH) === row && !taken.has('seed:first')) {
             const z = mainZone(zonesAt(firstSeed.x, firstSeed.d));
             add({ id: 'seed:first', kind: 'seed', x: firstSeed.x, d: firstSeed.d, card: z.card, cardId: z.id, role: 'bead', pick: 0.5, phase: 2, reach: 120, beacon: true });
@@ -1502,6 +1504,20 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
 
     // The card of the place he is at (x, depth), if any: its id in src/data/cards.json
     const placeCard = (x, d) => placeAt(x, d)?.P.id ?? null;
+    // The first seed must lie away from every place, with room round it: sitting where it is picked up has to plant it,
+    // not open a card (Paciencia's boat takes some 4000 px across, round where the first place stands). So, once, it
+    // is moved nearer the front, then back towards where he starts, until it and the ground round it are clear
+    function clearOfPlaces(seed) {
+        const free = (x, d) => [[0, 0], [-SEED_ROOM, 0], [SEED_ROOM, 0], [0, -SEED_ROOM], [0, SEED_ROOM]]
+            .every(([dx, dd]) => !placeAt(x + dx, d + dd));
+        const x0 = seed.x, d0 = seed.d;
+        seed.clear = true;
+        for (let back = 0; back <= 1200; back += 150) {
+            for (let front = 0; front <= 900; front += 60) {
+                if (free(x0 - back, d0 - front)) { seed.x = x0 - back; seed.d = d0 - front; return; }
+            }
+        }
+    }
     // The place nearest (x, depth) within `range` of its middle (the floor's depth counting a little more): { id, x, d,
     // reach } or null (for the page to write its thought over it as he comes near)
     function placeNear(x, d, range) {

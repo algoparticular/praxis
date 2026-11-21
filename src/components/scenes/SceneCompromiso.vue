@@ -33,6 +33,8 @@
     import Rulito from '../Rulito.vue';
     import art from '../../composables/compromisoScene.json';
 
+    // (rulito: its rulito is born, for the card's page to write the affirmation over it)
+    const emit = defineEmits(['rulito']);
     const props = defineProps({
         card: { type: Object, default: () => ({}) },
         active: Boolean
@@ -153,7 +155,7 @@
         grow: 4.6, linger: 3.2, eat: 3,
         onNote: (step) => play('kindle', { step }),
         onComplete: (times) => {
-            play('rulito');
+            play('rulito'); emit('rulito');
             play('converge');
             dust?.boost(2, 1.4);
             dust?.boost(1, 1);

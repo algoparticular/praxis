@@ -30,6 +30,8 @@
     import dustCloud from '../../composables/creatividadDust.json';
     import scene from '../../composables/creatividadScene.json';
 
+    // (rulito: its rulito is born, for the card's page to write the affirmation over it)
+    const emit = defineEmits(['rulito']);
     const props = defineProps({
         card: { type: Object, default: () => ({}) },
         active: Boolean
@@ -318,7 +320,7 @@
             win.age += dt;
             win.pop = Math.max(0, win.pop - dt * 2.2);
             win.head = 1 - (1 - Math.min(1, Math.max(0, (win.age - DELAY) / GROW))) ** 1.6;
-            if (win.head >= 1 && !win.full) { win.full = true; win.pop = 1; play('rulito'); }
+            if (win.head >= 1 && !win.full) { win.full = true; win.pop = 1; play('rulito'); emit('rulito'); }
             if (win.ending && !count()) win.tail = Math.min(1, win.tail + dt / EAT);
             const whole = Math.min(1, Math.max(0, (win.head - win.tail - 0.6) / 0.4));
             named = Math.max(win.pop, 0.8 * whole * whole * (3 - 2 * whole));

@@ -57,6 +57,20 @@
     //The affirmation is what makes a card a full reading; special cards only carry their description
     const hasAffirmation = computed(() => card.value.affirmation_es != null || card.value.affirmation_en != null);
 
+    // When the scene's rulito is born, its affirmation is written by hand over the stage, where the name was, on a cloud
+    // of frosted cream, as Sid's world writes it (`teaching` in LabSid.vue); the name steps aside meanwhile and comes
+    // back after AFFIRMATION_SHOW ms. Told on to whoever holds the card too (the world, when it opened it)
+    const AFFIRMATION_SHOW = 10000;
+    const affirmation = ref(false);
+    let affirmationTimer = 0;
+    const rulitoBorn = () => {
+        emit('rulito');
+        if (!String(card.value['affirmation_es'] ?? '').trim()) return;
+        affirmation.value = true;
+        clearTimeout(affirmationTimer);
+        affirmationTimer = setTimeout(() => { affirmation.value = false; }, AFFIRMATION_SHOW);
+    };
+
     const paragraphs = (text) => String(text ?? '').split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
 
     const fadeCue = () => {
@@ -117,6 +131,7 @@
         setCurrentVisit(null);
         stopInk();
         document.body.classList.remove('card-ink');
+        clearTimeout(affirmationTimer);
     });
 </script>
 
@@ -124,11 +139,15 @@
 	<main class="cardWrapper" :class="{ entering }" ref="root">
         <section class="stage" ref="stage" @contextmenu.prevent @selectstart.prevent @pointerdown.capture="onStageDown" @click.capture="onStageClick">
             <div class="sceneHost" :class="{ ready }">
-                <component :is="scene" :card="card" :active="ready" @rulito="emit('rulito')" />
+                <component :is="scene" :card="card" :active="ready" @rulito="rulitoBorn" />
             </div>
 
-            <h1 class="title" v-if="String(card['name_' + $i18n.locale] ?? '').trim()">{{ String(card['name_' + $i18n.locale] ?? '').trim() }}</h1>
+            <h1 class="title" :class="{ aside: affirmation }" v-if="String(card['name_' + $i18n.locale] ?? '').trim()">{{ String(card['name_' + $i18n.locale] ?? '').trim() }}</h1>
 
+
+            <Transition name="affirmation">
+                <p v-if="affirmation" class="affirmation glass" aria-live="polite">{{ String(card['affirmation_' + $i18n.locale] ?? '').trim() }}</p>
+            </Transition>
 
             <div class="cue" ref="cue" aria-hidden="true">
                 <svg width="28" height="28" viewBox="0 0 28 28" fill="none"><path d="M6 10.5L14 18.5L22 10.5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -229,6 +248,49 @@
            the glow ended in a hard-edged rectangle round the name; its light is in the colour and the shadows) */
     }
 
+    .stage .title.aside {
+        opacity: 0;
+        transition: opacity 0.6s ease-in;
+    }
+
+    /* The affirmation, once the rulito is born: by hand, in the navy, on the app's frosted glass as a soft cloud (an
+       uneven round shape that breathes slowly and whose edge fades into the scene), as in Sid's world */
+    .affirmation {
+        position: absolute;
+        left: 16px;
+        right: 16px;
+        top: calc(max(84px, 10.5svh) - 18px);
+        margin: 0 auto;
+        width: fit-content;
+        max-width: min(520px, calc(100% - 24px));
+        box-sizing: border-box;
+        padding: 26px 44px 30px;
+        text-align: center;
+        font-family: 'Caveat', 'Nunito', helvetica, sans-serif;
+        font-size: clamp(28px, 6.6vw, 42px);
+        line-height: 1.15;
+        color: #143246;
+        border: none;
+        background-color: rgba(247, 248, 241, 0.62);
+        box-shadow: none;
+        border-radius: 46% 54% 44% 56% / 56% 46% 54% 44%;
+        -webkit-mask-image: radial-gradient(closest-side, #000 80%, transparent 100%);
+        mask-image: radial-gradient(closest-side, #000 80%, transparent 100%);
+        pointer-events: none;
+        animation: affirmation-breath 9s ease-in-out infinite alternate;
+    }
+    @keyframes affirmation-breath {
+        from { border-radius: 46% 54% 44% 56% / 56% 46% 54% 44%; }
+        to { border-radius: 54% 46% 56% 44% / 46% 56% 44% 54%; }
+    }
+    .affirmation-enter-active { transition: opacity 1.6s ease-out 0.4s, transform 1.6s ease-out 0.4s; }
+    .affirmation-leave-active { transition: opacity 0.9s ease-in; }
+    .affirmation-enter-from { opacity: 0; transform: translateY(8px); }
+    .affirmation-leave-to { opacity: 0; }
+    @media (prefers-reduced-motion: reduce) {
+        .affirmation { animation: none; }
+        .affirmation-enter-from { transform: none; }
+    }
 
     /* At the end of the reading: the card's own colours, turned around */
     .shareEnd {
