@@ -238,6 +238,7 @@ function starFell() {
 // motion); `burst`: landing, the seed opens in a little burst of particles of its light (everything started from a
 // particle), and only then the plant sprouts
 const labEl = ref(null), lotusEl = ref(null);
+let pageTop = '';                                          // (the colour last given to the page's background)
 const still = typeof window !== 'undefined' && (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false);
 function fly(from, to, rgb, done, ms = 900, burst = false) {
     const root = labEl.value;
@@ -1320,6 +1321,9 @@ function draw() {
     nightSky.value.style.opacity = dark.toFixed(3);
     if (nightSky.value.style.backgroundColor !== under) nightSky.value.style.backgroundColor = under;
     document.body.classList.toggle('lab-night', dark > 0.55);
+    // (the page under the drawing in the sky's colour at the top: the iPhone's status bar takes it, cream otherwise)
+    const top = world.topColour();
+    if (top !== pageTop) { pageTop = top; labEl.value.style.backgroundColor = top; document.body.style.backgroundColor = top; }
     teaching.light = dark > 0.55;
     if (teaching.ink !== INK) teaching.ink = INK;
     c.fillStyle = world.ground();
@@ -1567,6 +1571,7 @@ onBeforeUnmount(() => {
     visit?.cardClosed(portal.won);
     visit?.finish();
     document.body.classList.remove('lab-page', 'lab-night', 'lab-portal');
+    document.body.style.backgroundColor = '';
     clearTimeout(portalTimer);
     setCardChord(null);
     cancelAnimationFrame(raf);
@@ -1586,6 +1591,7 @@ onBeforeUnmount(() => {
     <div class="labRoot">
     <!-- (no menu on a long press: a finger held down only guides him) -->
     <div ref="labEl" class="lab" @contextmenu.prevent>
+        <div class="page"></div>
         <div ref="nightSky" class="night-sky" :style="zoomStyle"><canvas ref="starCanvas"></canvas></div>
         <!-- the rulito draws itself on its own canvas, which this scene lays over his head -->
         <Rulito ref="rulito" class="offstage" :color="rulitoColour" />
@@ -1655,6 +1661,13 @@ canvas {
     height: 100%;
     display: block;
     touch-action: none;
+}
+/* The page's cream under everything: the .lab itself takes the sky's colour at the top for the iPhone's status bar */
+.page {
+    position: absolute;
+    inset: 0;
+    background: #F7F8F1;
+    pointer-events: none;
 }
 /* The cards' starry night (useStarField.js) behind the drawing, in Ciclos's teal: it shows as the yellow clears */
 .offstage {
