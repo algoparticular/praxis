@@ -37,7 +37,16 @@ export function loadMemory() {
     }
 }
 
+// Starting the world again (a button in the menu, inside the world, while it is being tried: Menu.vue): what it keeps is
+// forgotten and nothing is written again until the page is loaded anew, so the next visit is the first
+let wiped = false;
+export function resetMemory() {
+    wiped = true;
+    try { localStorage.removeItem(KEY); } catch { /* (nothing was kept) */ }
+}
+
 export function saveMemory(memory) {
+    if (wiped) return;
     if (memory.planted.length > MAX_PLANTED) memory.planted.splice(0, memory.planted.length - MAX_PLANTED);
     try { localStorage.setItem(KEY, JSON.stringify(memory)); } catch { /* (nothing kept: the world works the same) */ }
 }

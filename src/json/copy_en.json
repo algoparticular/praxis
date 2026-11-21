@@ -39,7 +39,8 @@
             "effects": "Effects",
             "side": "Buttons",
             "sideLeft": "Left",
-            "sideRight": "Right"
+            "sideRight": "Right",
+            "worldResetAsk": "Start Sid's world again? What you sowed, the story you found and your seeds are forgotten, as if it were the first time."
         },
         "about": {
             "oracleAuthor": "Belén Brito",
