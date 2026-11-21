@@ -33,3 +33,7 @@ export const FRAGMENTS = [
     { es: 'No tengas miedo del camino. Ten miedo de no caminar.',
         en: 'Do not fear the path. Fear not walking.' },
 ];
+
+// How the notebook's page of Pensamientos lays them out: in paragraphs, by what they speak of (the dream and what
+// separates us; the particle, the atoms and Love; humility, made of the same; the void; the rulito, beauty, the path)
+export const PARAGRAPHS = [[0, 1], [2, 3, 4], [5, 6], [7, 8], [9, 10, 11]];

@@ -12,7 +12,7 @@ import { createStarField, CONSTELLATION_TIME } from '../composables/useStarField
 import { worldSide } from '../composables/useWorldSide.js';
 import { WORLD_RESUME } from '../composables/worldResume.js';
 import { THOUGHTS } from './thoughts.js';
-import { FRAGMENTS } from './story.js';
+import { FRAGMENTS, PARAGRAPHS } from './story.js';
 import { HERBARIUM, kindOf } from './herbarium.js';
 import { CONSTELLATIONS } from './constellations.js';
 import Rulito from '../components/Rulito.vue';
@@ -116,7 +116,7 @@ function readFragment(i) {
 // Sid's notebook, written in the sky (its icon, a notebook, on a small round button over the seed's, shows once there is something in it and
 // glows while there is something new to see; it opens on the page that has it; a touch anywhere, or Escape, closes it;
 // the header's icons go cream over it, `body.lab-story`). Two pages:
-// - Pensamientos: the fragments of the story found, in order, as one paragraph, those still hidden as faint stars the
+// - Pensamientos: the fragments of the story found, in order, in paragraphs by theme (PARAGRAPHS in story.js), those still hidden as faint stars the
 //   length of their words; those found since it was last seen (memory.storySeen) are painted in, one after another, in
 //   the order they were found (each mark gives one still hidden, at random);
 // - Herbario: every plant a seed can grow into (herbarium.js) as a dark silhouette, and in its colours with its name
@@ -1969,10 +1969,10 @@ onBeforeUnmount(() => {
                     <button role="tab" :aria-selected="story.tab === 'herbarium'" :class="{ on: story.tab === 'herbarium' }" @click="story.dir = 'from-right'; showTab('herbarium')">{{ $i18n.locale === 'en' ? 'Herbarium' : 'Herbario' }}</button>
                 </div>
                 <div v-if="story.tab === 'thoughts'" class="story-card" :class="story.dir">
-                    <p class="story-text">
-                        <template v-for="(f, i) in FRAGMENTS" :key="i">
+                    <p v-for="(para, n) in PARAGRAPHS" :key="n" class="story-text">
+                        <template v-for="i in para" :key="i">
                             <span class="frag" :class="{ locked: !story.have.has(i), fresh: story.order.has(i) }"
-                                :style="{ animationDelay: `${400 + (story.order.get(i) ?? 0) * 1300}ms` }" :aria-hidden="!story.have.has(i)">{{ $i18n.locale === 'en' ? f.en : f.es }}</span>{{ ' ' }}
+                                :style="{ animationDelay: `${400 + (story.order.get(i) ?? 0) * 1300}ms` }" :aria-hidden="!story.have.has(i)">{{ $i18n.locale === 'en' ? FRAGMENTS[i].en : FRAGMENTS[i].es }}</span>{{ ' ' }}
                         </template>
                     </p>
                     <!-- how many have been found: one dot each, as the world's dots -->
@@ -2465,7 +2465,7 @@ canvas {
 @keyframes page-from-right { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: none; } }
 @keyframes page-from-left { from { opacity: 0; transform: translateX(-40px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .story-card.from-right, .story-card.from-left { animation: none; } }
-/* the story's page: over the dimmed world, a card of frosted cream with the story as one paragraph, written by hand;
+/* the story's page: over the dimmed world, a card of frosted cream with the story in paragraphs, written by hand;
    what is still hidden, dark bars the length of its words; what was found since it was last seen is painted in */
 .story {
     position: absolute;
@@ -2521,7 +2521,7 @@ canvas {
 .story-tabs button:focus { outline: none; }
 .story-tabs button:focus-visible { text-shadow: 0 0 10px rgba(255, 111, 97, 0.9); }
 .story-text {
-    margin: 0;
+    margin: 0 0 0.7em;
     color: #F7F8F1;
     font-family: Caveat, cursive;
     font-size: 23px;
