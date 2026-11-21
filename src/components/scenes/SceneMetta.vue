@@ -59,7 +59,7 @@
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     // ---- Layout: the illustration is a 2160 square resting on the bottom of the screen. On a phone upright it is as big
-    // as the beings round the nest allow across (the outer ones may be cut a little); on a wide screen the hill goes on
+    // as the beings round the nest allow across (all of them whole, the outer ones too, so they can be touched); on a wide screen the hill goes on
     // past the frame on both sides
     const SIZE = art.size;
     const B = art.boxes;
@@ -69,7 +69,7 @@
     const sx = (x) => F.x + x * k();
     const sy = (y) => F.y + y * k();
     const rectOf = ([left, top, w, h]) => ({ left: sx(left), top: sy(top), w: w * k(), h: h * k() });
-    const SPAN = 1720;                      // art px across that must be seen on a phone (centred)
+    const SPAN = 2040;                      // art px across that must be seen on a phone (centred): every being round the nest, whole
     const DROP = 0.08;                      // how much of the frame goes under the bottom of a wide screen
     const layout = (w, h) => {
         W = w; H = h;

@@ -2,7 +2,7 @@
 // a particle of light floating low over the ground (sidWorld.js, `mark`). Walking under one, the next fragment
 // of the story is written by hand on the teaching's card (LabSid.vue), in order, however the marks are found; each mark
 // is found once ever (memory.marks, on the phone) and once every fragment is read the marks are no longer there.
-// It goes on from the words that open the world ("Todo partió de una partícula.", STORY in LabSid.vue).
+// Eighteen in all. It goes on from the words that open the world ("Todo partió de una partícula.", STORY in LabSid.vue).
 //
 // The text is Algo Particular's own (its notes on how the Universe is born, why a particle, the rulito, the void,
 // letting go), cut short to float over the world, in order: from the dream to walking. The English is a translation of
@@ -32,4 +32,23 @@ export const FRAGMENTS = [
         en: 'Finding beauty in what is simple is giving oneself more and more moments.' },
     { es: 'No tengas miedo del camino. Ten miedo de no caminar.',
         en: 'Do not fear the path. Fear not walking.' },
+    // Six more, from Algo Particular's own words in the app (its hello, its old intro, its about and its 404), added at
+    // the end so the ones kept on the phones keep their numbers; where they are read is PARAGRAPHS
+    { es: '¿En qué frecuencia estoy vibrando?',
+        en: 'What frequency am I vibrating at?' },
+    { es: 'Cada uno de nuestros átomos, y los de todo lo que existe, vienen navegando el Universo desde el principio de los tiempos.',
+        en: 'Each of our atoms, and those of everything there is, have been sailing the Universe since the beginning of time.' },
+    { es: 'Esas partículas cargan con miles de historias, de reflexiones y aprendizajes.',
+        en: 'Those particles carry thousands of stories, of reflections and lessons.' },
+    { es: 'Como es arriba, es abajo: todos somos iguales, todos somos uno.',
+        en: 'As above, so below: we are all the same, we are all one.' },
+    { es: 'Una partícula que, al volverse consciente de sí, aprende a navegar el Universo libremente.',
+        en: 'A particle that, upon becoming aware of itself, learns to sail the Universe freely.' },
+    { es: 'Hay una brújula interna que nos invita a un camino con corazón.',
+        en: 'There is an inner compass that invites us to a path with heart.' },
 ];
+
+// How the notebook's page of Pensamientos lays them out: in paragraphs of two or three, by what they speak of (the dream
+// and what separates us; the particle; the atoms and Love; humility, made of the same; the void; the rulito and beauty;
+// the path)
+export const PARAGRAPHS = [[0, 1, 12], [2, 13, 14], [3, 4], [5, 15, 6], [7, 8], [16, 9, 10], [17, 11]];
