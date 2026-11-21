@@ -101,12 +101,16 @@ const CURLS = ['pacCurl0', 'pacCurl1', 'pacCurl2', 'pacCurl3', 'pacCurl4', 'pacC
 // Seeds: now and then one lies on the ground (SEED_CHANCE of the stretches), of the card of the zone where it lies; he
 // picks it up as he walks over it, and sitting in lotus away from the places he plants one in front of him. What it
 // grows into is a plant of its card's scene (SEED_PLANTS: the name, its size grown, how it sways), in its card's own
-// colours wherever it is planted; it grows a little on every visit (SEED_GROWTH, by how many visits ago it was planted).
+// colours wherever it is planted; it grows a step each time he comes back to it after going away (SEED_GROWTH: how big
+// it starts, each step, and the most it grows; the steps are kept on the phone with it, `steps`).
 // Seeds are few on the ground (most are won: the page gives the seed of a place's card when its rulito is born, and
 // now and then a spore of light flies by on the wind, SPORE_EVERY, which he catches walking under it, SPORE_PICK).
 // A card with no plant of its own (Transformación: its tree is its place, not a plant to sow) grows any other card's
 const SEED_CHANCE = 0.012, SEED_PICK = 130, SEED_SPROUT = 5;     // (how near he picks it up; seconds it takes to sprout)
-const SEED_GROWTH = [0.6, 0.8, 1];
+const SEED_GROWTH = { start: 0.6, step: 0.12, most: 1.4 };
+const SEED_BACK = { near: 320, away: 900 };     // (how near counts as coming back to it, and how far as having gone away)
+const SEED_GREW = 1.6;                          // (seconds a step of growing takes)
+const grownOf = (steps) => Math.min(SEED_GROWTH.most, SEED_GROWTH.start + SEED_GROWTH.step * steps);
 const SPORE_FIRST = 14, SPORE_EVERY = [35, 60], SPORE_PICK = 210, SPORE_SPEED = 120;   // (s to the first, s between them, px)
 const SEED_SIZE = 2.6;
 // A seed of light: the one a shooting star leaves at his feet while he meditates by night (LabSid.vue). It is of no card
@@ -170,7 +174,8 @@ export const CICLOS = {
 // Each has its card's colours: its ink (also Sid's line) and its white (Sid's body), its sky by day and by night (the
 // night is the cards' starry sky over it), its ground and the streaks and marks on it by day and by night, its sun,
 // the colours things take, and its own pieces (cut out of its scene's layers, shown in its own colours once coloured).
-// Celebración is a night clearing: there it is always night (dark). Between two zones everything blends over BLEND.
+// (A zone can be always night, `dark`; none is now: Celebración, a night clearing in its card, has its day too, in the
+// card's own light colours.) Between two zones everything blends over BLEND.
 // (The colours were read off each card.)
 const ZONES = [
     { card: 'ciclos', id: 15, ...CICLOS, roles: { plants: [1, 4, 1, 0], beads: [2, 5, 3, 0], stones: [4, 3, 5, 0] }, own: [{ names: ['fan0', 'fan1', 'fan2', 'fan3'], weight: 3, sway: 0.35 }], grass: true },
@@ -237,9 +242,11 @@ const ZONES = [
     },
     {
         // (its plants dark, its lavender and its blue, as the card draws them over its light blue ground)
+        // (a night card: by day its sky is the pale mint of its stones and its ground the light blue of its clearing,
+        // with the cream of its beings in its streaks; by night its navy sky over the same light blue, as in the card)
         roles: { plants: [5, 4, 5], beads: [2, 1, 0], stones: [5, 3, 0] },
-        card: 'celebracion', id: 14, ink: '#48486C', white: '#D8F0FC', sky: '#2460A8', night: '#2460A8', sun: '#FCE484', dark: 1,
-        groundDay: '#6CB4E4', groundNight: '#6CB4E4', detailDay: '#D8F0FC', detailNight: '#D8F0FC',
+        card: 'celebracion', id: 14, ink: '#48486C', white: '#D8F0FC', sky: '#C1DBD8', night: '#2460A8', sun: '#FCE484',
+        groundDay: '#69B8E2', groundNight: '#6CB4E4', detailDay: '#D8F0FC', detailNight: '#D8F0FC',
         colours: [
             { light: '#F09CA8', ink: '#B05A68' }, { light: '#E478A8', ink: '#A0406C' }, { light: '#FCE484', ink: '#A8901E' },
             { light: '#D8F0FC', ink: '#7CA8C8' }, { light: '#6CB4E4', ink: '#2E78A8' }, { light: '#9C9CD0', ink: '#48486C' },
@@ -387,7 +394,7 @@ const PART_COLOUR = { cap: 2, stem: null };   // the mushrooms of the tree: thei
 const ROLES = { plant: 'plants', bead: 'beads', stone: 'stones' };
 const mixRgb = (a, b, t) => `rgb(${a.map((v, i) => Math.round(v + (b[i] - v) * t)).join(',')})`;
 
-export function createWorld({ clouds = null, moon = null, planted = [], visit = 0, onSeed = null, marks = null, onMark = null }) {
+export function createWorld({ clouds = null, moon = null, planted = [], visit = 0, onSeed = null, onGrow = null, marks = null, onMark = null }) {
     // (marks: { found: [keys], open: () => whether there is still a fragment to read }: the marks of the story, story.js)
     zoneOrder = shuffled(ZONES);                // (a new map of the worlds on every visit)
     // The colours on the screen now: those of the zone where the camera is (blended between two), set as the sky is
@@ -414,6 +421,10 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
     const taken = new Set();                // the seeds he has picked up on this visit (they stay picked)
     let spore = null, sporeIn = SPORE_FIRST, sporeCount = 0;   // the spore of light flying by now, and when the next comes
     const garden = [...planted];            // what he has planted (remembered by the page, worldMemory.js)
+    // (kept before plants grew by coming back to them, they grew by visits: as big as they were then)
+    for (const g of garden) g.steps ??= [0, 2, 3][Math.min(2, Math.max(0, visit - (g.visit ?? visit)))];
+    // whether he is by each plant now (it grows when he comes back to it, not while he stays) and how it is growing
+    const by = new Map(), growing = new Map();
     let time = 0;
 
     // ---- making a stretch ----
@@ -575,7 +586,7 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
         }
         return out;
     }
-    // It is one of its card's plants, in its card's own colours from the start, as big as the visits since it was planted
+    // It is one of its card's plants, in its card's own colours from the start, as big as the times he came back to it
     // say (and, planted now, sprouting out of the ground)
     function plantedItem(g, x, d) {
         const id = `plant:${g.key}:${Math.round(x)},${Math.round(d)}`;
@@ -583,7 +594,7 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
         // (Transformación's seeds once grew its tree, small: those kept on the phone come up as another card's plant)
         if (g.name === 'trTree') [g.name, g.scale, g.sway] = ANY_PLANT[Math.floor((g.pick ?? 0.5) * ANY_PLANT.length)];
         return { id, kind: 'piece', name: g.name, x, d, scale: g.scale, flip: g.flip, sway: g.sway, role: 'plant', pick: g.pick ?? 0.5,
-            star: g.card === STAR_SEED, planted: { grown: SEED_GROWTH[Math.min(SEED_GROWTH.length - 1, Math.max(0, visit - g.visit))], now: g.visit === visit ? g.at : null } };
+            star: g.card === STAR_SEED, planted: { g, now: g.visit === visit && g.at ? g.at : null } };
     }
     // Planting a seed of a card at (x, d): what to remember of it (and it starts to sprout there now)
     function plant(card, x, d) {
@@ -592,14 +603,15 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
         const i = Math.floor((x - ZONE_START) / ZONE), j = Math.floor((d - D_START) / ZONE_D);
         const g = {
             key: `${Date.now().toString(36)}${Math.floor(Math.random() * 1296).toString(36)}`, card, name, scale: scale * (0.9 + Math.random() * 0.2),
-            flip: Math.random() < 0.5 ? -1 : 1, sway, pick: Math.random(), visit, at: performance.now(),
+            flip: Math.random() < 0.5 ? -1 : 1, sway, pick: Math.random(), visit, at: performance.now(), steps: 0,
             zone: zoneOfCell(i, j).card, j: mod(j, n), dx: x - (ZONE_START + ZONE * i), dd: d - (D_START + ZONE_D * j),
         };
         garden.push(g);
+        by.set(g.key, true);                // (he is by it: it grows when he comes back)
         // (its stretch may already be made: it goes into it now; the rest are made with it)
         const si = Math.floor(x / STRETCH), sj = Math.floor((d + 180) / PATCH), made = stretches.get(`${si},${sj}`);
         if (made) made.items.push(plantedItem(g, x, d));
-        return { ...g, at: 0 };
+        return g;
     }
     const stretch = (i, j) => { const key = `${i},${j}`; if (!stretches.has(key)) stretches.set(key, { i, items: make(i, j) }); return stretches.get(key).items; };
     // the patches over a stretch of floor: across, from x0 to x1, and in depth, from d0 to d1
@@ -655,6 +667,7 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
         flySpore(dt, sid, pace);
         // the place he meditates at answers him (its glow grows while he sits there, and fades when he gets up)
         const at = sid.sitting ? placeAt(sid.x, sid.d) : null;
+        const plantsNear = new Map();       // (how near he is to each plant: its nearest copy in the endless world)
         for (const { i, items } of stretches.values()) {
             if (Math.abs(i * STRETCH - sid.x) > 3000) {
                 // (far from him, the characters and the places go back to ink, still, ready for the next time he comes)
@@ -681,6 +694,7 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
             }
             for (const item of items) {
                 const dx = item.x - sid.x, dd = (item.d - sid.d) * 1.6, dist = Math.hypot(dx, dd);
+                if (item.planted) { const k = item.planted.g.key; plantsNear.set(k, Math.min(plantsNear.get(k) ?? Infinity, dist)); }
                 // a seed he walks over: he picks it up (it rises and goes, and the page counts it)
                 if (item.kind === 'seed' && !taken.has(item.id) && !sid.sitting && dist < SEED_PICK) {
                     taken.add(item.id); lifeOf(item).up = 0;
@@ -707,6 +721,18 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
                     const l = lifeOf(item), push = Math.abs(dd) < 50 && Math.abs(dx) < 70 ? Math.sign(dx || 1) * 0.8 * (1 - Math.abs(dx) / 70) : 0;
                     l.bend += (push - l.bend) * Math.min(1, dt * (push ? 10 : 3));
                 }
+            }
+        }
+        // what he planted grows a step each time he comes back to it, once he has gone away from it (the page keeps it)
+        for (const g of garden) {
+            const dist = plantsNear.get(g.key) ?? Infinity;
+            if (dist > SEED_BACK.away) by.set(g.key, false);
+            else if (dist < SEED_BACK.near && !by.get(g.key)) {
+                by.set(g.key, true);
+                if (grownOf(g.steps + 1) <= grownOf(g.steps)) continue;     // (grown all it grows)
+                growing.set(g.key, { from: grownOf(g.steps), at: performance.now() });
+                g.steps += 1;
+                onGrow?.(g);
             }
         }
     }
@@ -796,11 +822,35 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
         case 'piece': {
             // one of her pieces, standing on its foot (the bottom of its box), swaying if it is a plant
             // (what he planted: as big as it has grown, and planted now, sprouting out of the ground with a little light)
+            // (coming back to it, it grows a step: up softly, a little past and back, with a light at its foot)
             let grow = 1;
             if (item.planted) {
-                const pl = item.planted, u = pl.now == null ? 1 : Math.min(1, (performance.now() - pl.now) / 1000 / SEED_SPROUT);
-                grow = pl.grown * (u >= 1 ? 1 : 1 - (1 - u) ** 3 * Math.cos(u * 9));
-                if (u < 1) halo(c, 0, -20, 160 * (1 - u * 0.5), [255, 244, 200], 0.55 * (1 - u));
+                const pl = item.planted, now = performance.now(), u = pl.now == null ? 1 : Math.min(1, (now - pl.now) / 1000 / SEED_SPROUT);
+                let grown = grownOf(pl.g.steps);
+                const step = growing.get(pl.g.key);
+                if (step) {
+                    const v = Math.min(1, (now - step.at) / 1000 / SEED_GREW);
+                    if (v >= 1) growing.delete(pl.g.key);
+                    grown = step.from + (grown - step.from) * (1 - (1 - v) ** 3 * Math.cos(v * 7));
+                    halo(c, 0, -30, 190, [255, 244, 200], 0.5 * Math.sin(Math.PI * v));
+                }
+                grow = grown * (u >= 1 ? 1 : 1 - (1 - u) ** 3 * Math.cos(u * 9));
+                if (u < 1) {
+                    // born out of the ground: the earth opens round its foot and crumbs of it are thrown up and fall back
+                    halo(c, 0, -20, 160 * (1 - u * 0.5), [255, 244, 200], 0.55 * (1 - u));
+                    const open = Math.sin(Math.PI * Math.min(1, u * 2.2));
+                    c.save(); c.fillStyle = line; c.globalAlpha *= 0.35 * open;
+                    c.beginPath(); c.ellipse(0, 0, 70 * open, 12 * open, 0, 0, Math.PI * 2); c.fill();
+                    c.restore();
+                    c.fillStyle = line;
+                    const t = Math.min(1, u * 2.5);
+                    if (t < 1) for (let n = 0; n < 9; n++) {
+                        const ang = -Math.PI * (0.15 + 0.7 * ((n * 0.618) % 1)), sp = 160 + 90 * ((n * 0.37) % 1);
+                        const px = Math.cos(ang) * sp * t, py = Math.sin(ang) * sp * t + 380 * t * t;
+                        if (py > 4) continue;
+                        c.beginPath(); c.arc(px, py, 6 * (1 - t * 0.5), 0, Math.PI * 2); c.fill();
+                    }
+                }
                 if (grow <= 0.01) break;
             }
             const box = boxOf(item.name), k = item.scale * grow;
@@ -1242,7 +1292,7 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
     }
 
     // How much light there is: 1 all day, 0 all night, a soft dusk and dawn between
-    // (where it is always night, Celebración's clearing, there is no day)
+    // (where it is always night, a zone with `dark`, there is no day)
     const light = () => { const v = 0.5 + 2.8 * Math.sin(clock * Math.PI * 2); return Math.max(0, Math.min(1, v)) * (1 - screen.dark); };   // (a short dusk)
     const lerp = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t);
     const detailRgb = () => lerp(screen.detailNight, screen.detailDay, light());
@@ -1269,7 +1319,7 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
             for (const [x, y, r] of m.dots) { c.beginPath(); c.arc(p.x + (x - m.x) * scale, p.y + (y - m.y) * scale, r * scale, 0, Math.PI * 2); c.fill(); }
             c.globalAlpha = 1;
         };
-        // (where it is always night, Celebración's clearing, the moon takes the sun's way across the sky too)
+        // (where it is always night, a zone with `dark`, the moon takes the sun's way across the sky too)
         if (sunT != null) {
             if (screen.dark < 0.99) { c.globalAlpha = 1 - screen.dark; drawSun(c, along(sunT, ciclos.sun.r * scale * 1.6), scale); c.globalAlpha = 1; }
             drawMoon(sunT, screen.dark);

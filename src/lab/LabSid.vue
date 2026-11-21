@@ -13,7 +13,7 @@ import { THOUGHTS } from './thoughts.js';
 import { FRAGMENTS } from './story.js';
 import { W as RUL_W, H as RUL_H, LINE_AT, LOOP_AT } from '../data/rulitoShape.js';
 import Rulito from '../components/Rulito.vue';
-import { play, setCardChord } from '../composables/useSound.js';
+import { play, setCardChord, vibrate } from '../composables/useSound.js';
 import { chordFor } from '../data/cardChords.js';
 import { getCard } from '../data/cards.js';
 import { loadMemory, saveMemory } from './worldMemory.js';
@@ -22,7 +22,7 @@ import { hasWebGL } from '../composables/useLayerStage.js';
 import { seedSvg } from './seedShape.js';
 import { startWorldVisit } from '../analytics.js';
 
-const ui = reactive({ bones: false, sitting: false, touch: false, hint: false, seeds: 0, seedPop: 0, choose: false, guide: null });
+const ui = reactive({ bones: false, sitting: false, touch: false, hint: false, seeds: 0, seedPop: 0, choose: false, peek: false, guide: null, press: false, pop: 0, hover: null });
 
 // The hints, with no words (as the ghost hand in the scenes): the seed button calls (it swells and glows and rings of
 // light go out of it, twice), and what the person has done once (memory.learned) is never hinted again:
@@ -131,22 +131,36 @@ function placeThought() {
     el.style.transform = `translate(${(x - half).toFixed(1)}px, ${y.toFixed(1)}px)`;
 }
 
-// A meditation, for real, if one wants it: a long press on the seed (or M) shows three lights, 1, 3 and 5 minutes; one
-// of them sits him in lotus and a bowl sounds; a ring of light round him grows as one breathes in (BREATH_IN s) and
-// comes back as one breathes out (BREATH_OUT s), and he breathes with it; round the seed the time goes by as a line of
-// light that closes; at the end the bowl again, and he stays sitting. Getting up ends it, with no bowl. While it lasts
-// a place's card does not open (its rulito is born there instead). It is offered once, wordless, to whoever sits a
-// while without it (GUIDE_PEEK: the three lights come out of the seed for a moment), until one has been chosen
+// A meditation, for real, if one wants it: a long press on the seed (or M) opens a menu as an iPhone does with a long
+// press (the seed sinks as it is held, pops with a tick of vibration, the world dims behind a veil and the menu grows
+// out of the seed on a spring): 1, 3 and 5 minutes; one can slide the finger onto one and let go, or tap it. One of them
+// sits him in lotus and a bowl sounds; he breathes slowly, BREATH_IN s in and BREATH_OUT s out; round the seed the time
+// goes by as a line of light that closes; at the end the bowl again, and he stays sitting. Getting up ends it, with no
+// bowl. While it lasts a place's card does not open (its rulito is born there instead). It is offered once, wordless,
+// to whoever sits a while without it (GUIDE_PEEK: the menu comes out of the seed for a moment), until one has been chosen
 const BREATH_IN = 4, BREATH_OUT = 6, GUIDE_MINUTES = [1, 3, 5], GUIDE_PEEK = 25, LONG_PRESS = 450;
-const breathEl = ref(null);
 let pressTimer = 0, longPressed = false, peeked = false, peekTimer = 0;
 const guideLeft = computed(() => (ui.guide ? Math.max(0, 1 - ui.guide.t / ui.guide.total) : 0));
+function openChoose() { ui.choose = true; ui.peek = false; ui.hint = false; ui.press = false; ui.pop += 1; vibrate(10); }
 function seedDown() {
-    longPressed = false;
+    longPressed = false; ui.press = true; ui.hover = null;
     clearTimeout(pressTimer);
-    pressTimer = setTimeout(() => { longPressed = true; ui.choose = true; ui.hint = false; }, LONG_PRESS);
+    pressTimer = setTimeout(() => { longPressed = true; openChoose(); }, LONG_PRESS);
 }
-function seedUp() { clearTimeout(pressTimer); }
+// (still held after the menu opened: the finger slides over it, and letting go on a row chooses it)
+function seedMove(e) {
+    if (!ui.choose || !longPressed) return;
+    const row = document.elementFromPoint(e.clientX, e.clientY)?.closest?.('[data-minutes]');
+    const m = row ? Number(row.dataset.minutes) : null;
+    if (m !== ui.hover && m) vibrate(4);
+    ui.hover = m;
+}
+function seedUp(e) {
+    clearTimeout(pressTimer); ui.press = false;
+    // (only a finger lifted chooses: a cancelled touch never does)
+    if (e?.type === 'pointerup' && ui.choose && longPressed && ui.hover) meditate(ui.hover);
+    ui.hover = null;
+}
 function seedClick() {
     if (longPressed) { longPressed = false; return; }
     ui.choose = false;
@@ -407,12 +421,16 @@ const STILLNESS = 0.05;                       // the world's pace while he medit
 const picture = (src) => (typeof Image !== 'undefined' ? Object.assign(new Image(), { src }) : null);
 // What the world remembers on this phone (worldMemory.js): the visits, the seeds he carries and what he has planted.
 // A seed he walks over is picked up (counted on the seed button); sitting in lotus away from the places, after a moment
-// (PLANT_AFTER) he plants the first he found in front of him, one each time he sits
+// (PLANT_AFTER) he plants the first he found in front of him, one each time he sits: it does not go straight there. It
+// flies out of the button to his heart (fly(), SOW.fly), goes down through him as a light only (SOW.through), on under
+// the ground to where it is planted, a glow under the earth (SOW.under; drawSowing), and is born out of the ground
+// there with its burst (burstAt, world.plant). What he planted grows a step each time he comes back to it (onGrow)
 const memory = loadMemory();
 memory.visits += 1;
 saveMemory(memory);
 ui.seeds = memory.seeds.length;
-const PLANT_AFTER = 1.5, SOW_FLIGHT = 0.8;
+const PLANT_AFTER = 1.5;
+const SOW = { fly: 0.9, through: 1.3, under: 0.8 };    // (seconds of each part of its way)
 const world = createWorld({
     clouds: picture('/assets/ciclos/clouds.webp'), moon: picture('/assets/ciclos/moon.webp'),
     planted: memory.planted, visit: memory.visits,
@@ -420,6 +438,7 @@ const world = createWorld({
     // the marks of the story (story.js), while there is a fragment to read: found, the next one is written
     marks: { found: memory.marks, open: () => memory.marks.length < FRAGMENTS.length },
     onMark: () => { saveMemory(memory); readFragment(memory.marks.length - 1); },
+    onGrow: () => { saveMemory(memory); play('star'); },
 });
 // The floor goes back into the distance: his depth d (0 in front .. DEPTH at the back) lifts his feet towards the
 // horizon and makes him smaller, towards the middle of the screen (a vanishing point)
@@ -535,6 +554,7 @@ const state = {
     steps: [null, null], toes: [0, 0], legTuck: [0, 0],
     legSit: [0, 0], sitT: 9, rising: false, settled: true,
     plantT: 0, planted: false,                               // seconds sitting away from the places, and whether he planted this time
+    sowing: null,                                            // the seed on its way to where it is born: { t, x, d, light }
     underTree: 0, rul: null, portalDone: false,                                 // seconds sitting under the tree, the rulito born there      // sitting down in lotus and getting up, leg by leg
     reach: null,                   // a world point his near hand goes to
     reached: null,                 // the last one (his hand comes back from it)
@@ -778,7 +798,7 @@ function onKey(e) {
     if (key) { e.preventDefault(); if (e.type === 'keydown' && !e.repeat) press(key, true); if (e.type === 'keyup') press(key, false); return; }
     if (e.key === ' ' || e.code === 'Space') { e.preventDefault(); if (e.type === 'keydown' && !e.repeat) sit(); }
     // (M: the three meditations, as a long press on the seed)
-    if ((e.key === 'm' || e.key === 'M') && e.type === 'keydown' && !e.repeat) ui.choose = !ui.choose;
+    if ((e.key === 'm' || e.key === 'M') && e.type === 'keydown' && !e.repeat) { if (ui.choose) ui.choose = false; else openChoose(); }
     // (jumping has no button for now: J jumps, on a computer)
     if ((e.key === 'j' || e.key === 'J') && e.type === 'keydown' && !e.repeat) jump();
 }
@@ -885,21 +905,27 @@ function update(dt, now) {
     const card = seated ? world.placeCard(state.x, state.d) : null;
     state.underTree = card ? state.underTree + dt : 0;
     // away from the places, with seeds, he plants one in front of him (once each time he sits)
-    // (the seed leaves the button SOW_FLIGHT s before, and flies to the ground in front of him, where it sprouts)
+    // (the seed leaves the button SOW.fly s before PLANT_AFTER and flies to his heart; then, as a light, through him and
+    // under the ground to where it is born)
     if (!ui.sitting) {
-        if (state.sowing && !state.planted) ui.seeds = memory.seeds.length;   // (he got up before it landed: it stays his)
-        state.plantT = 0; state.planted = false; state.sowing = false; state.portalDone = false;
+        if (state.sowing && !state.planted) ui.seeds = memory.seeds.length;   // (he got up before it was born: it stays his)
+        state.plantT = 0; state.planted = false; state.sowing = null; state.portalDone = false;
     } else if (seated && !card && !state.planted && memory.seeds.length) {
         state.plantT += dt;
-        if (!state.sowing && state.plantT >= PLANT_AFTER - SOW_FLIGHT) {
-            state.sowing = true;
+        if (!state.sowing && state.plantT >= PLANT_AFTER - SOW.fly) {
+            const light = world.seedLight(memory.seeds[0]);
+            state.sowing = { t: 0, x: state.x, d: state.d - 110, light };
             ui.seeds = memory.seeds.length - 1;
-            fly(buttonMiddle(), toScreen(state.x, state.d - 110), world.seedLight(memory.seeds[0]), null, SOW_FLIGHT * 1000, true);
+            fly(buttonMiddle(), { ...sowAt.heart }, light, () => play('tap'), SOW.fly * 1000);
         }
-        if (state.plantT >= PLANT_AFTER) {
+        if (state.sowing) state.sowing.t += dt;
+        if (state.sowing && state.sowing.t >= SOW.fly + SOW.through + SOW.under) {
+            const w = state.sowing;
+            state.sowing = null;
             state.planted = true;
+            if (!still) burstAt(toScreen(w.x, w.d), `rgb(${w.light.map(Math.round).join(',')})`);
             const seed = memory.seeds.shift();
-            memory.planted.push(world.plant(seed, state.x, state.d - 110));
+            memory.planted.push(world.plant(seed, w.x, w.d));
             visit?.seedPlanted(seed, world.zoneCard());
             ui.seeds = memory.seeds.length;
             learn('planted');
@@ -938,8 +964,8 @@ function update(dt, now) {
     }
     // (sitting a while without one, the three lights are offered once, for a moment)
     if (meditating && !ui.guide && !peeked && !memory.learned.guided && state.sitT > GUIDE_PEEK) {
-        peeked = true; ui.choose = true;
-        peekTimer = setTimeout(() => { ui.choose = false; }, 4500);
+        peeked = true; ui.choose = true; ui.peek = true;      // (offered, the world is not dimmed)
+        peekTimer = setTimeout(() => { if (ui.peek) ui.choose = false; }, 4500);
     }
     if (state.rul) {
         const r = state.rul;
@@ -1399,13 +1425,10 @@ function draw() {
     const mid = map(f, PIVOT.x, (rig.silhouette.crown[1] + PIVOT.y) / 2);
     const onScreen = c.getTransform().transformPoint(mid);
     sidOnScreen.x = onScreen.x / view.dpr; sidOnScreen.y = onScreen.y / view.dpr;
-    // the ring of light of the meditation, round him, breathing; and a place's thought over it
-    if (breathEl.value) {
-        const g = ui.guide, k = g?.started ? breathAt(g.t) : 0, size = TALL * 1.25 * view.k * scaleAt(state.d);
-        breathEl.value.style.transform = `translate(${sidOnScreen.x.toFixed(1)}px, ${sidOnScreen.y.toFixed(1)}px) translate(-50%, -50%) scale(${(0.55 + 0.6 * k).toFixed(3)})`;
-        breathEl.value.style.width = breathEl.value.style.height = `${Math.round(size)}px`;
-        breathEl.value.style.opacity = g?.started ? (0.45 + 0.5 * k).toFixed(3) : '0';
-    }
+    // (and his heart and the ground under him, for the seed he plants: it goes into his heart and down through him)
+    const heart = c.getTransform().transformPoint(map(f, PIVOT.x, rig.silhouette.crown[1] * 0.35 + PIVOT.y * 0.65));
+    const base = c.getTransform().transformPoint({ x: f.root.x, y: state.ground });
+    Object.assign(sowAt, { heart: { x: heart.x / view.dpr, y: heart.y / view.dpr }, base: { x: base.x / view.dpr, y: base.y / view.dpr }, size: depth * view.k });
     if (thought.on) placeThought();
 
     // The rulito over his head (its canvas is bigger than the glyph, 32 x 86, by 14 all round, for its glow)
@@ -1429,6 +1452,34 @@ function draw() {
     }
     c.restore();
     world.draw(c, place, (d) => d <= state.d, { x: state.x, d: state.d });   // and what is in front of him (faint close to him)
+    if (state.sowing && state.sowing.t >= SOW.fly && !still) drawSowing(c, state.sowing, toScreen(state.sowing.x, state.sowing.d));
+}
+
+// The seed he plants, once it is in him (in px of the screen): only its light, going down through him from his heart
+// to the ground (his body lit softly round it), and under the ground a glow running to where it is born
+const sowAt = { heart: { x: 0, y: 0 }, base: { x: 0, y: 0 }, size: 1 };
+function drawSowing(c, w, to) {
+    const ease = (u) => u * u * (3 - 2 * u), lerp = (a, b, u) => ({ x: a.x + (b.x - a.x) * u, y: a.y + (b.y - a.y) * u });
+    const rgb = w.light.map(Math.round).join(','), size = sowAt.size, t = w.t - SOW.fly;
+    const light = (p, r, a) => {
+        const g = c.createRadialGradient(p.x, p.y, 0, p.x, p.y, r);
+        g.addColorStop(0, `rgba(255,252,236,${a})`); g.addColorStop(0.3, `rgba(${rgb},${a * 0.7})`); g.addColorStop(1, `rgba(${rgb},0)`);
+        c.fillStyle = g; c.beginPath(); c.arc(p.x, p.y, r, 0, Math.PI * 2); c.fill();
+    };
+    c.save();
+    c.setTransform(view.dpr, 0, 0, view.dpr, 0, 0);
+    c.globalCompositeOperation = 'lighter';
+    if (t < SOW.through) {
+        const u = t / SOW.through, p = lerp(sowAt.heart, sowAt.base, ease(u)), r = 150 * size, flash = Math.max(0, 1 - u * 4);
+        light(lerp(sowAt.heart, sowAt.base, 0.45), r * 1.6, 0.18 * Math.sin(Math.PI * u));
+        light(p, r * (0.5 + 0.6 * flash), 0.75);
+        for (let n = 1; n <= 4; n++) light(lerp(sowAt.heart, sowAt.base, ease(Math.max(0, u - n * 0.06))), r * 0.35, 0.25 / n);
+    } else {
+        const u = Math.min(1, (t - SOW.through) / SOW.under), p = lerp(sowAt.base, to, ease(u)), r = 120 * size;
+        c.translate(p.x, p.y); c.scale(1, 0.32);
+        light({ x: 0, y: 0 }, r * (1 + 0.5 * u), 0.55);
+    }
+    c.restore();
 }
 
 function loop(now) {
@@ -1487,8 +1538,6 @@ onBeforeUnmount(() => {
         <!-- the rulito draws itself on its own canvas, which this scene lays over his head -->
         <Rulito ref="rulito" class="offstage" :color="rulitoColour" />
         <canvas ref="canvas" :style="zoomStyle" @pointermove="onMove" @pointerdown="onDown" @pointerup="onUp" @pointercancel="onUp"></canvas>
-        <!-- the ring of light of a meditation (meditate), round him, breathing -->
-        <span ref="breathEl" class="breathing" aria-hidden="true"></span>
         <!-- what a place thinks as he comes near (thoughts.js), over it in the sky -->
         <Transition name="thought">
             <p v-if="thought.on" ref="thoughtEl" class="thought" :class="{ light: teaching.light }" :style="{ color: teaching.light ? null : teaching.ink }">
@@ -1508,13 +1557,18 @@ onBeforeUnmount(() => {
              in lotus and gets him up again; he walks with the arrows or WASD, or where a click or a touch on the floor
              sends him; a touch on him makes him wave (on a computer J jumps) -->
         <!-- the three meditations (a long press on the seed, or M): 1, 3 and 5 minutes -->
+        <Transition name="veil">
+            <div v-if="ui.choose && !ui.peek" class="veil" @pointerdown.stop="ui.choose = false"></div>
+        </Transition>
         <Transition name="choose">
-            <div v-if="ui.choose" class="choose">
-                <button v-for="(m, i) in GUIDE_MINUTES" :key="m" class="minutes glass" :style="{ '--i': i }" :aria-label="`${m} min`" @click="meditate(m)">{{ m }}</button>
+            <div v-if="ui.choose" class="choose" :class="{ light: teaching.light }" role="menu">
+                <button v-for="m in GUIDE_MINUTES" :key="m" class="minutes" :class="{ hover: ui.hover === m }" role="menuitem" :data-minutes="m" @click="meditate(m)">
+                    <span class="dot" aria-hidden="true"></span>{{ m }} min
+                </button>
             </div>
         </Transition>
-        <button ref="lotusEl" class="lotus glass" :class="{ on: ui.sitting, hint: ui.hint }" :aria-pressed="ui.sitting" aria-label="Loto" title="Loto"
-            @pointerdown="seedDown" @pointerup="seedUp" @pointerleave="seedUp" @pointercancel="seedUp" @click="seedClick">
+        <button ref="lotusEl" class="lotus glass" :class="{ on: ui.sitting, hint: ui.hint, press: ui.press, popped: ui.pop && ui.choose }" :aria-pressed="ui.sitting" aria-label="Loto" title="Loto"
+            @pointerdown="seedDown" @pointermove="seedMove" @pointerup="seedUp" @pointercancel="seedUp" @click="seedClick">
             <span class="seed" aria-hidden="true"></span>
             <!-- a meditation's time going by: a line of light round the seed that closes -->
             <svg v-if="ui.guide" class="time" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="47" pathLength="1" :style="{ strokeDashoffset: (1 - guideLeft).toFixed(4) }" /></svg>
@@ -1611,52 +1665,89 @@ canvas {
 .thought-enter-active { transition: opacity 2.2s ease-out; }
 .thought-leave-active { transition: opacity 1.4s ease-in; }
 .thought-enter-from, .thought-leave-to { opacity: 0; }
-/* the ring of light of a meditation, round him: it grows as one breathes in and comes back as one breathes out */
-.breathing {
+/* the meditations' menu, as an iPhone's long press: the world dims behind a veil and a menu of frosted glass grows out
+   of the seed on a spring, right-aligned over it; the row under the finger lights up */
+.veil {
     position: absolute;
-    left: 0;
-    top: 0;
-    width: 200px;
-    height: 200px;
-    border-radius: 50%;
-    border: 2px solid rgba(255, 248, 226, 0.85);
-    box-shadow: 0 0 30px 6px rgba(255, 240, 200, 0.45), inset 0 0 30px 4px rgba(255, 240, 200, 0.35);
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 1.2s ease-out;
+    inset: 0;
+    background: rgba(20, 50, 70, 0.18);
+    -webkit-backdrop-filter: blur(5px);
+    backdrop-filter: blur(5px);
 }
-/* the three meditations, above the seed: small round lights on the app's glass */
+.veil-enter-active { transition: opacity 320ms ease-out; }
+.veil-leave-active { transition: opacity 240ms ease-in; }
+.veil-enter-from, .veil-leave-to { opacity: 0; }
 .choose {
     position: absolute;
     right: 20px;
     bottom: calc(140px + env(safe-area-inset-bottom, 0px));
-    width: 84px;
+    min-width: 172px;
     display: flex;
-    flex-direction: column-reverse;
+    flex-direction: column;
+    border-radius: 16px;
+    overflow: hidden;
+    background: rgba(247, 248, 241, 0.78);
+    -webkit-backdrop-filter: blur(22px) saturate(1.6);
+    backdrop-filter: blur(22px) saturate(1.6);
+    box-shadow: 0 12px 40px rgba(20, 50, 70, 0.28), 0 0 0 0.5px rgba(20, 50, 70, 0.12);
+    color: #143246;
+    /* (it grows out of the seed: from the middle of the button, under its bottom right corner) */
+    transform-origin: calc(100% - 42px) calc(100% + 54px);
+}
+.choose.light { background: rgba(28, 44, 66, 0.72); color: #F7F8F1; box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4), 0 0 0 0.5px rgba(247, 248, 241, 0.18); }
+.minutes {
+    display: flex;
     align-items: center;
     gap: 12px;
-}
-.minutes {
-    width: 56px;
-    height: 56px;
-    padding: 0;
-    border-radius: 50%;
-    border: 1px solid rgba(247, 248, 241, 0.45);
-    background-color: rgba(20, 50, 70, 0.3);
-    color: #F7F8F1;
-    font-family: 'Caveat', 'Nunito', sans-serif;
-    font-size: 30px;
-    line-height: 1;
+    padding: 14px 20px;
+    margin: 0;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    background: transparent;
+    color: inherit;
+    font-family: Nunito, sans-serif;
+    font-size: 17px;
+    font-weight: 600;
+    text-align: left;
     cursor: pointer;
-    touch-action: manipulation;
+    touch-action: none;
     -webkit-tap-highlight-color: transparent;
-    box-shadow: 0 0 18px 2px rgba(255, 240, 200, 0.35);
+    transition: background-color 120ms ease-out;
 }
-.minutes:active { transform: scale(0.94); }
-.choose-enter-active .minutes { transition: opacity 500ms ease-out, transform 500ms cubic-bezier(.2,.8,.3,1.2); transition-delay: calc(var(--i) * 70ms); }
-.choose-leave-active .minutes { transition: opacity 300ms ease-in, transform 300ms ease-in; }
-.choose-enter-active, .choose-leave-active { transition: opacity 500ms; }
-.choose-enter-from .minutes, .choose-leave-to .minutes { opacity: 0; transform: translateY(30px) scale(0.6); }
+.minutes + .minutes { border-top: 0.5px solid rgba(20, 50, 70, 0.16); }
+.choose.light .minutes + .minutes { border-top-color: rgba(247, 248, 241, 0.16); }
+.minutes.hover, .minutes:active { background-color: rgba(20, 50, 70, 0.1); }
+.choose.light .minutes.hover, .choose.light .minutes:active { background-color: rgba(247, 248, 241, 0.14); }
+@media (hover: hover) { .minutes:hover { background-color: rgba(20, 50, 70, 0.08); } .choose.light .minutes:hover { background-color: rgba(247, 248, 241, 0.12); } }
+.minutes:focus { outline: none; }
+.minutes:focus-visible { box-shadow: inset 0 0 0 2px rgba(255, 111, 97, 0.7); }
+/* a little light before each, bigger the longer the meditation */
+.minutes .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #FFE9A8;
+    box-shadow: 0 0 8px 2px rgba(255, 220, 140, 0.8);
+}
+.minutes[data-minutes="3"] .dot { width: 13px; height: 13px; }
+.minutes[data-minutes="5"] .dot { width: 16px; height: 16px; }
+.choose-enter-active { transition: transform 460ms cubic-bezier(0.3, 1.45, 0.55, 1), opacity 200ms ease-out; }
+.choose-leave-active { transition: transform 220ms ease-in, opacity 200ms ease-in; }
+.choose-enter-from, .choose-leave-to { transform: scale(0.2); opacity: 0; }
+.choose-enter-active .minutes { animation: row-in 360ms ease-out both; }
+.choose-enter-active .minutes:nth-child(2) { animation-delay: 40ms; }
+.choose-enter-active .minutes:nth-child(3) { animation-delay: 80ms; }
+@keyframes row-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+    .choose-enter-active, .choose-leave-active { transition: opacity 200ms; }
+    .choose-enter-from, .choose-leave-to { transform: none; }
+    .choose-enter-active .minutes { animation: none; }
+}
+/* held, the seed sinks slowly; as the menu opens it pops back up */
+.lotus.press { transform: scale(0.9); transition: transform 450ms cubic-bezier(0.4, 0, 0.6, 1), box-shadow 400ms ease-out; }
+.lotus.popped { animation: seed-pop 420ms cubic-bezier(0.3, 1.6, 0.5, 1); }
+@keyframes seed-pop { from { transform: scale(0.9); } 50% { transform: scale(1.08); } to { transform: scale(1); } }
 /* a meditation's time, round the seed */
 .lotus .time {
     position: absolute;
@@ -1674,7 +1765,6 @@ canvas {
     stroke-dasharray: 1;
     filter: drop-shadow(0 0 3px rgba(255, 240, 200, 0.9));
 }
-@media (prefers-reduced-motion: reduce) { .breathing { display: none; } }
 .portal {
     position: relative;
     z-index: 10;                  /* (over the world, under the app's header: z-index 11) */
@@ -1716,7 +1806,7 @@ canvas {
     border: 1px solid rgba(247, 248, 241, 0.35);
     box-shadow: 0 4px 24px rgba(20, 50, 70, 0.18);
     cursor: pointer;
-    touch-action: manipulation;
+    touch-action: none;           /* (a finger held on it slides onto the menu: the page must not take it) */
     -webkit-tap-highlight-color: transparent;
     transition: box-shadow 400ms ease-out, background-color 400ms ease-out, transform 160ms ease-out;
 }
