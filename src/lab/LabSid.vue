@@ -7,10 +7,13 @@
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import Header from '../components/Header.vue';
 import rig from './sid/sid.json';
-import { CICLOS, createWorld } from './sidWorld.js';
-import { createStarField } from '../composables/useStarField.js';
+import { CICLOS, createWorld, STAR_SEED, STAR_LIGHT } from './sidWorld.js';
+import { createStarField, CONSTELLATION_TIME } from '../composables/useStarField.js';
+import { THOUGHTS } from './thoughts.js';
+import { FRAGMENTS } from './story.js';
+import { W as RUL_W, H as RUL_H, LINE_AT, LOOP_AT } from '../data/rulitoShape.js';
 import Rulito from '../components/Rulito.vue';
-import { play, setCardChord } from '../composables/useSound.js';
+import { play, setCardChord, vibrate } from '../composables/useSound.js';
 import { chordFor } from '../data/cardChords.js';
 import { gardenNote } from '../audio/synth.js';
 import { getCard } from '../data/cards.js';
@@ -20,7 +23,7 @@ import { hasWebGL } from '../composables/useLayerStage.js';
 import { seedSvg } from './seedShape.js';
 import { startWorldVisit } from '../analytics.js';
 
-const ui = reactive({ bones: false, sitting: false, touch: false, hint: false, seeds: 0, seedPop: 0 });
+const ui = reactive({ bones: false, sitting: false, touch: false, hint: false, seeds: 0, seedPop: 0, choose: false, peek: false, guide: null, press: false, pop: 0, hover: null });
 
 // The hints, with no words (as the ghost hand in the scenes): the seed button calls (it swells and glows and rings of
 // light go out of it, twice), and what the person has done once (memory.learned) is never hinted again:
@@ -59,7 +62,7 @@ function learn(what) {
 // docs/mundo.md); with the first seed in the button, what to do with it
 const STORY = {
     intro: { es: 'Todo partió de una partícula.', en: 'Everything began with a particle.' },
-    seed: { es: 'Donde Sid medita, florece.', en: 'Where Sid meditates, it blooms.' },
+    seed: { es: 'Lo que se siembra en calma, florece.', en: 'What is sown in calm, blooms.' },
 };
 const STORY_SHOW = 6500;
 let storyTimer = 0, gone = false;
@@ -76,6 +79,158 @@ function tell(what, after = 0) {
         clearTimeout(storyTimer);
         storyTimer = setTimeout(() => { if (teaching.story) teaching.on = false; }, STORY_SHOW);
     }, after);
+}
+
+// The fragments of the story (story.js), each written when a mark of it is found, in order (waiting, as the words
+// above, for what is written to go); a little longer on the card: they are read, not glanced at
+function readFragment(i) {
+    const f = FRAGMENTS[i];
+    if (!f) return;
+    play('star'); visit?.secret('fragment');
+    setTimeout(function say() {
+        if (gone) return;
+        if ((teaching.on && !teaching.story) || portal.card != null) { setTimeout(say, 1500); return; }
+        Object.assign(teaching, { es: f.es, en: f.en, on: true, story: true });
+        clearTimeout(storyTimer);
+        storyTimer = setTimeout(() => { if (teaching.story) teaching.on = false; }, STORY_SHOW * 1.4);
+    }, 600);
+}
+
+// What the places think, as the things of Everything do (thoughts.js): coming near one of the seven places, one of
+// its card's own sentences is written by hand in the sky over it, softly, with no card under it, and goes as he walks
+// away (or sits, or something else is written); the next time, the next sentence (memory.thoughts)
+const THOUGHT_NEAR = 700, THOUGHT_KEEP = 1500, THOUGHT_SHOW = 9000;
+const thought = reactive({ es: '', en: '', on: false });
+const thoughtEl = ref(null);
+let thinkKey = null, thinkAt = 0, thinkPlace = null, thinkIn = 0.5;
+function think(dt) {
+    thinkIn -= dt;
+    if (thinkIn > 0) return;
+    thinkIn = 0.25;
+    const near = portal.card == null ? world.placeNear(state.x, state.d, THOUGHT_KEEP) : null;
+    if (!near) { thinkKey = null; thought.on = false; return; }
+    thinkPlace = near;
+    const key = `${near.id}:${Math.round(near.x)}:${Math.round(near.d)}`, list = THOUGHTS[near.id];
+    // (covered before it could be read, by words written on the card or by his sitting, it is written again later)
+    if (thought.on && (ui.sitting || teaching.on)) {
+        thought.on = false;
+        if (performance.now() - thinkAt < THOUGHT_SHOW / 2) { thinkKey = null; memory.thoughts[near.id] = Math.max(0, (memory.thoughts[near.id] ?? 1) - 1); }
+    }
+    if (performance.now() - thinkAt > THOUGHT_SHOW) thought.on = false;
+    if (key === thinkKey || !list || ui.sitting || teaching.on || near.dist > near.reach + THOUGHT_NEAR) return;
+    thinkKey = key; thinkAt = performance.now();
+    const n = memory.thoughts[near.id] ?? 0;
+    Object.assign(thought, list[n % list.length], { on: true });
+    memory.thoughts[near.id] = n + 1; saveMemory(memory);
+}
+// (over its place, in the sky, kept whole on the screen)
+function placeThought() {
+    const el = thoughtEl.value;
+    if (!el || !thinkPlace) return;
+    const half = Math.min(el.offsetWidth / 2, view.w / 2 - 16), x = Math.max(16 + half, Math.min(view.w - 16 - half, toScreen(thinkPlace.x, thinkPlace.d).x));
+    const y = Math.max(84, horizon() * view.k * 0.42);
+    el.style.transform = `translate(${(x - half).toFixed(1)}px, ${y.toFixed(1)}px)`;
+}
+
+// A meditation, for real, if one wants it: a long press on the seed (or M) opens a menu as an iPhone does with a long
+// press (the seed sinks as it is held, pops with a tick of vibration, the world dims behind a veil and the menu grows
+// out of the seed on a spring): 1, 3 and 5 minutes; one can slide the finger onto one and let go, or tap it. One of them
+// sits him in lotus and a bowl sounds; he breathes slowly, BREATH_IN s in and BREATH_OUT s out; round the seed the time
+// goes by as a line of light that closes; at the end the bowl again, and he stays sitting. Getting up ends it, with no
+// bowl. While it lasts a place's card does not open (its rulito is born there instead). It is offered once, wordless,
+// to whoever sits a while without it (GUIDE_PEEK: the menu comes out of the seed for a moment), until one has been chosen
+const BREATH_IN = 4, BREATH_OUT = 6, GUIDE_MINUTES = [1, 3, 5], GUIDE_PEEK = 25, LONG_PRESS = 450;
+let pressTimer = 0, longPressed = false, peeked = false, peekTimer = 0;
+const guideLeft = computed(() => (ui.guide ? Math.max(0, 1 - ui.guide.t / ui.guide.total) : 0));
+function openChoose() { ui.choose = true; ui.peek = false; ui.hint = false; ui.press = false; ui.pop += 1; vibrate(10); }
+function seedDown() {
+    longPressed = false; ui.press = true; ui.hover = null;
+    clearTimeout(pressTimer);
+    pressTimer = setTimeout(() => { longPressed = true; openChoose(); }, LONG_PRESS);
+}
+// (still held after the menu opened: the finger slides over it, and letting go on a row chooses it)
+function seedMove(e) {
+    if (!ui.choose || !longPressed) return;
+    const row = document.elementFromPoint(e.clientX, e.clientY)?.closest?.('[data-minutes]');
+    const m = row ? Number(row.dataset.minutes) : null;
+    if (m !== ui.hover && m) vibrate(4);
+    ui.hover = m;
+}
+function seedUp(e) {
+    clearTimeout(pressTimer); ui.press = false;
+    // (only a finger lifted chooses: a cancelled touch never does)
+    if (e?.type === 'pointerup' && ui.choose && longPressed && ui.hover) meditate(ui.hover);
+    ui.hover = null;
+}
+function seedClick() {
+    if (longPressed) { longPressed = false; return; }
+    ui.choose = false;
+    sit();
+}
+function meditate(minutes) {
+    ui.choose = false; clearTimeout(peekTimer);
+    learn('guided');
+    if (!ui.sitting) sit(true);
+    ui.guide = { minutes, total: minutes * 60, t: 0, started: false };
+}
+function endGuide(done) {
+    if (!ui.guide) return;
+    const g = ui.guide;
+    if (g.started) visit?.guided(g.minutes, done, Math.round(g.t));
+    if (done) play('bowl');
+    ui.guide = null;
+}
+const breathAt = (t) => {
+    const u = t % (BREATH_IN + BREATH_OUT), e = (k) => 0.5 - 0.5 * Math.cos(Math.PI * k);
+    return u < BREATH_IN ? e(u / BREATH_IN) : 1 - e((u - BREATH_IN) / BREATH_OUT);
+};
+
+// The secrets of the night (nothing says they are there):
+// - sitting in lotus by night a while (CONSTELLATION_AFTER s), the stars come together over him into the rulito of the
+//   card of the world he is in, in its colour, with threads of dots (useStarField's constellation, as the landing's
+//   sky draws its icons), and it shines once whole; it goes when he gets up or the day comes;
+// - sitting by night, now and then the sky sends a shooting star near (SHOOT_EVERY s, SHOOT_ODDS), and a near one
+//   passing while he sits leaves a seed of light at his feet (STAR_SEED: of no card, it grows any card's plant, which
+//   twinkles by night), once each time he sits
+const CONSTELLATION_AFTER = 6, SHOOT_EVERY = 18, SHOOT_ODDS = 0.45;
+function rulitoFigure() {
+    const h = Math.min(horizon() * view.k * 0.84, 280), k = h / RUL_H, w = RUL_W * k;
+    const cx = Math.max(w + 16, Math.min(view.w - w - 16, sidOnScreen.x)), cy = horizon() * view.k * 0.5;
+    const at = ([x, y]) => [cx + (x - RUL_W / 2) * k, cy + (y - RUL_H / 2) * k];
+    const stem = [0, 5, 10, 15, 20, 24].map((i) => at(LINE_AT[i])), loop = [0, 2, 4, 6, 8, 10, 12, 14].map((i) => at(LOOP_AT[i]));
+    return [{ points: stem, closed: false }, { points: loop, closed: false }];
+}
+function nightSecrets(dt, seated) {
+    const dark = world.night();
+    const starry = seated && dark > 0.6 && portal.card == null;
+    state.starT = starry ? (state.starT ?? 0) + dt : 0;
+    if (starry && !state.figure && state.starT > CONSTELLATION_AFTER && stars) {
+        const card = world.placeCard(state.x, state.d) ?? world.zoneCard();
+        stars.constellation(rulitoFigure(), { color: RULITO_COLOURS[card] ?? RULITO_COLOURS[15] });
+        state.figure = setTimeout(() => { if (state.figure) play('star'); }, CONSTELLATION_TIME * 1000);
+        if (!memory.learned.constellation) learn('constellation');
+        visit?.secret('constellation');
+    }
+    if (state.figure && (!ui.sitting || dark < 0.45 || portal.card != null)) { clearTimeout(state.figure); state.figure = null; stars?.constellation(null); }
+    // (the sky answers his stillness with a shooting star near, now and then)
+    if (starry && !state.starGiven) {
+        state.shootT = (state.shootT ?? 0) + dt;
+        if (state.shootT > SHOOT_EVERY) { state.shootT = 0; if (Math.random() < SHOOT_ODDS) stars?.shoot(true); }
+    } else state.shootT = 0;
+    if (!ui.sitting) state.starGiven = false;
+}
+// a near shooting star while he sits by night: a seed of light falls from it to his feet, and from there to the seed
+function starFell() {
+    if (!ui.sitting || state.starGiven || world.night() < 0.5 || portal.card != null) return;
+    state.starGiven = true;
+    state.planted = true;          // (it is not planted where it fell: it is kept, to be planted wherever he chooses)
+    visit?.secret('star_seed');
+    learn('starSeed');
+    setTimeout(() => {
+        if (gone || portal.card != null) return;
+        const feet = toScreen(state.x, state.d - 60), from = { x: feet.x + (Math.random() - 0.5) * 240, y: Math.max(70, horizon() * view.k * 0.25) };
+        fly(from, feet, STAR_LIGHT, () => { burstAt(feet, `rgb(${STAR_LIGHT.join(',')})`); addSeed(STAR_SEED, feet, STAR_LIGHT); }, 1500);
+    }, 900);
 }
 
 // A seed flying, over the world, from where it lay into the button (picked up), or from the button to the ground in
@@ -281,6 +436,9 @@ const world = createWorld({
     clouds: picture('/assets/ciclos/clouds.webp'), moon: picture('/assets/ciclos/moon.webp'),
     planted: memory.planted, visit: memory.visits,
     onSeed: (seed) => { visit?.seedPicked(); seedFound(seed); },
+    // the marks of the story (story.js), while there is a fragment to read: found, the next one is written
+    marks: { found: memory.marks, open: () => memory.marks.length < FRAGMENTS.length },
+    onMark: () => { saveMemory(memory); readFragment(memory.marks.length - 1); },
     onGrow: () => { saveMemory(memory); play('star'); },
     onSing: (p) => sing(p),
 });
@@ -549,6 +707,7 @@ function sit(on = !ui.sitting) {
     // getting up is its own little movement while his legs are still crossed
     state.rising = !on && Math.max(...state.legSit) > 0.1;
     if (on) visit?.sat();
+    if (!on) endGuide(false);
     ui.sitting = on; state.sitT = 0; state.settled = false; state.target = null; state.action = null;
 }
 
@@ -623,6 +782,7 @@ function onUp(e) {
     if (state.mark) state.mark.t = 0;          // (and its ring fades from now)
 }
 function onDown(e) {
+    ui.choose = false;
     lastInput = e.pointerType === 'touch' ? 'touch' : 'pointer';
     const screen = pointerTo(e);
     state.pointer = screen; state.pointerAt = performance.now();
@@ -662,6 +822,8 @@ function onKey(e) {
     const key = KEYS[e.key.length === 1 ? e.key.toLowerCase() : e.key];
     if (key) { e.preventDefault(); if (e.type === 'keydown' && !e.repeat) press(key, true); if (e.type === 'keyup') press(key, false); return; }
     if (e.key === ' ' || e.code === 'Space') { e.preventDefault(); if (e.type === 'keydown' && !e.repeat) sit(); }
+    // (M: the three meditations, as a long press on the seed)
+    if ((e.key === 'm' || e.key === 'M') && e.type === 'keydown' && !e.repeat) { if (ui.choose) ui.choose = false; else openChoose(); }
     // (jumping has no button for now: J jumps, on a computer)
     if ((e.key === 'j' || e.key === 'J') && e.type === 'keydown' && !e.repeat) jump();
 }
@@ -833,7 +995,7 @@ function update(dt, now) {
         if (!memory.learned.place) { state.placeCall -= dt; if (state.placeCall <= 0) { callButton(); state.placeCall = HINT_AT_PLACE; } }
     } else state.placeCall = 0.5;
     // at a door to a card, the card's scene instead of the rulito here
-    const door = card != null && PORTALS.has(card) && webgl;
+    const door = card != null && PORTALS.has(card) && webgl && !ui.guide;
     if (door && !state.portalDone && portal.card == null && state.underTree >= PORTAL_AFTER) openPortal(card);
     if (state.underTree >= RULITO_AFTER && !state.rul && !door) {
         state.rul = { age: 0, head: 0, tail: 0, pop: 0, full: false, card };
@@ -843,6 +1005,20 @@ function update(dt, now) {
     // the music moves to the chord of the card of the zone he is in (src/data/cardChords.js), as on a card's page
     const zone = world.zoneCard();
     if (zone !== state.zone) { state.zone = zone; setCardChord(chordFor(zone)); visit?.zone(zone); }
+    think(dt);
+    nightSecrets(dt, seated);
+    // the meditation chosen (meditate): it starts as he has settled in lotus, and goes by in real time
+    if (ui.guide && meditating) {
+        const g = ui.guide;
+        if (!g.started) { g.started = true; play('bowl'); }
+        g.t += dt;
+        if (g.t >= g.total) endGuide(true);
+    }
+    // (sitting a while without one, the three lights are offered once, for a moment)
+    if (meditating && !ui.guide && !peeked && !memory.learned.guided && state.sitT > GUIDE_PEEK) {
+        peeked = true; ui.choose = true; ui.peek = true;      // (offered, the world is not dimmed)
+        peekTimer = setTimeout(() => { if (ui.peek) ui.choose = false; }, 4500);
+    }
     if (state.rul) {
         const r = state.rul;
         r.age += dt; r.pop = Math.max(0, r.pop - dt * 2.2);
@@ -867,7 +1043,7 @@ function update(dt, now) {
 
     // Breathing (slower and deeper sitting), blinking, looking
     const rate = ui.sitting ? 0.16 : 0.26;
-    state.breath = Math.sin(now / 1000 * Math.PI * 2 * rate) * (ui.sitting ? 1.3 : 1);
+    state.breath = ui.guide?.started ? (breathAt(ui.guide.t) * 2 - 1) * 1.5 : Math.sin(now / 1000 * Math.PI * 2 * rate) * (ui.sitting ? 1.3 : 1);
     state.nextBlink -= dt;
     if (state.nextBlink <= 0) { state.blink = 0.16; state.nextBlink = 2 + Math.random() * 3.5; }
     state.blink = Math.max(0, state.blink - dt);
@@ -1305,6 +1481,7 @@ function draw() {
     const heart = c.getTransform().transformPoint(map(f, PIVOT.x, rig.silhouette.crown[1] * 0.35 + PIVOT.y * 0.65));
     const base = c.getTransform().transformPoint({ x: f.root.x, y: state.ground });
     Object.assign(sowAt, { heart: { x: heart.x / view.dpr, y: heart.y / view.dpr }, base: { x: base.x / view.dpr, y: base.y / view.dpr }, size: depth * view.k });
+    if (thought.on) placeThought();
 
     // The rulito over his head (its canvas is bigger than the glyph, 32 x 86, by 14 all round, for its glow)
     if (state.rul && rulito.value) {
@@ -1367,7 +1544,7 @@ function loop(now) {
 }
 
 // (for trying him out from the browser's console)
-if (typeof window !== 'undefined') window.__sid = { state, springs, hands, ui, world, walkTo, sit, memory, portal, portalWon, closePortal, toScreen };
+if (typeof window !== 'undefined') window.__sid = { state, springs, hands, ui, world, walkTo, sit, memory, portal, portalWon, closePortal, toScreen, meditate, shoot: () => stars?.shoot(true) };
 
 onMounted(() => {
     document.body.classList.add('lab-page');
@@ -1378,7 +1555,7 @@ onMounted(() => {
     resize();
     window.addEventListener('resize', resize);
     // (a shooting star that passes near sounds, as in the app's other night skies; only when the night is out)
-    stars = createStarField(starCanvas.value, nightSky.value, { pace: () => state.pace, onShoot: () => { if (world.night() > 0.5) play('star'); } });
+    stars = createStarField(starCanvas.value, nightSky.value, { pace: () => state.pace, onShoot: () => { if (world.night() > 0.5) play('star'); starFell(); } });
     raf = requestAnimationFrame(loop);
     scheduleHint();
     tell('intro', 1400);
@@ -1393,7 +1570,8 @@ onBeforeUnmount(() => {
     clearTimeout(portalTimer);
     setCardChord(null);
     cancelAnimationFrame(raf);
-    gone = true; clearTimeout(hintTimer); clearTimeout(callTimer); clearTimeout(storyTimer);
+    gone = true; clearTimeout(hintTimer); clearTimeout(callTimer); clearTimeout(storyTimer); clearTimeout(pressTimer); clearTimeout(peekTimer); clearTimeout(state.figure);
+    endGuide(false);
     stars?.destroy();
     window.removeEventListener('resize', resize);
     window.removeEventListener('keydown', onKey);
@@ -1412,6 +1590,12 @@ onBeforeUnmount(() => {
         <!-- the rulito draws itself on its own canvas, which this scene lays over his head -->
         <Rulito ref="rulito" class="offstage" :color="rulitoColour" />
         <canvas ref="canvas" :style="zoomStyle" @pointermove="onMove" @pointerdown="onDown" @pointerup="onUp" @pointercancel="onUp"></canvas>
+        <!-- what a place thinks as he comes near (thoughts.js), over it in the sky -->
+        <Transition name="thought">
+            <p v-if="thought.on" ref="thoughtEl" class="thought glass" :class="{ light: teaching.light }" :style="{ color: teaching.light ? null : teaching.ink }">
+                {{ $i18n.locale === 'en' ? thought.en : thought.es }}
+            </p>
+        </Transition>
         <!-- the affirmation of the card of the place where he meditates, written by hand in the sky -->
         <Transition name="teaching">
             <p v-if="teaching.on" class="teaching glass" :class="{ light: teaching.light }" :style="{ color: teaching.light ? null : teaching.ink }">
@@ -1424,8 +1608,22 @@ onBeforeUnmount(() => {
         <!-- one button, on a phone and on a computer alike: the seed, Algo Particular's mark (as in the header), sits him
              in lotus and gets him up again; he walks with the arrows or WASD, or where a click or a touch on the floor
              sends him; a touch on him makes him wave (on a computer J jumps) -->
-        <button ref="lotusEl" class="lotus glass" :class="{ on: ui.sitting, hint: ui.hint }" :aria-pressed="ui.sitting" aria-label="Loto" title="Loto" @click="sit()">
+        <!-- the three meditations (a long press on the seed, or M): 1, 3 and 5 minutes -->
+        <Transition name="veil">
+            <div v-if="ui.choose && !ui.peek" class="veil" @pointerdown.stop="ui.choose = false"></div>
+        </Transition>
+        <Transition name="choose">
+            <div v-if="ui.choose" class="choose" :class="{ light: teaching.light }" role="menu">
+                <button v-for="m in GUIDE_MINUTES" :key="m" class="minutes" :class="{ hover: ui.hover === m }" role="menuitem" :data-minutes="m" @click="meditate(m)">
+                    <span class="dot" aria-hidden="true"></span>{{ m }} min
+                </button>
+            </div>
+        </Transition>
+        <button ref="lotusEl" class="lotus glass" :class="{ on: ui.sitting, hint: ui.hint, press: ui.press, popped: ui.pop && ui.choose }" :aria-pressed="ui.sitting" aria-label="Loto" title="Loto"
+            @pointerdown="seedDown" @pointermove="seedMove" @pointerup="seedUp" @pointercancel="seedUp" @click="seedClick">
             <span class="seed" aria-hidden="true"></span>
+            <!-- a meditation's time going by: a line of light round the seed that closes -->
+            <svg v-if="ui.guide" class="time" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="47" pathLength="1" :style="{ strokeDashoffset: (1 - guideLeft).toFixed(4) }" /></svg>
             <!-- the seeds he carries (picked up walking, planted sitting in lotus away from the places) -->
             <span v-if="ui.seeds" :key="ui.seedPop" class="count">{{ ui.seeds }}</span>
         </button>
@@ -1500,6 +1698,133 @@ canvas {
 .teaching-leave-active { transition: opacity 0.9s ease-in; }
 .teaching-enter-from { opacity: 0; transform: translateY(8px); }
 .teaching-leave-to { opacity: 0; }
+/* a place's thought: written by hand in the sky over it, on the app's frosted glass as the teaching's card (a soft cloud
+   that breathes, its edge fading into the sky), so it reads over anything */
+.thought {
+    position: absolute;
+    left: 0;
+    top: 0;
+    margin: 0;
+    max-width: min(440px, calc(100vw - 32px));
+    width: max-content;
+    box-sizing: border-box;
+    padding: 24px 40px 28px;
+    text-align: center;
+    font-family: 'Caveat', 'Nunito', helvetica, sans-serif;
+    font-size: clamp(24px, 5.6vw, 34px);
+    line-height: 1.15;
+    pointer-events: none;
+    border: none;
+    background-color: rgba(247, 248, 241, 0.62);
+    box-shadow: none;
+    border-radius: 46% 54% 44% 56% / 56% 46% 54% 44%;
+    -webkit-mask-image: radial-gradient(closest-side, #000 80%, transparent 100%);
+    mask-image: radial-gradient(closest-side, #000 80%, transparent 100%);
+}
+.thought.light { color: #F7F8F1; background-color: rgba(16, 30, 52, 0.5); }
+.thought-enter-active { transition: opacity 2.2s ease-out; }
+.thought-leave-active { transition: opacity 1.4s ease-in; }
+.thought-enter-from, .thought-leave-to { opacity: 0; }
+/* the meditations' menu, as an iPhone's long press: the world dims behind a veil and a menu of frosted glass grows out
+   of the seed on a spring, right-aligned over it; the row under the finger lights up */
+.veil {
+    position: absolute;
+    inset: 0;
+    background: rgba(20, 50, 70, 0.18);
+    -webkit-backdrop-filter: blur(5px);
+    backdrop-filter: blur(5px);
+}
+.veil-enter-active { transition: opacity 320ms ease-out; }
+.veil-leave-active { transition: opacity 240ms ease-in; }
+.veil-enter-from, .veil-leave-to { opacity: 0; }
+.choose {
+    position: absolute;
+    right: 20px;
+    bottom: calc(140px + env(safe-area-inset-bottom, 0px));
+    min-width: 172px;
+    display: flex;
+    flex-direction: column;
+    border-radius: 16px;
+    overflow: hidden;
+    background: rgba(247, 248, 241, 0.78);
+    -webkit-backdrop-filter: blur(22px) saturate(1.6);
+    backdrop-filter: blur(22px) saturate(1.6);
+    box-shadow: 0 12px 40px rgba(20, 50, 70, 0.28), 0 0 0 0.5px rgba(20, 50, 70, 0.12);
+    color: #143246;
+    /* (it grows out of the seed: from the middle of the button, under its bottom right corner) */
+    transform-origin: calc(100% - 42px) calc(100% + 54px);
+}
+.choose.light { background: rgba(28, 44, 66, 0.72); color: #F7F8F1; box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4), 0 0 0 0.5px rgba(247, 248, 241, 0.18); }
+.minutes {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 20px;
+    margin: 0;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    background: transparent;
+    color: inherit;
+    font-family: Nunito, sans-serif;
+    font-size: 17px;
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+    touch-action: none;
+    -webkit-tap-highlight-color: transparent;
+    transition: background-color 120ms ease-out;
+}
+.minutes + .minutes { border-top: 0.5px solid rgba(20, 50, 70, 0.16); }
+.choose.light .minutes + .minutes { border-top-color: rgba(247, 248, 241, 0.16); }
+.minutes.hover, .minutes:active { background-color: rgba(20, 50, 70, 0.1); }
+.choose.light .minutes.hover, .choose.light .minutes:active { background-color: rgba(247, 248, 241, 0.14); }
+@media (hover: hover) { .minutes:hover { background-color: rgba(20, 50, 70, 0.08); } .choose.light .minutes:hover { background-color: rgba(247, 248, 241, 0.12); } }
+.minutes:focus { outline: none; }
+.minutes:focus-visible { box-shadow: inset 0 0 0 2px rgba(255, 111, 97, 0.7); }
+/* a little light before each, bigger the longer the meditation */
+.minutes .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #FFE9A8;
+    box-shadow: 0 0 8px 2px rgba(255, 220, 140, 0.8);
+}
+.minutes[data-minutes="3"] .dot { width: 13px; height: 13px; }
+.minutes[data-minutes="5"] .dot { width: 16px; height: 16px; }
+.choose-enter-active { transition: transform 460ms cubic-bezier(0.3, 1.45, 0.55, 1), opacity 200ms ease-out; }
+.choose-leave-active { transition: transform 220ms ease-in, opacity 200ms ease-in; }
+.choose-enter-from, .choose-leave-to { transform: scale(0.2); opacity: 0; }
+.choose-enter-active .minutes { animation: row-in 360ms ease-out both; }
+.choose-enter-active .minutes:nth-child(2) { animation-delay: 40ms; }
+.choose-enter-active .minutes:nth-child(3) { animation-delay: 80ms; }
+@keyframes row-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+    .choose-enter-active, .choose-leave-active { transition: opacity 200ms; }
+    .choose-enter-from, .choose-leave-to { transform: none; }
+    .choose-enter-active .minutes { animation: none; }
+}
+/* held, the seed sinks slowly; as the menu opens it pops back up */
+.lotus.press { transform: scale(0.9); transition: transform 450ms cubic-bezier(0.4, 0, 0.6, 1), box-shadow 400ms ease-out; }
+.lotus.popped { animation: seed-pop 420ms cubic-bezier(0.3, 1.6, 0.5, 1); }
+@keyframes seed-pop { from { transform: scale(0.9); } 50% { transform: scale(1.08); } to { transform: scale(1); } }
+/* a meditation's time, round the seed */
+.lotus .time {
+    position: absolute;
+    inset: -3px;
+    width: calc(100% + 6px);
+    height: calc(100% + 6px);
+    transform: rotate(-90deg);
+    pointer-events: none;
+}
+.lotus .time circle {
+    fill: none;
+    stroke: rgba(255, 248, 226, 0.95);
+    stroke-width: 3;
+    stroke-linecap: round;
+    stroke-dasharray: 1;
+    filter: drop-shadow(0 0 3px rgba(255, 240, 200, 0.9));
+}
 .portal {
     position: relative;
     z-index: 10;                  /* (over the world, under the app's header: z-index 11) */
@@ -1541,7 +1866,7 @@ canvas {
     border: 1px solid rgba(247, 248, 241, 0.35);
     box-shadow: 0 4px 24px rgba(20, 50, 70, 0.18);
     cursor: pointer;
-    touch-action: manipulation;
+    touch-action: none;           /* (a finger held on it slides onto the menu: the page must not take it) */
     -webkit-tap-highlight-color: transparent;
     transition: box-shadow 400ms ease-out, background-color 400ms ease-out, transform 160ms ease-out;
 }

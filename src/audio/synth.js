@@ -831,6 +831,14 @@ const chordBreath = (ctx, out, time, harmony, { duration, shape, level }) => {
 const inColour = (k) => 320 * Math.pow(1500 / 320, smooth(k));
 const outColour = (k) => 1500 * Math.pow(340 / 1500, smooth(k));
 
+// A bowl, for a meditation in Sid's world (its start and its end): the card's note deep, its fifth and itself, ringing long
+export const bowl = (ctx, out, time, harmony) => {
+    const h = harmony ?? PLAIN;
+    bell(ctx, out, time, hz(h.voice - 12), 7, 0.06);
+    bell(ctx, out, time + 0.03, hz(h.voice - 5), 5.5, 0.026);
+    bell(ctx, out, time + 0.06, hz(h.voice), 4.6, 0.016);
+};
+
 // One slow breath, the length of breathCurve.js: in and out, joined
 export const breath = (ctx, out, time, harmony) => {
     const duration = INHALE + EXHALE;

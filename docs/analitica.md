@@ -36,7 +36,9 @@ Todos llevan `lang` (`es`/`en`) e `installed` (la app corre como PWA instalada).
 | `world_card_closed` | vuelve al mundo desde esa carta | `card_id`, `won` (completó su juego), `seconds` |
 | `world_rulito` | vuelve al mundo con un rulito | `card_id`, `via`: `card` (lo ganó en la carta) / `place` (nació en el lugar, sin WebGL) |
 | `world_seed_planted` | planta una semilla | `seed` (la carta de la semilla, por su nombre: `metta`), `zone` (id de la carta de la zona donde la planta) |
-| `world_left` | una vez por visita: se va del mundo, lo oculta o cierra la página | `seconds`, `distance` (px de su mundo: cruzar una zona son unos 8000), `zones`, `places`, `cards_opened`, `sits`, `seeds_picked`, `seeds_planted`, `rulitos`, `seconds_to_first_move` y `seconds_to_first_sit` (vacíos si no pasó), `touch`, `webgl`, y la fluidez (abajo) |
+| `world_secret` | descubre un secreto del mundo, una vez por visita cada uno | `what`: `constellation` (de noche, meditando, las estrellas forman el rulito), `star_seed` (una estrella fugaz le deja una semilla de luz), `fragment` (encuentra una marca de la historia); `seconds` |
+| `world_meditation` | termina una meditación elegida (1, 3 o 5 minutos) | `minutes`, `completed` (la terminó o se levantó antes), `seconds` (cuánto duró) |
+| `world_left` | una vez por visita: se va del mundo, lo oculta o cierra la página | `seconds`, `distance` (px de su mundo: cruzar una zona son unos 8000), `zones`, `places`, `cards_opened`, `sits`, `seeds_picked`, `seeds_planted`, `rulitos`, `meditations`, `secrets` (cuántos tipos de secreto descubrió), `seconds_to_first_move` y `seconds_to_first_sit` (vacíos si no pasó), `touch`, `webgl`, y la fluidez (abajo) |
 | `share_opened` | abre la pantalla de compartir | `card_id`, `from`: `reading` (el botón del final de la lectura; hasta noviembre de 2026 también `stage`, un botón sobre la escena que se sacó) |
 | `share_clicked` | elige un canal | `card_id`, `channel` (`link`, `facebook`, `twitter`, `whatsapp`) |
 | `language_changed` | cambia el idioma | `to` |

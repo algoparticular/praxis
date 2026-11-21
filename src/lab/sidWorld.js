@@ -129,6 +129,15 @@ const mostOf = (g) => {
 const grownOf = (g, steps = g.steps) => Math.min(mostOf(g), SEED_GROWTH.start + SEED_GROWTH.step * steps);
 const SPORE_FIRST = 14, SPORE_EVERY = [35, 60], SPORE_PICK = 210, SPORE_SPEED = 120;   // (s to the first, s between them, px)
 const SEED_SIZE = 2.6;
+// A seed of light: the one a shooting star leaves at his feet while he meditates by night (LabSid.vue). It is of no card
+// (`star`): it grows any card's plant, in the night's star yellow, and by night that plant twinkles with a few stars
+export const STAR_SEED = 'star', STAR_LIGHT = [252, 220, 140];
+// The marks of the story (story.js): a particle, as an atom is drawn (everything started from a particle), floating low
+// over the ground in every cell of the grid, away from its place (MARK.dx across and MARK.dd back from the place, to one
+// side or the other): a bright core in its zone's light with three tilted orbits of dots turning round it, each with its
+// light running along it, and a faint column of light rising from it to the sky, so it is told from the world's other
+// lights (fireflies, butterflies, bees, spores) and found from afar; walking under it he finds it, and it opens
+const MARK = { size: 620, dx: 0.32, dd: 0.28, pick: 240, high: 150 };
 // the seed's shape (seedShape.js: a seed with a particle of light inside it, until the illustrator draws it)
 const SEED_PATHS = typeof Path2D === 'undefined' ? null : { outline: new Path2D(SEED_OUTLINE), seam: new Path2D(SEED_SEAM) };          // (how big a seed is drawn: big enough to be seen from afar)
 const SEED_PLANTS = {
@@ -405,7 +414,8 @@ const PART_COLOUR = { cap: 2, stem: null };   // the mushrooms of the tree: thei
 const ROLES = { plant: 'plants', bead: 'beads', stone: 'stones' };
 const mixRgb = (a, b, t) => `rgb(${a.map((v, i) => Math.round(v + (b[i] - v) * t)).join(',')})`;
 
-export function createWorld({ clouds = null, moon = null, planted = [], visit = 0, onSeed = null, onGrow = null, onSing = null }) {
+export function createWorld({ clouds = null, moon = null, planted = [], visit = 0, onSeed = null, onGrow = null, onSing = null, marks = null, onMark = null }) {
+    // (marks: { found: [keys], open: () => whether there is still a fragment to read }: the marks of the story, story.js)
     zoneOrder = shuffled(ZONES);                // (a new map of the worlds on every visit)
     // The colours on the screen now: those of the zone where the camera is (blended between two), set as the sky is
     // drawn, first thing every frame
@@ -573,6 +583,19 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
             const id = `seed:${index},${row}`;
             if (clear(p) && !taken.has(id)) add({ id, kind: 'seed', x: p.x, d: p.d, card: z.card, cardId: z.id, role: 'bead', pick: rs(), phase: rs() * 10, reach: 120 });
         }
+        // the mark of the story in each cell of the grid that falls in this stretch, while there is a fragment to read
+        // (its key: the zone's card and its row of the grid, so it is the same mark however the worlds were shuffled)
+        if (marks?.open()) {
+            const n = zoneOrder.length;
+            for (let i = Math.floor((index * STRETCH - ZONE_START) / ZONE) - 1; i <= Math.floor(((index + 1) * STRETCH - ZONE_START) / ZONE) + 1; i++) {
+                for (let j = Math.floor((row * PATCH - 180 - D_START) / ZONE_D) - 1; j <= Math.floor(((row + 1) * PATCH - 180 - D_START) / ZONE_D) + 1; j++) {
+                    const side = mod(i + j, 2) ? 1 : -1, x = ZONE_START + ZONE * (i + 0.5 + side * MARK.dx), d = D_START + ZONE_D * (j + 0.5 + MARK.dd);
+                    if (x < index * STRETCH || x >= (index + 1) * STRETCH || row !== Math.floor((d + 180) / PATCH)) continue;
+                    const key = `${zoneOfCell(i, j).card}:${mod(j, n)}`;
+                    if (!marks.found.includes(key)) add({ kind: 'mark', key, x, d, role: 'bead', pick: 0.5, phase: (i * 3 + j) % 10, reach: 200 });
+                }
+            }
+        }
         // what he has planted, wherever its world is now
         for (const g of garden) {
             for (const at of plantedAt(g, index * STRETCH, (index + 1) * STRETCH, row * PATCH + PATCH_OFF, (row + 1) * PATCH + PATCH_OFF)) items.push(plantedItem(g, at.x, at.d));
@@ -608,7 +631,7 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
         // (Transformación's seeds once grew its tree, small: those kept on the phone come up as another card's plant)
         if (g.name === 'trTree') [g.name, g.scale, g.sway] = ANY_PLANT[Math.floor((g.pick ?? 0.5) * ANY_PLANT.length)];
         return { id, kind: 'piece', name: g.name, x, d, scale: g.scale, flip: g.flip, sway: g.sway, role: 'plant', pick: g.pick ?? 0.5,
-            planted: { g, now: g.visit === visit && g.at ? g.at : null } };
+            star: g.card === STAR_SEED, planted: { g, now: g.visit === visit && g.at ? g.at : null } };
     }
     // Planting a seed of a card at (x, d): what to remember of it (and it starts to sprout there now)
     function plant(card, x, d) {
@@ -717,6 +740,12 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
                     onSeed?.({ card: item.card, id: item.cardId, x: item.x, d: item.d, light: item.P?.light });
                 }
                 if (item.kind === 'seed' && taken.has(item.id)) { const l = lifeOf(item); l.up = Math.min(1, (l.up ?? 0) + dt * 1.6); }
+                // a mark of the story he walks over: found (it rises in light and goes; the page writes the next fragment)
+                if (item.kind === 'mark') {
+                    const l = lifeOf(item);
+                    if (!marks.found.includes(item.key) && marks.open() && !sid.sitting && dist < MARK.pick) { marks.found.push(item.key); l.up = 0; onMark?.(item.key); }
+                    if (marks.found.includes(item.key)) l.up = Math.min(1, (l.up ?? 1) + dt * 0.8);
+                }
                 // colour: as he walks by, and inside the wave while he sits (what grows round a place, with its place)
                 let c = colour.get(item.id) ?? 0;
                 const g = item.garden, from = g ? Math.hypot(g.x - sid.x, (g.d - sid.d) * 1.6) : dist;
@@ -922,7 +951,57 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
                     c.fillStyle = `rgba(255,248,220,${a})`; c.beginPath(); c.arc(sx, sy, 2.6 + 1.4 * (1 - t), 0, Math.PI * 2); c.fill();
                 }
             }
+            // what grew from a seed of light twinkles by night, a few stars round its top
+            if (item.star && dark > 0.05) {
+                const top = -box[3] * k * 0.8;
+                halo(c, 0, top, box[2] * k * 0.5, STAR_LIGHT, 0.18 * dark);
+                for (let n = 0; n < 5; n++) {
+                    const tw = Math.max(0, Math.sin(time * (1.3 + n * 0.37) + n * 2.1 + item.x * 0.01)) ** 3;
+                    const sx = Math.cos(n * 2.4) * box[2] * k * 0.42, sy = top + Math.sin(n * 2.4) * box[3] * k * 0.3;
+                    c.fillStyle = `rgba(${STAR_LIGHT.join(',')},${dark * (0.25 + 0.75 * tw)})`;
+                    c.beginPath(); c.arc(sx, sy, 2 + 3 * tw, 0, Math.PI * 2); c.fill();
+                }
+            }
             c.restore();
+            break;
+        }
+        case 'mark': {
+            // a particle as an atom: a core, three tilted orbits of dots turning, a light running along each, and a faint
+            // column of light up to the sky; found, it rises, its orbits open out and fade
+            const up = l?.up ?? 0;
+            if (up >= 1 || !marks?.open() && up === 0) break;
+            const t = time + item.phase, breath = 0.5 + 0.5 * Math.sin(t * 1.4), K = MARK.size, a = 1 - up;
+            const rgb = P.light.map(Math.round), y = -MARK.high - 10 * Math.sin(t * 0.9) - up * 220;
+            c.fillStyle = `rgba(20,50,70,${0.08 * a})`; c.beginPath(); c.ellipse(0, 0, K * 0.12, K * 0.025, 0, 0, Math.PI * 2); c.fill();
+            c.globalAlpha *= a;
+            // the column of light, from the ground up to the sky, fading upwards
+            const col = c.createLinearGradient(0, 0, 0, -2600);
+            col.addColorStop(0, `rgba(${rgb.join(',')},${0.32 + 0.1 * breath})`); col.addColorStop(1, `rgba(${rgb.join(',')},0)`);
+            // (soft at its sides: a few bands, the wider the fainter)
+            c.fillStyle = col;
+            for (const [w, al] of [[0.06, 0.35], [0.032, 0.5], [0.012, 0.9]]) { c.globalAlpha *= al; c.fillRect(-K * w / 2, -2600, K * w, 2600); c.globalAlpha /= al; }
+            halo(c, 0, y, K * (0.32 + 0.06 * breath), rgb, 0.4 + 0.15 * breath);
+            // the orbits: ellipses of dots, each tilted its own way, turning, with a light running along (the dots in the
+            // zone's ink by day, so they read on its ground, and cream by night)
+            const orbit = mixRgb(P.ink, [255, 250, 230], night());
+            for (let o = 0; o < 3; o++) {
+                const tilt = o * Math.PI / 3 + 0.3, R = K * 0.3 * (1 + up * 2.5), r = R * 0.34, spin = t * (0.7 + o * 0.25) + o * 2;
+                const ct = Math.cos(tilt), st = Math.sin(tilt);
+                for (let n = 0; n < 16; n++) {
+                    const u = n / 16 * Math.PI * 2 + spin * 0.15, ex = Math.cos(u) * R, ey = Math.sin(u) * r;
+                    c.fillStyle = orbit;
+                    c.beginPath(); c.arc(ex * ct - ey * st, y + ex * st + ey * ct, K * 0.01, 0, Math.PI * 2); c.fill();
+                }
+                const ex = Math.cos(spin) * R, ey = Math.sin(spin) * r, px = ex * ct - ey * st, py = y + ex * st + ey * ct;
+                halo(c, px, py, K * 0.07, rgb, 0.9);
+                c.fillStyle = `rgb(${rgb.join(',')})`; c.beginPath(); c.arc(px, py, K * 0.026, 0, Math.PI * 2); c.fill();
+                c.fillStyle = 'rgba(255,252,238,1)'; c.beginPath(); c.arc(px, py, K * 0.013, 0, Math.PI * 2); c.fill();
+            }
+            halo(c, 0, y, K * 0.11, [255, 250, 230], 0.8 + 0.2 * breath);
+            c.fillStyle = `rgb(${rgb.join(',')})`;
+            c.beginPath(); c.arc(0, y, K * (0.05 + 0.01 * breath), 0, Math.PI * 2); c.fill();
+            c.fillStyle = 'rgba(255,252,238,0.95)';
+            c.beginPath(); c.arc(-K * 0.01, y - K * 0.01, K * 0.022, 0, Math.PI * 2); c.fill();
             break;
         }
         case 'tree': {
@@ -1387,6 +1466,16 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
 
     // The card of the place he is at (x, depth), if any: its id in src/data/cards.json
     const placeCard = (x, d) => placeAt(x, d)?.P.id ?? null;
+    // The place nearest (x, depth) within `range` of its middle (the floor's depth counting a little more): { id, x, d,
+    // reach } or null (for the page to write its thought over it as he comes near)
+    function placeNear(x, d, range) {
+        let best = null, bestD = Infinity;
+        for (const { P, x: px, d: pd } of placesNear(x - range - 2000, x + range + 2000, d - range, d + range)) {
+            const dist = Math.hypot(px - x, (pd - d) * 1.6);
+            if (dist < bestD) { bestD = dist; best = { id: P.id, x: px, d: pd, reach: P.reach ?? 700, dist }; }
+        }
+        return best && bestD < range + best.reach ? best : null;
+    }
 
     // What stands in his way near x (within `range`): circles on the floor { x, d, r }
     function obstacles(x, d, range) {
@@ -1457,6 +1546,6 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
         return 'dance';
     }
     // (seedLight: the light of a card's seeds, for the page to fly one from the button to where it is planted)
-    const seedLight = (card) => { const z = ZONES.find((q) => q.card === card); return z ? colourOf([{ z, w: 1 }], 'bead', 0.5).light : [255, 244, 214]; };
-    return { update, draw, drawSky, drawGround, ground, night, ink, white, nightColour, placeCard, zoneCard, obstacles, plant, plantsNear, plantBy, touchPlant, singPlant, cardIdOf, tend, seedsNear, seedLight, spore: () => spore, setClock: (v) => { clock = ((v % 1) + 1) % 1; } };
+    const seedLight = (card) => { if (card === STAR_SEED) return STAR_LIGHT; const z = ZONES.find((q) => q.card === card); return z ? colourOf([{ z, w: 1 }], 'bead', 0.5).light : [255, 244, 214]; };
+    return { update, draw, drawSky, drawGround, ground, night, ink, white, nightColour, placeCard, placeNear, zoneCard, obstacles, plant, plantsNear, plantBy, touchPlant, singPlant, cardIdOf, tend, seedsNear, seedLight, spore: () => spore, setClock: (v) => { clock = ((v % 1) + 1) % 1; } };
 }
