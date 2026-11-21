@@ -128,7 +128,7 @@ function openStory() {
     showTab(news.thoughts ? 'thoughts' : news.herb ? 'herbarium' : story.found ? story.tab : 'herbarium');
     story.open = true; ui.choose = false;
     document.body.classList.add('lab-story');
-    visit?.notebook(story.tab, news.thoughts || news.herb);
+    visit?.notebook(story.tab, news.thoughts || news.herb, memory.fragments.length, herbPlanted().size);
     play('tap');
 }
 function closeStory() { story.open = false; document.body.classList.remove('lab-story'); }
@@ -228,9 +228,10 @@ function seedClick() {
 function meditate(minutes) {
     ui.choose = false; clearTimeout(peekTimer);
     learn('guided');
-    if (!ui.sitting) sit(true);
+    if (!ui.sitting) sit(true, minutes);
     ui.guide = { minutes, total: minutes * 60, t: 0, started: false, breaths: 0 };
     setHush(true);
+    visit?.guideChosen(minutes);
 }
 function endGuide(done) {
     if (!ui.guide) return;
@@ -400,6 +401,7 @@ function addSeed(card, from, light) {
     memory.seeds.push(card); saveMemory(memory); play('pick');
     fly(from, buttonMiddle(), light ?? world.seedLight(card), () => {
         ui.seeds = memory.seeds.length; ui.seedPop += 1;
+        if (seedWaiting) visit?.firstSeed('picked');
         seedWaiting = false;
         if (!firstSeedCalled && !memory.learned.planted) { firstSeedCalled = true; callButton(); tell('seed', 300); }
     });
@@ -566,7 +568,7 @@ const world = createWorld({
         const i = left[Math.floor(Math.random() * left.length)];
         if (i == null) return;
         memory.fragments.push(i); saveMemory(memory); readFragment(i);
-        visit?.fragment();
+        visit?.fragment(memory.fragments.length);
     },
     onGrow: () => { saveMemory(memory); play('star'); },
     onSing: (p) => sing(p),
@@ -830,13 +832,14 @@ function walkTo(x, d = state.d) {
 }
 function wave() { if (!ui.sitting) act('wave', 2.6, { arm: 'near' }); }
 function jump() { if (!ui.sitting && !state.air) { state.jumped = false; act('jump', 1.7); } }
-function sit(on = !ui.sitting) {
+function sit(on = !ui.sitting, minutes = null) {
     if (on === ui.sitting) return;
     if (on) { satThisVisit = true; clearTimeout(hintTimer); learn('sat'); }
     ui.hint = false;
     // getting up is its own little movement while his legs are still crossed
     state.rising = !on && Math.max(...state.legSit) > 0.1;
-    if (on) visit?.sat();
+    // (where: the card of the place he sits at, or none; whether by night; and the meditation chosen, if one was)
+    if (on) visit?.sat({ place: world.placeCard(state.x, state.d) ?? null, zone: world.zoneCard(), night: world.night() > 0.5, minutes });
     if (!on) endGuide(false);
     ui.sitting = on; state.sitT = 0; state.settled = false; state.target = null; state.action = null;
 }
@@ -1105,9 +1108,11 @@ function update(dt, now) {
             state.sowing = null;
             state.planted = true;
             if (!still) burstAt(toScreen(w.x, w.d), `rgb(${w.light.map(Math.round).join(',')})`);
-            const seed = memory.seeds.shift(), g = world.plant(seed, w.x, w.d);
+            const seed = memory.seeds.shift(), kinds = herbPlanted(), g = world.plant(seed, w.x, w.d), kind = kindOf(g.name);
             memory.planted.push(g);
-            visit?.seedPlanted(seed, world.zoneCard(), kindOf(g.name));
+            visit?.seedPlanted(seed, world.zoneCard(), kind);
+            if (firstVisit) visit?.firstSeed('planted');
+            if (kind && !kinds.has(kind)) visit?.plantDiscovered(kind, kinds.size + 1);
             ui.seeds = memory.seeds.length;
             learn('planted');
             firstVisit = false;
@@ -1716,7 +1721,7 @@ onMounted(() => {
     // where they came from: the page before this one in the app (the landing's labyrinth), or nothing (a link)
     const back = window.history.state?.back;
     const standalone = window.matchMedia?.('(display-mode: standalone)').matches || window.navigator.standalone === true;
-    visit = startWorldVisit({ from: back ? (back === '/' ? 'landing' : back.split('?')[0]) : 'direct', touch: ui.touch, webgl, standalone });
+    visit = startWorldVisit({ from: back ? (back === '/' ? 'landing' : back.split('?')[0]) : 'direct', touch: ui.touch, webgl, standalone, visit: memory.visits });
 });
 onBeforeUnmount(() => {
     visit?.cardClosed(portal.won);

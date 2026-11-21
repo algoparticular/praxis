@@ -185,8 +185,8 @@ export const startTableVisit = (table) => {
 // What a person does in Sid's world (/sid), told as one story when they leave it, with a few moments on the way.
 // It counts this visit only: what the world remembers on the phone (worldMemory.js: visits, seeds, plants) is never
 // sent, so it cannot tell who comes back. `from` is the page they came from (the landing's labyrinth, a link...).
-export const startWorldVisit = ({ from, touch, webgl, standalone = false }) => {
-    if (!tracking()) return { zone() {}, moved() {}, sat() {}, meditated() {}, seedPicked() {}, seedPlanted() {}, fragment() {}, notebook() {}, cardOpened() {}, cardClosed() {}, rulito() {}, secret() {}, guided() {}, finish() {} };
+export const startWorldVisit = ({ from, touch, webgl, standalone = false, visit: number = null }) => {
+    if (!tracking()) return { zone() {}, moved() {}, sat() {}, meditated() {}, seedPicked() {}, seedPlanted() {}, firstSeed() {}, fragment() {}, notebook() {}, plantDiscovered() {}, guideChosen() {}, cardOpened() {}, cardClosed() {}, rulito() {}, secret() {}, guided() {}, finish() {} };
     const startedAt = performance.now();
     const meter = measureFrames();
     const secs = (at = performance.now()) => Math.round((at - startedAt) / 100) / 10;
@@ -195,9 +195,9 @@ export const startWorldVisit = ({ from, touch, webgl, standalone = false }) => {
     let distance = 0, sits = 0, seedsPicked = 0, seedsPlanted = 0, rulitos = 0, firstMoveAt = null, firstSitAt = null;
     let opened = null, finished = false;
 
-    // (standalone: opened from the Home Screen. Nothing the world keeps on the phone is sent: not which visit this is,
-    // nor what was found or planted before; only what happens in this visit)
-    track('world_entered', { from, touch, webgl, standalone });
+    // (standalone: opened from the Home Screen; visit: which visit of this device it is, as the world remembers it. Of
+    // what the world keeps on the phone only counts are sent: this number, and how many fragments and kinds of plant)
+    track('world_entered', { from, touch, webgl, standalone, visit: number });
 
     const visit = {
         // the zone he walks into, the card of that world (the first one too: where the shuffled world starts)
@@ -215,9 +215,12 @@ export const startWorldVisit = ({ from, touch, webgl, standalone = false }) => {
                 track('world_moved', { seconds_to_first: secs(firstMoveAt), how });
             }
         },
-        sat() {
+        // each time he sits in lotus: at which place (its card, or null away from them), in which zone, whether by night,
+        // and the meditation chosen (1, 3 or 5 minutes) if he sat for one
+        sat({ place = null, zone = null, night = false, minutes = null } = {}) {
             sits += 1;
             if (firstSitAt === null) firstSitAt = performance.now();
+            track('world_sat', { place, zone, night, minutes, sits, seconds: secs() });
         },
         // meditating at a place (a card's door), once a visit each
         meditated(card) {
@@ -230,12 +233,23 @@ export const startWorldVisit = ({ from, touch, webgl, standalone = false }) => {
             seedsPlanted += 1;
             track('world_seed_planted', { seed: card, zone, kind });
         },
-        // a fragment of the story found in this visit (counted for world_left; the first is also a world_secret)
-        fragment() { fragments += 1; },
-        // Sid's notebook opened: on which page, and whether something new was waiting in it
-        notebook(tab, fresh) {
+        // the first visit's lesson: the seed lying near him picked up, and then planted (seconds since he came in)
+        firstSeed(step) {
+            track('world_first_seed', { step, seconds: secs() });
+        },
+        // a fragment of the story found (each mark gives one): how many of the twelve there are now
+        fragment(found) {
+            fragments += 1;
+            track('world_fragment', { found, seconds: secs() });
+        },
+        // Sid's notebook opened: on which page, how much is in it, and whether something new was waiting in it
+        notebook(tab, fresh, found, plants) {
             notebookOpens += 1;
-            track('world_notebook_opened', { tab, fresh });
+            track('world_notebook_opened', { tab, fresh, fragments: found, plants });
+        },
+        // a kind of plant planted for the first time ever (it comes into the herbarium): which, and how many kinds now
+        plantDiscovered(kind, kinds) {
+            track('world_plant_discovered', { kind, kinds });
         },
         cardOpened(card) {
             cards.add(card);
@@ -258,6 +272,10 @@ export const startWorldVisit = ({ from, touch, webgl, standalone = false }) => {
             if (secrets.has(what)) return;
             secrets.add(what);
             track('world_secret', { what, seconds: secs(), ...more });
+        },
+        // a meditation chosen (1, 3 or 5 minutes), as it starts (sitting already or not)
+        guideChosen(minutes) {
+            track('world_meditation_started', { minutes, seconds: secs() });
         },
         // a meditation chosen (1, 3 or 5 minutes): whether it was sat through, and how long it lasted
         guided(minutes, completed, seconds) {
