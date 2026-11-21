@@ -100,7 +100,7 @@ function readFragment(i) {
     }, 600);
 }
 
-// Sid's notebook, written in the sky (its icon, a notebook, under the header's menu button, shows once there is something in it and
+// Sid's notebook, written in the sky (its icon, a notebook, on a small round button over the seed's, shows once there is something in it and
 // glows while there is something new to see; it opens on the page that has it; a touch anywhere, or Escape, closes it;
 // the header's icons go cream over it, `body.lab-story`). Two pages:
 // - Pensamientos: the fragments of the story found, in order, as one paragraph, those still hidden as faint stars the
@@ -1770,7 +1770,7 @@ onBeforeUnmount(() => {
         </Transition>
         <!-- the affirmation of the card of the place where he meditates, written by hand in the sky -->
         <Transition name="teaching">
-            <p v-if="teaching.on" class="teaching glass" :class="{ light: teaching.light, low: story.shown && portal.card == null }" :style="{ color: teaching.light ? null : teaching.ink }">
+            <p v-if="teaching.on" class="teaching glass" :class="{ light: teaching.light }" :style="{ color: teaching.light ? null : teaching.ink }">
                 {{ $i18n.locale === 'en' ? teaching.en : teaching.es }}
             </p>
         </Transition>
@@ -1791,9 +1791,9 @@ onBeforeUnmount(() => {
                 </button>
             </div>
         </Transition>
-        <!-- Sid's notebook (openStory): its icon under the menu button, once there is something in it -->
+        <!-- Sid's notebook (openStory): a small round button over the seed's, once there is something in it -->
         <Transition name="teaching">
-            <button v-if="story.shown && portal.card == null" class="story-icon" :class="{ light: teaching.light, fresh: story.fresh }"
+            <button v-if="story.shown && portal.card == null" class="story-icon glass" :class="{ fresh: story.fresh }"
                 :aria-label="$i18n.locale === 'en' ? 'Notebook' : 'Libreta'" :title="$i18n.locale === 'en' ? 'Notebook' : 'Libreta'"
                 @click="openStory"><span aria-hidden="true"></span></button>
         </Transition>
@@ -1911,8 +1911,6 @@ canvas {
     from { border-radius: 46% 54% 44% 56% / 56% 46% 54% 44%; }
     to { border-radius: 54% 46% 56% 44% / 46% 56% 44% 54%; }
 }
-/* under the notebook's icon while it is shown in the corner, so the two never overlap */
-.teaching.low { top: calc(120px + env(safe-area-inset-top, 0px)); }
 @media (prefers-reduced-motion: reduce) { .teaching { animation: none; } }
 .teaching-enter-active { transition: opacity 1.6s ease-out, transform 1.6s ease-out; }
 .teaching-leave-active { transition: opacity 0.9s ease-in; }
@@ -2206,42 +2204,43 @@ canvas {
     pointer-events: none;
     box-shadow: 0 0 6px rgba(255, 244, 214, 0.9);
 }
-/* the story's icon: a notebook, as the app's icons (a line, no button round it), in the top right corner under the
-   header's menu button, so the sound, the menu and the notebook make a little triangle there;
-   in the ink of his line by day, cream by night (as the header's icons); while a fragment found waits to be seen it
-   breathes a soft glow */
+/* the notebook's button: as the seed's, smaller (the app's frosted glass, a little darkened, a cream line round it),
+   centred over it; the notebook in cream; while something new waits to be seen it breathes a soft glow */
 .story-icon {
     position: absolute;
-    /* centred under the menu button (50 px wide, at the header's 2vw from the edge, 16 px under its top) */
-    right: calc(2vw + 3px);
-    top: calc(64px + env(safe-area-inset-top, 0px));
-    width: 44px;
-    height: 44px;
+    right: 36px;                  /* (centred over the seed's: 20 + (84 - 52) / 2) */
+    bottom: calc(144px + env(safe-area-inset-bottom, 0px));
+    width: 52px;
+    height: 52px;
     padding: 0;
     margin: 0;
-    border: none;
-    background: none;
-    color: rgba(0, 0, 0, 0.78);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #F7F8F1;
+    background-color: rgba(20, 50, 70, 0.26);
+    border: 1px solid rgba(247, 248, 241, 0.35);
+    box-shadow: 0 4px 24px rgba(20, 50, 70, 0.18);
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
-    transition: transform 160ms ease-out, color 600ms ease-out;
+    transition: transform 160ms ease-out, box-shadow 400ms ease-out;
 }
-.story-icon.light { color: #F7F8F1; }
 .story-icon span {
     display: block;
-    width: 100%;
-    height: 100%;
+    width: 26px;
+    height: 26px;
     background-color: currentColor;
     -webkit-mask: url('../assets/icon/Notebook.svg') center / contain no-repeat;
     mask: url('../assets/icon/Notebook.svg') center / contain no-repeat;
 }
 .story-icon:active { transform: scale(0.9); }
 .story-icon:focus { outline: none; }
-.story-icon:focus-visible { filter: drop-shadow(0 0 6px rgba(255, 111, 97, 0.9)); }
+.story-icon:focus-visible { box-shadow: 0 0 0 4px rgba(247, 248, 241, 0.6); }
 .story-icon.fresh { animation: story-call 2.4s ease-in-out infinite alternate; }
 @keyframes story-call {
-    from { filter: drop-shadow(0 0 0 rgba(255, 240, 200, 0)); }
-    to { filter: drop-shadow(0 0 8px rgba(255, 240, 200, 0.95)); }
+    from { box-shadow: 0 0 6px 0 rgba(255, 240, 200, 0.3); }
+    to { box-shadow: 0 0 24px 6px rgba(255, 240, 200, 0.8); }
 }
 /* the story's page: over the dimmed world, a card of frosted cream with the story as one paragraph, written by hand;
    what is still hidden, dark bars the length of its words; what was found since it was last seen is painted in */
@@ -2410,7 +2409,7 @@ canvas {
 .story-count span.on { background: #F7F8F1; box-shadow: 0 0 6px rgba(255, 240, 200, 0.8); }
 @media (prefers-reduced-motion: reduce) {
     .frag.fresh, .frag.locked, .herbarium li.fresh img, .herbarium li.fresh .name { animation: none; }
-    .story-icon.fresh { animation: none; filter: drop-shadow(0 0 6px rgba(255, 240, 200, 0.9)); }
+    .story-icon.fresh { animation: none; box-shadow: 0 0 18px 4px rgba(255, 240, 200, 0.7); }
 }
 /* The app's header over his light sky: its cream icons in the ink of his line (the header is teleported into <body>,
    so this is not scoped; body.lab-page only while the lab is open) */
