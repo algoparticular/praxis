@@ -237,7 +237,7 @@ export const startWorldVisit = ({ from, touch, webgl, standalone = false, visit:
         firstSeed(step) {
             track('world_first_seed', { step, seconds: secs() });
         },
-        // a fragment of the story found (each mark gives one): how many of the twelve there are now
+        // a fragment of the story found (each mark gives one): how many of the eighteen there are now
         fragment(found) {
             fragments += 1;
             track('world_fragment', { found, seconds: secs() });

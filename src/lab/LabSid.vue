@@ -689,14 +689,14 @@ const world = createWorld({
     clouds: picture('/assets/ciclos/clouds.webp'), moon: picture('/assets/ciclos/moon.webp'),
     planted: memory.planted, visit: memory.visits,
     onSeed: (seed) => { visit?.seedPicked(); seedFound(seed); },
-    // the marks of the story (story.js), out once the first seed is planted, and still out once the twelve are found:
+    // the marks of the story (story.js), out once the first seed is planted, and still out once the eighteen are found:
     // found, the next one is written. The first is near where he starts, in sight (FIRST_MARK), until one is found
     marks: { found: memory.marks, open: () => !firstVisit, first: memory.fragments.length ? null : FIRST_MARK },
     firstSeed: firstVisit ? { ...FIRST_SEED } : null,
     // (each mark gives a fragment still hidden, at random: the story is found out of order)
     onMark: () => {
         const left = FRAGMENTS.map((f, i) => i).filter((i) => !memory.fragments.includes(i));
-        // (with the twelve found, a mark gives one of them again, at random, for now)
+        // (with the eighteen found, a mark gives one of them again, at random, for now)
         if (!left.length) { saveMemory(memory); readFragment(Math.floor(Math.random() * FRAGMENTS.length)); return; }
         const i = left[Math.floor(Math.random() * left.length)];
         memory.fragments.push(i); saveMemory(memory); readFragment(i);
