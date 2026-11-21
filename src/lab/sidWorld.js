@@ -112,6 +112,7 @@ const CURLS = ['pacCurl0', 'pacCurl1', 'pacCurl2', 'pacCurl3', 'pacCurl4', 'pacC
 // stem, with its little light). A seed of light grows any card's plant. The page can say which of them (`names`): those
 // whose kind has not been planted yet, so the herbarium is filled without repeats
 const SEED_CHANCE = 0.012, SEED_PICK = 130, SEED_SPROUT = 5;     // (how near he picks it up; seconds it takes to sprout)
+const SEED_ROOM = 300;     // (how far round the first seed no place may be sat at)
 const SEED_GROWTH = { start: 0.6, step: 0.12, most: 1.4, top: 2 };
 const SEED_BACK = { near: 320, away: 900 };     // (how near counts as coming back to it, and how far as having gone away)
 const SEED_GREW = 1.6;                          // (seconds a step of growing takes)
@@ -141,7 +142,8 @@ export const STAR_SEED = 'star', STAR_LIGHT = [252, 220, 140];
 // side or the other): a bright core in its zone's light with three tilted orbits of dots turning round it, each with its
 // light running along it, and a faint column of light rising from it to the sky, so it is told from the world's other
 // lights (fireflies, butterflies, bees, spores) and found from afar; walking under it he finds it, and it opens
-const MARK = { size: 620, dx: 0.32, dd: 0.28, pick: 240, high: 150 };
+// (dd: 1080 back, so walking along the front the marks of the row stand at the horizon: small and far, hardly past it)
+const MARK = { size: 620, dx: 0.32, dd: 0.18, pick: 240, high: 150 };
 // the seed's shape (seedShape.js: a seed with a particle of light inside it, until the illustrator draws it)
 const SEED_PATHS = typeof Path2D === 'undefined' ? null : { outline: new Path2D(SEED_OUTLINE), seam: new Path2D(SEED_SEAM) };          // (how big a seed is drawn: big enough to be seen from afar)
 const SEED_PLANTS = {
@@ -427,7 +429,8 @@ const mixRgb = (a, b, t) => `rgb(${a.map((v, i) => Math.round(v + (b[i] - v) * t
 export function createWorld({ clouds = null, moon = null, planted = [], visit = 0, onSeed = null, onGrow = null, onSing = null, marks = null, onMark = null, firstSeed = null }) {
     // (firstSeed: { x, d }, on the very first visit: a seed lies there, near him, calling with rings of light on the
     // ground, so the first thing learnt is that seeds are gathered; LabSid.vue)
-    // (marks: { found: [keys], open: () => whether there is still a fragment to read }: the marks of the story, story.js)
+    // (marks: { found: [keys], open: () => whether they are out, first: { x, d } or null }: the marks of the story,
+    // story.js; first: one of its own, near where he starts and in sight, until the first fragment is found)
     zoneOrder = shuffled(ZONES);                // (a new map of the worlds on every visit)
     // The colours on the screen now: those of the zone where the camera is (blended between two), set as the sky is
     // drawn, first thing every frame
@@ -436,7 +439,7 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
         return { ink: m('ink'), white: m('white'), sky: m('sky'), night: m('night'), sun: m('sun'), groundDay: m('groundDay'),
             groundNight: m('groundNight'), detailDay: m('detailDay'), detailNight: m('detailNight'), dark: zs.reduce((t, { z, w }) => t + z.dark * w, 0) };
     };
-    let screen = blend(zonesAt(1000)), lastCam = 1000, lastD = 420;
+    let screen = blend(zonesAt(0)), lastCam = 0, lastD = 420;
     // One of the colours a thing takes, as the zone where it stands has it (blended between two)
     const colourOf = (zs, role = 'plant', pick = 0) => {
         const of = (z) => { const list = z.roles[ROLES[role]]; return z.palette[list[Math.min(list.length - 1, Math.floor(pick * list.length))]]; };
@@ -596,6 +599,7 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
             if (clear(p) && !taken.has(id)) add({ id, kind: 'seed', x: p.x, d: p.d, card: z.card, cardId: z.id, role: 'bead', pick: rs(), phase: rs() * 10, reach: 120 });
         }
         // the first seed of all, near him on the first visit (firstSeed), of the card of the zone where it lies
+        if (firstSeed && !firstSeed.clear) clearOfPlaces(firstSeed);
         if (firstSeed && Math.floor(firstSeed.x / STRETCH) === index && Math.floor((firstSeed.d - PATCH_OFF) / PATCH) === row && !taken.has('seed:first')) {
             const z = mainZone(zonesAt(firstSeed.x, firstSeed.d));
             add({ id: 'seed:first', kind: 'seed', x: firstSeed.x, d: firstSeed.d, card: z.card, cardId: z.id, role: 'bead', pick: 0.5, phase: 2, reach: 120, beacon: true });
@@ -611,6 +615,10 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
                     const key = `${zoneOfCell(i, j).card}:${mod(j, n)}`;
                     if (!marks.found.includes(key)) add({ kind: 'mark', key, x, d, role: 'bead', pick: 0.5, phase: (i * 3 + j) % 10, reach: 200 });
                 }
+            }
+            const f = marks.first;
+            if (f && !marks.found.includes('first') && Math.floor(f.x / STRETCH) === index && row === Math.floor((f.d + 180) / PATCH)) {
+                add({ kind: 'mark', key: 'first', x: f.x, d: f.d, role: 'bead', pick: 0.5, phase: 3, reach: 200, big: 1.4 });
             }
         }
         // what he has planted, wherever its world is now
@@ -996,7 +1004,7 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
             // column of light up to the sky; found, it rises, its orbits open out and fade
             const up = l?.up ?? 0;
             if (up >= 1 || !marks?.open() && up === 0) break;
-            const t = time + item.phase, breath = 0.5 + 0.5 * Math.sin(t * 1.4), K = MARK.size, a = 1 - up;
+            const t = time + item.phase, breath = 0.5 + 0.5 * Math.sin(t * 1.4), K = MARK.size * (item.big ?? 1), a = 1 - up;
             const rgb = P.light.map(Math.round), y = -MARK.high - 10 * Math.sin(t * 0.9) - up * 220;
             c.fillStyle = `rgba(20,50,70,${0.08 * a})`; c.beginPath(); c.ellipse(0, 0, K * 0.12, K * 0.025, 0, 0, Math.PI * 2); c.fill();
             c.globalAlpha *= a;
@@ -1502,6 +1510,20 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
 
     // The card of the place he is at (x, depth), if any: its id in src/data/cards.json
     const placeCard = (x, d) => placeAt(x, d)?.P.id ?? null;
+    // The first seed must lie away from every place, with room round it: sitting where it is picked up has to plant it,
+    // not open a card (Paciencia's boat takes some 4000 px across, round where the first place stands). So, once, it
+    // is moved nearer the front, then back towards where he starts, until it and the ground round it are clear
+    function clearOfPlaces(seed) {
+        const free = (x, d) => [[0, 0], [-SEED_ROOM, 0], [SEED_ROOM, 0], [0, -SEED_ROOM], [0, SEED_ROOM]]
+            .every(([dx, dd]) => !placeAt(x + dx, d + dd));
+        const x0 = seed.x, d0 = seed.d;
+        seed.clear = true;
+        for (let back = 0; back <= 1200; back += 150) {
+            for (let front = 0; front <= 900; front += 60) {
+                if (free(x0 - back, d0 - front)) { seed.x = x0 - back; seed.d = d0 - front; return; }
+            }
+        }
+    }
     // The place nearest (x, depth) within `range` of its middle (the floor's depth counting a little more): { id, x, d,
     // reach } or null (for the page to write its thought over it as he comes near)
     function placeNear(x, d, range) {
