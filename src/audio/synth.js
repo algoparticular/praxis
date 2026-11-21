@@ -47,9 +47,11 @@ export const chord = (name = BASE_CHORD) => {
     return {
         name,
         kind,
+        root,
         bass,
         voice,
         intervals: tones,
+        scale,
         // The tones from a register upwards, across a span of semitones
         tones: (from, span) => {
             const out = [];
@@ -520,6 +522,35 @@ export const sing = (ctx, out, time, harmony, { step = 0, length = 0.6 } = {}) =
     vibrato.start(time);
     vibrato.stop(end);
     swish(ctx, out, time, { from: 1400, to: 2600, duration: length * 0.8 + 0.2, level: 0.004, q: 0.7 });
+};
+
+// Sid's garden (src/lab): each plant he planted has one note, a note of its own card's chord (`pick` chooses which),
+// so walking among them plays a tune made of the cards he lived. If that note clashes with the world it grows in (not in
+// its chord nor in the pentatonic its chimes use, which never clash with the pad) it moves to the nearest one that fits,
+// so it is nearly always its own and never out of tune. How big it has grown is its register: small ones high, grown
+// ones low (caring for it changes its voice). The midi note, for `garden` below.
+export const gardenNote = (own, here, pick = 0.5, grown = 1) => {
+    const a = chord(own), b = chord(here);
+    const tone = a.intervals[Math.min(a.intervals.length - 1, Math.floor(Math.max(0, pick) * a.intervals.length))];
+    const fits = (pc) => [...b.scale, ...b.intervals].some((step) => (b.root + step) % 12 === pc);
+    let pc = (a.root + tone) % 12;
+    if (!fits(pc)) {
+        for (const d of [-1, 1, -2, 2]) if (fits((pc + d + 12) % 12)) { pc = (pc + d + 12) % 12; break; }
+    }
+    const low = grown < 1 ? 79 : grown < 1.5 ? 67 : 55;     // (from G5, G4 or G3 up)
+    return low + (((pc - low) % 12) + 12) % 12;
+};
+// A plant of the garden sings its note, a soft bell, on the next step of a slow pulse (GARDEN_BEAT s), so passing a
+// few plays a phrase and not loose keys; quieter the more sang just before it
+const GARDEN_BEAT = 0.25;
+let gardenLoad = 0, gardenAt = -Infinity;
+export const garden = (ctx, out, time, harmony, { midi = 67, level = 1 } = {}) => {
+    const at = Math.ceil(time / GARDEN_BEAT) * GARDEN_BEAT;
+    const since = at - gardenAt;
+    gardenLoad = since < 0 ? 1 : gardenLoad * Math.exp(-since / 1.5) + 1;
+    gardenAt = Math.max(gardenAt, at);
+    const k = Math.min(1, Math.max(0, level)) / Math.sqrt(gardenLoad);
+    bell(ctx, out, at, hz(midi), midi < 64 ? 3.2 : 2.4, (midi < 64 ? 0.045 : 0.032) * k);
 };
 
 // Creatividad (Resonar, a music box): a lit coral or weed passing the comb plays its note like the tine of a music box,
