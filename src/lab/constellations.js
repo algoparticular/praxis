@@ -9,20 +9,22 @@ const ring = (cx, cy, rx, ry, n, from = 0) => Array.from({ length: n }, (_, i) =
     return [cx + Math.cos(a) * rx, cy + Math.sin(a) * ry];
 });
 
-// (an arc of a circle, from one angle to another, n points)
-const arc = (cx, cy, r, from, to, n) => Array.from({ length: n }, (_, i) => {
-    const a = from + (to - from) * (i / (n - 1));
-    return [cx + Math.cos(a) * r, cy + Math.sin(a) * r];
-});
+// (a spiral from radius r0 to r1 over `turns` turns, n points evenly spread along it, so its stars are as far apart
+// near the middle as further out)
+const spiral = (r0, r1, turns, n) => {
+    const end = turns * Math.PI * 2, at = (t) => r0 + (r1 - r0) * (t / end), fine = [];
+    for (let k = 0, len = 0, last = null; k <= 600; k++) {
+        const t = (k / 600) * end, p = [Math.cos(t - Math.PI / 2) * at(t), Math.sin(t - Math.PI / 2) * at(t)];
+        if (last) len += Math.hypot(p[0] - last[0], p[1] - last[1]);
+        fine.push({ p, len }); last = p;
+    }
+    const total = fine[fine.length - 1].len;
+    return Array.from({ length: n }, (_, i) => fine.find((f) => f.len >= (total * i) / (n - 1)) ?? fine[fine.length - 1]).map((f) => f.p);
+};
 
 export const CONSTELLATIONS = {
-    // Ciclos: the day and the night of its cycle, side by side: a sun with its rays (lone stars) and a crescent moon
-    15: [
-        { points: ring(-0.42, 0, 0.27, 0.27, 7, -Math.PI / 2), closed: true },
-        // (its rays: a lone star each, round it)
-        ...ring(-0.42, 0, 0.48, 0.48, 8, -Math.PI / 2).map((p) => ({ points: [p], closed: false })),
-        { points: [...arc(0.6, 0, 0.42, Math.PI * 0.62, Math.PI * 1.38, 6), ...arc(0.8, 0, 0.36, Math.PI * 1.3, Math.PI * 0.7, 4)], closed: true },
-    ],
+    // Ciclos: a spiral opening from its middle, the cycle that comes round again and never to the same place
+    15: [{ points: spiral(0.06, 0.92, 2.1, 19), closed: false }],
     // Metta: a heart
     8: [
         { points: [[0, -0.42], [-0.3, -0.82], [-0.72, -0.74], [-0.9, -0.3], [-0.66, 0.2], [-0.32, 0.56], [0, 0.88],
