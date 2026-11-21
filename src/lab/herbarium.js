@@ -11,7 +11,7 @@ export const HERBARIUM = [
     { id: 'pondSprout', card: 'upekkha', es: 'Brote del estanque', en: 'Pond sprout', pictures: ['pondSprout'], show: 'pondSprout' },
     { id: 'curl', card: 'paciencia', es: 'Pasto en rulo', en: 'Curling grass', pictures: ['pacCurl0', 'pacCurl1', 'pacCurl2', 'pacCurl3', 'pacCurl4', 'pacCurl5', 'pacCurl6'], show: 'pacCurl5' },
     { id: 'palePlant', card: 'gratitud', es: 'Abanico turquesa', en: 'Turquoise fan', pictures: ['grPlant'], show: 'grPlant' },
-    { id: 'palm', card: 'gratitud', es: 'Palmera', en: 'Palm', pictures: ['grPalm'], show: 'grPalm' },
+    { id: 'palm', card: 'gratitud', es: 'Palmera agradecida', en: 'Grateful palm', pictures: ['grPalm'], show: 'grPalm' },
     { id: 'fireShrooms', card: 'celebracion', es: 'Hongos de la fogata', en: 'Firelight mushrooms', pictures: ['mushrooms'], show: 'mushrooms' },
     { id: 'twinShrooms', card: 'celebracion', es: 'Hongos gemelos', en: 'Twin mushrooms', pictures: ['caps'], show: 'caps' },
 ];
