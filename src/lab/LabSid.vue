@@ -11,7 +11,7 @@ import { CICLOS, createWorld, STAR_SEED, STAR_LIGHT } from './sidWorld.js';
 import { createStarField, CONSTELLATION_TIME } from '../composables/useStarField.js';
 import { THOUGHTS } from './thoughts.js';
 import { FRAGMENTS } from './story.js';
-import { W as RUL_W, H as RUL_H, LINE_AT, LOOP_AT } from '../data/rulitoShape.js';
+import { CONSTELLATIONS } from './constellations.js';
 import Rulito from '../components/Rulito.vue';
 import { play, setCardChord, setHush, vibrate } from '../composables/useSound.js';
 import { chordFor } from '../data/cardChords.js';
@@ -211,32 +211,65 @@ const breathAt = (t) => {
 };
 
 // The secrets of the night (nothing says they are there):
-// - sitting in lotus by night a while (CONSTELLATION_AFTER s), the stars come together over him into the rulito of the
-//   card of the world he is in, in its colour, with threads of dots (useStarField's constellation, as the landing's
-//   sky draws its icons), and it shines once whole; it goes when he gets up or the day comes;
+// - sitting in lotus by night a while (CONSTELLATION_AFTER s), now and then (CONSTELLATION_ODDS, at most once a visit)
+//   the camera looks up to the sky (`state.look`: the horizon comes down, LOOK_HORIZON, and the sky fills much of the
+//   screen over him) and, once it has, the stars come together into the constellation of the world he is in
+//   (constellations.js: a figure of its card, in the colour of its rulito, with threads of dots, as the landing's sky
+//   draws its icons), and it shines once whole; it goes, and the camera looks down again, when he gets up or the day comes;
 // - sitting by night, now and then the sky sends a shooting star near (SHOOT_EVERY s, SHOOT_ODDS), and a near one
 //   passing while he sits leaves a seed of light at his feet (STAR_SEED: of no card, it grows any card's plant, which
 //   twinkles by night), once each time he sits
-const CONSTELLATION_AFTER = 6, SHOOT_EVERY = 18, SHOOT_ODDS = 0.45;
-function rulitoFigure() {
-    const h = Math.min(horizon() * view.k * 0.84, 280), k = h / RUL_H, w = RUL_W * k;
-    const cx = Math.max(w + 16, Math.min(view.w - w - 16, sidOnScreen.x)), cy = horizon() * view.k * 0.5;
-    const at = ([x, y]) => [cx + (x - RUL_W / 2) * k, cy + (y - RUL_H / 2) * k];
-    const stem = [0, 5, 10, 15, 20, 24].map((i) => at(LINE_AT[i])), loop = [0, 2, 4, 6, 8, 10, 12, 14].map((i) => at(LOOP_AT[i]));
-    return [{ points: stem, closed: false }, { points: loop, closed: false }];
+const CONSTELLATION_AFTER = 8, CONSTELLATION_ODDS = 0.5, SHOOT_EVERY = 18, SHOOT_ODDS = 0.45;
+const LOOK_TIME = 2.6;          // (s the camera takes to look up, or down again)
+let figureShown = false;        // (a constellation already seen on this visit)
+// the figure of the card, in the sky over him: as big as the sky between the header and his head (or the horizon) allows
+function constellationFigure(card) {
+    const strokes = CONSTELLATIONS[card] ?? CONSTELLATIONS[15];
+    const top = 92, bottom = Math.min(horizon() * view.k, sidCrown.y) - 24;
+    const size = Math.max(120, Math.min(bottom - top, view.w - 48, 340));
+    const cy = top + Math.max(0, bottom - top) / 2;
+    const cx = Math.max(size / 2 + 20, Math.min(view.w - size / 2 - 20, sidOnScreen.x));
+    // (over him if the moon leaves room; else in the biggest part of the sky the moon leaves free: beside it, above it or
+    // under it, smaller if it must be)
+    const m = world.moonAt();
+    if (m) {
+        const mx = m.x * view.k, my = m.y * view.k, mr = m.r * view.k + 16;
+        if (Math.abs(cx - mx) < size / 2 + mr && Math.abs(cy - my) < size / 2 + mr) {
+            const fit = (s) => Math.min(size, s);
+            const spots = [
+                { s: fit(Math.min(mx - mr - 20, bottom - top)), x: (mx - mr + 20) / 2, y: cy },
+                { s: fit(Math.min(view.w - mx - mr - 20, bottom - top)), x: (mx + mr + view.w - 20) / 2, y: cy },
+                { s: fit(Math.min(my - mr - top, view.w - 40)), x: cx, y: (top + my - mr) / 2 },
+                { s: fit(Math.min(bottom - my - mr, view.w - 40)), x: cx, y: (my + mr + bottom) / 2 },
+            ].sort((a, b) => b.s - a.s);
+            const best = spots[0];
+            if (best.s >= 110) return place(strokes, Math.max(best.s / 2 + 20, Math.min(view.w - best.s / 2 - 20, best.x)), best.y, best.s);
+        }
+    }
+    return place(strokes, cx, cy, size);
+}
+function place(strokes, cx, cy, size) {
+    return strokes.map(({ points, closed }) => ({ closed, points: points.map(([x, y]) => [cx + x * size / 2, cy + y * size / 2]) }));
 }
 function nightSecrets(dt, seated) {
     const dark = world.night();
     const starry = seated && dark > 0.6 && portal.card == null && !ui.guide;
-    state.starT = starry ? (state.starT ?? 0) + dt : 0;
-    if (starry && !state.figure && state.starT > CONSTELLATION_AFTER && stars) {
+    const before = state.starT ?? 0;
+    state.starT = starry ? before + dt : 0;
+    // (once a sitting, a while into it: whether the sky shows its figure this time)
+    if (starry && before <= CONSTELLATION_AFTER && state.starT > CONSTELLATION_AFTER && !figureShown && Math.random() < CONSTELLATION_ODDS) {
+        figureShown = true; state.lookUp = true;
+    }
+    if (!starry || dark < 0.45) state.lookUp = false;
+    state.look = Math.max(0, Math.min(1, (state.look ?? 0) + (state.lookUp ? dt : -dt) / LOOK_TIME));
+    if (state.lookUp && !state.figure && state.look >= 1 && stars) {
         const card = world.placeCard(state.x, state.d) ?? world.zoneCard();
-        stars.constellation(rulitoFigure(), { color: RULITO_COLOURS[card] ?? RULITO_COLOURS[15] });
+        stars.constellation(constellationFigure(card), { color: RULITO_COLOURS[card] ?? RULITO_COLOURS[15] });
         state.figure = setTimeout(() => { if (state.figure) play('star'); }, CONSTELLATION_TIME * 1000);
         if (!memory.learned.constellation) learn('constellation');
         visit?.secret('constellation');
     }
-    if (state.figure && (!ui.sitting || dark < 0.45 || portal.card != null || ui.guide)) { clearTimeout(state.figure); state.figure = null; stars?.constellation(null); }
+    if (state.figure && !state.lookUp) { clearTimeout(state.figure); state.figure = null; stars?.constellation(null); }
     // (the sky answers his stillness with a shooting star near, now and then)
     if (starry && !state.starGiven) {
         state.shootT = (state.shootT ?? 0) + dt;
@@ -352,7 +385,7 @@ const PORTALS = new Set([15, 8, 9, 14, 27, 24, 32]);
 const PORTAL_AFTER = 0.23, PORTAL_FADE = 900, PORTAL_ZOOM = 2.6;
 const portal = reactive({ card: null, won: false });
 // where he is on the screen (in CSS px, drawn each frame) and the zoom of the world's canvases towards it
-const sidOnScreen = { x: 0, y: 0 };
+const sidOnScreen = { x: 0, y: 0 }, sidCrown = { x: 0, y: 0 };
 const zoom = reactive({ on: false, x: 0, y: 0 });
 const zoomStyle = computed(() => ({
     transformOrigin: `${zoom.x}px ${zoom.y}px`,
@@ -779,7 +812,8 @@ function resize() {
     view.k = SMALL * Math.min((ui.touch ? view.h * 0.55 : view.h * 0.62) / (TALL + STAND), view.w * 0.9 / 420);
     const was = state.ground;
     state.ground = (ui.touch ? view.h * 0.84 : view.h * 0.86) / view.k;
-    view.floor = (state.ground * view.k - view.h * (ui.touch ? 0.2 : 0.24)) / view.k;     // from the front of the floor to the horizon (high on the screen: little sky)
+    view.horizon0 = ui.touch ? 0.2 : 0.24;     // where the horizon is on the screen (high: little sky), and looking up
+    lookAt();
     if (!was) { state.x = 1000; state.cam = state.x; state.camD = -follow(); }     // (he starts a little before her tree, which is ahead on his way)
     // the starry night fills the sky, down to the horizon
     skyHeight();
@@ -787,8 +821,18 @@ function resize() {
 // How far in front of him the camera stands (in depth): it keeps him a little below the middle of the screen. The starry night behind the drawing goes down to the horizon, which stays
 // where it is on the screen as the camera follows him
 const follow = () => DEPTH * 0.35;
+// (the floor, from its front to the horizon: shorter as the camera looks up to the sky, state.look, so the horizon comes
+// down the screen towards him and the sky fills more of it)
+const LOOK_HORIZON = { touch: 0.6, wide: 0.52 };
+function lookAt() {
+    const e = state.look ?? 0, k = e * e * (3 - 2 * e);
+    const at = view.horizon0 + ((ui.touch ? LOOK_HORIZON.touch : LOOK_HORIZON.wide) - view.horizon0) * k;
+    view.floor = (state.ground * view.k - view.h * at) / view.k;
+}
+// (the starry night is as tall as the sky can be, looking up: the ground drawn over it hides what is under the horizon,
+// and its stars are not made again as the camera moves)
 function skyHeight() {
-    if (nightSky.value) nightSky.value.style.height = `${Math.ceil(horizon() * view.k) + 2}px`;
+    if (nightSky.value) nightSky.value.style.height = `${Math.ceil(view.h * (ui.touch ? LOOK_HORIZON.touch : LOOK_HORIZON.wide)) + 2}px`;
 }
 
 function pointerTo(e) {
@@ -1049,6 +1093,7 @@ function update(dt, now) {
     if (zone !== state.zone) { state.zone = zone; setCardChord(chordFor(zone)); visit?.zone(zone); }
     think(dt);
     nightSecrets(dt, seated);
+    lookAt();
     // the meditation chosen (meditate): it starts as he has settled in lotus, and goes by in real time
     if (ui.guide && meditating) {
         const g = ui.guide;
@@ -1524,6 +1569,8 @@ function draw() {
     const mid = map(f, PIVOT.x, (rig.silhouette.crown[1] + PIVOT.y) / 2);
     const onScreen = c.getTransform().transformPoint(mid);
     sidOnScreen.x = onScreen.x / view.dpr; sidOnScreen.y = onScreen.y / view.dpr;
+    const crown = c.getTransform().transformPoint(map(f, PIVOT.x, rig.silhouette.crown[1]));
+    sidCrown.x = crown.x / view.dpr; sidCrown.y = crown.y / view.dpr;
     // (and his heart and the ground under him, for the seed he plants: it goes into his heart and down through him)
     const heart = c.getTransform().transformPoint(map(f, PIVOT.x, rig.silhouette.crown[1] * 0.35 + PIVOT.y * 0.65));
     const base = c.getTransform().transformPoint({ x: f.root.x, y: state.ground });
@@ -1591,7 +1638,7 @@ function loop(now) {
 }
 
 // (for trying him out from the browser's console)
-if (typeof window !== 'undefined') window.__sid = { state, springs, hands, ui, world, walkTo, sit, memory, portal, portalWon, closePortal, toScreen, meditate, shoot: () => stars?.shoot(true) };
+if (typeof window !== 'undefined') window.__sid = { state, springs, hands, ui, world, walkTo, sit, memory, portal, portalWon, closePortal, toScreen, meditate, shoot: () => stars?.shoot(true), figure: (card) => { state.lookUp = true; state.look = 1; lookAt(); clearTimeout(state.figure); state.figure = setTimeout(() => {}, 1e9); stars?.constellation(constellationFigure(card), { color: RULITO_COLOURS[card] }); } };
 
 onMounted(() => {
     document.body.classList.add('lab-page');
