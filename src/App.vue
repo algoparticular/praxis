@@ -59,7 +59,7 @@
 </template>
 
 <!-- Opened from the iPhone's Home Screen the page goes under the clock and the battery (black-translucent, index.html):
-     only Sid's world shows there (its sky); everywhere else that strip is painted navy, where the white clock reads, and
+     that strip is painted navy everywhere, Sid's world too (its sky goes on under it), where the white clock reads, and
      the app starts below it. In Safari or on a computer there is no such strip (the inset is 0). -->
 <style>
 	.status-strip { display: none; }
@@ -75,7 +75,6 @@
 			z-index: 60;
 			pointer-events: none;
 		}
-		body.lab-page .status-strip { display: none; }
 		body #app { padding-top: env(safe-area-inset-top, 0px); }
 		body.lab-page #app { padding-top: 0; }
 	}

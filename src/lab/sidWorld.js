@@ -1557,13 +1557,6 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
     // (setClock: to look at a given hour from the console, 0 sunrise .. 0.75 midnight)
     // The colours of the zone on the screen, for the page: Sid's line and body, and the colour under the starry night
     const ink = () => css(screen.ink), white = () => css(screen.white), nightColour = () => css(screen.night);
-    // The colour the top edge of the screen shows (the sky over the starry night over the page's cream), for the page's
-    // own background: Safari on the iPhone tints the bar with the time and the battery from it, not from the canvas
-    const PAGE = [247, 248, 241];
-    const topColour = () => {
-        const L = light(), d = 1 - L;
-        return css(screen.sky.map((v, i) => v * L + (1 - L) * (screen.night[i] * d + PAGE[i] * (1 - d))));
-    };
     // The card of the zone on the screen (its id), for the music
     const zoneCard = () => mainZone(zonesAt(lastCam, lastD)).id;
     // (seedsNear: the seeds not yet picked up round (x, d), to find one from the console)
@@ -1612,5 +1605,5 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
     }
     // (seedLight: the light of a card's seeds, for the page to fly one from the button to where it is planted)
     const seedLight = (card) => { if (card === STAR_SEED) return STAR_LIGHT; const z = ZONES.find((q) => q.card === card); return z ? colourOf([{ z, w: 1 }], 'bead', 0.5).light : [255, 244, 214]; };
-    return { update, draw, drawSky, drawGround, ground, night, ink, white, nightColour, topColour, placeCard, placeNear, zoneCard, obstacles, plant, plantsNear, plantBy, touchPlant, singPlant, cardIdOf, tend, seedsNear, seedLight, spore: () => spore, setClock: (v) => { clock = ((v % 1) + 1) % 1; } };
+    return { update, draw, drawSky, drawGround, ground, night, ink, white, nightColour, placeCard, placeNear, zoneCard, obstacles, plant, plantsNear, plantBy, touchPlant, singPlant, cardIdOf, tend, seedsNear, seedLight, spore: () => spore, setClock: (v) => { clock = ((v % 1) + 1) % 1; } };
 }
