@@ -144,8 +144,12 @@ const ANY_PLANT = Object.values(SEED_PLANTS).flat();
 const TRUNK = { behind: 25, r: 122, dx: -19 };
 const ROOTS = { dx: 30, dd: -150, r: 400, rd: 175 };
 
-const STRETCH = 520;            // the width of the stretch of world made at a time (px of his world)
-const PATCH = 780;              // and how deep (the world is endless both ways: across and into the distance)
+const STRETCH = 500;            // the width of the stretch of world made at a time (px of his world)
+const PATCH = 750;              // and how deep (the world is endless both ways: across and into the distance)
+// (where the rows of stretches start in depth: a row starts at row * PATCH + PATCH_OFF. The stretches fit the zones'
+// cells exactly, ZONE and ZONE_D are whole numbers of them and the cells start on one, so each world's landscape can be
+// made from where it is in its cell: see `make`)
+const PATCH_OFF = -330;
 const LINE = 7;                 // the pen: thinner than his own outline, so he stays the one you look at
 
 // A small random number generator that always gives the same numbers for the same seed
@@ -434,9 +438,13 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
 
     // ---- making a stretch ----
     function make(index, row) {
-        const r = random(index * 7919 + row * 15485863 + 104729), items = [];
+        // (its numbers come from its world and where it is in that world's cell, not from where it is on the map: each
+        // world has the same landscape on every visit however the worlds are shuffled, as what is planted in it. Only
+        // near its edges, where two worlds blend, what stands there can change with its neighbour)
+        const key = cellKey(index, row);
+        const r = random(key * 7919 + 104729), items = [];
         const pick = (list) => list[Math.floor(r() * list.length)];
-        const at = () => ({ x: index * STRETCH + r() * STRETCH, d: (row + r()) * PATCH - 180 });
+        const at = () => ({ x: index * STRETCH + r() * STRETCH, d: (row + r()) * PATCH + PATCH_OFF });
         const jitter = (p, a = 0.8) => [p[0] + (r() - 0.5) * a, p[1] + (r() - 0.5) * a];
         const sproutsFor = (rr) => {
             const v = rr(), n = v < 0.15 ? 0 : v < 0.75 ? 1 : 2, list = [];
@@ -462,9 +470,9 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
 
         // her tree and the zones' special places, where they stand (their stretch keeps clear round them)
         // (as far across as the widest keeps its ground clear: Gratitud's lake, and Paciencia's mycelium)
-        const near = placesNear(index * STRETCH - 2500, (index + 1) * STRETCH + 2500, row * PATCH - 180 - 1200, (row + 1) * PATCH - 180 + 1200);
+        const near = placesNear(index * STRETCH - 2500, (index + 1) * STRETCH + 2500, row * PATCH + PATCH_OFF - 1200, (row + 1) * PATCH + PATCH_OFF + 1200);
         for (const { P, x, d } of near) {
-            if (x < index * STRETCH || x >= (index + 1) * STRETCH || row !== Math.floor((d + 180) / PATCH)) continue;
+            if (x < index * STRETCH || x >= (index + 1) * STRETCH || row !== Math.floor((d - PATCH_OFF) / PATCH)) continue;
             if (P.kind === 'tree') add({ kind: 'tree', x, d, reach: 700, place: P });
             else add({ kind: 'place', x, d, reach: P.reach, place: P, scale: 1 });
         }
@@ -474,7 +482,7 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
         for (const { P, x, d } of near) {
             for (const [name, dx, dd, scale, sway = 0] of P.garden ?? []) {
                 const bx = x + dx, bd = d + dd;
-                if (bx < index * STRETCH || bx >= (index + 1) * STRETCH || row !== Math.floor((bd + 180) / PATCH)) continue;
+                if (bx < index * STRETCH || bx >= (index + 1) * STRETCH || row !== Math.floor((bd - PATCH_OFF) / PATCH)) continue;
                 add({ kind: 'piece', name, x: bx, d: bd, scale: Math.abs(scale), flip: Math.sign(scale), sway, role: sway ? 'plant' : 'stone', pick: r(),
                     garden: { x, d, P } });
             }
@@ -483,7 +491,7 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
         for (const { P, x, d } of near) {
             if (!P.lake) continue;
             const [dx, dd, rx, rd] = P.lake, lx = x + dx, ld = d + dd;
-            if (lx < index * STRETCH || lx >= (index + 1) * STRETCH || row !== Math.floor((ld + 180) / PATCH)) continue;
+            if (lx < index * STRETCH || lx >= (index + 1) * STRETCH || row !== Math.floor((ld - PATCH_OFF) / PATCH)) continue;
             add({ kind: 'lake', x: lx, d: ld, rx, rd, reach: rx, phase: r() * 10, garden: { x, d, P } });
         }
         // the characters round the places, each where it stands (in the stretch and the row its own place falls in)
@@ -491,7 +499,7 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
             for (const name of P.crowd ?? []) {
                 const at = PIECES[name].at, [, , w, h] = PIECES[name].box, u = PIECES[name].unit;
                 const bx = x + (at[0] + w / 2 - P.anchor[0]) * u, bd = d - (at[1] + h - P.anchor[1]) * u * P.depthK;
-                if (bx < index * STRETCH || bx >= (index + 1) * STRETCH || row !== Math.floor((bd + 180) / PATCH)) continue;
+                if (bx < index * STRETCH || bx >= (index + 1) * STRETCH || row !== Math.floor((bd - PATCH_OFF) / PATCH)) continue;
                 add({ kind: 'being', name, x: bx, d: bd, place: P, home: `${x},${d}`, phase: r() * 10, reach: w * u });
             }
         }
@@ -554,17 +562,26 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
         }
         // now and then a seed on the ground, of the card of the zone where it lies (its own numbers, so the rest of the
         // world is where it always was)
-        const rs = random(index * 104729 + row * 7919 + 31);
+        const rs = random(key * 104729 + 31);
         if (rs() < SEED_CHANCE) {
-            const p = { x: index * STRETCH + rs() * STRETCH, d: (row + rs()) * PATCH - 180 }, z = mainZone(zonesAt(p.x, p.d));
+            const p = { x: index * STRETCH + rs() * STRETCH, d: (row + rs()) * PATCH + PATCH_OFF }, z = mainZone(zonesAt(p.x, p.d));
             const id = `seed:${index},${row}`;
             if (clear(p) && !taken.has(id)) add({ id, kind: 'seed', x: p.x, d: p.d, card: z.card, cardId: z.id, role: 'bead', pick: rs(), phase: rs() * 10, reach: 120 });
         }
         // what he has planted, wherever its world is now
         for (const g of garden) {
-            for (const at of plantedAt(g, index * STRETCH, (index + 1) * STRETCH, row * PATCH - 180, (row + 1) * PATCH - 180)) items.push(plantedItem(g, at.x, at.d));
+            for (const at of plantedAt(g, index * STRETCH, (index + 1) * STRETCH, row * PATCH + PATCH_OFF, (row + 1) * PATCH + PATCH_OFF)) items.push(plantedItem(g, at.x, at.d));
         }
         return items;
+    }
+    // A stretch's place in its world: the world (its card, and its row of the grid, as what is planted keeps it) and
+    // where the stretch is in that world's cell, as one number
+    function cellKey(index, row) {
+        const x = index * STRETCH - ZONE_START, d = row * PATCH + PATCH_OFF - D_START;
+        const i = Math.floor(x / ZONE), j = Math.floor(d / ZONE_D), n = zoneOrder.length;
+        const li = Math.round((x - i * ZONE) / STRETCH), lj = Math.round((d - j * ZONE_D) / PATCH);
+        const zone = ZONES.findIndex((z) => z === zoneOfCell(i, j));
+        return ((zone * n + mod(j, n)) * (ZONE / STRETCH) + li) * (ZONE_D / PATCH) + lj;
     }
     // Where something planted is (it is kept by the zone it was planted in, its row of the grid and where in its cell, so
     // it is found again in its world however the worlds were shuffled), between x0 and x1 and the depths d0 and d1
@@ -602,7 +619,7 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
         by.set(g.key, true);                // (he is by it: it grows when he comes back)
         tended.add(g.key);                  // (and it has just sprouted: sitting by it again on this visit, it dances)
         // (its stretch may already be made: it goes into it now; the rest are made with it)
-        const si = Math.floor(x / STRETCH), sj = Math.floor((d + 180) / PATCH), made = stretches.get(`${si},${sj}`);
+        const si = Math.floor(x / STRETCH), sj = Math.floor((d - PATCH_OFF) / PATCH), made = stretches.get(`${si},${sj}`);
         if (made) made.items.push(plantedItem(g, x, d));
         return g;
     }
@@ -610,7 +627,7 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
     // the patches over a stretch of floor: across, from x0 to x1, and in depth, from d0 to d1
     function* patches(x0, x1, d0, d1) {
         for (let i = Math.floor(x0 / STRETCH); i <= Math.floor(x1 / STRETCH); i++) {
-            for (let j = Math.floor((d0 + 180) / PATCH); j <= Math.floor((d1 + 180) / PATCH); j++) yield* stretch(i, j);
+            for (let j = Math.floor((d0 - PATCH_OFF) / PATCH); j <= Math.floor((d1 - PATCH_OFF) / PATCH); j++) yield* stretch(i, j);
         }
     }
 
