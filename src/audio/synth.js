@@ -705,6 +705,25 @@ export const rulito = (ctx, out, time, harmony) => {
     swish(ctx, out, time, { from: 2500, to: 8000, duration: climb.length * gap + 0.6, level: 0.009, q: 0.6 });
 };
 
+// A seed sown, as the law of octaves too (the rulito's leap, spread over the seed's way): as it leaves the button the
+// chord starts to climb, a note at a time, slowly, all the way down through him and under the ground (`span` s), and
+// as the plant is born `sprout` rings the whole chord on the do above, with a bowl on the root it started from
+export const sow = (ctx, out, time, harmony, { span = 3 } = {}) => {
+    const h = harmony ?? PLAIN;
+    const climb = h.tones(h.voice, 12), gap = span / climb.length;
+    climb.forEach((midi, i) => bell(ctx, out, time + i * gap, hz(midi), 2.2, 0.014 + 0.006 * (i / climb.length)));
+    swish(ctx, out, time, { from: 1800, to: 6000, duration: span, level: 0.006, q: 0.6 });
+};
+export const sprout = (ctx, out, time, harmony) => {
+    const h = harmony ?? PLAIN;
+    const minor = isMinor(h.kind), seventh = hasSeventh(h);
+    h.tones(h.voice + 12, 11).forEach((midi, i) => {
+        bell(ctx, out, time + i * 0.018, hz(midi), minor ? 4.2 : 3.6, 0.024);
+        if (seventh) bell(ctx, out, time + i * 0.018 + 0.01, hz(midi) * 1.004, 3, 0.011);
+    });
+    bell(ctx, out, time, hz(h.voice - 12), 4.5, 0.03);
+};
+
 // The third eye opens: a low bowl on the chord's root and fifth, and a high shimmer over them
 export const open = (ctx, out, time, harmony) => {
     const h = harmony ?? PLAIN;

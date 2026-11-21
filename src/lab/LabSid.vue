@@ -687,7 +687,7 @@ const world = createWorld({
 // clashes with the world where it grows (gardenNote in synth.js); it sings as he passes near it (sidWorld.js) and, while
 // he meditates among his plants (GARDEN.reach), they sing in turn from left to right, slowly, each swaying as it sings;
 // then they rest a long while (GARDEN.rest s) before singing again, so a plant does not keep ringing by him
-const GARDEN = { reach: 900, first: 2.6, step: 0.75, rest: 14 };
+const GARDEN = { reach: 900, first: 2.6, step: 0.75, rest: 7 };
 function sing(p, level = 1) {
     if (ui.guide) return;                           // (a meditation is silence)
     const midi = gardenNote(chordFor(world.cardIdOf(p.card)), chordFor(world.zoneCard()), p.pick, p.grown);
@@ -1235,7 +1235,9 @@ function update(dt, now) {
             const light = world.seedLight(memory.seeds[0]);
             state.sowing = { t: 0, x: state.x, d: state.d - 110, light };
             ui.seeds = memory.seeds.length - 1;
-            fly(buttonMiddle(), { ...sowAt.heart }, light, () => play('tap'), SOW.fly * 1000);
+            fly(buttonMiddle(), { ...sowAt.heart }, light, null, SOW.fly * 1000);
+            // (the chord climbs all along its way, and leaps to the octave as it is born: the law of octaves)
+            play('sow', { span: SOW.fly + SOW.through + SOW.under });
         }
         if (state.sowing) state.sowing.t += dt;
         if (state.sowing && state.sowing.t >= SOW.fly + SOW.through + SOW.under) {
@@ -1259,7 +1261,7 @@ function update(dt, now) {
             firstVisit = false;
             refreshStory();
             saveMemory(memory);
-            play('bloom');
+            play('sprout');
         }
     }
     // meditating among his plants (away from the places), they sing in turn
@@ -2595,6 +2597,10 @@ body.lab-page header #soundButton.active { filter: drop-shadow(0px 2px 3px rgba(
 /* the sound and menu buttons stay over the open menu, so it can be closed (elsewhere their drop shadow, a filter, puts
    them over it; here, without it while the menu is open or by night, they would be left under it) */
 body.lab-page header .navContainer.right { position: relative; z-index: 1; }
+/* with the notebook open its left corner (the way back) is hidden: it would leave the world instead of closing the
+   notebook, which a touch anywhere or Escape closes */
+body.lab-page header .navContainer:not(.right) { transition: opacity 250ms ease-out; }
+body.lab-page.lab-story header .navContainer:not(.right) { opacity: 0; pointer-events: none; }
 /* by night (and in Celebración's clearing) the icons stay cream, over the dark sky */
 body.lab-page.lab-night header .navContainer button,
 body.lab-page.lab-night header #soundButton,
