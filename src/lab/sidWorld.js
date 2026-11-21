@@ -142,8 +142,8 @@ export const STAR_SEED = 'star', STAR_LIGHT = [252, 220, 140];
 // side or the other): a bright core in its zone's light with three tilted orbits of dots turning round it, each with its
 // light running along it, and a faint column of light rising from it to the sky, so it is told from the world's other
 // lights (fireflies, butterflies, bees, spores) and found from afar; walking under it he finds it, and it opens
-// (dd: 960 back, so walking along the front the marks of the row stand at the horizon: small and far, not hidden past it)
-const MARK = { size: 620, dx: 0.32, dd: 0.16, pick: 240, high: 150 };
+// (dd: 1080 back, so walking along the front the marks of the row stand at the horizon: small and far, hardly past it)
+const MARK = { size: 620, dx: 0.32, dd: 0.18, pick: 240, high: 150 };
 // the seed's shape (seedShape.js: a seed with a particle of light inside it, until the illustrator draws it)
 const SEED_PATHS = typeof Path2D === 'undefined' ? null : { outline: new Path2D(SEED_OUTLINE), seam: new Path2D(SEED_SEAM) };          // (how big a seed is drawn: big enough to be seen from afar)
 const SEED_PLANTS = {
