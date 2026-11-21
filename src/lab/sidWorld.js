@@ -115,6 +115,10 @@ const SEED_GREW = 1.6;                          // (seconds a step of growing ta
 // lotus by it (SEED_TEND, as near as he plants) it grows a step, once a visit (besides growing when he comes back);
 // after that, or grown all it grows, it dances (seconds of each)
 const SEED_TEND = 260, SEED_WIGGLE = 0.9, SEED_DANCE = 4.5;
+// The garden sings (as in Proteus): each plant sings its note once as he passes near it (SEED_SING.near), and again only
+// once he has gone a little way off (SEED_SING.away); singing, it sways once and glows (SEED_SING.long s). The page plays
+// the note (`onSing`; gardenNote in synth.js), and while he meditates among them it sings them in turn (`singPlant`)
+const SEED_SING = { near: 210, away: 420, long: 1.3 };
 // (how big it can grow: as long as each pixel of its picture covers no more than one of the screen, on a screen of
 // about 0.76 of a screen's pixel to a px of his world, a phone's or a laptop's at the depth he stands; never less than
 // `most`, never more than `top`. Ciclos's fans, Paciencia's curls, Upekkha's tufts and sprout, Gratitud's palm grow more)
@@ -401,7 +405,7 @@ const PART_COLOUR = { cap: 2, stem: null };   // the mushrooms of the tree: thei
 const ROLES = { plant: 'plants', bead: 'beads', stone: 'stones' };
 const mixRgb = (a, b, t) => `rgb(${a.map((v, i) => Math.round(v + (b[i] - v) * t)).join(',')})`;
 
-export function createWorld({ clouds = null, moon = null, planted = [], visit = 0, onSeed = null, onGrow = null }) {
+export function createWorld({ clouds = null, moon = null, planted = [], visit = 0, onSeed = null, onGrow = null, onSing = null }) {
     zoneOrder = shuffled(ZONES);                // (a new map of the worlds on every visit)
     // The colours on the screen now: those of the zone where the camera is (blended between two), set as the sky is
     // drawn, first thing every frame
@@ -433,6 +437,7 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
     const by = new Map(), growing = new Map();
     // (what has grown by his meditating on this visit, and how each is dancing now: { at, long })
     const tended = new Set(), dancing = new Map();
+    const sang = new Set();                 // (the plants that sang as he came near, until he goes a little way off)
     const returned = new Set();             // (what has grown on this visit by his coming back to it: once a visit)
     let time = 0;
 
@@ -618,6 +623,7 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
         garden.push(g);
         by.set(g.key, true);                // (he is by it: it grows when he comes back)
         tended.add(g.key);                  // (and it has just sprouted: sitting by it again on this visit, it dances)
+        sang.add(g.key);                    // (it sings once he has gone a little way off and comes past it again)
         // (its stretch may already be made: it goes into it now; the rest are made with it)
         const si = Math.floor(x / STRETCH), sj = Math.floor((d - PATCH_OFF) / PATCH), made = stretches.get(`${si},${sj}`);
         if (made) made.items.push(plantedItem(g, x, d));
@@ -730,6 +736,9 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
         // what he planted grows a step each time he comes back to it, once he has gone away from it (the page keeps it)
         for (const g of garden) {
             const dist = plantsNear.get(g.key) ?? Infinity;
+            // (it sings as he passes near it, walking; once, until he has gone a little way off)
+            if (dist > SEED_SING.away) sang.delete(g.key);
+            else if (dist < SEED_SING.near && !sang.has(g.key) && !sid.sitting) { sang.add(g.key); singPlant(g.key); onSing?.(sung(g)); }
             if (dist > SEED_BACK.away) by.set(g.key, false);
             else if (dist < SEED_BACK.near && !by.get(g.key)) {
                 by.set(g.key, true);
@@ -865,9 +874,16 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
             // (touched it wiggles; by him in lotus it dances: it sways to a beat, bounces, stretching and squashing, in a light)
             const dance = item.planted && dancing.get(item.planted.g.key);
             if (dance) {
-                const t = (performance.now() - dance.at) / 1000, long = dance.long ? SEED_DANCE : SEED_WIGGLE;
+                const t = (performance.now() - dance.at) / 1000, long = dance.long ? SEED_DANCE : dance.sing ? SEED_SING.long : SEED_WIGGLE;
                 if (t >= long) dancing.delete(item.planted.g.key);
-                else if (dance.long) {
+                else if (dance.sing) {
+                    // (singing: it rises a little, sways once and glows, as a note rings and fades)
+                    const env = Math.sin(Math.PI * Math.min(1, t / long));
+                    lean += Math.sin(Math.PI * 2 * t / long) * 0.12 * env;
+                    c.translate(0, -8 * env);
+                    c.scale(1, 1 + 0.05 * env);
+                    halo(c, 0, -box[3] * k * 0.5, box[3] * k * 0.7, [255, 244, 200], 0.3 * env);
+                } else if (dance.long) {
                     const env = Math.sin(Math.PI * Math.min(1, t / long)) ** 0.5, beat = t * 1.6;
                     const bounce = Math.abs(Math.sin(Math.PI * beat));
                     lean += Math.sin(Math.PI * beat) * 0.2 * env;
@@ -1406,7 +1422,7 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
         for (const item of patches(x - range, x + range, d - range, d + range)) {
             if (!item.planted) continue;
             const box = boxOf(item.name), k = item.scale * grownOf(item.planted.g);
-            out.push({ key: item.planted.g.key, card: item.planted.g.card, x: item.x, d: item.d, w: box[2] * k, h: box[3] * k });
+            out.push({ ...sung(item.planted.g), x: item.x, d: item.d, w: box[2] * k, h: box[3] * k });
         }
         return out;
     }
@@ -1420,6 +1436,12 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
         return best;
     }
     // Touched: it wiggles
+    // What the page needs to know of a plant to sing it: its card, its note's number and how big it has grown
+    const sung = (g) => ({ key: g.key, card: g.card, pick: g.pick ?? 0.5, grown: grownOf(g) });
+    // It sings: it sways once and glows (unless it is dancing)
+    const singPlant = (key) => { if (!dancing.get(key)?.long) dancing.set(key, { at: performance.now(), sing: true }); };
+    // (the id of a card by its name, for the page to find its chord)
+    const cardIdOf = (card) => ZONES.find((z) => z.card === card)?.id;
     const touchPlant = (key) => { if (!dancing.get(key)?.long) dancing.set(key, { at: performance.now(), long: false }); };
     // He meditates by it: it grows a step ('grow'), once a visit; after that, or grown all it grows, it dances ('dance')
     function tend(key) {
@@ -1436,5 +1458,5 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
     }
     // (seedLight: the light of a card's seeds, for the page to fly one from the button to where it is planted)
     const seedLight = (card) => { const z = ZONES.find((q) => q.card === card); return z ? colourOf([{ z, w: 1 }], 'bead', 0.5).light : [255, 244, 214]; };
-    return { update, draw, drawSky, drawGround, ground, night, ink, white, nightColour, placeCard, zoneCard, obstacles, plant, plantsNear, plantBy, touchPlant, tend, seedsNear, seedLight, spore: () => spore, setClock: (v) => { clock = ((v % 1) + 1) % 1; } };
+    return { update, draw, drawSky, drawGround, ground, night, ink, white, nightColour, placeCard, zoneCard, obstacles, plant, plantsNear, plantBy, touchPlant, singPlant, cardIdOf, tend, seedsNear, seedLight, spore: () => spore, setClock: (v) => { clock = ((v % 1) + 1) % 1; } };
 }
