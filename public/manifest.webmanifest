@@ -8,14 +8,14 @@
     "orientation": "portrait-primary",
     "icons": [
       {
-        "src": "../icon-32.png",
+        "src": "/icon-32.png",
         "type": "image/png",
-        "sizes": "32x32" 
+        "sizes": "64x64" 
       },
       {
-        "src": "../icon-512.png",
+        "src": "/icon-512.png",
         "type": "image/png",
-        "sizes": "512x512" 
+        "sizes": "1024x1024" 
       }
     ]  
   }
