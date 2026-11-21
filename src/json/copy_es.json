@@ -39,7 +39,8 @@
             "effects": "Efectos",
             "side": "Botones",
             "sideLeft": "Izquierda",
-            "sideRight": "Derecha"
+            "sideRight": "Derecha",
+            "worldResetAsk": "¿Empezar el mundo de Sid de nuevo? Se olvida lo que sembraste, la historia que encontraste y tus semillas, como si fuera la primera vez."
         },
         "about": {
             "oracleAuthor": "Belén Brito",

@@ -49,6 +49,7 @@ Todos llevan `lang` (`es`/`en`) e `installed` (la app corre como PWA instalada).
 | `share_clicked` | elige un canal | `card_id`, `channel` (`link`, `facebook`, `twitter`, `whatsapp`) |
 | `language_changed` | cambia el idioma | `to` |
 | `world_side_changed` | en el menú, dentro del mundo de Sid, elige de qué lado van sus botones | `to` (`left` / `right`) |
+| `world_reset` | empieza el mundo de Sid de nuevo (gesto escondido: mantener apretado el laberinto del menú 3 s y confirmar) | (nada) |
 | `sound_toggled` | activa o apaga el sonido | `on` |
 | `pwa_installed` | instala la app | |
 

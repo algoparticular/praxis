@@ -1,7 +1,8 @@
 <script setup>
-    import { onMounted, computed } from 'vue';
+    import { onMounted, computed, ref } from 'vue';
     import { useRoute } from 'vue-router';
     import { worldSide, setWorldSide } from '../composables/useWorldSide.js';
+    import { resetMemory } from '../lab/worldMemory.js';
     import { track } from '../analytics.js';
     import { musicVolume, effectsVolume, setMusicVolume, setEffectsVolume, play } from '../composables/useSound.js';
 
@@ -17,6 +18,26 @@
     // inside Sid's world only: which side its buttons sit on
     const route = useRoute();
     const inWorld = computed(() => route.path === '/sid');
+    // A hidden gesture to start Sid's world again, as on a first visit: holding the labyrinth down (WORLD_RESET_HOLD ms;
+    // it lights up as it is held) asks, and yes forgets what the world kept (what was sown, the story found, the seeds and
+    // what was learned; the language, the volumes and the buttons' side stay). A quick touch still goes into the world
+    const WORLD_RESET_HOLD = 3000;
+    const holding = ref(false);
+    let holdTimer = 0, held = false;
+    const holdStart = (ask) => {
+        held = false; holding.value = true;
+        clearTimeout(holdTimer);
+        holdTimer = setTimeout(() => {
+            held = true; holding.value = false;
+            if (!window.confirm(ask)) return;
+            track('world_reset');
+            resetMemory();
+            window.location.replace('/sid');
+        }, WORLD_RESET_HOLD);
+    };
+    const holdEnd = () => { clearTimeout(holdTimer); holding.value = false; };
+    // (a long hold is not a touch to go in)
+    const goToWorld = () => { if (held) { held = false; return; } navigate('/sid'); };
     const sideChanged = (side) => {
         setWorldSide(side);
         track('world_side_changed', { to: side });
@@ -78,7 +99,8 @@
             <label for="lang-en" lang="en" title="English" aria-label="English" :class="{active: $i18n.locale == 'en'}">EN</label>
         </div>
 
-        <a v-if="props.hasWorld" class="world" href="/sid" :aria-label="$t('nav.lab')" :title="$t('nav.lab')" @click.prevent="navigate('/sid')"></a>
+        <a v-if="props.hasWorld" class="world" :class="{ holding }" href="/sid" :aria-label="$t('nav.lab')" :title="$t('nav.lab')" @click.prevent="goToWorld"
+            @pointerdown="holdStart($t('nav.worldResetAsk'))" @pointerup="holdEnd" @pointerleave="holdEnd" @pointercancel="holdEnd" @contextmenu.prevent></a>
 
     </nav>
 </template>
@@ -205,6 +227,19 @@
         mask: url('../assets/icon/Lab.svg') center / contain no-repeat;
         filter: drop-shadow(0 0 0 rgba(247, 248, 241, 0));
         transition: filter 250ms ease-out, transform 250ms ease-out;
+    }
+
+    /* held down (the hidden gesture to start the world again), it lights up slowly until it asks */
+    nav a.world {
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+        user-select: none;
+    }
+
+    nav a.world.holding {
+        filter: drop-shadow(0 0 14px rgba(255, 240, 200, 1));
+        transform: scale(1.18);
+        transition: filter 3s ease-in, transform 3s ease-in;
     }
 
     nav a.world:hover,
