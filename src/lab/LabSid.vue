@@ -1672,20 +1672,23 @@ onBeforeUnmount(() => {
         <!-- the story's own page (openStory): its icon over the seed, once a fragment has been found -->
         <Transition name="teaching">
             <button v-if="story.found && portal.card == null" class="story-icon" :class="{ light: teaching.light, fresh: story.fresh }"
-                :aria-label="$i18n.locale === 'en' ? 'The story of Sid' : 'La historia de Sid'" :title="$i18n.locale === 'en' ? 'The story of Sid' : 'La historia de Sid'"
+                :aria-label="$i18n.locale === 'en' ? 'Thoughts' : 'Pensamientos'" :title="$i18n.locale === 'en' ? 'Thoughts' : 'Pensamientos'"
                 @click="openStory"><span aria-hidden="true"></span></button>
         </Transition>
         <Transition name="veil">
-            <div v-if="story.open" class="story" role="dialog" :aria-label="$i18n.locale === 'en' ? 'The story of Sid' : 'La historia de Sid'" @pointerdown.stop @click="story.open = false">
+            <div v-if="story.open" class="story" role="dialog" :aria-label="$i18n.locale === 'en' ? 'Thoughts' : 'Pensamientos'" @pointerdown.stop @click="story.open = false">
                 <div class="story-card">
-                    <h2>{{ $i18n.locale === 'en' ? 'The story of Sid' : 'La historia de Sid' }}</h2>
+                    <h2>{{ $i18n.locale === 'en' ? 'Thoughts' : 'Pensamientos' }}</h2>
                     <p class="story-text">
                         <template v-for="(f, i) in FRAGMENTS" :key="i">
                             <span class="frag" :class="{ locked: i >= story.found, fresh: i >= story.from && i < story.found }"
                                 :style="{ animationDelay: `${400 + storyIndex(i) * 1300}ms` }" :aria-hidden="i >= story.found">{{ $i18n.locale === 'en' ? f.en : f.es }}</span>{{ ' ' }}
                         </template>
                     </p>
-                    <p class="story-count">{{ story.found }} / {{ FRAGMENTS.length }}</p>
+                    <!-- how many have been found: one dot each, as the world's dots -->
+                    <p class="story-count" :aria-label="`${story.found} / ${FRAGMENTS.length}`">
+                        <span v-for="(f, i) in FRAGMENTS" :key="i" :class="{ on: i < story.found }"></span>
+                    </p>
                 </div>
             </div>
         </Transition>
@@ -2128,47 +2131,68 @@ canvas {
     user-select: text;
 }
 .story-card h2 {
-    margin: 0 0 14px;
+    margin: 0 0 12px;
     font-family: Caveat, cursive;
     font-weight: 500;
     font-size: 34px;
     line-height: 1.1;
     text-align: center;
+    color: #143246;
 }
 .story-text {
     margin: 0;
     color: #143246;
     font-family: Caveat, cursive;
     font-size: 21px;
-    line-height: 1.4;
+    line-height: 1.5;
 }
-.frag {
-    border-radius: 6px;
-    -webkit-box-decoration-break: clone;
-    box-decoration-break: clone;
-}
+/* what is still hidden: a thread of dots the length of its words, as the threads of the scenes, breathing softly */
 .frag.locked {
     color: transparent;
-    background-color: rgba(20, 50, 70, 0.78);
+    background-image: radial-gradient(circle, rgba(20, 50, 70, 0.34) 0 1.3px, transparent 1.9px);
+    background-size: 9px 100%;
+    background-repeat: repeat-x;
+    background-position: 0 58%;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
     -webkit-user-select: none;
     user-select: none;
+    animation: frag-breathe 3.6s ease-in-out infinite alternate;
 }
-.frag.fresh { animation: frag-paint 1.6s ease-out both; }
-@keyframes frag-paint {
-    from { color: transparent; background-color: rgba(20, 50, 70, 0.78); }
-    45% { color: transparent; background-color: rgba(255, 220, 150, 0.9); }
-    to { color: #143246; background-color: rgba(255, 220, 150, 0); }
+.frag.locked:nth-child(3n) { animation-delay: -1.2s; }
+.frag.locked:nth-child(3n + 1) { animation-delay: -2.4s; }
+@keyframes frag-breathe { from { opacity: 0.55; } to { opacity: 1; } }
+/* found since it was last seen: its thread of dots gives way to the words, which come into focus out of a warm light */
+.frag.fresh {
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+    background-size: 9px 100%;
+    background-repeat: repeat-x;
+    background-position: 0 58%;
+    animation: frag-appear 2s ease-out both;
+}
+@keyframes frag-appear {
+    0% { color: transparent; text-shadow: none; background-image: radial-gradient(circle, rgba(20, 50, 70, 0.34) 0 1.3px, transparent 1.9px); }
+    25% { color: transparent; text-shadow: 0 0 14px rgba(255, 196, 110, 0.95); background-image: radial-gradient(circle, rgba(255, 180, 90, 0.8) 0 1.6px, transparent 2.2px); }
+    26% { background-image: none; }
+    60% { color: transparent; text-shadow: 0 0 5px rgba(20, 50, 70, 0.65); background-image: none; }
+    100% { color: #143246; text-shadow: 0 0 0 rgba(20, 50, 70, 0); background-image: none; }
 }
 .story-count {
-    margin: 14px 0 0;
-    color: #143246;
-    text-align: center;
-    font-size: 14px;
-    letter-spacing: 0.08em;
-    opacity: 0.6;
+    display: flex;
+    justify-content: center;
+    gap: 7px;
+    margin: 18px 0 2px;
 }
+.story-count span {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    box-shadow: inset 0 0 0 1.2px rgba(20, 50, 70, 0.4);
+}
+.story-count span.on { background: #143246; box-shadow: none; }
 @media (prefers-reduced-motion: reduce) {
-    .frag.fresh { animation: none; }
+    .frag.fresh, .frag.locked { animation: none; }
     .story-icon.fresh { animation: none; filter: drop-shadow(0 0 6px rgba(255, 240, 200, 0.9)); }
 }
 /* The app's header over his light sky: its cream icons in the ink of his line (the header is teleported into <body>,
