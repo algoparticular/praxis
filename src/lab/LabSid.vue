@@ -12,6 +12,7 @@ import { createStarField } from '../composables/useStarField.js';
 import Rulito from '../components/Rulito.vue';
 import { play, setCardChord } from '../composables/useSound.js';
 import { chordFor } from '../data/cardChords.js';
+import { gardenNote } from '../audio/synth.js';
 import { getCard } from '../data/cards.js';
 import { loadMemory, saveMemory } from './worldMemory.js';
 import CardTemplate from '../components/CardTemplate.vue';
@@ -281,7 +282,17 @@ const world = createWorld({
     planted: memory.planted, visit: memory.visits,
     onSeed: (seed) => { visit?.seedPicked(); seedFound(seed); },
     onGrow: () => { saveMemory(memory); play('star'); },
+    onSing: (p) => sing(p),
 });
+// The garden sings (as in Proteus): each plant his note, of its own card's chord, moved to the nearest that fits if it
+// clashes with the world where it grows (gardenNote in synth.js); it sings as he passes near it (sidWorld.js) and, while
+// he meditates among his plants (GARDEN.reach), they sing in turn from left to right, slowly, a rest after each round,
+// each swaying as it sings
+const GARDEN = { reach: 900, first: 2.6, step: 0.75, rest: 1.5 };
+function sing(p, level = 1) {
+    const midi = gardenNote(chordFor(world.cardIdOf(p.card)), chordFor(world.zoneCard()), p.pick, p.grown);
+    play('garden', { midi, level });
+}
 // The floor goes back into the distance: his depth d (0 in front .. DEPTH at the back) lifts his feet towards the
 // horizon and makes him smaller, towards the middle of the screen (a vanishing point)
 // (deep: the camera is high and far, so most of the screen is floor and little is sky; a depth unit is still about
@@ -398,6 +409,7 @@ const state = {
     plantT: 0, planted: false,                               // seconds sitting away from the places, and whether he planted this time
     sowing: null,                                            // the seed on its way to where it is born: { t, x, d, light }
     tending: null,                                           // the plant of his he sits by, if any (it grows or dances)
+    roundT: 0, roundI: 0,                                    // meditating among his plants: when the next sings, and which
     underTree: 0, rul: null, portalDone: false,                                 // seconds sitting under the tree, the rulito born there      // sitting down in lotus and getting up, leg by leg
     reach: null,                   // a world point his near hand goes to
     reached: null,                 // the last one (his hand comes back from it)
@@ -621,9 +633,9 @@ function onDown(e) {
         if (!ui.sitting && !state.action) wave();
         return;
     }
-    // On something he planted: it wiggles and strums the chord of its world (the music is in it, setCardChord)
+    // On something he planted: it wiggles and sings its note (in tune with the world it grows in)
     const plant = plantAt(screen);
-    if (plant) { world.touchPlant(plant.key); play('star'); state.target = null; return; }
+    if (plant) { world.touchPlant(plant.key); sing(plant); state.target = null; return; }
     // In the air, only a touch close to him, as high as his head or higher, is something he reaches for with his hand
     if (screen.y <= horizon() + 10) {
         const p = toSid(screen), head = map(frame(), PIVOT.x, 260);
@@ -771,7 +783,7 @@ function update(dt, now) {
                 if (!still) burstAt(toScreen(p.x, p.d, p.h * 0.4), `rgb(${world.seedLight(p.card).map(Math.round).join(',')})`);
                 saveMemory(memory);
                 play('bloom');
-            } else if (how === 'dance') play('star');
+            } else if (how === 'dance') sing(p);
         }
     } else if (seated && !card && !state.planted && memory.seeds.length) {
         state.plantT += dt;
@@ -796,6 +808,21 @@ function update(dt, now) {
             play('bloom');
         }
     }
+    // meditating among his plants (away from the places), they sing in turn
+    if (seated && card == null && portal.card == null) {
+        state.roundT -= dt;
+        if (state.roundT <= 0) {
+            const seen = new Set(), round = world.plantsNear(state.x, state.d, GARDEN.reach)
+                .filter((p) => Math.hypot(p.x - state.x, (p.d - state.d) * 1.6) < GARDEN.reach && !seen.has(p.key) && seen.add(p.key))
+                .sort((a, b) => a.x - b.x);
+            if (round.length) {
+                const i = state.roundI % round.length, p = round[i];
+                world.singPlant(p.key); sing(p, 0.85);
+                state.roundI = i + 1;
+                state.roundT = i === round.length - 1 ? GARDEN.rest + GARDEN.step : GARDEN.step;
+            } else state.roundT = 1;
+        }
+    } else { state.roundT = GARDEN.first; state.roundI = 0; }
     if (card != null) learn('place');
     // Standing at a place, a ring of light under his feet, in its rulito's colour: here, sitting, something happens;
     // and until he has sat at one once, the button calls while he stands there
