@@ -414,7 +414,9 @@ const PART_COLOUR = { cap: 2, stem: null };   // the mushrooms of the tree: thei
 const ROLES = { plant: 'plants', bead: 'beads', stone: 'stones' };
 const mixRgb = (a, b, t) => `rgb(${a.map((v, i) => Math.round(v + (b[i] - v) * t)).join(',')})`;
 
-export function createWorld({ clouds = null, moon = null, planted = [], visit = 0, onSeed = null, onGrow = null, onSing = null, marks = null, onMark = null }) {
+export function createWorld({ clouds = null, moon = null, planted = [], visit = 0, onSeed = null, onGrow = null, onSing = null, marks = null, onMark = null, firstSeed = null }) {
+    // (firstSeed: { x, d }, on the very first visit: a seed lies there, near him, calling with rings of light on the
+    // ground, so the first thing learnt is that seeds are gathered; LabSid.vue)
     // (marks: { found: [keys], open: () => whether there is still a fragment to read }: the marks of the story, story.js)
     zoneOrder = shuffled(ZONES);                // (a new map of the worlds on every visit)
     // The colours on the screen now: those of the zone where the camera is (blended between two), set as the sky is
@@ -582,6 +584,11 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
             const p = { x: index * STRETCH + rs() * STRETCH, d: (row + rs()) * PATCH + PATCH_OFF }, z = mainZone(zonesAt(p.x, p.d));
             const id = `seed:${index},${row}`;
             if (clear(p) && !taken.has(id)) add({ id, kind: 'seed', x: p.x, d: p.d, card: z.card, cardId: z.id, role: 'bead', pick: rs(), phase: rs() * 10, reach: 120 });
+        }
+        // the first seed of all, near him on the first visit (firstSeed), of the card of the zone where it lies
+        if (firstSeed && Math.floor(firstSeed.x / STRETCH) === index && Math.floor((firstSeed.d - PATCH_OFF) / PATCH) === row && !taken.has('seed:first')) {
+            const z = mainZone(zonesAt(firstSeed.x, firstSeed.d));
+            add({ id: 'seed:first', kind: 'seed', x: firstSeed.x, d: firstSeed.d, card: z.card, cardId: z.id, role: 'bead', pick: 0.5, phase: 2, reach: 120, beacon: true });
         }
         // the mark of the story in each cell of the grid that falls in this stretch, while there is a fragment to read
         // (its key: the zone's card and its row of the grid, so it is the same mark however the worlds were shuffled)
@@ -1275,6 +1282,16 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
             const bob = Math.sin(time * 2 + item.phase) * 7, rise = up * up * 420, a = 1 - up, K = SEED_SIZE;
             const glowRgb = item.P.light.map(Math.round), twinkle = 0.5 + 0.5 * Math.sin(time * 3.1 + item.phase * 2);
             c.globalAlpha *= a;
+            // (the first seed calls: rings of its light go out over the ground round it, one after another)
+            if (item.beacon && up === 0) {
+                c.save(); c.lineWidth = 3;
+                for (let n = 0; n < 3; n++) {
+                    const k = (time * 0.45 + n / 3) % 1;
+                    c.strokeStyle = `rgba(${glowRgb.join(',')},${(0.75 * (1 - k)).toFixed(3)})`;
+                    c.beginPath(); c.ellipse(0, 0, 40 + 170 * k, 12 + 50 * k, 0, 0, Math.PI * 2); c.stroke();
+                }
+                c.restore();
+            }
             halo(c, 0, -6, 60 * K, glowRgb, 0.3 + 0.15 * twinkle);
             c.save(); c.translate(0, -34 * K - bob * K - rise); c.scale(K * (1 - up * 0.4), K * (1 - up * 0.4));
             // the stipple: dots of its light round it, each drifting on its own orbit and twinkling

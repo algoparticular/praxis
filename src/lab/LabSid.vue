@@ -13,7 +13,7 @@ import { THOUGHTS } from './thoughts.js';
 import { FRAGMENTS } from './story.js';
 import { W as RUL_W, H as RUL_H, LINE_AT, LOOP_AT } from '../data/rulitoShape.js';
 import Rulito from '../components/Rulito.vue';
-import { play, setCardChord, vibrate } from '../composables/useSound.js';
+import { play, setCardChord, setHush, vibrate } from '../composables/useSound.js';
 import { chordFor } from '../data/cardChords.js';
 import { gardenNote } from '../audio/synth.js';
 import { getCard } from '../data/cards.js';
@@ -48,6 +48,8 @@ function scheduleHint() {
     if (satThisVisit) return;
     hintTimer = setTimeout(() => {
         if (satThisVisit) return;
+        // (on the first visit the seed near him calls first: the button waits until it is picked up)
+        if (seedWaiting) { hintTimer = setTimeout(scheduleHint, HINT_SHOW); return; }
         callButton();
         hintTimer = setTimeout(scheduleHint, HINT_SHOW);
     }, memory.visits <= 1 ? HINT_FIRST : HINT_AFTER);
@@ -87,6 +89,7 @@ function readFragment(i) {
     const f = FRAGMENTS[i];
     if (!f) return;
     play('star'); visit?.secret('fragment');
+    story.found = memory.marks.length; story.fresh = true;
     setTimeout(function say() {
         if (gone) return;
         if ((teaching.on && !teaching.story) || portal.card != null) { setTimeout(say, 1500); return; }
@@ -95,6 +98,21 @@ function readFragment(i) {
         storyTimer = setTimeout(() => { if (teaching.story) teaching.on = false; }, STORY_SHOW * 1.4);
     }, 600);
 }
+
+// The story's own page: the fragments found, in order, as one paragraph, and those still hidden as dark bars the length
+// of their words, as the secrets of a game (its icon, an atom as the marks are drawn, over the seed button, shows once
+// the first is found and glows while one found is still to be seen there). Opened, the ones found since it was last
+// seen (memory.storySeen) are painted in, one after another; a touch anywhere, or Escape, closes it
+const story = reactive({ open: false, found: 0, from: 0, fresh: false });
+function openStory() {
+    if (!story.found) return;
+    story.from = Math.min(memory.storySeen ?? 0, story.found);
+    story.open = true; ui.choose = false;
+    play('tap');
+    if (memory.storySeen !== story.found) { memory.storySeen = story.found; saveMemory(memory); }
+    story.fresh = false;
+}
+const storyIndex = (i) => Math.max(0, i - story.from);      // (the order in which the new ones are painted in)
 
 // What the places think, as the things of Everything do (thoughts.js): coming near one of the seven places, one of
 // its card's own sentences is written by hand in the sky over it, softly, with no card under it, and goes as he walks
@@ -107,7 +125,9 @@ function think(dt) {
     thinkIn -= dt;
     if (thinkIn > 0) return;
     thinkIn = 0.25;
-    const near = portal.card == null ? world.placeNear(state.x, state.d, THOUGHT_KEEP) : null;
+    // (never before the words that open the world have been read, nor on the first visit until its seed is planted)
+    const waiting = firstVisit || [...told].some((w) => !memory.learned[`words_${w}`]);
+    const near = portal.card == null && !waiting ? world.placeNear(state.x, state.d, THOUGHT_KEEP) : null;
     if (!near) { thinkKey = null; thought.on = false; return; }
     thinkPlace = near;
     const key = `${near.id}:${Math.round(near.x)}:${Math.round(near.d)}`, list = THOUGHTS[near.id];
@@ -137,7 +157,10 @@ function placeThought() {
 // out of the seed on a spring): 1, 3 and 5 minutes; one can slide the finger onto one and let go, or tap it. One of them
 // sits him in lotus and a bowl sounds; he breathes slowly, BREATH_IN s in and BREATH_OUT s out; round the seed the time
 // goes by as a line of light that closes; at the end the bowl again, and he stays sitting. Getting up ends it, with no
-// bowl. While it lasts a place's card does not open (its rulito is born there instead). It is offered once, wordless,
+// bowl. While it lasts it is silence and the world lets him be (`ui.guide`): the music fades out (setHush), only a soft
+// breath is heard, in and out with him (guideBreath in synth.js); nothing is planted or grows, the plants do not sing,
+// no place's card opens and no rulito is born, the night keeps its secrets (no constellation, no star sent, no seed of
+// light; a shooting star of the sky passes without a sound). It is offered once, wordless,
 // to whoever sits a while without it (GUIDE_PEEK: the menu comes out of the seed for a moment), until one has been chosen
 const BREATH_IN = 4, BREATH_OUT = 6, GUIDE_MINUTES = [1, 3, 5], GUIDE_PEEK = 25, LONG_PRESS = 450;
 let pressTimer = 0, longPressed = false, peeked = false, peekTimer = 0;
@@ -171,7 +194,8 @@ function meditate(minutes) {
     ui.choose = false; clearTimeout(peekTimer);
     learn('guided');
     if (!ui.sitting) sit(true);
-    ui.guide = { minutes, total: minutes * 60, t: 0, started: false };
+    ui.guide = { minutes, total: minutes * 60, t: 0, started: false, breaths: 0 };
+    setHush(true);
 }
 function endGuide(done) {
     if (!ui.guide) return;
@@ -179,6 +203,7 @@ function endGuide(done) {
     if (g.started) visit?.guided(g.minutes, done, Math.round(g.t));
     if (done) play('bowl');
     ui.guide = null;
+    setHush(false);
 }
 const breathAt = (t) => {
     const u = t % (BREATH_IN + BREATH_OUT), e = (k) => 0.5 - 0.5 * Math.cos(Math.PI * k);
@@ -202,7 +227,7 @@ function rulitoFigure() {
 }
 function nightSecrets(dt, seated) {
     const dark = world.night();
-    const starry = seated && dark > 0.6 && portal.card == null;
+    const starry = seated && dark > 0.6 && portal.card == null && !ui.guide;
     state.starT = starry ? (state.starT ?? 0) + dt : 0;
     if (starry && !state.figure && state.starT > CONSTELLATION_AFTER && stars) {
         const card = world.placeCard(state.x, state.d) ?? world.zoneCard();
@@ -211,7 +236,7 @@ function nightSecrets(dt, seated) {
         if (!memory.learned.constellation) learn('constellation');
         visit?.secret('constellation');
     }
-    if (state.figure && (!ui.sitting || dark < 0.45 || portal.card != null)) { clearTimeout(state.figure); state.figure = null; stars?.constellation(null); }
+    if (state.figure && (!ui.sitting || dark < 0.45 || portal.card != null || ui.guide)) { clearTimeout(state.figure); state.figure = null; stars?.constellation(null); }
     // (the sky answers his stillness with a shooting star near, now and then)
     if (starry && !state.starGiven) {
         state.shootT = (state.shootT ?? 0) + dt;
@@ -221,7 +246,7 @@ function nightSecrets(dt, seated) {
 }
 // a near shooting star while he sits by night: a seed of light falls from it to his feet, and from there to the seed
 function starFell() {
-    if (!ui.sitting || state.starGiven || world.night() < 0.5 || portal.card != null) return;
+    if (!ui.sitting || ui.guide || state.starGiven || world.night() < 0.5 || portal.card != null) return;
     state.starGiven = true;
     state.planted = true;          // (it is not planted where it fell: it is kept, to be planted wherever he chooses)
     visit?.secret('star_seed');
@@ -289,6 +314,7 @@ function addSeed(card, from, light) {
     memory.seeds.push(card); saveMemory(memory); play('pick');
     fly(from, buttonMiddle(), light ?? world.seedLight(card), () => {
         ui.seeds = memory.seeds.length; ui.seedPop += 1;
+        seedWaiting = false;
         if (!firstSeedCalled && !memory.learned.planted) { firstSeedCalled = true; callButton(); tell('seed', 300); }
     });
 }
@@ -430,7 +456,16 @@ const picture = (src) => (typeof Image !== 'undefined' ? Object.assign(new Image
 const memory = loadMemory();
 memory.visits += 1;
 saveMemory(memory);
+story.found = memory.marks.length;
+story.fresh = story.found > (memory.storySeen ?? 0);
 ui.seeds = memory.seeds.length;
+// The very first visit teaches the world's one thing, in order: the words that open it, then a seed lying near him that
+// calls (rings of light on the ground; the button does not call meanwhile), then, picked up, the words of the seed and
+// the button calling (sitting plants it). Until it is planted the places do not think aloud and the marks of the story
+// stay hidden, so nothing comes before (`firstVisit`; the seed: firstSeed in sidWorld.js)
+let firstVisit = memory.visits === 1 && !memory.learned.planted && !memory.seeds.length && !memory.planted.length;
+let seedWaiting = firstVisit;
+const FIRST_SEED = { x: 1420, d: -40 };     // (he starts at x 1000: a little ahead of him, nearer the front)
 const PLANT_AFTER = 1.5;
 const SOW = { fly: 0.9, through: 1.3, under: 0.8 };    // (seconds of each part of its way)
 const world = createWorld({
@@ -438,7 +473,8 @@ const world = createWorld({
     planted: memory.planted, visit: memory.visits,
     onSeed: (seed) => { visit?.seedPicked(); seedFound(seed); },
     // the marks of the story (story.js), while there is a fragment to read: found, the next one is written
-    marks: { found: memory.marks, open: () => memory.marks.length < FRAGMENTS.length },
+    marks: { found: memory.marks, open: () => !firstVisit && memory.marks.length < FRAGMENTS.length },
+    firstSeed: firstVisit ? FIRST_SEED : null,
     onMark: () => { saveMemory(memory); readFragment(memory.marks.length - 1); },
     onGrow: () => { saveMemory(memory); play('star'); },
     onSing: (p) => sing(p),
@@ -449,6 +485,7 @@ const world = createWorld({
 // each swaying as it sings
 const GARDEN = { reach: 900, first: 2.6, step: 0.75, rest: 1.5 };
 function sing(p, level = 1) {
+    if (ui.guide) return;                           // (a meditation is silence)
     const midi = gardenNote(chordFor(world.cardIdOf(p.card)), chordFor(world.zoneCard()), p.pick, p.grown);
     play('garden', { midi, level });
 }
@@ -819,6 +856,7 @@ function press(key, on) {
 function onKey(e) {
     // (in a card's scene the keys are not his; Escape goes back to the world)
     if (portal.card != null) { if (e.key === 'Escape' && e.type === 'keydown') closePortal(); return; }
+    if (story.open) { if (e.key === 'Escape' && e.type === 'keydown') story.open = false; return; }
     if (e.target?.closest?.('button') && e.key === ' ') e.target.blur();
     const key = KEYS[e.key.length === 1 ? e.key.toLowerCase() : e.key];
     if (key) { e.preventDefault(); if (e.type === 'keydown' && !e.repeat) press(key, true); if (e.type === 'keyup') press(key, false); return; }
@@ -936,6 +974,8 @@ function update(dt, now) {
     if (!ui.sitting) {
         if (state.sowing && !state.planted) ui.seeds = memory.seeds.length;   // (he got up before it was born: it stays his)
         state.plantT = 0; state.planted = false; state.sowing = null; state.portalDone = false; state.tending = null;
+    } else if (ui.guide) {
+        // (a meditation: nothing is planted and nothing grows)
     } else if (seated && !card && !state.planted && (state.tending ??= world.plantBy(state.x, state.d))) {
         // by a plant of his he plants nothing: after the same moment it grows a step, or, grown since he came, it dances
         state.plantT += dt;
@@ -967,12 +1007,13 @@ function update(dt, now) {
             visit?.seedPlanted(seed, world.zoneCard());
             ui.seeds = memory.seeds.length;
             learn('planted');
+            firstVisit = false;
             saveMemory(memory);
             play('bloom');
         }
     }
     // meditating among his plants (away from the places), they sing in turn
-    if (seated && card == null && portal.card == null) {
+    if (seated && card == null && portal.card == null && !ui.guide) {
         state.roundT -= dt;
         if (state.roundT <= 0) {
             const seen = new Set(), round = world.plantsNear(state.x, state.d, GARDEN.reach)
@@ -998,7 +1039,7 @@ function update(dt, now) {
     // at a door to a card, the card's scene instead of the rulito here
     const door = card != null && PORTALS.has(card) && webgl && !ui.guide;
     if (door && !state.portalDone && portal.card == null && state.underTree >= PORTAL_AFTER) openPortal(card);
-    if (state.underTree >= RULITO_AFTER && !state.rul && !door) {
+    if (state.underTree >= RULITO_AFTER && !state.rul && !door && !ui.guide) {
         state.rul = { age: 0, head: 0, tail: 0, pop: 0, full: false, card };
         rulitoColour.value = RULITO_COLOURS[card] ?? RULITO_COLOURS[15];
         rulito.value?.reshape();
@@ -1012,6 +1053,8 @@ function update(dt, now) {
     if (ui.guide && meditating) {
         const g = ui.guide;
         if (!g.started) { g.started = true; play('bowl'); }
+        // (a soft breath to follow, at the start of each one, with him: breathAt)
+        if (g.t >= g.breaths * (BREATH_IN + BREATH_OUT)) { g.breaths += 1; play('guideBreath'); }
         g.t += dt;
         if (g.t >= g.total) endGuide(true);
     }
@@ -1559,7 +1602,7 @@ onMounted(() => {
     resize();
     window.addEventListener('resize', resize);
     // (a shooting star that passes near sounds, as in the app's other night skies; only when the night is out)
-    stars = createStarField(starCanvas.value, nightSky.value, { pace: () => state.pace, onShoot: () => { if (world.night() > 0.5) play('star'); starFell(); } });
+    stars = createStarField(starCanvas.value, nightSky.value, { pace: () => state.pace, onShoot: () => { if (world.night() > 0.5 && !ui.guide) play('star'); starFell(); } });
     raf = requestAnimationFrame(loop);
     scheduleHint();
     tell('intro', 1400);
@@ -1572,6 +1615,7 @@ onBeforeUnmount(() => {
     visit?.finish();
     document.body.classList.remove('lab-page', 'lab-night', 'lab-portal');
     document.body.style.backgroundColor = '';
+    setHush(false);
     clearTimeout(portalTimer);
     setCardChord(null);
     cancelAnimationFrame(raf);
@@ -1623,6 +1667,26 @@ onBeforeUnmount(() => {
                 <button v-for="m in GUIDE_MINUTES" :key="m" class="minutes" :class="{ hover: ui.hover === m }" role="menuitem" :data-minutes="m" @click="meditate(m)">
                     <span class="dot" aria-hidden="true"></span>{{ m }} min
                 </button>
+            </div>
+        </Transition>
+        <!-- the story's own page (openStory): its icon over the seed, once a fragment has been found -->
+        <Transition name="teaching">
+            <button v-if="story.found && portal.card == null" class="story-icon" :class="{ light: teaching.light, fresh: story.fresh }"
+                :aria-label="$i18n.locale === 'en' ? 'The story of Sid' : 'La historia de Sid'" :title="$i18n.locale === 'en' ? 'The story of Sid' : 'La historia de Sid'"
+                @click="openStory"><span aria-hidden="true"></span></button>
+        </Transition>
+        <Transition name="veil">
+            <div v-if="story.open" class="story" role="dialog" :aria-label="$i18n.locale === 'en' ? 'The story of Sid' : 'La historia de Sid'" @pointerdown.stop @click="story.open = false">
+                <div class="story-card">
+                    <h2>{{ $i18n.locale === 'en' ? 'The story of Sid' : 'La historia de Sid' }}</h2>
+                    <p class="story-text">
+                        <template v-for="(f, i) in FRAGMENTS" :key="i">
+                            <span class="frag" :class="{ locked: i >= story.found, fresh: i >= story.from && i < story.found }"
+                                :style="{ animationDelay: `${400 + storyIndex(i) * 1300}ms` }" :aria-hidden="i >= story.found">{{ $i18n.locale === 'en' ? f.en : f.es }}</span>{{ ' ' }}
+                        </template>
+                    </p>
+                    <p class="story-count">{{ story.found }} / {{ FRAGMENTS.length }}</p>
+                </div>
             </div>
         </Transition>
         <button ref="lotusEl" class="lotus glass" :class="{ on: ui.sitting, hint: ui.hint, press: ui.press, popped: ui.pop && ui.choose }" :aria-pressed="ui.sitting" aria-label="Loto" title="Loto"
@@ -1738,8 +1802,9 @@ canvas {
 .thought-enter-active { transition: opacity 2.2s ease-out; }
 .thought-leave-active { transition: opacity 1.4s ease-in; }
 .thought-enter-from, .thought-leave-to { opacity: 0; }
-/* the meditations' menu, as an iPhone's long press: the world dims behind a veil and a menu of frosted glass grows out
-   of the seed on a spring, right-aligned over it; the row under the finger lights up */
+/* the meditations' menu, as an iPhone's long press: the world dims behind a veil and the menu grows out of the seed to
+   its left on a spring, on the seed's own glass (.glass, darkened a little, a cream line round it): ethereal, as the
+   button; the one under the finger lights up */
 .veil {
     position: absolute;
     inset: 0;
@@ -1752,27 +1817,31 @@ canvas {
 .veil-enter-from, .veil-leave-to { opacity: 0; }
 .choose {
     position: absolute;
-    right: 20px;
-    bottom: calc(140px + env(safe-area-inset-bottom, 0px));
-    min-width: 172px;
+    right: 116px;
+    /* (its middle level with the seed's: the button is 84 high, the menu 56) */
+    bottom: calc(58px + env(safe-area-inset-bottom, 0px));
+    height: 56px;
     display: flex;
-    flex-direction: column;
-    border-radius: 16px;
+    flex-direction: row;
+    border-radius: 28px;
     overflow: hidden;
-    background: rgba(247, 248, 241, 0.78);
-    -webkit-backdrop-filter: blur(22px) saturate(1.6);
-    backdrop-filter: blur(22px) saturate(1.6);
-    box-shadow: 0 12px 40px rgba(20, 50, 70, 0.28), 0 0 0 0.5px rgba(20, 50, 70, 0.12);
-    color: #143246;
-    /* (it grows out of the seed: from the middle of the button, under its bottom right corner) */
-    transform-origin: calc(100% - 42px) calc(100% + 54px);
+    background-color: rgba(20, 50, 70, 0.32);
+    background-image: url('../assets/noise.png');
+    -webkit-backdrop-filter: blur(18px);
+    backdrop-filter: blur(18px);
+    border: 1px solid rgba(247, 248, 241, 0.35);
+    box-shadow: 0 4px 24px rgba(20, 50, 70, 0.18);
+    color: #F7F8F1;
+    /* (it grows out of the seed: from the middle of the button, to its right) */
+    transform-origin: calc(100% + 54px) 50%;
 }
-.choose.light { background: rgba(28, 44, 66, 0.72); color: #F7F8F1; box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4), 0 0 0 0.5px rgba(247, 248, 241, 0.18); }
+.choose.light { background-color: rgba(28, 44, 66, 0.4); }
 .minutes {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 14px 20px;
+    gap: 7px;
+    padding: 0 13px;
+    white-space: nowrap;
     margin: 0;
     border: none;
     border-radius: 0;
@@ -1780,7 +1849,7 @@ canvas {
     background: transparent;
     color: inherit;
     font-family: Nunito, sans-serif;
-    font-size: 17px;
+    font-size: 15px;
     font-weight: 600;
     text-align: left;
     cursor: pointer;
@@ -1788,11 +1857,9 @@ canvas {
     -webkit-tap-highlight-color: transparent;
     transition: background-color 120ms ease-out;
 }
-.minutes + .minutes { border-top: 0.5px solid rgba(20, 50, 70, 0.16); }
-.choose.light .minutes + .minutes { border-top-color: rgba(247, 248, 241, 0.16); }
-.minutes.hover, .minutes:active { background-color: rgba(20, 50, 70, 0.1); }
-.choose.light .minutes.hover, .choose.light .minutes:active { background-color: rgba(247, 248, 241, 0.14); }
-@media (hover: hover) { .minutes:hover { background-color: rgba(20, 50, 70, 0.08); } .choose.light .minutes:hover { background-color: rgba(247, 248, 241, 0.12); } }
+.minutes + .minutes { border-left: 1px solid rgba(247, 248, 241, 0.2); }
+.minutes.hover, .minutes:active { background-color: rgba(255, 240, 200, 0.22); }
+@media (hover: hover) { .minutes:hover { background-color: rgba(255, 240, 200, 0.16); } }
 .minutes:focus { outline: none; }
 .minutes:focus-visible { box-shadow: inset 0 0 0 2px rgba(255, 111, 97, 0.7); }
 /* a little light before each, bigger the longer the meditation */
@@ -1807,11 +1874,11 @@ canvas {
 .minutes[data-minutes="5"] .dot { width: 16px; height: 16px; }
 .choose-enter-active { transition: transform 460ms cubic-bezier(0.3, 1.45, 0.55, 1), opacity 200ms ease-out; }
 .choose-leave-active { transition: transform 220ms ease-in, opacity 200ms ease-in; }
-.choose-enter-from, .choose-leave-to { transform: scale(0.2); opacity: 0; }
+.choose-enter-from, .choose-leave-to { transform: translateX(30px) scale(0.2); opacity: 0; }
 .choose-enter-active .minutes { animation: row-in 360ms ease-out both; }
 .choose-enter-active .minutes:nth-child(2) { animation-delay: 40ms; }
-.choose-enter-active .minutes:nth-child(3) { animation-delay: 80ms; }
-@keyframes row-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.choose-enter-active .minutes:nth-child(1) { animation-delay: 80ms; }
+@keyframes row-in { from { opacity: 0; transform: translateX(8px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) {
     .choose-enter-active, .choose-leave-active { transition: opacity 200ms; }
     .choose-enter-from, .choose-leave-to { transform: none; }
@@ -1987,6 +2054,114 @@ canvas {
     border-radius: 50%;
     pointer-events: none;
     box-shadow: 0 0 6px rgba(255, 244, 214, 0.9);
+}
+/* the story's icon: an atom, as the app's icons (a line, round, no button round it), over the seed and in line with it;
+   in the ink of his line by day, cream by night (as the header's icons); while a fragment found waits to be seen it
+   breathes a soft glow */
+.story-icon {
+    position: absolute;
+    right: 40px;
+    bottom: calc(146px + env(safe-area-inset-bottom, 0px));
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    margin: 0;
+    border: none;
+    background: none;
+    color: rgba(0, 0, 0, 0.78);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform 160ms ease-out, color 600ms ease-out;
+}
+.story-icon.light { color: #F7F8F1; }
+.story-icon span {
+    display: block;
+    width: 100%;
+    height: 100%;
+    background-color: currentColor;
+    -webkit-mask: url('../assets/icon/Atom.svg') center / contain no-repeat;
+    mask: url('../assets/icon/Atom.svg') center / contain no-repeat;
+}
+.story-icon:active { transform: scale(0.9); }
+.story-icon:focus { outline: none; }
+.story-icon:focus-visible { filter: drop-shadow(0 0 6px rgba(255, 111, 97, 0.9)); }
+.story-icon.fresh { animation: story-call 2.4s ease-in-out infinite alternate; }
+@keyframes story-call {
+    from { filter: drop-shadow(0 0 0 rgba(255, 240, 200, 0)); }
+    to { filter: drop-shadow(0 0 8px rgba(255, 240, 200, 0.95)); }
+}
+/* the story's page: over the dimmed world, a card of frosted cream with the story as one paragraph, written by hand;
+   what is still hidden, dark bars the length of its words; what was found since it was last seen is painted in */
+.story {
+    position: absolute;
+    inset: 0;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: calc(84px + env(safe-area-inset-top, 0px)) 16px calc(24px + env(safe-area-inset-bottom, 0px));
+    background: rgba(20, 50, 70, 0.3);
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+    cursor: pointer;
+}
+.story-card {
+    max-width: 560px;
+    max-height: 100%;
+    overflow-y: auto;
+    padding: 28px 26px 18px;
+    border-radius: 24px;
+    background-color: rgba(247, 248, 241, 0.86);
+    background-image: url('../assets/noise.png');
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    box-shadow: 0 12px 40px rgba(20, 50, 70, 0.28);
+    color: #143246;
+    -webkit-user-select: text;
+    user-select: text;
+}
+.story-card h2 {
+    margin: 0 0 14px;
+    font-family: Caveat, cursive;
+    font-weight: 500;
+    font-size: 34px;
+    line-height: 1.1;
+    text-align: center;
+}
+.story-text {
+    margin: 0;
+    color: #143246;
+    font-family: Caveat, cursive;
+    font-size: 21px;
+    line-height: 1.4;
+}
+.frag {
+    border-radius: 6px;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+}
+.frag.locked {
+    color: transparent;
+    background-color: rgba(20, 50, 70, 0.78);
+    -webkit-user-select: none;
+    user-select: none;
+}
+.frag.fresh { animation: frag-paint 1.6s ease-out both; }
+@keyframes frag-paint {
+    from { color: transparent; background-color: rgba(20, 50, 70, 0.78); }
+    45% { color: transparent; background-color: rgba(255, 220, 150, 0.9); }
+    to { color: #143246; background-color: rgba(255, 220, 150, 0); }
+}
+.story-count {
+    margin: 14px 0 0;
+    color: #143246;
+    text-align: center;
+    font-size: 14px;
+    letter-spacing: 0.08em;
+    opacity: 0.6;
+}
+@media (prefers-reduced-motion: reduce) {
+    .frag.fresh { animation: none; }
+    .story-icon.fresh { animation: none; filter: drop-shadow(0 0 6px rgba(255, 240, 200, 0.9)); }
 }
 /* The app's header over his light sky: its cream icons in the ink of his line (the header is teleported into <body>,
    so this is not scoped; body.lab-page only while the lab is open) */
