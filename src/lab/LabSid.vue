@@ -397,6 +397,7 @@ const state = {
     legSit: [0, 0], sitT: 9, rising: false, settled: true,
     plantT: 0, planted: false,                               // seconds sitting away from the places, and whether he planted this time
     sowing: null,                                            // the seed on its way to where it is born: { t, x, d, light }
+    tending: null,                                           // the plant of his he sits by, if any (it grows or dances)
     underTree: 0, rul: null, portalDone: false,                                 // seconds sitting under the tree, the rulito born there      // sitting down in lotus and getting up, leg by leg
     reach: null,                   // a world point his near hand goes to
     reached: null,                 // the last one (his hand comes back from it)
@@ -542,6 +543,15 @@ function sit(on = !ui.sitting) {
 // Where a point of the screen is in his own world, at his depth (his world is scaled about the vanishing point)
 const groundAt = (d) => state.ground - (d - state.camD) / DEPTH * view.floor;
 const horizon = () => state.ground - view.floor;
+// What he planted under a touch on the screen (the nearest to us, if two overlap)
+function plantAt(screen) {
+    let best = null;
+    for (const p of world.plantsNear(state.cam, state.camD + DEPTH / 2, 3000)) {
+        const s = scaleAt(p.d), x = view.w / view.k / 2 + (p.x - state.cam) * s, y = groundAt(p.d);
+        if (Math.abs(screen.x - x) < Math.max(36, p.w * s / 2) && screen.y < y + 14 && screen.y > y - Math.max(50, p.h * s) && (!best || p.d < best.d)) best = p;
+    }
+    return best;
+}
 function toSid(p, d = state.d) {
     const s = scaleAt(d), x0 = view.w / view.k / 2;
     return { x: state.cam + (p.x - x0) / s, y: state.ground + (p.y - groundAt(d)) / s };
@@ -611,6 +621,9 @@ function onDown(e) {
         if (!ui.sitting && !state.action) wave();
         return;
     }
+    // On something he planted: it wiggles and strums the chord of its world (the music is in it, setCardChord)
+    const plant = plantAt(screen);
+    if (plant) { world.touchPlant(plant.key); play('star'); state.target = null; return; }
     // In the air, only a touch close to him, as high as his head or higher, is something he reaches for with his hand
     if (screen.y <= horizon() + 10) {
         const p = toSid(screen), head = map(frame(), PIVOT.x, 260);
@@ -747,7 +760,19 @@ function update(dt, now) {
     // under the ground to where it is born)
     if (!ui.sitting) {
         if (state.sowing && !state.planted) ui.seeds = memory.seeds.length;   // (he got up before it was born: it stays his)
-        state.plantT = 0; state.planted = false; state.sowing = null; state.portalDone = false;
+        state.plantT = 0; state.planted = false; state.sowing = null; state.portalDone = false; state.tending = null;
+    } else if (seated && !card && !state.planted && (state.tending ??= world.plantBy(state.x, state.d))) {
+        // by a plant of his he plants nothing: after the same moment it grows a step, or, grown since he came, it dances
+        state.plantT += dt;
+        if (state.plantT >= PLANT_AFTER) {
+            state.planted = true;
+            const p = state.tending, how = world.tend(p.key);
+            if (how === 'grow') {
+                if (!still) burstAt(toScreen(p.x, p.d, p.h * 0.4), `rgb(${world.seedLight(p.card).map(Math.round).join(',')})`);
+                saveMemory(memory);
+                play('bloom');
+            } else if (how === 'dance') play('star');
+        }
     } else if (seated && !card && !state.planted && memory.seeds.length) {
         state.plantT += dt;
         if (!state.sowing && state.plantT >= PLANT_AFTER - SOW.fly) {
@@ -1315,7 +1340,7 @@ function loop(now) {
 }
 
 // (for trying him out from the browser's console)
-if (typeof window !== 'undefined') window.__sid = { state, springs, hands, ui, world, walkTo, sit, memory, portal, portalWon, closePortal };
+if (typeof window !== 'undefined') window.__sid = { state, springs, hands, ui, world, walkTo, sit, memory, portal, portalWon, closePortal, toScreen };
 
 onMounted(() => {
     document.body.classList.add('lab-page');
