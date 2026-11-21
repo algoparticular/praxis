@@ -1818,12 +1818,12 @@ canvas {
 .choose {
     position: absolute;
     right: 116px;
-    /* (its middle level with the seed's: the button is 84 high, the menu 56) */
-    bottom: calc(58px + env(safe-area-inset-bottom, 0px));
-    height: 56px;
+    /* (its middle level with the seed's: the button is 84 high, the menu 68) */
+    bottom: calc(52px + env(safe-area-inset-bottom, 0px));
+    height: 68px;
     display: flex;
     flex-direction: row;
-    border-radius: 28px;
+    border-radius: 34px;
     overflow: hidden;
     background-color: rgba(20, 50, 70, 0.32);
     background-image: url('../assets/noise.png');
@@ -1837,10 +1837,17 @@ canvas {
 }
 .choose.light { background-color: rgba(28, 44, 66, 0.4); }
 .minutes {
+    /* the light above, the minutes under it */
     display: flex;
+    flex-direction: column;
     align-items: center;
+    justify-content: center;
     gap: 7px;
-    padding: 0 13px;
+    padding: 0 18px;
+    /* (the whole height of the menu, so the words sit in its middle: the app's buttons are 48 high, style.scss) */
+    height: auto;
+    align-self: stretch;
+    line-height: 1;
     white-space: nowrap;
     margin: 0;
     border: none;
@@ -1849,9 +1856,9 @@ canvas {
     background: transparent;
     color: inherit;
     font-family: Nunito, sans-serif;
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 600;
-    text-align: left;
+    text-align: center;
     cursor: pointer;
     touch-action: none;
     -webkit-tap-highlight-color: transparent;
@@ -1870,8 +1877,9 @@ canvas {
     background: #FFE9A8;
     box-shadow: 0 0 8px 2px rgba(255, 220, 140, 0.8);
 }
-.minutes[data-minutes="3"] .dot { width: 13px; height: 13px; }
-.minutes[data-minutes="5"] .dot { width: 16px; height: 16px; }
+.minutes .dot { margin: 3px 0; }      /* (each light in a box 16 high, so the three words line up) */
+.minutes[data-minutes="3"] .dot { width: 13px; height: 13px; margin: 1.5px 0; }
+.minutes[data-minutes="5"] .dot { width: 16px; height: 16px; margin: 0; }
 .choose-enter-active { transition: transform 460ms cubic-bezier(0.3, 1.45, 0.55, 1), opacity 200ms ease-out; }
 .choose-leave-active { transition: transform 220ms ease-in, opacity 200ms ease-in; }
 .choose-enter-from, .choose-leave-to { transform: translateX(30px) scale(0.2); opacity: 0; }
