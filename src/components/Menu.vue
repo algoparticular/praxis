@@ -1,5 +1,7 @@
 <script setup>
-    import { onMounted } from 'vue';
+    import { onMounted, computed } from 'vue';
+    import { useRoute } from 'vue-router';
+    import { worldSide, setWorldSide } from '../composables/useWorldSide.js';
     import { track } from '../analytics.js';
     import { musicVolume, effectsVolume, setMusicVolume, setEffectsVolume, play } from '../composables/useSound.js';
 
@@ -11,6 +13,14 @@
         // the labyrinth into Sid's world, alone at the bottom: the navigation menu only (the footer has its own)
         hasWorld: Boolean,
     });
+
+    // inside Sid's world only: which side its buttons sit on
+    const route = useRoute();
+    const inWorld = computed(() => route.path === '/sid');
+    const sideChanged = (side) => {
+        setWorldSide(side);
+        track('world_side_changed', { to: side });
+    };
 
     const emit = defineEmits(['navigate','langChanged']); 
 
@@ -51,6 +61,19 @@
                     :style="{ '--fill': Math.round(effectsVolume * 100) + '%' }" :aria-label="$t('nav.effects')"
                     @input="setEffectsVolume($event.target.value / 100)" @change="effectsHeard" />
             </label>
+        </div>
+
+        <div v-if="props.hasAudio && inWorld" id="sideSelect" class="choice">
+            <span class="title">{{ $t("nav.side") }}</span>
+            <div class="options">
+                <label :class="{active: worldSide === 'left'}">
+                    <input type="radio" name="worldSide" value="left" :checked="worldSide === 'left'" @change="sideChanged('left')"/>{{ $t("nav.sideLeft") }}
+                </label>
+                <span>|</span>
+                <label :class="{active: worldSide === 'right'}">
+                    <input type="radio" name="worldSide" value="right" :checked="worldSide === 'right'" @change="sideChanged('right')"/>{{ $t("nav.sideRight") }}
+                </label>
+            </div>
         </div>
 
         <div id="languageSelect">
@@ -233,6 +256,45 @@
             -ms-user-select: none; /* Internet Explorer/Edge */
                 user-select: none; /* Non-prefixed version, currently
                                     supported by Chrome, Edge, Opera and Firefox */
+    }
+
+    /* Inside Sid's world: which side its buttons sit on, a line as the language's under its name */
+    #sideSelect {
+        gap: 10px;
+    }
+
+    #sideSelect .title {
+        font-family: 'Caveat', 'Nunito', helvetica, sans-serif;
+        font-size: 21px;
+        color: #F7F8F1;
+    }
+
+    #sideSelect .options {
+        flex-direction: row;
+        gap: 24px;
+    }
+
+    #sideSelect input {
+        display: none;
+    }
+
+    #sideSelect label {
+        font-size: 21px;
+        font-family: 'Caveat', 'Nunito', helvetica, sans-serif;
+        color: #F7F8F1;
+        cursor: pointer;
+    }
+
+    #sideSelect label.active {
+        color: #143246;
+    }
+
+    #sideSelect .options span {
+        font-size: 24px;
+        font-family: 'Caveat', 'Nunito', helvetica, sans-serif;
+        color: #F7F8F1;
+        user-select: none;
+        -webkit-user-select: none;
     }
 
     /* DESKTOP */

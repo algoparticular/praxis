@@ -196,13 +196,15 @@
     /* over the veil the navy cannot mark things: the language chosen is underlined in light (cream, glowing a little,
        as the sliders' thumbs), a hovered word with a fine line, and the sliders fill in cream */
     #menuOverlay nav a:hover,
-    #menuOverlay #languageSelect label:hover {
+    #menuOverlay #languageSelect label:hover,
+    #menuOverlay #sideSelect label:hover {
         color: #F7F8F1;
         text-decoration: underline 1px;
         text-underline-offset: 6px;
     }
 
-    #menuOverlay #languageSelect label.active {
+    #menuOverlay #languageSelect label.active,
+    #menuOverlay #sideSelect label.active {
         color: #F7F8F1;
         text-decoration: underline 2px #F7F8F1;
         text-underline-offset: 6px;
@@ -239,7 +241,9 @@
 
     #menuOverlay nav a,
     #menuOverlay nav #languageSelect label,
-    #menuOverlay nav #languageSelect span {
+    #menuOverlay nav #languageSelect span,
+    #menuOverlay nav #sideSelect label,
+    #menuOverlay nav #sideSelect .options span {
         font-size: 32px;
     }
 

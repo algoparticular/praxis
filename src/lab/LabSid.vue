@@ -9,6 +9,7 @@ import Header from '../components/Header.vue';
 import rig from './sid/sid.json';
 import { CICLOS, createWorld, STAR_SEED, STAR_LIGHT, pieceUrl } from './sidWorld.js';
 import { createStarField, CONSTELLATION_TIME } from '../composables/useStarField.js';
+import { worldSide } from '../composables/useWorldSide.js';
 import { THOUGHTS } from './thoughts.js';
 import { FRAGMENTS } from './story.js';
 import { HERBARIUM, kindOf } from './herbarium.js';
@@ -1756,7 +1757,7 @@ onBeforeUnmount(() => {
          it as on its own page, a card opened at its place) -->
     <div class="labRoot">
     <!-- (no menu on a long press: a finger held down only guides him) -->
-    <div ref="labEl" class="lab" @contextmenu.prevent>
+    <div ref="labEl" class="lab" :class="{ lefty: worldSide === 'left' }" @contextmenu.prevent>
         <div class="page"></div>
         <div ref="nightSky" class="night-sky" :style="zoomStyle"><canvas ref="starCanvas"></canvas></div>
         <!-- the rulito draws itself on its own canvas, which this scene lays over his head -->
@@ -2226,6 +2227,14 @@ canvas {
     -webkit-tap-highlight-color: transparent;
     transition: transform 160ms ease-out, box-shadow 400ms ease-out;
 }
+/* the buttons on the left, for whoever prefers them there (the menu, inside the world: useWorldSide.js); the minutes'
+   menu then springs out of the seed to its right */
+.lab.lefty .lotus { right: auto; left: 20px; }
+.lab.lefty .lotus .count { right: auto; left: -4px; }
+.lab.lefty .story-icon { right: auto; left: 36px; }
+.lab.lefty .choose { right: auto; left: 116px; transform-origin: -54px 50%; }
+.lab.lefty .choose-enter-from, .lab.lefty .choose-leave-to { transform: translateX(-30px) scale(0.2); }
+@media (prefers-reduced-motion: reduce) { .lab.lefty .choose-enter-from, .lab.lefty .choose-leave-to { transform: none; } }
 .story-icon span {
     display: block;
     width: 26px;

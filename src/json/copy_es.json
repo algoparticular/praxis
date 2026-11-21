@@ -36,7 +36,10 @@
             "soundOff": "Sin sonido",
             "audio": "Audio",
             "music": "Música",
-            "effects": "Efectos"
+            "effects": "Efectos",
+            "side": "Botones",
+            "sideLeft": "Izquierda",
+            "sideRight": "Derecha"
         },
         "about": {
             "oracleAuthor": "Belén Brito",
