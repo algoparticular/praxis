@@ -10,6 +10,7 @@ import rig from './sid/sid.json';
 import { CICLOS, createWorld, STAR_SEED, STAR_LIGHT, pieceUrl } from './sidWorld.js';
 import { createStarField, CONSTELLATION_TIME } from '../composables/useStarField.js';
 import { worldSide } from '../composables/useWorldSide.js';
+import { WORLD_RESUME } from '../composables/worldResume.js';
 import { THOUGHTS } from './thoughts.js';
 import { FRAGMENTS } from './story.js';
 import { HERBARIUM, kindOf } from './herbarium.js';
@@ -91,13 +92,24 @@ function readFragment(i) {
     const f = FRAGMENTS[i];
     if (!f) return;
     play('star'); visit?.secret('fragment');
+    // (the first time, the notebook's button waits for the words to come into it)
+    if (!story.shown) holdNotebook();
     refreshStory();
     setTimeout(function say() {
         if (gone) return;
         if ((teaching.on && !teaching.story) || portal.card != null) { setTimeout(say, 1500); return; }
         Object.assign(teaching, { es: f.es, en: f.en, on: true, story: true });
         clearTimeout(storyTimer);
-        storyTimer = setTimeout(() => { if (teaching.story) teaching.on = false; }, STORY_SHOW * 1.4);
+        storyTimer = setTimeout(() => {
+            if (!teaching.story) return;
+            // read, its words come undone into motes of light that fly into the notebook, where it is kept
+            const r = teachingEl.value?.getBoundingClientRect(), root = labEl.value?.getBoundingClientRect();
+            teaching.on = false;
+            // (in the colour its words were written in: the world's ink by day, cream by night)
+            const ink = teaching.light ? '#FFF4D6' : teaching.ink;
+            if (r && root) intoNotebook({ x: r.left - root.left, y: r.top - root.top, w: r.width, h: r.height }, ink, 30);
+            else releaseNotebook();
+        }, STORY_SHOW * 1.4);
     }, 600);
 }
 
@@ -110,7 +122,7 @@ function readFragment(i) {
 // - Herbario: every plant a seed can grow into (herbarium.js) as a dark silhouette, and in its colours with its name
 //   once one of its kind has been planted (those planted since it was last seen, memory.herbSeen, come in out of a
 //   warm light)
-const story = reactive({ open: false, tab: 'thoughts', found: 0, fresh: false, shown: false, have: new Set(), order: new Map(), herb: new Set(), herbNew: new Map() });
+const story = reactive({ dir: '', hold: false, open: false, tab: 'thoughts', found: 0, fresh: false, shown: false, have: new Set(), order: new Map(), herb: new Set(), herbNew: new Map() });
 const herbPlanted = () => new Set(memory.planted.map((g) => kindOf(g.name)).filter(Boolean));
 function storyNews() {
     const thoughts = memory.fragments.some((i) => !memory.storySeen.includes(i));
@@ -123,6 +135,69 @@ function refreshStory() {
     const news = storyNews();
     story.fresh = news.thoughts || news.herb;
 }
+// What goes into the notebook is seen going in (its only lesson, with no words): a fragment read comes undone into
+// motes of light, a plant of a new kind sends a spark of its colour, and they fly into the notebook's button, which takes
+// them in with a little pulse (`note.got`). The first time, the button itself appears as they arrive (`story.hold`).
+// And while something new waits in it and it has never been opened, it calls now and then, as the seed's button does
+// (NOTE_CALL s, `note.hint`), until it is opened once (memory.learned.notebook)
+const note = reactive({ got: false, hint: false });
+const NOTE_CALL = 9, NOTE_FLY = 1100;
+let noteHold = 0;
+function holdNotebook() {
+    story.hold = true;
+    clearTimeout(noteHold);
+    noteHold = setTimeout(releaseNotebook, 20000);          // (never left hidden, whatever covers the words)
+}
+function releaseNotebook() { clearTimeout(noteHold); story.hold = false; }
+// where the notebook's button is (or will be): centred over the seed's, as the style puts it
+function notebookMiddle() {
+    const b = buttonMiddle(), r = lotusEl.value?.getBoundingClientRect();
+    return { x: b.x, y: b.y - (r ? r.height / 2 : 42) - 16 - 26 };
+}
+// `from`: a box on the screen (the motes start spread over it) or a point; `light`: their colour ([r, g, b] or CSS)
+function intoNotebook(from, light, count) {
+    const root = labEl.value, to = notebookMiddle(), colour = Array.isArray(light) ? `rgb(${light.map(Math.round).join(',')})` : light;
+    const arrive = () => {
+        releaseNotebook(); play('pick');
+        note.got = false;
+        requestAnimationFrame(() => { note.got = true; setTimeout(() => { note.got = false; }, 900); });
+    };
+    if (!root || still) { arrive(); return; }
+    let last = 0;
+    for (let n = 0; n < count; n++) {
+        const x0 = from.w ? from.x + Math.random() * from.w : from.x + (Math.random() - 0.5) * 24;
+        const y0 = from.h ? from.y + from.h * (0.25 + Math.random() * 0.5) : from.y + (Math.random() - 0.5) * 24;
+        const dot = document.createElement('span'), size = 2.5 + Math.random() * 3.5;
+        dot.className = 'mote';
+        Object.assign(dot.style, { width: `${size}px`, height: `${size}px`, background: colour, left: '0px', top: '0px' });
+        root.appendChild(dot);
+        // (each on its own curve, up and over, a little apart in time, so they stream in as a thread of light)
+        const lift = 40 + Math.random() * 90, side = (Math.random() - 0.5) * 120;
+        const mid = { x: (x0 + to.x) / 2 + side, y: Math.min(y0, to.y) - lift }, frames = [];
+        for (let k = 0; k <= 12; k++) {
+            const e = k / 12, q = 1 - e;
+            const x = q * q * x0 + 2 * q * e * mid.x + e * e * to.x, y = q * q * y0 + 2 * q * e * mid.y + e * e * to.y;
+            frames.push({ transform: `translate(${x}px, ${y}px) translate(-50%, -50%) scale(${1 - 0.5 * e})`, opacity: k === 0 ? 0 : k === 12 ? 0.2 : 1 });
+        }
+        const delay = Math.random() * 500, ms = NOTE_FLY + Math.random() * 400;
+        last = Math.max(last, delay + ms);
+        const anim = dot.animate(frames, { duration: ms, delay, easing: 'cubic-bezier(.45,.05,.4,1)', fill: 'both' });
+        anim.onfinish = () => dot.remove();
+    }
+    setTimeout(() => { if (!gone) arrive(); }, last - 150);
+}
+let noteCallT = 0, noteCallTimer = 0;
+function callNotebook(dt) {
+    const waiting = story.shown && !story.hold && story.fresh && !story.open && !memory.learned.notebook
+        && portal.card == null && !ui.guide && !teaching.on;
+    noteCallT = waiting ? noteCallT + dt : 0;
+    if (noteCallT < NOTE_CALL) return;
+    noteCallT = 0;
+    note.hint = false;
+    clearTimeout(noteCallTimer);
+    requestAnimationFrame(() => { note.hint = true; noteCallTimer = setTimeout(() => { note.hint = false; }, HINT_SHOW); });
+}
+
 // the herbarium's drawings are small (72 to 290 px): each is shown at most at its own size over 1.5, so a phone's
 // screen does not blow it up into blurred pixels (until the illustrator's own, bigger ones come)
 const HERB_SCALE = 1 / 1.5;
@@ -134,14 +209,38 @@ function fitHerb(e) {
 
 function openStory() {
     if (!story.shown) return;
+    story.dir = '';
     const news = storyNews();
     showTab(news.thoughts ? 'thoughts' : news.herb ? 'herbarium' : story.found ? story.tab : 'herbarium');
-    story.open = true; ui.choose = false;
+    story.open = true; ui.choose = false; note.hint = false;
+    if (!memory.learned.notebook) learn('notebook');
     document.body.classList.add('lab-story');
     visit?.notebook(story.tab, news.thoughts || news.herb, memory.fragments.length, herbPlanted().size);
     play('tap');
 }
-function closeStory() { story.open = false; document.body.classList.remove('lab-story'); }
+function closeStory() {
+    // (a swipe that turned the page is not a touch to close it)
+    if (swiped) { swiped = false; return; }
+    story.open = false; document.body.classList.remove('lab-story');
+}
+// A finger swiped across turns its page, as a book's: to the left, the next (Herbario); to the right, back (Pensamientos);
+// the page comes in from the side it was turned to (`story.dir`)
+const SWIPE = 50;
+let swipeAt = null, swiped = false;
+function swipeStart(e) { swipeAt = { x: e.clientX, y: e.clientY }; swiped = false; }
+function swipeEnd(e) {
+    if (!swipeAt) return;
+    const dx = e.clientX - swipeAt.x, dy = e.clientY - swipeAt.y;
+    swipeAt = null;
+    if (Math.abs(dx) < SWIPE || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    swiped = true;
+    setTimeout(() => { swiped = false; }, 400);       // (if no click follows, the next touch still closes it)
+    const tab = dx < 0 ? 'herbarium' : 'thoughts';
+    if (tab === story.tab) return;
+    story.dir = dx < 0 ? 'from-right' : 'from-left';
+    showTab(tab);
+    play('tap');
+}
 // (each page, as it is shown, paints in what is new on it and remembers it as seen)
 function showTab(tab) {
     story.tab = tab;
@@ -432,6 +531,7 @@ let stars = null;
 // affirmation of that place's card is written in the sky, by hand (teaching), and goes when he gets up
 const rulito = ref(null);
 const RULITO_AFTER = 3, RULITO_GROW = 2.2, RULITO_GO = 3.4;
+const teachingEl = ref(null);
 const teaching = reactive({ es: '', en: '', on: false, story: false, light: false, ink: CICLOS.ink });
 // the rulito is born in the colour its card gives it (as in the card's own scene)
 const RULITO_COLOURS = { 15: '#fc747c', 8: '#f595b6', 9: '#b3539a', 14: '#ffe285', 27: '#f37b85', 24: '#fff6c2', 32: '#f5d35a' };
@@ -842,8 +942,30 @@ function walkTo(x, d = state.d) {
 }
 function wave() { if (!ui.sitting) act('wave', 2.6, { arm: 'near' }); }
 function jump() { if (!ui.sitting && !state.air) { state.jumped = false; act('jump', 1.7); } }
+// While he sits the screen stays on (a meditation is not cut by the phone going dark): the screen's wake lock, asked for
+// as he sits and let go as he gets up; the phone drops it when the page is hidden, so it is asked for again on coming
+// back if he is still sitting. Where the browser has none, nothing happens
+let wakeLock = null, wantAwake = false;
+async function keepAwake(on) {
+    wantAwake = on;
+    if (!on) { const w = wakeLock; wakeLock = null; w?.release().catch(() => {}); return; }
+    if (wakeLock || !navigator.wakeLock || document.visibilityState !== 'visible') return;
+    try {
+        const w = await navigator.wakeLock.request('screen');
+        if (!wantAwake || gone) { w.release().catch(() => {}); return; }
+        wakeLock = w;
+        w.addEventListener('release', () => { if (wakeLock === w) wakeLock = null; });
+    } catch { /* refused (low battery, not allowed): the screen keeps its own timer */ }
+}
+// Whoever was in the world goes back into it if the phone closes the app in the background (router/index.js): it is
+// written while the world is open and as the page is hidden, and cleared when one walks out of the world in the app
+function onVisibility() {
+    if (document.visibilityState === 'hidden') { try { localStorage.setItem(WORLD_RESUME, String(Date.now())); } catch { /* (not kept) */ } }
+    else if (ui.sitting) keepAwake(true);
+}
 function sit(on = !ui.sitting, minutes = null) {
     if (on === ui.sitting) return;
+    keepAwake(on);
     if (on) { satThisVisit = true; clearTimeout(hintTimer); learn('sat'); }
     ui.hint = false;
     // getting up is its own little movement while his legs are still crossed
@@ -1125,7 +1247,13 @@ function update(dt, now) {
             memory.planted.push(g);
             visit?.seedPlanted(seed, world.zoneCard(), kind);
             if (firstVisit) visit?.firstSeed('planted');
-            if (kind && !kinds.has(kind)) visit?.plantDiscovered(kind, kinds.size + 1);
+            if (kind && !kinds.has(kind)) {
+                visit?.plantDiscovered(kind, kinds.size + 1);
+                // (a kind never planted before: a spark of its colour flies into the notebook, where it is kept)
+                const first = !story.shown, at = toScreen(w.x, w.d, 60), light = w.light;
+                if (first) holdNotebook();
+                setTimeout(() => { if (!gone) intoNotebook(at, light, 14); }, 900);
+            }
             ui.seeds = memory.seeds.length;
             learn('planted');
             firstVisit = false;
@@ -1171,6 +1299,7 @@ function update(dt, now) {
     if (zone !== state.zone) { state.zone = zone; setCardChord(chordFor(zone)); visit?.zone(zone); }
     think(dt);
     nightSecrets(dt, seated);
+    callNotebook(dt);
     lookAt();
     // the meditation chosen (meditate): it starts as he has settled in lotus, and goes by in real time
     if (ui.guide && meditating) {
@@ -1716,10 +1845,12 @@ function loop(now) {
 }
 
 // (for trying him out from the browser's console)
-if (typeof window !== 'undefined') window.__sid = { story, openStory, state, springs, hands, ui, world, walkTo, sit, memory, portal, portalWon, closePortal, toScreen, meditate, shoot: () => stars?.shoot(true), freeSky: () => freeSky(92, Math.min(horizon() * view.k, sidCrown.y) - 24), figure: (card) => { state.lookUp = true; state.look = 1; clearTimeout(state.figure); state.figure = setTimeout(() => {}, 1e9); requestAnimationFrame(() => requestAnimationFrame(() => stars?.constellation(constellationFigure(card), { color: RULITO_COLOURS[card] }))); } };
+if (typeof window !== 'undefined') window.__sid = { story, openStory, readFragment, note, state, springs, hands, ui, world, walkTo, sit, memory, portal, portalWon, closePortal, toScreen, meditate, shoot: () => stars?.shoot(true), freeSky: () => freeSky(92, Math.min(horizon() * view.k, sidCrown.y) - 24), figure: (card) => { state.lookUp = true; state.look = 1; clearTimeout(state.figure); state.figure = setTimeout(() => {}, 1e9); requestAnimationFrame(() => requestAnimationFrame(() => stars?.constellation(constellationFigure(card), { color: RULITO_COLOURS[card] }))); } };
 
 onMounted(() => {
     document.body.classList.add('lab-page');
+    try { localStorage.setItem(WORLD_RESUME, String(Date.now())); } catch { /* (not kept) */ }
+    document.addEventListener('visibilitychange', onVisibility);
     ui.touch = window.matchMedia?.('(pointer: coarse)').matches ?? false;
     window.addEventListener('keydown', onKey);
     window.addEventListener('keyup', onKey);
@@ -1745,7 +1876,10 @@ onBeforeUnmount(() => {
     clearTimeout(portalTimer);
     setCardChord(null);
     cancelAnimationFrame(raf);
-    gone = true; clearTimeout(hintTimer); clearTimeout(callTimer); clearTimeout(storyTimer); clearTimeout(pressTimer); clearTimeout(peekTimer); clearTimeout(state.figure);
+    document.removeEventListener('visibilitychange', onVisibility);
+    keepAwake(false);
+    try { localStorage.removeItem(WORLD_RESUME); } catch { /* (nothing kept) */ }
+    gone = true; clearTimeout(noteHold); clearTimeout(noteCallTimer); clearTimeout(hintTimer); clearTimeout(callTimer); clearTimeout(storyTimer); clearTimeout(pressTimer); clearTimeout(peekTimer); clearTimeout(state.figure);
     endGuide(false);
     stars?.destroy();
     window.removeEventListener('resize', resize);
@@ -1774,7 +1908,7 @@ onBeforeUnmount(() => {
         </Transition>
         <!-- the affirmation of the card of the place where he meditates, written by hand in the sky -->
         <Transition name="teaching">
-            <p v-if="teaching.on" class="teaching glass" :class="{ light: teaching.light }" :style="{ color: teaching.light ? null : teaching.ink }">
+            <p v-if="teaching.on" ref="teachingEl" class="teaching glass" :class="{ light: teaching.light }" :style="{ color: teaching.light ? null : teaching.ink }">
                 {{ $i18n.locale === 'en' ? teaching.en : teaching.es }}
             </p>
         </Transition>
@@ -1797,18 +1931,18 @@ onBeforeUnmount(() => {
         </Transition>
         <!-- Sid's notebook (openStory): a small round button over the seed's, once there is something in it -->
         <Transition name="teaching">
-            <button v-if="story.shown && portal.card == null" class="story-icon glass" :class="{ fresh: story.fresh }"
+            <button v-if="story.shown && !story.hold && portal.card == null" class="story-icon glass" :class="{ fresh: story.fresh, got: note.got, hint: note.hint }"
                 :aria-label="$i18n.locale === 'en' ? 'Notebook' : 'Libreta'" :title="$i18n.locale === 'en' ? 'Notebook' : 'Libreta'"
                 @click="openStory"><span aria-hidden="true"></span></button>
         </Transition>
         <Transition name="veil">
-            <div v-if="story.open" class="story" role="dialog" :aria-label="$i18n.locale === 'en' ? 'Notebook' : 'Libreta'" @pointerdown.stop @click="closeStory">
+            <div v-if="story.open" class="story" role="dialog" :aria-label="$i18n.locale === 'en' ? 'Notebook' : 'Libreta'" @pointerdown.stop="swipeStart" @pointerup="swipeEnd" @click="closeStory">
                 <!-- its two pages, as two words written in the sky: the one open glows -->
                 <div class="story-tabs" role="tablist" @click.stop>
-                    <button role="tab" :aria-selected="story.tab === 'thoughts'" :class="{ on: story.tab === 'thoughts' }" @click="showTab('thoughts')">{{ $i18n.locale === 'en' ? 'Thoughts' : 'Pensamientos' }}</button>
-                    <button role="tab" :aria-selected="story.tab === 'herbarium'" :class="{ on: story.tab === 'herbarium' }" @click="showTab('herbarium')">{{ $i18n.locale === 'en' ? 'Herbarium' : 'Herbario' }}</button>
+                    <button role="tab" :aria-selected="story.tab === 'thoughts'" :class="{ on: story.tab === 'thoughts' }" @click="story.dir = 'from-left'; showTab('thoughts')">{{ $i18n.locale === 'en' ? 'Thoughts' : 'Pensamientos' }}</button>
+                    <button role="tab" :aria-selected="story.tab === 'herbarium'" :class="{ on: story.tab === 'herbarium' }" @click="story.dir = 'from-right'; showTab('herbarium')">{{ $i18n.locale === 'en' ? 'Herbarium' : 'Herbario' }}</button>
                 </div>
-                <div v-if="story.tab === 'thoughts'" class="story-card">
+                <div v-if="story.tab === 'thoughts'" class="story-card" :class="story.dir">
                     <p class="story-text">
                         <template v-for="(f, i) in FRAGMENTS" :key="i">
                             <span class="frag" :class="{ locked: !story.have.has(i), fresh: story.order.has(i) }"
@@ -1820,7 +1954,7 @@ onBeforeUnmount(() => {
                         <span v-for="(f, i) in FRAGMENTS" :key="i" :class="{ on: i < story.found }"></span>
                     </p>
                 </div>
-                <div v-else class="story-card">
+                <div v-else class="story-card" :class="story.dir">
                     <ul class="herbarium">
                         <li v-for="h in HERBARIUM" :key="h.id" :class="{ known: story.herb.has(h.id), fresh: story.herbNew.has(h.id) }"
                             :style="{ animationDelay: `${300 + (story.herbNew.get(h.id) ?? 0) * 900}ms` }">
@@ -2250,16 +2384,41 @@ canvas {
 .story-icon:focus { outline: none; }
 .story-icon:focus-visible { box-shadow: 0 0 0 4px rgba(247, 248, 241, 0.6); }
 .story-icon.fresh { animation: story-call 2.4s ease-in-out infinite alternate; }
+/* what flies into it, taken in with a little pulse; and, until it has been opened once, its call (as the seed's) */
+.story-icon.got { animation: story-got 0.8s ease-out; }
+@keyframes story-got {
+    0% { transform: scale(1); }
+    35% { transform: scale(1.22); box-shadow: 0 0 30px 8px rgba(255, 240, 200, 0.9); }
+    100% { transform: scale(1); }
+}
+.story-icon::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 244, 214, 0.9);
+    opacity: 0;
+    pointer-events: none;
+}
+.story-icon.hint { animation: lotus-call 2.2s ease-in-out 2; }
+.story-icon.hint::before { animation: lotus-ring 2.2s ease-out 2; }
 @keyframes story-call {
     from { box-shadow: 0 0 6px 0 rgba(255, 240, 200, 0.3); }
     to { box-shadow: 0 0 24px 6px rgba(255, 240, 200, 0.8); }
 }
+/* a page turned comes in from the side it was turned to */
+.story-card.from-right { animation: page-from-right 320ms ease-out; }
+.story-card.from-left { animation: page-from-left 320ms ease-out; }
+@keyframes page-from-right { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: none; } }
+@keyframes page-from-left { from { opacity: 0; transform: translateX(-40px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .story-card.from-right, .story-card.from-left { animation: none; } }
 /* the story's page: over the dimmed world, a card of frosted cream with the story as one paragraph, written by hand;
    what is still hidden, dark bars the length of its words; what was found since it was last seen is painted in */
 .story {
     position: absolute;
     inset: 0;
     z-index: 20;
+    touch-action: pan-y;          /* (a finger across turns the page; up and down still scrolls the herbarium) */
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -2422,6 +2581,7 @@ canvas {
 @media (prefers-reduced-motion: reduce) {
     .frag.fresh, .frag.locked, .herbarium li.fresh img, .herbarium li.fresh .name { animation: none; }
     .story-icon.fresh { animation: none; box-shadow: 0 0 18px 4px rgba(255, 240, 200, 0.7); }
+    .story-icon.got, .story-icon.hint, .story-icon.hint::before { animation: none; }
 }
 /* The app's header over his light sky: its cream icons in the ink of his line (the header is teleported into <body>,
    so this is not scoped; body.lab-page only while the lab is open) */

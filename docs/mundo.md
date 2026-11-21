@@ -62,3 +62,7 @@ Antes de elegir sirve medir. Desde el 20 de noviembre de 2026 el mundo tiene su 
 - Mirar la analítica del mundo antes de decidir su lugar en Inicio (arriba).
 - Si Sid pasa del Canvas 2D a la escena WebGL común (`useLayerStage.js`), como el resto de las escenas.
 - Qué pedirle a la ilustradora: `sid-en-piezas.md`.
+
+- **La libreta se enseña sola.** Lo que entra en la libreta se ve entrar: un fragmento leído se deshace en puntitos del color de su letra y una planta de un tipo nuevo suelta una chispa de su color; los dos vuelan al botón de la libreta, que los recibe con un latido (la primera vez el botón aparece justo cuando llegan). Mientras tenga algo nuevo y nunca se haya abierto, el botón llama cada 9 s como el de la semilla. Adentro, deslizar el dedo de lado pasa de página (Pensamientos y Herbario).
+- **Meditar sin que se apague la pantalla.** Mientras Sid está sentado en loto, el teléfono no apaga la pantalla (Wake Lock); al levantarse vuelve a su tiempo normal.
+- **Volver al mundo.** Si el teléfono cierra la app instalada mientras estaba en segundo plano, al abrirla de nuevo vuelve al mundo de Sid en vez de a la portada (si se estuvo en él en las últimas 6 horas). Sid arranca de nuevo, como en cada visita.
