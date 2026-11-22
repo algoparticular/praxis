@@ -145,12 +145,12 @@ export const STAR_SEED = 'star', STAR_LIGHT = [252, 220, 140];
 // it is found from afar; walking under it he finds it, a light runs through it from its
 // outside to its middle and it rises and goes (the page writes the fragment and its words fly into the notebook)
 // (dd: 1080 back, so walking along the front the marks of the row stand at the horizon: small and far, hardly past it)
-const MARK = { size: 170, dx: 0.32, dd: 0.18, pick: 240, high: 150, alone: 6000 };
+const MARK = { line: true, size: 170, dx: 0.32, dd: 0.18, pick: 240, high: 150, alone: 6000 };
 // (the labyrinth's dots, once: along the middle of the icon's line (it is drawn as an outline 2.5 of its 40 units wide:
 // each point of the outline is taken half that inwards), one every MAZE_GAP; in -0.5..0.5 about its middle, each with
 // how far from the middle it is, 0..1, for the light that runs in, and its own phase to twinkle)
 const MAZE_GAP = 4.4, CREAM_LIGHT = [255, 246, 220];
-let mazeDots = null;
+let mazeDots = null, mazeShape = null;
 function maze() {
     if (mazeDots || typeof document === 'undefined') return mazeDots;
     const d = labIcon.match(/\sd="([^"]+)"/)?.[1] ?? '';
@@ -1031,8 +1031,8 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
             break;
         }
         case 'mark': {
-            // the labyrinth of dots of light, only white and cream (no colour of its zone), floating and breathing, each
-            // dot twinkling on its own in a soft glow, with its column of light up to the sky; found, a light runs
+            // the labyrinth, only white and cream (no colour of its zone), floating and breathing: drawn with its line
+            // (MARK.line) or as dots of light, each twinkling on its own in a soft glow; with its column of light up to the sky; found, a light runs
             // through it from its outside to its middle, then it rises and fades
             const up = l?.up ?? 0, dots = maze();
             if (!dots || up >= 1 || !marks?.open() && up === 0) break;
@@ -1048,7 +1048,23 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
             c.fillStyle = col;
             for (const [w, al] of [[0.16, 0.35], [0.085, 0.5], [0.032, 0.9]]) { c.globalAlpha *= al; c.fillRect(-K * w / 2, -2600, K * w, 2600); c.globalAlpha /= al; }
             halo(c, 0, y, K * (0.75 + 0.08 * breath + 0.5 * run), CREAM_LIGHT, 0.22 + 0.08 * breath + 0.4 * run);
-            for (const [u, v, r, ph] of dots) {
+            if (MARK.line) {
+                // drawn with its line, as the icon is: cream, in a soft glow, breathing; the light that runs in is white,
+                // over all of the line outside a circle closing in on its middle
+                const sc = K / 40, far = 20;
+                mazeShape ??= new Path2D(labIcon.match(/\sd="([^"]+)"/)?.[1] ?? '');
+                c.save(); c.translate(0, y); c.scale(sc, sc); c.translate(-20, -20.5);
+                c.shadowColor = 'rgba(255,246,220,0.9)'; c.shadowBlur = 10;
+                c.globalAlpha *= 0.85 + 0.15 * breath;
+                c.fillStyle = 'rgb(255,246,220)'; c.fill(mazeShape, 'evenodd');
+                if (run > 0) {
+                    c.beginPath(); c.rect(-10, -10, 60, 60); c.arc(20, 20.5, Math.max(0, (1 - run) * far), 0, Math.PI * 2);
+                    c.clip('evenodd');
+                    c.shadowColor = 'rgba(255,255,255,1)'; c.shadowBlur = 18;
+                    c.fillStyle = 'rgb(255,255,255)'; c.fill(mazeShape, 'evenodd');
+                }
+                c.restore();
+            } else for (const [u, v, r, ph] of dots) {
                 const lit = Math.max(0, Math.min(1, (run - (1 - r)) * 4));           // (the light comes in from outside)
                 const tw = 0.75 + 0.25 * Math.sin(t * 2.3 + ph), x = u * K, yy = y + v * K, size = K * 0.02 * tw * (1 + 0.5 * lit);
                 halo(c, x, yy, K * 0.045, CREAM_LIGHT, 0.35 + 0.5 * lit);

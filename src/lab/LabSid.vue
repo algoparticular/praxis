@@ -78,6 +78,7 @@ function tell(what, after = 0) {
         if (gone) return;
         // (never over a card's affirmation or a card opened: it waits for them to go)
         if (teaching.on || portal.card != null) { setTimeout(say, 1500); return; }
+        if (thought.on) { thought.on = false; thinkKey = null; thoughtQuiet = performance.now() + 2500; setTimeout(say, 1500); return; }
         learn(`words_${what}`);
         Object.assign(teaching, { ...STORY[what], on: true, story: true });
         clearTimeout(storyTimer);
@@ -97,6 +98,8 @@ function readFragment(i) {
     setTimeout(function say() {
         if (gone) return;
         if ((teaching.on && !teaching.story) || portal.card != null) { setTimeout(say, 1500); return; }
+        // (nor over what a place thinks: it goes first, and is written again another time)
+        if (thought.on) { thought.on = false; thinkKey = null; thoughtQuiet = performance.now() + 2500; setTimeout(say, 1500); return; }
         Object.assign(teaching, { es: f.es, en: f.en, on: true, story: true });
         clearTimeout(storyTimer);
         storyTimer = setTimeout(() => {
@@ -272,7 +275,7 @@ function showTab(tab) {
 const THOUGHT_NEAR = 700, THOUGHT_KEEP = 1500, THOUGHT_SHOW = 9000;
 const thought = reactive({ es: '', en: '', on: false });
 const thoughtEl = ref(null);
-let thinkKey = null, thinkAt = 0, thinkPlace = null, thinkIn = 0.5;
+let thinkKey = null, thinkAt = 0, thinkPlace = null, thinkIn = 0.5, thoughtQuiet = 0;     // (thoughtQuiet: till when a thought waits, as words go on the card)
 function think(dt) {
     thinkIn -= dt;
     if (thinkIn > 0) return;
@@ -289,7 +292,7 @@ function think(dt) {
         if (performance.now() - thinkAt < THOUGHT_SHOW / 2) { thinkKey = null; memory.thoughts[near.id] = Math.max(0, (memory.thoughts[near.id] ?? 1) - 1); }
     }
     if (performance.now() - thinkAt > THOUGHT_SHOW) thought.on = false;
-    if (key === thinkKey || !list || ui.sitting || teaching.on || near.dist > near.reach + THOUGHT_NEAR) return;
+    if (key === thinkKey || !list || ui.sitting || teaching.on || performance.now() < thoughtQuiet || near.dist > near.reach + THOUGHT_NEAR) return;
     thinkKey = key; thinkAt = performance.now();
     const n = memory.thoughts[near.id] ?? 0;
     Object.assign(thought, list[n % list.length], { on: true });
