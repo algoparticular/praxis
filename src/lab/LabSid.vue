@@ -112,7 +112,7 @@ function readFragment(i) {
     }, 600);
 }
 
-// Sid's notebook, written in the sky (its icon, a notebook, on a small round button over the seed's, shows once there is something in it and
+// Sid's notebook, written in the sky (its icon, a notebook, on a small round button to the right of the seed's, shows once there is something in it and
 // glows while there is something new to see; it opens on the page that has it; a touch anywhere, or Escape, closes it;
 // the header's icons go cream over it, `body.lab-story`). Two pages:
 // - Bitácora: the fragments of the story found, in order, in paragraphs by theme (PARAGRAPHS in story.js), those still hidden as faint stars the
@@ -150,10 +150,14 @@ function holdNotebook() {
     noteHold = setTimeout(releaseNotebook, 20000);          // (never left hidden, whatever covers the words)
 }
 function releaseNotebook() { clearTimeout(noteHold); story.hold = false; }
-// where the notebook's button is (or will be): centred over the seed's, as the style puts it
+// where the notebook's button is (or will be, when it is still hidden): to the right of the seed's, its middle level with
+// it, as the style puts it (.story-icon: 18 px from the seed's button, 52 px round)
+const storyIconEl = ref(null);
 function notebookMiddle() {
+    const own = storyIconEl.value?.getBoundingClientRect();
+    if (own?.width) return { x: own.left + own.width / 2, y: own.top + own.height / 2 };
     const b = buttonMiddle(), r = lotusEl.value?.getBoundingClientRect();
-    return { x: b.x, y: b.y - (r ? r.height / 2 : 42) - 16 - 26 };
+    return { x: b.x + (r ? r.width / 2 : 42) + 18 + 26, y: b.y };
 }
 // `from`: a box on the screen (the motes start spread over it) or a point; `light`: their colour ([r, g, b] or CSS)
 function intoNotebook(from, light, count) {
@@ -1970,7 +1974,7 @@ onBeforeUnmount(() => {
         </Transition>
         <!-- Sid's notebook (openStory): a small round button to the right of the seed's, once there is something in it -->
         <Transition name="teaching">
-            <button v-if="story.shown && !story.hold && portal.card == null" class="story-icon glass" :class="{ fresh: story.fresh, got: note.got, hint: note.hint }"
+            <button v-if="story.shown && !story.hold && portal.card == null" ref="storyIconEl" class="story-icon glass" :class="{ fresh: story.fresh, got: note.got, hint: note.hint }"
                 :aria-label="$i18n.locale === 'en' ? 'Notebook' : 'Libreta'" :title="$i18n.locale === 'en' ? 'Notebook' : 'Libreta'"
                 @click="openStory"><span aria-hidden="true"></span></button>
         </Transition>
