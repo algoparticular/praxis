@@ -13,6 +13,8 @@ La documentación sigue las pestañas del artefacto "Anima GDD" (un documento po
 | Abierto | `abierto.md` | Lo que falta decidir |
 | Teoría | `teoria.md` | La idea de Anima (qué aspira, cómo se unen notas, chakras y personajes), y los chakras y su tradición |
 
+El roadmap es un kanban aparte (no es una pestaña ni un documento del repo): https://claude.ai/artifact/U7TN7ZhB6wQ7ixdyo22Era (Ideas, Por decidir, Próximo, Haciendo, Hecho, por área). Lo que se decide o se termina se pasa también a estos documentos.
+
 Otros documentos:
 - `editar-cartas.md`: cómo editar los textos, colores e ilustraciones de una carta.
 - `registro-cartas-vivas.md`: qué hace cada escena al tocarla.
