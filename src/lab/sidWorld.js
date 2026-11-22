@@ -20,6 +20,7 @@ import { decodeCloud, sampleCloud } from '../composables/stippleCloud.js';
 import arbol from './arbol/arbol.json';
 import suelo from './suelo/suelo.json';
 import { SEED_OUTLINE, SEED_SEAM, SEED_GERM } from './seedShape.js';
+import labIcon from '../assets/icon/Lab.svg?raw';
 
 // Her pieces, and the plants, stones and mushrooms cut out of the cards' scenes (src/lab/suelo, made by
 // scripts/convert-lab-suelo.mjs): the line and what is inside it, as pictures (tinted in code)
@@ -137,13 +138,38 @@ const SEED_SIZE = 2.6;
 // A seed of light: the one a shooting star leaves at his feet while he meditates by night (LabSid.vue). It is of no card
 // (`star`): it grows any card's plant, in the night's star yellow, and by night that plant twinkles with a few stars
 export const STAR_SEED = 'star', STAR_LIGHT = [252, 220, 140];
-// The marks of the story (story.js): a particle, as an atom is drawn (everything started from a particle), floating low
+// The marks of the Bitácora (story.js): as the things of Everything hold Alan Watts's words, a little symbol floating low
 // over the ground in every cell of the grid, away from its place (MARK.dx across and MARK.dd back from the place, to one
-// side or the other): a bright core in its zone's light with three tilted orbits of dots turning round it, each with its
-// light running along it, and a faint column of light rising from it to the sky, so it is told from the world's other
-// lights (fireflies, butterflies, bees, spores) and found from afar; walking under it he finds it, and it opens
+// side or the other): the labyrinth of the world's own door (Lab.svg, the icon that opens the world), made of dots of
+// light as the world's stipple and stars are, breathing; walking under it he finds it, a light runs through it from its
+// outside to its middle and it rises and goes (the page writes the fragment and its words fly into the notebook)
 // (dd: 1080 back, so walking along the front the marks of the row stand at the horizon: small and far, hardly past it)
-const MARK = { size: 620, dx: 0.32, dd: 0.18, pick: 240, high: 150 };
+const MARK = { size: 230, dx: 0.32, dd: 0.18, pick: 240, high: 150 };
+// (the labyrinth's dots, once: along the middle of the icon's line (it is drawn as an outline 2.5 of its 40 units wide:
+// each point of the outline is taken half that inwards), one every MAZE_GAP; in -0.5..0.5 about its middle, each with
+// how far from the middle it is, 0..1, for the light that runs in, and its own phase to twinkle)
+const MAZE_GAP = 2.2;
+let mazeDots = null;
+function maze() {
+    if (mazeDots || typeof document === 'undefined') return mazeDots;
+    const d = labIcon.match(/\sd="([^"]+)"/)?.[1] ?? '';
+    const el = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    el.setAttribute('d', d);
+    const shape = new Path2D(d), test = document.createElement('canvas').getContext('2d');
+    const inside = (x, y) => test.isPointInPath(shape, x, y, 'evenodd');
+    const length = el.getTotalLength(), dots = [];
+    for (let at = 0; at < length; at += 0.4) {
+        const p = el.getPointAtLength(at), q = el.getPointAtLength(Math.min(length, at + 0.2));
+        const tl = Math.hypot(q.x - p.x, q.y - p.y) || 1, nx = -(q.y - p.y) / tl, ny = (q.x - p.x) / tl;
+        let x = p.x + nx * 1.25, y = p.y + ny * 1.25;
+        if (!inside(x, y)) { x = p.x - nx * 1.25; y = p.y - ny * 1.25; }
+        if (!inside(x, y)) continue;
+        if (dots.every(([u, v]) => Math.hypot(u - x, v - y) > MAZE_GAP)) dots.push([x, y]);
+    }
+    const far = Math.max(...dots.map(([x, y]) => Math.hypot(x - 20, y - 20.5)));
+    mazeDots = dots.map(([x, y]) => [(x - 20) / 40, (y - 20.5) / 40, Math.hypot(x - 20, y - 20.5) / far, Math.random() * 6.3]);
+    return mazeDots;
+}
 // the seed's shape (seedShape.js: a seed with a particle of light inside it, until the illustrator draws it)
 const SEED_PATHS = typeof Path2D === 'undefined' ? null : { outline: new Path2D(SEED_OUTLINE), seam: new Path2D(SEED_SEAM) };          // (how big a seed is drawn: big enough to be seen from afar)
 const SEED_PLANTS = {
@@ -770,7 +796,7 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
                 if (item.kind === 'mark') {
                     const l = lifeOf(item);
                     if (!marks.found.includes(item.key) && marks.open() && !sid.sitting && dist < MARK.pick) { marks.found.push(item.key); l.up = 0; onMark?.(item.key); }
-                    if (marks.found.includes(item.key)) l.up = Math.min(1, (l.up ?? 1) + dt * 0.8);
+                    if (marks.found.includes(item.key)) l.up = Math.min(1, (l.up ?? 1) + dt * 0.55);
                 }
                 // colour: as he walks by, and inside the wave while he sits (what grows round a place, with its place)
                 let c = colour.get(item.id) ?? 0;
@@ -1000,42 +1026,28 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
             break;
         }
         case 'mark': {
-            // a particle as an atom: a core, three tilted orbits of dots turning, a light running along each, and a faint
-            // column of light up to the sky; found, it rises, its orbits open out and fade
-            const up = l?.up ?? 0;
-            if (up >= 1 || !marks?.open() && up === 0) break;
-            const t = time + item.phase, breath = 0.5 + 0.5 * Math.sin(t * 1.4), K = MARK.size * (item.big ?? 1), a = 1 - up;
-            const rgb = P.light.map(Math.round), y = -MARK.high - 10 * Math.sin(t * 0.9) - up * 220;
-            c.fillStyle = `rgba(20,50,70,${0.08 * a})`; c.beginPath(); c.ellipse(0, 0, K * 0.12, K * 0.025, 0, 0, Math.PI * 2); c.fill();
+            // the labyrinth of dots of light, floating and breathing, each dot twinkling on its own (in the zone's ink by
+            // day, so it reads on its ground, cream by night, with a soft light of the zone round it); found, a light runs
+            // through it from its outside to its middle, then it rises and fades
+            const up = l?.up ?? 0, dots = maze();
+            if (!dots || up >= 1 || !marks?.open() && up === 0) break;
+            const t = time + item.phase, breath = 0.5 + 0.5 * Math.sin(t * 1.4), K = MARK.size * (item.big ?? 1);
+            const run = Math.min(1, up / 0.45), go = Math.max(0, (up - 0.45) / 0.55), a = 1 - go;
+            const rgb = P.light.map(Math.round), y = -MARK.high - 8 * Math.sin(t * 0.9) - go * 160;
+            c.fillStyle = `rgba(20,50,70,${0.07 * a})`; c.beginPath(); c.ellipse(0, 0, K * 0.3, K * 0.06, 0, 0, Math.PI * 2); c.fill();
             c.globalAlpha *= a;
-            // the column of light, from the ground up to the sky, fading upwards
-            const col = c.createLinearGradient(0, 0, 0, -2600);
-            col.addColorStop(0, `rgba(${rgb.join(',')},${0.32 + 0.1 * breath})`); col.addColorStop(1, `rgba(${rgb.join(',')},0)`);
-            // (soft at its sides: a few bands, the wider the fainter)
-            c.fillStyle = col;
-            for (const [w, al] of [[0.06, 0.35], [0.032, 0.5], [0.012, 0.9]]) { c.globalAlpha *= al; c.fillRect(-K * w / 2, -2600, K * w, 2600); c.globalAlpha /= al; }
-            halo(c, 0, y, K * (0.32 + 0.06 * breath), rgb, 0.4 + 0.15 * breath);
-            // the orbits: ellipses of dots, each tilted its own way, turning, with a light running along (the dots in the
-            // zone's ink by day, so they read on its ground, and cream by night)
-            const orbit = mixRgb(P.ink, [255, 250, 230], night());
-            for (let o = 0; o < 3; o++) {
-                const tilt = o * Math.PI / 3 + 0.3, R = K * 0.3 * (1 + up * 2.5), r = R * 0.34, spin = t * (0.7 + o * 0.25) + o * 2;
-                const ct = Math.cos(tilt), st = Math.sin(tilt);
-                for (let n = 0; n < 16; n++) {
-                    const u = n / 16 * Math.PI * 2 + spin * 0.15, ex = Math.cos(u) * R, ey = Math.sin(u) * r;
-                    c.fillStyle = orbit;
-                    c.beginPath(); c.arc(ex * ct - ey * st, y + ex * st + ey * ct, K * 0.01, 0, Math.PI * 2); c.fill();
-                }
-                const ex = Math.cos(spin) * R, ey = Math.sin(spin) * r, px = ex * ct - ey * st, py = y + ex * st + ey * ct;
-                halo(c, px, py, K * 0.07, rgb, 0.9);
-                c.fillStyle = `rgb(${rgb.join(',')})`; c.beginPath(); c.arc(px, py, K * 0.026, 0, Math.PI * 2); c.fill();
-                c.fillStyle = 'rgba(255,252,238,1)'; c.beginPath(); c.arc(px, py, K * 0.013, 0, Math.PI * 2); c.fill();
+            halo(c, 0, y, K * (0.75 + 0.08 * breath + 0.5 * run), rgb, 0.22 + 0.1 * breath + 0.4 * run);
+            const ink = mixRgb(P.ink, [255, 250, 230], night());
+            for (const [u, v, r, ph] of dots) {
+                const lit = Math.max(0, Math.min(1, (run - (1 - r)) * 4));           // (the light comes in from outside)
+                const tw = 0.75 + 0.25 * Math.sin(t * 2.3 + ph), x = u * K, yy = y + v * K, size = K * 0.017 * tw * (1 + 0.5 * lit);
+                if (lit > 0.05) halo(c, x, yy, K * 0.05, rgb, 0.8 * lit);
+                c.fillStyle = lit > 0.5 ? 'rgb(255,252,238)' : ink;
+                c.beginPath(); c.arc(x, yy, size, 0, Math.PI * 2); c.fill();
             }
-            halo(c, 0, y, K * 0.11, [255, 250, 230], 0.8 + 0.2 * breath);
-            c.fillStyle = `rgb(${rgb.join(',')})`;
-            c.beginPath(); c.arc(0, y, K * (0.05 + 0.01 * breath), 0, Math.PI * 2); c.fill();
-            c.fillStyle = 'rgba(255,252,238,0.95)';
-            c.beginPath(); c.arc(-K * 0.01, y - K * 0.01, K * 0.022, 0, Math.PI * 2); c.fill();
+            // (its middle, a particle of light: everything started from a particle)
+            halo(c, 0, y, K * (0.1 + 0.15 * run), [255, 250, 230], 0.6 + 0.2 * breath + 0.2 * run);
+            c.fillStyle = `rgb(${rgb.join(',')})`; c.beginPath(); c.arc(0, y, K * (0.022 + 0.004 * breath), 0, Math.PI * 2); c.fill();
             break;
         }
         case 'tree': {
