@@ -1434,8 +1434,8 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
         lastD = view.d ?? lastD;
         screen = blend(zonesAt(view.cam, lastD));
         const L = light(), H = bottom - top;
-        c.clearRect(0, top, view.width, H + 2);
-        c.globalAlpha = L; c.fillStyle = css(screen.sky); c.fillRect(0, top, view.width, H + 2); c.globalAlpha = 1;
+        c.clearRect(0, 0, view.width, bottom + 2);         // (the sky's colour from the very top, under the clock too)
+        c.globalAlpha = L; c.fillStyle = css(screen.sky); c.fillRect(0, 0, view.width, bottom + 2); c.globalAlpha = 1;
         const scale = H / 1300 * 0.55;
         const along = (t, r) => ({ x: view.width * (0.06 + 0.88 * t), y: bottom + r - (bottom + r - (top + H * 0.4)) * Math.sin(Math.PI * t) });   // (high, but under the buttons)
         const sunT = clock < 0.5 ? clock / 0.5 : null, moonT = clock >= 0.5 ? (clock - 0.5) / 0.5 : null;
