@@ -1103,8 +1103,11 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
                 const [, , bw, bh] = B('pacBed'), live = 0.25 + 0.75 * col;
                 halo(0, -bh * 0.9, bw * (0.18 + 0.12 * g), [255, 248, 230], 0.1 + 0.4 * g);
                 at('pacBed', -bw / 2, -bh);
-                // (the pine cone as the card has it in a strip: 0.128 of its height from its top, 0.08 of its width wide)
-                const [, , cw, ch] = B('pacCone'), ck = 0.04 * bw / cw, cx = -0.035 * bw, ctop = -bh + 0.128 * bh;
+                // (the pine cone on its stem, as the card has it in its strip: 0.413 of the strip's width from its left,
+                // 0.08 of it wide, 0.128 of its height from its top; the bed is the card's ground, two strips wide with
+                // the strip (1944 px) in its middle, its centre on the place's, so the cone stands just left of the middle)
+                const strip = 1944, [, , cw, ch] = B('pacCone'), ck = 0.0798 * strip / cw;
+                const cx = (0.4135 + 0.0798 / 2 - 0.5) * strip, ctop = -bh + 0.128 * bh;
                 halo(cx, ctop + ch * ck * 0.5, cw * ck * (1.2 + 1.5 * g), [255, 242, 150], 0.2 * live + 0.6 * g);
                 at('pacCone', cx - cw * ck / 2, ctop, ck);
                 const hover = bh * 1.45 + 40 * Math.sin(time * 0.9) * live + 160 * g;

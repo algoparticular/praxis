@@ -109,8 +109,9 @@ const PIECES = {
     pacS: { atlas: ['paciencia', 'boat', ['sBody', 'sLine', 'sAntennae', 'sEyes']], unit: 1.2, inside: 'colour', dark: 110 },
     pacT: { atlas: ['paciencia', 'boat', ['tBody', 'tLine', 'tAntennae', 'tEyes']], unit: 1.2, inside: 'colour', dark: 110 },
     pacR: { atlas: ['paciencia', 'boat', ['rBody', 'rLine', 'rAntennae', 'rEyes']], unit: 1.2, inside: 'colour', dark: 110 },
-    // (its mycelium: two of its strips side by side, as it goes on in the card, fading away at both ends, `fade`)
-    pacBed: { compose: [['paciencia/mushrooms', 0, 0], ['paciencia/mushrooms', 1944, 0]], canvas: [0, 0, 3888, 365], fade: 0.12, unit: 0.9, inside: 'colour', dark: 110 },
+    // (its mycelium: two strips wide as the card's ground, its strip in the middle and a mirrored one at each side, so its
+    // pine cone's stem is just left of the middle, under the boat, as in the card; fading away at both ends, `fade`)
+    pacBed: { compose: [['paciencia/mushrooms', -972, 0, 'flop'], ['paciencia/mushrooms', 972, 0], ['paciencia/mushrooms', 2916, 0, 'flop']], canvas: [0, 0, 3888, 365], fade: 0.12, unit: 0.9, inside: 'colour', dark: 110 },
     pacCone: { from: 'paciencia/cone', unit: 0.9, inside: 'colour', dark: 110 },
     ...Object.fromEntries([[0, 111], [118, 146], [340, 174], [535, 190], [903, 300], [1250, 210], [1460, 290]]
         .map(([x, w], i) => [`pacCurl${i}`, { from: 'paciencia/grass', crop: [x, 0, w, 365], unit: 0.9, inside: 'none', keep: 0.25 }])),
@@ -177,13 +178,15 @@ for (const [name, piece] of Object.entries(PIECES)) {
     } else if (piece.compose) {
         piece.at = piece.canvas.slice(0, 2);
         const [cx, cy, cw, ch] = piece.canvas, layers = [];
-        for (const [from, x, y] of piece.compose) {
-            const m = await sharp(path.join(assets, `${from}.webp`)).metadata();
+        for (const [from, x, y, flop] of piece.compose) {
+            // (a layer can be mirrored, 'flop', as the card mirrors its strips)
+            const source = flop ? await sharp(path.join(assets, `${from}.webp`)).flop().png().toBuffer() : path.join(assets, `${from}.webp`);
+            const m = await sharp(source).metadata();
             // (only what falls on the canvas)
             const left = Math.max(0, cx - x), top = Math.max(0, cy - y);
             const w = Math.min(m.width - left, cx + cw - x - left), h = Math.min(m.height - top, cy + ch - y - top);
             if (w <= 0 || h <= 0) continue;
-            layers.push({ input: await sharp(path.join(assets, `${from}.webp`)).extract({ left, top, width: w, height: h }).png().toBuffer(), left: x + left - cx, top: y + top - cy });
+            layers.push({ input: await sharp(source).extract({ left, top, width: w, height: h }).png().toBuffer(), left: x + left - cx, top: y + top - cy });
         }
         img = sharp(await sharp({ create: { width: cw, height: ch, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } }).composite(layers).png().toBuffer());
     } else img = sharp(path.join(assets, `${piece.from}.webp`)).ensureAlpha();

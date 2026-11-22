@@ -57,8 +57,43 @@ Antes de elegir sirve medir. Desde el 20 de noviembre de 2026 el mundo tiene su 
 ## Por hacer
 
 - Sacar los personajes por capa y en código para el mundo.
-- Diseñar el herbario y sus plantas.
+- Diseñar el herbario y sus plantas (plan abajo, para sentarnos a hacerlo).
 - Mundo oculto: Viljandi-sama. Es el mural (3240x1080): las colinas con el castillo, la fogata con Sid, el campo de Samas, el río y el arcoíris que se hace noche. Ya no está en el repo; se recupera con `git show 0655455^:public/assets/mural.jpg > mural.jpg` (hay una versión chica, `muralito.jpg`, en `7699947^`).
+
+### El herbario: repensarlo y redibujarlo
+
+**Lo que hay hoy.** 11 plantas de 7 cartas (`src/lab/herbarium.js`, y en `SEED_PLANTS` de `sidWorld.js` lo que da cada semilla), todas recortadas de las capas de las escenas, ninguna dibujada para el herbario:
+
+| Carta | Plantas |
+|---|---|
+| Ciclos | Abanico del ocaso |
+| Metta | Farolito |
+| Upekkha | Hongo del estanque, Flor de luz, Brote del estanque |
+| Paciencia | Pasto en rulo |
+| Gratitud | Abanico turquesa, Palmera agradecida |
+| Celebración | Hongos de la fogata, Hongos gemelos |
+| Transformación | Helecho de luz |
+
+**Lo que no anda:**
+- Desparejo: Upekkha tiene 3 y casi todas las demás 1, así que llenarlo lleva por lo menos 3 visitas solo por Upekkha.
+- Se repiten: tres hongos parecidos y dos abanicos (Ciclos y Gratitud).
+- Los "Hongos gemelos" de Celebración son los hongos rosados de Desafío (`caps`, de `desafio/mushrooms`).
+- Son chicos (de 72 a 470 px): en la libreta se muestran a lo sumo a su tamaño sobre 1,5 (`HERB_SCALE` en `LabSid.vue`) para no verse borrosos.
+
+**Cuántas pueden ser.** No hay límite técnico: cada planta es una entrada en `herbarium.js` y una línea en `SEED_PLANTS`. El límite es de diseño: las semillas salen sobre todo de los lugares, una por lugar por visita, y hoy hay 7 zonas. Opciones:
+- **1 por carta:** 7 hoy, 33 con todas las cartas. Cada carta tiene su planta firma; el herbario se puede llenar en una visita.
+- **2 por carta (la que propuse):** 14 hoy. Lleva 2 visitas y cada zona sigue teniendo algo por descubrir.
+- **3 por carta:** 21 hoy, 3 visitas.
+
+Sale de las escenas de cada carta, para elegir: los abanicos y el pasto de Ciclos, las flores de luz de Metta, el helecho con su flor y los cristales de Upekkha, los rulos y la piña de Paciencia, la palmera y la planta pálida de Gratitud, los hongos de Celebración, el helecho y la semilla de Transformación.
+
+**Cómo dibujarlas (para la ilustradora):**
+- **Tamaño:** a la escala del árbol que ya dibujó (`originales/arbol`, lienzo de 2592 x 3240 px), donde Sid mide unos 710 px y su línea unos 11 px. Con Sid como capa de referencia, cada planta del tamaño que tendría a su lado: de unos 150 a 700 px de alto. A esa escala puede crecer al doble en el mundo (`mostOf`, `SEED_GROWTH.top`) y verse nítida en la libreta del teléfono.
+- **Trazo negro**, en su propia capa: el mundo empieza en tinta sobre crema y la línea se tiñe en código. Los contornos que llevan color, cerrados.
+- **Color plano** en otra capa, debajo de la línea: sin sombras ni degradados, en los colores de su carta. De ahí sale la planta en sus colores (`NAME-colour.webp`) y cada parte (pétalo, tallo, sombrero) puede tener el suyo. Hoy el código pinta lo de adentro de una pieza de un solo color (`NAME-fill.webp`): hay que enseñarle al converter a leer esa capa (es poco).
+- **Sin fondo:** cada planta en su capa, PNG transparente. El cielo, el suelo y el fondo de la libreta se pintan en código.
+
+**A decidir al sentarnos:** cuántas por carta, cuáles, sus nombres (los de hoy están "para revisar"), y si la semilla de luz sigue dando cualquier planta que falte.
 
 ## Abierto
 
