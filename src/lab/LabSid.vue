@@ -121,18 +121,18 @@ function readFragment(i) {
 // - Herbario: every plant a seed can grow into (herbarium.js) as a dark silhouette, and in its colours with its name
 //   once one of its kind has been planted (those planted since it was last seen, memory.herbSeen, come in out of a
 //   warm light)
-const story = reactive({ dir: '', hold: false, open: false, tab: 'thoughts', found: 0, fresh: false, shown: false, have: new Set(), order: new Map(), herb: new Set(), herbNew: new Map() });
+const story = reactive({ dir: '', hold: false, open: false, tab: 'bitacora', found: 0, fresh: false, shown: false, have: new Set(), order: new Map(), herb: new Set(), herbNew: new Map() });
 const herbPlanted = () => new Set(memory.planted.map((g) => kindOf(g.name)).filter(Boolean));
 function storyNews() {
-    const thoughts = memory.fragments.some((i) => !memory.storySeen.includes(i));
+    const bitacora = memory.fragments.some((i) => !memory.storySeen.includes(i));
     const herb = [...herbPlanted()].some((h) => !memory.herbSeen.includes(h));
-    return { thoughts, herb };
+    return { bitacora, herb };
 }
 function refreshStory() {
     story.found = memory.fragments.length;
     story.shown = story.found > 0 || herbPlanted().size > 0;
     const news = storyNews();
-    story.fresh = news.thoughts || news.herb;
+    story.fresh = news.bitacora || news.herb;
 }
 // What goes into the notebook is seen going in (its only lesson, with no words): a fragment read comes undone into
 // motes of light, a plant of a new kind sends a spark of its colour, and they fly into the notebook's button, which takes
@@ -215,11 +215,11 @@ function openStory() {
     if (!story.shown) return;
     story.dir = '';
     const news = storyNews();
-    showTab(news.thoughts ? 'thoughts' : news.herb ? 'herbarium' : story.found ? story.tab : 'herbarium');
+    showTab(news.bitacora ? 'bitacora' : news.herb ? 'herbarium' : story.found ? story.tab : 'herbarium');
     story.open = true; ui.choose = false; note.hint = false;
     if (!memory.learned.notebook) learn('notebook');
     document.body.classList.add('lab-story');
-    visit?.notebook(story.tab, news.thoughts || news.herb, memory.fragments.length, herbPlanted().size);
+    visit?.notebook(story.tab, news.bitacora || news.herb, memory.fragments.length, herbPlanted().size);
     play('tap');
 }
 function closeStory() {
@@ -239,7 +239,7 @@ function swipeEnd(e) {
     if (Math.abs(dx) < SWIPE || Math.abs(dx) < Math.abs(dy) * 1.5) return;
     swiped = true;
     setTimeout(() => { swiped = false; }, 400);       // (if no click follows, the next touch still closes it)
-    const tab = dx < 0 ? 'herbarium' : 'thoughts';
+    const tab = dx < 0 ? 'herbarium' : 'bitacora';
     if (tab === story.tab) return;
     story.dir = dx < 0 ? 'from-right' : 'from-left';
     showTab(tab);
@@ -248,7 +248,7 @@ function swipeEnd(e) {
 // (each page, as it is shown, paints in what is new on it and remembers it as seen)
 function showTab(tab) {
     story.tab = tab;
-    if (tab === 'thoughts') {
+    if (tab === 'bitacora') {
         const seen = new Set(memory.storySeen);
         story.have = new Set(memory.fragments);
         story.order = new Map(memory.fragments.filter((i) => !seen.has(i)).map((i, n) => [i, n]));
@@ -1978,10 +1978,10 @@ onBeforeUnmount(() => {
             <div v-if="story.open" class="story" role="dialog" :aria-label="$i18n.locale === 'en' ? 'Notebook' : 'Libreta'" @pointerdown.stop="swipeStart" @pointerup="swipeEnd" @click="closeStory">
                 <!-- its two pages, as two words written in the sky: the one open glows -->
                 <div class="story-tabs" role="tablist" @click.stop>
-                    <button role="tab" :aria-selected="story.tab === 'thoughts'" :class="{ on: story.tab === 'thoughts' }" @click="story.dir = 'from-left'; showTab('thoughts')">{{ $i18n.locale === 'en' ? 'Logbook' : 'Bitácora' }}</button>
+                    <button role="tab" :aria-selected="story.tab === 'bitacora'" :class="{ on: story.tab === 'bitacora' }" @click="story.dir = 'from-left'; showTab('bitacora')">{{ $i18n.locale === 'en' ? 'Logbook' : 'Bitácora' }}</button>
                     <button role="tab" :aria-selected="story.tab === 'herbarium'" :class="{ on: story.tab === 'herbarium' }" @click="story.dir = 'from-right'; showTab('herbarium')">{{ $i18n.locale === 'en' ? 'Herbarium' : 'Herbario' }}</button>
                 </div>
-                <div v-if="story.tab === 'thoughts'" class="story-card" :class="story.dir">
+                <div v-if="story.tab === 'bitacora'" class="story-card" :class="story.dir">
                     <p v-for="(para, n) in PARAGRAPHS" :key="n" class="story-text">
                         <template v-for="i in para" :key="i">
                             <span class="frag" :class="{ locked: !story.have.has(i), fresh: story.order.has(i) }"
