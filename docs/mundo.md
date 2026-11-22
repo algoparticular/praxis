@@ -93,7 +93,27 @@ Sale de las escenas de cada carta, para elegir: los abanicos y el pasto de Ciclo
 - **Color plano** en otra capa, debajo de la línea: sin sombras ni degradados, en los colores de su carta. De ahí sale la planta en sus colores (`NAME-colour.webp`) y cada parte (pétalo, tallo, sombrero) puede tener el suyo. Hoy el código pinta lo de adentro de una pieza de un solo color (`NAME-fill.webp`): hay que enseñarle al converter a leer esa capa (es poco).
 - **Sin fondo:** cada planta en su capa, PNG transparente. El cielo, el suelo y el fondo de la libreta se pintan en código.
 
-**A decidir al sentarnos:** cuántas por carta, cuáles, sus nombres (los de hoy están "para revisar"), y si la semilla de luz sigue dando cualquier planta que falte.
+**Decidido (22 de noviembre): 2 por carta.** 14 con los 7 mundos de hoy, 66 con las 33 cartas. Hay que sacar una planta a Upekkha (tiene 3) y sumar una a Ciclos, Metta, Paciencia y Transformación; Gratitud y Celebración ya tienen 2, aunque los "Hongos gemelos" de Celebración son de Desafío y conviene cambiarlos por una planta suya.
+
+**A decidir al sentarnos:** cuáles dos de cada carta, sus nombres (los de hoy están "para revisar") y si la semilla de luz sigue dando cualquier planta que falte.
+
+### Sumar mundos
+
+Hoy hay 7 mundos (zonas), cada uno con su carta, su lugar, sus personajes y sus piezas. La grilla es de 7 por 7 y cada fila corre las mismas 7 cartas dos lugares (`SHIFT`), así cada carta está una vez en cada fila y en cada columna. Cada zona mide 8000 de ancho, unos 19 s caminando.
+
+**Propuesta: llegar a las 33, pero de a tandas de 6 o 7.** Que estén todas tiene sentido: el mundo pasa a ser el mapa del mazo, cada carta tiene su lugar y su juego se abre desde ahí. Pero cada mundo nuevo pide trabajo:
+- su paleta y su cielo (`ZONES`),
+- su lugar y sus personajes, recortados de las capas de la escena (`PLACES`, `convert-lab-suelo.mjs`),
+- sus piezas sueltas por el suelo,
+- sus 2 plantas del herbario,
+- sus pensamientos (`thoughts.js`) y su constelación (`constellations.js`),
+- y peso: cada tanda suma imágenes al trozo del mundo, que se mide en `check:budget`.
+
+Además, con muchas cartas el mundo se hace largo: una fila de 33 son unos 10 minutos caminando. Con 7 se vuelve a la misma carta en unos 2 minutos.
+
+**A decidir al sentarnos:**
+- El orden de las tandas. Por ejemplo, primero las escenas que ya tienen sus piezas y personajes por separado (más fáciles de recortar), o agruparlas por verbo o por acorde.
+- Cómo se arma el mapa con más de 7. Hoy el orden se baraja en cada visita. Para las 33 ya estaba anotado un mapa fijo, por ejemplo una grilla de 6x6 que se cierra sobre sí misma (abajo, en Abierto). Una grilla de 6x6 tiene 36 lugares para 33 cartas: quedan 3 libres, y uno podría ser el mundo oculto, Viljandi-sama (idea, sin decidir).
 
 ## Abierto
 
