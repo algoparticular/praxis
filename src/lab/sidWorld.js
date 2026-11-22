@@ -145,7 +145,7 @@ export const STAR_SEED = 'star', STAR_LIGHT = [252, 220, 140];
 // it is found from afar; walking under it he finds it, a light runs through it from its
 // outside to its middle and it rises and goes (the page writes the fragment and its words fly into the notebook)
 // (dd: 1080 back, so walking along the front the marks of the row stand at the horizon: small and far, hardly past it)
-const MARK = { line: true, size: 170, dx: 0.32, dd: 0.18, pick: 240, high: 150, alone: 6000 };
+const MARK = { line: true, size: 110, dx: 0.32, dd: 0.18, pick: 240, high: 150, alone: 6000 };
 // (the labyrinth's dots, once: along the middle of the icon's line (it is drawn as an outline 2.5 of its 40 units wide:
 // each point of the outline is taken half that inwards), one every MAZE_GAP; in -0.5..0.5 about its middle, each with
 // how far from the middle it is, 0..1, for the light that runs in, and its own phase to twinkle)
@@ -1046,7 +1046,7 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
             const col = c.createLinearGradient(0, 0, 0, -2600);
             col.addColorStop(0, `rgba(255,248,226,${0.3 + 0.1 * breath})`); col.addColorStop(1, 'rgba(255,248,226,0)');
             c.fillStyle = col;
-            for (const [w, al] of [[0.16, 0.35], [0.085, 0.5], [0.032, 0.9]]) { c.globalAlpha *= al; c.fillRect(-K * w / 2, -2600, K * w, 2600); c.globalAlpha /= al; }
+            for (const [w, al] of [[27, 0.35], [14, 0.5], [5.5, 0.9]]) { c.globalAlpha *= al; c.fillRect(-w / 2, -2600, w, 2600); c.globalAlpha /= al; }
             halo(c, 0, y, K * (0.75 + 0.08 * breath + 0.5 * run), CREAM_LIGHT, 0.22 + 0.08 * breath + 0.4 * run);
             if (MARK.line) {
                 // drawn with its line, as the icon is: cream, in a soft glow, breathing; the light that runs in is white,
