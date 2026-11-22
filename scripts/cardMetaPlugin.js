@@ -1,6 +1,7 @@
 // After `vite build`, writes dist/card/<id>/index.html for every card with that card's own
 // og:/twitter: tags and dist/og/<id>.jpg (1200x630). Crawlers (WhatsApp, Facebook, X...) don't run
 // JavaScript, so the tags have to be in the HTML. Netlify serves these files before the SPA redirect.
+// It also writes dist/sid/index.html, Sid's world with its own picture and words.
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import sharp from 'sharp';
@@ -9,6 +10,8 @@ import cards from '../src/data/cards.json' with { type: 'json' };
 const SITE = 'https://algoparticular.com';
 const WIDTH = 1200;
 const HEIGHT = 630;
+const SID_WORDS = 'Sid camina un mundo propio, dibujado en código, donde viven las cartas.';
+const SID_ALT = 'Sid medita en loto en su mundo y las plantas a su alrededor toman color.';
 
 const escape = (text) => String(text).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
 
@@ -52,6 +55,7 @@ export default function cardMeta() {
                 let html = template.replace(/<title>.*?<\/title>/, `<title>${escape(title)}</title>`);
                 html = setTag(html, 'property', 'og:title', title);
                 html = setTag(html, 'property', 'og:description', card.affirmation_es);
+                html = setTag(html, 'name', 'description', card.affirmation_es);
                 html = setTag(html, 'property', 'og:image', `${SITE}/og/${card.id}.jpg`);
                 html = setTag(html, 'property', 'og:image:width', WIDTH);
                 html = setTag(html, 'property', 'og:image:height', HEIGHT);
@@ -63,6 +67,23 @@ export default function cardMeta() {
                 await mkdir(dir, { recursive: true });
                 await writeFile(path.join(dir, 'index.html'), html);
             }
+
+            // Sid's world (/sid) has its own picture (public/share/sid.jpg, scripts/shot-sid-share.mjs) and words
+            const title = 'Sid · Algo Particular';
+            const image = `${SITE}/share/sid.jpg`;
+            let html = template.replace(/<title>.*?<\/title>/, `<title>${escape(title)}</title>`);
+            html = setTag(html, 'property', 'og:title', title);
+            html = setTag(html, 'property', 'og:description', SID_WORDS);
+            html = setTag(html, 'name', 'description', SID_WORDS);
+            html = setTag(html, 'property', 'og:image', image);
+            html = setTag(html, 'property', 'og:image:width', WIDTH);
+            html = setTag(html, 'property', 'og:image:height', HEIGHT);
+            html = setTag(html, 'property', 'og:image:alt', SID_ALT);
+            html = setTag(html, 'property', 'og:url', `${SITE}/sid`);
+            html = setTag(html, 'name', 'twitter:image', image);
+            html = setTag(html, 'name', 'twitter:image:alt', SID_ALT);
+            await mkdir(path.join(outDir, 'sid'), { recursive: true });
+            await writeFile(path.join(outDir, 'sid', 'index.html'), html);
         },
     };
 }
