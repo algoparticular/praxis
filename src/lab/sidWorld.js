@@ -141,14 +141,15 @@ export const STAR_SEED = 'star', STAR_LIGHT = [252, 220, 140];
 // The marks of the Bitácora (story.js): as the things of Everything hold Alan Watts's words, a little symbol floating low
 // over the ground in every cell of the grid, away from its place (MARK.dx across and MARK.dd back from the place, to one
 // side or the other): the labyrinth of the world's own door (Lab.svg, the icon that opens the world), made of dots of
-// light as the world's stipple and stars are, breathing; walking under it he finds it, a light runs through it from its
+// light, white and cream, as the world's stars are, breathing, with a faint column of light rising from it to the sky so
+// it is found from afar; walking under it he finds it, a light runs through it from its
 // outside to its middle and it rises and goes (the page writes the fragment and its words fly into the notebook)
 // (dd: 1080 back, so walking along the front the marks of the row stand at the horizon: small and far, hardly past it)
-const MARK = { size: 230, dx: 0.32, dd: 0.18, pick: 240, high: 150 };
+const MARK = { size: 170, dx: 0.32, dd: 0.18, pick: 240, high: 150 };
 // (the labyrinth's dots, once: along the middle of the icon's line (it is drawn as an outline 2.5 of its 40 units wide:
 // each point of the outline is taken half that inwards), one every MAZE_GAP; in -0.5..0.5 about its middle, each with
 // how far from the middle it is, 0..1, for the light that runs in, and its own phase to twinkle)
-const MAZE_GAP = 2.2;
+const MAZE_GAP = 3.2;
 let mazeDots = null;
 function maze() {
     if (mazeDots || typeof document === 'undefined') return mazeDots;
@@ -1026,8 +1027,8 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
             break;
         }
         case 'mark': {
-            // the labyrinth of dots of light, floating and breathing, each dot twinkling on its own (in the zone's ink by
-            // day, so it reads on its ground, cream by night, with a soft light of the zone round it); found, a light runs
+            // the labyrinth of dots of light, white and cream, floating and breathing, each dot twinkling on its own in a
+            // soft glow, with a soft light of the zone round it and its column of light up to the sky; found, a light runs
             // through it from its outside to its middle, then it rises and fades
             const up = l?.up ?? 0, dots = maze();
             if (!dots || up >= 1 || !marks?.open() && up === 0) break;
@@ -1036,13 +1037,18 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
             const rgb = P.light.map(Math.round), y = -MARK.high - 8 * Math.sin(t * 0.9) - go * 160;
             c.fillStyle = `rgba(20,50,70,${0.07 * a})`; c.beginPath(); c.ellipse(0, 0, K * 0.3, K * 0.06, 0, 0, Math.PI * 2); c.fill();
             c.globalAlpha *= a;
-            halo(c, 0, y, K * (0.75 + 0.08 * breath + 0.5 * run), rgb, 0.22 + 0.1 * breath + 0.4 * run);
-            const ink = mixRgb(P.ink, [255, 250, 230], night());
+            // the column of light, from the ground up to the sky, fading upwards, so it is found from afar (soft at its
+            // sides: a few bands, the wider the fainter)
+            const col = c.createLinearGradient(0, 0, 0, -2600);
+            col.addColorStop(0, `rgba(${rgb.join(',')},${0.32 + 0.1 * breath})`); col.addColorStop(1, `rgba(${rgb.join(',')},0)`);
+            c.fillStyle = col;
+            for (const [w, al] of [[0.16, 0.35], [0.085, 0.5], [0.032, 0.9]]) { c.globalAlpha *= al; c.fillRect(-K * w / 2, -2600, K * w, 2600); c.globalAlpha /= al; }
+            halo(c, 0, y, K * (0.75 + 0.08 * breath + 0.5 * run), rgb, 0.3 + 0.1 * breath + 0.4 * run);
             for (const [u, v, r, ph] of dots) {
                 const lit = Math.max(0, Math.min(1, (run - (1 - r)) * 4));           // (the light comes in from outside)
-                const tw = 0.75 + 0.25 * Math.sin(t * 2.3 + ph), x = u * K, yy = y + v * K, size = K * 0.017 * tw * (1 + 0.5 * lit);
-                if (lit > 0.05) halo(c, x, yy, K * 0.05, rgb, 0.8 * lit);
-                c.fillStyle = lit > 0.5 ? 'rgb(255,252,238)' : ink;
+                const tw = 0.75 + 0.25 * Math.sin(t * 2.3 + ph), x = u * K, yy = y + v * K, size = K * 0.02 * tw * (1 + 0.5 * lit);
+                halo(c, x, yy, K * 0.045, lit > 0.05 ? rgb : [255, 250, 230], 0.35 + 0.5 * lit);
+                c.fillStyle = lit > 0.5 || ph > 3.15 ? 'rgb(255,255,255)' : 'rgb(255,246,220)';     // (white and cream)
                 c.beginPath(); c.arc(x, yy, size, 0, Math.PI * 2); c.fill();
             }
             // (its middle, a particle of light: everything started from a particle)
