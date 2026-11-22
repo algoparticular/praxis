@@ -49,7 +49,7 @@ export const FRAGMENTS = [
         en: 'From that moment I decided to walk with an open heart: instead of growing more vulnerable, one grows stronger and stronger.' },
 ];
 
-// How the notebook's page of Pensamientos lays them out: in paragraphs of two or three, by what they speak of (the dream
+// How the notebook's page of Bitácora lays them out: in paragraphs of two or three, by what they speak of (the dream
 // and what separates us; the particle, as above so below; the atoms and Love; humility, made of the same; the void;
 // the rulito and beauty; the path)
 export const PARAGRAPHS = [[0, 12, 1], [2, 13], [3, 4, 14], [5, 15, 6], [7, 16, 8], [9, 10], [17, 11]];
