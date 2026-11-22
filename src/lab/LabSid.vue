@@ -1015,7 +1015,19 @@ function toSid(p, d = state.d) {
     return { x: state.cam + (p.x - x0) / s, y: state.ground + (p.y - groundAt(d)) / s };
 }
 
-const view = { w: 1, h: 1, k: 1, dpr: 1, floor: 1 };
+const view = { w: 1, h: 1, k: 1, dpr: 1, floor: 1, top: 0 };
+// The strip under the clock and the battery (opened from the iPhone's Home Screen the page goes under it, black-translucent
+// in index.html; 0 elsewhere): the world is laid out on the screen below it, as it was when the page started below it, and
+// the strip is more sky over it
+let insetProbe = null;
+function safeTop() {
+    if (!insetProbe) {
+        insetProbe = document.createElement('div');
+        insetProbe.style.cssText = 'position:fixed;top:0;left:0;width:0;height:env(safe-area-inset-top, 0px);visibility:hidden;pointer-events:none';
+        document.body.appendChild(insetProbe);
+    }
+    return insetProbe.offsetHeight || 0;
+}
 let raf = 0, last = 0, paused = false;
 
 function resize() {
@@ -1023,11 +1035,13 @@ function resize() {
     view.dpr = Math.min(window.devicePixelRatio || 1, 2);
     view.w = el.clientWidth; view.h = el.clientHeight;
     el.width = view.w * view.dpr; el.height = view.h * view.dpr;
+    view.top = Math.min(safeTop(), view.h * 0.2);
+    const H = view.h - view.top;              // (the screen below the strip under the clock)
     // He is about half the height of the screen
     // (SMALL: he is a little smaller than at first, so the world, and her tree, are big round him)
-    view.k = SMALL * Math.min((ui.touch ? view.h * 0.55 : view.h * 0.62) / (TALL + STAND), view.w * 0.9 / 420);
+    view.k = SMALL * Math.min((ui.touch ? H * 0.55 : H * 0.62) / (TALL + STAND), view.w * 0.9 / 420);
     const was = state.ground;
-    state.ground = (ui.touch ? view.h * 0.84 : view.h * 0.86) / view.k;
+    state.ground = (view.top + (ui.touch ? H * 0.84 : H * 0.86)) / view.k;
     view.horizon0 = ui.touch ? 0.2 : 0.24;     // where the horizon is on the screen (high: little sky), and looking up
     lookAt();
     if (!was) { state.x = START_X; state.cam = state.x; state.camD = -follow(); }     // (he starts a short walk before the first place, which is ahead on his way)
@@ -1043,12 +1057,12 @@ const LOOK_HORIZON = { touch: 0.6, wide: 0.52 };
 function lookAt() {
     const e = state.look ?? 0, k = e * e * (3 - 2 * e);
     const at = view.horizon0 + ((ui.touch ? LOOK_HORIZON.touch : LOOK_HORIZON.wide) - view.horizon0) * k;
-    view.floor = (state.ground * view.k - view.h * at) / view.k;
+    view.floor = (state.ground * view.k - (view.top + (view.h - view.top) * at)) / view.k;
 }
 // (the starry night is as tall as the sky can be, looking up: the ground drawn over it hides what is under the horizon,
 // and its stars are not made again as the camera moves)
 function skyHeight() {
-    if (nightSky.value) nightSky.value.style.height = `${Math.ceil(view.h * (ui.touch ? LOOK_HORIZON.touch : LOOK_HORIZON.wide)) + 2}px`;
+    if (nightSky.value) nightSky.value.style.height = `${Math.ceil(view.top + (view.h - view.top) * (ui.touch ? LOOK_HORIZON.touch : LOOK_HORIZON.wide)) + 2}px`;
 }
 
 function pointerTo(e) {
@@ -1635,7 +1649,7 @@ function draw() {
     const W = view.w / view.k;
 
     // The floor, back to the horizon, and him on it at his depth (smaller and nearer the middle the farther back)
-    world.drawSky(c, { width: W, cam: state.cam, d: state.d }, 0, horizon());
+    world.drawSky(c, { width: W, cam: state.cam, d: state.d }, view.top / view.k, horizon());   // (the sun's way and the clouds in the sky below the strip under the clock; the sky's colour up to the top)
     // the zone's colours: his line and body, the colour under the starry night, and the header's icons cream by night
     INK = world.ink(); FILL = world.white();
     const dark = world.night(), under = world.nightColour();

@@ -59,8 +59,8 @@
 </template>
 
 <!-- Opened from the iPhone's Home Screen the page goes under the clock and the battery (black-translucent, index.html):
-     only Sid's world shows there (its sky); everywhere else that strip is painted navy, where the white clock reads, and
-     the app starts below it. In Safari or on a computer there is no such strip (the inset is 0). -->
+     only Sid's world shows there (its sky); everywhere else that strip is painted, where the white clock reads, and the
+     app starts below it: navy, or the colour of the page's own top (--strip, statusStrip.js). In Safari or on a computer there is no such strip (the inset is 0). -->
 <style>
 	.status-strip { display: none; }
 	@media (display-mode: standalone) {
@@ -71,7 +71,10 @@
 			left: 0;
 			right: 0;
 			height: env(safe-area-inset-top, 0px);
-			background: #143246;
+			/* navy, or the colour a page gives it at its top (--strip, statusStrip.js): the landing's violet as it
+			   turns into the navy, a card's background */
+			background: var(--strip, #143246);
+			transition: background-color 400ms ease-out;
 			z-index: 60;
 			pointer-events: none;
 		}
