@@ -115,7 +115,7 @@ function readFragment(i) {
 // Sid's notebook, written in the sky (its icon, a notebook, on a small round button over the seed's, shows once there is something in it and
 // glows while there is something new to see; it opens on the page that has it; a touch anywhere, or Escape, closes it;
 // the header's icons go cream over it, `body.lab-story`). Two pages:
-// - Pensamientos: the fragments of the story found, in order, in paragraphs by theme (PARAGRAPHS in story.js), those still hidden as faint stars the
+// - Bitácora: the fragments of the story found, in order, in paragraphs by theme (PARAGRAPHS in story.js), those still hidden as faint stars the
 //   length of their words; those found since it was last seen (memory.storySeen) are painted in, one after another, in
 //   the order they were found (each mark gives one still hidden, at random);
 // - Herbario: every plant a seed can grow into (herbarium.js) as a dark silhouette, and in its colours with its name
@@ -227,7 +227,7 @@ function closeStory() {
     if (swiped) { swiped = false; return; }
     story.open = false; document.body.classList.remove('lab-story');
 }
-// A finger swiped across turns its page, as a book's: to the left, the next (Herbario); to the right, back (Pensamientos);
+// A finger swiped across turns its page, as a book's: to the left, the next (Herbario); to the right, back (Bitácora);
 // the page comes in from the side it was turned to (`story.dir`)
 const SWIPE = 50;
 let swipeAt = null, swiped = false;
@@ -1978,7 +1978,7 @@ onBeforeUnmount(() => {
             <div v-if="story.open" class="story" role="dialog" :aria-label="$i18n.locale === 'en' ? 'Notebook' : 'Libreta'" @pointerdown.stop="swipeStart" @pointerup="swipeEnd" @click="closeStory">
                 <!-- its two pages, as two words written in the sky: the one open glows -->
                 <div class="story-tabs" role="tablist" @click.stop>
-                    <button role="tab" :aria-selected="story.tab === 'thoughts'" :class="{ on: story.tab === 'thoughts' }" @click="story.dir = 'from-left'; showTab('thoughts')">{{ $i18n.locale === 'en' ? 'Thoughts' : 'Pensamientos' }}</button>
+                    <button role="tab" :aria-selected="story.tab === 'thoughts'" :class="{ on: story.tab === 'thoughts' }" @click="story.dir = 'from-left'; showTab('thoughts')">{{ $i18n.locale === 'en' ? 'Logbook' : 'Bitácora' }}</button>
                     <button role="tab" :aria-selected="story.tab === 'herbarium'" :class="{ on: story.tab === 'herbarium' }" @click="story.dir = 'from-right'; showTab('herbarium')">{{ $i18n.locale === 'en' ? 'Herbarium' : 'Herbario' }}</button>
                 </div>
                 <div v-if="story.tab === 'thoughts'" class="story-card" :class="story.dir">
