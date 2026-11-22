@@ -78,6 +78,7 @@ function tell(what, after = 0) {
         if (gone) return;
         // (never over a card's affirmation or a card opened: it waits for them to go)
         if (teaching.on || portal.card != null) { setTimeout(say, 1500); return; }
+        if (thought.on) { thought.on = false; thinkKey = null; thoughtQuiet = performance.now() + 2500; setTimeout(say, 1500); return; }
         learn(`words_${what}`);
         Object.assign(teaching, { ...STORY[what], on: true, story: true });
         clearTimeout(storyTimer);
@@ -97,6 +98,8 @@ function readFragment(i) {
     setTimeout(function say() {
         if (gone) return;
         if ((teaching.on && !teaching.story) || portal.card != null) { setTimeout(say, 1500); return; }
+        // (nor over what a place thinks: it goes first, and is written again another time)
+        if (thought.on) { thought.on = false; thinkKey = null; thoughtQuiet = performance.now() + 2500; setTimeout(say, 1500); return; }
         Object.assign(teaching, { es: f.es, en: f.en, on: true, story: true });
         clearTimeout(storyTimer);
         storyTimer = setTimeout(() => {
@@ -272,7 +275,7 @@ function showTab(tab) {
 const THOUGHT_NEAR = 700, THOUGHT_KEEP = 1500, THOUGHT_SHOW = 9000;
 const thought = reactive({ es: '', en: '', on: false });
 const thoughtEl = ref(null);
-let thinkKey = null, thinkAt = 0, thinkPlace = null, thinkIn = 0.5;
+let thinkKey = null, thinkAt = 0, thinkPlace = null, thinkIn = 0.5, thoughtQuiet = 0;     // (thoughtQuiet: till when a thought waits, as words go on the card)
 function think(dt) {
     thinkIn -= dt;
     if (thinkIn > 0) return;
@@ -289,7 +292,7 @@ function think(dt) {
         if (performance.now() - thinkAt < THOUGHT_SHOW / 2) { thinkKey = null; memory.thoughts[near.id] = Math.max(0, (memory.thoughts[near.id] ?? 1) - 1); }
     }
     if (performance.now() - thinkAt > THOUGHT_SHOW) thought.on = false;
-    if (key === thinkKey || !list || ui.sitting || teaching.on || near.dist > near.reach + THOUGHT_NEAR) return;
+    if (key === thinkKey || !list || ui.sitting || teaching.on || performance.now() < thoughtQuiet || near.dist > near.reach + THOUGHT_NEAR) return;
     thinkKey = key; thinkAt = performance.now();
     const n = memory.thoughts[near.id] ?? 0;
     Object.assign(thought, list[n % list.length], { on: true });
@@ -542,7 +545,7 @@ function newPlants(seed, kinds) {
     return names.length ? names : null;
 }
 const canvas = ref(null);
-const nightSky = ref(null), starCanvas = ref(null);   // the cards' starry night, behind the drawing (useStarField.js)
+const nightSky = ref(null), starBox = ref(null), starCanvas = ref(null);   // the cards' starry night, behind the drawing (useStarField.js)
 let stars = null;
 // Sitting in lotus at a zone's special place (under the crown of her tree, by the two embracing, the pond, the
 // the fire), after a moment (RULITO_AFTER) the rulito is born over his head, as in the cards (Rulito.vue, in
@@ -1048,7 +1051,6 @@ function resize() {
     view.horizon0 = ui.touch ? 0.2 : 0.24;     // where the horizon is on the screen (high: little sky), and looking up
     lookAt();
     if (!was) { state.x = START_X; state.cam = state.x; state.camD = -follow(); }     // (he starts a short walk before the first place, which is ahead on his way)
-    // the starry night fills the sky, down to the horizon
     skyHeight();
 }
 // How far in front of him the camera stands (in depth): it keeps him a little below the middle of the screen. The starry night behind the drawing goes down to the horizon, which stays
@@ -1057,15 +1059,14 @@ const follow = () => DEPTH * 0.35;
 // (the floor, from its front to the horizon: shorter as the camera looks up to the sky, state.look, so the horizon comes
 // down the screen towards him and the sky fills more of it)
 const LOOK_HORIZON = { touch: 0.6, wide: 0.52 };
+// (the starry night's stars are as tall as the sky can be, looking up; its colour, under them, fills the screen)
+function skyHeight() {
+    if (starBox.value) starBox.value.style.height = `${Math.ceil(view.top + (view.h - view.top) * (ui.touch ? LOOK_HORIZON.touch : LOOK_HORIZON.wide)) + 2}px`;
+}
 function lookAt() {
     const e = state.look ?? 0, k = e * e * (3 - 2 * e);
     const at = view.horizon0 + ((ui.touch ? LOOK_HORIZON.touch : LOOK_HORIZON.wide) - view.horizon0) * k;
     view.floor = (state.ground * view.k - (view.top + (view.h - view.top) * at)) / view.k;
-}
-// (the starry night is as tall as the sky can be, looking up: the ground drawn over it hides what is under the horizon,
-// and its stars are not made again as the camera moves)
-function skyHeight() {
-    if (nightSky.value) nightSky.value.style.height = `${Math.ceil(view.top + (view.h - view.top) * (ui.touch ? LOOK_HORIZON.touch : LOOK_HORIZON.wide)) + 2}px`;
 }
 
 function pointerTo(e) {
@@ -1901,7 +1902,7 @@ onMounted(() => {
     resize();
     window.addEventListener('resize', resize);
     // (a shooting star that passes near sounds, as in the app's other night skies; only when the night is out)
-    stars = createStarField(starCanvas.value, nightSky.value, { pace: () => state.pace, onShoot: () => { if (world.night() > 0.5 && !ui.guide) play('star'); starFell(); } });
+    stars = createStarField(starCanvas.value, starBox.value, { pace: () => state.pace, onShoot: () => { if (world.night() > 0.5 && !ui.guide) play('star'); starFell(); } });
     raf = requestAnimationFrame(loop);
     scheduleHint();
     tell('intro', 1400);
@@ -1939,7 +1940,7 @@ onBeforeUnmount(() => {
     <!-- (no menu on a long press: a finger held down only guides him) -->
     <div ref="labEl" class="lab" @contextmenu.prevent>
         <div class="page"></div>
-        <div ref="nightSky" class="night-sky" :style="zoomStyle"><canvas ref="starCanvas"></canvas></div>
+        <div ref="nightSky" class="night-sky" :style="zoomStyle"><div ref="starBox" class="stars"><canvas ref="starCanvas"></canvas></div></div>
         <!-- the rulito draws itself on its own canvas, which this scene lays over his head -->
         <Rulito ref="rulito" class="offstage" :color="rulitoColour" />
         <canvas ref="canvas" :style="zoomStyle" @pointermove="onMove" @pointerdown="onDown" @pointerup="onUp" @pointercancel="onUp"></canvas>
@@ -2246,14 +2247,22 @@ canvas {
 .portal-enter-active { transition: opacity 0.9s ease-in-out; }
 .portal-leave-active { transition: opacity 1.4s ease-in-out; }
 .portal-enter-from, .portal-leave-to { opacity: 0; }
+/* the starry night: its colour over the whole screen, behind the drawing, whose ground hides what is under the horizon
+   (so whatever the screen measures it always reaches the horizon: only as tall as the sky could be, it fell short on an
+   iPhone looking up and left a strip of the page's cream over the horizon); its stars only as tall as the sky can be
+   (.stars, skyHeight), so they and the shooting stars are where the sky is, and are not made again as the camera moves */
 .night-sky {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    background: #039CA8;
+    pointer-events: none;
+}
+.night-sky .stars {
     position: absolute;
     left: 0;
     right: 0;
     top: 0;
-    opacity: 0;
-    background: #039CA8;
-    pointer-events: none;
 }
 .night-sky canvas {
     position: absolute;

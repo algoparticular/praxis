@@ -31,8 +31,8 @@ for (const { file, rel } of scripts) {
     else if (/^index-/.test(name)) check(`JS ${name} (the app)`, gzipKb(file), 165);
     // PostHog's SDK: fetched after the app is idle, and only when a key is configured (src/analytics.js)
     else if (/^module-/.test(name)) check(`JS ${name} (PostHog)`, gzipKb(file), 115);
-    // Sid's world: the puppet, the world drawn in code and its seeds and plants, in one chunk loaded only at /sid
-    else if (/^LabSid-/.test(name)) check(`JS ${name} (Sid's world)`, gzipKb(file), 54);
+    // Sid's world: the puppet, the world drawn in code and its seeds and plants, in one chunk loaded only at /sid (58: the Bitácora's labyrinths and the frases kept apart, 22/11/2026)
+    else if (/^LabSid-/.test(name)) check(`JS ${name} (Sid's world)`, gzipKb(file), 58);
     else check(`JS ${name}`, gzipKb(file), 40);
 }
 
