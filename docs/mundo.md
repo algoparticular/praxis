@@ -54,6 +54,12 @@ Opciones pensadas, ninguna elegida:
 
 Antes de elegir sirve medir. Desde el 20 de noviembre de 2026 el mundo tiene su analítica (`world_entered`, `world_left` y los momentos de adentro; la lista en `analitica.md`): de dónde se llega (el laberinto de Inicio o un enlace), cuánto se queda, cuánto camina, si encuentra el botón para sentarse, cuántos lugares medita, qué cartas abre y si las completa. Con unas semanas de datos se puede ver si quien lo encuentra se queda.
 
+## Por hacer
+
+- Sacar los personajes por capa y en código para el mundo.
+- Diseñar el herbario y sus plantas.
+- Mundo oculto: Viljandi-sama (a definir).
+
 ## Abierto
 
 - Su lugar en Inicio (arriba).
