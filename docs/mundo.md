@@ -58,7 +58,7 @@ Antes de elegir sirve medir. Desde el 20 de noviembre de 2026 el mundo tiene su 
 
 - Sacar los personajes por capa y en código para el mundo.
 - Diseñar el herbario y sus plantas.
-- Mundo oculto: Viljandi-sama (a definir).
+- Mundo oculto: Viljandi-sama. Es el mural (3240x1080): las colinas con el castillo, la fogata con Sid, el campo de Samas, el río y el arcoíris que se hace noche. Ya no está en el repo; se recupera con `git show 0655455^:public/assets/mural.jpg > mural.jpg` (hay una versión chica, `muralito.jpg`, en `7699947^`).
 
 ## Abierto
 

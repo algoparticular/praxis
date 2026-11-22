@@ -42,6 +42,10 @@ Hipótesis, no decisiones: ninguna está implementada ni decidida. Están en `pl
 ## El mundo de Sid
 Lo abierto del mundo (`/sid`) está en `mundo.md`: su lugar en Inicio (cuatro opciones, sin elegir), qué es en el fondo, el mapa fijo cuando estén todas las cartas, y mirar su analítica (desde el 20 de noviembre) antes de elegir.
 
+## SEO y PWA (para más adelante)
+- Cambiar la descripción del sitio (`description` y `og:description` en `index.html`; hoy: "Guía tu intuición consultando al Oráculo de las Partículas...") y mejorar el SEO donde se pueda: por ejemplo `robots.txt` y `sitemap.xml`, `canonical`, `og:locale`, el `og:image:alt` de cada carta (hoy heredan el de la portada, el de Sid en su alfombra) y páginas propias para `/oracle`, `/deck` o `/about`.
+- Mejorar la PWA (`public/manifest.webmanifest`): íconos de 192 y 512 px y uno `maskable`, `description`, `id`, `lang`, atajos (oráculo, mundo de Sid), capturas para la instalación, y revisar `theme_color` y `background_color` (hoy `#10100F`, que no es de la marca).
+
 ## Música y secuencias
 - Cómo se juegan los choques de mi–fa y si–do en una secuencia que suba por los chakras.
 - Qué secuencias de acordes se usan en el juego. Los siete acordes disminuidos y otros nueve quedan sin carta; podrían servir para esas secuencias o para momentos del juego.
