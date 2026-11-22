@@ -9,7 +9,6 @@ import Header from '../components/Header.vue';
 import rig from './sid/sid.json';
 import { CICLOS, createWorld, STAR_SEED, STAR_LIGHT, pieceUrl, plantsOf } from './sidWorld.js';
 import { createStarField, CONSTELLATION_TIME } from '../composables/useStarField.js';
-import { worldSide } from '../composables/useWorldSide.js';
 import { WORLD_RESUME } from '../composables/worldResume.js';
 import { THOUGHTS } from './thoughts.js';
 import { FRAGMENTS, PARAGRAPHS } from './story.js';
@@ -1934,7 +1933,7 @@ onBeforeUnmount(() => {
          it as on its own page, a card opened at its place) -->
     <div class="labRoot">
     <!-- (no menu on a long press: a finger held down only guides him) -->
-    <div ref="labEl" class="lab" :class="{ lefty: worldSide === 'left' }" @contextmenu.prevent>
+    <div ref="labEl" class="lab" @contextmenu.prevent>
         <div class="page"></div>
         <div ref="nightSky" class="night-sky" :style="zoomStyle"><canvas ref="starCanvas"></canvas></div>
         <!-- the rulito draws itself on its own canvas, which this scene lays over his head -->
@@ -1958,7 +1957,7 @@ onBeforeUnmount(() => {
         <!-- one button, on a phone and on a computer alike: the seed, Algo Particular's mark (as in the header), sits him
              in lotus and gets him up again; he walks with the arrows or WASD, or where a click or a touch on the floor
              sends him; a touch on him makes him wave (on a computer J jumps) -->
-        <!-- the three meditations (a long press on the seed, or M): 1, 3 and 5 minutes -->
+        <!-- the three meditations (a long press on the seed, or M): 1, 3 and 5 minutes, springing up over it -->
         <Transition name="veil">
             <div v-if="ui.choose && !ui.peek" class="veil" @pointerdown.stop="ui.choose = false"></div>
         </Transition>
@@ -1969,7 +1968,7 @@ onBeforeUnmount(() => {
                 </button>
             </div>
         </Transition>
-        <!-- Sid's notebook (openStory): a small round button over the seed's, once there is something in it -->
+        <!-- Sid's notebook (openStory): a small round button to the right of the seed's, once there is something in it -->
         <Transition name="teaching">
             <button v-if="story.shown && !story.hold && portal.card == null" class="story-icon glass" :class="{ fresh: story.fresh, got: note.got, hint: note.hint }"
                 :aria-label="$i18n.locale === 'en' ? 'Notebook' : 'Libreta'" :title="$i18n.locale === 'en' ? 'Notebook' : 'Libreta'"
@@ -2121,8 +2120,8 @@ canvas {
 .thought-enter-active { transition: opacity 2.2s ease-out; }
 .thought-leave-active { transition: opacity 1.4s ease-in; }
 .thought-enter-from, .thought-leave-to { opacity: 0; }
-/* the meditations' menu, as an iPhone's long press: the world dims behind a veil and the menu grows out of the seed to
-   its left on a spring, on the seed's own glass (.glass, darkened a little, a cream line round it): ethereal, as the
+/* the meditations' menu, as an iPhone's long press: the world dims behind a veil and the menu grows up out of the seed
+   on a spring, on the seed's own glass (.glass, darkened a little, a cream line round it): ethereal, as the
    button; the one under the finger lights up */
 .veil {
     position: absolute;
@@ -2136,9 +2135,12 @@ canvas {
 .veil-enter-from, .veil-leave-to { opacity: 0; }
 .choose {
     position: absolute;
-    right: 116px;
-    /* (its middle level with the seed's: the button is 84 high, the menu 68) */
-    bottom: calc(52px + env(safe-area-inset-bottom, 0px));
+    /* centred over the seed (the button's top is 44 + 84 up, and 16 more) */
+    left: 0;
+    right: 0;
+    width: max-content;
+    margin: 0 auto;
+    bottom: calc(144px + env(safe-area-inset-bottom, 0px));
     height: 68px;
     display: flex;
     flex-direction: row;
@@ -2151,8 +2153,8 @@ canvas {
     border: 1px solid rgba(247, 248, 241, 0.35);
     box-shadow: 0 4px 24px rgba(20, 50, 70, 0.18);
     color: #F7F8F1;
-    /* (it grows out of the seed: from the middle of the button, to its right) */
-    transform-origin: calc(100% + 54px) 50%;
+    /* (it grows out of the seed: from the middle of the button, under it) */
+    transform-origin: 50% calc(100% + 58px);
 }
 .choose.light { background-color: rgba(28, 44, 66, 0.4); }
 .minutes {
@@ -2201,11 +2203,10 @@ canvas {
 .minutes[data-minutes="5"] .dot { width: 16px; height: 16px; margin: 0; }
 .choose-enter-active { transition: transform 460ms cubic-bezier(0.3, 1.45, 0.55, 1), opacity 200ms ease-out; }
 .choose-leave-active { transition: transform 220ms ease-in, opacity 200ms ease-in; }
-.choose-enter-from, .choose-leave-to { transform: translateX(30px) scale(0.2); opacity: 0; }
+.choose-enter-from, .choose-leave-to { transform: translateY(30px) scale(0.2); opacity: 0; }
 .choose-enter-active .minutes { animation: row-in 360ms ease-out both; }
-.choose-enter-active .minutes:nth-child(2) { animation-delay: 40ms; }
-.choose-enter-active .minutes:nth-child(1) { animation-delay: 80ms; }
-@keyframes row-in { from { opacity: 0; transform: translateX(8px); } to { opacity: 1; transform: none; } }
+.choose-enter-active .minutes:nth-child(1), .choose-enter-active .minutes:nth-child(3) { animation-delay: 50ms; }
+@keyframes row-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) {
     .choose-enter-active, .choose-leave-active { transition: opacity 200ms; }
     .choose-enter-from, .choose-leave-to { transform: none; }
@@ -2258,7 +2259,8 @@ canvas {
     /* on the app's frosted glass (.glass: its noise and its blur), a little darkened so the cream seed reads over a light
        sky or ground; a touch lights it up, and while he meditates it keeps a soft glow that breathes */
     position: absolute;
-    right: 20px;
+    /* in the middle, at the bottom */
+    left: calc(50% - 42px);
     bottom: calc(44px + env(safe-area-inset-bottom, 0px));
     width: 84px;
     height: 84px;
@@ -2389,11 +2391,12 @@ canvas {
     mix-blend-mode: screen;
 }
 /* the notebook's button: as the seed's, smaller (the app's frosted glass, a little darkened, a cream line round it),
-   centred over it; the notebook in cream; while something new waits to be seen it breathes a soft glow */
+   to its right, its middle level with the seed's; the notebook in cream; while something new waits to be seen it
+   breathes a soft glow */
 .story-icon {
     position: absolute;
-    right: 36px;                  /* (centred over the seed's: 20 + (84 - 52) / 2) */
-    bottom: calc(144px + env(safe-area-inset-bottom, 0px));
+    left: calc(50% + 42px + 18px);
+    bottom: calc(60px + env(safe-area-inset-bottom, 0px));   /* (44 + (84 - 52) / 2) */
     width: 52px;
     height: 52px;
     padding: 0;
@@ -2410,14 +2413,6 @@ canvas {
     -webkit-tap-highlight-color: transparent;
     transition: transform 160ms ease-out, box-shadow 400ms ease-out;
 }
-/* the buttons on the left, for whoever prefers them there (the menu, inside the world: useWorldSide.js); the minutes'
-   menu then springs out of the seed to its right */
-.lab.lefty .lotus { right: auto; left: 20px; }
-.lab.lefty .lotus .count { right: auto; left: -4px; }
-.lab.lefty .story-icon { right: auto; left: 36px; }
-.lab.lefty .choose { right: auto; left: 116px; transform-origin: -54px 50%; }
-.lab.lefty .choose-enter-from, .lab.lefty .choose-leave-to { transform: translateX(-30px) scale(0.2); }
-@media (prefers-reduced-motion: reduce) { .lab.lefty .choose-enter-from, .lab.lefty .choose-leave-to { transform: none; } }
 .story-icon span {
     display: block;
     width: 26px;

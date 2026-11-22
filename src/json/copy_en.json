@@ -37,9 +37,6 @@
             "audio": "Audio",
             "music": "Music",
             "effects": "Effects",
-            "side": "Buttons",
-            "sideLeft": "Left",
-            "sideRight": "Right",
             "worldResetAsk": "Start Sid's world again? What you sowed, the story you found and your seeds are forgotten, as if it were the first time."
         },
         "about": {

@@ -1,7 +1,5 @@
 <script setup>
-    import { onMounted, computed, ref } from 'vue';
-    import { useRoute } from 'vue-router';
-    import { worldSide, setWorldSide } from '../composables/useWorldSide.js';
+    import { onMounted, ref } from 'vue';
     import { resetMemory } from '../lab/worldMemory.js';
     import { track } from '../analytics.js';
     import { musicVolume, effectsVolume, setMusicVolume, setEffectsVolume, play } from '../composables/useSound.js';
@@ -15,12 +13,9 @@
         hasWorld: Boolean,
     });
 
-    // inside Sid's world only: which side its buttons sit on
-    const route = useRoute();
-    const inWorld = computed(() => route.path === '/sid');
     // A hidden gesture to start Sid's world again, as on a first visit: holding the labyrinth down (WORLD_RESET_HOLD ms;
     // it lights up as it is held) asks, and yes forgets what the world kept (what was sown, the story found, the seeds and
-    // what was learned; the language, the volumes and the buttons' side stay). A quick touch still goes into the world
+    // what was learned; the language and the volumes stay). A quick touch still goes into the world
     const WORLD_RESET_HOLD = 3000;
     const holding = ref(false);
     let holdTimer = 0, held = false;
@@ -38,10 +33,6 @@
     const holdEnd = () => { clearTimeout(holdTimer); holding.value = false; };
     // (a long hold is not a touch to go in)
     const goToWorld = () => { if (held) { held = false; return; } navigate('/sid'); };
-    const sideChanged = (side) => {
-        setWorldSide(side);
-        track('world_side_changed', { to: side });
-    };
 
     const emit = defineEmits(['navigate','langChanged']); 
 
@@ -82,13 +73,6 @@
                     :style="{ '--fill': Math.round(effectsVolume * 100) + '%' }" :aria-label="$t('nav.effects')"
                     @input="setEffectsVolume($event.target.value / 100)" @change="effectsHeard" />
             </label>
-        </div>
-
-        <!-- which side the world's buttons sit on: no words, two little screens with their button in one corner -->
-        <div v-if="props.hasAudio && inWorld" id="sideSelect" role="radiogroup" :aria-label="$t('nav.side')">
-            <button v-for="side in ['left', 'right']" :key="side" type="button" role="radio" :class="[side, { active: worldSide === side }]"
-                :aria-checked="worldSide === side" :aria-label="$t(side === 'left' ? 'nav.sideLeft' : 'nav.sideRight')"
-                :title="$t(side === 'left' ? 'nav.sideLeft' : 'nav.sideRight')" @click="sideChanged(side)"><span></span></button>
         </div>
 
         <!-- the language: its two letters, the chosen one bright and the other faint -->
@@ -317,51 +301,6 @@
                 user-select: none; /* Non-prefixed version, currently
                                     supported by Chrome, Edge, Opera and Firefox */
     }
-
-    /* Inside Sid's world: which side its buttons sit on, as two little screens in a fine cream line, each with its
-       button as a dot in one corner; the chosen one bright, the other faint */
-    #sideSelect {
-        flex-direction: row;
-        gap: 28px;
-    }
-
-    #sideSelect button {
-        position: relative;
-        width: 26px;
-        height: 40px;
-        min-width: 0;
-        padding: 0;
-        margin: 0;
-        border: 1.5px solid #F7F8F1;
-        border-radius: 6px;
-        background: none;
-        box-shadow: none;
-        opacity: 0.4;
-        cursor: pointer;
-        transition: opacity 250ms ease-out, filter 250ms ease-out;
-    }
-
-    #sideSelect button span {
-        position: absolute;
-        bottom: 5px;
-        width: 7px;
-        height: 7px;
-        border-radius: 50%;
-        background: #F7F8F1;
-    }
-
-    #sideSelect button.left span { left: 4px; }
-    #sideSelect button.right span { right: 4px; }
-
-    #sideSelect button:hover { opacity: 0.7; }
-
-    #sideSelect button.active {
-        opacity: 1;
-        filter: drop-shadow(0 0 6px rgba(247, 248, 241, 0.7));
-    }
-
-    #sideSelect button:focus { outline: none; }
-    #sideSelect button:focus-visible { outline: 1px dashed #F7F8F1; outline-offset: 4px; }
 
     /* DESKTOP */
     @media screen and (min-width: 769px) {
