@@ -7,12 +7,16 @@
     import { getCard } from '../data/cards.js';
     import { sceneFor, sceneNameFor } from '../data/cardScenes.js';
     import { setCurrentVisit, startCardVisit, track } from '../analytics.js';
+    import { cardGame } from '../composables/useCardGame.js';
 
     const props = defineProps({
         id: String,
         // where the visit came from, when it is not the oracle nor a link (the lab, where Sid meditated at its place)
-        entry: String
+        entry: String,
+        // the card has its game (from the world or /deck, or ?jugar); otherwise it is alive but has no game to win
+        play: { type: Boolean, default: false }
     });
+    cardGame.value = props.play;
     // (the scene's rulito is whole: told to whoever holds the card, the lab's world)
     const emit = defineEmits(['rulito']);
 
@@ -32,7 +36,7 @@
 
     // What the person does here is told as one story when they leave (analytics.js): how long, whether they touched the
     // scene, whether they read on. A card with a picked transition was chosen in the oracle; otherwise it was opened directly.
-    const visit = startCardVisit(props.id, { scene: sceneNameFor(props.id), entry: props.entry ?? (transition ? 'picked' : 'direct') });
+    const visit = startCardVisit(props.id, { scene: sceneNameFor(props.id), entry: props.entry ?? (transition ? 'picked' : 'direct'), game: props.play });
     setCurrentVisit(visit);
 
     // Touching the scene counts: its touchable zones are role="button" (a finger that only drags the page to the reading
@@ -108,6 +112,7 @@
     });
 
     onBeforeUnmount(() => {
+        cardGame.value = true;      // (outside a card, Sid's world draws its own rulitos)
         window.removeEventListener('scroll', fadeCue);
         stopReveals.forEach((stop) => stop());
         transition?.el.remove();

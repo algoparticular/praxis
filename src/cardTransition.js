@@ -45,5 +45,6 @@ export const handOffCard = ({ router, card, rect, frameColor, hideCard }) => {
     hideCard?.();
 
     setPendingTransition({ el: clone, color });
-    router.push({ name: 'card', params: { id: card.id } });
+    // the cards opened from "Las cartas" (/deck) have their game; the oracle's are alive with no game (useCardGame.js)
+    router.push({ name: 'card', params: { id: card.id }, query: path === '/deck' ? { jugar: null } : {} });
 };

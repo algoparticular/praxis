@@ -16,6 +16,7 @@
 // The hand keeps the count of how long the scene has been left alone: a scene asks `due(HINT_AFTER, wanted)` each frame
 // and, when it is, calls play().
 import { createStardust } from './useStardust.js';
+import { cardGame } from './useCardGame.js';
 
 const TAU = Math.PI * 2;
 const ease = (u) => u * u * (3 - 2 * u);
@@ -273,7 +274,7 @@ export function createGhostHand(stage, { color = 0xf7f8f1, shade = 0x143246, ord
     return {
         // Shows a gesture (loops: how many times it does it)
         play(steps, { loops = 2 } = {}) {
-            if (reduced || !steps?.length) return;
+            if (reduced || !steps?.length || !cardGame.value) return;   // a card with no game has no gesture to teach
             canvasEl = stage.canvas;
             script = steps;
             loopsLeft = loops;
