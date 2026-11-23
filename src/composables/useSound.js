@@ -8,6 +8,9 @@
 import { ref } from 'vue';
 import * as synth from '../audio/synth.js';
 import { track } from '../analytics.js';
+import { cardGame } from './useCardGame.js';
+// the sounds of a game won, never heard on a card with no game
+const GAME_ONLY = new Set(['rulito']);
 
 const STORAGE_KEY = 'sound';
 
@@ -147,6 +150,7 @@ export const toggleSound = () => {
 // lights joined (Pañña) takes instead the heights of the two lights (and how loud it is)
 export const play = (name, level) => {
     if (!soundOn.value || !ctx || ctx.state !== 'running' || typeof synth[name] !== 'function') return;
+    if (!cardGame.value && GAME_ONLY.has(name)) return;    // a card with no game never completes (useCardGame.js)
     synth[name](ctx, effectsBus, ctx.currentTime + 0.02, cardChord, level);
 };
 

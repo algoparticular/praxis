@@ -1,6 +1,6 @@
 # Mundo
 
-Pestaña de "Anima GDD", la segunda: el mundo de Sid (`/sid`). Probablemente sea el juego de Anima: el oráculo queda como oráculo (sacar una carta y leerla) y los juegos viven acá. Todavía no está decidido (`abierto.md`, la pregunta grande). El detalle de cómo se fue armando está en `mundo-semiabierto.md`; qué pedirle a la ilustradora, en `sid-en-piezas.md`; el código, en `src/lab/` (y el punto "Sid's world" de `CLAUDE.md`).
+Pestaña de "Anima GDD", la segunda: el mundo de Sid (`/sid`). Es el juego de Anima: el oráculo queda como oráculo (sacar una carta y leerla, la carta viva pero sin juego) y los juegos se juegan acá, al meditar en el lugar de una carta (decidido el 23 de noviembre; por ahora también desde "Las cartas"). Los mundos y sus juegos se van largando de a poco. El detalle de cómo se fue armando está en `mundo-semiabierto.md`; qué pedirle a la ilustradora, en `sid-en-piezas.md`; el código, en `src/lab/` (y el punto "Sid's world" de `CLAUDE.md`).
 
 ## Qué es
 
@@ -85,7 +85,7 @@ Todo lo que el mundo escribe, en español e inglés, está relevado en la subpes
 
 ## Por decidir
 
-Las decisiones del mundo están en `abierto.md`: la pregunta grande (si los juegos viven acá), qué es en el fondo, cuántos mundos, el mapa fijo y su lugar en Inicio. Para esta última, las opciones pensadas, ninguna elegida:
+Las decisiones del mundo están en `abierto.md`: qué es en el fondo, cuántos mundos, el mapa fijo y su lugar en Inicio. Para esta última, las opciones pensadas, ninguna elegida:
 
 Hoy se llega solo desde el laberinto del footer de Inicio y del menú: está escondido. Inicio tiene tres bloques: el hero (el personaje y su espiral, que lleva al oráculo), el oráculo (mazo completo o Los Nueve) y la frase final.
 

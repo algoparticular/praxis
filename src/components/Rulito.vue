@@ -10,6 +10,7 @@
     // the stroke (0..1) the front and the back of the visible part are. It is drawn on a small 2D canvas.
     import { onMounted, ref } from 'vue';
     import { LINE_AT, LINE_W, LOOP_AT, LOOP_W } from '../data/rulitoShape.js';
+    import { cardGame } from '../composables/useCardGame.js';
 
     const props = defineProps({
         color: { type: String, default: '#f37b85' },
@@ -113,7 +114,7 @@
         ctx = ctx || cv.getContext('2d');
         ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.clearRect(0, 0, cv.width, cv.height);
-        if (head <= 0 || fade <= 0) return;
+        if (head <= 0 || fade <= 0 || !cardGame.value) return;   // a card with no game has no rulito (useCardGame.js)
         ctx.setTransform(unit, 0, 0, unit, PAD * unit, PAD * unit);
 
         const a = tail * L, b = head * L;
