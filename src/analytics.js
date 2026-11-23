@@ -137,9 +137,12 @@ export const startCardVisit = (cardId, { scene, entry, game }) => {
             reachedReading = true;
             track('card_reading_reached', { card_id: cardId, seconds: Math.round((performance.now() - startedAt) / 1000) });
         },
+        // only a card with its game reports milestones: without one its parts still answer, but nothing is won
+        // (useCardGame.js), so the milestones stay what they were, the moments of a game
         milestone(action, extra = {}) {
+            if (!game) return;
             milestones += 1;
-            track('scene_milestone', { card_id: cardId, scene, action, game: !!game, ...extra });
+            track('scene_milestone', { card_id: cardId, scene, action, ...extra });
         },
         finish() {
             if (finished) return;
