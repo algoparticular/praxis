@@ -37,7 +37,7 @@ Se llamaba "el laboratorio de Sid" (`/lab/sid`). Desde el 20 de noviembre de 202
 
 ## Textos
 
-Todo lo que el mundo escribe, en español e inglés, está relevado en la subpestaña "Textos" de esta pestaña del GDD. Se escribe en el código, no en `src/json`: las palabras de la historia en `STORY` (`src/lab/LabSid.vue`), los fragmentos en `src/lab/story.js` (y el título "Bitácora", "Logbook" en inglés, en `LabSid.vue`), lo que piensa cada lugar en `src/lab/thoughts.js` (frases de Belén sacadas de la descripción y la invitación de cada carta) y las afirmaciones en `src/data/cards.json`. Para revisar: "Loto", la etiqueta del botón de la semilla, no cambia con el idioma.
+Todo lo que el mundo escribe, en español e inglés, está relevado en la subpestaña "Textos" de esta pestaña del GDD. Se escribe en el código, no en `src/json`: las palabras de la historia en `STORY` (`src/lab/LabSid.vue`), los fragmentos en `src/lab/story.js` (y el título "Bitácora", "Logbook" en inglés, en `LabSid.vue`), lo que piensa cada lugar en `src/lab/thoughts.js` (frases de Belén sacadas de la descripción y la invitación de cada carta) y las afirmaciones en `src/data/cards.json`. El botón de la semilla se llama "Loto" ("Lotus" en inglés) para el lector de pantalla.
 
 ## Su lugar en Inicio (sin decidir)
 

@@ -2,6 +2,8 @@
 
 Séptima pestaña de "Anima GDD": lo que falta decidir, agrupado por tema.
 
+El día a día de estas preguntas está en el tablero "Roadmap de Anima" (https://claude.ai/artifact/U7TN7ZhB6wQ7ixdyo22Era), en su columna "Por decidir": ahí se mueven a "Próximo" cuando se deciden. Esta lista es el contexto de cada una; si las dos no coinciden, manda el tablero.
+
 ## Verbos y cartas
 - Los siete verbos se probaron en una escena: Arraigar (Paciencia, Hogar y Addhitthana), Fluir (Khanti), Encender (Evolución Espiritual y Viriya), Dar y recibir (Dana, Metta y Gratitud), Resonar (Sincronicidad, Sila y Armonía, en su forma "a tiempo"; Creatividad, como composición libre, y Sacca, Comunicación y Honestidad, como eco), Ver (Pañña) y Soltar (Vipassana, Nekkhamma y Upekkha). Todos pueden cambiar.
 - Resonar: decidir sus dos formas (a tiempo para Sincronicidad, Armonía y Sila; eco para Comunicación, Honestidad y Sacca). El eco está probado en Sacca, Comunicación y Honestidad, y el pulso en Sila, Sincronicidad y Armonía.

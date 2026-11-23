@@ -1,6 +1,6 @@
 # Docs
 
-La documentación sigue las pestañas del artefacto "Anima GDD" (un documento por pestaña; el artefacto además tiene una pestaña "Empezar", que no tiene documento propio, y las fichas de los siete verbos, que salen de `verbos-y-dinamicas.md`). Los que están debajo son de otros temas.
+La documentación sigue las pestañas del artefacto "Anima GDD" (un documento por pestaña; el artefacto además tiene una pestaña "Empezar", que no tiene documento propio, y las fichas de los siete verbos, que salen de `verbos-y-dinamicas.md`). Los que están debajo son de otros temas. Cada pestaña dice al día de qué fecha está, y Empezar tiene los pilares de diseño, las novedades y el enlace al tablero "Roadmap de Anima" (https://claude.ai/artifact/U7TN7ZhB6wQ7ixdyo22Era), donde vive lo que viene y lo que falta decidir.
 
 | Pestaña | Documento | De qué trata |
 |---|---|---|
