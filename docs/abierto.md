@@ -20,9 +20,6 @@ Si los juegos siguen en las cartas.
 ### Resonar: ¿qué forma va con cada carta?
 Hoy hay tres: a tiempo (Sincronicidad, Sila y Armonía), eco (Sacca, Comunicación y Honestidad) y composición libre (Creatividad). ¿Quedan así, o cada carta de Resonar usa una sola forma? Qué ayudaría: jugar las siete seguidas en un teléfono.
 
-### Tu verdad: ¿tiene juego?
-Hoy es el silencio, a propósito: solo el pequeño signo de Algo Particular que late y la música que se calla. ¿Queda así o tiene un juego propio?
-
 ### ¿La afirmación aparece al nacer el rulito?
 Como en el mundo de Sid: escrita a mano arriba, en el lugar del nombre, que se aparta y vuelve. Opciones: que dure unos 10 s o mientras el rulito está en pantalla; y si al abrir la carta desde un lugar del mundo se muestra también, ya que al volver al mundo aparece otra vez.
 
@@ -58,4 +55,5 @@ En una secuencia que suba por los chakras, esos dos semitonos chocan. ¿Se evita
 
 ## Cerrado hace poco
 - Que las raíces de Arraigar se recuerden entre visitas: se descartó (23 de noviembre).
+- Tu verdad no tiene verbo ni juego, por ahora: es el silencio (decidido en `verbos-y-dinamicas.md`).
 - Que los siete verbos puedan cambiar no es una pregunta: pasó a los pilares de Empezar.
