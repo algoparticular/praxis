@@ -18,7 +18,7 @@ export const THOUGHTS = {
         { es: 'Metta es la razón y el motivo de estar acá.', en: 'Metta is the reason and the motive for being here.' },
     ],
     9: [    // Upekkha
-        { es: 'Todo pasa, todo cambia constantemente.', en: 'Everything changes constantly.' },
+        { es: 'Todo pasa, todo cambia constantemente.', en: 'Everything passes, everything changes constantly.' },
         { es: 'Este instante, el único tiempo eterno.', en: 'This moment, the only eternal time.' },
         { es: 'Los pensamientos se mueven en dos direcciones, pasado y futuro.', en: 'Thoughts move in two directions, past and future.' },
         { es: 'Aquí y ahora, donde la vida es.', en: 'Here and now, where life is.' },

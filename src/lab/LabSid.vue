@@ -2037,7 +2037,7 @@ onBeforeUnmount(() => {
                 </div>
             </div>
         </Transition>
-        <button ref="lotusEl" class="lotus glass" :class="{ on: ui.sitting, hint: ui.hint, press: ui.press, popped: ui.pop && ui.choose }" :aria-pressed="ui.sitting" aria-label="Loto" title="Loto"
+        <button ref="lotusEl" class="lotus glass" :class="{ on: ui.sitting, hint: ui.hint, press: ui.press, popped: ui.pop && ui.choose }" :aria-pressed="ui.sitting" :aria-label="$i18n.locale === 'en' ? 'Lotus' : 'Loto'" :title="$i18n.locale === 'en' ? 'Lotus' : 'Loto'"
             @pointerdown="seedDown" @pointermove="seedMove" @pointerup="seedUp" @pointercancel="seedUp" @click="seedClick">
             <span class="seed" aria-hidden="true"></span>
             <!-- a meditation's time going by: a line of light round the seed that closes -->
