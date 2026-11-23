@@ -78,6 +78,7 @@ function tell(what, after = 0) {
         if (gone) return;
         // (never over a card's affirmation or a card opened: it waits for them to go)
         if (teaching.on || portal.card != null) { setTimeout(say, 1500); return; }
+        if (thought.on) { thought.on = false; thinkKey = null; thoughtQuiet = performance.now() + 2500; setTimeout(say, 1500); return; }
         learn(`words_${what}`);
         Object.assign(teaching, { ...STORY[what], on: true, story: true });
         clearTimeout(storyTimer);
@@ -97,6 +98,8 @@ function readFragment(i) {
     setTimeout(function say() {
         if (gone) return;
         if ((teaching.on && !teaching.story) || portal.card != null) { setTimeout(say, 1500); return; }
+        // (nor over what a place thinks: it goes first, and is written again another time)
+        if (thought.on) { thought.on = false; thinkKey = null; thoughtQuiet = performance.now() + 2500; setTimeout(say, 1500); return; }
         Object.assign(teaching, { es: f.es, en: f.en, on: true, story: true });
         clearTimeout(storyTimer);
         storyTimer = setTimeout(() => {
@@ -112,27 +115,27 @@ function readFragment(i) {
     }, 600);
 }
 
-// Sid's notebook, written in the sky (its icon, a notebook, on a small round button over the seed's, shows once there is something in it and
+// Sid's notebook, written in the sky (its icon, a notebook, on a small round button to the right of the seed's, shows once there is something in it and
 // glows while there is something new to see; it opens on the page that has it; a touch anywhere, or Escape, closes it;
 // the header's icons go cream over it, `body.lab-story`). Two pages:
-// - Pensamientos: the fragments of the story found, in order, in paragraphs by theme (PARAGRAPHS in story.js), those still hidden as faint stars the
+// - Bitácora: the fragments of the story found, in order, in paragraphs by theme (PARAGRAPHS in story.js), those still hidden as faint stars the
 //   length of their words; those found since it was last seen (memory.storySeen) are painted in, one after another, in
 //   the order they were found (each mark gives one still hidden, at random);
 // - Herbario: every plant a seed can grow into (herbarium.js) as a dark silhouette, and in its colours with its name
 //   once one of its kind has been planted (those planted since it was last seen, memory.herbSeen, come in out of a
 //   warm light)
-const story = reactive({ dir: '', hold: false, open: false, tab: 'thoughts', found: 0, fresh: false, shown: false, have: new Set(), order: new Map(), herb: new Set(), herbNew: new Map() });
+const story = reactive({ dir: '', hold: false, open: false, tab: 'bitacora', found: 0, fresh: false, shown: false, have: new Set(), order: new Map(), herb: new Set(), herbNew: new Map() });
 const herbPlanted = () => new Set(memory.planted.map((g) => kindOf(g.name)).filter(Boolean));
 function storyNews() {
-    const thoughts = memory.fragments.some((i) => !memory.storySeen.includes(i));
+    const bitacora = memory.fragments.some((i) => !memory.storySeen.includes(i));
     const herb = [...herbPlanted()].some((h) => !memory.herbSeen.includes(h));
-    return { thoughts, herb };
+    return { bitacora, herb };
 }
 function refreshStory() {
     story.found = memory.fragments.length;
     story.shown = story.found > 0 || herbPlanted().size > 0;
     const news = storyNews();
-    story.fresh = news.thoughts || news.herb;
+    story.fresh = news.bitacora || news.herb;
 }
 // What goes into the notebook is seen going in (its only lesson, with no words): a fragment read comes undone into
 // motes of light, a plant of a new kind sends a spark of its colour, and they fly into the notebook's button, which takes
@@ -150,10 +153,14 @@ function holdNotebook() {
     noteHold = setTimeout(releaseNotebook, 20000);          // (never left hidden, whatever covers the words)
 }
 function releaseNotebook() { clearTimeout(noteHold); story.hold = false; }
-// where the notebook's button is (or will be): centred over the seed's, as the style puts it
+// where the notebook's button is (or will be, when it is still hidden): to the right of the seed's, its middle level with
+// it, as the style puts it (.story-icon: 18 px from the seed's button, 52 px round)
+const storyIconEl = ref(null);
 function notebookMiddle() {
+    const own = storyIconEl.value?.getBoundingClientRect();
+    if (own?.width) return { x: own.left + own.width / 2, y: own.top + own.height / 2 };
     const b = buttonMiddle(), r = lotusEl.value?.getBoundingClientRect();
-    return { x: b.x, y: b.y - (r ? r.height / 2 : 42) - 16 - 26 };
+    return { x: b.x + (r ? r.width / 2 : 42) + 18 + 26, y: b.y };
 }
 // `from`: a box on the screen (the motes start spread over it) or a point; `light`: their colour ([r, g, b] or CSS)
 function intoNotebook(from, light, count) {
@@ -215,11 +222,11 @@ function openStory() {
     if (!story.shown) return;
     story.dir = '';
     const news = storyNews();
-    showTab(news.thoughts ? 'thoughts' : news.herb ? 'herbarium' : story.found ? story.tab : 'herbarium');
+    showTab(news.bitacora ? 'bitacora' : news.herb ? 'herbarium' : story.found ? story.tab : 'herbarium');
     story.open = true; ui.choose = false; note.hint = false;
     if (!memory.learned.notebook) learn('notebook');
     document.body.classList.add('lab-story');
-    visit?.notebook(story.tab, news.thoughts || news.herb, memory.fragments.length, herbPlanted().size);
+    visit?.notebook(story.tab, news.bitacora || news.herb, memory.fragments.length, herbPlanted().size);
     play('tap');
 }
 function closeStory() {
@@ -227,7 +234,7 @@ function closeStory() {
     if (swiped) { swiped = false; return; }
     story.open = false; document.body.classList.remove('lab-story');
 }
-// A finger swiped across turns its page, as a book's: to the left, the next (Herbario); to the right, back (Pensamientos);
+// A finger swiped across turns its page, as a book's: to the left, the next (Herbario); to the right, back (Bitácora);
 // the page comes in from the side it was turned to (`story.dir`)
 const SWIPE = 50;
 let swipeAt = null, swiped = false;
@@ -239,7 +246,7 @@ function swipeEnd(e) {
     if (Math.abs(dx) < SWIPE || Math.abs(dx) < Math.abs(dy) * 1.5) return;
     swiped = true;
     setTimeout(() => { swiped = false; }, 400);       // (if no click follows, the next touch still closes it)
-    const tab = dx < 0 ? 'herbarium' : 'thoughts';
+    const tab = dx < 0 ? 'herbarium' : 'bitacora';
     if (tab === story.tab) return;
     story.dir = dx < 0 ? 'from-right' : 'from-left';
     showTab(tab);
@@ -248,7 +255,7 @@ function swipeEnd(e) {
 // (each page, as it is shown, paints in what is new on it and remembers it as seen)
 function showTab(tab) {
     story.tab = tab;
-    if (tab === 'thoughts') {
+    if (tab === 'bitacora') {
         const seen = new Set(memory.storySeen);
         story.have = new Set(memory.fragments);
         story.order = new Map(memory.fragments.filter((i) => !seen.has(i)).map((i, n) => [i, n]));
@@ -268,7 +275,7 @@ function showTab(tab) {
 const THOUGHT_NEAR = 700, THOUGHT_KEEP = 1500, THOUGHT_SHOW = 9000;
 const thought = reactive({ es: '', en: '', on: false });
 const thoughtEl = ref(null);
-let thinkKey = null, thinkAt = 0, thinkPlace = null, thinkIn = 0.5;
+let thinkKey = null, thinkAt = 0, thinkPlace = null, thinkIn = 0.5, thoughtQuiet = 0;     // (thoughtQuiet: till when a thought waits, as words go on the card)
 function think(dt) {
     thinkIn -= dt;
     if (thinkIn > 0) return;
@@ -285,7 +292,7 @@ function think(dt) {
         if (performance.now() - thinkAt < THOUGHT_SHOW / 2) { thinkKey = null; memory.thoughts[near.id] = Math.max(0, (memory.thoughts[near.id] ?? 1) - 1); }
     }
     if (performance.now() - thinkAt > THOUGHT_SHOW) thought.on = false;
-    if (key === thinkKey || !list || ui.sitting || teaching.on || near.dist > near.reach + THOUGHT_NEAR) return;
+    if (key === thinkKey || !list || ui.sitting || teaching.on || performance.now() < thoughtQuiet || near.dist > near.reach + THOUGHT_NEAR) return;
     thinkKey = key; thinkAt = performance.now();
     const n = memory.thoughts[near.id] ?? 0;
     Object.assign(thought, list[n % list.length], { on: true });
@@ -538,7 +545,7 @@ function newPlants(seed, kinds) {
     return names.length ? names : null;
 }
 const canvas = ref(null);
-const nightSky = ref(null), starCanvas = ref(null);   // the cards' starry night, behind the drawing (useStarField.js)
+const nightSky = ref(null), starBox = ref(null), starCanvas = ref(null);   // the cards' starry night, behind the drawing (useStarField.js)
 let stars = null;
 // Sitting in lotus at a zone's special place (under the crown of her tree, by the two embracing, the pond, the
 // the fire), after a moment (RULITO_AFTER) the rulito is born over his head, as in the cards (Rulito.vue, in
@@ -1029,6 +1036,9 @@ function safeTop() {
 }
 let raf = 0, last = 0, paused = false;
 
+// (the sun and the moon keep below this much of the top of the screen, as well as below the strip under the clock: on an
+// iPhone the system blurs what is under its clock, and the inset is not always known when the page starts)
+const SKY_CLEAR = 64;
 function resize() {
     const el = canvas.value;
     view.dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -1041,10 +1051,10 @@ function resize() {
     view.k = SMALL * Math.min((ui.touch ? H * 0.55 : H * 0.62) / (TALL + STAND), view.w * 0.9 / 420);
     const was = state.ground;
     state.ground = (view.top + (ui.touch ? H * 0.84 : H * 0.86)) / view.k;
-    view.horizon0 = ui.touch ? 0.2 : 0.24;     // where the horizon is on the screen (high: little sky), and looking up
+    view.horizon0 = ui.touch ? 0.25 : 0.26;    // where the horizon is on the screen (high: little sky, but enough for the sun and
+                                               // the moon to cross it clear of the clock), and looking up
     lookAt();
     if (!was) { state.x = START_X; state.cam = state.x; state.camD = -follow(); }     // (he starts a short walk before the first place, which is ahead on his way)
-    // the starry night fills the sky, down to the horizon
     skyHeight();
 }
 // How far in front of him the camera stands (in depth): it keeps him a little below the middle of the screen. The starry night behind the drawing goes down to the horizon, which stays
@@ -1053,15 +1063,14 @@ const follow = () => DEPTH * 0.35;
 // (the floor, from its front to the horizon: shorter as the camera looks up to the sky, state.look, so the horizon comes
 // down the screen towards him and the sky fills more of it)
 const LOOK_HORIZON = { touch: 0.6, wide: 0.52 };
+// (the starry night's stars are as tall as the sky can be, looking up; its colour, under them, fills the screen)
+function skyHeight() {
+    if (starBox.value) starBox.value.style.height = `${Math.ceil(view.top + (view.h - view.top) * (ui.touch ? LOOK_HORIZON.touch : LOOK_HORIZON.wide)) + 2}px`;
+}
 function lookAt() {
     const e = state.look ?? 0, k = e * e * (3 - 2 * e);
     const at = view.horizon0 + ((ui.touch ? LOOK_HORIZON.touch : LOOK_HORIZON.wide) - view.horizon0) * k;
     view.floor = (state.ground * view.k - (view.top + (view.h - view.top) * at)) / view.k;
-}
-// (the starry night is as tall as the sky can be, looking up: the ground drawn over it hides what is under the horizon,
-// and its stars are not made again as the camera moves)
-function skyHeight() {
-    if (nightSky.value) nightSky.value.style.height = `${Math.ceil(view.top + (view.h - view.top) * (ui.touch ? LOOK_HORIZON.touch : LOOK_HORIZON.wide)) + 2}px`;
 }
 
 function pointerTo(e) {
@@ -1648,7 +1657,7 @@ function draw() {
     const W = view.w / view.k;
 
     // The floor, back to the horizon, and him on it at his depth (smaller and nearer the middle the farther back)
-    world.drawSky(c, { width: W, cam: state.cam, d: state.d }, view.top / view.k, horizon());   // (the sun's way and the clouds in the sky below the strip under the clock; the sky's colour up to the top)
+    world.drawSky(c, { width: W, cam: state.cam, d: state.d }, Math.max(view.top, SKY_CLEAR) / view.k, horizon());   // (the sun's way and the clouds in the sky below the strip under the clock; the sky's colour up to the top)
     // the zone's colours: his line and body, the colour under the starry night, and the header's icons cream by night
     INK = world.ink(); FILL = world.white();
     const dark = world.night(), under = world.nightColour();
@@ -1895,9 +1904,11 @@ onMounted(() => {
     window.addEventListener('keyup', onKey);
     window.addEventListener('blur', release);
     resize();
+    // (the inset under the clock can come a moment after the page starts on an iPhone: looked at again)
+    for (const ms of [400, 1500]) setTimeout(() => { if (!gone && safeTop() !== Math.round(view.top)) resize(); }, ms);
     window.addEventListener('resize', resize);
     // (a shooting star that passes near sounds, as in the app's other night skies; only when the night is out)
-    stars = createStarField(starCanvas.value, nightSky.value, { pace: () => state.pace, onShoot: () => { if (world.night() > 0.5 && !ui.guide) play('star'); starFell(); } });
+    stars = createStarField(starCanvas.value, starBox.value, { pace: () => state.pace, onShoot: () => { if (world.night() > 0.5 && !ui.guide) play('star'); starFell(); } });
     raf = requestAnimationFrame(loop);
     scheduleHint();
     tell('intro', 1400);
@@ -1935,7 +1946,7 @@ onBeforeUnmount(() => {
     <!-- (no menu on a long press: a finger held down only guides him) -->
     <div ref="labEl" class="lab" @contextmenu.prevent>
         <div class="page"></div>
-        <div ref="nightSky" class="night-sky" :style="zoomStyle"><canvas ref="starCanvas"></canvas></div>
+        <div ref="nightSky" class="night-sky" :style="zoomStyle"><div ref="starBox" class="stars"><canvas ref="starCanvas"></canvas></div></div>
         <!-- the rulito draws itself on its own canvas, which this scene lays over his head -->
         <Rulito ref="rulito" class="offstage" :color="rulitoColour" />
         <canvas ref="canvas" :style="zoomStyle" @pointermove="onMove" @pointerdown="onDown" @pointerup="onUp" @pointercancel="onUp"></canvas>
@@ -1970,7 +1981,7 @@ onBeforeUnmount(() => {
         </Transition>
         <!-- Sid's notebook (openStory): a small round button to the right of the seed's, once there is something in it -->
         <Transition name="teaching">
-            <button v-if="story.shown && !story.hold && portal.card == null" class="story-icon glass" :class="{ fresh: story.fresh, got: note.got, hint: note.hint }"
+            <button v-if="story.shown && !story.hold && portal.card == null" ref="storyIconEl" class="story-icon glass" :class="{ fresh: story.fresh, got: note.got, hint: note.hint }"
                 :aria-label="$i18n.locale === 'en' ? 'Notebook' : 'Libreta'" :title="$i18n.locale === 'en' ? 'Notebook' : 'Libreta'"
                 @click="openStory"><span aria-hidden="true"></span></button>
         </Transition>
@@ -1978,10 +1989,10 @@ onBeforeUnmount(() => {
             <div v-if="story.open" class="story" role="dialog" :aria-label="$i18n.locale === 'en' ? 'Notebook' : 'Libreta'" @pointerdown.stop="swipeStart" @pointerup="swipeEnd" @click="closeStory">
                 <!-- its two pages, as two words written in the sky: the one open glows -->
                 <div class="story-tabs" role="tablist" @click.stop>
-                    <button role="tab" :aria-selected="story.tab === 'thoughts'" :class="{ on: story.tab === 'thoughts' }" @click="story.dir = 'from-left'; showTab('thoughts')">{{ $i18n.locale === 'en' ? 'Thoughts' : 'Pensamientos' }}</button>
+                    <button role="tab" :aria-selected="story.tab === 'bitacora'" :class="{ on: story.tab === 'bitacora' }" @click="story.dir = 'from-left'; showTab('bitacora')">{{ $i18n.locale === 'en' ? 'Logbook' : 'Bitácora' }}</button>
                     <button role="tab" :aria-selected="story.tab === 'herbarium'" :class="{ on: story.tab === 'herbarium' }" @click="story.dir = 'from-right'; showTab('herbarium')">{{ $i18n.locale === 'en' ? 'Herbarium' : 'Herbario' }}</button>
                 </div>
-                <div v-if="story.tab === 'thoughts'" class="story-card" :class="story.dir">
+                <div v-if="story.tab === 'bitacora'" class="story-card" :class="story.dir">
                     <p v-for="(para, n) in PARAGRAPHS" :key="n" class="story-text">
                         <template v-for="i in para" :key="i">
                             <span class="frag" :class="{ locked: !story.have.has(i), fresh: story.order.has(i) }"
@@ -2242,14 +2253,22 @@ canvas {
 .portal-enter-active { transition: opacity 0.9s ease-in-out; }
 .portal-leave-active { transition: opacity 1.4s ease-in-out; }
 .portal-enter-from, .portal-leave-to { opacity: 0; }
+/* the starry night: its colour over the whole screen, behind the drawing, whose ground hides what is under the horizon
+   (so whatever the screen measures it always reaches the horizon: only as tall as the sky could be, it fell short on an
+   iPhone looking up and left a strip of the page's cream over the horizon); its stars only as tall as the sky can be
+   (.stars, skyHeight), so they and the shooting stars are where the sky is, and are not made again as the camera moves */
 .night-sky {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    background: #039CA8;
+    pointer-events: none;
+}
+.night-sky .stars {
     position: absolute;
     left: 0;
     right: 0;
     top: 0;
-    opacity: 0;
-    background: #039CA8;
-    pointer-events: none;
 }
 .night-sky canvas {
     position: absolute;

@@ -20,6 +20,7 @@ import { decodeCloud, sampleCloud } from '../composables/stippleCloud.js';
 import arbol from './arbol/arbol.json';
 import suelo from './suelo/suelo.json';
 import { SEED_OUTLINE, SEED_SEAM, SEED_GERM } from './seedShape.js';
+import labIcon from '../assets/icon/Lab.svg?raw';
 
 // Her pieces, and the plants, stones and mushrooms cut out of the cards' scenes (src/lab/suelo, made by
 // scripts/convert-lab-suelo.mjs): the line and what is inside it, as pictures (tinted in code)
@@ -137,13 +138,39 @@ const SEED_SIZE = 2.6;
 // A seed of light: the one a shooting star leaves at his feet while he meditates by night (LabSid.vue). It is of no card
 // (`star`): it grows any card's plant, in the night's star yellow, and by night that plant twinkles with a few stars
 export const STAR_SEED = 'star', STAR_LIGHT = [252, 220, 140];
-// The marks of the story (story.js): a particle, as an atom is drawn (everything started from a particle), floating low
+// The marks of the Bitácora (story.js): as the things of Everything hold Alan Watts's words, a little symbol floating low
 // over the ground in every cell of the grid, away from its place (MARK.dx across and MARK.dd back from the place, to one
-// side or the other): a bright core in its zone's light with three tilted orbits of dots turning round it, each with its
-// light running along it, and a faint column of light rising from it to the sky, so it is told from the world's other
-// lights (fireflies, butterflies, bees, spores) and found from afar; walking under it he finds it, and it opens
+// side or the other): the labyrinth of the world's own door (Lab.svg, the icon that opens the world), made of dots of
+// light, white and cream, as the world's stars are, breathing, with a faint column of light rising from it to the sky so
+// it is found from afar; walking under it he finds it, a light runs through it from its
+// outside to its middle and it rises and goes (the page writes the fragment and its words fly into the notebook)
 // (dd: 1080 back, so walking along the front the marks of the row stand at the horizon: small and far, hardly past it)
-const MARK = { size: 620, dx: 0.32, dd: 0.18, pick: 240, high: 150 };
+const MARK = { line: true, size: 110, dx: 0.32, dd: 0.18, pick: 240, high: 150, alone: 6000 };
+// (the labyrinth's dots, once: along the middle of the icon's line (it is drawn as an outline 2.5 of its 40 units wide:
+// each point of the outline is taken half that inwards), one every MAZE_GAP; in -0.5..0.5 about its middle, each with
+// how far from the middle it is, 0..1, for the light that runs in, and its own phase to twinkle)
+const MAZE_GAP = 4.4, CREAM_LIGHT = [255, 246, 220];
+let mazeDots = null, mazeShape = null;
+function maze() {
+    if (mazeDots || typeof document === 'undefined') return mazeDots;
+    const d = labIcon.match(/\sd="([^"]+)"/)?.[1] ?? '';
+    const el = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    el.setAttribute('d', d);
+    const shape = new Path2D(d), test = document.createElement('canvas').getContext('2d');
+    const inside = (x, y) => test.isPointInPath(shape, x, y, 'evenodd');
+    const length = el.getTotalLength(), dots = [];
+    for (let at = 0; at < length; at += 0.4) {
+        const p = el.getPointAtLength(at), q = el.getPointAtLength(Math.min(length, at + 0.2));
+        const tl = Math.hypot(q.x - p.x, q.y - p.y) || 1, nx = -(q.y - p.y) / tl, ny = (q.x - p.x) / tl;
+        let x = p.x + nx * 1.25, y = p.y + ny * 1.25;
+        if (!inside(x, y)) { x = p.x - nx * 1.25; y = p.y - ny * 1.25; }
+        if (!inside(x, y)) continue;
+        if (dots.every(([u, v]) => Math.hypot(u - x, v - y) > MAZE_GAP)) dots.push([x, y]);
+    }
+    const far = Math.max(...dots.map(([x, y]) => Math.hypot(x - 20, y - 20.5)));
+    mazeDots = dots.map(([x, y]) => [(x - 20) / 40, (y - 20.5) / 40, Math.hypot(x - 20, y - 20.5) / far, Math.random() * 6.3]);
+    return mazeDots;
+}
 // the seed's shape (seedShape.js: a seed with a particle of light inside it, until the illustrator draws it)
 const SEED_PATHS = typeof Path2D === 'undefined' ? null : { outline: new Path2D(SEED_OUTLINE), seam: new Path2D(SEED_SEAM) };          // (how big a seed is drawn: big enough to be seen from afar)
 const SEED_PLANTS = {
@@ -610,8 +637,12 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
             const n = zoneOrder.length;
             for (let i = Math.floor((index * STRETCH - ZONE_START) / ZONE) - 1; i <= Math.floor(((index + 1) * STRETCH - ZONE_START) / ZONE) + 1; i++) {
                 for (let j = Math.floor((row * PATCH - 180 - D_START) / ZONE_D) - 1; j <= Math.floor(((row + 1) * PATCH - 180 - D_START) / ZONE_D) + 1; j++) {
-                    const side = mod(i + j, 2) ? 1 : -1, x = ZONE_START + ZONE * (i + 0.5 + side * MARK.dx), d = D_START + ZONE_D * (j + 0.5 + MARK.dd);
+                    // (to one side or the other by its row, so along a row they are a whole zone apart and never two
+                    // together; and none near the first one while it waits to be found)
+                    const side = mod(j, 2) ? 1 : -1, x = ZONE_START + ZONE * (i + 0.5 + side * MARK.dx), d = D_START + ZONE_D * (j + 0.5 + MARK.dd);
                     if (x < index * STRETCH || x >= (index + 1) * STRETCH || row !== Math.floor((d + 180) / PATCH)) continue;
+                    const f = marks.first;
+                    if (f && !marks.found.includes('first') && Math.hypot(x - f.x, d - f.d) < MARK.alone) continue;
                     const key = `${zoneOfCell(i, j).card}:${mod(j, n)}`;
                     if (!marks.found.includes(key)) add({ kind: 'mark', key, x, d, role: 'bead', pick: 0.5, phase: (i * 3 + j) % 10, reach: 200 });
                 }
@@ -770,7 +801,7 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
                 if (item.kind === 'mark') {
                     const l = lifeOf(item);
                     if (!marks.found.includes(item.key) && marks.open() && !sid.sitting && dist < MARK.pick) { marks.found.push(item.key); l.up = 0; onMark?.(item.key); }
-                    if (marks.found.includes(item.key)) l.up = Math.min(1, (l.up ?? 1) + dt * 0.8);
+                    if (marks.found.includes(item.key)) l.up = Math.min(1, (l.up ?? 1) + dt * 0.55);
                 }
                 // colour: as he walks by, and inside the wave while he sits (what grows round a place, with its place)
                 let c = colour.get(item.id) ?? 0;
@@ -1000,42 +1031,49 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
             break;
         }
         case 'mark': {
-            // a particle as an atom: a core, three tilted orbits of dots turning, a light running along each, and a faint
-            // column of light up to the sky; found, it rises, its orbits open out and fade
-            const up = l?.up ?? 0;
-            if (up >= 1 || !marks?.open() && up === 0) break;
-            const t = time + item.phase, breath = 0.5 + 0.5 * Math.sin(t * 1.4), K = MARK.size * (item.big ?? 1), a = 1 - up;
-            const rgb = P.light.map(Math.round), y = -MARK.high - 10 * Math.sin(t * 0.9) - up * 220;
-            c.fillStyle = `rgba(20,50,70,${0.08 * a})`; c.beginPath(); c.ellipse(0, 0, K * 0.12, K * 0.025, 0, 0, Math.PI * 2); c.fill();
+            // the labyrinth, only white and cream (no colour of its zone), floating and breathing: drawn with its line
+            // (MARK.line) or as dots of light, each twinkling on its own in a soft glow; with its column of light up to the sky; found, a light runs
+            // through it from its outside to its middle, then it rises and fades
+            const up = l?.up ?? 0, dots = maze();
+            if (!dots || up >= 1 || !marks?.open() && up === 0) break;
+            const t = time + item.phase, breath = 0.5 + 0.5 * Math.sin(t * 1.4), K = MARK.size * (item.big ?? 1);
+            const run = Math.min(1, up / 0.45), go = Math.max(0, (up - 0.45) / 0.55), a = 1 - go;
+            const y = -MARK.high - 8 * Math.sin(t * 0.9) - go * 160;
+            c.fillStyle = `rgba(20,50,70,${0.07 * a})`; c.beginPath(); c.ellipse(0, 0, K * 0.3, K * 0.06, 0, 0, Math.PI * 2); c.fill();
             c.globalAlpha *= a;
-            // the column of light, from the ground up to the sky, fading upwards
+            // the column of light, from the ground up to the sky, fading upwards, so it is found from afar (soft at its
+            // sides: a few bands, the wider the fainter)
             const col = c.createLinearGradient(0, 0, 0, -2600);
-            col.addColorStop(0, `rgba(${rgb.join(',')},${0.32 + 0.1 * breath})`); col.addColorStop(1, `rgba(${rgb.join(',')},0)`);
-            // (soft at its sides: a few bands, the wider the fainter)
+            col.addColorStop(0, `rgba(255,248,226,${0.3 + 0.1 * breath})`); col.addColorStop(1, 'rgba(255,248,226,0)');
             c.fillStyle = col;
-            for (const [w, al] of [[0.06, 0.35], [0.032, 0.5], [0.012, 0.9]]) { c.globalAlpha *= al; c.fillRect(-K * w / 2, -2600, K * w, 2600); c.globalAlpha /= al; }
-            halo(c, 0, y, K * (0.32 + 0.06 * breath), rgb, 0.4 + 0.15 * breath);
-            // the orbits: ellipses of dots, each tilted its own way, turning, with a light running along (the dots in the
-            // zone's ink by day, so they read on its ground, and cream by night)
-            const orbit = mixRgb(P.ink, [255, 250, 230], night());
-            for (let o = 0; o < 3; o++) {
-                const tilt = o * Math.PI / 3 + 0.3, R = K * 0.3 * (1 + up * 2.5), r = R * 0.34, spin = t * (0.7 + o * 0.25) + o * 2;
-                const ct = Math.cos(tilt), st = Math.sin(tilt);
-                for (let n = 0; n < 16; n++) {
-                    const u = n / 16 * Math.PI * 2 + spin * 0.15, ex = Math.cos(u) * R, ey = Math.sin(u) * r;
-                    c.fillStyle = orbit;
-                    c.beginPath(); c.arc(ex * ct - ey * st, y + ex * st + ey * ct, K * 0.01, 0, Math.PI * 2); c.fill();
+            for (const [w, al] of [[27, 0.35], [14, 0.5], [5.5, 0.9]]) { c.globalAlpha *= al; c.fillRect(-w / 2, -2600, w, 2600); c.globalAlpha /= al; }
+            halo(c, 0, y, K * (0.75 + 0.08 * breath + 0.5 * run), CREAM_LIGHT, 0.22 + 0.08 * breath + 0.4 * run);
+            if (MARK.line) {
+                // drawn with its line, as the icon is: cream, in a soft glow, breathing; the light that runs in is white,
+                // over all of the line outside a circle closing in on its middle
+                const sc = K / 40, far = 20;
+                mazeShape ??= new Path2D(labIcon.match(/\sd="([^"]+)"/)?.[1] ?? '');
+                c.save(); c.translate(0, y); c.scale(sc, sc); c.translate(-20, -20.5);
+                c.shadowColor = 'rgba(255,246,220,0.9)'; c.shadowBlur = 10;
+                c.globalAlpha *= 0.85 + 0.15 * breath;
+                c.fillStyle = 'rgb(255,246,220)'; c.fill(mazeShape, 'evenodd');
+                if (run > 0) {
+                    c.beginPath(); c.rect(-10, -10, 60, 60); c.arc(20, 20.5, Math.max(0, (1 - run) * far), 0, Math.PI * 2);
+                    c.clip('evenodd');
+                    c.shadowColor = 'rgba(255,255,255,1)'; c.shadowBlur = 18;
+                    c.fillStyle = 'rgb(255,255,255)'; c.fill(mazeShape, 'evenodd');
                 }
-                const ex = Math.cos(spin) * R, ey = Math.sin(spin) * r, px = ex * ct - ey * st, py = y + ex * st + ey * ct;
-                halo(c, px, py, K * 0.07, rgb, 0.9);
-                c.fillStyle = `rgb(${rgb.join(',')})`; c.beginPath(); c.arc(px, py, K * 0.026, 0, Math.PI * 2); c.fill();
-                c.fillStyle = 'rgba(255,252,238,1)'; c.beginPath(); c.arc(px, py, K * 0.013, 0, Math.PI * 2); c.fill();
+                c.restore();
+            } else for (const [u, v, r, ph] of dots) {
+                const lit = Math.max(0, Math.min(1, (run - (1 - r)) * 4));           // (the light comes in from outside)
+                const tw = 0.75 + 0.25 * Math.sin(t * 2.3 + ph), x = u * K, yy = y + v * K, size = K * 0.02 * tw * (1 + 0.5 * lit);
+                halo(c, x, yy, K * 0.045, CREAM_LIGHT, 0.35 + 0.5 * lit);
+                c.fillStyle = lit > 0.5 || ph > 3.15 ? 'rgb(255,255,255)' : 'rgb(255,246,220)';     // (white and cream)
+                c.beginPath(); c.arc(x, yy, size, 0, Math.PI * 2); c.fill();
             }
-            halo(c, 0, y, K * 0.11, [255, 250, 230], 0.8 + 0.2 * breath);
-            c.fillStyle = `rgb(${rgb.join(',')})`;
-            c.beginPath(); c.arc(0, y, K * (0.05 + 0.01 * breath), 0, Math.PI * 2); c.fill();
-            c.fillStyle = 'rgba(255,252,238,0.95)';
-            c.beginPath(); c.arc(-K * 0.01, y - K * 0.01, K * 0.022, 0, Math.PI * 2); c.fill();
+            // (its middle, a particle of light: everything started from a particle)
+            halo(c, 0, y, K * (0.1 + 0.15 * run), [255, 250, 230], 0.6 + 0.2 * breath + 0.2 * run);
+            c.fillStyle = 'rgb(255,255,255)'; c.beginPath(); c.arc(0, y, K * (0.022 + 0.004 * breath), 0, Math.PI * 2); c.fill();
             break;
         }
         case 'tree': {
@@ -1103,11 +1141,11 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
                 const [, , bw, bh] = B('pacBed'), live = 0.25 + 0.75 * col;
                 halo(0, -bh * 0.9, bw * (0.18 + 0.12 * g), [255, 248, 230], 0.1 + 0.4 * g);
                 at('pacBed', -bw / 2, -bh);
-                // (the pine cone on its stem, as the card has it in its strip: 0.413 of the strip's width from its left,
-                // 0.08 of it wide, 0.128 of its height from its top; the bed is the card's ground, two strips wide with
-                // the strip (1944 px) in its middle, its centre on the place's, so the cone stands just left of the middle)
-                const strip = 1944, [, , cw, ch] = B('pacCone'), ck = 0.0798 * strip / cw;
-                const cx = (0.4135 + 0.0798 / 2 - 0.5) * strip, ctop = -bh + 0.128 * bh;
+                // (the pine cone where the card has it, in the strip drawn in the middle of the bed, which starts at 972 of
+                // its canvas (convert-lab-suelo.mjs): 0.413 of the strip across, 0.128 of its height down, 0.08 of it wide)
+                const bed = PIECES.pacBed, onBed = (u) => (u - bed.at[0]) / bed.box[2] * bw;
+                const [, , cw, ch] = B('pacCone'), ck = onBed(bed.at[0] + 0.0798 * 1944) / cw;
+                const cx = onBed(972 + (0.4135 + 0.0798 / 2) * 1944) - bw / 2, ctop = -bh + 0.1285 * bh;
                 halo(cx, ctop + ch * ck * 0.5, cw * ck * (1.2 + 1.5 * g), [255, 242, 150], 0.2 * live + 0.6 * g);
                 at('pacCone', cx - cw * ck / 2, ctop, ck);
                 const hover = bh * 1.45 + 40 * Math.sin(time * 0.9) * live + 160 * g;

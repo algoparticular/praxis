@@ -26,8 +26,10 @@ export const FRAGMENTS = [
         en: 'Every particle holds emptiness inside it, as part of its existence.' },
     { es: 'Entre dos puntos siempre hay infinitos puntos. El amor busca achicar ese espacio hasta que no quepa nada.',
         en: 'Between two points there are always infinite points. Love seeks to shrink that space until nothing fits in it.' },
-    { es: 'El rulito nace cuando uno Ve: cuando es a la vez un todo y una parte.',
-        en: 'The rulito is born when one Sees: when one is a whole and a part at once.' },
+    // (until 22/11/2026 it was 'El rulito nace cuando uno Ve: cuando es a la vez un todo y una parte.', which did not
+    // read; this one is not from the notes, it was written for now to go with the next one, on looking at what is simple)
+    { es: 'Cuando miro despacio, lo pequeño se vuelve inmenso.',
+        en: 'When I look slowly, what is small becomes immense.' },
     { es: 'Encontrar la belleza en lo simple es regalarse cada vez más instantes.',
         en: 'Finding beauty in what is simple is giving oneself more and more moments.' },
     { es: 'No tengas miedo del camino. Ten miedo de no caminar.',
@@ -49,7 +51,7 @@ export const FRAGMENTS = [
         en: 'From that moment I decided to walk with an open heart: instead of growing more vulnerable, one grows stronger and stronger.' },
 ];
 
-// How the notebook's page of Pensamientos lays them out: in paragraphs of two or three, by what they speak of (the dream
+// How the notebook's page of Bitácora lays them out: in paragraphs of two or three, by what they speak of (the dream
 // and what separates us; the particle, as above so below; the atoms and Love; humility, made of the same; the void;
-// the rulito and beauty; the path)
+// looking slowly and beauty; the path)
 export const PARAGRAPHS = [[0, 12, 1], [2, 13], [3, 4, 14], [5, 15, 6], [7, 16, 8], [9, 10], [17, 11]];
