@@ -116,7 +116,7 @@ function readFragment(i) {
 }
 
 // Sid's notebook, written in the sky (its icon, a notebook, on a small round button to the right of the seed's, shows once there is something in it and
-// glows while there is something new to see; it opens on the page that has it; a touch on the sky round it, the labyrinth in the header's corner or Escape closes it;
+// glows while there is something new to see; it opens on the page that has it; a touch anywhere round it (its left corner too, with no icon) or Escape closes it;
 // the header's icons go cream over it, `body.lab-story`). Two pages:
 // - Bitácora: the fragments of the story found, in order, in paragraphs by theme (PARAGRAPHS in story.js), those still hidden as faint stars the
 //   length of their words; those found since it was last seen (memory.storySeen) are painted in, one after another, in
@@ -2731,6 +2731,10 @@ body.lab-page header #soundButton.active { filter: drop-shadow(0px 2px 3px rgba(
 /* the sound and menu buttons stay over the open menu, so it can be closed (elsewhere their drop shadow, a filter, puts
    them over it; here, without it while the menu is open or by night, they would be left under it) */
 body.lab-page header .navContainer.right { position: relative; z-index: 1; }
+/* with the notebook open its left corner shows no icon (the way back would leave the world, the labyrinth confused),
+   but a touch there closes it and goes back into the world (an unseen `hasWorld`), as a touch round it or Escape */
+body.lab-page header .navContainer:not(.right) { transition: opacity 250ms ease-out; }
+body.lab-page.lab-story header .navContainer:not(.right) { opacity: 0; }
 /* by night (and in Celebración's clearing) the icons stay cream, over the dark sky */
 body.lab-page.lab-night header .navContainer button,
 body.lab-page.lab-night header #soundButton,
