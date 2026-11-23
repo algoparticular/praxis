@@ -113,7 +113,7 @@ const framesReport = (meter) => {
 
 // What a person does on one card page, gathered into a single story that is told when they leave:
 // how long they stayed, whether they touched the scene (and how often), whether they read on.
-export const startCardVisit = (cardId, { scene, entry }) => {
+export const startCardVisit = (cardId, { scene, entry, game }) => {
     const startedAt = performance.now();
     let touches = 0;
     let firstTouchAt = null;
@@ -122,7 +122,7 @@ export const startCardVisit = (cardId, { scene, entry }) => {
     let finished = false;
     const meter = tracking() ? measureFrames() : null;
 
-    track('card_viewed', { card_id: cardId, scene, entry });
+    track('card_viewed', { card_id: cardId, scene, entry, game: !!game });
 
     return {
         touch() {
@@ -137,7 +137,10 @@ export const startCardVisit = (cardId, { scene, entry }) => {
             reachedReading = true;
             track('card_reading_reached', { card_id: cardId, seconds: Math.round((performance.now() - startedAt) / 1000) });
         },
+        // only a card with its game reports milestones: without one its parts still answer, but nothing is won
+        // (useCardGame.js), so the milestones stay what they were, the moments of a game
         milestone(action, extra = {}) {
+            if (!game) return;
             milestones += 1;
             track('scene_milestone', { card_id: cardId, scene, action, ...extra });
         },
@@ -150,6 +153,7 @@ export const startCardVisit = (cardId, { scene, entry }) => {
                 seconds: Math.round((performance.now() - startedAt) / 1000),
                 touches,
                 milestones,
+                game: !!game,
                 read: reachedReading,
                 ...framesReport(meter),
             });

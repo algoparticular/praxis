@@ -2049,7 +2049,7 @@ onBeforeUnmount(() => {
     <!-- the card of the place where he meditates (openPortal), as its own page shows it -->
     <Transition name="portal">
         <div v-if="portal.card != null" class="portal content cardPage">
-            <CardTemplate :id="String(portal.card)" entry="lab" @rulito="portalWon" />
+            <CardTemplate :id="String(portal.card)" entry="lab" play @rulito="portalWon" />
         </div>
     </Transition>
     </div>
