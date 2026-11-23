@@ -21,7 +21,7 @@ const PAGES = [
     {
         path: '/sid',
         title: 'El mundo de Sid · Algo Particular',
-        words: 'Sid camina un mundo dibujado en tinta que toma color a su paso. Encuentra semillas, planta un jardín que canta, medita y abre las cartas del oráculo. Sin puntaje, sin tiempo, sin perder.',
+        words: 'Sid camina un mundo dibujado en tinta que toma color a su paso. Encuentra semillas y los fragmentos de su historia, se sienta a meditar y planta un jardín que canta.',
         image: `${SITE}/share/sid.jpg`,
         alt: 'Sid medita en loto en un prado verde, entre plantas y hongos, mientras sale un sol rojo.',
     },
