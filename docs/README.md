@@ -4,9 +4,9 @@ La documentación sigue las pestañas del artefacto "Anima GDD" (un documento po
 
 | Pestaña | Documento | De qué trata |
 |---|---|---|
+| Mundo | `mundo.md` | El mundo de Sid (`/sid`), probablemente el juego: qué es, el bucle, cómo se juega, los sistemas, las siete zonas, la progresión, cómo va y su lugar en Inicio, sin decidir |
 | Verbos | `verbos-y-dinamicas.md` | Los siete verbos, las dos corrientes, reglas comunes y qué propone cada verbo (lo implementado en las escenas con juego) |
 | Cartas | `cartas.md` | El acorde de cada carta y por qué, y las 33 de un vistazo: verbo, acorde y qué hace cada una en la app |
-| Mundo | `mundo.md` | El mundo de Sid (`/sid`): qué es, cómo se juega, lo que tiene y su lugar en Inicio, sin decidir |
 | Música | `musica.md` | Teoría musical (notas, cómo se arma un acorde, los 42 acordes) y cómo suena Anima (cómo se elige el acorde, el acorde de base, sonidos, secuencias, ley de octava) |
 | Marca | `marca.md` | La paleta de los siete chakras junto a crema, coral y azul-negro |
 | Analítica | `analitica.md` | Qué se mide (eventos, fluidez, garantías de privacidad) y los primeros datos |
