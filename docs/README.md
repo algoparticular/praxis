@@ -1,12 +1,13 @@
 # Docs
 
-La documentación sigue las pestañas del artefacto "Anima GDD" (un documento por pestaña; el artefacto además tiene una pestaña "Empezar", que no tiene documento propio, y las fichas de los siete verbos, que salen de `verbos-y-dinamicas.md`). Los que están debajo son de otros temas. Cada pestaña dice al día de qué fecha está, y Empezar tiene los pilares de diseño (entre ellos, que los verbos y los juegos pueden cambiar), las novedades y el enlace al tablero "Roadmap de Anima" (https://claude.ai/artifact/U7TN7ZhB6wQ7ixdyo22Era), donde vive lo que viene y lo que falta decidir.
+La documentación sigue las pestañas del artefacto "Anima GDD", ordenado por partes: Empezar (qué es Anima, sus dos partes, pilares y novedades; sin documento propio), Oráculo y Mundo, y aparte lo común a las dos (Música, Marca, Teoría, Analítica, Abierto). Los que están debajo son de otros temas. Cada pestaña dice al día de qué fecha está, y Empezar tiene los pilares de diseño (entre ellos, que los verbos y los juegos pueden cambiar), las novedades y el enlace al tablero "Roadmap de Anima" (https://claude.ai/artifact/U7TN7ZhB6wQ7ixdyo22Era), donde vive lo que viene y lo que falta decidir.
 
 | Pestaña | Documento | De qué trata |
 |---|---|---|
-| Mundo | `mundo.md` | El mundo de Sid (`/sid`), probablemente el juego: qué es, el bucle, cómo se juega, los sistemas, las siete zonas, la progresión, cómo va y su lugar en Inicio, sin decidir |
-| Verbos | `verbos-y-dinamicas.md` | Los siete verbos, las dos corrientes, reglas comunes y qué propone cada verbo (lo implementado en las escenas con juego) |
-| Cartas | `cartas.md` | El acorde de cada carta y por qué, y las 33 de un vistazo: verbo, acorde y qué hace cada una en la app |
+| Oráculo | `cartas.md` | Qué pasa al sacar una carta (la carta viva, sin juego), lo que define a cada carta, el acorde de cada una y por qué, y las 33 de un vistazo |
+| Mundo · Cómo es | `mundo.md` | El mundo de Sid (`/sid`), el juego: qué es, el bucle, cómo se juega, los sistemas, las siete zonas, la progresión, cómo va y su lugar en Inicio, sin decidir |
+| Mundo · Juegos | `verbos-y-dinamicas.md` | Los juegos de las cartas, que se juegan desde el mundo: los siete verbos, las dos corrientes, reglas comunes y qué propone cada verbo |
+| Mundo · Textos | (en `mundo.md` y el código) | Todo lo que el mundo escribe |
 | Música | `musica.md` | Teoría musical (notas, cómo se arma un acorde, los 42 acordes) y cómo suena Anima (cómo se elige el acorde, el acorde de base, sonidos, secuencias, ley de octava) |
 | Marca | `marca.md` | La paleta de los siete chakras junto a crema, coral y azul-negro |
 | Analítica | `analitica.md` | Qué se mide (eventos, fluidez, garantías de privacidad) y los primeros datos |
