@@ -1,6 +1,6 @@
 # Abierto
 
-Séptima pestaña de "Anima GDD": solo las decisiones que faltan tomar, agrupadas por tema. Cada una con la pregunta, las opciones que hay pensadas y lo que ayudaría a decidir.
+Última pestaña de "Anima GDD": solo las decisiones que faltan tomar, agrupadas por tema. Cada una con la pregunta, las opciones que hay pensadas y lo que ayudaría a decidir.
 
 Lo que es probar algo en un teléfono o una tarea por hacer no está acá: vive en el tablero "Roadmap de Anima" (https://claude.ai/artifact/U7TN7ZhB6wQ7ixdyo22Era), en sus columnas "Para probar" y "Próximo". Estas decisiones están también en su columna "Por decidir"; cuando una se decide, sale de esta lista.
 

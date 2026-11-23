@@ -1,6 +1,6 @@
 # Mundo
 
-Pestaña de "Anima GDD", la segunda: el mundo de Sid (`/sid`). Es el juego de Anima: el oráculo queda como oráculo (sacar una carta y leerla, la carta viva pero sin juego) y los juegos se juegan acá, al meditar en el lugar de una carta (decidido el 23 de noviembre; por ahora también desde "Las cartas"). Los mundos y sus juegos se van largando de a poco. El detalle de cómo se fue armando está en `mundo-semiabierto.md`; qué pedirle a la ilustradora, en `sid-en-piezas.md`; el código, en `src/lab/` (y el punto "Sid's world" de `CLAUDE.md`).
+Pestaña de "Anima GDD", la tercera (con sus Juegos, de `verbos-y-dinamicas.md`, y sus Textos): el mundo de Sid (`/sid`). Es el juego de Anima: el oráculo queda como oráculo (sacar una carta y leerla, la carta viva pero sin juego) y los juegos se juegan acá, al meditar en el lugar de una carta (decidido el 23 de noviembre; por ahora también desde "Las cartas"). Los mundos y sus juegos se van largando de a poco. El detalle de cómo se fue armando está en `mundo-semiabierto.md`; qué pedirle a la ilustradora, en `sid-en-piezas.md`; el código, en `src/lab/` (y el punto "Sid's world" de `CLAUDE.md`).
 
 ## Qué es
 
