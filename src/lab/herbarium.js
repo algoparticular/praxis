@@ -2,7 +2,7 @@
 // (its pictures are the drawings it can grow as: the four fans of Ciclos are one plant). Shown on the second page of
 // the notebook (LabSid.vue): all of them as dark silhouettes from the start, and each one, the first time something of
 // its kind is planted, in its colours with its name. Each: { id, card, es, en, pictures: [names in src/lab/suelo],
-// show: the one drawn on the page }. The names are to be checked with Algo Particular; more plants will come.
+// show: the one drawn on the page, light: it holds a little light, drawn in code, FERN_LIGHT in sidWorld.js }. The names are to be checked with Algo Particular; more plants will come.
 export const HERBARIUM = [
     { id: 'fan', card: 'ciclos', es: 'Abanico del ocaso', en: 'Dusk fan', pictures: ['fan0', 'fan1', 'fan2', 'fan3'], show: 'fan0' },
     { id: 'lantern', card: 'metta', es: 'Farolito', en: 'Little lantern', pictures: ['bloom0', 'bloom1', 'bloom2', 'bloom3', 'bloom4'], show: 'bloom1' },
@@ -14,7 +14,7 @@ export const HERBARIUM = [
     { id: 'palm', card: 'gratitud', es: 'Palmera agradecida', en: 'Grateful palm', pictures: ['grPalm'], show: 'grPalm' },
     { id: 'fireShrooms', card: 'celebracion', es: 'Hongos de la fogata', en: 'Firelight mushrooms', pictures: ['mushrooms'], show: 'mushrooms' },
     { id: 'twinShrooms', card: 'celebracion', es: 'Hongos gemelos', en: 'Twin mushrooms', pictures: ['caps'], show: 'caps' },
-    { id: 'lightFern', card: 'transformacion', es: 'Helecho de luz', en: 'Light fern', pictures: ['trFern'], show: 'trFern' },
+    { id: 'lightFern', card: 'transformacion', es: 'Helecho de luz', en: 'Light fern', pictures: ['trFern'], show: 'trFern', light: true },
 ];
 
 // the kind of plant a planted picture is (null if it is none of them)

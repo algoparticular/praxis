@@ -7,7 +7,7 @@
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import Header from '../components/Header.vue';
 import rig from './sid/sid.json';
-import { CICLOS, createWorld, STAR_SEED, STAR_LIGHT, pieceUrl, plantsOf } from './sidWorld.js';
+import { CICLOS, createWorld, STAR_SEED, STAR_LIGHT, FERN_LIGHT, pieceUrl, plantsOf } from './sidWorld.js';
 import { createStarField, CONSTELLATION_TIME } from '../composables/useStarField.js';
 import { WORLD_RESUME } from '../composables/worldResume.js';
 import { THOUGHTS } from './thoughts.js';
@@ -116,7 +116,7 @@ function readFragment(i) {
 }
 
 // Sid's notebook, written in the sky (its icon, a notebook, on a small round button to the right of the seed's, shows once there is something in it and
-// glows while there is something new to see; it opens on the page that has it; a touch anywhere, or Escape, closes it;
+// glows while there is something new to see; it opens on the page that has it; a touch on the sky round it, the labyrinth in the header's corner or Escape closes it;
 // the header's icons go cream over it, `body.lab-story`). Two pages:
 // - Bitácora: the fragments of the story found, in order, in paragraphs by theme (PARAGRAPHS in story.js), those still hidden as faint stars the
 //   length of their words; those found since it was last seen (memory.storySeen) are painted in, one after another, in
@@ -124,7 +124,7 @@ function readFragment(i) {
 // - Herbario: every plant a seed can grow into (herbarium.js) as a dark silhouette, and in its colours with its name
 //   once one of its kind has been planted (those planted since it was last seen, memory.herbSeen, come in out of a
 //   warm light)
-const story = reactive({ dir: '', hold: false, open: false, tab: 'bitacora', found: 0, fresh: false, shown: false, have: new Set(), order: new Map(), herb: new Set(), herbNew: new Map() });
+const story = reactive({ dir: '', hold: false, open: false, tab: 'bitacora', herbSing: new Map(), found: 0, fresh: false, shown: false, have: new Set(), order: new Map(), herb: new Set(), herbNew: new Map() });
 const herbPlanted = () => new Set(memory.planted.map((g) => kindOf(g.name)).filter(Boolean));
 function storyNews() {
     const bitacora = memory.fragments.some((i) => !memory.storySeen.includes(i));
@@ -218,12 +218,28 @@ function fitHerb(e) {
     img.style.maxHeight = `${Math.min(84, Math.round(img.naturalHeight * HERB_SCALE))}px`;
 }
 
+// A touch on a plant of the herbarium that has been planted makes it sing its note (gardenNote, as it sings in the
+// garden: of its own card's chord, fitted to the world where he is; each kind of a card its own note of the chord,
+// grown) and wiggle with a glow, as a plant of the garden touched; one still a silhouette only trembles, silent
+const herbLight = {
+    left: `${FERN_LIGHT.x * 100}%`, top: `${FERN_LIGHT.y * 100}%`, width: `${FERN_LIGHT.r * 200}%`,
+    '--rgb': FERN_LIGHT.rgb.join(','),
+};
+function singHerb(h) {
+    story.herbSing.set(h.id, (story.herbSing.get(h.id) ?? 0) + 1);     // (a new key starts its wiggle again)
+    if (!story.herb.has(h.id)) return;
+    const kin = HERBARIUM.filter((o) => o.card === h.card), n = kin.indexOf(h);
+    const pick = kin.length > 1 ? (n + 0.5) / kin.length : 0.5;
+    const midi = gardenNote(chordFor(world.cardIdOf(h.card)), chordFor(world.zoneCard()), pick, 1.2);
+    play('garden', { midi, level: 1 });
+}
+
 function openStory() {
     if (!story.shown) return;
     story.dir = '';
     const news = storyNews();
     showTab(news.bitacora ? 'bitacora' : news.herb ? 'herbarium' : story.found ? story.tab : 'herbarium');
-    story.open = true; ui.choose = false; note.hint = false;
+    story.open = true; story.herbSing.clear(); ui.choose = false; note.hint = false;
     if (!memory.learned.notebook) learn('notebook');
     document.body.classList.add('lab-story');
     visit?.notebook(story.tab, news.bitacora || news.herb, memory.fragments.length, herbPlanted().size);
@@ -1964,7 +1980,7 @@ onBeforeUnmount(() => {
         </Transition>
         <!-- the app's own header: back on the left, the sound and the menu on the right -->
         <!-- (in a card opened here, the labyrinth takes the corner of the back arrow: back into the world) -->
-        <Header :hasBack="portal.card == null" :hasWorld="portal.card != null" :hasMenu="true" @world="closePortal()" />
+        <Header :hasBack="portal.card == null && !story.open" :hasWorld="portal.card != null || story.open" :hasMenu="true" @world="story.open ? closeStory() : closePortal()" />
         <!-- one button, on a phone and on a computer alike: the seed, Algo Particular's mark (as in the header), sits him
              in lotus and gets him up again; he walks with the arrows or WASD, or where a click or a touch on the floor
              sends him; a touch on him makes him wave (on a computer J jumps) -->
@@ -2007,8 +2023,11 @@ onBeforeUnmount(() => {
                 <div v-else class="story-card" :class="story.dir">
                     <ul class="herbarium">
                         <li v-for="h in HERBARIUM" :key="h.id" :class="{ known: story.herb.has(h.id), fresh: story.herbNew.has(h.id) }"
-                            :style="{ animationDelay: `${300 + (story.herbNew.get(h.id) ?? 0) * 900}ms` }">
-                            <span class="pic"><img :src="pieceUrl(h.show)" alt="" draggable="false" @load="fitHerb"></span>
+                            :style="{ animationDelay: `${300 + (story.herbNew.get(h.id) ?? 0) * 900}ms` }" @click.stop="singHerb(h)">
+                            <span class="pic"><span class="plant" :key="story.herbSing.get(h.id) ?? 0" :class="{ sing: story.herbSing.has(h.id) }">
+                                <img :src="pieceUrl(h.show)" alt="" draggable="false" @load="fitHerb">
+                                <span v-if="h.light" class="light" :style="herbLight"></span>
+                            </span></span>
                             <span class="name">{{ story.herb.has(h.id) ? ($i18n.locale === 'en' ? h.en : h.es) : '' }}</span>
                         </li>
                     </ul>
@@ -2622,6 +2641,42 @@ canvas {
     -webkit-user-drag: none;
 }
 .herbarium li.known img { filter: drop-shadow(0 0 10px rgba(255, 240, 200, 0.35)); }
+.herbarium li { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+/* the drawing and what is drawn over it (the fern's little light), wiggling together from its foot */
+.herbarium .plant {
+    position: relative;
+    display: block;
+    max-width: 100%;
+    transform-origin: 50% 100%;
+}
+.herbarium .plant.sing { animation: herb-tremble 0.5s ease-out; }
+.herbarium li.known .plant.sing { animation: herb-wiggle 1.1s ease-out; }
+.herbarium li.known .plant.sing img { animation: herb-glow 1.1s ease-out; }
+@keyframes herb-wiggle {
+    0% { transform: none; }
+    12% { transform: rotate(-7deg) scale(1.06, 0.94); }
+    28% { transform: rotate(5deg) scale(0.97, 1.05); }
+    44% { transform: rotate(-3deg) scale(1.02, 0.98); }
+    62% { transform: rotate(1.5deg); }
+    100% { transform: none; }
+}
+@keyframes herb-tremble { 0%, 100% { transform: none; } 25% { transform: rotate(-2deg); } 60% { transform: rotate(1.5deg); } }
+@keyframes herb-glow {
+    0%, 100% { filter: drop-shadow(0 0 10px rgba(255, 240, 200, 0.35)); }
+    20% { filter: drop-shadow(0 0 16px rgba(255, 236, 170, 0.95)); }
+}
+/* Transformación's fern holds a little light over its crown, as in the garden (FERN_LIGHT in sidWorld.js) */
+.herbarium .light {
+    position: absolute;
+    aspect-ratio: 1;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    background: rgba(var(--rgb), 0.95);
+    box-shadow: 0 0 6px 3px rgba(var(--rgb), 0.55), 0 0 16px 8px rgba(var(--rgb), 0.25);
+    animation: herb-light 4s ease-in-out infinite;
+}
+.herbarium li:not(.known) .light { opacity: 0.25; box-shadow: none; animation: none; }
+@keyframes herb-light { 0%, 100% { opacity: 0.8; } 50% { opacity: 1; } }
 .herbarium .name {
     min-height: 1.3em;
     font-family: Caveat, cursive;
@@ -2660,7 +2715,7 @@ canvas {
 }
 .story-count span.on { background: #F7F8F1; box-shadow: 0 0 6px rgba(255, 240, 200, 0.8); }
 @media (prefers-reduced-motion: reduce) {
-    .frag.fresh, .frag.locked, .herbarium li.fresh img, .herbarium li.fresh .name { animation: none; }
+    .frag.fresh, .frag.locked, .herbarium li.fresh img, .herbarium li.fresh .name, .herbarium .plant.sing, .herbarium .plant.sing img, .herbarium .light { animation: none !important; }
     .story-icon.fresh { animation: none; box-shadow: 0 0 18px 4px rgba(255, 240, 200, 0.7); }
     .story-icon.got, .story-icon.got span, .story-icon.got::before, .story-icon.got::after, .story-icon.hint, .story-icon.hint::before { animation: none; }
 }
@@ -2676,10 +2731,6 @@ body.lab-page header #soundButton.active { filter: drop-shadow(0px 2px 3px rgba(
 /* the sound and menu buttons stay over the open menu, so it can be closed (elsewhere their drop shadow, a filter, puts
    them over it; here, without it while the menu is open or by night, they would be left under it) */
 body.lab-page header .navContainer.right { position: relative; z-index: 1; }
-/* with the notebook open its left corner (the way back) is hidden: it would leave the world instead of closing the
-   notebook, which a touch anywhere or Escape closes */
-body.lab-page header .navContainer:not(.right) { transition: opacity 250ms ease-out; }
-body.lab-page.lab-story header .navContainer:not(.right) { opacity: 0; pointer-events: none; }
 /* by night (and in Celebración's clearing) the icons stay cream, over the dark sky */
 body.lab-page.lab-night header .navContainer button,
 body.lab-page.lab-night header #soundButton,
