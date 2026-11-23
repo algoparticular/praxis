@@ -187,7 +187,7 @@ const ANY_PLANT = Object.values(SEED_PLANTS).flat();
 // the names of the plants a seed of a card can grow into (any card's, for a seed of light)
 export const plantsOf = (card) => (SEED_PLANTS[card] ?? ANY_PLANT).map(([name]) => name);
 // where the young fern's little light is, in its picture (its ring, as a part of its box), and its colour (the card's sun)
-const FERN_LIGHT = { x: 0.177, y: 0.155, r: 0.05, rgb: [255, 226, 133] };
+export const FERN_LIGHT = { x: 0.177, y: 0.155, r: 0.05, rgb: [255, 226, 133] };
 // her tree's trunk on the floor: it stands a little behind its foot (its roots come forward), as wide as it looks
 // Her tree stands in his way where it is drawn: its trunk (just behind its foot, as wide as it is drawn just over its
 // roots, its middle a little left of the foot) and its roots, which spread wide and come forward over the floor (an

@@ -42,7 +42,7 @@ Sentado en loto en un lugar, la cámara se acerca a Sid y se abre la carta de es
 - **Plantar:** sentado lejos de los lugares, Sid planta la primera que encontró. La semilla vuela del botón a su corazón, lo atraviesa como pura luz, sigue bajo tierra como un brillo y nace de la tierra con una explosión de partículas. Suena como la ley de octava: el acorde de su carta sube nota a nota a lo largo de todo el camino, y al brotar suena entero una octava arriba.
 - **Crecer:** brota una planta de su carta, con sus colores (la de Transformación, el helecho de luz que sale de su semilla gigante, con su lucecita). Crece un paso cuando Sid vuelve a ella después de haberse ido y otro cuando medita a su lado, una vez por visita cada uno, hasta 1,4 veces su tamaño (o 2 si su dibujo lo aguanta); después, a su lado, baila.
 - **Cantar:** cada planta tiene una nota del acorde de su carta (si choca con el mundo donde crece, la más cercana que encaja; más grave o más aguda según cuánto creció). Canta cuando Sid pasa cerca y al tocarla; mientras medita entre sus plantas, cantan por turno, de izquierda a derecha.
-- **El Herbario:** la primera planta de cada tipo vuela a la libreta y entra al Herbario, su página de plantas: 11 tipos, cada uno en sus colores y con su nombre (los que faltan, siluetas). Una semilla crece primero en un tipo que todavía no está; la de estrella da cualquiera que falte, así meditar de noche es el comodín. Completarlo lleva al menos tres visitas.
+- **El Herbario:** la primera planta de cada tipo vuela a la libreta y entra al Herbario, su página de plantas: 11 tipos, cada uno en sus colores y con su nombre (los que faltan, siluetas). Al tocar en la libreta una planta ya sembrada, suena su nota y se mueve (una silueta solo tiembla). Una semilla crece primero en un tipo que todavía no está; la de estrella da cualquiera que falte, así meditar de noche es el comodín. Completarlo lleva al menos tres visitas.
 
 ### La historia y la Bitácora
 La historia de Sid, en 18 fragmentos de las notas de Algo Particular (y entre ellos el principio de correspondencia de *El Kybalion*, "Como es arriba, es abajo"). Cada uno está en un laberintito de luz blanco y crema, el ícono que abre el mundo, que flota lejos de los lugares con una columna de luz para verlo de lejos; nunca dos juntos. Al pasar Sid por debajo, una luz lo recorre de afuera hacia el centro, sube y se va, y se escribe a mano un fragmento de los que faltan, al azar. Sus letras vuelan a la libreta y entra a la Bitácora, su página de la historia: los 18 en siete párrafos por tema (los que faltan, una línea de estrellitas), que se completa salteada. Si sobre un lugar estaba escrita su frase, se va primero, para que no se pisen.
@@ -95,5 +95,64 @@ Hoy se llega solo desde el laberinto del footer de Inicio y del menú: está esc
 | **Tercer modo del oráculo** | Junto a "mazo completo" y "Los Nueve", con su constelación | Ya existe el lugar y el gesto | Lo pone bajo "Deja que tu intuición te guíe", y el mundo no es sacar una carta al azar |
 | **En el hero** | La primera pantalla ya es Sid en su mundo; el oráculo viene después | Lo más visible; si el mundo es el juego, es lo que se ve primero | Cambia qué es Anima para quien llega (hoy, un oráculo); es la decisión más grande y la más cara de deshacer |
 | **Seguir en el footer, por ahora** | Como hoy, midiendo primero | No compromete nada mientras el mundo todavía no sabe qué es | Sigue escondido |
+
+### El herbario: repensarlo y redibujarlo
+
+**Lo que hay hoy.** 11 plantas de 7 cartas (`src/lab/herbarium.js`, y en `SEED_PLANTS` de `sidWorld.js` lo que da cada semilla), todas recortadas de las capas de las escenas, ninguna dibujada para el herbario:
+
+| Carta | Plantas |
+|---|---|
+| Ciclos | Abanico del ocaso |
+| Metta | Farolito |
+| Upekkha | Hongo del estanque, Flor de luz, Brote del estanque |
+| Paciencia | Pasto en rulo |
+| Gratitud | Abanico turquesa, Palmera agradecida |
+| Celebración | Hongos de la fogata, Hongos gemelos |
+| Transformación | Helecho de luz |
+
+**Lo que no anda:**
+- Desparejo: Upekkha tiene 3 y casi todas las demás 1, así que llenarlo lleva por lo menos 3 visitas solo por Upekkha.
+- Se repiten: tres hongos parecidos y dos abanicos (Ciclos y Gratitud).
+- Los "Hongos gemelos" de Celebración son los hongos rosados de Desafío (`caps`, de `desafio/mushrooms`).
+- Son chicos (de 72 a 470 px): en la libreta se muestran a lo sumo a su tamaño sobre 1,5 (`HERB_SCALE` en `LabSid.vue`) para no verse borrosos.
+
+**Cuántas pueden ser.** No hay límite técnico: cada planta es una entrada en `herbarium.js` y una línea en `SEED_PLANTS`. El límite es de diseño: las semillas salen sobre todo de los lugares, una por lugar por visita, y hoy hay 7 zonas. Opciones:
+- **1 por carta:** 7 hoy, 33 con todas las cartas. Cada carta tiene su planta firma; el herbario se puede llenar en una visita.
+- **2 por carta (la que propuse):** 14 hoy. Lleva 2 visitas y cada zona sigue teniendo algo por descubrir.
+- **3 por carta:** 21 hoy, 3 visitas.
+
+Sale de las escenas de cada carta, para elegir: los abanicos y el pasto de Ciclos, las flores de luz de Metta, el helecho con su flor y los cristales de Upekkha, los rulos y la piña de Paciencia, la palmera y la planta pálida de Gratitud, los hongos de Celebración, el helecho y la semilla de Transformación.
+
+**Cómo dibujarlas (para la ilustradora):**
+- **Tamaño:** con Sid de referencia, `docs/referencias/sid-referencia.png`: un lienzo de 3240 x 4050 px (el de sus originales), transparente (en 3840 x 2160, a la misma escala: `sid-de-pie-3840.png` y `sid-loto.png`, sentado en loto), con Sid de pie de 1100 px de alto (su línea, unos 20 px). Cada planta, del tamaño que tendría al lado de él, con un pincel de ese grosor. A esa escala puede crecer al doble en el mundo (`mostOf`, `SEED_GROWTH.top`) y verse nítida en la libreta del teléfono. (El árbol se dibujó más chico: a esa escala Sid mediría unos 665 px, y por eso crece menos sin perder nitidez.)
+- **Trazo negro**, en su propia capa: el mundo empieza en tinta sobre crema y la línea se tiñe en código. Los contornos que llevan color, cerrados.
+- **Color plano** en otra capa, debajo de la línea: sin sombras ni degradados, en los colores de su carta. De ahí sale la planta en sus colores (`NAME-colour.webp`) y cada parte (pétalo, tallo, sombrero) puede tener el suyo. Hoy el código pinta lo de adentro de una pieza de un solo color (`NAME-fill.webp`): hay que enseñarle al converter a leer esa capa (es poco).
+- **Sin fondo:** cada planta en su capa, PNG transparente. El cielo, el suelo y el fondo de la libreta se pintan en código.
+
+**Decidido (22 de noviembre): 2 por carta.** 14 con los 7 mundos de hoy, 66 con las 33 cartas. Hay que sacar una planta a Upekkha (tiene 3) y sumar una a Ciclos, Metta, Paciencia y Transformación; Gratitud y Celebración ya tienen 2, aunque los "Hongos gemelos" de Celebración son de Desafío y conviene cambiarlos por una planta suya.
+
+**A decidir al sentarnos:** cuáles dos de cada carta, sus nombres (los de hoy están "para revisar") y si la semilla de luz sigue dando cualquier planta que falte.
+
+### Sumar mundos
+
+Hoy hay 7 mundos (zonas), cada uno con su carta, su lugar, sus personajes y sus piezas. La grilla es de 7 por 7 y cada fila corre las mismas 7 cartas dos lugares (`SHIFT`), así cada carta está una vez en cada fila y en cada columna. Cada zona mide 8000 de ancho, unos 19 s caminando.
+
+**Propuesta: llegar a las 33, pero de a tandas de 6 o 7.** Que estén todas tiene sentido: el mundo pasa a ser el mapa del mazo, cada carta tiene su lugar y su juego se abre desde ahí. Pero cada mundo nuevo pide trabajo:
+- su paleta y su cielo (`ZONES`),
+- su lugar y sus personajes, recortados de las capas de la escena (`PLACES`, `convert-lab-suelo.mjs`),
+- sus piezas sueltas por el suelo,
+- sus 2 plantas del herbario,
+- sus pensamientos (`thoughts.js`) y su constelación (`constellations.js`),
+- y peso: cada tanda suma imágenes al trozo del mundo, que se mide en `check:budget`.
+
+Además, con muchas cartas el mundo se hace largo: una fila de 33 son unos 10 minutos caminando. Con 7 se vuelve a la misma carta en unos 2 minutos.
+
+**A decidir al sentarnos:**
+- El orden de las tandas. Por ejemplo, primero las escenas que ya tienen sus piezas y personajes por separado (más fáciles de recortar), o agruparlas por verbo o por acorde.
+- Cómo se arma el mapa con más de 7. Hoy el orden se baraja en cada visita. Para las 33 ya estaba anotado un mapa fijo, por ejemplo una grilla de 6x6 que se cierra sobre sí misma (en `abierto.md`). Una grilla de 6x6 tiene 36 lugares para 33 cartas: quedan 3 libres, y uno podría ser el mundo oculto, Viljandi-sama (idea, sin decidir).
+
+### El mundo oculto
+
+Mundo oculto: Viljandi-sama. Es el mural (3240x1080): las colinas con el castillo, la fogata con Sid, el campo de Samas, el río y el arcoíris que se hace noche. Ya no está en el repo; se recupera con `git show 0655455^:public/assets/mural.jpg > mural.jpg` (hay una versión chica, `muralito.jpg`, en `7699947^`).
 
 Técnico, sin apuro: si Sid pasa del Canvas 2D a la escena WebGL común (`useLayerStage.js`), como el resto de las escenas.
