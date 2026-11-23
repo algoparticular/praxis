@@ -1680,9 +1680,9 @@ function draw() {
     nightSky.value.style.opacity = dark.toFixed(3);
     if (nightSky.value.style.backgroundColor !== under) nightSky.value.style.backgroundColor = under;
     document.body.classList.toggle('lab-night', dark > 0.55);
-    // (the page under the drawing in the sky's colour at the top: the iPhone's status bar takes it, cream otherwise)
+    // (the page under the drawing in the sky's colour at the top: the browser's bar takes it from there, topColour.js)
     const top = world.topColour();
-    if (top !== pageTop) { pageTop = top; labEl.value.style.backgroundColor = top; document.body.style.backgroundColor = top; }
+    if (top !== pageTop) { pageTop = top; labEl.value.style.backgroundColor = top; }
     teaching.light = dark > 0.55;
     if (teaching.ink !== INK) teaching.ink = INK;
     c.fillStyle = world.ground();
@@ -1937,7 +1937,6 @@ onBeforeUnmount(() => {
     visit?.cardClosed(portal.won);
     visit?.finish();
     document.body.classList.remove('lab-page', 'lab-night', 'lab-portal', 'lab-story');
-    document.body.style.backgroundColor = '';
     setHush(false);
     clearTimeout(portalTimer);
     setCardChord(null);

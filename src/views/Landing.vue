@@ -1,7 +1,5 @@
 <script setup>
 	import { onMounted, onBeforeUnmount, ref } from 'vue';
-    import { setStrip, mixColour } from '../composables/statusStrip.js';
-    const VIOLET = '#6A428D', NAVY = '#143246';   // (the hero's --tint, from the violet to the oracle block's navy)
     import { useRouter } from 'vue-router';
     import { inView, scroll } from "motion";
 
@@ -60,8 +58,6 @@
     const stopReveals = [];
 
     onBeforeUnmount(() => {
-        setStrip(null);
-        window.removeEventListener('scroll', stripFollows);
         unmounted = true;
         cellField?.destroy();
         spiral?.destroy();
@@ -71,19 +67,8 @@
         stopReveals.forEach((stop) => stop());
     });
 
-    function stripFollows() {
-        const hero = document.getElementById('hero');
-        if (!hero) return;
-        const h = window.innerHeight, end = hero.getBoundingClientRect().bottom;
-        setStrip(mixColour(VIOLET, NAVY, Math.min(1, Math.max(0, (h - end) / (h * 0.55)))));
-    }
-
     // //ON MOUNTED
 	onMounted (() => {         
-        // The strip under the iPhone's clock (installed app) goes on from the hero: violet, turning into the oracle block's
-        // navy as the hero's end rises from the bottom of the screen to 45% of it, as its --mix does (with reduced motion too)
-        stripFollows();
-        window.addEventListener('scroll', stripFollows, { passive: true });
         spiral = createHeroSpiral(spiralCanvas.value, { animate: !reducedMotion });
         starField = createStarField(starCanvas.value, document.getElementById('oracle'), { onShoot: () => play('star') });
         //The sky keeps going into the top of the next block and fades out as the background turns violet

@@ -8,6 +8,7 @@ import { en } from "./json/copy_en.json";
 import App from "./App.vue";
 import { initAnalytics } from "./analytics.js";
 import { getCard } from "./data/cards.js";
+import { followTopColour } from "./composables/topColour.js";
 
 //Router
 import router from "./router";
@@ -65,6 +66,9 @@ watchEffect(() => {
 });
 
 app.mount("#app");
+
+// The browser's bar in the colour at the top of the screen, on every page and as it scrolls
+followTopColour(router);
 
 // Anonymous, cookie-less usage analytics (does nothing without VITE_POSTHOG_KEY)
 initAnalytics({ router, i18n });
