@@ -722,6 +722,9 @@
         if (gone) { made.destroy(); return; }
         stage = made;
         stageEl = root.value.closest('.stage');
+        // the browser's bar takes the colour at the top of the screen (topColour.js): on a phone the roof of leaves,
+        // drawn here, covers the top
+        root.value.topColourAt = (y) => (viewSize[0] < viewSize[1] && y < sy(ROOF) ? ROOF_COLOUR : null);
         build(stage);
         stage.onResize((w, h) => place(w, h));
         const after = (node) => node.mesh.renderOrder + 0.5;
