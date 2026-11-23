@@ -4,7 +4,7 @@ Pestaña de "Anima GDD", después de Cartas: el mundo de Sid (`/sid`), qué es h
 
 ## Qué es
 
-Sid camina un mundo propio, dibujado en código, donde viven las cartas. El oráculo lleva a una carta al azar; el mundo lleva a las cartas caminando. Es una segunda manera de entrar a Anima, no un reemplazo: las cartas, sus escenas y sus lecturas son las mismas.
+Sid camina un mundo propio, dibujado en código: zonas de algunas cartas, sus lugares y sus personajes, semillas que se plantan, la Bitácora de su historia. Sentado en un lugar, se abre la carta de esa zona. Qué relación tiene con las cartas está por decidir: puede que los juegos vivan solo acá y las cartas queden animadas (ver `abierto.md`, la pregunta grande).
 
 Todavía no está decidido qué es en el fondo (un mapa de las cartas, un camino de aprendizaje, un jardín para estar). Se va decidiendo jugando con él, de a una pieza por vez, probando cada una en el teléfono.
 
