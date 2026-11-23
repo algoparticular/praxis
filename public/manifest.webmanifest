@@ -1,21 +1,46 @@
 {
-    "short_name": "Algo Particular",
-    "name": "Algo Particular",
-    "start_url": "/",
-    "display": "standalone",
-    "background_color": "#10100F",
-    "theme_color": "#10100F",
-    "orientation": "portrait-primary",
-    "icons": [
-      {
-        "src": "/icon-32.png",
-        "type": "image/png",
-        "sizes": "64x64" 
-      },
-      {
-        "src": "/icon-512.png",
-        "type": "image/png",
-        "sizes": "1024x1024" 
-      }
-    ]  
-  }
+  "id": "/",
+  "name": "Algo Particular",
+  "short_name": "Algo Particular",
+  "description": "Anima, el Oráculo de las Partículas: 33 cartas de Belén Brito para buscar las respuestas en tu interior, y el mundo de Sid.",
+  "lang": "es",
+  "dir": "ltr",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#E9EDD8",
+  "theme_color": "#143246",
+  "categories": ["lifestyle", "entertainment", "games"],
+  "icons": [
+    { "src": "/icon-192.png", "type": "image/png", "sizes": "192x192", "purpose": "any" },
+    { "src": "/icon-512.png", "type": "image/png", "sizes": "512x512", "purpose": "any" },
+    { "src": "/icon-512.png", "type": "image/png", "sizes": "512x512", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    {
+      "name": "Consulta al Oráculo",
+      "short_name": "Oráculo",
+      "url": "/oracle",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "El mundo de Sid",
+      "short_name": "Sid",
+      "url": "/sid",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Las cartas",
+      "short_name": "Cartas",
+      "url": "/deck",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    }
+  ],
+  "screenshots": [
+    { "src": "/screenshots/landing.webp", "sizes": "780x1688", "type": "image/webp", "form_factor": "narrow", "label": "¿Y tú qué tienes de particular?" },
+    { "src": "/screenshots/dana.webp", "sizes": "780x1688", "type": "image/webp", "form_factor": "narrow", "label": "Dana: cada carta es una escena para jugar" },
+    { "src": "/screenshots/sid.webp", "sizes": "780x1688", "type": "image/webp", "form_factor": "narrow", "label": "El mundo de Sid" },
+    { "src": "/screenshots/upekkha.webp", "sizes": "1280x800", "type": "image/webp", "form_factor": "wide", "label": "Upekkha" }
+  ]
+}

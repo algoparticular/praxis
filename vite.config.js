@@ -21,8 +21,9 @@ export default defineConfig({
       manifest: false,
       workbox: {
         globPatterns: ['**/*.{js,css,html,woff2,svg}', 'cards/thumb/*.webp', 'icon-*.png'],
-        // the share pages of each card are for crawlers; offline every address opens the app
-        globIgnores: ['card/**'],
+        // the pages with their own words (each card's, Sid's world, the deck, the oracle, The Nine) are for crawlers;
+        // offline every address opens the app
+        globIgnores: ['card/**', 'sid/**', 'deck/**', 'oracle/**', 'oracleTheNine/**'],
         // pages: from the network first; offline, the one saved for that address or else the app's own index.html
         navigateFallback: null,
         cleanupOutdatedCaches: true,

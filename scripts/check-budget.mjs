@@ -78,6 +78,7 @@ group('Card illustrations', (rel) => /^cards\/\d+\.webp$/.test(rel), { each: 900
 // What phones and most screens load (pictureUrl in src/data/cards.js; npm run thumbs makes them)
 group('Card illustrations 1440', (rel) => /^cards\/1440\/\d+\.webp$/.test(rel), { each: 450, total: 4600 });
 group('Share pictures', (rel) => /^og\/\d+\.jpg$/.test(rel), { each: 200, total: 2300 });
+group('Install screenshots', (rel) => rel.startsWith('screenshots/'), { each: 150, total: 350 });   // public/screenshots, the manifest's (shot-manifest.mjs)
 group('Other pictures', (rel) => /^assets\/(?!panna\/|khanti\/|creatividad\/|evolucion\/|sila\/|viriya\/|upekkha\/|addhitthana\/|paciencia\/|metta\/|esperanza\/|transformacion\/|perdon\/|fe\/|honestidad\/|gratitud\/|desafio\/|coraje\/|compromiso\/|sincronicidad\/|hogar\/|armonia\/|aceptacion\/|belleza\/|celebracion\/|ciclos\/|comunicacion\/|confianza\/)[\w-]+\/.*\.(webp|jpg|png)$/.test(rel), { each: 900, total: 4600 });
 
 const over = rows.filter((row) => row.value > row.limit);
