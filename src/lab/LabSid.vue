@@ -1036,6 +1036,9 @@ function safeTop() {
 }
 let raf = 0, last = 0, paused = false;
 
+// (the sun and the moon keep below this much of the top of the screen, as well as below the strip under the clock: on an
+// iPhone the system blurs what is under its clock, and the inset is not always known when the page starts)
+const SKY_CLEAR = 64;
 function resize() {
     const el = canvas.value;
     view.dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -1048,7 +1051,8 @@ function resize() {
     view.k = SMALL * Math.min((ui.touch ? H * 0.55 : H * 0.62) / (TALL + STAND), view.w * 0.9 / 420);
     const was = state.ground;
     state.ground = (view.top + (ui.touch ? H * 0.84 : H * 0.86)) / view.k;
-    view.horizon0 = ui.touch ? 0.2 : 0.24;     // where the horizon is on the screen (high: little sky), and looking up
+    view.horizon0 = ui.touch ? 0.25 : 0.26;    // where the horizon is on the screen (high: little sky, but enough for the sun and
+                                               // the moon to cross it clear of the clock), and looking up
     lookAt();
     if (!was) { state.x = START_X; state.cam = state.x; state.camD = -follow(); }     // (he starts a short walk before the first place, which is ahead on his way)
     skyHeight();
@@ -1653,7 +1657,7 @@ function draw() {
     const W = view.w / view.k;
 
     // The floor, back to the horizon, and him on it at his depth (smaller and nearer the middle the farther back)
-    world.drawSky(c, { width: W, cam: state.cam, d: state.d }, view.top / view.k, horizon());   // (the sun's way and the clouds in the sky below the strip under the clock; the sky's colour up to the top)
+    world.drawSky(c, { width: W, cam: state.cam, d: state.d }, Math.max(view.top, SKY_CLEAR) / view.k, horizon());   // (the sun's way and the clouds in the sky below the strip under the clock; the sky's colour up to the top)
     // the zone's colours: his line and body, the colour under the starry night, and the header's icons cream by night
     INK = world.ink(); FILL = world.white();
     const dark = world.night(), under = world.nightColour();
@@ -1900,6 +1904,8 @@ onMounted(() => {
     window.addEventListener('keyup', onKey);
     window.addEventListener('blur', release);
     resize();
+    // (the inset under the clock can come a moment after the page starts on an iPhone: looked at again)
+    for (const ms of [400, 1500]) setTimeout(() => { if (!gone && safeTop() !== Math.round(view.top)) resize(); }, ms);
     window.addEventListener('resize', resize);
     // (a shooting star that passes near sounds, as in the app's other night skies; only when the night is out)
     stars = createStarField(starCanvas.value, starBox.value, { pace: () => state.pace, onShoot: () => { if (world.night() > 0.5 && !ui.guide) play('star'); starFell(); } });
