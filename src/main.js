@@ -7,6 +7,8 @@ import { en } from "./json/copy_en.json";
 
 import App from "./App.vue";
 import { initAnalytics } from "./analytics.js";
+import { getCard } from "./data/cards.js";
+import { followTopColour } from "./composables/topColour.js";
 
 //Router
 import router from "./router";
@@ -43,7 +45,30 @@ window.addEventListener('vite:preloadError', (event) => {
 // The page's language follows the one chosen (screen readers and the browser's translation read it)
 watchEffect(() => { document.documentElement.lang = i18n.global.locale; });
 
+// The tab's title follows the page and the language (the history and the tabs then say where each one was). The
+// pages for crawlers carry the same in Spanish (scripts/cardMetaPlugin.js).
+const pageTitle = (route, t, locale) => {
+  if (route.name === 'card') {
+    const card = getCard(route.params.id);
+    const name = card?.[`name_${locale}`] ?? card?.name_es;
+    if (name) return name;
+  }
+  if (route.path === '/sid') return t('nav.lab');
+  if (route.path === '/deck') return t('nav.deck');
+  if (route.path === '/oracle') return t('landing.oracleAction');
+  if (route.path === '/oracleTheNine') return t('praxis.theNine');
+  return null;
+};
+watchEffect(() => {
+  const { t, locale } = i18n.global;
+  const page = pageTitle(router.currentRoute.value, t, locale);
+  document.title = page ? `${page} · Algo Particular` : `Algo Particular · ${t('deck.name')}`;
+});
+
 app.mount("#app");
+
+// The browser's bar in the colour at the top of the screen, on every page and as it scrolls
+followTopColour(router);
 
 // Anonymous, cookie-less usage analytics (does nothing without VITE_POSTHOG_KEY)
 initAnalytics({ router, i18n });

@@ -5,7 +5,6 @@
     import { takePendingTransition } from '../cardTransition.js';
 
     import { getCard } from '../data/cards.js';
-    import { setStrip } from '../composables/statusStrip.js';
     import { sceneFor, sceneNameFor } from '../data/cardScenes.js';
     import { setCurrentVisit, startCardVisit, track } from '../analytics.js';
     import { cardGame } from '../composables/useCardGame.js';
@@ -75,8 +74,6 @@
     const stopInk = watchEffect(() => document.body.classList.toggle('card-ink', INK_HEADER.has(String(props.id))));
 
     onMounted(async () => {
-        // the strip under the iPhone's clock (installed app) in the card's background colour, the colour round its drawing
-        setStrip(color.value || null);
         window.addEventListener('scroll', fadeCue, { passive: true });
         window.addEventListener('pagehide', visit.finish);
         document.addEventListener('visibilitychange', onHidden);
@@ -116,7 +113,6 @@
 
     onBeforeUnmount(() => {
         cardGame.value = true;      // (outside a card, Sid's world draws its own rulitos)
-        setStrip(null);
         window.removeEventListener('scroll', fadeCue);
         stopReveals.forEach((stop) => stop());
         transition?.el.remove();

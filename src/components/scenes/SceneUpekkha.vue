@@ -1105,6 +1105,22 @@
         if (gone) { made.destroy(); return; }
         stage = made;
         stageEl = root.value.closest('.stage');
+        // The browser's bar takes the colour at the top of the screen (topColour.js), and the two halves are drawn here: at
+        // that height, the half of the sky that covers more of the screen's width, with the edge as it moves (below the
+        // horizon the land's drawing covers the ground's colours: the scene's own background)
+        root.value.topColourAt = (y) => {
+            const ya = (y - F.y) / k();
+            if (ya < 0 || ya >= R.horizon[0]) return null;
+            const W = root.value?.clientWidth ?? 0;
+            let right = 0;
+            for (let i = 0; i < 24; i++) {
+                let xa = ((i + 0.5) / 24 * W - F.x) / k();
+                if (xa < 0) xa = -xa;
+                else if (xa > SIZE) xa = 2 * SIZE - xa;
+                if (xa > edgeNow(0, ya)) right++;
+            }
+            return '#' + (right > 12 ? FUTURE : MINT).toString(16).padStart(6, '0');
+        };
         build(stage);
         hand = createGhostHand(stage, { color: 0x143246, shade: 0xf7f8f1 });   // navy: the cream hand does not read on the mint
         stage.onResize((w, h) => place(w, h));

@@ -515,6 +515,15 @@
         if (gone) { made.destroy(); return; }
         stage = made;
         stageEl = root.value.closest('.stage');
+        // the browser's bar takes the colour at the top of the screen (topColour.js), and the dome and the cap are drawn
+        // here, not in the page: under the cap its coral, inside the dome its night, else the scene's own background
+        root.value.topColourAt = (y) => {
+            const x = (root.value?.clientWidth ?? 0) / 2;
+            const a = CAP.a * k(), b = CAP.b * k(), r = DOME.r * k();
+            if (((x - sx(CAP.x)) / a) ** 2 + ((y - sy(CAP.y)) / b) ** 2 <= 1) return hexCss(CAP.color);
+            if (y < sy(CAP.y) && Math.hypot(x - sx(DOME.x), y - sy(DOME.y)) <= r) return hexCss(DOME.color);
+            return null;
+        };
         build(stage);
         stage.onResize((w, h) => place(w, h));
         const after = (node) => node.mesh.renderOrder + 0.5;
