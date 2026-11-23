@@ -81,3 +81,12 @@ Una foto sacada de PostHog el 29 de octubre. Son pocas visitas y muchas deben se
 - 45 visitas (31 desde iPhone, 8 desde Android, 7 desde Mac); 58 cartas abiertas (47 sacadas, 11 por enlace); 44 cartas sacadas (28 del anillo de `/deck`, 10 del mazo completo, 6 de The Nine); 9 veces se bajó hasta la lectura; 7 veces se abrió compartir y 5 se compartió.
 - En las cartas planas casi nadie toca la escena (1 de 19 visitas) y se quedan unos 5 segundos; en Vipassana y Pañña tocan casi todos y se quedan casi un minuto. Pañña es la que más se juega: la figura se vio 8 veces y se deshizo 9.
 - El detalle por escena y por hito está en la pestaña Analítica del artefacto "Anima GDD".
+
+## El primer mes (26 de octubre al 23 de noviembre de 2026)
+Sacado de PostHog el 23 de noviembre. Solo `algoparticular.com`: se dejan afuera las vistas previas de Netlify (`deploy-preview-…`, unas 40 visitas de prueba). Las pruebas del equipo desde el sitio de verdad no se pueden separar (el filtro de cuentas internas de PostHog no aplica, porque no hay personas), así que muchas visitas de iPhone son nuestras.
+- 413 visitas: 358 desde iOS, 29 Android, 23 Mac, 4 Windows y 2 Linux. Por semana: 199 (la del lanzamiento), 23, 63 y 129.
+- 407 cartas abiertas en 145 visitas; 308 sacadas del oráculo. 50 veces se bajó hasta la lectura (12 % de las cartas abiertas).
+- En la ilustración plana (las cartas sin escena de entonces) 1 de 62 tocó la escena; en las escenas con juego tocan entre la mitad y casi todos (Vipassana 19 de 25, Pañña 15 de 19, Sila 13 de 15, Nekkhamma 13 de 16).
+- Juegos completados (veces, no personas): Hogar 29, Paciencia 28, Pañña 15, Upekkha 12, Vipassana 11, Nekkhamma 10, Dana 10, Sila 9.
+- El mundo de Sid (desde el 20 de noviembre): 52 entradas en 48 visitas, 18 visitas se sentaron, 19 plantaron una semilla, 11 encontraron un fragmento y 15 abrieron la libreta; solo 4 abrieron la carta de un lugar.
+- Compartir: 19 visitas lo abrieron y 8 compartieron.

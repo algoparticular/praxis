@@ -1,47 +1,59 @@
 # Abierto
 
-Séptima pestaña de "Anima GDD": lo que falta decidir, agrupado por tema.
+Séptima pestaña de "Anima GDD": solo las decisiones que faltan tomar, agrupadas por tema. Cada una con la pregunta, las opciones que hay pensadas y lo que ayudaría a decidir.
 
-## Verbos y cartas
-- Los siete verbos se probaron en una escena: Arraigar (Paciencia, Hogar y Addhitthana), Fluir (Khanti), Encender (Evolución Espiritual y Viriya), Dar y recibir (Dana, Metta y Gratitud), Resonar (Sincronicidad, Sila y Armonía, en su forma "a tiempo"; Creatividad, como composición libre, y Sacca, Comunicación y Honestidad, como eco), Ver (Pañña) y Soltar (Vipassana, Nekkhamma y Upekkha). Todos pueden cambiar.
-- Resonar: decidir sus dos formas (a tiempo para Sincronicidad, Armonía y Sila; eco para Comunicación, Honestidad y Sacca). El eco está probado en Sacca, Comunicación y Honestidad, y el pulso en Sila, Sincronicidad y Armonía.
-- Encender en Viriya: cuánto hay que frotar (`RUB`, 1,6 anchos de la escena) y a qué ritmo deja de contar (`STEADY`), la fuerza de la honda y la caída de la llama, y si los cactus y flores chicos se alcanzan bien en un teléfono: probarlos con un teléfono en la mano. En el teléfono el valle queda abajo y arriba hay mucho cielo azul.
-- Resonar en Sila (a tiempo, con el latido): el pulso del corazón (`BEAT`, 1,15 s), cuánto margen tiene un toque a tiempo (`IN_TIME`, 0,24 s), cuántos hongos hacen falta (los seis de la carta), si los destellos del cielo distraen lo justo y si el brillo encendido de los hongos se distingue del tenue: probarlos con un teléfono en la mano.
-- Resonar en Sacca (eco): qué nota lleva cada color de nube (hoy, por el chakra de su color: celeste Sol, salmón Re, verde azulado Fa; el rosa pálido, que no tiene chakra de su color, Si, la corona, por ser el más claro), el largo de la frase (cuatro notas, cada color una vez), el pulso al cantarla (`GAP`, 0,85 s, y más lento tras un error) y si en un teléfono las nubes chicas se tocan bien: probarlos con un teléfono en la mano.
-- Resonar en Creatividad (caja de música): cuántas piezas hacen la melodía (`TUNE`, 7), la velocidad de la corona mientras suena (`PLAY_TURN`, una vuelta cada 12 s) y si las piezas encendidas y el peine se distinguen bien: probarlos con un teléfono en la mano.
-- Resonar en Armonía (a tiempo, con pausas): el compás (`BAR`, latido, latido, pausa, latido), el pulso (`BEAT`, 1,05 s), la ventana (0,22 s antes a 0,34 s después), si el `pulse` de la medusa que guía se oye lo suficiente para seguirlo, y que las seis notas vuelvan a Do, Mi en lugar de seguir subiendo: probarlos con un teléfono en la mano.
-- Resonar en Comunicación (eco en la quietud): cuánta quietud pide la luz antes de cantar (`STILL`, 3,5 s), si se entiende sin palabras que tocar la corta, el largo de la frase (de dos a cuatro notas) y el tamaño del rulito en un teléfono (unos 60 px): probarlos con un teléfono en la mano.
-- Resonar en Honestidad (eco de ritmo): si se entiende sin palabras que las burbujas son voces que hay que acallar y que la medusa repite el ritmo, cómo suenan las seis voces juntas, si un intervalo de medio tiempo (0,25 s) se toca bien, el margen (`IN_TIME`, 45 % del intervalo), cuándo despierta sola una burbuja (`WAKE`, 35 s) y si el brillo celeste de la campana al ganar es demasiado: probarlos con un teléfono en la mano.
-- Resonar en Sincronicidad: el pulso (`BEAT`, 1,3 s) y la ventana para acertar (`IN_TIME`, 0,28 s): probarlos con un teléfono en la mano.
-- Encender: cuánto hay que frotar (`RUB`), cuántos golpes dura el fuego (`FUEL`) y cuánto abarca cada golpe (`REACH`): ajustarlos con un teléfono en la mano. Hoy se encienden los doce en unos cinco a siete lanzamientos.
-- Las fichas de Huit y Sid no tienen texto de historia, solo la tabla.
+Lo que es probar algo en un teléfono o una tarea por hacer no está acá: vive en el tablero "Roadmap de Anima" (https://claude.ai/artifact/U7TN7ZhB6wQ7ixdyo22Era), en sus columnas "Para probar" y "Próximo". Estas decisiones están también en su columna "Por decidir"; cuando una se decide, sale de esta lista.
 
-## Escenas de juego
-- Más adelante, por accesibilidad: que Pañña, Vipassana, Evolución, Sincronicidad, Creatividad, Sila, Viriya y Upekkha se puedan jugar con movimiento reducido (hoy quedan estáticas y no se pueden jugar; Dana, Metta y Gratitud ya se juegan así), y Vipassana también con teclado. El ajuste de movimiento reducido lo activan personas a las que las animaciones les dan mareo o malestar, y el teclado lo usa quien no puede tocar la pantalla. El gesto seguiría funcionando, con menos chispas y menos movimiento.
-- Tiempos de Arraigar (2,6 s dibujándose, 3,4 s yéndose): ajustarlos con un teléfono en la mano.
-- Que las raíces se recuerden entre visitas (hoy se pierden al salir de la carta).
-- Idea, todavía no: que al nacer el rulito en una carta aparezca su afirmación arriba, como en el mundo de Sid (escrita a mano en la nube de vidrio crema que respira, `teaching` en `LabSid.vue`), en el lugar del nombre, que se aparta mientras tanto y vuelve después de unos 10 s. Cómo: cada escena con juego emite `rulito` donde suena `play('rulito')` (hoy solo lo hacen las siete de los lugares del mundo) y `CardTemplate.vue` muestra la afirmación al recibirlo. A decidir: cuánto dura (10 s o mientras el rulito está en pantalla) y si al abrir la carta desde un lugar del mundo se muestra ahí, ya que al volver al mundo aparece otra vez.
-- El color del rulito de Vipassana: es el rosa de la espiral porque el fondo de la escena ya es el violeta de la carta.
+## La pregunta grande
 
-- Soles y lunas (paquete S): hechos, con el sol de Ciclos y el planeta de Perdón. Falta probarlos en un teléfono. Lo decidido en cada carta está en `plan-revision-verbos.md`, paquete S.
-- Las 18 cartas que se hicieron jugables el 31 de octubre se revisan de a una, probándolas en un teléfono: `plan-revision-verbos.md`.
+### ¿Dónde viven los juegos: en las cartas o en el mundo de Sid?
+Hoy 32 de las 33 cartas tienen un juego en su escena, y el mundo de Sid abre esas mismas cartas desde siete lugares. Puede que las cartas dejen de ser interactivas y queden solo animadas, y que los juegos vivan solo en el mundo.
+- **Como hoy:** cada carta con su juego; el mundo abre la carta.
+- **Cartas animadas, juegos en el mundo:** la carta es escena viva y lectura; el juego se juega en su lugar del mundo.
+- **Una mezcla:** la carta se puede tocar (responde y suena) sin un juego que ganar; el juego entero, en el mundo.
 
-## Del plan inmersivo
-Lo que queda de `plan-inmersivo.md`. Los pasos 1 a 6 y The Nine en 3D ya están hechos; esto es lo que se anotó como pendiente o como primera versión.
-- Pulir el estilo visual del ritual de sacar carta en `/oracle` y `/oracleTheNine`: el barajado, la elección y el volteo son una primera versión.
-- Medir batería y fluidez en un teléfono real de la mesa 3D (`/oracle` y `/oracleTheNine`) y de las escenas con three.js. Con `?fps` en la dirección (por ejemplo `/card/31?fps`) aparece un contador abajo a la izquierda: cuadros por segundo, cuadros lentos, tirones, el peor cuadro y el tiempo que lleva midiendo. Tocarlo lo reinicia y `?fps=0` lo apaga. Los teléfonos de quienes usan la app mandan lo mismo a PostHog al dejar una carta o una mesa (`card_left`, `table_left`; ver `analitica.md`).
-- Medir la batería a mano, porque una página web no puede leerla: con el brillo fijo y el teléfono sin cargar, dejar 15 minutos una escena con three.js tocándola de vez en cuando, y 15 minutos una carta de ilustración plana; anotar el % al empezar y al terminar y si el teléfono se calentó. La diferencia es lo que cuesta la escena. Repetir con las mesas de `/oracle` y `/oracleTheNine`. Con el iPhone conectado a la Mac, Safari > Desarrollo > (el iPhone) > la página, pestaña Timelines, muestra además el uso del procesador y una estimación del gasto de batería.
+Qué ayudaría: la analítica del primer mes (en las escenas con juego tocan entre la mitad y casi todos; Hogar y Paciencia son las que más se completan; solo el 12 % de las cartas abiertas llega a la lectura; del mundo, 48 visitas y solo 4 abrieron la carta de un lugar). Probarlo con personas. Varias de las decisiones de abajo dependen de esta.
 
-## Ideas para seguir
-Hipótesis, no decisiones: ninguna está implementada ni decidida. Están en `plan-inmersivo.md`.
-- Qué se puede llevar la persona. De menor a mayor compromiso: la afirmación como imagen para guardar o compartir (ya hay una imagen social por carta), la carta del día guardada en el dispositivo, la invitación como recordatorio o nota propia, y el rulito que le salió a cada persona.
-- Antes de construirlo, mirar en la analítica cuánta gente completa un juego y cuánta llega a la lectura (`pattern_seen`, `all_released`).
-- Las 33 cartas tienen escena viva y 32 tienen juego; la 10, Tu verdad, no lo tendrá por ahora.
-- Dos presupuestos de tamaño están justos (otras imágenes y ilustraciones de cartas): cada escena nueva con capas WebP los va a pedir.
+## El juego en las cartas
+Si los juegos siguen en las cartas.
+
+### Resonar: ¿qué forma va con cada carta?
+Hoy hay tres: a tiempo (Sincronicidad, Sila y Armonía), eco (Sacca, Comunicación y Honestidad) y composición libre (Creatividad). ¿Quedan así, o cada carta de Resonar usa una sola forma? Qué ayudaría: jugar las siete seguidas en un teléfono.
+
+### ¿La afirmación aparece al nacer el rulito?
+Como en el mundo de Sid: escrita a mano arriba, en el lugar del nombre, que se aparta y vuelve. Opciones: que dure unos 10 s o mientras el rulito está en pantalla; y si al abrir la carta desde un lugar del mundo se muestra también, ya que al volver al mundo aparece otra vez.
+
+### Movimiento reducido y teclado: ¿cuándo?
+Pañña, Vipassana, Evolución, Sincronicidad, Creatividad, Sila, Viriya y Upekkha hoy quedan quietas con movimiento reducido y no se pueden jugar (Dana, Metta y Gratitud sí); Vipassana tampoco con teclado. ¿Se hace ahora o más adelante? Si los juegos pasan al mundo, se resuelve allá.
 
 ## El mundo de Sid
-Lo abierto del mundo (`/sid`) está en `mundo.md`: su lugar en Inicio (cuatro opciones, sin elegir), qué es en el fondo, el mapa fijo cuando estén todas las cartas, y mirar su analítica (desde el 20 de noviembre) antes de elegir.
 
-## Música y secuencias
-- Cómo se juegan los choques de mi–fa y si–do en una secuencia que suba por los chakras.
-- Qué secuencias de acordes se usan en el juego. Los siete acordes disminuidos y otros nueve quedan sin carta; podrían servir para esas secuencias o para momentos del juego.
+### ¿Qué es en el fondo?
+Un mapa de las cartas, un camino de aprendizaje o un jardín para estar. Se va viendo jugando con él, de a una pieza por vez.
+
+### ¿Dónde va en Inicio?
+Cuatro opciones, en `mundo.md`: un bloque propio después del oráculo, un tercer modo del oráculo, en el hero, o seguir en el footer por ahora. Qué ayudaría: unas semanas más de su analítica (desde el 20 de noviembre) y la respuesta a la pregunta grande.
+
+### ¿Cuántos mundos?
+Hoy son siete, uno por carta con lugar. ¿Se suman las 33? Son muchos: cada una pide su lugar, sus personajes y sus plantas.
+
+### ¿Un mapa fijo cuando estén todas?
+Que cada carta aparezca una sola vez (por ejemplo una grilla de 6x6 que se cierra sobre sí misma), para poder aprender el camino. Hoy el orden se sortea en cada visita.
+
+## Lo que se lleva la persona
+
+### ¿Qué se puede llevar?
+De menor a mayor compromiso: la afirmación como imagen para guardar o compartir (ya hay una imagen por carta para compartir), la carta del día guardada en el teléfono, la invitación como recordatorio, el rulito que le salió. Qué ayudaría: la analítica (cuánta gente completa un juego y cuánta llega a la lectura) y la respuesta a la pregunta grande.
+
+## Música
+
+### ¿Qué secuencias de acordes se usan en el juego?
+Los siete acordes disminuidos y otros nueve quedan sin carta; podrían servir para secuencias o para momentos del juego.
+
+### ¿Cómo se juegan los choques mi–fa y si–do?
+En una secuencia que suba por los chakras, esos dos semitonos chocan. ¿Se evitan, se resuelven o se usan?
+
+## Cerrado hace poco
+- Que las raíces de Arraigar se recuerden entre visitas: se descartó (23 de noviembre).
+- Tu verdad no tiene verbo ni juego, por ahora: es el silencio (decidido en `verbos-y-dinamicas.md`).
+- Que los siete verbos puedan cambiar no es una pregunta: pasó a los pilares de Empezar.
