@@ -1,0 +1,6 @@
+# Response headers, read by Cloudflare (and by Netlify while both serve the site). Everything else keeps the default:
+# public, max-age=0, must-revalidate with an ETag, so a deploy is seen at once (see vite.config.js).
+
+# The card pictures change rarely: browsers keep them for a day and refresh them in the background for a week
+/cards/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
