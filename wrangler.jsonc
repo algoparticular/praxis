@@ -1,0 +1,15 @@
+// Cloudflare Workers: the site is the built dist/ served as static files, with no Worker script of its own
+// (docs/cloudflare.md). Workers Builds runs `npm run build` and then `npx wrangler deploy` on every push to main.
+{
+	"$schema": "./node_modules/wrangler/config-schema.json",
+	"name": "algoparticular",
+	"compatibility_date": "2026-11-24",
+	"assets": {
+		"directory": "./dist",
+		// any address that is not a file opens the app (the router decides), as Netlify's `/* /index.html 200` did
+		"not_found_handling": "single-page-application",
+		// pages are served without a trailing slash (/card/3 from card/3/index.html), the address their canonical,
+		// the sitemap and the app's router use; /card/3/ redirects to it
+		"html_handling": "drop-trailing-slash"
+	}
+}
