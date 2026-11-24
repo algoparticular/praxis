@@ -29,6 +29,12 @@ Todo lo demás se comporta igual que en Netlify: cada archivo se sirve con `Cach
 
 Para que Cloudflare sirva `algoparticular.com`, el dominio tiene que ser una *zona* de la cuenta: Cloudflare pasa a manejar sus DNS. El orden importa para que el sitio no se caiga.
 
+### Cómo está hoy (revisado el 24 de noviembre de 2026)
+
+- Comprado en **GoDaddy** (vence el 14 de noviembre de 2027), y sus DNS también están en GoDaddy (`ns31.domaincontrol.com` y `ns32.domaincontrol.com`). Netlify no maneja los DNS: solo recibe el tráfico.
+- Registros: `algoparticular.com` → `A 75.2.60.5` (Netlify) y `www` → `CNAME algoparticular.com`. Netlify redirige `www` a `algoparticular.com`.
+- Sin correo (ningún `MX`), sin `TXT` de verificación, sin DNSSEC.
+
 ### Antes de empezar: anotar lo que hay
 
 - **Dónde se compró el dominio** (el *registrar*). Si no se sabe: <https://lookup.icann.org/>.
