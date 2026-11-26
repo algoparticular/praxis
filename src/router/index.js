@@ -92,12 +92,22 @@ const router = createRouter({
   ],
 });
 
+// Offline, a page whose code was never saved (Sid's world not opened yet: the first visit only saves the app's shell,
+// vite.config.js) cannot open: the app stays where it was, or, if it was the first page, opens the landing
+let offlineMiss = false;
+
 // Every page starts at the top
 router.beforeEach((to, from) => {
     window.scrollTo(0, 0);
     // Opened from the Home Screen, a phone that closed the app in the background starts it again at its start_url (the
     // landing): whoever was in Sid's world a little while ago goes back into it (worldResume.js)
-    if (from === START_LOCATION && to.path === '/' && !to.hash && backToWorld()) return '/sid';
+    if (!offlineMiss && from === START_LOCATION && to.path === '/' && !to.hash && backToWorld()) return '/sid';
+});
+
+router.onError(() => {
+    if (navigator.onLine !== false || offlineMiss) return;
+    offlineMiss = true;
+    if (!router.currentRoute.value.matched.length) router.replace('/');
 });
 
 export default router;

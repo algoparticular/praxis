@@ -8,8 +8,26 @@
 const CHECK_EVERY = 10 * 60 * 1000; // asking more often than this on every return would be wasted requests
 const QUIET_WINDOW = 10 * 1000;     // after coming back, a reload this soon and before any touch is not noticed
 
+// The first visit loads its pieces before the service worker has taken over, so they do not go through it: once it has,
+// what was loaded is saved as if it had (the caches of vite.config.js: `chunks` for the app's pieces, `versioned` for the
+// pictures and sounds that carry a fingerprint), so what was seen on the first visit also opens offline
+const warm = () => {
+	if (!('caches' in window)) return;
+	const urls = performance.getEntriesByType('resource').map((entry) => new URL(entry.name))
+		.filter((url) => url.origin === location.origin);
+	const chunks = urls.filter((url) => /^\/assets\/[^/]+\.(js|css)$/.test(url.pathname)).map(String);
+	const pictures = urls.filter((url) => /\.(webp|jpg|png|mp3)$/.test(url.pathname)
+		&& (url.searchParams.has('v') || /^\/assets\/[^/]+-[\w-]{8}\.\w+$/.test(url.pathname))).map(String);
+	const keep = (name, list) => caches.open(name).then((cache) => Promise.all(list.map((url) => cache.add(url).catch(() => {}))));
+	keep('chunks', chunks).catch(() => {});
+	keep('versioned', pictures).catch(() => {});
+};
+
 export function registerServiceWorker() {
 	if (!('serviceWorker' in navigator) || !import.meta.env.PROD) return;
+	// Sid's world alone asks for some 300 pictures: room for all of them in the list warm() reads
+	try { performance.setResourceTimingBufferSize(1500); } catch { /* old browsers: the default list */ }
+	if (!navigator.serviceWorker.controller) navigator.serviceWorker.ready.then(warm).catch(() => {});
 
 	navigator.serviceWorker.register('/serviceWorker.js').then((registration) => {
 		// the first install also takes control of the page: that is not an update

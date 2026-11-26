@@ -10,6 +10,7 @@
     import { pictureUrl } from '../../data/cards.js';
     import { chordFor } from '../../data/cardChords.js';
     import { chordColors } from '../../data/chordColors.js';
+    import { assetUrl } from '../../assetUrl.js';
 
     const props = defineProps({
         card: { type: Object, default: () => ({}) },
@@ -25,7 +26,7 @@
 
     const picture = computed(() => {
         const full = props.card.image ? `url(${pictureUrl(props.card)})` : '';
-        const thumb = props.card.image ? `url(/cards/thumb/${props.card.id}.webp)` : '';
+        const thumb = props.card.image ? `url(${assetUrl(`/cards/thumb/${props.card.id}.webp`)})` : '';
         return [full, thumb].filter(Boolean).join(',');
     });
 

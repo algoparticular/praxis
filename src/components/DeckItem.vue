@@ -1,5 +1,6 @@
 <script setup>
     import { ref } from 'vue';
+    import { assetUrl } from '../assetUrl.js';
 
     const props = defineProps({
         id: Number,
@@ -18,7 +19,7 @@
 <template>
     <button class="item" @click="drawn()">
         <span class="frame" ref="frame" :style="{ '--glow': props.data.colorAlt }">
-            <img :src="'/cards/thumb/' + props.id + '.webp'" :alt="props.data['name_' + $i18n.locale]" loading="lazy"/>
+            <img :src="assetUrl('/cards/thumb/' + props.id + '.webp')" :alt="props.data['name_' + $i18n.locale]" loading="lazy"/>
         </span>
         <span class="name">{{ props.data['name_' + $i18n.locale] }}</span>
     </button>

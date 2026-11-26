@@ -10,9 +10,9 @@ export default defineConfig({
     vue(),
     assetVersions(),
     cardMeta(),
-    // The service worker (dist/serviceWorker.js, registered in App.vue): the app works without internet. The app
-    // itself, the fonts and the deck's thumbnails are saved on the first visit; the pictures (illustrations, the layers
-    // of the scenes) as they are seen. Those come with their folder's fingerprint (src/assetUrl.js) and are kept for good:
+    // The service worker (dist/serviceWorker.js, registered in App.vue): the app works without internet. The app's
+    // shell (its main code, styles, fonts and icons) is saved on the first visit; each scene, Sid's world, the
+    // thumbnails and the pictures (illustrations, the layers of the scenes) as they are first opened. Those come with their folder's fingerprint (src/assetUrl.js) and are kept for good:
     // a picture that changes gets a new address, so it is never mixed with what was saved before (an old crown over a
     // new cell). The page is always asked for first, so a deploy is seen at once; without internet, or if it does not
     // answer in a few seconds, what was saved is used. src/pwa.js reloads
@@ -22,16 +22,24 @@ export default defineConfig({
       injectRegister: false,
       manifest: false,
       workbox: {
-        globPatterns: ['**/*.{js,css,html,woff2,svg}', 'cards/thumb/*.webp', 'icon-*.png'],
+        globPatterns: ['**/*.{js,css,html,woff2,svg}', 'icon-*.png'],
         // the pages with their own words (each card's, Sid's world, the deck, the oracle, The Nine) are for crawlers;
         // offline every address opens the app
-        globIgnores: ['card/**', 'sid/**', 'deck/**', 'oracle/**', 'oracleTheNine/**'],
+        globIgnores: ['card/**', 'sid/**', 'deck/**', 'oracle/**', 'oracleTheNine/**',
+          // the first visit only saves the app's shell: each scene, Sid's world and the scenes' data are saved when they
+          // are first opened (the `chunks` rule below), not all at once while the first page is still loading
+          'assets/Scene*', 'assets/LabSid-*', 'assets/ciclosScene-*'],
         // pages: from the network first; offline, the one saved for that address or else the app's own index.html
         navigateFallback: null,
         cleanupOutdatedCaches: true,
         skipWaiting: true,
         clientsClaim: true,
         runtimeCaching: [{
+          // the pieces of the app not saved on the first visit (globIgnores): their names change with their contents
+          urlPattern: ({ sameOrigin, url }) => sameOrigin && /^\/assets\/[^/]+\.(js|css)$/.test(url.pathname),
+          handler: 'CacheFirst',
+          options: { cacheName: 'chunks', expiration: { maxEntries: 200, maxAgeSeconds: 60 * 60 * 24 * 365 } },
+        }, {
           urlPattern: ({ request }) => request.mode === 'navigate',
           handler: 'NetworkFirst',
           options: {
@@ -45,7 +53,9 @@ export default defineConfig({
         }, {
           // a picture or sound with its folder's fingerprint (src/assetUrl.js) never changes: kept and used without
           // asking the server; a deploy that changes it gives it another address
-          urlPattern: ({ sameOrigin, url }) => sameOrigin && url.searchParams.has('v') && /\.(webp|jpg|png|mp3)$/.test(url.pathname),
+          // and so is anything Vite built with a fingerprint in its name (Sid's world's pieces, /assets/fern-CBiS5Exv.webp)
+          urlPattern: ({ sameOrigin, url }) => sameOrigin && /\.(webp|jpg|png|mp3)$/.test(url.pathname)
+            && (url.searchParams.has('v') || /^\/assets\/[^/]+-[\w-]{8}\.\w+$/.test(url.pathname)),
           handler: 'CacheFirst',
           options: {
             cacheName: 'versioned',

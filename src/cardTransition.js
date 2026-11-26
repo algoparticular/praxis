@@ -1,5 +1,6 @@
 import { track } from './analytics.js';
 import { pictureUrl } from './data/cards.js';
+import { assetUrl } from './assetUrl.js';
 
 // Hands the flipped card from the oracle grid to the card page, which animates it into place.
 let pending = null;
@@ -35,7 +36,7 @@ export const handOffCard = ({ router, card, rect, frameColor, hideCard }) => {
     const radius = rect.width * 18 / 90;
     const full = card?.image ? `url(${pictureUrl(card)})` : '';
     // The thumbnail underneath is already in cache, so the copy never shows an empty frame
-    const thumb = card?.image ? `url(/cards/thumb/${card.id}.webp)` : '';
+    const thumb = card?.image ? `url(${assetUrl(`/cards/thumb/${card.id}.webp`)})` : '';
     const clone = document.createElement('div');
     clone.style.cssText = `position:fixed;z-index:100;pointer-events:none;box-sizing:border-box;`
         + `left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;height:${rect.height}px;`

@@ -6,7 +6,9 @@ import SceneFlat from '../components/scenes/SceneFlat.vue';
 import { hasWebGL } from '../composables/useLayerStage.js';
 
 // Not suspensible: the page does not wait for a scene (and three.js) to load; the scene fades in when it arrives
-const lazy = (loader) => defineAsyncComponent({ loader, suspensible: false });
+// Offline, a scene never opened is not on the phone (the first visit only saves the app's shell, vite.config.js): the
+// card keeps its flat illustration instead
+const lazy = (loader) => defineAsyncComponent({ loader, suspensible: false, errorComponent: SceneFlat });
 // A scene drawn whole in WebGL (useLayerStage): without WebGL the card keeps its flat illustration
 const webgl = hasWebGL();
 const stage = (loader) => (webgl ? lazy(loader) : SceneFlat);
