@@ -71,7 +71,7 @@ Para después (decidido con Juan): que el mundo viva sin uno entre visitas, un c
 
 - Es un laboratorio: no toca las cartas ni sus escenas; todo vive en `src/lab/` y su ruta.
 - Los dibujos de la ilustradora se pasan a WebP por un converter (los originales no quedan en el repo; `originales/` solo tiene `.gitkeep`). Cielos y partículas en código, nunca como imágenes (ver `CLAUDE.md`).
-- Cada cambio: `npm run check`, probar en el teléfono (el preview de Netlify del PR), y un PR por paso.
+- Cada cambio: `npm run check`, probar en el teléfono (la vista previa del PR, ver `docs/cloudflare.md`), y un PR por paso.
 
 **Hecho: cada planta crece lo que su dibujo da.** Al volver a una planta crece un paso una vez por visita, igual que al meditar a su lado: como mucho dos pasos por visita. Antes todas llegaban a 1,4 veces su tamaño; ahora las que tienen píxeles de sobra en su imagen llegan más lejos, hasta 2, sin que se vean borrosas (`mostOf` en `sidWorld.js`: que cada píxel de la imagen no ocupe más de uno de la pantalla, en una pantalla de teléfono o de notebook a la profundidad de Sid). Crecen más los abanicos de Ciclos (hasta 1,85 a 2), los rulos de pasto de Paciencia (1,7), las matas y el brote de Upekkha (1,5 a 1,8) y la palmera de Gratitud (1,55); los hongos de Celebración casi nada (las tapas 1,4). Las plantitas de Metta, los hongos de Upekkha y la planta pálida de Gratitud se quedan en 1,4: sus imágenes son chicas y a ese tamaño ya se estiran un poco.
 

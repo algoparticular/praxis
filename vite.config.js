@@ -11,7 +11,7 @@ export default defineConfig({
     // The service worker (dist/serviceWorker.js, registered in App.vue): the app works without internet. The app
     // itself, the fonts and the deck's thumbnails are saved on the first visit; the pictures (illustrations, the layers
     // of the scenes) as they are seen. With internet the page and the pictures are always asked for first (a picture
-    // that has not changed costs a 304: Netlify revalidates /assets with its ETag), so a deploy is seen at once and
+    // that has not changed costs a 304: Cloudflare revalidates /assets with its ETag), so a deploy is seen at once and
     // never mixed with what was saved before (an old app asking for pictures that are gone, an old crown over a new
     // cell); without internet, or if it does not answer in a few seconds, what was saved is used. src/pwa.js reloads
     // an app left open when a new deploy takes over; main.js reloads if an old page asks for a file that is gone.

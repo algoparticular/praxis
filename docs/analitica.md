@@ -4,13 +4,13 @@ Anónima y sin cookies. Todo el código está en `src/analytics.js`; sin `VITE_P
 
 ## Activarla
 1. En PostHog crear un proyecto y copiar la *Project API key* (empieza con `phc_`; es pública por diseño).
-2. En Netlify, *Site configuration → Environment variables*: `VITE_POSTHOG_KEY` y, si el proyecto es europeo, `VITE_POSTHOG_HOST=https://eu.i.posthog.com` (por defecto `https://us.i.posthog.com`). Volver a desplegar: las variables `VITE_` se fijan al construir.
+2. En Cloudflare, en el Worker `algoparticular`, *Settings → Build → Build variables and secrets*: `VITE_POSTHOG_KEY` y, si el proyecto es europeo, `VITE_POSTHOG_HOST=https://eu.i.posthog.com` (por defecto `https://us.i.posthog.com`). Volver a desplegar: las variables `VITE_` se fijan al construir.
 
 ## Qué garantiza
 - Sin cookies ni `localStorage`: el id vive en memoria y muere con la visita. Se cuentan **visitas**, no personas (no hay retención entre días, a propósito). El mundo de Sid guarda en el teléfono sus visitas, semillas, plantas, fragmentos y lo que ya se vio en la libreta (`worldMemory.js`), y de eso solo se mandan cantidades: qué número de visita es, cuántos fragmentos de la historia tiene y cuántos tipos de planta sembró (nada que identifique a la persona; sirve para ver si el mundo invita a volver y cuánto se avanza).
 - Sin autocapture, replay, encuestas ni perfiles de persona (`$process_person_profile: false`): solo los eventos de abajo.
 - Respeta Do Not Track y Global Privacy Control.
-- `$current_url` y `$pathname` van sin barra final (`/card/27`, no `/card/27/`): Netlify sirve una carta abierta directamente con barra y el router la quita, y así no cuentan como dos páginas.
+- `$current_url` y `$pathname` van sin barra final (`/card/27`, no `/card/27/`): una carta abierta directamente puede llegar con barra (Netlify la servía así; Cloudflare la redirige) y el router la quita, y así no cuentan como dos páginas.
 - El SDK se baja cuando la app está en reposo (chunk aparte, tope en `scripts/check-budget.mjs`).
 - PostHog descarta por su cuenta los user-agents que parecen bots (incluido Chromium automatizado), así que en pruebas locales con Playwright no llega nada salvo que se oculte `navigator.webdriver` y `userAgentData`.
 
