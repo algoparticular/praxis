@@ -88,6 +88,10 @@
         "sound": {
             "mute": "Mute sound",
             "unmute": "Turn sound on"
+        },
+        "world": {
+            "offline": "Offline, but in touch with yourself. Sid is waiting on the other side of the signal.",
+            "back": "Back"
         }
     }
 }

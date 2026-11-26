@@ -8,6 +8,7 @@ import Card from '../views/Card.vue';
 import Deck from '../views/Deck.vue';
 import PageNotFound from '../views/PageNotFound.vue';
 import { backToWorld } from '../composables/worldResume.js';
+import WorldOffline from '../components/WorldOffline.vue';
 
 // Navigation object
 const router = createRouter({
@@ -79,7 +80,11 @@ const router = createRouter({
     },
     // Sid's world (the puppet lab: Sid walking a world of his own), from the labyrinth in the footer; its own chunk,
     // loaded only when it is opened. Its code still lives in src/lab
-    { path: "/sid", component: () => import('../lab/LabSid.vue') },
+    // offline, before the world was ever opened, its code is not on the phone: a few words instead (WorldOffline.vue)
+    { path: "/sid", component: () => import('../lab/LabSid.vue').catch((error) => {
+      if (navigator.onLine === false) return WorldOffline;
+      throw error;
+    }) },
     {
       // Its first address, kept for links already shared
       path: "/lab/sid",
@@ -92,8 +97,8 @@ const router = createRouter({
   ],
 });
 
-// Offline, a page whose code was never saved (Sid's world not opened yet: the first visit only saves the app's shell,
-// vite.config.js) cannot open: the app stays where it was, or, if it was the first page, opens the landing
+// Offline, a page whose code was never saved (the first visit only saves the app's shell, vite.config.js) cannot open:
+// the app stays where it was, or, if it was the first page, opens the landing (Sid's world shows WorldOffline instead)
 let offlineMiss = false;
 
 // Every page starts at the top
