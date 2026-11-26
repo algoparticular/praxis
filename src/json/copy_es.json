@@ -88,6 +88,10 @@
         "sound": {
             "mute": "Silenciar el sonido",
             "unmute": "Activar el sonido"
+        },
+        "world": {
+            "offline": "Desconectado de la red, conectado con vos. Sid te espera del otro lado de la señal.",
+            "back": "Volver"
         }
     }
 }
