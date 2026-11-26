@@ -214,11 +214,18 @@
 
     // ---- The thread on two canvases (the square of the artwork): all of it under the pink, and over it only where it
     // crosses in front. Drawn at the frame's size (the stroke is soft: no need for the screen's full density).
+    // The scene's 2D canvases (the thread under and over, the flasks filling, the light) are drawn again and sent to the
+    // GPU every other frame: on an iPhone that upload was what made Khanti stutter (30-50 fps, PostHog, November 2026).
+    // On a phone (a coarse pointer, or 4 cores or fewer, as useLayerStage.js tells a low-power device) they are drawn at
+    // the screen's own CSS px, half the px of the 1.5 used elsewhere; their strokes are soft and glowing
+    const CANVAS_DPR = Math.min(window.devicePixelRatio || 1,
+        window.matchMedia?.('(pointer: coarse)').matches || (navigator.hardwareConcurrency ?? 8) <= 4 ? 1 : 1.5);
+    const canvasPx = () => Math.max(2, Math.round(F.size * CANVAS_DPR));
     const threadUnder = document.createElement('canvas');
     const threadOver = document.createElement('canvas');
     const FADE_ALPHA = [0.7, 0.4, 0.4, 0.45, 0.5];
     const drawThread = () => {
-        const px = Math.max(2, Math.round(F.size * Math.min(window.devicePixelRatio || 1, 1.5)));
+        const px = canvasPx();
         [threadUnder, threadOver].forEach((c) => { if (c.width !== px) { c.width = px; c.height = px; } });
         const k = px / 2160;
         const paths = strokesD().map((d) => (d ? new Path2D(d) : null));
@@ -512,10 +519,22 @@
             ctx.stroke();
         }
     };
+    // What each of the two canvases last held, so an empty one is not drawn (and sent to the GPU) again and again: the
+    // flasks' canvas is empty until a flask is uncorked, the light's before it is born and once the network is whole
+    let flowDrawn = true, aheadDrawn = true, drawnPx = 0;
     const drawFlow = () => {
-        const px = Math.max(2, Math.round(F.size * Math.min(window.devicePixelRatio || 1, 1.5)));
+        const px = canvasPx();
+        const resized = px !== drawnPx;
+        drawnPx = px;
+        const flowing = STOPS.some((s) => s.flask && s.flask.drain >= 0.01);
+        const shining = cur.alpha > 0.01 && !(win && win.full);
+        if (resized || flowing || flowDrawn) drawFlask(px, flowing);
+        if (resized || shining || aheadDrawn) drawAhead(px, shining);
+    };
+    const drawFlask = (px, flowing) => {
+        flowDrawn = flowing;
         if (flowCanvas.width !== px) { flowCanvas.width = px; flowCanvas.height = px; }
-        let ctx = flowCanvas.getContext('2d');
+        const ctx = flowCanvas.getContext('2d');
         ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.clearRect(0, 0, px, px);
         ctx.setTransform(px / 2160, 0, 0, px / 2160, 0, 0);
@@ -541,14 +560,17 @@
         });
         ctx.globalAlpha = 1;
         N_.flow?.refresh();
-        // The light, its train and its tail, on their own canvas over the drawing, so the glass and the outlines never
-        // hide them
+    };
+    // The light, its train and its tail, on their own canvas over the drawing, so the glass and the outlines never
+    // hide them
+    const drawAhead = (px, shining) => {
+        aheadDrawn = shining;
         if (aheadCanvas.width !== px) { aheadCanvas.width = px; aheadCanvas.height = px; }
-        ctx = aheadCanvas.getContext('2d');
+        const ctx = aheadCanvas.getContext('2d');
         ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.clearRect(0, 0, px, px);
         ctx.setTransform(px / 2160, 0, 0, px / 2160, 0, 0);
-        if (cur.alpha > 0.01 && !(win && win.full)) {
+        if (shining) {
             const a = cur.alpha, rushing = 1 - stream.calm;
             const sz = (n) => n * 2160 / Math.max(1, F.size);   // a size in screen px, so it reads on a phone too
             const call = stream.touched ? Math.min(1, Math.max(0, (stream.idle - 3) / 2)) : 1;
