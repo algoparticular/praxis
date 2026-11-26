@@ -33,6 +33,8 @@ app.use(router);
 // After a deploy, a page opened before it may ask for a piece of the app that no longer exists: load the new version
 // (once a minute at most, so a file that is really missing cannot loop)
 window.addEventListener('vite:preloadError', (event) => {
+  // offline it is a piece never saved (a scene not opened yet), not a deploy: reloading would not bring it
+  if (navigator.onLine === false) return;
   try {
     const last = Number(sessionStorage.getItem('reloadedForUpdate') || 0);
     if (Date.now() - last < 60000) return;

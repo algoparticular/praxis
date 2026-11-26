@@ -82,9 +82,9 @@ const visit = async (context, label, page, webgl) => {
         }
         // A picture or sound of public/ asked for without its folder's fingerprint (src/assetUrl.js) would be kept by
         // the service worker's old rule and asked about on every visit: every place that loads one goes through
-        // assetUrl (the deck's thumbnails are the precache's own)
+        // assetUrl
         const { pathname, searchParams } = new URL(url);
-        if ((/^\/assets\/[^/]+\/.+\.(webp|jpg|png|mp3)$/.test(pathname) || /^\/cards\/(?!thumb\/).+\.(webp|jpg|png)$/.test(pathname))
+        if ((/^\/assets\/[^/]+\/.+\.(webp|jpg|png|mp3)$/.test(pathname) || /^\/cards\/.+\.(webp|jpg|png)$/.test(pathname))
             && !searchParams.has('v')) {
             found.push(`picture without its fingerprint (use assetUrl): ${pathname}`);
         }

@@ -4,6 +4,8 @@
 // so the card page can animate it in place, as in the oracle tables.
 // three is imported on demand so it does not weigh on the first load.
 
+import { assetUrl } from '../assetUrl.js';
+
 const CARD_W = 1;
 const CARD_H = 1.2;           // same 1:1.2 ratio as the oracle cards
 const STEP = (Math.PI * 2) / 33;   // angle between neighbours, fixed so a filtered deck keeps the same spacing
@@ -37,7 +39,7 @@ const loadImage = (url) => new Promise((resolve) => {
 // three.js is still downloading: by the time the ring is ready most of them are already here.
 const thumbs = new Map();
 const getThumb = (id) => {
-    if (!thumbs.has(id)) thumbs.set(id, loadImage(`/cards/thumb/${id}.webp`));
+    if (!thumbs.has(id)) thumbs.set(id, loadImage(assetUrl(`/cards/thumb/${id}.webp`)));
     return thumbs.get(id);
 };
 

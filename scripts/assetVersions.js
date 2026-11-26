@@ -12,8 +12,6 @@ import crypto from 'node:crypto';
 
 const ID = 'virtual:asset-versions';
 const ROOTS = ['assets', 'cards'];
-// Kept by the service worker's own precache, with its own revisions (vite.config.js): no fingerprint needed
-const SKIP = new Set(['cards/thumb']);
 const FILES = /\.(webp|jpg|png|mp3)$/;
 
 const versions = (publicDir) => {
@@ -31,7 +29,7 @@ const versions = (publicDir) => {
                 files++;
             }
         }
-        if (files && !SKIP.has(dir)) out[dir] = hash.digest('base64url').slice(0, 8);
+        if (files) out[dir] = hash.digest('base64url').slice(0, 8);
     };
     ROOTS.forEach((root) => { if (fs.existsSync(path.join(publicDir, root))) walk(root); });
     return out;
