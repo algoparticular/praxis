@@ -26,11 +26,11 @@ Al igual que cuando recorremos un lugar, tomamos la guía de un mapa o una brúj
 ## What I have learned in this project? 🌲 
 It was mainly a challenge of my own to be able to create and assemble a PWA from end to end. In early 2022 I researched and shared readings and practices on Vue.js with my 10th grade students, which awakened my old love for development and the idea of leveraging my artistic self with the technological one.
 
-Everything was learning: creating the project with Vite, developing based on the Vue SFC framework + router + a series of plugins, implementing database in Airtable, publishing the project with Netlify. 
+Everything was learning: creating the project with Vite, developing based on the Vue SFC framework + router + a series of plugins, implementing database in Airtable, publishing the project with Netlify (today it is served from Cloudflare). 
 
 >Principalmente fue un desafío propio de poder crear y montar una PWA de punta a punta. A principios de 2022 investigué y compartí lecturas y prácticas sobre Vue.js con mis estudiantes de 10mo grado, lo que despertó mi viejo amor por el desarrollo y surgió la idea de potenciar mi yo artístico con el tecnológico.
 >
->Todo fue aprendizaje: crear el proyecto con Vite, desarrollar basado en el framework Vue SFC + router + una serie de plugins, implementar base de datos en Airtable, publicar el proyecto con Netlify. 
+>Todo fue aprendizaje: crear el proyecto con Vite, desarrollar basado en el framework Vue SFC + router + una serie de plugins, implementar base de datos en Airtable, publicar el proyecto con Netlify (hoy se sirve desde Cloudflare). 
 
 
 ## Tecnology 🛠
@@ -41,7 +41,7 @@ Everything was learning: creating the project with Vite, developing based on the
 [![NPM](https://img.shields.io/badge/npm-CB3837?style=for-the-badge&logo=npm&logoColor=white)](https://npmjs.com)
 [![Vue js](https://img.shields.io/badge/Vue.js-35495E?style=for-the-badge&logo=vuedotjs&logoColor=4FC08D)](https://vuejs.org)
 [![Vite](https://img.shields.io/badge/Vite-B73BFE?style=for-the-badge&logo=vite&logoColor=FFD62E)](https://vitejs.dev)
-[![Netlify](https://img.shields.io/badge/Netlify-00C7B7?style=for-the-badge&logo=netlify&logoColor=white)](https://netlify.com)
+[![Cloudflare](https://img.shields.io/badge/Cloudflare-F38020?style=for-the-badge&logo=cloudflare&logoColor=white)](https://workers.cloudflare.com)
 
 
 
