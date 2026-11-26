@@ -28,7 +28,8 @@ for (const { file, rel } of scripts) {
     const name = path.basename(rel);
     // Only the parts of three.js listed in src/three.js
     if (/^three-/.test(name)) check(`JS ${name} (three.js)`, gzipKb(file), 150);
-    else if (/^index-/.test(name)) check(`JS ${name} (the app)`, gzipKb(file), 165);
+    // (166: the fingerprints of public/'s folders, src/assetUrl.js, 26/11/2026)
+    else if (/^index-/.test(name)) check(`JS ${name} (the app)`, gzipKb(file), 166);
     // PostHog's SDK: fetched after the app is idle, and only when a key is configured (src/analytics.js)
     else if (/^module-/.test(name)) check(`JS ${name} (PostHog)`, gzipKb(file), 115);
     // Sid's world: the puppet, the world drawn in code and its seeds and plants, in one chunk loaded only at /sid (58: the Bitácora's labyrinths and the frases kept apart, 22/11/2026)

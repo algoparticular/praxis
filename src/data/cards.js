@@ -1,4 +1,5 @@
 import cards from './cards.json';
+import { assetUrl } from '../assetUrl.js';
 
 export const deck = cards;
 
@@ -13,5 +14,5 @@ const MEDIUM = 1440;
 export const pictureUrl = (card) => {
     if (!card?.image) return '';
     const side = Math.min(window.innerWidth, window.innerHeight * 1.2) * (window.devicePixelRatio || 1);
-    return side > MEDIUM * 1.1 ? card.image[0].url : `/cards/${MEDIUM}/${card.id}.webp`;
+    return assetUrl(side > MEDIUM * 1.1 ? card.image[0].url : `/cards/${MEDIUM}/${card.id}.webp`);
 };

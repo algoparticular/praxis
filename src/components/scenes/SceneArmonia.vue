@@ -41,6 +41,7 @@
     import { sceneMilestone } from '../../analytics.js';
     import Rulito from '../Rulito.vue';
     import art from '../../composables/armoniaScene.json';
+    import { assetUrl } from '../../assetUrl.js';
 
     const props = defineProps({
         card: { type: Object, default: () => ({}) },
@@ -265,7 +266,7 @@
     const currentField = document.createElement('canvas');
     const shapes = Object.fromEntries(['current0', 'current1', 'current2'].map((name) => {
         const img = new Image();
-        img.src = `/assets/armonia/${name}.webp`;
+        img.src = assetUrl(`/assets/armonia/${name}.webp`);
         return [name, img];
     }));
     const shapesReady = Promise.all(Object.values(shapes).map((img) => img.decode().catch(() => {})));

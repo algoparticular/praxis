@@ -37,6 +37,7 @@
     import { chordFor } from '../../data/cardChords.js';
     import { chordColors } from '../../data/chordColors.js';
     import art from '../../composables/confianzaScene.json';
+    import { assetUrl } from '../../assetUrl.js';
 
     const props = defineProps({
         card: { type: Object, default: () => ({}) },
@@ -109,7 +110,7 @@
         const img = new Image();
         img.onload = () => resolve(img);
         img.onerror = reject;
-        img.src = src;
+        img.src = assetUrl(src);
     });
     const readMaze = async () => {
         const [fill, lines] = await Promise.all([loadImage('/assets/confianza/mazeFill.webp'), loadImage('/assets/confianza/mazeLines.webp')]);

@@ -24,6 +24,7 @@ import CardTemplate from '../components/CardTemplate.vue';
 import { hasWebGL } from '../composables/useLayerStage.js';
 import { seedSvg } from './seedShape.js';
 import { startWorldVisit } from '../analytics.js';
+import { assetUrl } from '../assetUrl.js';
 
 const ui = reactive({ bones: false, sitting: false, touch: false, hint: false, seeds: 0, seedPop: 0, choose: false, peek: false, guide: null, press: false, pop: 0, hover: null });
 
@@ -682,7 +683,7 @@ const PACE = 420, TROT = 680;                 // his easy pace and a trot (world
 const STILLNESS = 0.05;                       // the world's pace while he meditates
 
 // The world round him (sidWorld.js): endless, in ink, taking its colour as he goes
-const picture = (src) => (typeof Image !== 'undefined' ? Object.assign(new Image(), { src }) : null);
+const picture = (src) => (typeof Image !== 'undefined' ? Object.assign(new Image(), { src: assetUrl(src) }) : null);
 // What the world remembers on this phone (worldMemory.js): the visits, the seeds he carries and what he has planted.
 // A seed he walks over is picked up (counted on the seed button); sitting in lotus away from the places, after a moment
 // (PLANT_AFTER) he plants the first he found in front of him, one each time he sits: it does not go straight there. It

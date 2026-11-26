@@ -56,6 +56,8 @@
 //
 // The scene drives it from its own loop (useParallax): it moves the nodes and calls render(t). three is imported on demand.
 
+import { assetUrl } from '../assetUrl.js';
+
 export const hasWebGL = () => {
     try {
         const canvas = document.createElement('canvas');
@@ -645,7 +647,7 @@ export async function createLayerStage(canvas, { fov = 30, maxDpr = 2 } = {}) {
                         resolve();
                     };
                     img.onerror = () => resolve();
-                    img.src = src;
+                    img.src = assetUrl(src);
                 }));
             }
             return picture;

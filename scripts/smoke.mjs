@@ -80,6 +80,14 @@ const visit = async (context, label, page, webgl) => {
         else if (response.request().resourceType() !== 'document' && (response.headers()['content-type'] ?? '').includes('text/html')) {
             found.push(`missing file (answered with the page instead): ${url.replace(ORIGIN, '')}`);
         }
+        // A picture or sound of public/ asked for without its folder's fingerprint (src/assetUrl.js) would be kept by
+        // the service worker's old rule and asked about on every visit: every place that loads one goes through
+        // assetUrl (the deck's thumbnails are the precache's own)
+        const { pathname, searchParams } = new URL(url);
+        if ((/^\/assets\/[^/]+\/.+\.(webp|jpg|png|mp3)$/.test(pathname) || /^\/cards\/(?!thumb\/).+\.(webp|jpg|png)$/.test(pathname))
+            && !searchParams.has('v')) {
+            found.push(`picture without its fingerprint (use assetUrl): ${pathname}`);
+        }
     });
     try {
         await tab.goto(ORIGIN + page.path, { waitUntil: 'load', timeout: 30000 });

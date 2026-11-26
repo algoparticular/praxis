@@ -15,6 +15,7 @@
     import OracleScene from '../components/OracleScene.vue';
     import { iconConstellation } from '../composables/iconConstellation.js';
     import { play } from '../composables/useSound.js';
+    import { assetUrl } from '../assetUrl.js';
     
     const router = useRouter();
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -272,7 +273,7 @@
                 :strength="30"
                 axis="y"
                 type="translate">
-                <img class="character" src="/assets/hero/character.webp" alt="" draggable="false">
+                <img class="character" :src="assetUrl('/assets/hero/character.webp')" alt="" draggable="false">
                 <canvas class="spiral" ref="spiralCanvas"></canvas>
             </kinesis-element>
             <canvas class="cell-field" ref="cellCanvas"></canvas>
@@ -281,7 +282,7 @@
             <kinesis-element 
                 class="splash cell one"
                 tag="img"
-                src="/assets/hero/cell-one.webp"
+                :src="assetUrl('/assets/hero/cell-one.webp')"
                 loading=”lazy”
                 :strength="20"   
                 axis="x"
@@ -290,7 +291,7 @@
             <kinesis-element 
                 class="splash cell two"
                 tag="img"
-                src="/assets/hero/cell-two.webp"
+                :src="assetUrl('/assets/hero/cell-two.webp')"
                 loading=”lazy”
                 :strength="40"
                 transformOrigin="bottom right"
@@ -298,7 +299,7 @@
             <kinesis-element 
                 class="splash cell three"
                 tag="img"
-                src="/assets/hero/cell-three.webp"
+                :src="assetUrl('/assets/hero/cell-three.webp')"
                 loading=”lazy”
                 :strength="10"
                 transformOrigin="bottom left"
