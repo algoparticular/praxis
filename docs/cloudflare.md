@@ -4,18 +4,20 @@ El sitio se sirve desde **Cloudflare Workers** (sus archivos estáticos; Cloudfl
 
 ## Cómo está (26 de noviembre de 2026)
 
-- **El Worker** se llama `algoparticular`, está conectado a `algoparticular/praxis` y cada push a `main` lo construye y lo despliega (Workers Builds). Su dirección propia: `algoparticular.juanmanuelynz.workers.dev`.
+- **El Worker** se llama `algoparticular`, está conectado a `algoparticular/praxis` y cada push a `main` lo construye y lo despliega (Workers Builds; confirmado con el #152). Su dirección propia: `algoparticular.juanmanuelynz.workers.dev`.
 - **El dominio** sigue registrado en GoDaddy (lo tiene Pepi; vence el 14 de noviembre de 2027), con sus nameservers en Cloudflare (`bailey` y `rayden.ns.cloudflare.com`). `algoparticular.com` es un *Custom Domain* del Worker, y `www` (un `CNAME` con proxy) redirige a `algoparticular.com` con una *Redirect Rule* (`https://www.*` → `https://${1}`, 301, conserva la consulta).
 - **HTTPS:** *Always Use HTTPS* prendido.
+- **Sin la analítica de Cloudflare:** su *Web Analytics* (también llamada RUM) se prendía sola e inyectaba un script de `static.cloudflareinsights.com` en las páginas que pide un navegador; medimos con PostHog (`docs/analitica.md`). Como no aparecía en la lista de *Web Analytics* de la cuenta, se apagó con una *Configuration Rule* del dominio para todo pedido, con *Disable Real User Monitoring (RUM)*.
 - **Robots de IA:** búsqueda y agentes permitidos (*Security → Settings → Bot traffic → AI Crawler and Agent access policies*). El entrenamiento va en *Disallow* con *Bot Preference Sync* prendido: así Cloudflare bloquea esos robots y agrega sus reglas al principio de nuestro `robots.txt` (`public/robots.txt` queda como está).
-- **Netlify** todavía tiene el sitio conectado y sigue construyendo cada push, pero ya no recibe visitas: se borra cuando se confirme que Cloudflare despliega solo.
+- **Netlify** ya no está: su sitio se borró y `netlify.toml` salió del repositorio.
+- **Vistas previas de los PR:** Workers Builds construye cada rama que no es `main` con `npx wrangler preview` (en beta abierta, por eso el bloque `previews`, vacío, en `wrangler.jsonc`) y deja su dirección en un comentario del PR (`<rama>-algoparticular.juanmanuelynz.workers.dev`).
 
 ## Qué hay en el repositorio
 
 | Archivo | Para qué |
 |---|---|
 | `wrangler.jsonc` | La configuración de Cloudflare: servir `dist/`, que toda dirección que no es un archivo abra la app (como el `/* /index.html 200` de Netlify) y las páginas sin barra final (`/card/3`, la dirección de su `canonical` y del sitemap; `/card/3/` redirige ahí). |
-| `public/_headers` | Las cabeceras de respuesta (hoy, cuánto guardan los navegadores las ilustraciones de `/cards/*`). Lo leen Cloudflare y Netlify, así que sale de `netlify.toml`. |
+| `public/_headers` | Las cabeceras de respuesta (hoy, cuánto guardan los navegadores las ilustraciones de `/cards/*`). Antes estaba en `netlify.toml`. |
 | `.nvmrc` | La versión de Node para construir (22), la misma para Cloudflare y para quien trabaje en el proyecto. |
 
 Todo lo demás se comporta igual que en Netlify: cada archivo se sirve con `Cache-Control: public, max-age=0, must-revalidate` y su `ETag` (una imagen que no cambió cuesta un 304), que es lo que espera el service worker (`vite.config.js`). Probado con `wrangler dev`, el mismo motor de Cloudflare en local: las páginas, las de cada carta con su `og:` para compartir, el service worker y sin errores.
@@ -70,11 +72,7 @@ Para que Cloudflare sirva `algoparticular.com`, el dominio tiene que ser una *zo
 
 ## Lo que queda
 
-- **Confirmar el despliegue automático** con el próximo PR que llegue a `main`: en el Worker, *Deployments* muestra uno nuevo.
-- **Borrar el sitio de Netlify** (y con él sus vistas previas y su build), después sacar `netlify.toml`.
-- **Vistas previas de los PR** para probar en el teléfono, como las de Netlify: Workers Builds construye cada rama que no es `main` y corre `npx wrangler preview` (en beta abierta), que pide un bloque `previews` en `wrangler.jsonc` (está, vacío). Falta ver dónde publica su dirección.
 - **Comprobar que `robots.txt` muestre el bloqueo** del entrenamiento (el bloque `# BEGIN Cloudflare Managed content`).
-- **Apagar la analítica de Cloudflare** (*Web Analytics*, también llamada RUM, que inyecta un script de `static.cloudflareinsights.com` en las páginas que pide un navegador): medimos con PostHog (`docs/analitica.md`). Como no aparece en la lista de *Web Analytics* de la cuenta, se apaga con una *Configuration Rule* del dominio para todo pedido, con *Disable Real User Monitoring (RUM)*.
 - **HSTS** (*SSL/TLS → Edge Certificates*), que Netlify enviaba: opcional.
 
 Fuentes: [Netlify a Workers](https://developers.cloudflare.com/workers/static-assets/migration-guides/netlify-to-workers/), [SPA](https://developers.cloudflare.com/workers/static-assets/routing/single-page-application/), [barras finales](https://developers.cloudflare.com/workers/static-assets/routing/advanced/html-handling/), [`_headers`](https://developers.cloudflare.com/workers/static-assets/headers/), [Workers Builds](https://developers.cloudflare.com/workers/ci-cd/builds/configuration/), [versión de Node](https://developers.cloudflare.com/workers/ci-cd/builds/build-image/), [dominio propio](https://developers.cloudflare.com/workers/configuration/routing/custom-domains/), [mover los DNS](https://developers.cloudflare.com/dns/zone-setups/full-setup/setup/), [sin cortes](https://developers.cloudflare.com/fundamentals/performance/minimize-downtime/), [www a la raíz](https://developers.cloudflare.com/rules/url-forwarding/examples/redirect-www-to-root/).
