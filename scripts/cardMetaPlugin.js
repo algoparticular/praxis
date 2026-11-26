@@ -1,6 +1,6 @@
 // After `vite build`, writes dist/card/<id>/index.html for every card with that card's own
 // og:/twitter: tags and dist/og/<id>.jpg (1200x630). Crawlers (WhatsApp, Facebook, X...) don't run
-// JavaScript, so the tags have to be in the HTML. Netlify serves these files before the SPA redirect.
+// JavaScript, so the tags have to be in the HTML. Cloudflare serves these files before falling back to the app.
 // It also writes a page for each of the other addresses worth finding (PAGES: Sid's world, the deck, the oracle and
 // The Nine) with its own words, and dist/sitemap.xml with every one of them (robots.txt, in public/, points to it).
 // The landing's own words are in index.html. Each page says it is the one to index for its address (canonical).

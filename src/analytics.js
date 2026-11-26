@@ -19,8 +19,8 @@ let getLang = () => undefined;
 const waiting = [];                         // events that came before the SDK did (capped: if the SDK never loads, an ad blocker say, it must not grow)
 const MAX_WAITING = 100;
 
-// Netlify serves a card opened directly as /card/27/ (a static page, for the share previews) while the router moves to
-// /card/27: without this PostHog would count them as two different pages
+// A card opened directly can come as /card/27/ (Netlify served its static page, for the share previews, that way; Cloudflare
+// redirects it) while the router moves to /card/27: without this PostHog would count them as two different pages
 const withoutTrailingSlash = (path) => (path.length > 1 ? path.replace(/\/+$/, '') : path);
 const normalizeUrls = (event) => {
     const props = event?.properties;
