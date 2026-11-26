@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Anima** is the first interactive proposal from *Algo Particular* — a bilingual (Spanish/English) Progressive Web App offering a digital Oracle card deck for self-discovery and reflection. The oracle deck contains 33 cards, written by Belén Brito. Hosted on Cloudflare Workers as static files (`wrangler.jsonc`, headers in `public/_headers`): every push to `main` is built (`npm run build`) and deployed by Workers Builds; the domain, its DNS and the move from Netlify are in `docs/cloudflare.md`. Netlify served it until November 2026 (`netlify.toml` stays until its site is deleted).
+**Anima** is the first interactive proposal from *Algo Particular* — a bilingual (Spanish/English) Progressive Web App offering a digital Oracle card deck for self-discovery and reflection. The oracle deck contains 33 cards, written by Belén Brito. Hosted on Cloudflare Workers as static files (`wrangler.jsonc`, headers in `public/_headers`): every push to `main` is built (`npm run build`) and deployed by Workers Builds; the domain, its DNS and the move from Netlify are in `docs/cloudflare.md`. Netlify served it until November 2026.
 
 ## Commands
 
