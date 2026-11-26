@@ -11,5 +11,8 @@
 		// pages are served without a trailing slash (/card/3 from card/3/index.html), the address their canonical,
 		// the sitemap and the app's router use; /card/3/ redirects to it
 		"html_handling": "drop-trailing-slash"
-	}
+	},
+	// required by `wrangler preview`, which Workers Builds runs for every branch that is not main (a preview to try a
+	// pull request on a phone); empty: a preview serves the same files with the same settings
+	"previews": {}
 }
