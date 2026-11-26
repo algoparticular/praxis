@@ -35,6 +35,7 @@
     import { sceneMilestone } from '../../analytics.js';
     import { createGhostHand, gesture, HINT_AFTER } from '../../composables/useGhostHand.js';
     import Rulito from '../Rulito.vue';
+    import { assetUrl } from '../../assetUrl.js';
 
     const props = defineProps({
         card: { type: Object, default: () => ({}) },
@@ -436,7 +437,7 @@
         <canvas class="stageCanvas" ref="canvas"></canvas>
         <!-- He is drawn by the stage; his element stays, hidden, to be moved by his life and to say where he is touched -->
         <div class="character" ref="character">
-            <img class="body" src="/assets/hero/character.webp" alt="" draggable="false">
+            <img class="body" :src="assetUrl('/assets/hero/character.webp')" alt="" draggable="false">
             <canvas class="spiral" ref="spiralCanvas"></canvas>
             <!-- The rulito over his head, in the pink of his spiral -->
             <Rulito ref="rulito" class="rulito" color="#FFC2DE" />

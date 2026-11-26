@@ -10,6 +10,7 @@
     // scripts/convert-oracle.mjs). Without WebGL it is the flat drawing (still.webp); with reduced motion it is still.
     import { onBeforeUnmount, onMounted, ref } from 'vue';
     import art from '../composables/oracleScene.json';
+    import { assetUrl } from '../assetUrl.js';
 
     // Checked here, so the landing does not load the stage's code unless it is used
     const hasWebGL = () => {
@@ -198,7 +199,7 @@
 
 <template>
     <div class="oracleScene" ref="root">
-        <img v-if="flat" class="still" src="/assets/oracle/still.webp" alt="" loading="lazy" draggable="false">
+        <img v-if="flat" class="still" :src="assetUrl('/assets/oracle/still.webp')" alt="" loading="lazy" draggable="false">
         <canvas v-else ref="canvas"></canvas>
     </div>
 </template>

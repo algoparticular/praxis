@@ -2,18 +2,20 @@ import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { VitePWA } from 'vite-plugin-pwa'
 import cardMeta from './scripts/cardMetaPlugin.js'
+import assetVersions from './scripts/assetVersions.js'
 
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
     vue(),
+    assetVersions(),
     cardMeta(),
     // The service worker (dist/serviceWorker.js, registered in App.vue): the app works without internet. The app
     // itself, the fonts and the deck's thumbnails are saved on the first visit; the pictures (illustrations, the layers
-    // of the scenes) as they are seen. With internet the page and the pictures are always asked for first (a picture
-    // that has not changed costs a 304: Cloudflare revalidates /assets with its ETag), so a deploy is seen at once and
-    // never mixed with what was saved before (an old app asking for pictures that are gone, an old crown over a new
-    // cell); without internet, or if it does not answer in a few seconds, what was saved is used. src/pwa.js reloads
+    // of the scenes) as they are seen. Those come with their folder's fingerprint (src/assetUrl.js) and are kept for good:
+    // a picture that changes gets a new address, so it is never mixed with what was saved before (an old crown over a
+    // new cell). The page is always asked for first, so a deploy is seen at once; without internet, or if it does not
+    // answer in a few seconds, what was saved is used. src/pwa.js reloads
     // an app left open when a new deploy takes over; main.js reloads if an old page asks for a file that is gone.
     VitePWA({
       filename: 'serviceWorker.js',
@@ -39,6 +41,15 @@ export default defineConfig({
             // this function is copied into the service worker, where `caches` exists
             // eslint-disable-next-line no-undef
             plugins: [{ handlerDidError: async () => caches.match('/index.html', { ignoreSearch: true }) }],
+          },
+        }, {
+          // a picture or sound with its folder's fingerprint (src/assetUrl.js) never changes: kept and used without
+          // asking the server; a deploy that changes it gives it another address
+          urlPattern: ({ sameOrigin, url }) => sameOrigin && url.searchParams.has('v') && /\.(webp|jpg|png|mp3)$/.test(url.pathname),
+          handler: 'CacheFirst',
+          options: {
+            cacheName: 'versioned',
+            expiration: { maxEntries: 700, maxAgeSeconds: 60 * 60 * 24 * 365 },
           },
         }, {
           urlPattern: ({ sameOrigin, url }) => sameOrigin && /\.(webp|jpg|png)$/.test(url.pathname),

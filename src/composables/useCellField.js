@@ -8,6 +8,7 @@
 // the character, a cosmic mandala, until it is let go)  draws the whole field in towards the character and lets it out.
 
 import { breathEnvelope, BREATH, INHALE } from './breathCurve.js';
+import { assetUrl } from '../assetUrl.js';
 
 const CELL_TEXTURES = [
     '/assets/hero/cell-one.webp',
@@ -65,7 +66,7 @@ export async function createCellField(canvas, container, { onEvent = null } = {}
 
     // ---- Cells
     const loader = new THREE.TextureLoader();
-    const textures = await Promise.all(CELL_TEXTURES.map((url) => loader.loadAsync(url)));
+    const textures = await Promise.all(CELL_TEXTURES.map((url) => loader.loadAsync(assetUrl(url))));
     textures.forEach((texture) => { texture.colorSpace = THREE.SRGBColorSpace; });
 
     // One bigger cell up front, a few medium ones and the rest small, lost in the background

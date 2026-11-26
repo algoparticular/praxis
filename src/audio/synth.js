@@ -7,6 +7,7 @@
 
 import { BASE_CHORD } from '../data/cardChords.js';
 import { INHALE, EXHALE } from '../composables/breathCurve.js';
+import { assetUrl } from '../assetUrl.js';
 
 const rand = (min, max) => min + Math.random() * (max - min);
 
@@ -167,7 +168,7 @@ const decode = (ctx, data) => new Promise((resolve, reject) => {
 export const loadVibraphone = (ctx, base = '/assets/sound/vibraphone/') => {
     if (loadingVibraphone) return loadingVibraphone;
     loadingVibraphone = Promise.all(VIBRAPHONE.map(async (midi) => {
-        const response = await fetch(`${base}${midi}.mp3`);
+        const response = await fetch(assetUrl(`${base}${midi}.mp3`));
         if (!response.ok) throw new Error(`${midi}.mp3: ${response.status}`);
         const buffer = await decode(ctx, await response.arrayBuffer());
         let peak = 0;
