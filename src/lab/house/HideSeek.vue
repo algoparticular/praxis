@@ -42,7 +42,7 @@ const HIDE_TIME = 20, SEEK_TIME = 60, SAFETY = 40, LOOK = 0.75, ROUNDS = 2;
 const QUICK = { looks: 2, time: 12 };     // found this soon (in looks, or in seconds of looking): a dance and a caught one
 const PRINT_FADE = 14, PRINT_STEP = 105, SLOPPY = 5, DUST = 6;
 const GIGGLE = { near: 450, odds: 0.6, rest: 5 };
-const MACHINE = { who: 1, hide: 2.4, think: [0.4, 1.2], reads: 0.75, hear: 0.6, near: 3 };
+const MACHINE = { who: 1, hide: 2.4, think: [0.4, 1.2], reads: 0.2, cone: 0.5, hear: 0.6, near: 3 };
 const nameOf = (i) => t(PLAYERS[i].es, PLAYERS[i].en);
 
 const game = reactive({
@@ -282,15 +282,22 @@ function startCount() {
     };
     later(tick, 800);
 }
-// The machine looks for him: where it heard him, or (mostly) where the footprints it can still see lead (a place they
+// The machine looks for him: where it heard him, or (now and then, MACHINE.reads) where the footprints it can still see lead (a place they
 // reach), else one of the nearest it has not looked in
 function machineSeek() {
     if (game.phase !== 'seek' || game.busy) return;
     const p = puppets[seeker.value], left = spots.filter((s) => !s.seen);
     let sp = game.heard ? spots.find((s) => s.id === game.hidden) : null;
     if (!sp && Math.random() < MACHINE.reads) {
-        const led = left.filter((s) => prints.some((q) => q.alpha > 0.08 && dist(q, s.spot) < 220));
+        const seen = prints.filter((q) => q.alpha > 0.08);
+        const led = left.filter((s) => seen.some((q) => dist(q, s.spot) < 220));
         if (led.length) sp = led.sort((a, b) => dist(a.spot, p.state) - dist(b.spot, p.state))[0];
+        // (the trail ends before the place, his feet clean: as a person would, it goes on the way the last prints point)
+        else if (seen.length) {
+            const q = seen[seen.length - 1], off = (s) => Math.abs(Math.atan2(Math.sin(Math.atan2(s.spot.d - q.d, s.spot.x - q.x) - q.a), Math.cos(Math.atan2(s.spot.d - q.d, s.spot.x - q.x) - q.a)));
+            const ahead = left.filter((s) => off(s) < MACHINE.cone).sort((a, b) => off(a) - off(b));
+            if (ahead.length) sp = ahead[0];
+        }
     }
     if (!sp) {
         const near = left.sort((a, b) => dist(a.spot, p.state) - dist(b.spot, p.state)).slice(0, MACHINE.near);
