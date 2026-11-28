@@ -1,100 +1,19 @@
 // Sid as a puppet that can be made more than once: his body, his walk, his eyes, as LabSid.vue draws him (the same rig,
-// sid/sid.json, the same poses and springs, the same drawing), but each one with its own state, its own ink and white,
-// and none of the world round him. Made for the hide and seek in the house (house/HideSeek.vue), where two Sids play;
-// Sid's world itself still draws its one Sid with its own copy of this code (LabSid.vue), which also sits in lotus,
-// plants and opens cards.
+// poses, springs and drawing, shared in sid/rig.js), but each one with its own state, its own ink and white, and none
+// of the world round him. Made for the hide and seek in the house (house/HideSeek.vue), where two Sids play; Sid's
+// world moves its one Sid itself (LabSid.vue: he also sits in lotus, plants and opens cards) with the same rig.
 //
 // His own coordinates are as in the world: x across in world px, d into the distance (0 in front), and up in px of his
 // drawing over the ground at his depth (y grows down, the ground at 0). A camera (`cam`, below) puts him on the screen:
 // { x0, cam, groundAt(d), scaleAt(d), perDepth } (perDepth: how many px of the screen a unit of depth is, at scale 1).
 import rig from './sid/sid.json';
+import { PIVOT, TALL, LEG, ARM, STAND, HIP, FRONT_HIP, SHOULDER, REST_HAND, spread, EYES, FRONT_EYES, FRONT_SHOULDER, FRONT_HAND, mix,
+    standsOn, lowest, gaitLegs, cycleLength, spring, step, local, map, bend, turnPace, wrap, codeBody } from './sid/rig.js';
 
-const PIVOT = { x: 130, y: 518 };
-const TALL = 512;
-const LEG = { thigh: 97, shin: 97, foot: 40, width: 16 };
-const ARM = { upper: 116, fore: 110, width: 13.5 };
-const STAND = 196;
-const HIP = { far: { u: 134, v: 516 }, near: { u: 126, v: 515 } };
-const FRONT_HIP = { far: { u: 157, v: 514 }, near: { u: 103, v: 516 } };
-const SHOULDER = { far: { u: 100, v: 334 }, near: { u: 110, v: 334 } };
-const REST_HAND = { far: { u: 94, v: 538 }, near: { u: 118, v: 538 } };
-const EYES = rig.eyes;
-const FRONT_EYES = [[PIVOT.x - 17, 211, rig.eyes[0][2]], [PIVOT.x + 17, 211, rig.eyes[1][2]]];
-const FRONT_SHOULDER = { far: { u: PIVOT.x + 48, v: 322 }, near: { u: PIVOT.x - 48, v: 322 } };
-const FRONT_HAND = { far: { u: PIVOT.x + 132, v: 508 }, near: { u: PIVOT.x - 132, v: 508 } };
 const JUMP = { crouch: 0.3, speed: 600, gravity: 1800 };
 export const PACE = 420;
 export const TROT = 680;
 export const SID_TALL = TALL + STAND;
-const LINE_W = 15;
-const DEG = Math.PI / 180;
-
-const mix = (a, b, t) => a + (b - a) * t;
-const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
-const spread = (front) => Math.sqrt(Math.max(0, front));
-const turnPace = (off) => Math.max(0.35, Math.cos(Math.min(Math.PI / 2, off * 0.75)));
-
-// The walk, as The Animator's Survival Kit draws it (see LabSid.vue): one leg through a cycle in eight poses
-const WALK = [
-    [26, 3, 20], [17, 20, 0], [2, 7, 0], [-14, 2, -3],
-    [-23, 9, -30], [-15, 52, -55], [11, 74, -40], [30, 26, 6],
-];
-function walkPose(q, k = 1, amp = 1) {
-    const x = (((q % 1) + 1) % 1) * WALK.length, i = Math.floor(x), t = x - i, n = WALK.length;
-    const P = [WALK[(i + n - 1) % n], WALK[i], WALK[(i + 1) % n], WALK[(i + 2) % n]];
-    return [0, 1, 2].map((j) => {
-        const [a, b, c, d] = P.map((pose) => pose[j]);
-        const v = 0.5 * (2 * b + (c - a) * t + (2 * a - 5 * b + 4 * c - d) * t * t + (3 * b - a - 3 * c + d) * t * t * t);
-        return v * k * (j === 1 ? 1 + (amp - 1) * 0.6 : amp);
-    });
-}
-function legShape([thigh, knee, foot]) {
-    const T = thigh * DEG, S = (thigh - knee) * DEG, F = foot * DEG;
-    const kn = { a: LEG.thigh * Math.sin(T), u: -LEG.thigh * Math.cos(T) };
-    const an = { a: kn.a + LEG.shin * Math.sin(S), u: kn.u - LEG.shin * Math.cos(S) };
-    const reach = LEG.foot * Math.cos(F), rise = LEG.foot * Math.sin(F);
-    return { knee: kn, ankle: an, heel: { a: an.a, u: an.u - 6 }, tip: { a: an.a + reach, u: an.u - 6 + rise }, toe: { a: an.a + reach, u: an.u - 2 + rise } };
-}
-const standsOn = (L) => (L.tip.u < L.heel.u - 0.3 ? 'tip' : 'heel');
-const lowest = (L) => Math.min(L.heel.u, L.tip.u);
-const gaitLegs = (p, k, amp) => [0, 1].map((i) => legShape(walkPose(p + i * 0.5, k, amp)));
-const cycleLengths = new Map();
-function cycleLength(amp) {
-    const key = Math.round(amp * 50) / 50;
-    if (!cycleLengths.has(key)) {
-        let total = 0, prev = gaitLegs(0, 1, key);
-        for (let n = 1; n <= 400; n++) {
-            const p = n / 400, now = gaitLegs(p, 1, key), g = ((p - 1 / 800) % 1) < 0.5 ? 0 : 1, on = standsOn(now[g]);
-            total += Math.max(0, prev[g][on].a - now[g][on].a);
-            prev = now;
-        }
-        cycleLengths.set(key, total);
-    }
-    return cycleLengths.get(key);
-}
-function spring(x, stiff = 120, damp = 14) { return { x, v: 0, to: x, stiff, damp }; }
-function step(s, dt) { s.v += ((s.to - s.x) * s.stiff - s.v * s.damp) * dt; s.x += s.v * dt; }
-const bendAt = (f, t) => f.lean * TALL * t * t;
-const widthAt = (f, t) => f.sx * (1 + f.breath * 0.045 * Math.exp(-(((t - 0.24) / 0.16) ** 2)) + f.breath * 0.012 * Math.exp(-(((t - 0.75) / 0.2) ** 2)));
-function local(f, u, v) {
-    const t = Math.max(0, (PIVOT.y - v) / TALL);
-    return { x: (u - PIVOT.x) * widthAt(f, t) + bendAt(f, t), y: -(PIVOT.y - v) * f.sy };
-}
-function toWorld(f, p) {
-    const c = Math.cos(f.rot), s = Math.sin(f.rot), x = p.x * f.face;
-    return { x: f.root.x + x * c - p.y * s, y: f.root.y + x * s + p.y * c };
-}
-const map = (f, u, v) => toWorld(f, local(f, u, v));
-function bend(a, target, l1, l2, toward) {
-    const dx = target.x - a.x, dy = target.y - a.y;
-    const d = Math.min(Math.hypot(dx, dy), (l1 + l2) * 0.999), angle = Math.atan2(dy, dx);
-    const end = { x: a.x + Math.cos(angle) * d, y: a.y + Math.sin(angle) * d };
-    const open = Math.acos(Math.max(-1, Math.min(1, (l1 * l1 + d * d - l2 * l2) / (2 * l1 * Math.max(d, 1e-3)))));
-    const joints = [angle + open, angle - open].map((g) => ({ x: a.x + Math.cos(g) * l1, y: a.y + Math.sin(g) * l1 }));
-    const mid = { x: (a.x + end.x) / 2, y: (a.y + end.y) / 2 };
-    const score = (j) => (j.x - mid.x) * toward.x + (j.y - mid.y) * toward.y;
-    return { joint: score(joints[0]) >= score(joints[1]) ? joints[0] : joints[1], end };
-}
 
 // A Sid. `ink` and `white`: his line and his body. Where he stands (x, d) and where he faces (heading: 0 to the right,
 // PI to the left, -PI/2 towards us, PI/2 into the distance)
@@ -392,45 +311,6 @@ export function createPuppet({ ink = '#102A34', white = '#FBF4E4', x = 0, d = 0,
     }
 
     // --- Drawing him: in his own px at his depth; `cam` puts that on the screen ---
-    function codeBody(c, f) {
-        const S0 = rig.silhouette, fr = f.front;
-        const S = { ...S0, left: S0.left.map((l, i) => mix(l, PIVOT.x - (S0.right[i] - l) / 2, fr)),
-            right: S0.right.map((r, i) => mix(r, PIVOT.x + (r - S0.left[i]) / 2, fr)) };
-        const at = (u, v) => local(f, u, v);
-        const vOf = (i) => S.top + i * S.step;
-        const last = S.left.length - 1;
-        const crown = at(mix(S.crown[0], PIVOT.x, fr), S.crown[1]), base = at(mix(S.base[0], PIVOT.x, fr), S.base[1]);
-        const ring = [crown];
-        for (let i = 0; i <= last; i++) ring.push(at(S.right[i], vOf(i)));
-        ring.push(base);
-        for (let i = last; i >= 0; i--) ring.push(at(S.left[i], vOf(i)));
-        c.beginPath();
-        const midOf = (a, b) => ({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
-        let m = midOf(ring[ring.length - 1], ring[0]);
-        c.moveTo(m.x, m.y);
-        ring.forEach((p, i) => { m = midOf(p, ring[(i + 1) % ring.length]); c.quadraticCurveTo(p.x, p.y, m.x, m.y); });
-        c.closePath();
-        c.fillStyle = puppet.white; c.fill();
-        c.save();
-        c.clip();
-        c.strokeStyle = puppet.ink; c.lineWidth = LINE_W * 2; c.lineJoin = 'round'; c.stroke();
-        c.lineCap = 'round';
-        rig.hatching.forEach(([v, long], k) => {
-            const i = Math.max(0, Math.min(S.left.length - 1, Math.round((v - S.top) / S.step))), u = S.left[i];
-            const vary = Math.sin(k * 2.39), base_ = u + LINE_W - 7, reach = long + 4 + vary * 2;
-            const SEG = 7;
-            let prev = at(base_, v);
-            for (let j = 1; j <= SEG; j++) {
-                const tt = j / SEG, sag = (2.2 + vary) * tt * tt;
-                const next = at(base_ + reach * tt, v + sag);
-                c.lineWidth = mix(6.6 + vary * 0.5, 2, Math.pow((j - 0.5) / SEG, 0.8));
-                c.beginPath(); c.moveTo(prev.x, prev.y); c.lineTo(next.x, next.y); c.stroke();
-                prev = next;
-            }
-        });
-        c.restore();
-    }
-
     // A point on the floor (x, d), lifted y, in his own drawing at his depth
     function onFloor(p, cam) {
         const s0 = cam.scaleAt(state.d), s1 = cam.scaleAt(p.d);
@@ -501,7 +381,7 @@ export function createPuppet({ ink = '#102A34', white = '#FBF4E4', x = 0, d = 0,
         legs.forEach((l) => limb([l.h, l.joint, l.end, l.toe], LEG.width));
         c.save();
         c.translate(f.root.x, f.root.y); c.rotate(f.rot); c.scale(f.face, 1);
-        codeBody(c, f);
+        codeBody(c, f, puppet.ink, puppet.white);
         const closed = Math.max(springs.closed.x, state.blink > 0 ? 1 : 0);
         c.globalAlpha = state.show * (1 - springs.back.x);
         if (springs.back.x < 0.98) EYES.forEach(([pu, pv, r], e) => {
