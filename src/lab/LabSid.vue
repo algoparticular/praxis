@@ -4,7 +4,7 @@
 // traced off Nekkhamma's Sid (scripts/make-sid-lab.mjs -> sid.json), bent, squashed and stretched as a soft body; his
 // eyes (they look, blink and close); his arms and legs, strokes with his ink and line that bend freely. Canvas 2D on purpose: it shows the movement;
 // if it is what we want, the same rig goes into the WebGL stage (useLayerStage.js). Plan: docs/sid-en-piezas.md.
-import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
+import { computed, defineAsyncComponent, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import Header from '../components/Header.vue';
 import rig from './sid/sid.json';
 import { CICLOS, createWorld, STAR_SEED, STAR_LIGHT, FERN_LIGHT, pieceUrl, plantsOf } from './sidWorld.js';
@@ -611,6 +611,40 @@ function openPortal(card) {
     portalTimer = setTimeout(() => { if (portal.card === card) paused = true; }, PORTAL_FADE);
 }
 function portalWon() { portal.won = true; }
+
+// Gratitud's house has a door (`door` of its place in sidWorld.js, a warm light breathing in it): touched, he walks to
+// it; standing at it, sent there or pushing towards it with the keys, after a moment (HOUSE_AFTER) the world zooms in on
+// him as for a card, and the house opens over it: the hide and seek, two Sids by turns on one phone (house/HideSeek.vue,
+// its own chunk, loaded only when he goes in). Its "back to the world" (or Escape, or the labyrinth in the header's
+// corner) brings him out at its door. `/sid?casa` goes straight in (to try it)
+const HideSeek = defineAsyncComponent(() => import('./house/HideSeek.vue'));
+const house = reactive({ open: false });
+const HOUSE_AFTER = 0.3, DOOR_REACH = 90;
+let houseTimer = 0, doorT = 0;
+function enterHouse(direct = false) {
+    if (house.open) return;
+    release(); state.target = null; state.guide = null; state.toDoor = false; doorT = 0;
+    play('flip');
+    if (direct) { house.open = true; paused = true; return; }
+    Object.assign(zoom, { on: true, x: sidOnScreen.x, y: sidOnScreen.y });
+    houseTimer = setTimeout(() => { house.open = true; paused = true; }, PORTAL_FADE * 0.7);
+}
+function closeHouse() {
+    clearTimeout(houseTimer);
+    if (!house.open && !zoom.on) return;
+    house.open = false; paused = false; last = 0; zoom.on = false;
+    // (he comes out at its door, facing us, a step in front of it: not straight back in)
+    const door = world.doorNear(state.x, state.d, 2000);
+    if (door) { state.x = door.x; state.d = door.d - 120; state.heading = -Math.PI / 2; state.feet = [null, null]; }
+    state.toDoor = false; doorT = 0;
+}
+// A touch on the door of a house on the screen (in px / k): it, or null
+function doorAt(screen) {
+    const door = world.doorNear(state.x, state.d, 2600);
+    if (!door) return null;
+    const s = scaleAt(door.foot.d), x = view.w / view.k / 2 + (door.x - state.cam) * s, y = groundAt(door.foot.d) - door.up * s;
+    return Math.abs(screen.x - x) < 120 * s && Math.abs(screen.y - y) < 160 * s ? door : null;
+}
 function closePortal() {
     if (portal.card == null) return;
     const card = portal.card, won = portal.won;
@@ -984,6 +1018,8 @@ function walkTo(x, d = state.d) {
     // (sitting, he gets up first and only then sets off: the place is kept for when he is on his feet)
     if (ui.sitting) sit(false);
     state.target = { x, d }; state.reach = null;
+    const door = world.doorNear(x, d, 140);
+    state.toDoor = !!door && Math.hypot(door.x - x, door.d - d) < 140;
 }
 function wave() { if (!ui.sitting) act('wave', 2.6, { arm: 'near' }); }
 function jump() { if (!ui.sitting && !state.air) { state.jumped = false; act('jump', 1.7); } }
@@ -1130,6 +1166,9 @@ function onDown(e) {
         if (!ui.sitting && !state.action) wave();
         return;
     }
+    // On a house's door: he walks to it, and goes in
+    const door = doorAt(screen);
+    if (door) { walkTo(door.x, door.d); state.toDoor = true; state.mark = { ...state.target, t: 0 }; return; }
     // On something he planted: it wiggles and sings its note (in tune with the world it grows in)
     const plant = plantAt(screen);
     if (plant) { world.touchPlant(plant.key); sing(plant); state.target = null; return; }
@@ -1155,6 +1194,7 @@ function press(key, on) {
 function onKey(e) {
     // (in a card's scene the keys are not his; Escape goes back to the world)
     if (portal.card != null) { if (e.key === 'Escape' && e.type === 'keydown') closePortal(); return; }
+    if (house.open || zoom.on) return;          // (in the house the keys are its own)
     if (story.open) { if (e.key === 'Escape' && e.type === 'keydown') closeStory(); return; }
     if (e.target?.closest?.('button') && e.key === ' ') e.target.blur();
     const key = KEYS[e.key.length === 1 ? e.key.toLowerCase() : e.key];
@@ -1358,6 +1398,13 @@ function update(dt, now) {
         state.rul = { age: 0, head: 0, tail: 0, pop: 0, full: false, card };
         rulitoColour.value = RULITO_COLOURS[card] ?? RULITO_COLOURS[15];
         rulito.value?.reshape();
+    }
+    // at a house's door, sent there or pushing into it: he goes in
+    if (!house.open && !zoom.on && !ui.sitting && portal.card == null) {
+        const door = world.doorNear(state.x, state.d, DOOR_REACH);
+        const going = door && ((state.toDoor && !state.target) || (state.keys.up && Math.sin(state.heading) > 0.5));
+        doorT = going ? doorT + dt : 0;
+        if (doorT >= HOUSE_AFTER) enterHouse();
     }
     // the music moves to the chord of the card of the zone he is in (src/data/cardChords.js), as on a card's page
     const zone = world.zoneCard();
@@ -1929,6 +1976,7 @@ onMounted(() => {
     raf = requestAnimationFrame(loop);
     scheduleHint();
     tell('intro', 1400);
+    if (new URLSearchParams(window.location.search).has('casa')) enterHouse(true);
     // where they came from: the page before this one in the app (the landing's labyrinth), or nothing (a link)
     const back = window.history.state?.back;
     const standalone = window.matchMedia?.('(display-mode: standalone)').matches || window.navigator.standalone === true;
@@ -1939,7 +1987,7 @@ onBeforeUnmount(() => {
     visit?.finish();
     document.body.classList.remove('lab-page', 'lab-night', 'lab-portal', 'lab-story');
     setHush(false);
-    clearTimeout(portalTimer);
+    clearTimeout(portalTimer); clearTimeout(houseTimer);
     setCardChord(null);
     cancelAnimationFrame(raf);
     document.removeEventListener('visibilitychange', onVisibility);
@@ -1978,9 +2026,13 @@ onBeforeUnmount(() => {
                 {{ $i18n.locale === 'en' ? teaching.en : teaching.es }}
             </p>
         </Transition>
+        <!-- inside Gratitud's house: the hide and seek (enterHouse), over the world and under the header -->
+        <Transition name="portal">
+            <HideSeek v-if="house.open" @close="closeHouse" />
+        </Transition>
         <!-- the app's own header: back on the left, the sound and the menu on the right -->
         <!-- (in a card opened here, the labyrinth takes the corner of the back arrow: back into the world) -->
-        <Header :hasBack="portal.card == null && !story.open" :hasWorld="portal.card != null || story.open" :hasMenu="true" @world="story.open ? closeStory() : closePortal()" />
+        <Header :hasBack="portal.card == null && !story.open && !house.open" :hasWorld="portal.card != null || story.open || house.open" :hasMenu="true" @world="house.open ? closeHouse() : story.open ? closeStory() : closePortal()" />
         <!-- one button, on a phone and on a computer alike: the seed, Algo Particular's mark (as in the header), sits him
              in lotus and gets him up again; he walks with the arrows or WASD, or where a click or a touch on the floor
              sends him; a touch on him makes him wave (on a computer J jumps) -->

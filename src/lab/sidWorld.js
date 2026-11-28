@@ -386,7 +386,10 @@ const PLACES = [
         lake: [1240, -200, 760, 300],
         garden: [['grBoat', 1240, -200, 1, 0.12], ['grPlant', 360, -40, 1.1, 0.4], ['grPlant', -480, -160, -0.9, 0.4],
             ['grPlant', 1650, 560, 0.8, 0.4], ['grPalm', -1350, 250, 0.9, 0.3]],
-        block: { dd: 80, r: 450, rd: 180 }, sit: 380, clear: { w: 2350, front: 680, back: 800 } },
+        block: { dd: 80, r: 450, rd: 180 }, sit: 380, clear: { w: 2350, front: 680, back: 800 },
+        // (its door, a way into the house: across from its foot, the middle of the door over the ground, and how far in
+        // front of its foot he stands to go in; the hide and seek is played inside, house/HideSeek.vue)
+        door: { dx: -70, up: 212, front: 150 } },
     // (anchor: the middle of its pond, card px)
     { card: 'transformacion', kind: 'seed', id: 32, dd: 0, reach: 1000, anchor: [1072, 1972], depthK: 1.1,
         parts: ['trPond', 'trTree', 'trSeed'], crowd: ['trSmall', 'trElder'],
@@ -1176,6 +1179,8 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
                 const [hx, hy] = part('grHouse'), [, , hw, hh] = B('grHouse');
                 halo(hx + hw / 2, hy + hh * 0.5, hw * 0.8, [255, 210, 170], 0.3 * g);
                 at('grHouse', hx, hy);
+                // (its door, a warm light in it that breathes: one can go in)
+                if (P.door) halo(P.door.dx, -P.door.up, 150, [255, 226, 170], (0.22 + 0.1 * Math.sin(time * 2.2)) * (0.45 + 0.55 * col));
             } else if (P.kind === 'seed') {
                 // Transformación's pond (its light in the middle), the tree growing out of it and its seed beside the
                 // trunk; alive, golden dust rises from the pond's light along the trunk, and as he meditates by it the
@@ -1576,6 +1581,17 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
         return best && bestD < range + best.reach ? best : null;
     }
 
+    // The door of a house near (x, depth), within `range` of where one stands to go in: { x, d, up } or null
+    function doorNear(x, d, range = 600) {
+        let best = null;
+        for (const { P, x: px, d: pd } of placesNear(x - range - 1000, x + range + 1000, d - range - 400, d + range + 400)) {
+            if (!P.door) continue;
+            const door = { x: px + P.door.dx, d: pd - P.door.front, up: P.door.up, foot: { x: px, d: pd } };
+            const dist = Math.hypot(door.x - x, door.d - d);
+            if (dist < range && (!best || dist < best.dist)) best = { ...door, dist };
+        }
+        return best;
+    }
     // What stands in his way near x (within `range`): circles on the floor { x, d, r }
     function obstacles(x, d, range) {
         const out = [];
@@ -1653,5 +1669,5 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
     }
     // (seedLight: the light of a card's seeds, for the page to fly one from the button to where it is planted)
     const seedLight = (card) => { if (card === STAR_SEED) return STAR_LIGHT; const z = ZONES.find((q) => q.card === card); return z ? colourOf([{ z, w: 1 }], 'bead', 0.5).light : [255, 244, 214]; };
-    return { update, draw, drawSky, drawGround, ground, night, ink, white, nightColour, topColour, placeCard, placeNear, zoneCard, obstacles, plant, plantsNear, plantBy, touchPlant, singPlant, cardIdOf, tend, seedsNear, seedLight, spore: () => spore, setClock: (v) => { clock = ((v % 1) + 1) % 1; } };
+    return { update, draw, drawSky, drawGround, ground, night, ink, white, nightColour, topColour, placeCard, placeNear, doorNear, zoneCard, obstacles, plant, plantsNear, plantBy, touchPlant, singPlant, cardIdOf, tend, seedsNear, seedLight, spore: () => spore, setClock: (v) => { clock = ((v % 1) + 1) % 1; } };
 }
