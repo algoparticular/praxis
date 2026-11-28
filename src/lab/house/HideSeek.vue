@@ -27,6 +27,7 @@ import { createPuppet, SID_TALL } from '../puppet.js';
 import { BOUNDS, ENTRY, ROOM, SPOTS, beginFrame, createSpots, drawPrints, drawRoom, drawThings, obstacles, onRug, onSand, setLayout, spotAt } from './room.js';
 import { play, vibrate } from '../../composables/useSound.js';
 import { menuOpen } from '../../composables/menuOpen.js';
+import SidHead from './SidHead.vue';
 
 const emit = defineEmits(['close', 'played']);
 const vm = getCurrentInstance().proxy;
@@ -474,7 +475,7 @@ onBeforeUnmount(() => {
         <!-- at the bottom: who plays, and how it goes (few words) -->
         <Transition name="fade">
             <div v-if="['hide', 'seek', 'found'].includes(game.phase)" class="line glass">
-                <span class="who" :style="{ background: PLAYERS[game.phase === 'hide' ? hider : seeker].white, borderColor: PLAYERS[game.phase === 'hide' ? hider : seeker].ink }"></span>
+                <SidHead class="who" :ink="PLAYERS[game.phase === 'hide' ? hider : seeker].ink" :white="PLAYERS[game.phase === 'hide' ? hider : seeker].white" />
                 <span class="what">{{ hintText }}</span>
                 <span v-if="game.phase === 'hide'" class="time">{{ Math.max(0, Math.ceil(HIDE_TIME - game.clock)) }}</span>
                 <span v-else class="eyes" :aria-label="looksText(game.looks)">
@@ -493,7 +494,7 @@ onBeforeUnmount(() => {
                     <template v-if="game.phase === 'intro'">
                         <h2>{{ t('Escondidas', 'Hide and seek') }}</h2>
                         <p class="players">
-                            <span v-for="(p, i) in PLAYERS" :key="i" class="player"><span class="who" :style="{ background: p.white, borderColor: p.ink }"></span>{{ nameOf(i) }}</span>
+                            <span v-for="(p, i) in PLAYERS" :key="i" class="player"><SidHead class="who" :ink="p.ink" :white="p.white" />{{ nameOf(i) }}</span>
                         </p>
                         <p class="soft">{{ t('Uno se esconde, el otro busca. Seguí sus huellas antes de que se borren.', 'One hides, the other seeks. Follow the footprints before they fade.') }}</p>
                         <div class="buttons">
@@ -502,25 +503,25 @@ onBeforeUnmount(() => {
                         </div>
                     </template>
                     <template v-else-if="game.phase === 'cover'">
-                        <h2><span class="who big" :style="{ background: PLAYERS[hider].white, borderColor: PLAYERS[hider].ink }"></span></h2>
+                        <h2><SidHead class="who big" :ink="PLAYERS[hider].ink" :white="PLAYERS[hider].white" /></h2>
                         <p>{{ t(`Se esconde ${nameOf(hider)}.`, `${nameOf(hider)} hides.`) }}</p>
                         <p class="soft">{{ t(`${nameOf(seeker)}, no mires.`, `${nameOf(seeker)}, don't look.`) }}</p>
                         <button class="go glass" @click="startHiding">{{ t('Listo', 'Ready') }}</button>
                     </template>
                     <template v-else-if="game.phase === 'machineHide'">
-                        <h2><span class="who big" :style="{ background: PLAYERS[hider].white, borderColor: PLAYERS[hider].ink }"></span></h2>
+                        <h2><SidHead class="who big" :ink="PLAYERS[hider].ink" :white="PLAYERS[hider].white" /></h2>
                         <p>{{ game.ready ? t(`${nameOf(hider)} ya se escondió.`, `${nameOf(hider)} has hidden.`) : t(`${nameOf(hider)} se está escondiendo…`, `${nameOf(hider)} is hiding…`) }}</p>
                         <button class="go glass" :disabled="!game.ready" :class="{ waiting: !game.ready }" @click="startCount">{{ t('A buscar', 'Go seek') }}</button>
                     </template>
                     <template v-else-if="game.phase === 'pass'">
-                        <h2><span class="who big" :style="{ background: PLAYERS[seeker].white, borderColor: PLAYERS[seeker].ink }"></span></h2>
+                        <h2><SidHead class="who big" :ink="PLAYERS[seeker].ink" :white="PLAYERS[seeker].white" /></h2>
                         <p>{{ t(`Pasale el teléfono a ${nameOf(seeker)}.`, `Pass the phone to ${nameOf(seeker)}.`) }}</p>
                         <button class="go glass" @click="startCount">{{ t('A buscar', 'Go seek') }}</button>
                     </template>
                     <template v-else-if="game.phase === 'result'">
                         <h2>{{ t('¡Bien jugado!', 'Well played!') }}</h2>
                         <p v-for="(p, i) in PLAYERS" :key="i" class="score" :class="{ best: best === i }">
-                            <span class="who" :style="{ background: p.white, borderColor: p.ink }"></span>{{ nameOf(i) }}: {{ looksText(game.score[i].looks) }}
+                            <SidHead class="who" :ink="p.ink" :white="p.white" />{{ nameOf(i) }}: {{ looksText(game.score[i].looks) }}
                         </p>
                         <p class="soft">{{ best == null ? t('Los dos encontraron igual de bien.', 'Both found just as well.') : game.mode === 'machine' && best === 0 ? t('Encontraste mejor vos.', 'You found best.') : t(`${nameOf(best)} encontró mejor.`, `${nameOf(best)} found best.`) }}</p>
                         <div class="buttons">
@@ -548,16 +549,8 @@ onBeforeUnmount(() => {
     touch-action: none;
 }
 canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-.who {
-    display: inline-block;
-    width: 20px;
-    height: 24px;
-    border-radius: 50% 50% 46% 46% / 60% 60% 40% 40%;
-    border: 4px solid;
-    vertical-align: middle;
-    margin-right: 8px;
-}
-.who.big { width: 54px; height: 64px; border-width: 7px; margin: 0; }
+.who { height: 30px; margin-right: 8px; }
+.who.big { height: 76px; margin: 0; }
 /* the line at the bottom: who plays, and the time to hide or the looks so far, one dot each */
 .line {
     position: absolute;
