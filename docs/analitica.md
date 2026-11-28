@@ -49,6 +49,11 @@ Todos llevan `lang` (`es`/`en`) e `installed` (la app corre como PWA instalada).
 | `share_clicked` | elige un canal | `card_id`, `channel` (`link`, `facebook`, `twitter`, `whatsapp`) |
 | `language_changed` | cambia el idioma | `to` |
 | `world_reset` | empieza el mundo de Sid de nuevo (gesto escondido: mantener apretado el laberinto del menú 3 s y confirmar) | (nada) |
+| `house_entered` | entra a la casa de Gratitud, a jugar a las escondidas (`src/lab/house/HideSeek.vue`) | `from`: `world` (por la puerta, en el mundo) / `direct` (`/sid?casa`); `touch`; `layout`: `tall` (el cuarto largo, teléfono vertical) / `wide` (el ancho) |
+| `house_game_started` | elige con quién jugar y empieza una partida | `mode`: `friend` / `machine`; `games` (cuántas lleva en esta visita a la casa), `layout`, `seconds` |
+| `house_turn` | termina un turno de búsqueda | `mode`, `seeker`: `person` / `machine` (quién buscaba), `looks` (miradas; sin encontrarlo cuenta como 9), `seconds` (cuánto buscó), `found` (lo encontró o salió solo), `quick` (lo encontró enseguida: 2 miradas o menos, o en 12 s), `turn` (1 a 4) |
+| `house_game_finished` | termina la partida (los dos se escondieron dos veces) | `mode`, `looks_sid` y `looks_sad` (miradas en total de cada uno; contra la máquina Sid es la persona y Sad la máquina), `best`: `sid` / `sad` / `tie`, `seconds` |
+| `house_left` | una vez: sale de la casa, la oculta o cierra la página | `seconds`, `games`, `games_finished`, `turns`, `quick` (turnos encontrados enseguida), `pauses` (cuántas veces abrió el menú, que pausa el juego), `mode` (el último elegido) |
 | `sound_toggled` | activa o apaga el sonido | `on` |
 | `pwa_installed` | instala la app | |
 
@@ -70,6 +75,7 @@ Para empezar: `card_left` con promedio de `fps` y de `slow_pct`, desglosado por 
 - **Ritual**: `$pageview` (route `/`) → `oracle_mode_chosen` → `card_picked` → `card_viewed` → `card_reading_reached`.
 - **Escena**: `card_viewed` → `scene_interacted` → `scene_milestone` (desglosar por `scene` o `card_id`).
 - **Compartir**: `card_viewed` → `share_opened` → `share_clicked`.
+- **Escondidas**: `house_entered` → `house_game_started` → `house_game_finished` (¿terminan la partida?). Contra la máquina, `house_turn` desglosado por `seeker`: si la máquina necesita muchas menos miradas que la persona (`looks`), es demasiado difícil; `best` en `house_game_finished` dice quién gana más.
 - **Mundo de Sid** (armado en el tablero "Anima: el mundo de Sid" de PostHog, con el resto de sus gráficos): `world_entered` → `world_moved` → `world_zone_reached` (con `zones` = 2: salió de la primera) → `world_place_meditated` → `world_card_opened` → `world_card_closed` con `won` (desglosar por `from` y por `touch`). Y `world_left`: cuánto se queda (`seconds`), cuánto camina y si se sienta (`seconds_to_first_sit` vacío: no encontró el botón de la semilla).
 - **Llegada por enlace**: `card_viewed` con `entry = direct` → `oracle_mode_chosen` (¿quien llega por un enlace compartido entra al oráculo?).
 

@@ -318,3 +318,44 @@ export const startWorldVisit = ({ from, touch, webgl, standalone = false, visit:
     document.addEventListener('visibilitychange', onHidden);
     return visit;
 };
+
+// The hide and seek in Gratitud's house (lab/house/HideSeek.vue), one story a time it is opened: each game started, each
+// turn (who looked, a person or the machine, how many looks and how long: whether the machine is too easy or too hard
+// to beat), each game finished, and `house_left` with the totals
+export const startHouseVisit = ({ from, touch, layout }) => {
+    const none = { started() {}, turn() {}, finished() {}, paused() {}, finish() {} };
+    if (!tracking()) return none;
+    const startedAt = performance.now();
+    const secs = () => Math.round((performance.now() - startedAt) / 100) / 10;
+    let games = 0, done = 0, turns = 0, quick = 0, pauses = 0, mode = null, finished = false;
+    track('house_entered', { from, touch, layout });
+    const visit = {
+        started(how) {
+            games += 1; mode = how;
+            track('house_game_started', { mode: how, games, layout, seconds: secs() });
+        },
+        // seeker: 'person' or 'machine'; looks (the 8 of not finding him counted as such), seconds of looking, whether
+        // he came out by himself (not found) or was found at once (QUICK)
+        turn({ seeker, looks, seconds, out, fast, turn }) {
+            turns += 1; if (fast) quick += 1;
+            track('house_turn', { mode, seeker, looks, seconds: Math.round(seconds * 10) / 10, found: !out, quick: fast, turn });
+        },
+        // the person's looks and the other's (Sad's: the machine's, or the friend's), and who found best
+        finished({ looksSid, looksSad, best }) {
+            done += 1;
+            track('house_game_finished', { mode, looks_sid: looksSid, looks_sad: looksSad, best, seconds: secs() });
+        },
+        paused() { pauses += 1; },
+        finish() {
+            if (finished) return;
+            finished = true;
+            window.removeEventListener('pagehide', visit.finish);
+            document.removeEventListener('visibilitychange', onHidden);
+            track('house_left', { seconds: Math.round(secs()), games, games_finished: done, turns, quick, pauses, mode });
+        },
+    };
+    const onHidden = () => { if (document.visibilityState === 'hidden') visit.finish(); };
+    window.addEventListener('pagehide', visit.finish);
+    document.addEventListener('visibilitychange', onHidden);
+    return visit;
+};

@@ -22,12 +22,13 @@
 // nearest places he has not looked in.
 //
 // The room is drawn in code (house/room.js) and seen as Sid's world is seen; the two Sids are the same puppet (puppet.js).
-import { computed, getCurrentInstance, onBeforeUnmount, onMounted, reactive, ref, watchEffect } from 'vue';
+import { computed, getCurrentInstance, onBeforeUnmount, onMounted, reactive, ref, watch, watchEffect } from 'vue';
 import { createPuppet, SID_TALL } from '../puppet.js';
 import { BOUNDS, ENTRY, ROOM, SPOTS, beginFrame, createSpots, drawPrints, drawRoom, drawThings, obstacles, onRug, onSand, setLayout, spotAt } from './room.js';
 import { play, vibrate } from '../../composables/useSound.js';
 import { menuOpen } from '../../composables/menuOpen.js';
 import SidHead from './SidHead.vue';
+import { startHouseVisit } from '../../analytics.js';
 
 const emit = defineEmits(['close', 'played']);
 const vm = getCurrentInstance().proxy;
@@ -85,6 +86,9 @@ let blocking = obstacles();
 // the footprints of the one hiding: { x, d, a, side, strength, alpha }, how far he has walked since the last one, and
 // how much sand his feet still have (steps)
 let prints = [], walked = 0, lastAt = null, foot = 1, dust = DUST;
+
+// The story of this visit to the house, for the analytics (analytics.js, startHouseVisit)
+let stats = null;
 
 // Timers that die with the game: cleared on leaving the house and at every turn. They run on the game's own time
 // (`played`, moved by the loop), not the clock's, so they stop with it while the header's menu is open
@@ -161,6 +165,7 @@ function startTurn() {
 }
 function begin(mode = game.mode) {
     game.mode = mode;
+    stats?.started(mode);
     game.turn = 0;
     game.score = [{ looks: 0, time: 0, turns: [] }, { looks: 0, time: 0, turns: [] }];
     toHiding();
@@ -319,6 +324,7 @@ function found(sp, out) {
     const looks = out ? SPOTS.length + 1 : game.looks, time = out ? SEEK_TIME : game.clock;
     const sc = game.score[s];
     sc.looks += looks; sc.time += time; sc.turns.push({ looks, time, out });
+    stats?.turn({ seeker: isMachine(s) ? 'machine' : 'person', looks, seconds: time, out, fast: !out && (looks <= QUICK.looks || time <= QUICK.time), turn: game.turn + 1 });
     game.phase = 'found';
     sp.openTo = 1; sp.sloppy = null;
     // he comes out beside his place, on the side away from the one looking (if the room has room there)
@@ -333,7 +339,7 @@ function found(sp, out) {
     play('open');
     if (out) later(() => ph.wave(), 1100);
     // found at once (QUICK): the one who found him dances a little and he, caught, scratches his neck with his head down
-    else if (quick) { vibrate?.(30); later(() => { ps.dance(2.6); ph.sheepish(2.4); }, 400); }
+    else if (quick) { vibrate?.(30); later(() => { ps.dance(2.6); ph.sheepish(2.4); play('caught'); later(() => play('dance'), 900); }, 400); }
     else { vibrate?.(30); later(() => { ps.cheer(1.6); ph.cheer(1.2); }, 400); }
     later(() => { sp.openTo = 0; }, 900);
     ps.faceTo(null); ph.faceTo(null);
@@ -346,6 +352,7 @@ function found(sp, out) {
 }
 function finish() {
     game.phase = 'result';
+    stats?.finished({ looksSid: game.score[0].looks, looksSad: game.score[1].looks, best: best.value == null ? 'tie' : best.value === 0 ? 'sid' : 'sad' });
     play('converge');
     emit('played');
     // both in the room, together: both celebrate (the one who found best a little more)
@@ -454,8 +461,9 @@ function loop(now) {
 
 onMounted(() => {
     // (to look at from the console, and for the tests)
-    if (typeof window !== 'undefined') window.__house = { game, prints: () => prints, puppets, spots: () => spots, view, cam };
+    if (typeof window !== 'undefined') window.__house = { game, prints: () => prints, puppets, spots: () => spots, view, cam, begin, hideIn: (id) => hideIn(spots.find((s) => s.id === id)), lookIn: (id) => lookIn(spots.find((s) => s.id === id)), MACHINE };
     resize();
+    stats = startHouseVisit({ from: new URLSearchParams(window.location.search).has('casa') ? 'direct' : 'world', touch: matchMedia('(pointer: coarse)').matches, layout: shapeFor() });
     window.addEventListener('resize', resize);
     window.addEventListener('keydown', onKey);
     startTurn();
@@ -464,8 +472,11 @@ onMounted(() => {
 // over the navy veil between turns the header's icons go cream, as over the open menu (`body.house-veil`)
 const COVERED = ['intro', 'cover', 'pass', 'machineHide', 'result'];
 const covered = computed(() => COVERED.includes(game.phase));
+// (how often the menu was opened during a game: the pause)
+watch(menuOpen, (open) => { if (open) stats?.paused(); });
 watchEffect(() => document.body.classList.toggle('house-veil', covered.value));
 onBeforeUnmount(() => {
+    stats?.finish();
     document.body.classList.remove('house-veil');
     clearTimers();
     cancelAnimationFrame(raf);

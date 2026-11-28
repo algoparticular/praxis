@@ -19,7 +19,7 @@ const mid = (a, b) => [((a.x + b.x) / 2).toFixed(1), ((a.y + b.y) / 2).toFixed(1
 let d = `M${mid(ring[ring.length - 1], ring[0]).join(' ')}`;
 ring.forEach((p, i) => { d += `Q${p.x.toFixed(1)} ${p.y.toFixed(1)} ${mid(p, ring[(i + 1) % ring.length]).join(' ')}`; });
 const PATH = d + 'Z';
-const PAD = 16, W = Math.max(...rows.map((r) => r.w));
+const PAD = 28, W = Math.max(...rows.map((r) => r.w));
 const BOX = `${(PIVOT.x - W - PAD).toFixed(0)} ${(S.crown[1] - PAD).toFixed(0)} ${(2 * (W + PAD)).toFixed(0)} ${(NECK + 12 + PAD - S.crown[1] + PAD).toFixed(0)}`;
 const EYES = FRONT_EYES.map(([x, y]) => ({ x, y }));
 </script>
@@ -30,6 +30,8 @@ defineProps({ ink: { type: String, default: '#102A34' }, white: { type: String, 
 
 <template>
     <svg class="sid-head" :viewBox="BOX" aria-hidden="true">
+        <!-- (a rim of the cream round his line: every place it shows is on the navy, where his ink alone is lost) -->
+        <path :d="PATH" fill="none" stroke="#F7F8F1" stroke-opacity="0.75" stroke-width="44" stroke-linejoin="round" />
         <path :d="PATH" :fill="white" :stroke="ink" stroke-width="22" stroke-linejoin="round" />
         <circle v-for="(e, i) in EYES" :key="i" :cx="e.x" :cy="e.y" r="13" :fill="ink" />
     </svg>
