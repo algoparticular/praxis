@@ -199,6 +199,23 @@ export function createPuppet({ ink = '#102A34', white = '#FBF4E4', x = 0, d = 0,
             near.v = mix(REST_HAND.near.v, near.v, up); far.v = mix(REST_HAND.far.v, far.v, up);
             sy = 1 + 0.06 * up * Math.abs(Math.sin(t * 9)); closed = up > 0.5 ? 1 : 0;
         }
+        // a little dance (found him at once): swaying on the beat, bouncing, each arm up in turn
+        if (name === 'dance') {
+            const env = Math.min(1, t / 0.3) * Math.min(1, (state.action.dur - t) / 0.35), b = Math.sin(t * Math.PI * 2.4);
+            const up = 0.5 + 0.5 * b;
+            rot = 0.12 * b * env; lean = 0.04 * b * env; sy = 1 + 0.08 * env * Math.abs(Math.cos(t * Math.PI * 2.4)); drop = 30 * env * (1 - Math.abs(b));
+            near = { u: side(PIVOT.x - 120) + 20 * b * env, v: mix(REST_HAND.near.v, 70, up * env), final: true };
+            far = { u: side(PIVOT.x + 120) + 20 * b * env, v: mix(REST_HAND.far.v, 70, (1 - up) * env), final: true };
+            closed = env > 0.5 ? 1 : 0;
+        }
+        // found too soon: head down and to one side, a little smaller, a hand scratching the back of his neck
+        if (name === 'sheepish') {
+            const env = Math.min(1, t / 0.4) * Math.min(1, (state.action.dur - t) / 0.5), scratch = Math.sin(t * 26) * 12 * env;
+            lean = 0.08 * face * env * (1 - fr); rot = 0.11 * env * (fr > 0.5 ? 1 : face); sy = 1 - 0.08 * env; drop = 40 * env;
+            near = fr > 0.5
+                ? { u: mix(near.u, side(PIVOT.x - 96) + scratch * 0.5, env), v: mix(near.v, 222 + scratch, env), final: true }
+                : { u: mix(near.u, 56 + scratch * 0.4, env), v: mix(near.v, 250 + scratch, env) };
+        }
         // going into a hiding place (crouching small, then gone) and coming out of it (small, then up, with a give)
         if (name === 'crouch') {
             const e = Math.min(1, t / state.action.dur), k = e * e * (3 - 2 * e);
@@ -254,6 +271,7 @@ export function createPuppet({ ink = '#102A34', white = '#FBF4E4', x = 0, d = 0,
         const f0 = frame(), head = map(f0, 150, 200);
         let look = null;
         if (state.reach) look = state.reach;
+        else if (name === 'sheepish') look = { x: head.x + face * 80, y: head.y + 500 };
         else if (state.look) look = state.look;
         else if (aim !== null && off > 0.25) look = { x: head.x + Math.cos(aim) * 500, y: head.y + 40 };
         else {
@@ -266,6 +284,8 @@ export function createPuppet({ ink = '#102A34', white = '#FBF4E4', x = 0, d = 0,
             S.lookX.to = (dx / dist) * m * f0.face; S.lookY.to = (dy / dist) * m;
             if (!state.reach) S.lean.to += (dx / dist) * m * 0.02;
         } else { S.lookX.to = 0.35; S.lookY.to = 0; }
+        // (caught: his eyes on the floor, well down)
+        if (name === 'sheepish') { S.lookY.to = 2.4; S.lookX.to *= 0.3; }
 
         const before = Math.sign(S.face.x);
         for (const s of Object.values(S)) step(s, dt);
@@ -418,6 +438,9 @@ export function createPuppet({ ink = '#102A34', white = '#FBF4E4', x = 0, d = 0,
         wave() { if (!state.air) act('wave', 2.4, { arm: 'near' }); },
         hop(high = 1) { if (!state.air) { state.jumped = false; act('jump', 1.4, { high }); } },
         cheer(dur = 1.8) { act('cheer', dur); },
+        // a little dance (glad), and head down scratching his neck (caught)
+        dance(dur = 2.6) { if (!state.air) act('dance', dur); },
+        sheepish(dur = 2.6) { if (!state.air) act('sheepish', dur); },
         reachFor(p, dur = 1.2) { state.reach = p; state.reached = p; act('reach', dur); },
         // crouches small and is gone (into a hiding place); `then` once gone
         hide(then = null) { state.target = null; act('crouch', 0.45, { done: () => { state.hidden = true; then?.(); } }); },

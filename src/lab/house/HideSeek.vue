@@ -38,6 +38,7 @@ const PLAYERS = [
     { es: 'Sad', en: 'Sad', ink: '#4E2F7A', white: '#E9DDFB' },
 ];
 const HIDE_TIME = 20, SEEK_TIME = 60, SAFETY = 40, LOOK = 0.75, ROUNDS = 2;
+const QUICK = { looks: 2, time: 12 };     // found this soon (in looks, or in seconds of looking): a dance and a caught one
 const PRINT_FADE = 14, PRINT_STEP = 105, SLOPPY = 5, DUST = 6;
 const GIGGLE = { near: 450, odds: 0.6, rest: 5 };
 const MACHINE = { who: 1, hide: 2.4, think: [0.4, 1.2], reads: 0.75, hear: 0.6, near: 3 };
@@ -325,9 +326,12 @@ function found(sp, out) {
     ph.place(ex, sp.spot.d + 30, -Math.PI / 2);
     inRoom[h] = true;
     ph.emerge();
-    later(() => ph.hop(0.8), 350);
+    const quick = !out && (looks <= QUICK.looks || time <= QUICK.time);
+    if (!quick) later(() => ph.hop(0.8), 350);
     play('open');
     if (out) later(() => ph.wave(), 1100);
+    // found at once (QUICK): the one who found him dances a little and he, caught, scratches his neck with his head down
+    else if (quick) { vibrate?.(30); later(() => { ps.dance(2.6); ph.sheepish(2.4); }, 400); }
     else { vibrate?.(30); later(() => { ps.cheer(1.6); ph.cheer(1.2); }, 400); }
     later(() => { sp.openTo = 0; }, 900);
     ps.faceTo(null); ph.faceTo(null);
