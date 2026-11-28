@@ -456,9 +456,10 @@ const PART_COLOUR = { cap: 2, stem: null };   // the mushrooms of the tree: thei
 const ROLES = { plant: 'plants', bead: 'beads', stone: 'stones' };
 const mixRgb = (a, b, t) => `rgb(${a.map((v, i) => Math.round(v + (b[i] - v) * t)).join(',')})`;
 
-export function createWorld({ clouds = null, moon = null, planted = [], visit = 0, onSeed = null, onGrow = null, onSing = null, marks = null, onMark = null, firstSeed = null }) {
+export function createWorld({ clouds = null, moon = null, planted = [], visit = 0, onSeed = null, onGrow = null, onSing = null, marks = null, onMark = null, firstSeed = null, doorCall = null }) {
     // (firstSeed: { x, d }, on the very first visit: a seed lies there, near him, calling with rings of light on the
     // ground, so the first thing learnt is that seeds are gathered; LabSid.vue)
+    // (doorCall: () => whether the door of Gratitud's house still calls, until he has gone in once)
     // (marks: { found: [keys], open: () => whether they are out, first: { x, d } or null }: the marks of the story,
     // story.js; first: one of its own, near where he starts and in sight, until the first fragment is found)
     zoneOrder = shuffled(ZONES);                // (a new map of the worlds on every visit)
@@ -1179,8 +1180,22 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
                 const [hx, hy] = part('grHouse'), [, , hw, hh] = B('grHouse');
                 halo(hx + hw / 2, hy + hh * 0.5, hw * 0.8, [255, 210, 170], 0.3 * g);
                 at('grHouse', hx, hy);
-                // (its door, a warm light in it that breathes: one can go in)
-                if (P.door) halo(P.door.dx, -P.door.up, 150, [255, 226, 170], (0.22 + 0.1 * Math.sin(time * 2.2)) * (0.45 + 0.55 * col));
+                // (its door, a warm light in it that breathes, seen by day too: one can go in; until he has gone in once,
+                // `doorCall`, rings of that light go out over the ground at its foot, as the first seed calls)
+                if (P.door) {
+                    const breath = Math.sin(time * 2.2), on = 0.65 + 0.35 * col;
+                    halo(P.door.dx, -P.door.up, 190, [255, 226, 170], (0.38 + 0.14 * breath) * on);
+                    halo(P.door.dx, -P.door.up * 0.85, 80, [255, 240, 205], (0.32 + 0.12 * breath) * on);
+                    if (doorCall?.()) {
+                        c.save(); c.lineWidth = 4;
+                        for (let n = 0; n < 3; n++) {
+                            const k = (time * 0.45 + n / 3) % 1;
+                            c.strokeStyle = `rgba(255,226,170,${(0.8 * (1 - k)).toFixed(3)})`;
+                            c.beginPath(); c.ellipse(P.door.dx, 0, 60 + 230 * k, 16 + 60 * k, 0, 0, Math.PI * 2); c.stroke();
+                        }
+                        c.restore();
+                    }
+                }
             } else if (P.kind === 'seed') {
                 // Transformación's pond (its light in the middle), the tree growing out of it and its seed beside the
                 // trunk; alive, golden dust rises from the pond's light along the trunk, and as he meditates by it the

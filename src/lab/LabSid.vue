@@ -627,6 +627,7 @@ function enterHouse(direct = false) {
     if (house.open) return;
     release(); state.target = null; state.guide = null; state.toDoor = false; doorT = 0;
     play('flip');
+    learn('house');
     if (direct) { house.open = true; paused = true; return; }
     Object.assign(zoom, { on: true, x: sidOnScreen.x, y: sidOnScreen.y });
     houseTimer = setTimeout(() => { house.open = true; paused = true; }, PORTAL_FADE * 0.7);
@@ -733,6 +734,8 @@ const world = createWorld({
     // found, the next one is written. The first is near where he starts, in sight (FIRST_MARK), until one is found
     marks: { found: memory.marks, open: () => !firstVisit, first: memory.fragments.length ? null : FIRST_MARK },
     firstSeed: firstVisit ? { ...FIRST_SEED } : null,
+    // (the door of Gratitud's house calls with rings of its light until he has gone in once)
+    doorCall: () => !memory.learned.house,
     // (each mark gives a fragment still hidden, at random: the story is found out of order)
     onMark: () => {
         const left = FRAGMENTS.map((f, i) => i).filter((i) => !memory.fragments.includes(i));
