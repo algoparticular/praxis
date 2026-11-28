@@ -4,9 +4,11 @@
 // traced off Nekkhamma's Sid (scripts/make-sid-lab.mjs -> sid.json), bent, squashed and stretched as a soft body; his
 // eyes (they look, blink and close); his arms and legs, strokes with his ink and line that bend freely. Canvas 2D on purpose: it shows the movement;
 // if it is what we want, the same rig goes into the WebGL stage (useLayerStage.js). Plan: docs/sid-en-piezas.md.
-import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
+import { computed, defineAsyncComponent, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import Header from '../components/Header.vue';
 import rig from './sid/sid.json';
+import { PIVOT, TALL, LEG, ARM, STAND, HIP, FRONT_HIP, SHOULDER, REST_HAND, spread, EYES, FRONT_EYES, FRONT_SHOULDER, FRONT_HAND, mix,
+    standsOn, lowest, gaitLegs, cycleLength, spring, step, local, map, bend, turnPace, wrap, codeBody } from './sid/rig.js';
 import { CICLOS, createWorld, STAR_SEED, STAR_LIGHT, FERN_LIGHT, pieceUrl, plantsOf } from './sidWorld.js';
 import { createStarField, CONSTELLATION_TIME } from '../composables/useStarField.js';
 import { WORLD_RESUME } from '../composables/worldResume.js';
@@ -611,6 +613,47 @@ function openPortal(card) {
     portalTimer = setTimeout(() => { if (portal.card === card) paused = true; }, PORTAL_FADE);
 }
 function portalWon() { portal.won = true; }
+
+// Gratitud's house has a door (`door` of its place in sidWorld.js, a warm light breathing in it): touched, he walks to
+// it; standing at it, sent there or pushing towards it with the keys, after a moment (HOUSE_AFTER) the world zooms in on
+// him as for a card, and the house opens over it: the hide and seek, two Sids by turns on one phone (house/HideSeek.vue,
+// its own chunk, loaded only when he goes in). Its "back to the world" (or Escape, or the labyrinth in the header's
+// corner) brings him out at its door. `/sid?casa` goes straight in (to try it)
+const HideSeek = defineAsyncComponent(() => import('./house/HideSeek.vue'));
+const house = reactive({ open: false, played: false });
+const HOUSE_AFTER = 0.3, DOOR_REACH = 90;
+let houseTimer = 0, doorT = 0;
+function enterHouse(direct = false) {
+    if (house.open) return;
+    release(); state.target = null; state.guide = null; state.toDoor = false; doorT = 0;
+    play('flip');
+    learn('house');
+    if (direct) { house.open = true; paused = true; return; }
+    Object.assign(zoom, { on: true, x: sidOnScreen.x, y: sidOnScreen.y });
+    houseTimer = setTimeout(() => { house.open = true; paused = true; }, PORTAL_FADE * 0.7);
+}
+function closeHouse() {
+    clearTimeout(houseTimer);
+    if (!house.open && !zoom.on) return;
+    house.open = false; paused = false; last = 0; zoom.on = false;
+    // (he comes out at its door, facing us, a step in front of it: not straight back in)
+    const door = world.doorNear(state.x, state.d, 2000);
+    if (door) { state.x = door.x; state.d = door.d - 120; state.heading = -Math.PI / 2; state.feet = [null, null]; }
+    state.toDoor = false; doorT = 0;
+    // a game played in it gives a seed of Gratitud as he comes out (once a visit)
+    if (house.played && !wonHere.has('house')) {
+        wonHere.add('house');
+        setTimeout(() => { if (!gone) addSeed(PLACE_SEED[24], { x: sidOnScreen.x, y: sidOnScreen.y - 60 }); }, 1200);
+    }
+    house.played = false;
+}
+// A touch on the door of a house on the screen (in px / k): it, or null
+function doorAt(screen) {
+    const door = world.doorNear(state.x, state.d, 2600);
+    if (!door) return null;
+    const s = scaleAt(door.foot.d), x = view.w / view.k / 2 + (door.x - state.cam) * s, y = groundAt(door.foot.d) - door.up * s;
+    return Math.abs(screen.x - x) < 120 * s && Math.abs(screen.y - y) < 160 * s ? door : null;
+}
 function closePortal() {
     if (portal.card == null) return;
     const card = portal.card, won = portal.won;
@@ -635,33 +678,15 @@ function closePortal() {
     portal.card = null;
 }
 
-// --- The rig, in px of the source drawing (258 x 686): he faces +x (his eyes are on that side) ---
-const PIVOT = { x: 130, y: 518 };             // the middle of his bottom, where his hips are: the body bends about it
-const TALL = 512;                             // from his bottom to the top of his head
 let INK = CICLOS.ink;                            // his line and his white: those of the zone he is in (sidWorld.js)
 // His proportions as Nekkhamma's Sid standing (the drawing he is cut from): head 306 px of the source (to the pinch of
 // his waist), torso 181, legs 187 from his body to the floor: his legs as long as his torso, about 0.6 of his head
 // (Viriya's walker has them a little longer, 0.8). Limbs as thick as his outline.
 const SMALL = 0.48;                            // (seen from further away, as from a high camera: the world big round him)
-const LEG = { thigh: 97, shin: 97, foot: 40, width: 16 };
-const ARM = { upper: 116, fore: 110, width: 13.5 };        // long, as in Upekkha (they reach his crossed legs)
 // his legs crossed in lotus, as in Upekkha and Ciclos: the knees well out past his body, a little up off the floor,
 // each foot under the other knee, the two shins crossing in front of him
 const LOTUS = { knee: 132, kneeUp: 26, under: 70, hands: 15, open: 1.38, low: 16 };   // (hands: how far apart in his lap, low: how far under his pelvis they show; open: how far his elbows open)
-const STAND = 196;                            // his hips over the ground, standing: his legs all but straight
 const SIT = 48;                               // his hips over the ground, sitting with his legs crossed: his bottom on the floor
-// In profile his hips are together in his middle (one leg behind the other), his arms come from the middle of him
-// too, the near one hanging over his belly and the far one behind him (unseen until it swings out); turned to us, his
-// hips, shoulders and hands are at each side of him (FRONT_ below). Which is near and which far is as when one really
-// turns: facing us, to walk the way his face is (+u), he turns so that the side away from it comes to the front, so
-// turned to us his near arm and leg are on the side away from the way he faces
-const HIP = { far: { u: 134, v: 516 }, near: { u: 126, v: 515 } };
-const FRONT_HIP = { far: { u: 157, v: 514 }, near: { u: 103, v: 516 } };
-const SHOULDER = { far: { u: 100, v: 334 }, near: { u: 110, v: 334 } };   // towards his back, by the hatching
-const REST_HAND = { far: { u: 94, v: 538 }, near: { u: 118, v: 538 } };   // (low: his arms hang loose, all but straight)
-// (seen three quarters on, his hips, shoulders and hands are already well apart: they open out quickly as he turns
-// from his profile, so his legs do not cross like scissors and his arms are not drawn over his belly)
-const spread = (front) => Math.sqrt(Math.max(0, front));
 // Turned to us his near side is the one away from where he faces; with his back to us it is the one on that side (as
 // when one really turns: walking away three quarters on, the arm nearer us is on the side he goes to). `lateral()` is
 // 1 facing us, -1 with his back to us (soft through his profile, where it does not show), and `side(u)` puts a point
@@ -669,13 +694,6 @@ const spread = (front) => Math.sqrt(Math.max(0, front));
 const lateral = () => Math.max(-1, Math.min(1, -Math.sin(state.heading) * 4));
 const side = (u) => PIVOT.x + (u - PIVOT.x) * lateral();
 const hipsOf = (f) => ['far', 'near'].map((s) => ({ u: mix(HIP[s].u, side(FRONT_HIP[s].u), spread(f.front)), v: mix(HIP[s].v, FRONT_HIP[s].v, f.front) }));
-const EYES = rig.eyes;
-// Turned to us: his eyes in the middle of his face, a shoulder at each side of the pinch of his waist and his hands
-// hanging at each side of his belly
-const FRONT_EYES = [[PIVOT.x - 17, 211, rig.eyes[0][2]], [PIVOT.x + 17, 211, rig.eyes[1][2]]];
-const FRONT_SHOULDER = { far: { u: PIVOT.x + 48, v: 322 }, near: { u: PIVOT.x - 48, v: 322 } };
-const FRONT_HAND = { far: { u: PIVOT.x + 132, v: 508 }, near: { u: PIVOT.x - 132, v: 508 } };   // a little away from his sides
-const mix = (a, b, t) => a + (b - a) * t;
 const JUMP = { crouch: 0.34, speed: 560, gravity: 1700 };
 // (a cycle of his walk is about 390 px of his world: an easy pace is about two steps a second, as a short-legged
 // little one walks, and the trot nearly three)
@@ -716,6 +734,8 @@ const world = createWorld({
     // found, the next one is written. The first is near where he starts, in sight (FIRST_MARK), until one is found
     marks: { found: memory.marks, open: () => !firstVisit, first: memory.fragments.length ? null : FIRST_MARK },
     firstSeed: firstVisit ? { ...FIRST_SEED } : null,
+    // (the door of Gratitud's house calls with rings of its light until he has gone in once)
+    doorCall: () => !memory.learned.house,
     // (each mark gives a fragment still hidden, at random: the story is found out of order)
     onMark: () => {
         const left = FRAGMENTS.map((f, i) => i).filter((i) => !memory.fragments.includes(i));
@@ -748,65 +768,7 @@ const FAR = 0.5;                              // his size at the back (little sm
 const scaleAt = (d) => 1 - (1 - FAR) * (d - state.camD) / DEPTH;
 
 
-// --- The walk, as The Animator's Survival Kit draws a walk: pose by pose, each leg on its own ---
-// One leg through a whole cycle (two steps), in eight poses from its contact in front: [thigh, knee, foot], in degrees
-// (thigh from straight down, + forward; knee bent, + the shin going back; foot from flat, + toes up). The other leg
-// does the same half a cycle later. In between, the poses flow smoothly (a curve through them, frame by frame).
-const WALK = [
-    [26, 3, 20],      // 1 contact, in front: straight, the heel down and the toes up
-    [17, 20, 0],      // 2 down: the knee takes his weight, the foot flat
-    [2, 7, 0],        // 3 passing: under him, all but straight
-    [-14, 2, -3],     // 4 up: behind him, straight, pushing (the heel about to rise)
-    [-23, 9, -30],    // 5 contact, behind: on its toes, the heel up
-    [-15, 52, -55],   // 6 down: off the ground, the foot up behind him
-    [11, 74, -40],    // 7 passing: the knee forward and up, the foot hanging under him
-    [30, 26, 6],      // 8 up: reaching forward, the foot low, the toes coming up
-];
-const DEG = Math.PI / 180;
-// the pose of a leg at q (0..1 of its cycle), `k` of the way from standing to walking, a trot's poses wider (amp)
-function walkPose(q, k = 1, amp = 1) {
-    const x = (((q % 1) + 1) % 1) * WALK.length, i = Math.floor(x), t = x - i, n = WALK.length;
-    const P = [WALK[(i + n - 1) % n], WALK[i], WALK[(i + 1) % n], WALK[(i + 2) % n]];
-    return [0, 1, 2].map((j) => {
-        const [a, b, c, d] = P.map((pose) => pose[j]);
-        const v = 0.5 * (2 * b + (c - a) * t + (2 * a - 5 * b + 4 * c - d) * t * t + (3 * b - a - 3 * c + d) * t * t * t);
-        return v * k * (j === 1 ? 1 + (amp - 1) * 0.6 : amp);
-    });
-}
-// A leg in that pose, from its hip: along the way he goes (a) and up (u), in px of his drawing: its knee, its ankle,
-// its heel and the tip of its toes on the ground (the points it stands on), and its toes as they are drawn
-function legShape([thigh, knee, foot]) {
-    const T = thigh * DEG, S = (thigh - knee) * DEG, F = foot * DEG;
-    const kn = { a: LEG.thigh * Math.sin(T), u: -LEG.thigh * Math.cos(T) };
-    const an = { a: kn.a + LEG.shin * Math.sin(S), u: kn.u - LEG.shin * Math.cos(S) };
-    const reach = LEG.foot * Math.cos(F), rise = LEG.foot * Math.sin(F);
-    return { knee: kn, ankle: an, heel: { a: an.a, u: an.u - 6 }, tip: { a: an.a + reach, u: an.u - 6 + rise }, toe: { a: an.a + reach, u: an.u - 2 + rise } };
-}
-// which of its points a leg stands on (the lower: the heel, or the toes once the heel is up) and how high its hip is
-const standsOn = (L) => (L.tip.u < L.heel.u - 0.3 ? 'tip' : 'heel');
-const lowest = (L) => Math.min(L.heel.u, L.tip.u);
-// both legs at the phase p of the cycle (the far leg's contact in front at 0, the near one's at 0.5)
-const gaitLegs = (p, k, amp) => [0, 1].map((i) => legShape(walkPose(p + i * 0.5, k, amp)));
-// How far he goes in a cycle, walking (worked out once per width of step): the foot on the ground goes back under
-// him and he goes forward exactly as much, so a foot down never slides
-const cycleLengths = new Map();
-function cycleLength(amp) {
-    const key = Math.round(amp * 50) / 50;
-    if (!cycleLengths.has(key)) {
-        let total = 0, prev = gaitLegs(0, 1, key);
-        for (let n = 1; n <= 400; n++) {
-            const p = n / 400, now = gaitLegs(p, 1, key), g = ((p - 1 / 800) % 1) < 0.5 ? 0 : 1, on = standsOn(now[g]);
-            total += Math.max(0, prev[g][on].a - now[g][on].a);
-            prev = now;
-        }
-        cycleLengths.set(key, total);
-    }
-    return cycleLengths.get(key);
-}
 
-// --- Springs: a value that follows its target with some give (soft, it overshoots a little) ---
-function spring(x, stiff = 120, damp = 14) { return { x, v: 0, to: x, stiff, damp }; }
-function step(s, dt) { s.v += ((s.to - s.x) * s.stiff - s.v * s.damp) * dt; s.x += s.v * dt; }
 const springs = {
     lean: spring(0, 90, 9),        // the bend of his body, a fraction of his height at the top of his head
     sy: spring(1, 160, 9),         // squash and stretch (his width goes the other way, his volume stays)
@@ -871,36 +833,8 @@ function frame() {
         sy: springs.sy.x, sx: 1 / Math.sqrt(Math.max(0.5, springs.sy.x)), lean: springs.lean.x, breath,
     };
 }
-// How his body is bent at a height t (0 his bottom .. 1 the top of his head): the sideways shift and the width
-const bendAt = (f, t) => f.lean * TALL * t * t;
-const widthAt = (f, t) => f.sx * (1 + f.breath * 0.045 * Math.exp(-(((t - 0.24) / 0.16) ** 2)) + f.breath * 0.012 * Math.exp(-(((t - 0.75) / 0.2) ** 2)));
-function local(f, u, v) {
-    const t = Math.max(0, (PIVOT.y - v) / TALL);
-    return { x: (u - PIVOT.x) * widthAt(f, t) + bendAt(f, t), y: -(PIVOT.y - v) * f.sy };
-}
-function toWorld(f, p) {
-    const c = Math.cos(f.rot), s = Math.sin(f.rot), x = p.x * f.face;
-    return { x: f.root.x + x * c - p.y * s, y: f.root.y + x * s + p.y * c };
-}
-const map = (f, u, v) => toWorld(f, local(f, u, v));
 
-// Two bones from a to a target: where the joint goes, bending towards `toward` (a direction)
-function bend(a, target, l1, l2, toward) {
-    let dx = target.x - a.x, dy = target.y - a.y;
-    const d = Math.min(Math.hypot(dx, dy), (l1 + l2) * 0.999), angle = Math.atan2(dy, dx);
-    const end = { x: a.x + Math.cos(angle) * d, y: a.y + Math.sin(angle) * d };
-    const open = Math.acos(Math.max(-1, Math.min(1, (l1 * l1 + d * d - l2 * l2) / (2 * l1 * Math.max(d, 1e-3)))));
-    const joints = [angle + open, angle - open].map((g) => ({ x: a.x + Math.cos(g) * l1, y: a.y + Math.sin(g) * l1 }));
-    const mid = { x: (a.x + end.x) / 2, y: (a.y + end.y) / 2 };
-    const score = (j) => (j.x - mid.x) * toward.x + (j.y - mid.y) * toward.y;
-    return { joint: score(joints[0]) >= score(joints[1]) ? joints[0] : joints[1], end };
-}
 
-// --- Turning, and the way round what stands in his way ---
-// How much of his pace he keeps while he turns, by how far he still has to turn: he never stops to turn, he walks it
-// in a tight curve (slowing a little for a sharp one, never below a third), so going the other way is one swing round
-const turnPace = (off) => Math.max(0.35, Math.cos(Math.min(Math.PI / 2, off * 0.75)));
-const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
 // Turns his heading towards an angle, by at most `most`; turning right round he turns through facing us (as one does,
 // and his face shows on the way)
 function turnTo(aim, most) {
@@ -984,6 +918,8 @@ function walkTo(x, d = state.d) {
     // (sitting, he gets up first and only then sets off: the place is kept for when he is on his feet)
     if (ui.sitting) sit(false);
     state.target = { x, d }; state.reach = null;
+    const door = world.doorNear(x, d, 140);
+    state.toDoor = !!door && Math.hypot(door.x - x, door.d - d) < 140;
 }
 function wave() { if (!ui.sitting) act('wave', 2.6, { arm: 'near' }); }
 function jump() { if (!ui.sitting && !state.air) { state.jumped = false; act('jump', 1.7); } }
@@ -1130,6 +1066,9 @@ function onDown(e) {
         if (!ui.sitting && !state.action) wave();
         return;
     }
+    // On a house's door: he walks to it, and goes in
+    const door = doorAt(screen);
+    if (door) { walkTo(door.x, door.d); state.toDoor = true; state.mark = { ...state.target, t: 0 }; return; }
     // On something he planted: it wiggles and sings its note (in tune with the world it grows in)
     const plant = plantAt(screen);
     if (plant) { world.touchPlant(plant.key); sing(plant); state.target = null; return; }
@@ -1155,6 +1094,7 @@ function press(key, on) {
 function onKey(e) {
     // (in a card's scene the keys are not his; Escape goes back to the world)
     if (portal.card != null) { if (e.key === 'Escape' && e.type === 'keydown') closePortal(); return; }
+    if (house.open || zoom.on) return;          // (in the house the keys are its own)
     if (story.open) { if (e.key === 'Escape' && e.type === 'keydown') closeStory(); return; }
     if (e.target?.closest?.('button') && e.key === ' ') e.target.blur();
     const key = KEYS[e.key.length === 1 ? e.key.toLowerCase() : e.key];
@@ -1358,6 +1298,13 @@ function update(dt, now) {
         state.rul = { age: 0, head: 0, tail: 0, pop: 0, full: false, card };
         rulitoColour.value = RULITO_COLOURS[card] ?? RULITO_COLOURS[15];
         rulito.value?.reshape();
+    }
+    // at a house's door, sent there or pushing into it: he goes in
+    if (!house.open && !zoom.on && !ui.sitting && portal.card == null) {
+        const door = world.doorNear(state.x, state.d, DOOR_REACH);
+        const going = door && ((state.toDoor && !state.target) || (state.keys.up && Math.sin(state.heading) > 0.5));
+        doorT = going ? doorT + dt : 0;
+        if (doorT >= HOUSE_AFTER) enterHouse();
     }
     // the music moves to the chord of the card of the zone he is in (src/data/cardChords.js), as on a card's page
     const zone = world.zoneCard();
@@ -1618,51 +1565,7 @@ function drawMark(c, x0) {
     }
     c.globalAlpha = 1;
 }
-const LINE_W = 15;          // (about as thick as the line of her tree beside him)
 let FILL = CICLOS.white;
-function codeBody(c, f) {
-    // turned to us his silhouette is the same widths, row by row, set straight about his middle
-    const S0 = rig.silhouette, fr = f.front;
-    const S = { ...S0, left: S0.left.map((l, i) => mix(l, PIVOT.x - (S0.right[i] - l) / 2, fr)),
-        right: S0.right.map((r, i) => mix(r, PIVOT.x + (r - S0.left[i]) / 2, fr)) };
-    const at = (u, v) => local(f, u, v);
-    const vOf = (i) => S.top + i * S.step;
-    // (round at the crown and at the bottom: the path goes through a point just past each, not along a flat row)
-    const last = S.left.length - 1;
-    const crown = at(mix(S.crown[0], PIVOT.x, fr), S.crown[1]), base = at(mix(S.base[0], PIVOT.x, fr), S.base[1]);
-    const ring = [crown];
-    for (let i = 0; i <= last; i++) ring.push(at(S.right[i], vOf(i)));
-    ring.push(base);
-    for (let i = last; i >= 0; i--) ring.push(at(S.left[i], vOf(i)));
-    // a smooth closed curve through the middles of its segments (each point a control point): no corners anywhere
-    c.beginPath();
-    const midOf = (a, b) => ({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
-    let m = midOf(ring[ring.length - 1], ring[0]);
-    c.moveTo(m.x, m.y);
-    ring.forEach((p, i) => { m = midOf(p, ring[(i + 1) % ring.length]); c.quadraticCurveTo(p.x, p.y, m.x, m.y); });
-    c.closePath();
-    c.fillStyle = FILL; c.fill();
-    c.save();
-    c.clip();
-    c.strokeStyle = INK; c.lineWidth = LINE_W * 2; c.lineJoin = 'round'; c.stroke();
-    // the hatching: each of her marks as a brush stroke, round and full where it leaves his outline, thinning softly
-    // as it bends a little downwards towards his middle and ending round, not sharp; each a touch different
-    c.strokeStyle = INK; c.lineCap = 'round';
-    rig.hatching.forEach(([v, long], k) => {
-        const i = Math.max(0, Math.min(S.left.length - 1, Math.round((v - S.top) / S.step))), u = S.left[i];
-        const vary = Math.sin(k * 2.39), base = u + LINE_W - 7, reach = long + 4 + vary * 2;
-        const SEG = 7;
-        let prev = at(base, v);
-        for (let j = 1; j <= SEG; j++) {
-            const t = j / SEG, sag = (2.2 + vary) * t * t;                  // the stroke bends down as it goes
-            const next = at(base + reach * t, v + sag);
-            c.lineWidth = mix(6.6 + vary * 0.5, 2, Math.pow((j - 0.5) / SEG, 0.8));
-            c.beginPath(); c.moveTo(prev.x, prev.y); c.lineTo(next.x, next.y); c.stroke();
-            prev = next;
-        }
-    });
-    c.restore();
-}
 
 function draw() {
     const el = canvas.value, c = el.getContext('2d'), k = view.k * view.dpr;
@@ -1814,7 +1717,7 @@ function draw() {
     // His body
     c.save();
     c.translate(f.root.x, f.root.y); c.rotate(f.rot); c.scale(f.face, 1);
-    codeBody(c, f);
+    codeBody(c, f, INK, FILL);
     // His eyes: looking, blinking, closed
     const closed = Math.max(springs.closed.x, state.blink > 0 ? 1 : 0);
     c.globalAlpha = 1 - springs.back.x;                         // (his back to us: no eyes)
@@ -1929,6 +1832,7 @@ onMounted(() => {
     raf = requestAnimationFrame(loop);
     scheduleHint();
     tell('intro', 1400);
+    if (new URLSearchParams(window.location.search).has('casa')) enterHouse(true);
     // where they came from: the page before this one in the app (the landing's labyrinth), or nothing (a link)
     const back = window.history.state?.back;
     const standalone = window.matchMedia?.('(display-mode: standalone)').matches || window.navigator.standalone === true;
@@ -1939,7 +1843,7 @@ onBeforeUnmount(() => {
     visit?.finish();
     document.body.classList.remove('lab-page', 'lab-night', 'lab-portal', 'lab-story');
     setHush(false);
-    clearTimeout(portalTimer);
+    clearTimeout(portalTimer); clearTimeout(houseTimer);
     setCardChord(null);
     cancelAnimationFrame(raf);
     document.removeEventListener('visibilitychange', onVisibility);
@@ -1978,9 +1882,13 @@ onBeforeUnmount(() => {
                 {{ $i18n.locale === 'en' ? teaching.en : teaching.es }}
             </p>
         </Transition>
+        <!-- inside Gratitud's house: the hide and seek (enterHouse), over the world and under the header -->
+        <Transition name="portal">
+            <HideSeek v-if="house.open" @close="closeHouse" @played="house.played = true" />
+        </Transition>
         <!-- the app's own header: back on the left, the sound and the menu on the right -->
         <!-- (in a card opened here, the labyrinth takes the corner of the back arrow: back into the world) -->
-        <Header :hasBack="portal.card == null && !story.open" :hasWorld="portal.card != null || story.open" :hasMenu="true" @world="story.open ? closeStory() : closePortal()" />
+        <Header :hasBack="portal.card == null && !story.open && !house.open" :hasWorld="portal.card != null || story.open || house.open" :hasMenu="true" @world="house.open ? closeHouse() : story.open ? closeStory() : closePortal()" />
         <!-- one button, on a phone and on a computer alike: the seed, Algo Particular's mark (as in the header), sits him
              in lotus and gets him up again; he walks with the arrows or WASD, or where a click or a touch on the floor
              sends him; a touch on him makes him wave (on a computer J jumps) -->

@@ -484,6 +484,29 @@ export const resonate = (ctx, out, time, harmony, { step = 0 } = {}) => {
 // Out of time: only a small muted drop, nothing in the chord
 export const miss = (ctx, out, time) => drop(ctx, out, time, 0.03);
 
+// Hide and seek (lab/house/HideSeek.vue), found at once. `dance`: the one who found him dances, and the chord sounding
+// bounces under him on his beat (each arm up in turn, every 0.42 s: puppet.js), root, fifth, third, the octave above,
+// fifth and third, and lands on the octave: a little tune; `caught`: the one found scratches his neck, head down, and the chord's
+// voice falls a step at a time to its bass, soft and a little slow (a shrug, not a sadness: it does not go minor)
+export const dance = (ctx, out, time, harmony) => {
+    const h = harmony ?? PLAIN, beat = 0.417;
+    const up = h.tones(h.voice, 12);
+    const tune = [up[0], up[2] ?? up[0], up[1] ?? up[0], up[up.length - 1], up[2] ?? up[0], up[1] ?? up[0]];
+    tune.forEach((midi, i) => {
+        const at = time + i * beat * 0.75;
+        bell(ctx, out, at, hz(midi), 1.1, i % 2 ? 0.024 : 0.032);
+        if (i % 2 === 0) bell(ctx, out, at, hz(h.bass + 12), 0.9, 0.018);
+    });
+    bell(ctx, out, time + tune.length * beat * 0.75, hz(up[0] + 12), 2.6, 0.03);
+    swish(ctx, out, time + tune.length * beat * 0.75, { from: 2500, to: 6000, duration: 0.6, level: 0.006, q: 0.6 });
+};
+export const caught = (ctx, out, time, harmony) => {
+    const h = harmony ?? PLAIN;
+    const down = h.tones(h.voice - 12, 12).reverse().slice(0, 4);
+    down.forEach((midi, i) => bell(ctx, out, time + i * 0.26 + i * i * 0.03, hz(midi), 1.8 + i * 0.4, 0.026 - i * 0.003));
+    swish(ctx, out, time, { from: 1600, to: 500, duration: 1.2, level: 0.006, q: 0.8 });
+};
+
 // Sacca (Resonar, an echo): the lookout sings a phrase for the person to repeat. Each note is sung, not struck: a soft
 // voice that swells, with a slow vibrato and a breath of air, on the same notes as `resonate` (`step` 0..1 across the
 // chord), so the answer sounds like what was heard. `length` is how long it is held (s): slower when sung again

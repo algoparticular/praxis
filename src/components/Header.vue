@@ -1,8 +1,9 @@
 <script setup>
-    import { computed, onMounted, onBeforeUnmount, ref } from 'vue';
+    import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue';
     import { useRoute, useRouter } from 'vue-router';
     import Menu from './Menu.vue';    
     import { soundOn, toggleSound } from '../composables/useSound.js';
+    import { menuOpen } from '../composables/menuOpen.js';
 
     const props = defineProps({
         hasBack: Boolean,
@@ -14,6 +15,8 @@
     const emit = defineEmits(['world']);
 
     const showMenu = ref(false);
+    // (told to the page under it: a game pauses while the menu is open)
+    watch(showMenu, (open) => { menuOpen.value = open; });
 
     //The header stays on top while scrolling. Its icons are light, so it steps aside when the cream footer reaches the top.
     const tucked = ref(false);
@@ -29,6 +32,7 @@
         checkFooter();
     });
     onBeforeUnmount(() => {
+        menuOpen.value = false;
         window.removeEventListener('scroll', checkFooter);
         window.removeEventListener('resize', checkFooter);
     });

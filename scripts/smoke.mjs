@@ -36,6 +36,8 @@ const pages = [
     { path: '/oracleTheNine', name: 'oracle the nine', expect: '.content' },
     { path: '/share/3', name: 'share', expect: '#share' },
     { path: '/sid', name: 'sid', expect: '.labRoot', draws: true },
+    // (the hide and seek in Gratitud's house, opened straight away: house/HideSeek.vue)
+    { path: '/sid?casa', name: 'sid house', expect: '.house canvas' },
     { path: '/there-is-no-such-page', name: 'not found', expect: '.content' },
 ];
 const cardPages = cards.map((card) => ({ path: `/card/${card.id}`, name: `card ${card.id}`, expect: '.cardWrapper .stage', card: card.id, draws: sceneCards.includes(card.id) }));
