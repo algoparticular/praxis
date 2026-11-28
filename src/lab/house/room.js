@@ -1,7 +1,11 @@
-// The inside of Gratitud's house, for the hide and seek (HideSeek.vue): one long room going back from us (a phone is
-// narrow and tall, so the room is too: all of it on the screen at once, no camera to move), seen as Sid's world is seen,
-// a floor in perspective going back to a wall. Everything is drawn in code, in the colours of the house in the card (its
-// coral roof, its peach walls, its purple, its sand and its teal) with the world's ink, and drawn as by hand: every line
+// The inside of Gratitud's house, for the hide and seek (HideSeek.vue): a Japanese room, as its roof outside (the eaves
+// turned up) asks: tatami on the floor, wooden posts and a beam on its plaster walls, shoji on one side, a round window,
+// a hanging scroll, a paper lantern and a bonsai; its hiding places a closet with sliding doors (oshiire), a bamboo
+// blind (sudare), a futon on the floor, a pile of floor cushions (zabuton), a bamboo basket, a low table under its quilt
+// (kotatsu), a dark chest (nagamochi) and a folding screen (byōbu); the stone step inside the door (genkan) has sand
+// from the garden on it. Seen as Sid's world is seen, a floor in perspective going back to a wall. Everything is drawn
+// in code, in the colours of the house in the card (its coral roof, its peach walls, its purple and its teal) with the
+// world's ink, and drawn as by hand: every line
 // wavers a little (the same way each frame), the walls and the floor are stippled, things cast a soft shadow and their
 // sides are hatched, as she draws. A sketch to draw over: the illustrator will draw the inside by hand.
 //
@@ -13,6 +17,8 @@ const C = {
     cream: '#FBF4E4', coral: '#F5797A', coralDark: '#D85A5E', peach: '#FBC390', peachDark: '#EFAE78', teal: '#029EA2',
     tealDark: '#0C666E', purple: '#9C72C8', purpleDark: '#7E58AE', sand: '#E8C79C', sandDark: '#C19D75', aqua: '#9EE0DA',
     sky: '#73CBCF', sea: '#2AA8A6', sun: '#F5797A', wood: '#C99A68', woodDark: '#A47A4E', wicker: '#E2B877', wickerDark: '#B8894A',
+    tatami: '#D8CE90', heri: '#3F5E4C', post: '#7A5232', paper: '#FBF6E8', bamboo: '#D9B26A', lacquer: '#4A2E1C', gold: '#EACB7A',
+    stone: '#A9A595', ochre: '#E8B84A',
 };
 
 // The room comes in two shapes, so it fills the screen it is played on: long, going back from us, on a phone held
@@ -24,30 +30,31 @@ const C = {
 // (each: its middle on the floor, how wide, how deep, how high; where Sid stands to go into it or to look in it,
 // `spot`), and what only stands there (a plant in its pot, a lamp: in the way, not a hiding place)
 const NAMES = {
-    wardrobe: ['el ropero', 'the wardrobe'], curtain: ['la cortina', 'the curtain'], bed: ['la cama', 'the bed'], sofa: ['el sillón', 'the sofa'],
-    basket: ['el canasto', 'the basket'], table: ['la mesa', 'the table'], chest: ['el baúl', 'the chest'], screen: ['el biombo', 'the screen'],
+    wardrobe: ['el armario', 'the closet'], curtain: ['la persiana de bambú', 'the bamboo blind'], bed: ['el futón', 'the futon'],
+    sofa: ['los almohadones', 'the cushions'], basket: ['el canasto', 'the basket'], table: ['la mesa baja', 'the low table'],
+    chest: ['el baúl', 'the chest'], screen: ['el biombo', 'the screen'],
 };
 // [id, x, d, w, dd, h, spot x, spot d]
 const LAYOUTS = {
     tall: {
         room: { x0: -1150, x1: 1150, d0: -300, d1: 2500 }, bounds: { x0: -1070, x1: 1070, d0: -230, d1: 2410 },
-        door: { d: 1150 }, rug: { x: 0, d: 1050, rx: 420, rd: 360 }, window: [-260, 300], picture: { x: 'x1', d: 880 },
+        door: { d: 1150 }, rug: { x: 0, d: 1050, rx: 420, rd: 360 }, window: [-260, 300], picture: { x: 'x1', d: 420 },
         sand: [[-150, 190, 220, 130], [60, 1800, 170, 140], [-320, 2100, 180, 110]],
         spots: [['wardrobe', -680, 2380, 440, 190, 1000, -680, 2180], ['curtain', 760, 2470, 260, 40, 1060, 760, 2320],
-            ['bed', 720, 1650, 500, 640, 300, 720, 1220], ['sofa', -640, 1720, 560, 240, 430, -640, 1500],
-            ['basket', 760, 900, 260, 220, 380, 760, 690], ['table', -120, 620, 440, 320, 330, -120, 370],
+            ['bed', 720, 1650, 500, 640, 160, 720, 1220], ['sofa', -640, 1720, 320, 300, 420, -640, 1460],
+            ['basket', 760, 900, 260, 220, 380, 760, 690], ['table', -120, 620, 440, 380, 300, -120, 310],
             ['chest', 720, 280, 360, 240, 330, 720, 60], ['screen', -720, 180, 380, 90, 760, -720, -50]],
-        decor: [['plant', 1010, 2360, 150, 140, 250], ['lamp', 420, 2360, 140, 140, 780]],
+        decor: [['plant', 1010, 2360, 150, 140, 250], ['lamp', 420, 2360, 160, 160, 520]],
     },
     wide: {
         room: { x0: -1750, x1: 1750, d0: -300, d1: 1700 }, bounds: { x0: -1670, x1: 1670, d0: -230, d1: 1610 },
         door: { d: 650 }, rug: { x: 200, d: 650, rx: 430, rd: 330 }, window: [-250, 250], picture: { x: 'x1', d: 380 },
         sand: [[-650, 540, 220, 140], [480, 1300, 200, 130], [950, -90, 200, 110]],
         spots: [['wardrobe', -1150, 1580, 440, 190, 1000, -1150, 1380], ['curtain', 760, 1670, 260, 40, 1060, 760, 1520],
-            ['bed', 1250, 1000, 500, 640, 300, 1250, 570], ['sofa', -550, 1150, 560, 240, 430, -550, 930],
-            ['basket', 820, 560, 260, 220, 380, 820, 350], ['table', -1100, 330, 440, 320, 330, -1100, 80],
+            ['bed', 1250, 1000, 500, 640, 160, 1250, 570], ['sofa', -550, 1150, 320, 300, 420, -550, 890],
+            ['basket', 820, 560, 260, 220, 380, 820, 350], ['table', -1100, 330, 440, 380, 300, -1100, 20],
             ['chest', 1350, 130, 360, 240, 330, 1350, -110], ['screen', -250, 150, 380, 90, 760, -250, -90]],
-        decor: [['plant', 1560, 1560, 150, 140, 250], ['lamp', 450, 1560, 140, 140, 780]],
+        decor: [['plant', 1560, 1560, 150, 140, 250], ['lamp', 450, 1560, 160, 160, 520]],
     },
 };
 export const ROOM = { wall: 1150, wainscot: 360 };
@@ -169,42 +176,64 @@ function shadow(c, cam, x, d, rx, rd, a = 0.13) {
     c.fillStyle = `rgba(16,42,52,${a})`; c.beginPath(); pts.forEach((p, i) => (i ? c.lineTo(p.x, p.y) : c.moveTo(p.x, p.y))); c.closePath(); c.fill();
 }
 
-// The room itself: the sky and the island outside (it is a doll's house: its front is open), its floor, its walls,
-// the window, the door, the rug, and the shadows of what stands on it
+// The room itself: the sky and the island outside (it is a doll's house: its front is open), its tatami, its walls
+// with their posts, the shoji, the round window, the scroll, the sliding door and the stone step, the round straw mat,
+// and the shadows of what stands on it
+const WOOD_LINE = 7;
+// a wooden post standing against a wall: on the side walls along d (x fixed), on the back wall along x
+function post(c, cam, x, d, alongX, h) {
+    const w = 46, s = cam.scaleAt(d);
+    const q = alongX ? [P(cam, x - w / 2, d, 0), P(cam, x + w / 2, d, 0), P(cam, x + w / 2, d, h), P(cam, x - w / 2, d, h)]
+        : [P(cam, x, d - w / 2, 0), P(cam, x, d + w / 2, 0), P(cam, x, d + w / 2, h), P(cam, x, d - w / 2, h)];
+    poly(c, q, C.post, WOOD_LINE * s);
+}
+// shoji: paper in a lattice of thin wood, on a side wall (x fixed) from d0 to d1, from up u0 to u1
+function shoji(c, cam, x, d0, d1, u0, u1) {
+    const s = cam.scaleAt((d0 + d1) / 2);
+    poly(c, [P(cam, x, d0, u0), P(cam, x, d1, u0), P(cam, x, d1, u1), P(cam, x, d0, u1)], C.paper, 8 * s);
+    c.strokeStyle = C.post; c.lineWidth = 4 * s; c.lineCap = 'round';
+    for (let i = 1; i < 3; i++) { const d = d0 + (d1 - d0) * i / 3, a = P(cam, x, d, u0), b = P(cam, x, d, u1); c.beginPath(); c.moveTo(a.x, a.y); c.lineTo(b.x, b.y); c.stroke(); }
+    for (let i = 1; i < 5; i++) { const u = u0 + (u1 - u0) * i / 5, a = P(cam, x, d0, u), b = P(cam, x, d1, u); c.beginPath(); c.moveTo(a.x, a.y); c.lineTo(b.x, b.y); c.stroke(); }
+}
 export function drawRoom(c, cam, view, t) {
-    const R = ROOM, s1 = cam.scaleAt(R.d1);
+    const R = ROOM, s1 = cam.scaleAt(R.d1), BEAM = 820;
     c.fillStyle = C.sky; c.fillRect(0, 0, view.W, view.H);
     c.fillStyle = C.sea; c.fillRect(0, cam.groundAt(R.d0) - 40, view.W, view.H);
     // (the house's base under the open front, in the dark teal of its steps)
     poly(c, [P(cam, R.x0 - 40, R.d0), P(cam, R.x1 + 40, R.d0), P(cam, R.x1 + 40, R.d0, -120), P(cam, R.x0 - 40, R.d0, -120)], C.tealDark, 10 * cam.scaleAt(R.d0));
-    // the floor: sand, with its boards going back, stippled
+    // the floor: tatami, row after row going back, each mat twice as wide as it is deep, the rows offset by half a mat;
+    // their straw in fine lines, their cloth edges (heri) dark green
     const fl = [P(cam, R.x0, R.d0), P(cam, R.x1, R.d0), P(cam, R.x1, R.d1), P(cam, R.x0, R.d1)];
-    poly(c, fl, C.sand, 0);
+    poly(c, fl, C.tatami, 0);
     c.save();
     c.beginPath(); fl.forEach((p, i) => (i ? c.lineTo(p.x, p.y) : c.moveTo(p.x, p.y))); c.closePath(); c.clip();
-    // (the light from the window, warm on the boards at the back)
     {
         const m = P(cam, (WALL.window[0] + WALL.window[1]) / 2, R.d1 - 300), r = 900 * cam.scaleAt(R.d1 - 300);
         const g = c.createRadialGradient(m.x, m.y, 0, m.x, m.y, r);
-        g.addColorStop(0, 'rgba(255,246,214,0.55)'); g.addColorStop(1, 'rgba(255,246,214,0)');
+        g.addColorStop(0, 'rgba(255,246,214,0.5)'); g.addColorStop(1, 'rgba(255,246,214,0)');
         c.fillStyle = g; c.fillRect(m.x - r, m.y - r, r * 2, r * 2);
     }
-    for (let x = R.x0 + 190; x < R.x1; x += 190) line(c, P(cam, x, R.d0), P(cam, x, R.d1), 3.2 * cam.scaleAt(R.d0));
-    for (let d = R.d0 + 280, n = 0; d < R.d1; d += 280, n++) {
-        for (let x = R.x0 + (n % 2 ? 95 : 190); x < R.x1; x += 380) line(c, P(cam, x, d), P(cam, x + 190, d), 2.6 * cam.scaleAt(d));
+    const ROW = 360;
+    c.strokeStyle = 'rgba(120,112,52,0.28)'; c.lineCap = 'round';
+    for (let d = R.d0; d < R.d1; d += ROW / 9) {
+        const s = cam.scaleAt(d), a = P(cam, R.x0, d), b = P(cam, R.x1, d);
+        c.lineWidth = 2 * s; c.beginPath(); c.moveTo(a.x, a.y); c.lineTo(b.x, b.y); c.stroke();
     }
-    c.fillStyle = 'rgba(16,42,52,0.22)';
+    for (let d = R.d0, row = 0; d < R.d1; d += ROW, row++) {
+        const s = cam.scaleAt(d);
+        line(c, P(cam, R.x0, d), P(cam, R.x1, d), 3 * s);
+        c.strokeStyle = C.heri; c.lineWidth = 14 * s;
+        const a = P(cam, R.x0, d + 14), b = P(cam, R.x1, d + 14); c.beginPath(); c.moveTo(a.x, a.y); c.lineTo(b.x, b.y); c.stroke();
+        for (let x = R.x0 + (row % 2 ? 360 : 0) + 720; x < R.x1; x += 720) line(c, P(cam, x, d), P(cam, x, Math.min(R.d1, d + ROW)), 3 * cam.scaleAt(d + ROW / 2));
+    }
+    c.fillStyle = 'rgba(16,42,52,0.12)';
     for (const p of FLOOR_DOTS) { const q = P(cam, p.x, p.d), s = cam.scaleAt(p.d); c.beginPath(); c.arc(q.x, q.y, p.r * s, 0, Math.PI * 2); c.fill(); }
     c.restore();
-    // the sand blown in, and the door's mat with sand on it
-    for (const p of SAND) if (p.mat) {
-        const s = cam.scaleAt(p.d);
-        poly(c, floorEllipse(cam, p.x, p.d, p.rx * 0.8, p.rd * 0.85, 24), '#B88A5A', 6 * s);
-        for (let i = 1; i < 5; i++) line(c, P(cam, p.x - p.rx * 0.5, p.d - p.rd * 0.7 + p.rd * 0.35 * i), P(cam, p.x + p.rx * 0.5, p.d - p.rd * 0.7 + p.rd * 0.35 * i), 2.5 * s);
-    }
-    // (each patch a pale drift, its edge ragged, with its grains over it: lighter than a footprint, never mistaken for one)
-    for (const p of SAND) if (!p.mat) {
+    // the stone step inside the door, and the sand blown in: each patch a pale drift, its edge ragged, with its grains
+    // over it (lighter than a footprint, never mistaken for one)
+    for (const p of SAND) {
         const pts = Array.from({ length: 28 }, (_, i) => { const a = i / 28 * Math.PI * 2, r = 0.92 + 0.12 * Math.sin(a * 5 + p.x) + 0.06 * Math.sin(a * 11 + p.d); return P(cam, p.x + Math.cos(a) * p.rx * r, p.d + Math.sin(a) * p.rd * r); });
+        if (p.mat) { poly(c, [P(cam, p.x - p.rx, p.d - p.rd), P(cam, p.x + p.rx, p.d - p.rd), P(cam, p.x + p.rx, p.d + p.rd), P(cam, p.x - p.rx, p.d + p.rd)], C.stone, 7 * cam.scaleAt(p.d)); continue; }
         c.fillStyle = 'rgba(250,234,196,0.85)'; c.beginPath(); pts.forEach((q, i) => (i ? c.lineTo(q.x, q.y) : c.moveTo(q.x, q.y))); c.closePath(); c.fill();
     }
     for (const g of SAND_DOTS) {
@@ -212,66 +241,82 @@ export function drawRoom(c, cam, view, t) {
         c.fillStyle = g.k < 0.3 ? 'rgba(214,176,118,0.8)' : 'rgba(255,250,236,0.95)';
         c.beginPath(); c.arc(q.x, q.y, g.r * s, 0, Math.PI * 2); c.fill();
     }
-    // the round rug, lying flat: teal with a coral ring, its fringe
+    // the round straw mat (enza), its straw in a spiral
     {
         const s = cam.scaleAt(RUG.d);
-        poly(c, floorEllipse(cam, RUG.x, RUG.d, RUG.rx, RUG.rd), C.teal, 8 * s);
-        poly(c, floorEllipse(cam, RUG.x, RUG.d, RUG.rx * 0.78, RUG.rd * 0.78), null, 22 * s, C.coral);
-        poly(c, floorEllipse(cam, RUG.x, RUG.d, RUG.rx * 0.33, RUG.rd * 0.33), C.aqua, 0);
-        for (let i = 0; i < 36; i++) {
-            const a = i / 36 * Math.PI * 2, p = P(cam, RUG.x + Math.cos(a) * RUG.rx, RUG.d + Math.sin(a) * RUG.rd), q = P(cam, RUG.x + Math.cos(a) * (RUG.rx + 30), RUG.d + Math.sin(a) * (RUG.rd + 30));
-            line(c, p, q, 3 * s);
-        }
+        poly(c, floorEllipse(cam, RUG.x, RUG.d, RUG.rx, RUG.rd), C.bamboo, 8 * s);
+        c.strokeStyle = 'rgba(122,82,50,0.55)'; c.lineWidth = 3 * s;
+        c.beginPath();
+        for (let i = 0; i <= 260; i++) { const a = i / 260 * Math.PI * 2 * 7, r = i / 260, q = P(cam, RUG.x + Math.cos(a) * RUG.rx * r * 0.95, RUG.d + Math.sin(a) * RUG.rd * r * 0.95); i ? c.lineTo(q.x, q.y) : c.moveTo(q.x, q.y); }
+        c.stroke();
     }
-    // the side walls (peach, darker), with the purple below; the door in the left one, a picture on the right one
+    // the side walls: plaster (peach, darker) over a wooden skirting, its posts and the beam across them; shoji along the
+    // right one, the sliding door in the left one, and the scroll hanging on the right one
     for (const x of [R.x0, R.x1]) {
         const wall = [P(cam, x, R.d0), P(cam, x, R.d1), P(cam, x, R.d1, R.wall), P(cam, x, R.d0, R.wall)];
         poly(c, wall, C.peachDark, 10 * s1);
         c.save(); c.beginPath(); wall.forEach((p, i) => (i ? c.lineTo(p.x, p.y) : c.moveTo(p.x, p.y))); c.closePath(); c.clip();
-        c.fillStyle = 'rgba(16,42,52,0.16)';
+        c.fillStyle = 'rgba(16,42,52,0.14)';
         for (const p of WALL_DOTS) { const d = R.d0 + p.u * (R.d1 - R.d0), q = P(cam, x, d, p.up); c.beginPath(); c.arc(q.x, q.y, p.r * cam.scaleAt(d), 0, Math.PI * 2); c.fill(); }
         c.restore();
-        poly(c, [P(cam, x, R.d0), P(cam, x, R.d1), P(cam, x, R.d1, R.wainscot), P(cam, x, R.d0, R.wainscot)], C.purpleDark, 8 * s1);
-        line(c, P(cam, x, R.d0, R.wainscot), P(cam, x, R.d1, R.wainscot), 12 * s1);
+        poly(c, [P(cam, x, R.d0), P(cam, x, R.d1), P(cam, x, R.d1, 60), P(cam, x, R.d0, 60)], C.post, 6 * s1);
+        if (x === R.x1) {
+            const pd = WALL.picture.d;
+            for (let d = R.d0 + 200; d + 520 < R.d1; d += 640) if (Math.abs(d + 260 - (pd + 130)) > 420) shoji(c, cam, x, d, d + 520, 80, BEAM - 30);
+        }
+        for (let d = R.d0 + 160; d < R.d1; d += 640) post(c, cam, x, d, false, R.wall);
+        poly(c, [P(cam, x, R.d0, BEAM), P(cam, x, R.d1, BEAM), P(cam, x, R.d1, BEAM + 60), P(cam, x, R.d0, BEAM + 60)], C.post, 6 * s1);
     }
     {
+        // the sliding door (fusuma): paper in the house's purple, its round pull
         const x = R.x0, d0 = DOOR.d, d1 = DOOR.d + DOOR.w, s = cam.scaleAt(d0);
-        poly(c, [P(cam, x, d0), P(cam, x, d1), P(cam, x, d1, DOOR.h), P(cam, x, d0, DOOR.h)], C.coral, 10 * s);
-        poly(c, [P(cam, x, d0 + 50, 60), P(cam, x, d1 - 50, 60), P(cam, x, d1 - 50, DOOR.h - 60), P(cam, x, d0 + 50, DOOR.h - 60)], C.coralDark, 5 * s);
-        dot(c, P(cam, x, d1 - 80, DOOR.h * 0.45), 13 * s, C.cream);
+        poly(c, [P(cam, x, d0, 0), P(cam, x, d1, 0), P(cam, x, d1, DOOR.h), P(cam, x, d0, DOOR.h)], C.purple, 9 * s);
+        line(c, P(cam, x, (d0 + d1) / 2, 0), P(cam, x, (d0 + d1) / 2, DOOR.h), 5 * s);
+        for (const [dd, k] of [[d0 + 60, 0], [d1 - 60, 1]]) { const q = P(cam, x, dd, DOOR.h * 0.45); c.strokeStyle = INK; c.lineWidth = 5 * s; c.beginPath(); c.arc(q.x, q.y, 14 * s, 0, Math.PI * 2); c.stroke(); void k; }
+        // (a wave painted across it)
+        c.strokeStyle = C.aqua; c.lineWidth = 6 * s;
+        for (let i = 0; i < 3; i++) { const q = P(cam, x, d0 + 70 + i * 95, 220); c.beginPath(); c.arc(q.x, q.y, 28 * s, Math.PI * 1.05, Math.PI * 1.95); c.stroke(); }
     }
     {
-        const x = R[WALL.picture.x], d = WALL.picture.d, s = cam.scaleAt(d + 120);
-        poly(c, [P(cam, x, d, 600), P(cam, x, d + 260, 600), P(cam, x, d + 260, 840), P(cam, x, d, 840)], C.cream, 9 * s);
-        dot(c, P(cam, x, d + 70, 680), 20 * s, C.coral); dot(c, P(cam, x, d + 190, 680), 20 * s, C.teal); dot(c, P(cam, x, d + 130, 770), 20 * s, C.purple);
+        // the hanging scroll (kakejiku): a brush circle (ensō) in coral and the brand's three dots
+        const x = R[WALL.picture.x], d = WALL.picture.d + 60, s = cam.scaleAt(d + 70);
+        line(c, P(cam, x, d + 20, BEAM + 120), P(cam, x, d + 130, BEAM + 120), 4 * s);
+        poly(c, [P(cam, x, d - 10, BEAM + 40), P(cam, x, d + 160, BEAM + 40), P(cam, x, d + 160, 260), P(cam, x, d - 10, 260)], C.woodDark, 7 * s);
+        poly(c, [P(cam, x, d + 15, BEAM - 10), P(cam, x, d + 135, BEAM - 10), P(cam, x, d + 135, 320), P(cam, x, d + 15, 320)], C.paper, 4 * s);
+        c.strokeStyle = C.coral; c.lineWidth = 12 * s; c.lineCap = 'round'; c.beginPath();
+        for (let i = 0; i <= 30; i++) { const a = -1.2 + i / 30 * 5.6, q = P(cam, x, d + 75 + Math.cos(a) * 45, 620 + Math.sin(a) * 90); i ? c.lineTo(q.x, q.y) : c.moveTo(q.x, q.y); }
+        c.stroke();
+        dot(c, P(cam, x, d + 55, 430), 9 * s, C.teal); dot(c, P(cam, x, d + 95, 430), 9 * s, C.purple); dot(c, P(cam, x, d + 75, 395), 9 * s, C.coral);
+        line(c, P(cam, x, d - 10, 260), P(cam, x, d + 160, 260), 10 * s);
     }
-    // the back wall: peach, stippled, purple below with a cream rail, its boards
+    // the back wall: plaster, stippled, its skirting, its posts and its beam
     {
         const wall = [P(cam, R.x0, R.d1), P(cam, R.x1, R.d1), P(cam, R.x1, R.d1, R.wall), P(cam, R.x0, R.d1, R.wall)];
         poly(c, wall, C.peach, 10 * s1);
         c.fillStyle = 'rgba(16,42,52,0.14)';
         for (const p of WALL_DOTS) { const q = P(cam, R.x0 + p.u * (R.x1 - R.x0), R.d1, p.up); c.beginPath(); c.arc(q.x, q.y, p.r * s1, 0, Math.PI * 2); c.fill(); }
     }
-    poly(c, [P(cam, R.x0, R.d1), P(cam, R.x1, R.d1), P(cam, R.x1, R.d1, R.wainscot), P(cam, R.x0, R.d1, R.wainscot)], C.purple, 8 * s1);
-    line(c, P(cam, R.x0, R.d1, R.wainscot), P(cam, R.x1, R.d1, R.wainscot), 14 * s1);
-    for (let x = R.x0 + 160; x < R.x1; x += 160) line(c, P(cam, x, R.d1, 30), P(cam, x, R.d1, R.wainscot - 30), 3 * s1);
-    // the window: the sea and the sky of the card, a coral sun going slowly
+    poly(c, [P(cam, R.x0, R.d1), P(cam, R.x1, R.d1), P(cam, R.x1, R.d1, 60), P(cam, R.x0, R.d1, 60)], C.post, 6 * s1);
+    for (let x = R.x0 + 280; x < R.x1 - 100; x += 560) if (x < WALL.window[0] - 260 || x > WALL.window[1] + 260) post(c, cam, x, R.d1, true, R.wall);
+    poly(c, [P(cam, R.x0, R.d1, BEAM), P(cam, R.x1, R.d1, BEAM), P(cam, R.x1, R.d1, BEAM + 60), P(cam, R.x0, R.d1, BEAM + 60)], C.post, 6 * s1);
+    // the round window (marumado): the sea and the sky of the card, a coral sun going slowly, a few bamboo bars
     {
-        const [w0, w1] = WALL.window, u0 = 470, u1 = 930;
-        const pts = [P(cam, w0, R.d1, u0), P(cam, w1, R.d1, u0), P(cam, w1, R.d1, u1), P(cam, w0, R.d1, u1)];
-        poly(c, pts, C.sky, 0);
-        c.save(); c.beginPath(); pts.forEach((p, i) => (i ? c.lineTo(p.x, p.y) : c.moveTo(p.x, p.y))); c.closePath(); c.clip();
-        dot(c, P(cam, w0 + 300 + 40 * Math.sin(t * 0.05), R.d1, u0 + 230), 60 * s1, C.sun);
-        const sea = P(cam, w0, R.d1, u0 + 130);
-        c.fillStyle = C.sea; c.fillRect(pts[0].x, sea.y, pts[1].x - pts[0].x, pts[0].y - sea.y);
+        const cx = (WALL.window[0] + WALL.window[1]) / 2, cu = 560, r = (WALL.window[1] - WALL.window[0]) * 0.44;
+        const ring = Array.from({ length: 40 }, (_, i) => { const a = i / 40 * Math.PI * 2; return P(cam, cx + Math.cos(a) * r, R.d1, cu + Math.sin(a) * r); });
+        poly(c, ring, C.sky, 0);
+        c.save(); c.beginPath(); ring.forEach((p, i) => (i ? c.lineTo(p.x, p.y) : c.moveTo(p.x, p.y))); c.closePath(); c.clip();
+        dot(c, P(cam, cx + 40 * Math.sin(t * 0.05), R.d1, cu + 70), 55 * s1, C.sun);
+        const sea = P(cam, cx, R.d1, cu - 40), lo = P(cam, cx, R.d1, cu - r);
+        c.fillStyle = C.sea; c.fillRect(ring[20].x, sea.y, ring[0].x - ring[20].x, lo.y - sea.y + 2);
         for (let n = 0; n < 3; n++) {
-            const wv = P(cam, w0 + 70 + n * 150 + 30 * Math.sin(t * 0.6 + n), R.d1, u0 + 60 + (n % 2) * 40);
-            c.strokeStyle = C.aqua; c.lineWidth = 6 * s1; c.beginPath(); c.arc(wv.x, wv.y, 18 * s1, Math.PI * 1.1, Math.PI * 1.9); c.stroke();
+            const wv = P(cam, cx - 120 + n * 120 + 30 * Math.sin(t * 0.6 + n), R.d1, cu - 90 - (n % 2) * 30);
+            c.strokeStyle = C.aqua; c.lineWidth = 6 * s1; c.beginPath(); c.arc(wv.x, wv.y, 16 * s1, Math.PI * 1.1, Math.PI * 1.9); c.stroke();
         }
+        c.strokeStyle = C.post; c.lineWidth = 6 * s1;
+        for (const k of [-0.35, 0.35]) { const a = P(cam, cx + k * r, R.d1, cu - r), b = P(cam, cx + k * r, R.d1, cu + r); c.beginPath(); c.moveTo(a.x, a.y); c.lineTo(b.x, b.y); c.stroke(); }
         c.restore();
-        poly(c, pts, null, 14 * s1);
-        line(c, P(cam, (w0 + w1) / 2, R.d1, u0), P(cam, (w0 + w1) / 2, R.d1, u1), 10 * s1);
-        line(c, P(cam, w0 - 30, R.d1, u0), P(cam, w1 + 30, R.d1, u0), 16 * s1);
+        poly(c, ring, null, 22 * s1, C.post);
+        poly(c, ring, null, 5 * s1);
     }
     // the top of the walls: the coral of its roof, as a beam
     poly(c, [P(cam, R.x0, R.d1, R.wall), P(cam, R.x1, R.d1, R.wall), P(cam, R.x1, R.d1, R.wall + 70), P(cam, R.x0, R.d1, R.wall + 70)], C.coral, 10 * s1);
@@ -321,29 +366,29 @@ export function drawThings(c, cam, spots, t, between, hider = null) {
 function drawDecor(c, cam, o, t) {
     const s = cam.scaleAt(o.d);
     if (o.id === 'plant') {
-        // a pot of the house's coral, a palm of the island's in it, swaying a little
-        box(c, cam, { x0: o.x - 70, x1: o.x + 70, d0: o.d - 55, d1: o.d + 55, h: 170 }, { front: C.coral, top: '#5A4A36', side: C.coralDark }, 9);
-        const base = P(cam, o.x, o.d - 55, 170);
-        c.save(); c.translate(base.x, base.y); c.rotate(0.05 * Math.sin(t * 0.9)); c.strokeStyle = INK; c.lineCap = 'round';
-        c.lineWidth = 9 * s; c.beginPath(); c.moveTo(0, 0); c.quadraticCurveTo(10 * s, -160 * s, -10 * s, -300 * s); c.stroke();
-        for (let n = 0; n < 6; n++) {
-            const a = -Math.PI / 2 + (n - 2.5) * 0.5;
-            c.fillStyle = n % 2 ? C.teal : C.sea; c.lineWidth = 7 * s;
-            c.beginPath(); c.moveTo(-10 * s, -300 * s);
-            c.quadraticCurveTo(-10 * s + Math.cos(a - 0.3) * 160 * s, -300 * s + Math.sin(a - 0.3) * 160 * s, -10 * s + Math.cos(a) * 230 * s, -300 * s + Math.sin(a) * 200 * s + 50 * s);
-            c.quadraticCurveTo(-10 * s + Math.cos(a + 0.3) * 120 * s, -300 * s + Math.sin(a + 0.3) * 120 * s, -10 * s, -300 * s);
-            c.fill(); c.stroke();
+        // a bonsai on a low stand: a shallow coral pot, a twisting trunk and its foliage in pads, swaying a little
+        box(c, cam, { x0: o.x - 70, x1: o.x + 70, d0: o.d - 55, d1: o.d + 55, h: 110 }, { front: C.lacquer, top: C.post, side: C.lacquer }, 8);
+        box(c, cam, { x0: o.x - 60, x1: o.x + 60, d0: o.d - 40, d1: o.d + 40, h: 160, h0: 110, hatch: false }, { front: C.coral, top: '#5A4A36', side: C.coralDark }, 7);
+        const base = P(cam, o.x, o.d, 160);
+        c.save(); c.translate(base.x, base.y); c.rotate(0.03 * Math.sin(t * 0.8));
+        c.strokeStyle = INK; c.lineCap = 'round'; c.lineWidth = 14 * s;
+        c.beginPath(); c.moveTo(0, 0); c.bezierCurveTo(40 * s, -60 * s, -50 * s, -110 * s, 10 * s, -190 * s); c.stroke();
+        for (const [dx, dy, r] of [[-70, -150, 60], [60, -200, 70], [0, -260, 55]]) {
+            c.fillStyle = dy < -220 ? C.teal : C.sea; c.lineWidth = 7 * s;
+            c.beginPath(); c.ellipse(dx * s, dy * s, r * s, r * 0.55 * s, 0, 0, Math.PI * 2); c.fill(); c.stroke();
         }
         c.restore();
     } else if (o.id === 'lamp') {
-        // a standing lamp, its shade lit: a warm glow round it
-        const foot = P(cam, o.x, o.d), top = P(cam, o.x, o.d, 620);
-        const glow = c.createRadialGradient(top.x, top.y, 0, top.x, top.y, 420 * s);
-        glow.addColorStop(0, 'rgba(255,236,180,0.55)'); glow.addColorStop(1, 'rgba(255,236,180,0)');
-        c.fillStyle = glow; c.beginPath(); c.arc(top.x, top.y, 420 * s, 0, Math.PI * 2); c.fill();
-        c.fillStyle = INK; c.beginPath(); c.ellipse(foot.x, foot.y, 70 * s, 18 * s, 0, 0, Math.PI * 2); c.fill();
-        line(c, foot, top, 10 * s);
-        poly(c, [P(cam, o.x - 70, o.d, 600), P(cam, o.x + 70, o.d, 600), P(cam, o.x + 110, o.d, 470), P(cam, o.x - 110, o.d, 470)], '#FFE7A8', 9 * s);
+        // a paper lantern standing on the floor (andon): its frame of dark wood, its paper lit, a warm glow round it
+        const mid = P(cam, o.x, o.d, 300);
+        const glow = c.createRadialGradient(mid.x, mid.y, 0, mid.x, mid.y, 460 * s);
+        glow.addColorStop(0, 'rgba(255,236,180,0.6)'); glow.addColorStop(1, 'rgba(255,236,180,0)');
+        c.fillStyle = glow; c.beginPath(); c.arc(mid.x, mid.y, 460 * s, 0, Math.PI * 2); c.fill();
+        const w = o.w / 2;
+        box(c, cam, { x0: o.x - w, x1: o.x + w, d0: o.d - w, d1: o.d + w, h: o.h, h0: 70, hatch: false }, { front: '#FFF0C2', top: C.post, side: '#F6DE9E' }, 7);
+        for (const u of [-w / 3, w / 3]) line(c, P(cam, o.x + u, o.d - w, 80), P(cam, o.x + u, o.d - w, o.h - 10), 3 * s);
+        for (const up of [200, 330]) line(c, P(cam, o.x - w, o.d - w, up), P(cam, o.x + w, o.d - w, up), 3 * s);
+        for (const u of [-w, w]) line(c, P(cam, o.x + u, o.d - w, 0), P(cam, o.x + u, o.d - w, 80), 8 * s);
     }
 }
 
@@ -359,116 +404,115 @@ function drawSpot(c, cam, sp, t, hider) {
         c.fillStyle = g; c.beginPath(); c.arc(m.x, m.y, r, 0, Math.PI * 2); c.fill();
     }
     if (sp.id === 'wardrobe') {
-        box(c, cam, { x0, x1, d0, d1, h: sp.h }, { front: C.purple, top: C.purpleDark, side: C.purpleDark }, 10);
-        const mid = (x0 + x1) / 2, inset = 30;
-        poly(c, [P(cam, x0 + inset, d0, 60), P(cam, x1 - inset, d0, 60), P(cam, x1 - inset, d0, sp.h - 60), P(cam, x0 + inset, d0, sp.h - 60)], '#3A2458', 0);
-        if (o > 0.05) {   // (hangers in it, and a coat)
-            line(c, P(cam, x0 + inset + 20, d0 + 40, sp.h - 150), P(cam, x1 - inset - 20, d0 + 40, sp.h - 150), 6 * s);
-            for (let n = 0; n < 3; n++) poly(c, [P(cam, x0 + 100 + n * 110, d0 + 40, sp.h - 150), P(cam, x0 + 60 + n * 110, d0 + 40, sp.h - 220), P(cam, x0 + 140 + n * 110, d0 + 40, sp.h - 220)], null, 4 * s);
-            poly(c, [P(cam, x0 + 70, d0 + 40, sp.h - 220), P(cam, x0 + 150, d0 + 40, sp.h - 220), P(cam, x0 + 170, d0 + 40, sp.h - 560), P(cam, x0 + 50, d0 + 40, sp.h - 560)], C.aqua, 5 * s);
+        // a closet (oshiire): its dark wood frame, a shelf across its middle with futons folded on it, and two sliding
+        // doors of paper with a wave painted on them; looked in, the left one slides over the right
+        box(c, cam, { x0, x1, d0, d1, h: sp.h }, { front: C.post, top: C.lacquer, side: C.lacquer }, 10);
+        const inset = 26, top = sp.h - 40, mid = (x0 + x1) / 2, half = (x1 - x0) / 2 - inset;
+        poly(c, [P(cam, x0 + inset, d0, 40), P(cam, x1 - inset, d0, 40), P(cam, x1 - inset, d0, top), P(cam, x0 + inset, d0, top)], '#3A2418', 0);
+        if (o > 0.05) {
+            line(c, P(cam, x0 + inset, d0 + 20, sp.h * 0.55), P(cam, x1 - inset, d0 + 20, sp.h * 0.55), 10 * s);
+            [C.coral, C.cream, C.teal].forEach((col, i) => poly(c, [P(cam, x0 + 50, d0 + 30, sp.h * 0.55 + i * 70), P(cam, mid - 10, d0 + 30, sp.h * 0.55 + i * 70), P(cam, mid - 10, d0 + 30, sp.h * 0.55 + i * 70 + 66), P(cam, x0 + 50, d0 + 30, sp.h * 0.55 + i * 70 + 66)], col, 5 * s));
         }
-        const door = (hinge, other, way) => {
-            const a = o * 1.9, wd = Math.abs(other - hinge);
-            const ex = hinge + Math.cos(a) * wd * way, ed = d0 - Math.sin(a) * wd;
-            poly(c, [P(cam, hinge, d0, 60), P(cam, ex, ed, 60), P(cam, ex, ed, sp.h - 60), P(cam, hinge, d0, sp.h - 60)], C.coral, 9 * s);
-            // (its panel and its knob)
-            const at = (u, up) => P(cam, hinge + (ex - hinge) * u, d0 + (ed - d0) * u, up);
-            poly(c, [at(0.2, 160), at(0.8, 160), at(0.8, sp.h - 180), at(0.2, sp.h - 180)], null, 4 * s);
-            dot(c, at(0.88, sp.h * 0.5), 12 * s, C.cream);
+        const door = (from) => {
+            const q = [P(cam, from, d0, 40), P(cam, from + half, d0, 40), P(cam, from + half, d0, top), P(cam, from, d0, top)];
+            poly(c, q, C.paper, 8 * s);
+            c.strokeStyle = C.teal; c.lineWidth = 7 * s;
+            for (let i = 0; i < 3; i++) { const w = P(cam, from + half * (0.25 + i * 0.25), d0, top * 0.3); c.beginPath(); c.arc(w.x, w.y, 26 * s, Math.PI * 1.05, Math.PI * 1.95); c.stroke(); }
+            const pull = P(cam, from + half * 0.88, d0, sp.h * 0.5);
+            c.strokeStyle = INK; c.lineWidth = 5 * s; c.beginPath(); c.arc(pull.x, pull.y, 13 * s, 0, Math.PI * 2); c.stroke();
         };
-        door(x0 + inset, mid, 1); door(x1 - inset, mid, -1);
-        poly(c, [P(cam, x0 - 20, d0, sp.h), P(cam, x1 + 20, d0, sp.h), P(cam, x1 + 20, d0, sp.h + 50), P(cam, x0 - 20, d0, sp.h + 50)], C.coralDark, 9 * s);
+        door(mid);
+        door(x0 + inset + o * half);
     } else if (sp.id === 'curtain') {
-        // a long coral curtain beside the window, from its rod to the floor, in folds; looked behind, drawn aside
-        const rodY = sp.h, w = sp.w * (1 - 0.7 * o), left = x0;
-        line(c, P(cam, x0 - 60, sp.d, rodY + 20), P(cam, x1 + 60, sp.d, rodY + 20), 12 * s);
-        dot(c, P(cam, x0 - 60, sp.d, rodY + 20), 14 * s); dot(c, P(cam, x1 + 60, sp.d, rodY + 20), 14 * s);
-        const folds = 5, pts = [P(cam, left + w, sp.d, rodY), P(cam, left, sp.d, rodY)];
-        for (let n = 0; n <= folds * 2; n++) pts.push(P(cam, left + w * n / (folds * 2), sp.d - (n % 2 ? 30 : 0), n % 2 ? 6 : 0));
-        poly(c, pts, C.coral, 9 * s);
-        for (let n = 1; n < folds; n++) line(c, P(cam, left + w * n / folds, sp.d, rodY - 40), P(cam, left + w * n / folds + 6, sp.d - 20, 60), 4 * s);
-        poly(c, [P(cam, left, sp.d, rodY * 0.52), P(cam, left + w, sp.d, rodY * 0.5), P(cam, left + w, sp.d, rodY * 0.46), P(cam, left, sp.d, rodY * 0.48)], C.cream, 5 * s);
+        // a bamboo blind (sudare) hanging from the beam to the floor; looked behind, it rolls up
+        const rodY = sp.h, bottom = rodY * 0.95 * o, left = x0, right = x1;
+        line(c, P(cam, left - 40, sp.d, rodY + 20), P(cam, right + 40, sp.d, rodY + 20), 10 * s);
+        poly(c, [P(cam, left, sp.d, bottom), P(cam, right, sp.d, bottom), P(cam, right, sp.d, rodY), P(cam, left, sp.d, rodY)], C.bamboo, 8 * s);
+        c.strokeStyle = 'rgba(122,82,50,0.6)'; c.lineWidth = 2.5 * s;
+        for (let u = bottom + 30; u < rodY; u += 34) { const a = P(cam, left, sp.d, u), b = P(cam, right, sp.d, u); c.beginPath(); c.moveTo(a.x, a.y); c.lineTo(b.x, b.y); c.stroke(); }
+        for (const k of [0.25, 0.75]) line(c, P(cam, left + (right - left) * k, sp.d - 4, bottom), P(cam, left + (right - left) * k, sp.d - 4, rodY), 4 * s);
+        // (its roll, growing as it goes up)
+        const roll = 18 + 40 * o;
+        poly(c, [P(cam, left - 10, sp.d - 6, bottom - roll * 0.2), P(cam, right + 10, sp.d - 6, bottom - roll * 0.2), P(cam, right + 10, sp.d - 6, bottom + roll), P(cam, left - 10, sp.d - 6, bottom + roll)], C.wickerDark, 6 * s);
     } else if (sp.id === 'bed') {
-        // the bed: its headboard against the back, its mattress, a teal blanket with dots hanging to the floor, a cream
-        // pillow; looked under, the blanket's front lifts
-        box(c, cam, { x0, x1, d0: d1 - 50, d1, h: 600 }, { front: C.wood, top: C.woodDark, side: C.woodDark }, 10);
-        poly(c, [P(cam, x0 + 60, d1 - 50, 380), P(cam, x1 - 60, d1 - 50, 380), P(cam, x1 - 60, d1 - 50, 540), P(cam, x0 + 60, d1 - 50, 540)], null, 5 * s);
-        box(c, cam, { x0, x1, d0, d1: d1 - 50, h: sp.h }, { front: C.tealDark, top: C.teal, side: C.tealDark }, 10);
-        box(c, cam, { x0: x0 + 60, x1: x1 - 60, d0: d1 - 230, d1: d1 - 70, h: sp.h + 70, h0: sp.h, hatch: false }, { front: C.cream, top: C.cream, side: '#EDE3CC' }, 8);
-        const lift = o * (sp.h - 40);
-        if (o > 0.05) poly(c, [P(cam, x0 + 20, d0, 0), P(cam, x1 - 20, d0, 0), P(cam, x1 - 20, d0, lift), P(cam, x0 + 20, d0, lift)], '#0A3E44', 0);
-        poly(c, [P(cam, x0, d0, lift), P(cam, x1, d0, lift), P(cam, x1, d0, sp.h), P(cam, x0, d0, sp.h)], C.teal, 10 * s);
-        for (let n = 1; n < 6; n++) dot(c, P(cam, x0 + sp.w * n / 6, d0, (sp.h + lift) / 2), 9 * s, C.aqua);
+        // a futon on the floor: its mattress, a soba pillow, and its quilt in the house's coral with cream spots; looked
+        // under, the quilt's front lifts
+        box(c, cam, { x0, x1, d0, d1, h: 60, hatch: false }, { front: C.cream, top: C.cream, side: '#EDE3CC' }, 8);
+        box(c, cam, { x0: sp.x - 110, x1: sp.x + 110, d0: d1 - 170, d1: d1 - 60, h: 130, h0: 60, hatch: false }, { front: C.teal, top: C.aqua, side: C.tealDark }, 7);
+        const qh = sp.h, back = d1 - 190, lift = o * (qh - 30);
+        if (o > 0.05) poly(c, [P(cam, x0 + 10, d0, 0), P(cam, x1 - 10, d0, 0), P(cam, x1 - 10, d0, lift), P(cam, x0 + 10, d0, lift)], '#5A2A2C', 0);
+        poly(c, [P(cam, x0 - 10, d0, qh), P(cam, x1 + 10, d0, qh), P(cam, x1 + 10, back, qh * 0.8), P(cam, x0 - 10, back, qh * 0.8)], C.coral, 9 * s);
+        poly(c, [P(cam, x0 - 10, d0, lift), P(cam, x1 + 10, d0, lift), P(cam, x1 + 10, d0, qh), P(cam, x0 - 10, d0, qh)], C.coralDark, 9 * s);
+        for (let n = 0; n < 6; n++) dot(c, P(cam, x0 + sp.w * (n % 3 + 0.5) / 3, d0 + (back - d0) * (Math.floor(n / 3) + 0.5) / 2, qh * 0.9), 14 * s, C.cream);
     } else if (sp.id === 'sofa') {
-        // a coral sofa with its arms; looked behind, it scoots forward and tips a little
-        const k = o, dz = -80 * k;
-        const pivot = P(cam, sp.x, d0 + dz, 0); c.translate(pivot.x, pivot.y); c.rotate(-0.04 * k); c.translate(-pivot.x, -pivot.y);
-        box(c, cam, { x0, x1, d0: d1 - 90 + dz, d1: d1 + dz, h: sp.h }, { front: C.coral, top: C.coralDark, side: C.coralDark }, 10);
-        box(c, cam, { x0, x1, d0: d0 + dz, d1: d1 - 90 + dz, h: 220 }, { front: C.coralDark, top: C.coral, side: C.coralDark }, 10);
-        box(c, cam, { x0, x1: x0 + 90, d0: d0 + dz, d1: d1 + dz, h: 310 }, { front: C.coral, top: C.coralDark, side: C.coralDark }, 10);
-        box(c, cam, { x0: x1 - 90, x1, d0: d0 + dz, d1: d1 + dz, h: 310 }, { front: C.coral, top: C.coralDark, side: C.coralDark }, 10);
-        box(c, cam, { x0: x0 + 120, x1: x0 + 290, d0: d1 - 140 + dz, d1: d1 - 100 + dz, h: 380, h0: 220, hatch: false }, { front: C.aqua, top: C.aqua, side: C.teal }, 8);
-        // (its seams)
-        line(c, P(cam, sp.x, d0 + dz, 40), P(cam, sp.x, d0 + dz, 200), 4 * s);
+        // a pile of floor cushions (zabuton) in the house's colours, each with its little tassels; looked behind, the
+        // pile leans aside
+        const cols = [C.purple, C.coral, C.teal, C.ochre, C.purpleDark], each = sp.h / cols.length;
+        const pivot = P(cam, sp.x, d0, 0); c.translate(pivot.x, pivot.y); c.rotate(-0.12 * o); c.translate(-pivot.x, -pivot.y);
+        cols.forEach((col, i) => {
+            const dx = (i % 2 ? 14 : -12) + i * 3 * o * 10;
+            box(c, cam, { x0: x0 + dx, x1: x1 + dx, d0, d1, h: each * (i + 1), h0: each * i + 4, hatch: false }, { front: col, top: col, side: col }, 8);
+            dot(c, P(cam, x0 + dx + 18, d0 - 4, each * i + 10), 7 * s, C.ochre);
+            dot(c, P(cam, x1 + dx - 18, d0 - 4, each * i + 10), 7 * s, C.ochre);
+        });
     } else if (sp.id === 'basket') {
-        // a big wicker basket for the washing, its lid on; looked in, the lid tips up and a sleeve hangs out
-        const lift = o;
-        box(c, cam, { x0, x1, d0, d1, h: sp.h - 40 }, { front: C.wicker, top: '#6E5030', side: C.wickerDark }, 10);
-        // (the weave)
-        for (let r = 1; r < 6; r++) line(c, P(cam, x0, d0, (sp.h - 40) * r / 6), P(cam, x1, d0, (sp.h - 40) * r / 6), 3 * s);
-        for (let n = 1; n < 6; n++) for (let r = 0; r < 6; r++) {
-            const u = x0 + sp.w * n / 6 + (r % 2 ? 12 : -12), up = (sp.h - 40) * (r + 0.5) / 6;
-            line(c, P(cam, u, d0, up - 14), P(cam, u, d0, up + 14), 3 * s);
+        // a big bamboo basket with its lid; looked in, the lid tips up and a sleeve hangs out
+        box(c, cam, { x0, x1, d0, d1, h: sp.h - 40 }, { front: C.bamboo, top: '#6E5030', side: C.wickerDark }, 10);
+        // (its weave, in diagonals)
+        c.save();
+        const fq = [P(cam, x0, d0, 0), P(cam, x1, d0, 0), P(cam, x1, d0, sp.h - 40), P(cam, x0, d0, sp.h - 40)];
+        c.beginPath(); fq.forEach((q, i) => (i ? c.lineTo(q.x, q.y) : c.moveTo(q.x, q.y))); c.closePath(); c.clip();
+        c.strokeStyle = 'rgba(122,82,50,0.6)'; c.lineWidth = 3 * s;
+        for (let k = -sp.h; k < sp.w + sp.h; k += 46) {
+            for (const way of [1, -1]) { const a = P(cam, x0 + k, d0, 0), b = P(cam, x0 + k + way * sp.h, d0, sp.h); c.beginPath(); c.moveTo(a.x, a.y); c.lineTo(b.x, b.y); c.stroke(); }
         }
+        c.restore();
         if (o > 0.05) poly(c, [P(cam, x0 + 60, d0, sp.h - 40), P(cam, x0 + 120, d0, sp.h - 40), P(cam, x0 + 110, d0 - 10, sp.h - 200), P(cam, x0 + 70, d0 - 10, sp.h - 190)], C.coral, 5 * s);
-        const a = lift * 1.3, depth = d1 - d0, at = (u, e) => P(cam, u, d1 - Math.cos(a) * depth * e, sp.h - 40 + Math.sin(a) * depth * e + 30);
+        const a = o * 1.3, depth = d1 - d0, at = (u, e) => P(cam, u, d1 - Math.cos(a) * depth * e, sp.h - 40 + Math.sin(a) * depth * e + 30);
         poly(c, [P(cam, x0 - 10, d1, sp.h - 40), P(cam, x1 + 10, d1, sp.h - 40), at(x1 + 10, 1), at(x0 - 10, 1)], C.wickerDark, 9 * s);
         dot(c, at(sp.x, 0.5), 14 * s, C.coral);
     } else if (sp.id === 'table') {
-        // a table under a cream cloth with coral dots down to the floor; looked under, the cloth's front lifts
-        const lift = o * (sp.h - 30);
-        box(c, cam, { x0, x1, d0, d1, h: sp.h, hatch: false }, { front: C.cream, top: C.cream, side: '#EDE3CC' }, 10);
-        if (o > 0.05) {
-            poly(c, [P(cam, x0 + 10, d0, 0), P(cam, x1 - 10, d0, 0), P(cam, x1 - 10, d0, lift), P(cam, x0 + 10, d0, lift)], '#5A4A36', 0);
-            poly(c, [P(cam, x0, d0, lift), P(cam, x1, d0, lift), P(cam, x1, d0, sp.h), P(cam, x0, d0, sp.h)], C.cream, 9 * s);
-        }
-        for (let n = 0; n < 9; n++) {
-            const u = (n % 3 + 0.5) / 3, v = (Math.floor(n / 3) + 0.5) / 3, up = lift + (sp.h - lift) * v;
-            if (up < sp.h - 10) dot(c, P(cam, x0 + sp.w * u, d0, up), 13 * s, C.coral);
-        }
-        // a teapot and a cup on it
-        const pot = P(cam, sp.x - 60, sp.d, sp.h);
-        c.fillStyle = C.teal; c.strokeStyle = INK; c.lineWidth = 7 * s;
-        c.beginPath(); c.ellipse(pot.x, pot.y - 55 * s, 70 * s, 55 * s, 0, 0, Math.PI * 2); c.fill(); c.stroke();
-        c.beginPath(); c.moveTo(pot.x + 60 * s, pot.y - 70 * s); c.quadraticCurveTo(pot.x + 110 * s, pot.y - 90 * s, pot.x + 120 * s, pot.y - 120 * s); c.stroke();
-        dot(c, { x: pot.x, y: pot.y - 118 * s }, 12 * s);
-        const cup = P(cam, sp.x + 130, sp.d - 40, sp.h);
-        poly(c, [{ x: cup.x - 30 * s, y: cup.y - 50 * s }, { x: cup.x + 30 * s, y: cup.y - 50 * s }, { x: cup.x + 22 * s, y: cup.y }, { x: cup.x - 22 * s, y: cup.y }], C.peach, 6 * s);
+        // a low table over its quilt (kotatsu): the quilt in teal with a coral border down to the floor, the table top
+        // over it, a bowl of tangerines and an iron teapot; looked under, the quilt's front lifts
+        const top = sp.h - 40, lift = o * (top - 20);
+        box(c, cam, { x0, x1, d0, d1, h: top, hatch: false }, { front: C.teal, top: C.teal, side: C.tealDark }, 9);
+        if (o > 0.05) poly(c, [P(cam, x0 + 10, d0, 0), P(cam, x1 - 10, d0, 0), P(cam, x1 - 10, d0, lift), P(cam, x0 + 10, d0, lift)], '#06343A', 0);
+        if (o > 0.05) poly(c, [P(cam, x0, d0, lift), P(cam, x1, d0, lift), P(cam, x1, d0, top), P(cam, x0, d0, top)], C.teal, 9 * s);
+        poly(c, [P(cam, x0, d0, lift), P(cam, x1, d0, lift), P(cam, x1, d0, lift + 45), P(cam, x0, d0, lift + 45)], C.coral, 6 * s);
+        box(c, cam, { x0: x0 - 30, x1: x1 + 30, d0: d0 - 30, d1: d1 + 30, h: sp.h, h0: top, hatch: false }, { front: C.post, top: C.wood, side: C.post }, 9);
+        const bowl = P(cam, sp.x + 80, sp.d, sp.h);
+        c.fillStyle = C.lacquer; c.beginPath(); c.ellipse(bowl.x, bowl.y - 18 * s, 70 * s, 26 * s, 0, 0, Math.PI); c.fill();
+        for (const [dx, dy] of [[-30, -30], [20, -34], [-4, -58]]) { dot(c, { x: bowl.x + dx * s, y: bowl.y + dy * s }, 22 * s, '#F59A3C'); }
+        const pot = P(cam, sp.x - 110, sp.d - 20, sp.h);
+        c.fillStyle = '#2E3236'; c.strokeStyle = INK; c.lineWidth = 6 * s;
+        c.beginPath(); c.ellipse(pot.x, pot.y - 45 * s, 58 * s, 45 * s, 0, 0, Math.PI * 2); c.fill(); c.stroke();
+        c.beginPath(); c.arc(pot.x, pot.y - 95 * s, 40 * s, Math.PI * 1.1, Math.PI * 1.9); c.stroke();
     } else if (sp.id === 'chest') {
-        // a wooden chest with dark bands; looked in, its lid swings up
-        box(c, cam, { x0, x1, d0, d1, h: sp.h - 60 }, { front: C.wood, top: '#3A2A1A', side: C.woodDark }, 10);
-        for (const u of [0.22, 0.78]) line(c, P(cam, x0 + sp.w * u, d0, 0), P(cam, x0 + sp.w * u, d0, sp.h - 60), 22 * s);
-        // (the wood's grain)
-        for (let r = 1; r < 4; r++) line(c, P(cam, x0 + sp.w * 0.3, d0, (sp.h - 60) * r / 4), P(cam, x0 + sp.w * 0.7, d0, (sp.h - 60) * r / 4 + 8), 2.5 * s);
-        dot(c, P(cam, sp.x, d0, sp.h - 110), 16 * s, C.cream);
+        // a dark chest (nagamochi) with iron corners and ring handles; looked in, its lid swings up
+        box(c, cam, { x0, x1, d0, d1, h: sp.h - 60 }, { front: C.lacquer, top: '#24160C', side: '#3A2414' }, 10);
+        for (const [u, up] of [[x0 + 8, 8], [x1 - 48, 8], [x0 + 8, sp.h - 108], [x1 - 48, sp.h - 108]]) poly(c, [P(cam, u, d0, up), P(cam, u + 40, d0, up), P(cam, u + 40, d0, up + 40), P(cam, u, d0, up + 40)], '#2A2A2A', 3 * s);
+        for (const u of [x0 + sp.w * 0.25, x0 + sp.w * 0.75]) { const q = P(cam, u, d0, (sp.h - 60) * 0.5); c.strokeStyle = C.gold; c.lineWidth = 6 * s; c.beginPath(); c.arc(q.x, q.y + 10 * s, 20 * s, 0, Math.PI * 2); c.stroke(); }
         const a = o * 1.6, lh = 60, depth = d1 - d0;
         const back = (u) => P(cam, u, d1, sp.h - 60);
         const front = (u, up) => P(cam, u, d1 - Math.cos(a) * depth, sp.h - 60 + Math.sin(a) * depth + up);
-        poly(c, [back(x0), back(x1), front(x1, lh), front(x0, lh)], C.woodDark, 9 * s);
-        poly(c, [front(x0, 0), front(x1, 0), front(x1, lh), front(x0, lh)], C.wood, 9 * s);
+        poly(c, [back(x0), back(x1), front(x1, lh), front(x0, lh)], '#24160C', 9 * s);
+        poly(c, [front(x0, 0), front(x1, 0), front(x1, lh), front(x0, lh)], C.lacquer, 9 * s);
     } else if (sp.id === 'screen') {
-        // a folding screen of three panels, peach in purple frames, in a zigzag; looked behind, it folds aside
+        // a folding screen (byōbu): gold panels in dark frames, waves and a coral sun painted across them; looked
+        // behind, it folds aside
         const n = 3, pw = sp.w / n, fold = 1 - 0.65 * o;
         let px = x0, pd = sp.d;
         for (let i = 0; i < n; i++) {
             const nx = px + pw * fold, nd = sp.d + (i % 2 ? -1 : 1) * 70 * (1 - o * 0.5);
             const quad = [P(cam, px, pd, 30), P(cam, nx, nd, 30), P(cam, nx, nd, sp.h), P(cam, px, pd, sp.h)];
-            poly(c, quad, C.purple, 10 * s);
+            poly(c, quad, C.lacquer, 10 * s);
             const inset = (p, q, u) => ({ x: p.x + (q.x - p.x) * u, y: p.y + (q.y - p.y) * u });
-            const inner = [inset(quad[0], quad[2], 0.12), inset(quad[1], quad[3], 0.12), inset(quad[2], quad[0], 0.12), inset(quad[3], quad[1], 0.12)];
-            poly(c, inner, C.peach, 5 * s);
-            // (a little sun painted on each panel)
-            dot(c, inset(inner[0], inner[2], 0.5), 22 * s, i % 2 ? C.teal : C.coral);
+            const inner = [inset(quad[0], quad[2], 0.08), inset(quad[1], quad[3], 0.08), inset(quad[2], quad[0], 0.08), inset(quad[3], quad[1], 0.08)];
+            poly(c, inner, C.gold, 4 * s);
+            // (waves low on every panel; the sun on the middle one)
+            c.strokeStyle = C.teal; c.lineWidth = 6 * s;
+            for (let k = 0; k < 2; k++) { const w = inset(inset(inner[0], inner[1], 0.3 + k * 0.4), inset(inner[3], inner[2], 0.3 + k * 0.4), 0.78); c.beginPath(); c.arc(w.x, w.y, 24 * s, Math.PI * 1.05, Math.PI * 1.95); c.stroke(); }
+            if (i === 1) dot(c, inset(inset(inner[0], inner[1], 0.5), inset(inner[3], inner[2], 0.5), 0.3), 34 * s, C.coral);
             line(c, P(cam, px, pd, 0), P(cam, px, pd, 30), 10 * s);
             px = nx; pd = nd;
         }

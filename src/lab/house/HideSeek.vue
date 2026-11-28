@@ -72,7 +72,9 @@ const hintText = computed(() => {
     return me && isMachine(seeker.value) ? t(`${nameOf(seeker.value)} te busca`, `${nameOf(seeker.value)} is looking`) : t(`Buscá a ${nameOf(hider.value)}`, `Find ${nameOf(hider.value)}`);
 });
 
-const puppets = PLAYERS.map((p) => createPuppet({ ink: p.ink, white: p.white, x: ENTRY.from.x, d: ENTRY.from.d }));
+// (a little quicker than in the world: the house is a game against the clock)
+const WALK = { pace: 630, trot: 900 };
+const puppets = PLAYERS.map((p) => createPuppet({ ink: p.ink, white: p.white, x: ENTRY.from.x, d: ENTRY.from.d, ...WALK }));
 const inRoom = [false, false];
 const entering = [false, false];
 let spots = createSpots();

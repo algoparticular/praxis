@@ -17,7 +17,8 @@ export const SID_TALL = TALL + STAND;
 
 // A Sid. `ink` and `white`: his line and his body. Where he stands (x, d) and where he faces (heading: 0 to the right,
 // PI to the left, -PI/2 towards us, PI/2 into the distance)
-export function createPuppet({ ink = '#102A34', white = '#FBF4E4', x = 0, d = 0, heading = -Math.PI / 2 } = {}) {
+// (pace and trot: his easy pace and his trot in world px a second; the house has him go a little quicker than the world)
+export function createPuppet({ ink = '#102A34', white = '#FBF4E4', x = 0, d = 0, heading = -Math.PI / 2, pace = PACE, trot: trotPace = TROT } = {}) {
     const springs = {
         lean: spring(0, 90, 9), sy: spring(1, 160, 9), rot: spring(0, 120, 14), face: spring(1, 260, 26),
         drop: spring(0, 140, 16), closed: spring(0, 60, 14), lookX: spring(0, 60, 12), lookY: spring(0, 60, 12),
@@ -131,8 +132,8 @@ export function createPuppet({ ink = '#102A34', white = '#FBF4E4', x = 0, d = 0,
         if (aim !== null && !state.air) turnTo(aim, dt * (length > 0 ? 9 + 3 * state.run : 6));
         state.turning = dt > 0 ? wrap(state.heading - heading0) / dt : 0;
         const off = aim === null ? 0 : Math.abs(wrap(aim - state.heading));
-        const trot = state.hurry && left > 420;
-        const top = trot ? TROT : PACE;
+        const trot = (state.hurry && left > 420) || left > 1100;     // (far to go, he trots)
+        const top = trot ? trotPace : pace;
         const busy = name === 'jump' || name === 'crouch' || name === 'emerge';
         const want = length > 0 && !state.air && !busy ? Math.min(top, left * 3 + 20) * turnPace(off) : 0;
         const was = state.speed;
@@ -156,9 +157,9 @@ export function createPuppet({ ink = '#102A34', white = '#FBF4E4', x = 0, d = 0,
             state.d += Math.sin(state.heading) * go;
         }
         collide(obstacles, env.bounds);
-        state.run = Math.max(0, Math.min(1, (state.speed - PACE) / (TROT - PACE)));
+        state.run = Math.max(0, Math.min(1, (state.speed - pace) / (trotPace - pace)));
         const walking = state.speed > 3 ? 1 : 0;
-        if (was > 40 && state.speed <= 40 && want === 0) { S.lean.v += 0.22 * (Math.sign(S.face.x) || 1) * (1 - frame().front) * (was / PACE); S.sy.v -= 0.7; }
+        if (was > 40 && state.speed <= 40 && want === 0) { S.lean.v += 0.22 * (Math.sign(S.face.x) || 1) * (1 - frame().front) * (was / pace); S.sy.v -= 0.7; }
 
         S.walk.to = walking;
         const run = state.run;
