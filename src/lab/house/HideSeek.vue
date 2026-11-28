@@ -101,7 +101,7 @@ function runTimers() {
 
 // --- The camera: the whole room on the screen ---
 const canvas = ref(null);
-const view = { w: 1, h: 1, k: 1, dpr: 1, W: 1, H: 1, ground: 0 };
+const view = { w: 1, h: 1, k: 1, dpr: 1, W: 1, H: 1, ground: 0, margin: 80 };
 // (less perspective than the world: the room is long, and its back should not be too small)
 const DEPTH = 3600, FAR = 0.55;
 let CAM_D = 0, SPAN = 1;
@@ -133,7 +133,9 @@ function fit() {
     // as big as Sid is in the world, unless the room would not fit: across (with a little room at its sides) or down
     const wallTop = (ROOM.wall + 70) * cam.scaleAt(ROOM.d1);
     const kWorld = 0.48 * Math.min((touch ? view.h * 0.55 : view.h * 0.62) / SID_TALL, view.w * 0.9 / 420);
-    const kWide = view.w / ((ROOM.x1 - ROOM.x0 + 80) * cam.scaleAt(ROOM.d0));
+    // (on a phone its side walls touch the screen's edges, the strip under the front past them; on a computer it is framed)
+    view.margin = touch ? 0 : 80;
+    const kWide = view.w / ((ROOM.x1 - ROOM.x0 + view.margin) * cam.scaleAt(ROOM.d0));
     const kTall = view.h * 0.8 / (0.62 * SPAN + wallTop);
     view.k = Math.min(kWorld, kWide, kTall);
     view.W = view.w / view.k; view.H = view.h / view.k;
@@ -419,7 +421,7 @@ function update(dt, now) {
     const active = [0, 1].filter((i) => inRoom[i]);
     if (active.length) {
         const x = active.reduce((a, i) => a + puppets[i].state.x, 0) / active.length;
-        const most = Math.max(0, ((ROOM.x1 - ROOM.x0) / 2 + 80) * cam.scaleAt(ROOM.d0) - view.W / 2) / cam.scaleAt(ROOM.d0);
+        const most = Math.max(0, ((ROOM.x1 - ROOM.x0) / 2 + view.margin) * cam.scaleAt(ROOM.d0) - view.W / 2) / cam.scaleAt(ROOM.d0);
         cam.cam += (Math.max(-most, Math.min(most, x)) - cam.cam) * Math.min(1, dt * 2.2);
     }
 }
