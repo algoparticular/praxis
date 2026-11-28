@@ -1173,8 +1173,9 @@ export function createWorld({ clouds = null, moon = null, planted = [], visit = 
                 const [px, py] = part('grPalmBig'), [, , pw, ph] = B('grPalmBig'), [lx, ly] = part('grLight'), [, , lw, lh] = B('grLight');
                 const shine = Math.max(g, night() * col);
                 c.save(); c.translate(px + pw / 2, py + ph); c.rotate(wind(item.x) * 0.25 * (0.3 + 0.7 * col)); c.translate(-px - pw / 2, -py - ph);
-                at('grPalmBig', px, py);
+                // (its glow behind the palm, not over it: over it, it muddied the crown and showed where it ended)
                 halo(lx + lw / 2, ly + lh / 2, 80 + 240 * shine, [255, 236, 140], (0.2 + 0.6 * shine) * (0.85 + 0.15 * Math.sin(time * 2)));
+                at('grPalmBig', px, py);
                 at('grLight', lx, ly);
                 c.restore();
                 const [hx, hy] = part('grHouse'), [, , hw, hh] = B('grHouse');
