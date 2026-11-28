@@ -21,11 +21,11 @@ const emit = defineEmits(['close']);
 const vm = getCurrentInstance().proxy;
 const t = (es, en) => (vm.$i18n.locale === 'en' ? en : es);
 
-// The two players: Sid in the ink and white of Gratitud (as he is in its zone of the world), and the other Sid in the
+// The two players: Sid in the ink and white of Gratitud (as he is in its zone of the world), and Sad, a Sid in the
 // purple of the house
 const PLAYERS = [
     { es: 'Sid', en: 'Sid', ink: '#102A34', white: '#FBF4E4' },
-    { es: 'Sid lila', en: 'Lilac Sid', ink: '#4E2F7A', white: '#E9DDFB' },
+    { es: 'Sad', en: 'Sad', ink: '#4E2F7A', white: '#E9DDFB' },
 ];
 const HIDE_TIME = 20, SEEK_TIME = 60, HINTS = [20, 40], LOOK = 0.75;
 const nameOf = (i) => t(PLAYERS[i].es, PLAYERS[i].en);
