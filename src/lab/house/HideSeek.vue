@@ -544,7 +544,7 @@ onBeforeUnmount(() => {
                     </template>
                     <template v-else-if="game.phase === 'result'">
                         <h2>{{ t('¡Bien jugado!', 'Well played!') }}</h2>
-                        <p v-for="(p, i) in PLAYERS" :key="i" class="score" :class="{ best: best === i }">
+                        <p v-for="(p, i) in PLAYERS" :key="i" class="score" :class="{ best: best === i, other: best != null && best !== i }">
                             <SidHead class="who" :ink="p.ink" :white="p.white" />{{ nameOf(i) }}: {{ looksText(game.score[i].looks) }}
                         </p>
                         <p class="soft">{{ best == null ? t('Los dos encontraron igual de bien.', 'Both found just as well.') : game.mode === 'machine' && best === 0 ? t('Encontraste mejor vos.', 'You found best.') : t(`${nameOf(best)} encontró mejor.`, `${nameOf(best)} found best.`) }}</p>
@@ -630,7 +630,9 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
 .card p.soft { opacity: 0.85; font-size: 17px; }
 .players { display: flex; justify-content: center; gap: 24px; }
 .score { font-family: Caveat, cursive; font-size: 30px !important; }
-.score.best { color: #FF6F61; }
+/* who found best in the cream, glowing, the other faint: as the language chosen in the menu (the coral did not read on the veil) */
+.score.best { color: #F7F8F1; text-shadow: 0 0 12px rgba(247, 248, 241, 0.75), 0 0 26px rgba(247, 248, 241, 0.35); }
+.score.other { opacity: 0.6; }
 .buttons { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-top: 8px; }
 .go {
     padding: 12px 34px;
