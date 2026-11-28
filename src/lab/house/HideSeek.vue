@@ -3,8 +3,12 @@
 // world (LabSid.vue opens it over the world, its own chunk); `/sid?casa` opens it straight away (to try it).
 //
 // A turn: one comes in by the door and hides (HIDE_TIME s: a touch on a thing of the room walks him there and he goes
-// into it; a touch on the floor only walks him), and his feet are dusty: every step leaves a footprint (but on the rug),
-// so he can go straight to his place or wander by others to mislead. Then the other looks for him, in as few looks as he
+// into it; a touch on the floor only walks him; a new touch while he walks there changes his mind), and he comes in from
+// the garden with sand on his feet: every step leaves a print, fainter each step, and after DUST steps his feet are
+// clean, so the trail shows which way he went, not where he ended; stepping on the sand blown in (a few patches) dirties
+// them again (none on the rug). He can keep off the sand, or cross it on the way to another place, to mislead. The room
+// is long on a phone held upright and wide on a computer (room.js, `setLayout`, chosen between turns only). Then the
+// other looks for him, in as few looks as he
 // can: a touch on a thing walks him there and he looks in it (empty: a ring of dots stays where he looked). What tells
 // him where: the footprints, which fade within PRINT_FADE s of his coming in (read them quickly); a giggle as he passes
 // near (GIGGLE, now and then); a foot showing if he hid in a hurry (in the last SLOPPY s); and, after SAFETY s, his place
@@ -20,7 +24,7 @@
 // The room is drawn in code (house/room.js) and seen as Sid's world is seen; the two Sids are the same puppet (puppet.js).
 import { computed, getCurrentInstance, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import { createPuppet, SID_TALL } from '../puppet.js';
-import { BOUNDS, ENTRY, ROOM, SPOTS, beginFrame, createSpots, drawPrints, drawRoom, drawThings, obstacles, onRug, spotAt } from './room.js';
+import { BOUNDS, ENTRY, ROOM, SPOTS, beginFrame, createSpots, drawPrints, drawRoom, drawThings, obstacles, onRug, onSand, setLayout, spotAt } from './room.js';
 import { play, vibrate } from '../../composables/useSound.js';
 
 const emit = defineEmits(['close', 'played']);
@@ -32,7 +36,7 @@ const PLAYERS = [
     { es: 'Sad', en: 'Sad', ink: '#4E2F7A', white: '#E9DDFB' },
 ];
 const HIDE_TIME = 20, SEEK_TIME = 60, SAFETY = 40, LOOK = 0.75, ROUNDS = 2;
-const PRINT_FADE = 14, PRINT_STEP = 105, SLOPPY = 5;
+const PRINT_FADE = 14, PRINT_STEP = 105, SLOPPY = 5, DUST = 6;
 const GIGGLE = { near: 450, odds: 0.6, rest: 5 };
 const MACHINE = { who: 1, hide: 2.4, think: [0.4, 1.2], reads: 0.75, hear: 0.6, near: 3 };
 const nameOf = (i) => t(PLAYERS[i].es, PLAYERS[i].en);
@@ -72,9 +76,10 @@ const puppets = PLAYERS.map((p) => createPuppet({ ink: p.ink, white: p.white, x:
 const inRoom = [false, false];
 const entering = [false, false];
 let spots = createSpots();
-const blocking = obstacles();
-// the footprints of the one hiding: { x, d, a, alpha }, and how far he has walked since the last one
-let prints = [], walked = 0, lastAt = null, foot = 1;
+let blocking = obstacles();
+// the footprints of the one hiding: { x, d, a, side, strength, alpha }, how far he has walked since the last one, and
+// how much sand his feet still have (steps)
+let prints = [], walked = 0, lastAt = null, foot = 1, dust = DUST;
 
 // Timers that die with the game: cleared on leaving the house and at every turn
 const timers = new Set();
@@ -86,23 +91,36 @@ const canvas = ref(null);
 const view = { w: 1, h: 1, k: 1, dpr: 1, W: 1, H: 1, ground: 0 };
 // (less perspective than the world: the room is long, and its back should not be too small)
 const DEPTH = 3600, FAR = 0.55;
-const CAM_D = ROOM.d0 - 150, SPAN = ROOM.d1 - CAM_D;
+let CAM_D = 0, SPAN = 1;
 const cam = {
-    x0: 0, cam: 0, perDepth: 1, far: CAM_D + DEPTH,
+    x0: 0, cam: 0, perDepth: 1, far: 0,
     scaleAt: (d) => 1 - (1 - FAR) * (d - CAM_D) / DEPTH,
     groundAt: (d) => view.ground - (d - CAM_D) * cam.perDepth,
 };
+// the room's shape for this screen: long on a phone held upright, wide on a computer or a phone on its side
+const shapeFor = () => (view.w > view.h * 1.05 ? 'wide' : 'tall');
+function reshape() {
+    if (!setLayout(shapeFor())) return;
+    blocking = obstacles(); spots = createSpots();
+    fit();
+}
 function resize() {
     const el = canvas.value;
     if (!el) return;
     view.dpr = Math.min(window.devicePixelRatio || 1, 2);
     view.w = el.clientWidth; view.h = el.clientHeight;
     el.width = view.w * view.dpr; el.height = view.h * view.dpr;
+    // (it changes shape only before anyone has hidden: never while someone is hidden in it)
+    if (['intro', 'cover'].includes(game.phase)) reshape();
+    fit();
+}
+function fit() {
+    CAM_D = ROOM.d0 - 150; SPAN = ROOM.d1 - CAM_D; cam.far = CAM_D + DEPTH;
     const touch = matchMedia('(pointer: coarse)').matches;
     // as big as Sid is in the world, unless the room would not fit: across (with a little room at its sides) or down
     const wallTop = (ROOM.wall + 70) * cam.scaleAt(ROOM.d1);
     const kWorld = 0.48 * Math.min((touch ? view.h * 0.55 : view.h * 0.62) / SID_TALL, view.w * 0.9 / 420);
-    const kWide = view.w / ((ROOM.x1 - ROOM.x0 + 160) * cam.scaleAt(ROOM.d0));
+    const kWide = view.w / ((ROOM.x1 - ROOM.x0 + 80) * cam.scaleAt(ROOM.d0));
     const kTall = view.h * 0.8 / (0.62 * SPAN + wallTop);
     view.k = Math.min(kWorld, kWide, kTall);
     view.W = view.w / view.k; view.H = view.h / view.k;
@@ -119,8 +137,9 @@ function resize() {
 const dist = (a, b) => Math.hypot(a.x - b.x, a.d - b.d);
 function startTurn() {
     clearTimers();
+    reshape();
     spots = createSpots();
-    prints = []; walked = 0; lastAt = null;
+    prints = []; walked = 0; lastAt = null; dust = DUST;
     Object.assign(game, { hidden: null, clock: 0, busy: false, looks: 0, safety: false, heard: false, giggleAt: -99 });
     inRoom[0] = inRoom[1] = false;
     for (const p of puppets) { p.place(ENTRY.from.x, ENTRY.from.d, 0); p.state.hidden = false; p.state.show = 1; p.state.hurry = false; p.lookAt(null); p.faceTo(null); }
@@ -149,7 +168,8 @@ function startHiding() {
     comeIn(hider.value);
     play('flip');
 }
-// he leaves a footprint every step he walks while he hides, one foot then the other (none on the rug)
+// a step while he hides, one foot then the other: on the sand his feet take some up; while they have some, each step
+// leaves a print, fainter each time (none on the rug)
 function track(p) {
     const s = p.state;
     if (lastAt) walked += Math.hypot(s.x - lastAt.x, s.d - lastAt.d);
@@ -157,14 +177,19 @@ function track(p) {
     if (walked < PRINT_STEP || s.x < ROOM.x0 + 30) return;
     walked = 0; foot = -foot;
     const a = s.heading, x = s.x - Math.sin(a) * 18 * foot, d = s.d + Math.cos(a) * 18 * foot;
-    if (!onRug(x, d)) prints.push({ x, d, a, alpha: 0.7 });
+    if (onSand(x, d)) { dust = DUST; return; }
+    if (dust <= 0) return;
+    if (!onRug(x, d)) prints.push({ x, d, a, side: foot, strength: dust / DUST, alpha: dust / DUST });
+    dust -= 1;
 }
 // into a hiding place: he walks there, opens it, goes in (in a hurry, a foot shows)
+// (game.busy: 'walk' while he goes there, when a new touch still changes his mind; 'act' once he opens it)
 function hideIn(sp) {
     const p = puppets[hider.value];
-    game.busy = true;
+    game.busy = 'walk';
     p.state.hurry = game.clock > HIDE_TIME - 6;
     p.walkTo(sp.spot.x, sp.spot.d, () => {
+        game.busy = 'act';
         p.faceTo(Math.PI / 2);
         sp.openTo = 1;
         p.reachFor({ x: sp.x, y: -sp.h * 0.4 }, 0.5);
@@ -255,11 +280,12 @@ function machineSeek() {
 }
 function lookIn(sp, then = null) {
     const p = puppets[seeker.value];
-    game.busy = true;
+    game.busy = 'walk';
     sp.lit = 1;
     play('pick');
     p.walkTo(sp.spot.x, sp.spot.d, () => {
         if (game.phase !== 'seek') return;
+        game.busy = 'act';
         game.looks += 1;
         p.faceTo(Math.PI / 2);
         p.reachFor({ x: sp.x, y: -sp.h * 0.4 }, LOOK);
@@ -326,7 +352,9 @@ function floorAt(p) {
 }
 function onDown(e) {
     const who = game.phase === 'hide' ? hider.value : game.phase === 'seek' ? seeker.value : null;
-    if (who == null || isMachine(who) || game.busy || entering[who]) return;
+    // (the last touch counts: while he walks somewhere, a new one sends him to the new place; once he is opening or
+    // looking in a thing, he finishes)
+    if (who == null || isMachine(who) || game.busy === 'act' || entering[who]) return;
     const p = pointerTo(e), sp = spotAt(spots, p);
     if (sp) {
         if (game.phase === 'hide') hideIn(sp);
@@ -335,6 +363,7 @@ function onDown(e) {
         return;
     }
     const at = floorAt(p);
+    if (at.d > ROOM.d0 && at.d < ROOM.d1) game.busy = false;
     if (at.d > ROOM.d0 && at.d < ROOM.d1) puppets[who].walkTo(Math.max(BOUNDS.x0, Math.min(BOUNDS.x1, at.x)), Math.max(BOUNDS.d0, Math.min(BOUNDS.d1, at.d)));
 }
 function onKey(e) {
@@ -362,7 +391,7 @@ function update(dt, now) {
     }
     // the footprints fade once he is looking (read them quickly)
     const fade = game.phase === 'seek' ? Math.max(0, 1 - game.clock / PRINT_FADE) : ['hide', 'count'].includes(game.phase) ? 1 : 0;
-    for (const q of prints) q.alpha = 0.7 * fade;
+    for (const q of prints) q.alpha = q.strength * fade;
     for (const sp of spots) {
         sp.open += (sp.openTo - sp.open) * Math.min(1, dt * 9);
         sp.shake = Math.max(0, sp.shake - dt);
@@ -402,7 +431,7 @@ function loop(now) {
 
 onMounted(() => {
     // (to look at from the console, and for the tests)
-    if (typeof window !== 'undefined') window.__house = { game, prints: () => prints, puppets, spots: () => spots };
+    if (typeof window !== 'undefined') window.__house = { game, prints: () => prints, puppets, spots: () => spots, view, cam };
     resize();
     window.addEventListener('resize', resize);
     window.addEventListener('keydown', onKey);

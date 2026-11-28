@@ -15,34 +15,86 @@ const C = {
     sky: '#73CBCF', sea: '#2AA8A6', sun: '#F5797A', wood: '#C99A68', woodDark: '#A47A4E', wicker: '#E2B877', wickerDark: '#B8894A',
 };
 
-// The room: its walls at x0 and x1, its back wall at d1, its floor from d0 (the front, open to us, as a doll's house)
-export const ROOM = { x0: -950, x1: 950, d0: -300, d1: 2700, wall: 1150, wainscot: 360 };
-// Where they can walk (a little in from the walls)
-export const BOUNDS = { x0: -870, x1: 870, d0: -230, d1: 2610 };
-// The door they come in by, in the left wall (from d to d + w, up to h), and where they stand once in
-export const DOOR = { d: 1250, w: 330, h: 760 };
-export const ENTRY = { from: { x: -1010, d: DOOR.d + DOOR.w / 2 }, to: { x: -740, d: DOOR.d + DOOR.w / 2 - 40 } };
-// The round rug in the middle: soft, nobody leaves a footprint on it
-export const RUG = { x: 0, d: 1150, rx: 380, rd: 380 };
+// The room comes in two shapes, so it fills the screen it is played on: long, going back from us, on a phone held
+// upright (`tall`), and wide on a computer or a phone on its side (`wide`); the same eight hiding places, put where
+// each shape has room. `setLayout` chooses one (HideSeek.vue does it only between turns, so nothing moves while
+// someone is hidden). Each: the room (its walls at x0 and x1, its back wall at d1, its floor from d0, the front, open
+// to us as a doll's house), where they can walk (a little in from the walls), the door in the left wall (from d to
+// d + w, up to h), the round rug (soft: nobody leaves a footprint on it), the window and the picture, the hiding places
+// (each: its middle on the floor, how wide, how deep, how high; where Sid stands to go into it or to look in it,
+// `spot`), and what only stands there (a plant in its pot, a lamp: in the way, not a hiding place)
+const NAMES = {
+    wardrobe: ['el ropero', 'the wardrobe'], curtain: ['la cortina', 'the curtain'], bed: ['la cama', 'the bed'], sofa: ['el sillón', 'the sofa'],
+    basket: ['el canasto', 'the basket'], table: ['la mesa', 'the table'], chest: ['el baúl', 'the chest'], screen: ['el biombo', 'the screen'],
+};
+// [id, x, d, w, dd, h, spot x, spot d]
+const LAYOUTS = {
+    tall: {
+        room: { x0: -1150, x1: 1150, d0: -300, d1: 2500 }, bounds: { x0: -1070, x1: 1070, d0: -230, d1: 2410 },
+        door: { d: 1150 }, rug: { x: 0, d: 1050, rx: 420, rd: 360 }, window: [-260, 300], picture: { x: 'x1', d: 880 },
+        sand: [[-150, 190, 220, 130], [60, 1800, 170, 140], [-320, 2100, 180, 110]],
+        spots: [['wardrobe', -680, 2380, 440, 190, 1000, -680, 2180], ['curtain', 760, 2470, 260, 40, 1060, 760, 2320],
+            ['bed', 720, 1650, 500, 640, 300, 720, 1220], ['sofa', -640, 1720, 560, 240, 430, -640, 1500],
+            ['basket', 760, 900, 260, 220, 380, 760, 690], ['table', -120, 620, 440, 320, 330, -120, 370],
+            ['chest', 720, 280, 360, 240, 330, 720, 60], ['screen', -720, 180, 380, 90, 760, -720, -50]],
+        decor: [['plant', 1010, 2360, 150, 140, 250], ['lamp', 420, 2360, 140, 140, 780]],
+    },
+    wide: {
+        room: { x0: -1750, x1: 1750, d0: -300, d1: 1700 }, bounds: { x0: -1670, x1: 1670, d0: -230, d1: 1610 },
+        door: { d: 650 }, rug: { x: 200, d: 650, rx: 430, rd: 330 }, window: [-250, 250], picture: { x: 'x1', d: 380 },
+        sand: [[-650, 540, 220, 140], [480, 1300, 200, 130], [950, -90, 200, 110]],
+        spots: [['wardrobe', -1150, 1580, 440, 190, 1000, -1150, 1380], ['curtain', 760, 1670, 260, 40, 1060, 760, 1520],
+            ['bed', 1250, 1000, 500, 640, 300, 1250, 570], ['sofa', -550, 1150, 560, 240, 430, -550, 930],
+            ['basket', 820, 560, 260, 220, 380, 820, 350], ['table', -1100, 330, 440, 320, 330, -1100, 80],
+            ['chest', 1350, 130, 360, 240, 330, 1350, -110], ['screen', -250, 150, 380, 90, 760, -250, -90]],
+        decor: [['plant', 1560, 1560, 150, 140, 250], ['lamp', 450, 1560, 140, 140, 780]],
+    },
+};
+export const ROOM = { wall: 1150, wainscot: 360 };
+export const BOUNDS = {};
+export const DOOR = { w: 330, h: 760 };
+export const ENTRY = { from: {}, to: {} };
+export const RUG = {};
+export const SPOTS = [];
+const DECOR = [];
+const WALL = {};
 export const onRug = (x, d) => ((x - RUG.x) / RUG.rx) ** 2 + ((d - RUG.d) / RUG.rd) ** 2 < 1;
-
-// The hiding places: where each stands (its middle on the floor, how wide, how deep, how high), where Sid stands to
-// go into it or to look in it (spot), and its name. Each also stands in the way (an ellipse round it)
-export const SPOTS = [
-    { id: 'wardrobe', es: 'el ropero', en: 'the wardrobe', x: -560, d: 2580, w: 440, dd: 190, h: 1000, spot: { x: -560, d: 2380 } },
-    { id: 'curtain', es: 'la cortina', en: 'the curtain', x: 620, d: 2670, w: 260, dd: 40, h: 1060, spot: { x: 620, d: 2520 } },
-    { id: 'bed', es: 'la cama', en: 'the bed', x: 560, d: 1800, w: 500, dd: 640, h: 300, spot: { x: 560, d: 1370 } },
-    { id: 'sofa', es: 'el sillón', en: 'the sofa', x: -520, d: 1850, w: 560, dd: 240, h: 430, spot: { x: -520, d: 1630 } },
-    { id: 'basket', es: 'el canasto', en: 'the basket', x: 610, d: 1000, w: 260, dd: 220, h: 380, spot: { x: 610, d: 790 } },
-    { id: 'table', es: 'la mesa', en: 'the table', x: -90, d: 700, w: 440, dd: 320, h: 330, spot: { x: -90, d: 450 } },
-    { id: 'chest', es: 'el baúl', en: 'the chest', x: 580, d: 330, w: 360, dd: 240, h: 330, spot: { x: 580, d: 110 } },
-    { id: 'screen', es: 'el biombo', en: 'the screen', x: -600, d: 200, w: 380, dd: 90, h: 760, spot: { x: -600, d: -40 } },
-];
-// What only stands there (a plant in its pot, a lamp): in the way, not a hiding place
-const DECOR = [
-    { id: 'plant', x: 830, d: 2560, w: 150, dd: 140, h: 250 },
-    { id: 'lamp', x: 380, d: 2560, w: 140, dd: 140, h: 780 },
-];
+// The island's sand: a mat of it inside the door (they come in from the garden with it on their feet) and a few
+// patches blown in, where stepping dirties the feet again (HideSeek.vue: a dirty foot leaves a print, fainter each
+// step, and is clean again after a few)
+export const SAND = [];
+export const onSand = (x, d) => SAND.some((p) => ((x - p.x) / p.rx) ** 2 + ((d - p.d) / p.rd) ** 2 < 1);
+let SAND_DOTS = [];
+export let layout = null;
+// (the stipple of the floor and the walls, made again for each shape)
+const rand = (() => { let n = 7; return () => { n = (n * 16807) % 2147483647; return n / 2147483647; }; })();
+let FLOOR_DOTS = [], WALL_DOTS = [];
+export function setLayout(name) {
+    if (name === layout) return false;
+    layout = name;
+    const L = LAYOUTS[name];
+    Object.assign(ROOM, L.room); Object.assign(BOUNDS, L.bounds); Object.assign(DOOR, L.door); Object.assign(RUG, L.rug);
+    Object.assign(WALL, { window: L.window, picture: L.picture });
+    Object.assign(ENTRY.from, { x: ROOM.x0 - 60, d: DOOR.d + DOOR.w / 2 }); Object.assign(ENTRY.to, { x: ROOM.x0 + 210, d: DOOR.d + DOOR.w / 2 - 40 });
+    SPOTS.length = 0;
+    for (const [id, x, d, w, dd, h, sx, sd] of L.spots) SPOTS.push({ id, es: NAMES[id][0], en: NAMES[id][1], x, d, w, dd, h, spot: { x: sx, d: sd } });
+    SAND.length = 0;
+    SAND.push({ x: ROOM.x0 + 150, d: DOOR.d + DOOR.w / 2, rx: 130, rd: 190, mat: true });
+    for (const [x, d, rx, rd] of L.sand) SAND.push({ x, d, rx, rd });
+    // (each patch a stipple of grains, thicker in its middle, its edge ragged)
+    SAND_DOTS = SAND.flatMap((p) => Array.from({ length: Math.round(p.rx * p.rd / 420) }, () => {
+        const a = rand() * Math.PI * 2, r = Math.pow(rand(), 0.7) * (0.85 + 0.25 * Math.sin(a * 3 + p.x));
+        return { x: p.x + Math.cos(a) * r * p.rx, d: p.d + Math.sin(a) * r * p.rd, r: 6 + rand() * 7, k: rand() };
+    }));
+    DECOR.length = 0;
+    for (const [id, x, d, w, dd, h] of L.decor) DECOR.push({ id, x, d, w, dd, h });
+    const area = (ROOM.x1 - ROOM.x0) * (ROOM.d1 - ROOM.d0) / 5.7e6;
+    FLOOR_DOTS = Array.from({ length: Math.round(520 * area) }, () => ({ x: ROOM.x0 + rand() * (ROOM.x1 - ROOM.x0), d: ROOM.d0 + rand() * (ROOM.d1 - ROOM.d0), r: 2 + rand() * 3 }));
+    // (denser low on the walls, as her shading)
+    WALL_DOTS = Array.from({ length: 360 }, () => ({ u: rand(), up: ROOM.wainscot + Math.pow(rand(), 1.8) * (ROOM.wall - ROOM.wainscot), r: 2 + rand() * 2.5 }));
+    return true;
+}
+setLayout('tall');
 
 // What stands in the way, for the puppets: an ellipse round each thing
 export function obstacles() {
@@ -117,12 +169,6 @@ function shadow(c, cam, x, d, rx, rd, a = 0.13) {
     c.fillStyle = `rgba(16,42,52,${a})`; c.beginPath(); pts.forEach((p, i) => (i ? c.lineTo(p.x, p.y) : c.moveTo(p.x, p.y))); c.closePath(); c.fill();
 }
 
-// The stipple of the floor and the walls, made once (where each dot is, in the room)
-const rand = (() => { let s = 7; return () => { s = (s * 16807) % 2147483647; return s / 2147483647; }; })();
-const FLOOR_DOTS = Array.from({ length: 520 }, () => ({ x: ROOM.x0 + rand() * (ROOM.x1 - ROOM.x0), d: ROOM.d0 + rand() * (ROOM.d1 - ROOM.d0), r: 2 + rand() * 3 }));
-// (denser low on the walls, as her shading)
-const WALL_DOTS = Array.from({ length: 360 }, () => ({ u: rand(), up: ROOM.wainscot + Math.pow(rand(), 1.8) * (ROOM.wall - ROOM.wainscot), r: 2 + rand() * 2.5 }));
-
 // The room itself: the sky and the island outside (it is a doll's house: its front is open), its floor, its walls,
 // the window, the door, the rug, and the shadows of what stands on it
 export function drawRoom(c, cam, view, t) {
@@ -138,7 +184,7 @@ export function drawRoom(c, cam, view, t) {
     c.beginPath(); fl.forEach((p, i) => (i ? c.lineTo(p.x, p.y) : c.moveTo(p.x, p.y))); c.closePath(); c.clip();
     // (the light from the window, warm on the boards at the back)
     {
-        const m = P(cam, 50, R.d1 - 300), r = 900 * cam.scaleAt(R.d1 - 300);
+        const m = P(cam, (WALL.window[0] + WALL.window[1]) / 2, R.d1 - 300), r = 900 * cam.scaleAt(R.d1 - 300);
         const g = c.createRadialGradient(m.x, m.y, 0, m.x, m.y, r);
         g.addColorStop(0, 'rgba(255,246,214,0.55)'); g.addColorStop(1, 'rgba(255,246,214,0)');
         c.fillStyle = g; c.fillRect(m.x - r, m.y - r, r * 2, r * 2);
@@ -150,6 +196,22 @@ export function drawRoom(c, cam, view, t) {
     c.fillStyle = 'rgba(16,42,52,0.22)';
     for (const p of FLOOR_DOTS) { const q = P(cam, p.x, p.d), s = cam.scaleAt(p.d); c.beginPath(); c.arc(q.x, q.y, p.r * s, 0, Math.PI * 2); c.fill(); }
     c.restore();
+    // the sand blown in, and the door's mat with sand on it
+    for (const p of SAND) if (p.mat) {
+        const s = cam.scaleAt(p.d);
+        poly(c, floorEllipse(cam, p.x, p.d, p.rx * 0.8, p.rd * 0.85, 24), '#B88A5A', 6 * s);
+        for (let i = 1; i < 5; i++) line(c, P(cam, p.x - p.rx * 0.5, p.d - p.rd * 0.7 + p.rd * 0.35 * i), P(cam, p.x + p.rx * 0.5, p.d - p.rd * 0.7 + p.rd * 0.35 * i), 2.5 * s);
+    }
+    // (each patch a pale drift, its edge ragged, with its grains over it: lighter than a footprint, never mistaken for one)
+    for (const p of SAND) if (!p.mat) {
+        const pts = Array.from({ length: 28 }, (_, i) => { const a = i / 28 * Math.PI * 2, r = 0.92 + 0.12 * Math.sin(a * 5 + p.x) + 0.06 * Math.sin(a * 11 + p.d); return P(cam, p.x + Math.cos(a) * p.rx * r, p.d + Math.sin(a) * p.rd * r); });
+        c.fillStyle = 'rgba(250,234,196,0.85)'; c.beginPath(); pts.forEach((q, i) => (i ? c.lineTo(q.x, q.y) : c.moveTo(q.x, q.y))); c.closePath(); c.fill();
+    }
+    for (const g of SAND_DOTS) {
+        const q = P(cam, g.x, g.d), s = cam.scaleAt(g.d);
+        c.fillStyle = g.k < 0.3 ? 'rgba(214,176,118,0.8)' : 'rgba(255,250,236,0.95)';
+        c.beginPath(); c.arc(q.x, q.y, g.r * s, 0, Math.PI * 2); c.fill();
+    }
     // the round rug, lying flat: teal with a coral ring, its fringe
     {
         const s = cam.scaleAt(RUG.d);
@@ -179,9 +241,9 @@ export function drawRoom(c, cam, view, t) {
         dot(c, P(cam, x, d1 - 80, DOOR.h * 0.45), 13 * s, C.cream);
     }
     {
-        const x = R.x1, s = cam.scaleAt(1100);
-        poly(c, [P(cam, x, 980, 600), P(cam, x, 1240, 600), P(cam, x, 1240, 840), P(cam, x, 980, 840)], C.cream, 9 * s);
-        dot(c, P(cam, x, 1050, 680), 20 * s, C.coral); dot(c, P(cam, x, 1170, 680), 20 * s, C.teal); dot(c, P(cam, x, 1110, 770), 20 * s, C.purple);
+        const x = R[WALL.picture.x], d = WALL.picture.d, s = cam.scaleAt(d + 120);
+        poly(c, [P(cam, x, d, 600), P(cam, x, d + 260, 600), P(cam, x, d + 260, 840), P(cam, x, d, 840)], C.cream, 9 * s);
+        dot(c, P(cam, x, d + 70, 680), 20 * s, C.coral); dot(c, P(cam, x, d + 190, 680), 20 * s, C.teal); dot(c, P(cam, x, d + 130, 770), 20 * s, C.purple);
     }
     // the back wall: peach, stippled, purple below with a cream rail, its boards
     {
@@ -195,7 +257,7 @@ export function drawRoom(c, cam, view, t) {
     for (let x = R.x0 + 160; x < R.x1; x += 160) line(c, P(cam, x, R.d1, 30), P(cam, x, R.d1, R.wainscot - 30), 3 * s1);
     // the window: the sea and the sky of the card, a coral sun going slowly
     {
-        const w0 = -220, w1 = 280, u0 = 470, u1 = 930;
+        const [w0, w1] = WALL.window, u0 = 470, u1 = 930;
         const pts = [P(cam, w0, R.d1, u0), P(cam, w1, R.d1, u0), P(cam, w1, R.d1, u1), P(cam, w0, R.d1, u1)];
         poly(c, pts, C.sky, 0);
         c.save(); c.beginPath(); pts.forEach((p, i) => (i ? c.lineTo(p.x, p.y) : c.moveTo(p.x, p.y))); c.closePath(); c.clip();
@@ -218,20 +280,27 @@ export function drawRoom(c, cam, view, t) {
     for (const o of [...SPOTS, ...DECOR]) if (o.id !== 'curtain') shadow(c, cam, o.x + 20, o.d - 10, o.w / 2 + 30, o.dd / 2 + 40);
 }
 
-// The footprints of the one hiding (HideSeek.vue: one each step he takes, but on the rug), each a little foot lying on
-// the floor the way he went, as dusty as it is fresh (alpha)
+// The footprints of the one hiding (HideSeek.vue), as she would draw them: a stipple of grains of sand in the shape of
+// his little sole and heel, the right foot and the left mirrored; as a print fades (`alpha`, 0..1: how much sand his
+// foot still had, and how long ago) its grains go one by one, not all of it at once
+const SOLE = (() => {
+    const out = [];
+    for (let i = 0; i < 16; i++) { const a = i / 16 * Math.PI * 2 + 0.3, r = i % 2 ? 0.55 : 0.95; out.push([16 + Math.cos(a) * 20 * r, Math.sin(a) * 13 * r]); }
+    for (let i = 0; i < 7; i++) { const a = i / 7 * Math.PI * 2, r = i % 2 ? 0.4 : 0.9; out.push([-26 + Math.cos(a) * 11 * r, Math.sin(a) * 10 * r]); }
+    out.push([16, 0], [-26, 0]);
+    // (each grain its own size and the moment it goes)
+    return out.map(([u, v], i) => ({ u, v, r: 7 + 3 * Math.abs(Math.sin(i * 2.3)), at: (Math.sin(i * 7.7) * 0.5 + 0.5) * 0.9 }));
+})();
 export function drawPrints(c, cam, prints) {
     for (const p of prints) {
         if (p.alpha <= 0.01) continue;
-        const ca = Math.cos(p.a), sa = Math.sin(p.a), px = -sa, pd = ca;
-        const at = (along, across) => P(cam, p.x + ca * along + px * across, p.d + sa * along + pd * across);
-        // (bigger than his foot really is, so they read on a phone: a rounded sole and a dot of dust at its toes)
-        const toe = at(46, 0), heel = at(-34, 0), l = at(4, -22), r = at(4, 22), s = cam.scaleAt(p.d);
-        c.fillStyle = `rgba(74,48,26,${p.alpha})`;
-        c.beginPath(); c.moveTo(heel.x, heel.y);
-        c.quadraticCurveTo(l.x, l.y, toe.x, toe.y); c.quadraticCurveTo(r.x, r.y, heel.x, heel.y); c.fill();
-        dot(c, at(64, 0), 9 * s, `rgba(74,48,26,${p.alpha * 0.85})`);
-        dot(c, at(-48, 14), 4 * s, `rgba(74,48,26,${p.alpha * 0.5})`);
+        const ca = Math.cos(p.a), sa = Math.sin(p.a), s = cam.scaleAt(p.d), K = 1.9;
+        for (const g of SOLE) {
+            if (g.at > p.alpha) continue;
+            const v = g.v * p.side, q = P(cam, p.x + (ca * g.u - sa * v) * K, p.d + (sa * g.u + ca * v) * K);
+            c.fillStyle = `rgba(120,80,40,${Math.min(0.9, 0.4 + p.alpha * 0.5)})`;
+            c.beginPath(); c.arc(q.x, q.y, g.r * s, 0, Math.PI * 2); c.fill();
+        }
     }
 }
 
