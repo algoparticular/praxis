@@ -22,10 +22,11 @@
 // nearest places he has not looked in.
 //
 // The room is drawn in code (house/room.js) and seen as Sid's world is seen; the two Sids are the same puppet (puppet.js).
-import { computed, getCurrentInstance, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
+import { computed, getCurrentInstance, onBeforeUnmount, onMounted, reactive, ref, watchEffect } from 'vue';
 import { createPuppet, SID_TALL } from '../puppet.js';
 import { BOUNDS, ENTRY, ROOM, SPOTS, beginFrame, createSpots, drawPrints, drawRoom, drawThings, obstacles, onRug, onSand, setLayout, spotAt } from './room.js';
 import { play, vibrate } from '../../composables/useSound.js';
+import { menuOpen } from '../../composables/menuOpen.js';
 
 const emit = defineEmits(['close', 'played']);
 const vm = getCurrentInstance().proxy;
@@ -83,10 +84,18 @@ let blocking = obstacles();
 // how much sand his feet still have (steps)
 let prints = [], walked = 0, lastAt = null, foot = 1, dust = DUST;
 
-// Timers that die with the game: cleared on leaving the house and at every turn
-const timers = new Set();
-function later(fn, ms) { const id = setTimeout(() => { timers.delete(id); fn(); }, ms); timers.add(id); return id; }
-const clearTimers = () => { for (const id of timers) clearTimeout(id); timers.clear(); };
+// Timers that die with the game: cleared on leaving the house and at every turn. They run on the game's own time
+// (`played`, moved by the loop), not the clock's, so they stop with it while the header's menu is open
+let played = 0;
+let timers = [];
+function later(fn, ms) { timers.push({ at: played + ms / 1000, fn }); }
+const clearTimers = () => { timers = []; };
+function runTimers() {
+    const due = timers.filter((q) => q.at <= played);
+    if (!due.length) return;
+    timers = timers.filter((q) => q.at > played);
+    for (const q of due) q.fn();
+}
 
 // --- The camera: the whole room on the screen ---
 const canvas = ref(null);
@@ -356,7 +365,7 @@ function onDown(e) {
     const who = game.phase === 'hide' ? hider.value : game.phase === 'seek' ? seeker.value : null;
     // (the last touch counts: while he walks somewhere, a new one sends him to the new place; once he is opening or
     // looking in a thing, he finishes)
-    if (who == null || isMachine(who) || game.busy === 'act' || entering[who]) return;
+    if (menuOpen.value || who == null || isMachine(who) || game.busy === 'act' || entering[who]) return;
     const p = pointerTo(e), sp = spotAt(spots, p);
     if (sp) {
         if (game.phase === 'hide') hideIn(sp);
@@ -427,7 +436,12 @@ function loop(now) {
     raf = requestAnimationFrame(loop);
     const dt = Math.min(0.05, (now - (last || now)) / 1000);
     last = now;
-    update(dt, now);
+    // with the header's menu open the game pauses: its clock, its timers and the Sids stop (the room is still drawn)
+    if (!menuOpen.value) {
+        played += dt;
+        runTimers();
+        update(dt, now);
+    }
     draw(now);
 }
 
@@ -440,7 +454,12 @@ onMounted(() => {
     startTurn();
     raf = requestAnimationFrame(loop);
 });
+// over the navy veil between turns the header's icons go cream, as over the open menu (`body.house-veil`)
+const COVERED = ['intro', 'cover', 'pass', 'machineHide', 'result'];
+const covered = computed(() => COVERED.includes(game.phase));
+watchEffect(() => document.body.classList.toggle('house-veil', covered.value));
 onBeforeUnmount(() => {
+    document.body.classList.remove('house-veil');
     clearTimers();
     cancelAnimationFrame(raf);
     window.removeEventListener('resize', resize);
@@ -469,7 +488,7 @@ onBeforeUnmount(() => {
 
         <!-- between the turns: over everything, so nothing of the room shows while the phone is passed -->
         <Transition name="fade">
-            <div v-if="['intro', 'cover', 'pass', 'machineHide', 'result'].includes(game.phase)" class="cover" :class="{ see: game.phase === 'intro' || game.phase === 'result' }">
+            <div v-if="covered" class="cover" :class="{ see: game.phase === 'intro' || game.phase === 'result' }">
                 <div class="card">
                     <template v-if="game.phase === 'intro'">
                         <h2>{{ t('Escondidas', 'Hide and seek') }}</h2>
@@ -550,15 +569,17 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
     gap: 10px;
     padding: 8px 18px;
     border-radius: 999px;
-    background-color: rgba(251, 244, 228, 0.78);
+    /* the app's frosted glass with the navy veil of its menu, so the two read as one over the room */
+    background-color: rgba(20, 50, 70, 0.68);
+    color: #F7F8F1;
     white-space: nowrap;
     pointer-events: none;
 }
 .line .what { font-size: 16px; }
 .line .time { font-family: Caveat, cursive; font-size: 30px; line-height: 1; min-width: 1.4ch; text-align: right; }
 .line .eyes { display: flex; gap: 5px; }
-.line .eyes span { width: 9px; height: 9px; border-radius: 50%; border: 2px solid #102A34; opacity: 0.35; }
-.line .eyes span.on { background: #102A34; opacity: 1; }
+.line .eyes span { width: 9px; height: 9px; border-radius: 50%; border: 2px solid #F7F8F1; opacity: 0.4; }
+.line .eyes span.on { background: #F7F8F1; opacity: 1; }
 .count {
     position: absolute;
     inset: 0;
@@ -566,40 +587,52 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
     place-items: center;
     font-family: Caveat, cursive;
     font-size: 160px;
-    color: #FBF4E4;
-    text-shadow: 0 0 24px rgba(16, 42, 52, 0.6);
+    color: #F7F8F1;
+    text-shadow: 0 0 24px rgba(20, 50, 70, 0.6);
     pointer-events: none;
 }
-/* between turns the room is covered (no peeking); at the start and at the end it shows, dimmed, behind the words */
+/* between turns the room is covered (no peeking): the app's navy with its grain; at the start and at the end it shows
+   behind the words through the app's frosted glass and the navy veil of its menu (the overlays are one and the same) */
 .cover {
     position: absolute;
     inset: 0;
     display: grid;
     place-items: center;
     padding: 90px 16px 40px;
-    background: #0C666E;
-    color: #FBF4E4;
+    background: #143246 url('../../assets/noise.png');
+    color: #F7F8F1;
 }
-.cover.see { background: rgba(12, 102, 110, 0.8); }
+.cover.see {
+    background-color: rgba(20, 50, 70, 0.68);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+}
 .card { max-width: 420px; text-align: center; }
-.card h2 { color: #FBF4E4; font-family: Caveat, cursive; font-size: clamp(44px, 12vw, 64px); font-weight: 400; margin: 0 0 12px; }
+.card h2 { color: #F7F8F1; font-family: Caveat, cursive; font-size: clamp(44px, 12vw, 64px); font-weight: 400; margin: 0 0 12px; }
 .card p { font-size: 19px; line-height: 1.4; margin: 0 0 12px; }
 .card p.soft { opacity: 0.85; font-size: 17px; }
 .players { display: flex; justify-content: center; gap: 24px; }
 .score { font-family: Caveat, cursive; font-size: 30px !important; }
-.score.best { color: #FBC390; }
+.score.best { color: #FF6F61; }
 .buttons { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-top: 8px; }
 .go {
     padding: 12px 34px;
-    border: none;
     border-radius: 999px;
-    background-color: rgba(251, 244, 228, 0.92);
-    color: #102A34;
+    /* (the app's glass buttons, as the world's: .glass, cream words) */
+    color: #F7F8F1;
     font: 600 18px Nunito, sans-serif;
     cursor: pointer;
 }
+.go:hover:not(:disabled) { background-color: rgba(247, 248, 241, 0.28); }
 .go.waiting { opacity: 0.4; cursor: default; }
-.go.soft { background-color: rgba(251, 244, 228, 0.35); color: #FBF4E4; }
+.go.soft { background: none; border-color: transparent; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; opacity: 0.85; text-decoration: underline 1px; text-underline-offset: 4px; }
 .fade-enter-active, .fade-leave-active { transition: opacity 0.35s ease; }
 .fade-enter-from, .fade-leave-to { opacity: 0; }
+</style>
+
+<style>
+/* (the header is the app's, outside this component: its icons in cream over the veil) */
+body.lab-page.house-veil header .navContainer button,
+body.lab-page.house-veil header #soundButton,
+body.lab-page.house-veil header #menuButton { filter: none; }
 </style>
