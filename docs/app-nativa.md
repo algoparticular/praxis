@@ -1,6 +1,6 @@
 # Anima nativa (iOS y Android)
 
-Plan para que praxis salga de la PWA y sea una app de iOS y Android, sobre todo para tener cosas nativas: widgets en la pantalla de inicio. Planificado el 27 de noviembre de 2026; todavía no se hizo nada.
+Plan para que praxis salga de la PWA y sea una app de iOS y Android, sobre todo para tener cosas nativas: widgets en la pantalla de inicio. Planificado el 27 y 28 de noviembre de 2026; **en pausa**, todavía no se hizo nada.
 
 ## Decisiones tomadas
 
@@ -16,6 +16,24 @@ Plan para que praxis salga de la PWA y sea una app de iOS y Android, sobre todo 
 - **Cuenta de Google Play Console:** no se sabe si existe. Que sepamos es un pago único de 25 USD; confirmarlo.
 - **Sin verificar:** si un Apple ID gratis (equipo personal en Xcode) puede usar App Groups, que es lo que comparte datos con el widget. Creemos que no; confirmarlo antes de probar el widget en un iPhone.
 - Otras cosas nativas que puedan interesar (notificaciones, hápticos, algo durante la meditación): sin decidir.
+
+## ¿Conviene? (28 de noviembre de 2026, en pausa por otra prioridad)
+
+Conviene si los widgets y otras cosas nativas importan de verdad: en iOS una PWA no puede tener widgets.
+
+- **A favor:** widgets (la carta del día, el mundo de Sid), estar en las tiendas, y con Capacitor sigue siendo un solo código para la web y la app.
+- **En contra:** la cuenta de Apple (unos 99 USD por año, sin verificar), la revisión de Apple en cada versión (y el riesgo de "solo una web"), más cosas que mantener (dos proyectos nativos, widgets en Swift y en Kotlin), y sin probar cómo andan las escenas WebGL dentro del WebView de iOS (probablemente como en Safari).
+- **Primer paso recomendado, barato:** la fase 1 sola, en la Mac: empaquetar praxis con Capacitor y abrirlo en el simulador de iOS, que no pide ninguna cuenta. Si las escenas, el sonido y el mundo de Sid andan bien, seguir; si no, la PWA queda como está.
+
+## Con qué se trabaja iOS
+
+Xcode solo corre en una Mac; una sesión de Claude Code en la nube (un contenedor Linux) no puede compilar iOS. Tres caminos:
+
+- **Claude dentro de Xcode** (Xcode 26.3 en adelante, la parte con IA pide macOS 26 Tahoe): compila, corrige errores hasta que no quedan y mira las vistas previas. Si alcanza con la suscripción de Claude.ai o se paga por uso de la API está por verificar.
+- **Claude Code en la terminal de la Mac**, dentro de la carpeta de praxis (puede conectarse a Xcode por MCP).
+- **Conectar la Mac a una sesión en la nube** con Remote Control, desde la app de Claude en la Mac.
+
+Fuentes: [Apple Newsroom](https://www.apple.com/bg/newsroom/2026/02/xcode-26-point-3-unlocks-the-power-of-agentic-coding/), [Anthropic](https://anthropic.com/news/apple-xcode-claude-agent-sdk).
 
 ## Fases
 
