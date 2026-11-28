@@ -33,7 +33,15 @@ const nameOf = (i) => t(PLAYERS[i].es, PLAYERS[i].en);
 const game = reactive({
     phase: 'intro',     // intro, cover (before hiding: the seeker looks away), hide, pass (the phone is passed), count, seek, found, result
     round: 0, clock: 0, count: 3, times: [null, null], timedOut: [false, false], busy: false, hidden: null, starter: 0, hints: 0,
+    // with a friend (two people, one phone, passed between turns) or with the machine (Sad plays by himself: MACHINE)
+    mode: 'friend', ready: false, heard: false,
 });
+// Playing with the machine, the person is Sid and the machine is Sad: no phone to pass. Sad hides while the screen is
+// covered (MACHINE.hide s, then the person goes to look), and seeks by himself: he walks to a thing, looks, thinks a
+// moment (MACHINE.think) and goes on, mostly to one of the nearest he has not looked in; when the place trembles he
+// may notice (MACHINE.hear) and go straight there
+const MACHINE = { who: 1, hide: 2.2, think: [0.4, 1.3], hear: 0.55, near: 3 };
+const isMachine = (i) => game.mode === 'machine' && i === MACHINE.who;
 const hider = computed(() => (game.starter + game.round) % 2);
 const seeker = computed(() => 1 - hider.value);
 const clockText = computed(() => {
@@ -41,6 +49,16 @@ const clockText = computed(() => {
     return Math.min(SEEK_TIME, game.clock).toFixed(1).replace('.', t(',', '.'));
 });
 const fmt = (s) => s.toFixed(1).replace('.', t(',', '.'));
+// what the clock says: who hides or seeks (with the machine, the person is spoken to), and once found, who found whom
+const clockWhat = computed(() => {
+    const h = nameOf(hider.value), s = nameOf(seeker.value), me = game.mode === 'machine';
+    if (game.phase === 'hide') return me && isMachine(seeker.value) ? t(`Escondete de ${s}`, `Hide from ${s}`) : t('Escondete', 'Hide');
+    if (game.phase === 'found') {
+        if (game.timedOut[seeker.value]) return me && !isMachine(seeker.value) ? t('No lo encontraste', 'You did not find him') : t(`${s} no lo encontró`, `${s} did not find him`);
+        return me && !isMachine(seeker.value) ? t('¡Lo encontraste!', 'You found him!') : me ? t(`${s} te encontró`, `${s} found you`) : t(`${s} encontró a ${h}`, `${s} found ${h}`);
+    }
+    return me && isMachine(seeker.value) ? t(`${s} te busca`, `${s} is looking for you`) : t(`Buscá a ${h}`, `Find ${h}`);
+});
 const winner = computed(() => {
     const [a, b] = game.times;
     if (a == null || b == null || Math.abs(a - b) < 0.05) return null;
@@ -85,10 +103,26 @@ function startRound() {
     inRoom[0] = inRoom[1] = false;
     for (const p of puppets) { p.place(ENTRY.from.x, ENTRY.from.d, 0); p.state.hidden = false; p.state.show = 1; p.lookAt(null); p.faceTo(null); }
 }
-function begin() {
+function begin(mode = game.mode) {
+    game.mode = mode;
     game.round = 0; game.times = [null, null]; game.timedOut = [false, false];
     startRound();
-    game.phase = 'cover';
+    if (mode === 'machine') toHiding();
+    else game.phase = 'cover';
+}
+// the round's hiding: the person hides, or the machine does while the screen is covered
+function toHiding() {
+    if (!isMachine(hider.value)) { startHiding(); return; }
+    startRound();
+    game.phase = 'machineHide'; game.ready = false;
+    play('flip');
+    setTimeout(() => {
+        if (game.phase !== 'machineHide') return;
+        game.hidden = spots[Math.floor(Math.random() * spots.length)].id;
+        puppets[hider.value].state.hidden = true;
+        game.ready = true;
+        play('release');
+    }, MACHINE.hide * 1000);
 }
 function comeIn(i) {
     const p = puppets[i];
@@ -117,7 +151,12 @@ function hideIn(sp) {
                 game.hidden = sp.id;
                 sp.openTo = 0; sp.shake = 0.4;
                 play('release');
-                setTimeout(() => { if (game.phase === 'hide') { game.phase = 'pass'; inRoom[hider.value] = false; } }, 900);
+                setTimeout(() => {
+                    if (game.phase !== 'hide') return;
+                    inRoom[hider.value] = false;
+                    // (the machine does not peek: it comes in and counts at once)
+                    if (isMachine(seeker.value)) startCount(); else game.phase = 'pass';
+                }, 900);
             });
         }, 420);
     });
@@ -138,11 +177,25 @@ function startCount() {
         if (game.phase !== 'count') return;
         game.count -= 1;
         if (game.count > 0) { play('tap'); setTimeout(tick, 800); }
-        else { play('star'); game.phase = 'seek'; game.clock = 0; game.hints = 0; }
+        else {
+            play('star'); game.phase = 'seek'; game.clock = 0; game.hints = 0; game.heard = false;
+            if (isMachine(seeker.value)) setTimeout(machineSeek, 500);
+        }
     };
     setTimeout(tick, 800);
 }
-function lookIn(sp) {
+// The machine looks for him: the place it heard tremble, or one of the nearest it has not looked in
+function machineSeek() {
+    if (game.phase !== 'seek' || game.busy) return;
+    const p = puppets[seeker.value], left = spots.filter((s) => !s.seen);
+    let sp = game.heard ? spots.find((s) => s.id === game.hidden) : null;
+    if (!sp) {
+        const near = left.sort((a, b) => Math.hypot(a.spot.x - p.state.x, a.spot.d - p.state.d) - Math.hypot(b.spot.x - p.state.x, b.spot.d - p.state.d)).slice(0, MACHINE.near);
+        sp = near[Math.floor(Math.random() * near.length)];
+    }
+    if (sp) lookIn(sp, () => setTimeout(machineSeek, (MACHINE.think[0] + Math.random() * (MACHINE.think[1] - MACHINE.think[0])) * 1000));
+}
+function lookIn(sp, then = null) {
     const p = puppets[seeker.value];
     game.busy = true;
     sp.lit = 1;
@@ -157,7 +210,7 @@ function lookIn(sp) {
             if (sp.id === game.hidden) { found(sp, false); return; }
             sp.seen = true;
             play('miss');
-            setTimeout(() => { sp.openTo = 0; game.busy = false; }, 350);
+            setTimeout(() => { sp.openTo = 0; game.busy = false; then?.(); }, 350);
         }, LOOK * 1000);
     });
 }
@@ -186,7 +239,12 @@ function found(sp, timedOut) {
     setTimeout(() => { sp.openTo = 0; }, 900);
     // (they look at each other)
     ps.faceTo(null); ph.faceTo(null);
-    setTimeout(() => { if (game.phase !== 'found') return; game.round === 0 ? (game.phase = 'cover2') : finish(); }, 3200);
+    setTimeout(() => {
+        if (game.phase !== 'found') return;
+        if (game.round === 1) finish();
+        else if (game.mode === 'machine') nextRound();
+        else game.phase = 'cover2';
+    }, 3200);
 }
 function finish() {
     game.phase = 'result';
@@ -197,7 +255,7 @@ function finish() {
 }
 function nextRound() {
     game.round = 1;
-    startHiding();
+    toHiding();
 }
 function again() {
     game.starter = 1 - game.starter;
@@ -217,7 +275,7 @@ function floorAt(p) {
 }
 function onDown(e) {
     const who = game.phase === 'hide' ? hider.value : game.phase === 'seek' ? seeker.value : null;
-    if (who == null || game.busy || entering[who]) return;
+    if (who == null || isMachine(who) || game.busy || entering[who]) return;
     const p = pointerTo(e), sp = spotAt(spots, p);
     if (sp) {
         if (game.phase === 'hide') hideIn(sp);
@@ -245,7 +303,7 @@ function update(dt, now) {
         if (game.hints < HINTS.length && game.clock >= HINTS[game.hints]) {
             game.hints += 1;
             const sp = spots.find((s) => s.id === game.hidden);
-            if (sp) { sp.shake = 0.7; play('tap'); }
+            if (sp) { sp.shake = 0.7; play('tap'); if (Math.random() < MACHINE.hear) game.heard = true; }
         }
         if (game.clock >= SEEK_TIME) found(spots.find((s) => s.id === game.hidden), true);
     }
@@ -314,10 +372,10 @@ onBeforeUnmount(() => {
 
         <!-- the clock, and who plays -->
         <Transition name="fade">
-            <div v-if="['hide', 'seek'].includes(game.phase)" class="clock glass" :class="{ late: game.phase === 'hide' && game.clock > HIDE_TIME - 5 }">
+            <div v-if="['hide', 'seek', 'found'].includes(game.phase)" class="clock glass" :class="{ late: game.phase === 'hide' && game.clock > HIDE_TIME - 5 }">
                 <span class="who" :style="{ background: PLAYERS[game.phase === 'hide' ? hider : seeker].white, borderColor: PLAYERS[game.phase === 'hide' ? hider : seeker].ink }"></span>
-                <span class="what">{{ game.phase === 'hide' ? t('Escondete', 'Hide') : t(`Buscá a ${nameOf(hider)}`, `Find ${nameOf(hider)}`) }}</span>
-                <span class="time">{{ clockText }}</span>
+                <span class="what">{{ clockWhat }}</span>
+                <span class="time">{{ game.phase === 'found' ? fmt(game.times[seeker]) : clockText }}</span>
             </div>
         </Transition>
         <Transition name="fade">
@@ -326,7 +384,7 @@ onBeforeUnmount(() => {
 
         <!-- the words between the turns: over everything, so nothing of the room shows while the phone is passed -->
         <Transition name="fade">
-            <div v-if="['intro', 'cover', 'pass', 'cover2', 'result'].includes(game.phase)" class="cover" :class="{ see: game.phase === 'intro' || game.phase === 'result' }">
+            <div v-if="['intro', 'cover', 'pass', 'cover2', 'machineHide', 'result'].includes(game.phase)" class="cover" :class="{ see: game.phase === 'intro' || game.phase === 'result' }">
                 <div class="card">
                     <template v-if="game.phase === 'intro'">
                         <h2>{{ t('Escondidas', 'Hide and seek') }}</h2>
@@ -334,7 +392,11 @@ onBeforeUnmount(() => {
                         <p class="players">
                             <span v-for="(p, i) in PLAYERS" :key="i" class="player"><span class="who" :style="{ background: p.white, borderColor: p.ink }"></span>{{ nameOf(i) }}</span>
                         </p>
-                        <button class="go glass" @click="begin">{{ t('Jugar', 'Play') }}</button>
+                        <div class="buttons">
+                            <button class="go glass" @click="begin('friend')">{{ t('Con un amigo', 'With a friend') }}</button>
+                            <button class="go glass" @click="begin('machine')">{{ t('Con la máquina', 'With the machine') }}</button>
+                        </div>
+                        <p class="soft small">{{ t(`Con un amigo, se pasan el teléfono. Con la máquina, vos sos ${nameOf(0)}.`, `With a friend, you pass the phone. With the machine, you are ${nameOf(0)}.`) }}</p>
                     </template>
                     <template v-else-if="game.phase === 'cover' || game.phase === 'cover2'">
                         <h2><span class="who big" :style="{ background: PLAYERS[game.phase === 'cover2' ? seeker : hider].white, borderColor: PLAYERS[game.phase === 'cover2' ? seeker : hider].ink }"></span></h2>
@@ -343,6 +405,13 @@ onBeforeUnmount(() => {
                         <p class="soft">{{ t(`${nameOf(game.phase === 'cover2' ? hider : seeker)}, no mires.`, `${nameOf(game.phase === 'cover2' ? hider : seeker)}, don't look.`) }} {{ t(`Hay ${HIDE_TIME} segundos.`, `There are ${HIDE_TIME} seconds.`) }}</p>
                         <button class="go glass" @click="game.phase === 'cover2' ? nextRound() : startHiding()">{{ t('Listo', 'Ready') }}</button>
                     </template>
+                    <template v-else-if="game.phase === 'machineHide'">
+                        <h2><span class="who big" :style="{ background: PLAYERS[hider].white, borderColor: PLAYERS[hider].ink }"></span></h2>
+                        <p v-if="game.round === 1" class="done">{{ game.timedOut[1] ? t(`${nameOf(1)} no te encontró: ${SEEK_TIME} s.`, `${nameOf(1)} did not find you: ${SEEK_TIME} s.`) : t(`${nameOf(1)} te encontró en ${fmt(game.times[1])} s.`, `${nameOf(1)} found you in ${fmt(game.times[1])} s.`) }}</p>
+                        <p>{{ game.ready ? t(`${nameOf(hider)} ya se escondió.`, `${nameOf(hider)} has hidden.`) : t(`${nameOf(hider)} se está escondiendo… no mires.`, `${nameOf(hider)} is hiding… don't look.`) }}</p>
+                        <p class="soft">{{ t('Buscalo: tocá las cosas de la casa para mirar. El reloj corre.', 'Find him: touch the things in the house to look. The clock runs.') }}</p>
+                        <button class="go glass" :disabled="!game.ready" :class="{ waiting: !game.ready }" @click="startCount">{{ t('A buscar', 'Go seek') }}</button>
+                    </template>
                     <template v-else-if="game.phase === 'pass'">
                         <h2><span class="who big" :style="{ background: PLAYERS[seeker].white, borderColor: PLAYERS[seeker].ink }"></span></h2>
                         <p>{{ t(`Pasale el teléfono a ${nameOf(seeker)}.`, `Pass the phone to ${nameOf(seeker)}.`) }}</p>
@@ -350,7 +419,7 @@ onBeforeUnmount(() => {
                         <button class="go glass" @click="startCount">{{ t('A buscar', 'Go seek') }}</button>
                     </template>
                     <template v-else-if="game.phase === 'result'">
-                        <h2>{{ winner == null ? t('Empate', 'A tie') : t(`¡Ganó ${nameOf(winner)}!`, `${nameOf(winner)} wins!`) }}</h2>
+                        <h2>{{ winner == null ? t('Empate', 'A tie') : game.mode === 'machine' && winner === 0 ? t('¡Ganaste!', 'You win!') : t(`¡Ganó ${nameOf(winner)}!`, `${nameOf(winner)} wins!`) }}</h2>
                         <p v-for="(p, i) in PLAYERS" :key="i" class="score" :class="{ won: winner === i }">
                             <span class="who" :style="{ background: p.white, borderColor: p.ink }"></span>{{ nameOf(i) }}:
                             {{ game.timedOut[i] ? t(`no lo encontró (${SEEK_TIME} s)`, `did not find him (${SEEK_TIME} s)`) : `${fmt(game.times[i])} s` }}
@@ -448,6 +517,8 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
     font: 600 18px Nunito, sans-serif;
     cursor: pointer;
 }
+.go.waiting { opacity: 0.4; cursor: default; }
+.card p.small { font-size: 15px; margin-top: 16px; }
 .go.soft { background-color: rgba(251, 244, 228, 0.35); color: #FBF4E4; margin-top: 0; }
 .fade-enter-active, .fade-leave-active { transition: opacity 0.35s ease; }
 .fade-enter-from, .fade-leave-to { opacity: 0; }
